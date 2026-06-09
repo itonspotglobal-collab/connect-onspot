@@ -1,0 +1,259 @@
+Refine only the homepage “Work Differently” gradient checklist cards.
+
+Current issue:
+The two cards look good overall, but the checklist rows do not align perfectly between the left and right card. The row heights, icon positions, text start positions, and CTA button baselines need to be consistent.
+
+Goal:
+Make the two cards feel perfectly aligned and balanced:
+- Same card height
+- Same internal padding
+- Same header block height
+- Same checklist row height
+- Same icon column width
+- Same text alignment
+- CTA buttons centered and aligned on the same horizontal baseline
+- Keep the mini icons
+- Keep the current gradients and content
+
+Do not change:
+- Work Differently section headline
+- card copy
+- card gradients
+- CTA links
+- other homepage sections
+
+==================================================
+1. MAKE BOTH CARDS THE SAME STRUCTURE
+==================================================
+
+Use this structure for both cards:
+
+<article className="... flex h-full flex-col ...">
+  <div className="relative z-10 flex h-full flex-col">
+    <div className="min-h-[180px]">
+      LABEL
+      TITLE
+      DESCRIPTION
+    </div>
+
+    <div className="mt-6 grid gap-3">
+      ROWS
+    </div>
+
+    <div className="mt-auto flex justify-center pt-7">
+      BUTTON
+    </div>
+  </div>
+</article>
+
+Important:
+- Add `flex h-full flex-col` to both card wrappers.
+- Add `min-h-[180px]` to both card header/content blocks.
+- Use the same row container: `mt-6 grid gap-3`
+- Use `mt-auto` before the CTA button so both buttons sit at the bottom.
+
+==================================================
+2. CARD WRAPPER
+==================================================
+
+Both cards should use the same base classes:
+
+className="
+  relative
+  flex
+  h-full
+  flex-col
+  overflow-hidden
+  rounded-[30px]
+  border
+  border-white/18
+  p-7
+  text-white
+  shadow-[0_28px_80px_rgba(0,0,0,0.26)]
+  sm:p-8
+"
+
+Then keep each card’s existing gradient background.
+
+Grid parent should use:
+
+<div className="
+  mx-auto
+  mt-12
+  grid
+  max-w-[1120px]
+  items-stretch
+  gap-6
+  lg:grid-cols-2
+">
+
+==================================================
+3. CHECKLIST ROW ALIGNMENT
+==================================================
+
+Use this exact row style for every checklist item in both cards:
+
+<div className="
+  grid
+  min-h-[86px]
+  grid-cols-[44px_1fr]
+  items-center
+  gap-4
+  rounded-2xl
+  border
+  border-white/18
+  bg-white/10
+  px-5
+  py-4
+  backdrop-blur
+">
+
+Icon tile:
+
+<div className="
+  flex
+  h-10
+  w-10
+  items-center
+  justify-center
+  rounded-xl
+  bg-white/12
+  text-[#6EF3F1]
+">
+  <Icon className="h-5 w-5" strokeWidth={2.2} />
+</div>
+
+For the Professionals card, use:
+text-[#D7C9FF]
+
+Text wrapper:
+
+<div className="min-w-0">
+  <h4 className="
+    text-base
+    font-bold
+    leading-tight
+    text-white
+  ">
+    Row title
+  </h4>
+
+  <p className="
+    mt-1
+    text-sm
+    leading-snug
+    text-white/70
+  ">
+    Row description
+  </p>
+</div>
+
+Important:
+- Do not use dot markers anymore.
+- Do not use `items-start`.
+- Use `items-center`.
+- Use `grid-cols-[44px_1fr]`.
+- Use `min-h-[86px]`.
+- Every row in both cards must use the same row classes.
+
+==================================================
+4. PREVENT ROW HEIGHT DIFFERENCES FROM TEXT WRAPPING
+==================================================
+
+Some right-side descriptions may wrap differently. Keep row heights consistent by using `min-h-[86px]`.
+
+If one row still becomes taller, increase every row to:
+
+min-h-[92px]
+
+Do not set different row heights per card.
+
+==================================================
+5. BUTTON ALIGNMENT
+==================================================
+
+Both buttons should use the same wrapper:
+
+<div className="mt-auto flex justify-center pt-7">
+
+Both buttons should use:
+
+className="
+  inline-flex
+  h-12
+  min-w-[240px]
+  items-center
+  justify-center
+  gap-2
+  rounded-full
+  bg-white
+  px-6
+  text-sm
+  font-bold
+  text-[#2E3FA8]
+  shadow-[0_16px_34px_rgba(0,0,0,0.18)]
+  transition
+  hover:-translate-y-0.5
+  hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]
+"
+
+Keep links:
+- Companies button: /hire-talent
+- Professionals button: /find-best-matches
+
+Expected result:
+Both buttons are horizontally centered and vertically aligned with each other.
+
+==================================================
+6. HEADER TEXT ALIGNMENT
+==================================================
+
+Both card header blocks should use the same classes.
+
+Header wrapper:
+<div className="min-h-[180px]">
+
+Label:
+className="
+  mb-4
+  text-xs
+  font-bold
+  uppercase
+  tracking-[0.24em]
+  text-white/72
+"
+
+Title:
+className="
+  max-w-[460px]
+  text-[clamp(30px,3vw,44px)]
+  font-bold
+  leading-[1.02]
+  tracking-[-0.05em]
+  text-white
+"
+
+Description:
+className="
+  mt-4
+  max-w-[500px]
+  text-base
+  font-semibold
+  leading-relaxed
+  text-white/82
+"
+
+If the Professionals title/description makes the header visually shorter, do not add manual margin to only one card. The `min-h-[180px]` should handle alignment.
+
+==================================================
+7. FINAL CHECK
+==================================================
+
+After applying:
+- The first row in both cards begins at the same vertical level.
+- All checklist rows have the same height.
+- Icons align vertically with each other.
+- Text starts at the same x-position inside all rows.
+- Both CTA buttons are centered.
+- Both CTA buttons sit on the same horizontal baseline.
+- The section still fits compactly and keeps the current visual design.

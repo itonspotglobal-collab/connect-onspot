@@ -518,13 +518,13 @@ export default function Home() {
           </div>
 
           {/* Two gradient checklist cards */}
-          <div className="mx-auto mt-12 grid max-w-[1120px] gap-6 lg:grid-cols-2 lg:items-stretch">
+          <div className="mx-auto mt-12 grid max-w-[1120px] items-stretch gap-6 lg:grid-cols-2">
 
             {/* Card 1: For Companies */}
             <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
               <div className="relative z-10 flex h-full flex-col">
-                <div>
+                <div className="min-h-[180px]">
                   <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
                     For Companies
                   </p>
@@ -536,20 +536,20 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="mt-7 space-y-3">
+                <div className="mt-6 grid gap-3">
                   {[
-                    { icon: <Zap className="h-5 w-5" />, title: "Hire in days", sub: "72-hour match average" },
-                    { icon: <SlidersHorizontal className="h-5 w-5" />, title: "Hire your way", sub: "Contract, project, full-time" },
-                    { icon: <Users className="h-5 w-5" />, title: "No middlemen", sub: "Direct access, zero markups" },
-                    { icon: <Globe className="h-5 w-5" />, title: "50+ countries", sub: "Global reach, local expertise" },
+                    { icon: <Zap className="h-5 w-5" strokeWidth={2.2} />, title: "Hire in days", sub: "72-hour match average" },
+                    { icon: <SlidersHorizontal className="h-5 w-5" strokeWidth={2.2} />, title: "Hire your way", sub: "Contract, project, full-time" },
+                    { icon: <Users className="h-5 w-5" strokeWidth={2.2} />, title: "No middlemen", sub: "Direct access, zero markups" },
+                    { icon: <Globe className="h-5 w-5" strokeWidth={2.2} />, title: "50+ countries", sub: "Global reach, local expertise" },
                   ].map((item) => (
-                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/14 text-[#6EF3F1]">
+                    <div key={item.title} className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#6EF3F1]">
                         {item.icon}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
+                        <p className="mt-1 text-sm leading-snug text-white/70">{item.sub}</p>
                       </div>
                     </div>
                   ))}
@@ -558,7 +558,7 @@ export default function Home() {
                 <div className="mt-auto flex justify-center pt-7">
                   <Link
                     href="/hire-talent"
-                    className="inline-flex h-12 min-w-[230px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
+                    className="inline-flex h-12 min-w-[240px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
                   >
                     Find the right talent →
                   </Link>
@@ -570,7 +570,7 @@ export default function Home() {
             <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
               <div className="relative z-10 flex h-full flex-col">
-                <div>
+                <div className="min-h-[180px]">
                   <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
                     For Professionals
                   </p>
@@ -582,20 +582,20 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="mt-7 space-y-3">
+                <div className="mt-6 grid gap-3">
                   {[
-                    { icon: <TrendingUp className="h-5 w-5" />, title: "Steady pipeline", sub: "No gaps, no chasing" },
-                    { icon: <Star className="h-5 w-5" />, title: "Top global brands", sub: "Builds your reputation fast" },
-                    { icon: <Clock className="h-5 w-5" />, title: "Your terms", sub: "Remote, flexible schedule" },
-                    { icon: <CheckCircle2 className="h-5 w-5" />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                    { icon: <TrendingUp className="h-5 w-5" strokeWidth={2.2} />, title: "Steady pipeline", sub: "No gaps, no chasing" },
+                    { icon: <Star className="h-5 w-5" strokeWidth={2.2} />, title: "Top global brands", sub: "Builds your reputation fast" },
+                    { icon: <Clock className="h-5 w-5" strokeWidth={2.2} />, title: "Your terms", sub: "Remote, flexible schedule" },
+                    { icon: <CheckCircle2 className="h-5 w-5" strokeWidth={2.2} />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
                   ].map((item) => (
-                    <div key={item.title} className="flex items-start gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/14 text-[#D7C9FF]">
+                    <div key={item.title} className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#D7C9FF]">
                         {item.icon}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-relaxed text-white/70">{item.sub}</p>
+                        <p className="mt-1 text-sm leading-snug text-white/70">{item.sub}</p>
                       </div>
                     </div>
                   ))}
