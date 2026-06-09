@@ -412,7 +412,6 @@ export default function Home() {
       <section className="relative bg-[#F5F7FC] px-6 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1320px]">
           <div className="rounded-[40px] bg-gradient-to-br from-[#4B4FC4] via-[#3568E8] to-[#13B8C8] p-8 shadow-[0_28px_90px_rgba(44,63,170,0.22)] sm:p-10 lg:p-12">
-
             {/* Header */}
             <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
@@ -423,7 +422,8 @@ export default function Home() {
                   Ideas worth sharing.
                 </h2>
                 <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/75">
-                  Perspectives on customer experience, global talent, and the future of work.
+                  Perspectives on customer experience, global talent, and the
+                  future of work.
                 </p>
               </div>
               <div className="shrink-0">
@@ -448,13 +448,15 @@ export default function Home() {
                 {
                   slug: "leveraging-ghanas-tech-talent-philippines-customer-service",
                   category: "GLOBAL OUTSOURCING",
-                  title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
+                  title:
+                    "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines",
                   readTime: "5 min read",
                 },
                 {
                   slug: "ghana-software-development-outsourcing-goldmine",
                   category: "TECHNOLOGY",
-                  title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
+                  title:
+                    "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing",
                   readTime: "4 min read",
                 },
               ].map((post) => (
@@ -472,7 +474,9 @@ export default function Home() {
                     </h3>
                   </div>
                   <div className="mt-8 flex items-center justify-between">
-                    <span className="text-sm font-medium text-white/75">{post.readTime}</span>
+                    <span className="text-sm font-medium text-white/75">
+                      {post.readTime}
+                    </span>
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/16 text-white transition group-hover:bg-white group-hover:text-[#4B4FC4]">
                       →
                     </span>
@@ -490,7 +494,6 @@ export default function Home() {
                 Talk to an Expert →
               </Link>
             </div>
-
           </div>
         </div>
       </section>
@@ -498,7 +501,6 @@ export default function Home() {
       {/* ── 3. WORK DIFFERENTLY ── */}
       <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
-
           {/* Headline */}
           <div className="mx-auto max-w-[1120px] text-center mb-10">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white/60">
@@ -519,7 +521,6 @@ export default function Home() {
 
           {/* Two gradient checklist cards */}
           <div className="mx-auto mt-12 grid max-w-[1120px] items-stretch gap-6 lg:grid-cols-2">
-
             {/* Card 1: For Companies */}
             <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
@@ -532,24 +533,54 @@ export default function Home() {
                     Hire faster. Spend less.
                   </h3>
                   <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
-                    Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.
+                    Build your team with direct access, flexible engagement
+                    models, and talent matched around how your work actually
+                    runs.
                   </p>
                 </div>
 
                 <div className="mt-6 grid gap-3">
                   {[
-                    { icon: <Zap className="h-5 w-5" strokeWidth={2.2} />, title: "Hire in days", sub: "72-hour match average" },
-                    { icon: <SlidersHorizontal className="h-5 w-5" strokeWidth={2.2} />, title: "Hire your way", sub: "Contract, project, full-time" },
-                    { icon: <Users className="h-5 w-5" strokeWidth={2.2} />, title: "No middlemen", sub: "Direct access, zero markups" },
-                    { icon: <Globe className="h-5 w-5" strokeWidth={2.2} />, title: "50+ countries", sub: "Global reach, local expertise" },
+                    {
+                      icon: <Zap className="h-5 w-5" strokeWidth={2.2} />,
+                      title: "Hire in days",
+                      sub: "72-hour match average",
+                    },
+                    {
+                      icon: (
+                        <SlidersHorizontal
+                          className="h-5 w-5"
+                          strokeWidth={2.2}
+                        />
+                      ),
+                      title: "Hire your way",
+                      sub: "Contract, project, full-time",
+                    },
+                    {
+                      icon: <Users className="h-5 w-5" strokeWidth={2.2} />,
+                      title: "No middlemen",
+                      sub: "Direct access, zero markups",
+                    },
+                    {
+                      icon: <Globe className="h-5 w-5" strokeWidth={2.2} />,
+                      title: "50+ countries",
+                      sub: "Global reach, local expertise",
+                    },
                   ].map((item) => (
-                    <div key={item.title} className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                    <div
+                      key={item.title}
+                      className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur"
+                    >
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#6EF3F1]">
                         {item.icon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-snug text-white/70">{item.sub}</p>
+                        <h4 className="text-base font-bold leading-tight text-white">
+                          {item.title}
+                        </h4>
+                        <p className="mt-1 text-sm leading-snug text-white/70">
+                          {item.sub}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -578,24 +609,52 @@ export default function Home() {
                     Real work. Real growth.
                   </h3>
                   <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
-                    Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.
+                    Get matched with quality opportunities, steady pipelines,
+                    and flexible work that respects your terms.
                   </p>
                 </div>
 
                 <div className="mt-6 grid gap-3">
                   {[
-                    { icon: <TrendingUp className="h-5 w-5" strokeWidth={2.2} />, title: "Steady pipeline", sub: "No gaps, no chasing" },
-                    { icon: <Star className="h-5 w-5" strokeWidth={2.2} />, title: "Top global brands", sub: "Builds your reputation fast" },
-                    { icon: <Clock className="h-5 w-5" strokeWidth={2.2} />, title: "Your terms", sub: "Remote, flexible schedule" },
-                    { icon: <CheckCircle2 className="h-5 w-5" strokeWidth={2.2} />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                    {
+                      icon: (
+                        <TrendingUp className="h-5 w-5" strokeWidth={2.2} />
+                      ),
+                      title: "Steady pipeline",
+                      sub: "No gaps, no chasing",
+                    },
+                    {
+                      icon: <Star className="h-5 w-5" strokeWidth={2.2} />,
+                      title: "Top global brands",
+                      sub: "Builds your reputation fast",
+                    },
+                    {
+                      icon: <Clock className="h-5 w-5" strokeWidth={2.2} />,
+                      title: "Your terms",
+                      sub: "Remote, flexible schedule",
+                    },
+                    {
+                      icon: (
+                        <CheckCircle2 className="h-5 w-5" strokeWidth={2.2} />
+                      ),
+                      title: "Zero gatekeeping",
+                      sub: "Pure merit, open access",
+                    },
                   ].map((item) => (
-                    <div key={item.title} className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur">
+                    <div
+                      key={item.title}
+                      className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur"
+                    >
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#D7C9FF]">
                         {item.icon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-base font-bold leading-tight text-white">{item.title}</h4>
-                        <p className="mt-1 text-sm leading-snug text-white/70">{item.sub}</p>
+                        <h4 className="text-base font-bold leading-tight text-white">
+                          {item.title}
+                        </h4>
+                        <p className="mt-1 text-sm leading-snug text-white/70">
+                          {item.sub}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -611,7 +670,6 @@ export default function Home() {
                 </div>
               </div>
             </article>
-
           </div>
         </div>
       </section>
@@ -624,8 +682,8 @@ export default function Home() {
               className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]"
               style={{ textWrap: "balance", maxWidth: "58ch" }}
             >
-              Trusted by global brands, hundreds of entrepreneurs, and
-              thousands of professionals worldwide.
+              Trusted by global brands, hundreds of entrepreneurs, and thousands
+              of professionals worldwide.
             </h2>
             <TrustedLogos />
             <div className="flex justify-center">
@@ -806,7 +864,8 @@ export default function Home() {
         {/* Bottom caption */}
         <p className="relative z-10 mx-auto mt-7 max-w-[900px] px-6 text-center text-[clamp(17px,1.35vw,22px)] font-semibold leading-snug text-white/62">
           Behind every workflow is a{" "}
-          <span className="text-white">real person</span> making the work better.
+          <span className="text-white">real person</span> making the work
+          better.
         </p>
 
         {/* Meet the people CTA */}
@@ -999,15 +1058,13 @@ export default function Home() {
       <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
         <div className="pointer-events-none absolute right-[-12%] top-[-20%] h-[420px] w-[420px] rounded-full bg-[#2F7CF6]/20 blur-[90px]" />
         <div className="relative z-10 mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
-
           {/* Left: eyebrow + title */}
           <div>
-            <p className="mb-5 text-xs font-bold uppercase tracking-[0.30em] text-[#AFA8FF]">
-              The Why
-            </p>
             <h2 className="max-w-[430px] text-[clamp(38px,4.6vw,64px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
-              OnSpot started<br />
-              from a real<br />
+              OnSpot started
+              <br />
+              from a real
+              <br />
               problem.
             </h2>
           </div>
@@ -1015,18 +1072,29 @@ export default function Home() {
           {/* Right: story card */}
           <div className="rounded-[32px] border border-white/14 bg-white/[0.08] p-8 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:p-12">
             <h3 className="max-w-[760px] text-[clamp(20px,2.2vw,30px)] font-semibold leading-[1.08] tracking-[-0.04em] text-white">
-              Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+              Our founders were building businesses and ran into the same wall
+              most operators eventually hit: growth was possible, but operations
+              were becoming the bottleneck.
             </h3>
 
             <div className="mt-8 space-y-6 text-[clamp(15px,1.3vw,18px)] leading-relaxed text-white/72">
               <p>
-                Hiring took too long. Costs kept rising. Teams became harder to manage. Founder time was being consumed by work that should have been systemized.
+                Hiring took too long. Costs kept rising. Teams became harder to
+                manage. Founder time was being consumed by work that should have
+                been systemized.
               </p>
               <p>
-                So instead of accepting that as normal, they built a better way. What began as an internal solution became a company built to help other businesses scale with more clarity, better people, and less friction.
+                So instead of accepting that as normal, they built a better way.
+                What began as an internal solution became a company built to
+                help other businesses scale with more clarity, better people,
+                and less friction.
               </p>
               <p>
-                That is why OnSpot exists. Not to be another outsourcing provider, but to become a trusted growth partner for businesses that need more than manpower. They need intelligence that removes drag, people who can lead and execute, and a support system that makes both work as one.
+                That is why OnSpot exists. Not to be another outsourcing
+                provider, but to become a trusted growth partner for businesses
+                that need more than manpower. They need intelligence that
+                removes drag, people who can lead and execute, and a support
+                system that makes both work as one.
               </p>
             </div>
 
@@ -1039,14 +1107,12 @@ export default function Home() {
               </Link>
             </div>
           </div>
-
         </div>
       </section>
 
       {/* ── 7. WHY PARTNER / WHY ONSPOT ── */}
       <section className="bg-[#F3F6FC] px-6 py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-[1320px]">
-
           {/* Header block */}
           <div className="max-w-[720px]">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">
@@ -1059,7 +1125,9 @@ export default function Home() {
               </span>
             </h2>
             <p className="mt-5 max-w-[600px] text-[clamp(15px,1.2vw,18px)] leading-[1.5] text-[#536077]">
-              We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+              We design the operating layer behind modern outsourcing —
+              combining AI-ready systems, vetted talent, and human
+              accountability so your team can scale without losing control.
             </p>
           </div>
 
@@ -1072,6 +1140,7 @@ export default function Home() {
                 title: "AI-first infrastructure",
                 tagline: "Intelligent by design",
                 body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.",
+                variant: "light" as const,
               },
               {
                 icon: <Users className="h-6 w-6" />,
@@ -1079,6 +1148,7 @@ export default function Home() {
                 title: "Human-centered culture",
                 tagline: "People, not resources",
                 body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.",
+                variant: "dark" as const,
               },
               {
                 icon: <Globe className="h-6 w-6" />,
@@ -1086,6 +1156,7 @@ export default function Home() {
                 title: "Connected ecosystem",
                 tagline: "Seamless integration",
                 body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.",
+                variant: "light" as const,
               },
               {
                 icon: <TrendingUp className="h-6 w-6" />,
@@ -1093,30 +1164,55 @@ export default function Home() {
                 title: "Scalable excellence",
                 tagline: "Grow without compromise",
                 body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.",
+                variant: "dark" as const,
               },
             ].map((card) => (
               <article
                 key={card.title}
-                className="rounded-[24px] border border-[#DCE2F2] bg-white p-6 shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]"
+                className={
+                  card.variant === "light"
+                    ? "rounded-[24px] border border-[#DCE2F2] bg-white p-6 text-[#050A1F] shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]"
+                    : "rounded-[24px] border border-white/14 bg-[linear-gradient(135deg,#1B1D42_0%,#2D2E78_55%,#3F46A8_100%)] p-6 text-white shadow-[0_22px_65px_rgba(24,28,74,0.22)] transition hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(24,28,74,0.30)]"
+                }
               >
                 {/* Icon */}
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]">
+                <div className={
+                  card.variant === "light"
+                    ? "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]"
+                    : "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-[#8EF3F0] shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+                }>
                   {card.icon}
                 </div>
 
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]">
+                <p className={
+                  card.variant === "light"
+                    ? "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]"
+                    : "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#8EF3F0]"
+                }>
                   {card.label}
                 </p>
 
-                <h3 className="text-xl font-bold tracking-[-0.035em] text-[#050A1F]">
+                <h3 className={
+                  card.variant === "light"
+                    ? "text-xl font-bold tracking-[-0.035em] text-[#050A1F]"
+                    : "text-xl font-bold tracking-[-0.035em] text-white"
+                }>
                   {card.title}
                 </h3>
 
-                <p className="mt-2 text-sm font-bold text-[#4B4FC4]">
+                <p className={
+                  card.variant === "light"
+                    ? "mt-2 text-sm font-bold text-[#4B4FC4]"
+                    : "mt-2 text-sm font-bold text-[#B9B6FF]"
+                }>
                   {card.tagline}
                 </p>
 
-                <p className="mt-3 text-sm leading-relaxed text-[#536077]">
+                <p className={
+                  card.variant === "light"
+                    ? "mt-3 text-sm leading-relaxed text-[#536077]"
+                    : "mt-3 text-sm leading-relaxed text-white/72"
+                }>
                   {card.body}
                 </p>
               </article>
@@ -1132,7 +1228,6 @@ export default function Home() {
               See how it works →
             </Link>
           </div>
-
         </div>
       </section>
 

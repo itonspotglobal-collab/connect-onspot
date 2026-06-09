@@ -1,0 +1,198 @@
+Refine only the homepage “Why OnSpot” card grid.
+
+Current issue:
+All four Why OnSpot cards are white, so the section feels flat. Add alternating dark/light card colors to create better contrast and rhythm.
+
+Goal:
+Keep the same layout, content, icons, and CTA, but make the cards alternate between light and dark styles.
+
+Do not change:
+- section heading
+- section paragraph
+- card content
+- icons
+- CTA text/link
+- card layout/grid
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. ALTERNATE CARD COLORS
+==================================================
+
+Apply alternating card styles:
+
+Card 1: Light
+AI-first infrastructure
+
+Card 2: Dark
+Human-centered culture
+
+Card 3: Light
+Connected ecosystem
+
+Card 4: Dark
+Scalable excellence
+
+This should create a light/dark/light/dark pattern across desktop.
+
+==================================================
+2. LIGHT CARD STYLE
+==================================================
+
+Use this style for cards 1 and 3:
+
+className="
+  rounded-[24px]
+  border
+  border-[#DCE2F2]
+  bg-white
+  p-6
+  text-[#050A1F]
+  shadow-[0_18px_55px_rgba(45,55,105,0.08)]
+  transition
+  hover:-translate-y-1
+  hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]
+"
+
+Light card text:
+- Label: text-[#13839A]
+- Title: text-[#050A1F]
+- Subtitle: text-[#4B4FC4]
+- Description: text-[#536077]
+
+Light icon wrapper:
+
+<div className="
+  mb-6
+  flex
+  h-12
+  w-12
+  items-center
+  justify-center
+  rounded-2xl
+  bg-[#EEF0FF]
+  text-[#4B4FC4]
+  shadow-[0_10px_30px_rgba(75,79,196,0.12)]
+">
+  ICON
+</div>
+
+==================================================
+3. DARK CARD STYLE
+==================================================
+
+Use this style for cards 2 and 4:
+
+className="
+  rounded-[24px]
+  border
+  border-white/14
+  bg-[linear-gradient(135deg,#1B1D42_0%,#2D2E78_55%,#3F46A8_100%)]
+  p-6
+  text-white
+  shadow-[0_22px_65px_rgba(24,28,74,0.22)]
+  transition
+  hover:-translate-y-1
+  hover:shadow-[0_30px_80px_rgba(24,28,74,0.30)]
+"
+
+Dark card text:
+- Label: text-[#8EF3F0]
+- Title: text-white
+- Subtitle: text-[#B9B6FF]
+- Description: text-white/72
+
+Dark icon wrapper:
+
+<div className="
+  mb-6
+  flex
+  h-12
+  w-12
+  items-center
+  justify-center
+  rounded-2xl
+  bg-white/12
+  text-[#8EF3F0]
+  shadow-[0_10px_30px_rgba(0,0,0,0.18)]
+">
+  ICON
+</div>
+
+==================================================
+4. KEEP SAME CARD CONTENT
+==================================================
+
+Do not rewrite card content.
+
+Card 1:
+AI FOUNDATION
+AI-first infrastructure
+Intelligent by design
+
+Card 2:
+HUMAN CULTURE
+Human-centered culture
+People, not resources
+
+Card 3:
+CONNECTED WORKFLOW
+Connected ecosystem
+Seamless integration
+
+Card 4:
+SCALABLE MODEL
+Scalable excellence
+Grow without compromise
+
+==================================================
+5. IMPLEMENT CLEANLY
+==================================================
+
+If the cards are generated from an array, add a boolean or variant field:
+
+variant: "light" or "dark"
+
+Example:
+const whyCards = [
+  { ..., variant: "light" },
+  { ..., variant: "dark" },
+  { ..., variant: "light" },
+  { ..., variant: "dark" },
+]
+
+Then conditionally apply:
+- card classes
+- icon wrapper classes
+- label/subtitle/description colors
+
+Do not duplicate the entire card component four times if there is already a reusable map.
+
+==================================================
+6. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+light / dark / light / dark
+
+Tablet two-column:
+Row 1: light / dark
+Row 2: light / dark
+
+Mobile:
+Cards stack in the same order.
+
+Make sure dark cards are still readable on mobile.
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Why OnSpot cards alternate light and dark.
+- Text remains readable on all cards.
+- Icons remain visible.
+- The section feels more dynamic but still premium.
+- No content, links, or layout structure changed.
