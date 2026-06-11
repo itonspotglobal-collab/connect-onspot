@@ -1055,15 +1055,15 @@ export default function Home() {
       </div>
 
       {/* ── 6. THE WHY / ORIGIN STORY ── */}
-      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)] px-6 py-14 text-white sm:py-16 lg:py-20">
         <div className="pointer-events-none absolute right-[-12%] top-[-20%] h-[420px] w-[420px] rounded-full bg-[#2F7CF6]/20 blur-[90px]" />
-        <div className="relative z-10 mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+        <div className="relative z-10 mx-auto grid max-w-[1180px] gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
           {/* Left: eyebrow + title */}
           <div>
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-white/50">
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.30em] text-[#AFA8FF]/80">
               The Why
             </p>
-            <h2 className="max-w-[430px] text-[clamp(38px,4.5vw,64px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
+            <h2 className="max-w-[390px] text-[clamp(34px,4vw,56px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
               OnSpot started
               <br />
               from a real
@@ -1073,20 +1073,20 @@ export default function Home() {
           </div>
 
           {/* Right: story card */}
-          <div className="rounded-[32px] border border-white/18 bg-white/[0.08] p-8 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:p-12">
-            <h3 className="max-w-[820px] text-[clamp(30px,3.2vw,48px)] font-bold leading-[1.05] tracking-[-0.05em] text-white">
+          <div className="rounded-[30px] border border-white/18 bg-white/[0.08] p-7 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-8 lg:p-9">
+            <h3 className="max-w-[780px] text-[clamp(26px,2.7vw,40px)] font-bold leading-[1.04] tracking-[-0.045em] text-white">
               <span className="block">
                 Our founders were building businesses
               </span>
               <span className="mt-1 block text-white/88">
                 and ran into the same wall most operators hit:
               </span>
-              <span className="mt-3 block max-w-[800px] bg-gradient-to-r from-[#B9B6FF] via-[#8EA2FF] to-[#6ED8F6] bg-clip-text text-transparent">
+              <span className="mt-2 block max-w-[760px] bg-gradient-to-r from-[#B9B6FF] via-[#8EA2FF] to-[#6ED8F6] bg-clip-text text-transparent">
                 growth was possible, but operations were becoming the bottleneck.
               </span>
             </h3>
 
-            <div className="mt-8 max-w-[860px] space-y-5 text-[clamp(17px,1.45vw,21px)] leading-[1.75] text-white/76 sm:text-justify sm:[text-align-last:left]">
+            <div className="mt-6 max-w-[820px] space-y-4 text-[clamp(15px,1.25vw,18px)] leading-[1.62] text-white/76 sm:text-justify sm:[text-align-last:left]">
               <p>
                 <span className="font-semibold text-white">Hiring took too long.</span>{" "}
                 <span className="font-semibold text-white">Costs kept rising.</span>{" "}
@@ -1109,10 +1109,10 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="mt-7 flex justify-start">
+            <div className="mt-6 flex justify-start">
               <Link
                 href="/why-onspot"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-[#151632] shadow-[0_16px_38px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#151632] shadow-[0_14px_32px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)]"
               >
                 Explore How We Can Help →
               </Link>

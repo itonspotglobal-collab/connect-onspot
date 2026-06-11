@@ -1,0 +1,278 @@
+Refine only the dark “THE WHY / OnSpot started from a real problem” homepage section.
+
+Current issue:
+The design is already good, but the section is too tall. Please make it fit better into one screen without hurting the current layout/design.
+
+Goal:
+Keep the same two-column layout, dark background, visual hierarchy, story card, and CTA, but make the whole section more compact:
+- reduce vertical padding
+- reduce card padding slightly
+- reduce title/card text sizes slightly
+- reduce paragraph spacing
+- keep the headline hierarchy
+- keep desktop layout premium
+- keep mobile readable
+
+Do not change:
+- section content/copy
+- section placement
+- CTA text/link
+- dark background style
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. REDUCE SECTION HEIGHT
+==================================================
+
+Update the section wrapper spacing.
+
+Use:
+
+<section className="
+  relative
+  overflow-hidden
+  bg-[CURRENT_DARK_BACKGROUND]
+  px-6
+  py-14
+  text-white
+  sm:py-16
+  lg:py-18
+">
+
+If `lg:py-18` is not available, use `lg:py-20`.
+
+Do not use py-24, py-28, or larger.
+
+==================================================
+2. KEEP TWO-COLUMN LAYOUT BUT MAKE IT TIGHTER
+==================================================
+
+Update the container:
+
+<div className="
+  relative
+  z-10
+  mx-auto
+  grid
+  max-w-[1180px]
+  gap-8
+  lg:grid-cols-[0.72fr_1.28fr]
+  lg:items-start
+">
+
+If the card is still too wide/tall, use:
+max-w-[1120px]
+
+==================================================
+3. LEFT SIDE TITLE — SLIGHTLY SMALLER
+==================================================
+
+Keep the visual hierarchy:
+- small eyebrow
+- strong left title
+- story card headline
+
+Eyebrow:
+
+<p className="
+  mb-4
+  text-[11px]
+  font-bold
+  uppercase
+  tracking-[0.30em]
+  text-[#AFA8FF]/80
+">
+  The Why
+</p>
+
+Left title:
+
+<h2 className="
+  max-w-[390px]
+  text-[clamp(34px,4vw,56px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.055em]
+  text-white
+">
+  OnSpot started<br />
+  from a real<br />
+  problem.
+</h2>
+
+==================================================
+4. STORY CARD — REDUCE PADDING
+==================================================
+
+Update the story card wrapper:
+
+<div className="
+  rounded-[30px]
+  border
+  border-white/18
+  bg-white/[0.08]
+  p-7
+  shadow-[0_24px_70px_rgba(0,0,0,0.24)]
+  backdrop-blur-xl
+  sm:p-8
+  lg:p-9
+">
+
+This keeps the same design but reduces card height.
+
+==================================================
+5. STORY CARD HEADLINE — KEEP HIERARCHY BUT SMALLER
+==================================================
+
+Use the current visual hierarchy but reduce size.
+
+Story headline:
+
+<h3 className="
+  max-w-[780px]
+  text-[clamp(26px,2.7vw,40px)]
+  font-bold
+  leading-[1.04]
+  tracking-[-0.045em]
+  text-white
+">
+
+Keep the current line hierarchy:
+
+Line 1:
+Our founders were building businesses
+
+Line 2:
+and ran into the same wall most operators hit:
+
+Highlighted line:
+growth was possible, but operations were becoming the bottleneck.
+
+Highlighted line style:
+
+<span className="
+  mt-2
+  block
+  max-w-[760px]
+  bg-gradient-to-r
+  from-[#B9B6FF]
+  via-[#8EA2FF]
+  to-[#6ED8F6]
+  bg-clip-text
+  text-transparent
+">
+  growth was possible, but operations were becoming the bottleneck.
+</span>
+
+Important:
+- Keep the highlighted line.
+- Do not make the story headline larger than 40px on desktop.
+- Keep the design hierarchy intact.
+
+==================================================
+6. BODY PARAGRAPHS — COMPACT BUT JUSTIFIED
+==================================================
+
+Update the paragraph wrapper:
+
+<div className="
+  mt-6
+  max-w-[820px]
+  space-y-4
+  text-[clamp(15px,1.25vw,18px)]
+  leading-[1.62]
+  text-white/76
+  sm:text-justify
+  sm:[text-align-last:left]
+">
+
+Important:
+- Keep justified text on tablet/desktop.
+- Keep mobile left-aligned.
+- Reduce from space-y-6 to space-y-4.
+- Reduce line-height slightly from 1.75 to 1.62.
+- Keep emphasized spans as-is.
+
+If the section is still too tall, use:
+space-y-3
+leading-[1.55]
+
+==================================================
+7. CTA BUTTON — SLIGHTLY SMALLER
+==================================================
+
+Update CTA wrapper:
+
+<div className="mt-6 flex justify-start">
+
+Update button:
+
+<Link
+  href="CURRENT_EXISTING_LINK"
+  className="
+    inline-flex
+    h-11
+    items-center
+    justify-center
+    gap-2
+    rounded-full
+    bg-white
+    px-6
+    text-sm
+    font-bold
+    text-[#151632]
+    shadow-[0_14px_32px_rgba(0,0,0,0.20)]
+    transition
+    hover:-translate-y-0.5
+    hover:shadow-[0_20px_42px_rgba(0,0,0,0.28)]
+  "
+>
+  Explore How We Can Help →
+</Link>
+
+==================================================
+8. FIT TARGET
+==================================================
+
+Target desktop height:
+The full section should fit close to one screen, around 720px–820px total depending viewport.
+
+To achieve this:
+- section padding should be smaller
+- card padding should be smaller
+- headline max size should be 40px
+- paragraph text max size should be 18px
+- paragraph spacing should be space-y-4
+- CTA margin should be mt-6
+
+==================================================
+9. RESPONSIVE BEHAVIOR
+==================================================
+
+Mobile:
+- stack the left title above the card
+- keep paragraph text left-aligned
+- use card p-6 if needed
+- no horizontal overflow
+
+For mobile story card:
+
+className="
+  rounded-[26px]
+  p-6
+"
+
+==================================================
+10. FINAL CHECK
+==================================================
+
+After applying:
+- The section keeps the same premium design.
+- The section is more compact and closer to one-screen height.
+- Visual hierarchy is preserved.
+- The highlighted bottleneck line remains.
+- Paragraphs are still justified/balanced on desktop.
+- CTA is visible without excessive scrolling.
+- No content or other sections are changed.
