@@ -1,0 +1,244 @@
+Refine only the “THE WHY / OnSpot started from a real problem” homepage section.
+
+Current state:
+The design is good, but the section still feels too tall and may not fit comfortably in one screen.
+
+Goal:
+Make the section more compact without hurting the current layout/design:
+- keep the two-column layout
+- keep the dark premium background
+- keep the card design
+- keep the visual hierarchy
+- reduce height enough that it fits better within one viewport
+
+Do not change:
+- copy/content
+- CTA text/link
+- section placement
+- dark background design
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. REDUCE SECTION VERTICAL PADDING
+==================================================
+
+Update the section wrapper padding:
+
+<section className="
+  relative
+  overflow-hidden
+  bg-[CURRENT_DARK_BACKGROUND]
+  px-6
+  py-12
+  text-white
+  sm:py-14
+  lg:py-16
+">
+
+Important:
+- Do not use py-20, py-24, or larger.
+- This section needs to fit closer to one screen.
+
+==================================================
+2. TIGHTEN THE MAIN CONTAINER
+==================================================
+
+Update the inner container:
+
+<div className="
+  relative
+  z-10
+  mx-auto
+  grid
+  max-w-[1120px]
+  gap-7
+  lg:grid-cols-[0.68fr_1.32fr]
+  lg:items-start
+">
+
+This keeps the same layout but makes the section tighter.
+
+==================================================
+3. LEFT TITLE — SMALLER BUT STILL STRONG
+==================================================
+
+Eyebrow:
+
+<p className="
+  mb-3
+  text-[10px]
+  font-bold
+  uppercase
+  tracking-[0.30em]
+  text-[#AFA8FF]/75
+">
+  The Why
+</p>
+
+Left title:
+
+<h2 className="
+  max-w-[360px]
+  text-[clamp(32px,3.6vw,50px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.055em]
+  text-white
+">
+  OnSpot started<br />
+  from a real<br />
+  problem.
+</h2>
+
+==================================================
+4. STORY CARD — SLIGHTLY SMALLER
+==================================================
+
+Update the card wrapper:
+
+<div className="
+  rounded-[28px]
+  border
+  border-white/18
+  bg-white/[0.08]
+  p-6
+  shadow-[0_22px_62px_rgba(0,0,0,0.22)]
+  backdrop-blur-xl
+  sm:p-7
+  lg:p-8
+">
+
+This keeps the same design but reduces card height.
+
+==================================================
+5. CARD HEADLINE — PRESERVE HIERARCHY BUT REDUCE SIZE
+==================================================
+
+Update the story headline:
+
+<h3 className="
+  max-w-[760px]
+  text-[clamp(24px,2.45vw,36px)]
+  font-bold
+  leading-[1.04]
+  tracking-[-0.045em]
+  text-white
+">
+
+Keep the same visual hierarchy:
+
+Line 1:
+Our founders were building businesses
+
+Line 2:
+and ran into the same wall most operators hit:
+
+Highlighted line:
+growth was possible, but operations were becoming the bottleneck.
+
+Highlighted line class:
+
+<span className="
+  mt-2
+  block
+  max-w-[720px]
+  bg-gradient-to-r
+  from-[#B9B6FF]
+  via-[#8EA2FF]
+  to-[#6ED8F6]
+  bg-clip-text
+  text-transparent
+">
+  growth was possible, but operations were becoming the bottleneck.
+</span>
+
+Important:
+- Keep the highlighted bottleneck line.
+- Do not make the headline larger than 36px desktop.
+
+==================================================
+6. BODY PARAGRAPHS — MAKE MORE COMPACT
+==================================================
+
+Update paragraph wrapper:
+
+<div className="
+  mt-5
+  max-w-[800px]
+  space-y-3
+  text-[clamp(14px,1.12vw,16.5px)]
+  leading-[1.55]
+  text-white/76
+  sm:text-justify
+  sm:[text-align-last:left]
+">
+
+Important:
+- Keep desktop justified.
+- Keep mobile left aligned if needed.
+- Reduce spacing to `space-y-3`.
+- Reduce line height to `leading-[1.55]`.
+- Keep all emphasis spans as-is.
+
+==================================================
+7. CTA BUTTON — COMPACT
+==================================================
+
+Update CTA wrapper:
+
+<div className="mt-5 flex justify-start">
+
+Update button:
+
+<Link
+  href="CURRENT_EXISTING_LINK"
+  className="
+    inline-flex
+    h-10
+    items-center
+    justify-center
+    gap-2
+    rounded-full
+    bg-white
+    px-5
+    text-[13px]
+    font-bold
+    text-[#151632]
+    shadow-[0_12px_28px_rgba(0,0,0,0.20)]
+    transition
+    hover:-translate-y-0.5
+    hover:shadow-[0_18px_38px_rgba(0,0,0,0.28)]
+  "
+>
+  Explore How We Can Help →
+</Link>
+
+==================================================
+8. DESKTOP FIT TARGET
+==================================================
+
+The whole section should target around 650px–760px height on desktop.
+
+To achieve this:
+- section padding max lg:py-16
+- card padding max lg:p-8
+- story headline max 36px
+- body text max 16.5px
+- paragraph spacing space-y-3
+- CTA margin mt-5
+
+Do not reduce it so much that readability suffers, but make it clearly more compact than before.
+
+==================================================
+9. FINAL CHECK
+==================================================
+
+After applying:
+- The section still looks premium.
+- The visual hierarchy remains clear.
+- The story card is smaller.
+- The text is still readable.
+- The section fits much better in one screen.
+- No content or links are changed.
