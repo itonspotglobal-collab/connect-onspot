@@ -1,0 +1,162 @@
+Update only the stats row inside the “Get matched with vetted Philippine talent in 72 hours” CTA/footer-card section.
+
+Current issue:
+The current stats row says:
+- 70% / cost savings
+- 10+ / countries served
+- Dedicated / never shared teams
+
+I want to update the content to match the new reference:
+- Save 70% / vs. hiring locally
+- Hire in days / not months
+- Fully dedicated / your team, full-time
+
+Also add small creative icons above each stat for better visual representation.
+
+Do not change:
+- section layout
+- section background
+- gradient card design
+- main CTA heading
+- main CTA paragraph
+- “Get matched — it's free” button
+- “Join as talent” link
+- other sections
+- footer
+- navigation
+
+==================================================
+1. UPDATE THE THREE STAT ITEMS
+==================================================
+
+Replace the existing stat content with:
+
+Stat 1:
+Icon: dollar/currency icon
+Main text: Save 70%
+Subtext: vs. hiring locally
+
+Stat 2:
+Icon: lightning icon
+Main text: Hire in days
+Subtext: not months
+
+Stat 3:
+Icon: user-check or dedicated-team icon
+Main text: Fully dedicated
+Subtext: your team, full-time
+
+Use the existing icon library if available, preferably lucide-react.
+
+Suggested imports:
+
+import {
+  CircleDollarSign,
+  Zap,
+  UserCheck
+} from "lucide-react";
+
+If those icons are unavailable, use:
+DollarSign, Zap, Users
+
+==================================================
+2. KEEP THE EXISTING DESIGN STRUCTURE
+==================================================
+
+Do not redesign the entire stat row. Keep the existing placement under the divider.
+
+Only update the words and add icons.
+
+The stats should still appear as three columns on desktop.
+
+==================================================
+3. STAT ROW STYLE
+==================================================
+
+Use a clean compact stat row similar to the reference:
+
+<div className="
+  mt-8
+  grid
+  grid-cols-3
+  divide-x
+  divide-[#C9D3E6]
+  text-center
+">
+
+Each stat item:
+
+<div className="px-4">
+  <div className="
+    mx-auto
+    mb-2
+    flex
+    h-7
+    w-7
+    items-center
+    justify-center
+    rounded-full
+    bg-white/55
+    text-[#2F6FD6]
+    shadow-[0_8px_22px_rgba(47,111,214,0.12)]
+  ">
+    <Icon className="h-4 w-4" strokeWidth={2.2} />
+  </div>
+
+  <p className="
+    text-[clamp(20px,2vw,30px)]
+    font-bold
+    leading-tight
+    tracking-[-0.035em]
+    text-[#050A1F]
+  ">
+    Save 70%
+  </p>
+
+  <p className="
+    mt-1
+    text-sm
+    leading-snug
+    text-[#536077]
+  ">
+    vs. hiring locally
+  </p>
+</div>
+
+==================================================
+4. MOBILE RESPONSIVENESS
+==================================================
+
+On mobile, keep it readable.
+
+Use:
+
+<div className="
+  mt-8
+  grid
+  grid-cols-1
+  gap-5
+  divide-y
+  divide-[#C9D3E6]
+  text-center
+  sm:grid-cols-3
+  sm:gap-0
+  sm:divide-x
+  sm:divide-y-0
+">
+
+Each item should have mobile padding:
+
+className="px-4 py-3 sm:py-0"
+
+==================================================
+5. FINAL CHECK
+==================================================
+
+After applying:
+- First stat reads “Save 70%” and “vs. hiring locally”.
+- Second stat reads “Hire in days” and “not months”.
+- Third stat reads “Fully dedicated” and “your team, full-time”.
+- Each stat has a small icon above it.
+- The section design remains the same.
+- The stats align cleanly and look premium.

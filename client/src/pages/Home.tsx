@@ -32,6 +32,8 @@ import {
   Building2,
   Laptop,
   ShieldCheck,
+  CircleDollarSign,
+  UserCheck,
 } from "lucide-react";
 import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
@@ -1473,30 +1475,42 @@ export default function Home() {
           </p>
 
           {/* Stats row */}
-          <div className="mt-12 grid w-full max-w-[760px] grid-cols-1 gap-8 border-t border-[#66758A]/20 pt-10 sm:grid-cols-3 sm:gap-12">
-            <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
-                70%
+          <div className="mt-12 grid w-full max-w-[760px] grid-cols-1 gap-5 divide-y divide-[#C9D3E6] border-t border-[#66758A]/20 pt-10 text-center sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-y-0">
+            {/* Stat 1 — Save 70% */}
+            <div className="px-4 py-3 sm:py-0">
+              <div className="mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/55 text-[#2F6FD6] shadow-[0_8px_22px_rgba(47,111,214,0.12)]">
+                <CircleDollarSign className="h-4 w-4" strokeWidth={2.2} />
               </div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
-                cost savings
-              </div>
+              <p className="text-[clamp(20px,2vw,30px)] font-bold leading-tight tracking-[-0.035em] text-[#050A1F]">
+                Save 70%
+              </p>
+              <p className="mt-1 text-sm leading-snug text-[#536077]">
+                vs. hiring locally
+              </p>
             </div>
-            <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
-                10+
+            {/* Stat 2 — Hire in days */}
+            <div className="px-4 py-3 sm:py-0">
+              <div className="mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/55 text-[#2F6FD6] shadow-[0_8px_22px_rgba(47,111,214,0.12)]">
+                <Zap className="h-4 w-4" strokeWidth={2.2} />
               </div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
-                countries served
-              </div>
+              <p className="text-[clamp(20px,2vw,30px)] font-bold leading-tight tracking-[-0.035em] text-[#050A1F]">
+                Hire in days
+              </p>
+              <p className="mt-1 text-sm leading-snug text-[#536077]">
+                not months
+              </p>
             </div>
-            <div>
-              <div className="text-[28px] font-semibold text-[#080B1C] md:text-[32px]">
-                Dedicated
+            {/* Stat 3 — Fully dedicated */}
+            <div className="px-4 py-3 sm:py-0">
+              <div className="mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/55 text-[#2F6FD6] shadow-[0_8px_22px_rgba(47,111,214,0.12)]">
+                <UserCheck className="h-4 w-4" strokeWidth={2.2} />
               </div>
-              <div className="mt-1 text-[14px] text-[#58677D] md:text-[15px]">
-                never shared teams
-              </div>
+              <p className="text-[clamp(20px,2vw,30px)] font-bold leading-tight tracking-[-0.035em] text-[#050A1F]">
+                Fully dedicated
+              </p>
+              <p className="mt-1 text-sm leading-snug text-[#536077]">
+                your team, full-time
+              </p>
             </div>
           </div>
 
