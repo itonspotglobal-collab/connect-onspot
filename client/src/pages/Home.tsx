@@ -1890,10 +1890,10 @@ export default function Home() {
                 </button>
 
                 <div
-                  className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${
+                  className={`w-full space-y-4 overflow-hidden text-left transition-all duration-300 md:!block md:!max-h-none md:!opacity-100 ${
                     expandedFooterSection === "connect"
-                      ? "opacity-100 max-h-96"
-                      : "opacity-0 max-h-0 overflow-hidden"
+                      ? "opacity-100 max-h-[500px]"
+                      : "opacity-0 max-h-0"
                   }`}
                   style={{
                     marginTop:
@@ -1903,52 +1903,71 @@ export default function Home() {
                         : "0",
                   }}
                 >
-                  <a
-                    href="mailto:hello@onspotglobal.com"
-                    className="flex items-start justify-center md:justify-start gap-3 min-w-0 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                    data-testid="footer-email"
-                  >
-                    <Mail className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="break-words whitespace-normal leading-snug min-w-0">
-                      hello@onspotglobal.com
-                    </span>
-                  </a>
-                  <a
-                    href="tel:+1234567890"
-                    className="flex items-center justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
-                    data-testid="footer-phone"
-                  >
-                    <Phone className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                    <span>1-917-801-9294</span>
-                  </a>
-                  <div className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70">
-                    <span className="break-words sm:break-normal">
+                  {/* Email */}
+                  <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                    <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
+                      <Mail className="h-4 w-4 shrink-0" />
+                    </div>
+                    <div className="min-w-0 text-left leading-relaxed text-white/75">
                       <a
-                        href="https://www.google.com/search?q=onspot+global+new+york..."
+                        href="mailto:hello@onspotglobal.com"
+                        className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white"
+                        data-testid="footer-email"
+                      >
+                        hello@onspotglobal.com
+                      </a>
+                    </div>
+                  </div>
+                  {/* Phone */}
+                  <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                    <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
+                      <Phone className="h-4 w-4 shrink-0" />
+                    </div>
+                    <div className="min-w-0 text-left leading-relaxed text-white/75">
+                      <a
+                        href="tel:+19178019294"
+                        className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white"
+                        data-testid="footer-phone"
+                      >
+                        1-917-801-9294
+                      </a>
+                    </div>
+                  </div>
+                  {/* US Address */}
+                  <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                    <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
+                      <MapPinIcon className="h-4 w-4 shrink-0" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <a
+                        href="https://www.google.com/search?q=onspot+global+new+york"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                        className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white"
                       >
-                        <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                        <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
+                        <address className="block w-full not-italic text-left leading-relaxed text-white/75">
                           US - 2248 Broadway, New York, 10024
-                        </span>
+                        </address>
                       </a>
-                      <br />
+                    </div>
+                  </div>
+                  {/* PH Address */}
+                  <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                    <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
+                      <MapPinIcon className="h-4 w-4 shrink-0" />
+                    </div>
+                    <div className="min-w-0 text-left">
                       <a
-                        href="https://www.google.com/search?q=onspot+global+philippines&sca_esv=4acce884baa46368&rlz=1C5CHFA_enPH1014PH1014&ei=Koz4aJ3FFuuqvr0Pt66r6QI&oq=onspot+global+ph"
+                        href="https://www.google.com/search?q=onspot+global+philippines"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-start justify-center md:justify-start gap-3 text-xs sm:text-sm text-white/70 hover:text-white transition-all duration-300 group"
+                        className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white"
                       >
-                        <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-all duration-300" />
-                        <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                          PH - 17th Floor High Street South
-                          Corporate Plaza Tower 2, 11th Ave Cor 26th St,
-                          Bonifacio Global City, Taguig
-                        </span>
+                        <address className="block w-full max-w-[310px] not-italic text-left leading-relaxed text-white/75">
+                          PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+                        </address>
                       </a>
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>

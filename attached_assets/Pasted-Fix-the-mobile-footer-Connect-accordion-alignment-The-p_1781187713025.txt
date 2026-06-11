@@ -1,0 +1,153 @@
+Fix the mobile footer Connect accordion alignment.
+
+The previous fixes did not work because the Connect accordion content wrapper is still centering its children. In mobile view, the entire Connect content block must be left-aligned exactly like the Navigation/New Verticals accordion sections.
+
+IMPORTANT:
+Fix the parent wrapper and row wrappers. Do not only change the text elements.
+
+Target file appears to be:
+client/src/pages/Home.tsx
+
+Look for this element around the footer Connect accordion:
+
+data-testid="footer-accordion-connect"
+
+Immediately after it, there is a div similar to:
+
+<div className="space-y-3 transition-all duration-300 md:opacity-100 md:max-h-none md:block opacity-100 max-h-96" style={{ marginTop: 16 }}>
+
+This is the Connect expanded content wrapper.
+
+Replace/update that wrapper with left-aligned full-width classes:
+
+<div
+  className="
+    w-full
+    space-y-4
+    overflow-hidden
+    text-left
+    transition-all
+    duration-300
+    md:block
+    md:max-h-none
+    md:opacity-100
+  "
+  style={{ marginTop: 16 }}
+>
+
+Make sure this wrapper does NOT have:
+- text-center
+- items-center
+- justify-center
+- mx-auto
+- place-items-center
+- flex with items-center
+- flex with justify-center
+
+==================================================
+CONNECT ROW STRUCTURE
+==================================================
+
+Inside the Connect accordion, every contact row must be left-aligned using this exact structure:
+
+<div className="
+  grid
+  w-full
+  grid-cols-[24px_1fr]
+  items-start
+  gap-3
+  text-left
+  text-sm
+  leading-relaxed
+  text-white/75
+">
+  <div className="
+    flex
+    h-6
+    w-6
+    items-start
+    justify-start
+    pt-0.5
+    text-white/60
+  ">
+    ICON
+  </div>
+
+  <div className="
+    min-w-0
+    text-left
+    leading-relaxed
+    text-white/75
+  ">
+    TEXT
+  </div>
+</div>
+
+For email and phone, use:
+
+<a className="
+  block
+  w-full
+  text-left
+  leading-relaxed
+  text-white/75
+  transition
+  hover:text-white
+">
+
+For addresses, use:
+
+<address className="
+  block
+  w-full
+  max-w-[310px]
+  not-italic
+  text-left
+  leading-relaxed
+  text-white/75
+">
+
+==================================================
+REMOVE CENTERING FROM CONNECT-SPECIFIC PARENTS
+==================================================
+
+Search inside the Connect accordion only and remove/replace any of these classes:
+
+text-center → text-left
+items-center → items-start
+justify-center → justify-start
+mx-auto → remove it
+place-items-center → place-items-start
+
+Do NOT remove these globally. Only inside the mobile Connect accordion content.
+
+==================================================
+MAKE IT MATCH OTHER FOOTER SECTIONS
+==================================================
+
+The Connect header should remain:
+
+<button
+  data-testid="footer-accordion-connect"
+  className="
+    flex
+    w-full
+    items-center
+    justify-between
+    p-0
+    text-left
+  "
+>
+
+The expanded content should start at the same left x-position as the Connect title.
+
+The contact text should not be centered under the icons.
+
+Expected result:
+- Connect title starts on the left.
+- Email, phone, US address, and PH address rows start on the left.
+- Icons form a consistent left column.
+- Text starts consistently after the icon column.
+- The PH address wraps left-aligned.
+- No contact row is centered.
+- Desktop footer remains unchanged.
