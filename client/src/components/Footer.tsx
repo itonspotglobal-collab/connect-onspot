@@ -119,42 +119,50 @@ export function Footer() {
             {/* Contact Us */}
             <div className="space-y-3">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">Contact Us</h3>
-              <div className="space-y-5 pt-1">
+              <div className="w-full space-y-4 pt-2 text-left">
                 {/* Email */}
-                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
-                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                <div className="grid grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/76">
+                  <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
                     <Mail className="h-4 w-4 shrink-0" />
                   </div>
-                  <a href="mailto:hello@onspot.com" className="min-w-0 break-words text-left leading-relaxed text-white/78 hover:text-white transition-colors">
-                    hello@onspot.com
-                  </a>
+                  <div className="min-w-0 text-left leading-relaxed text-white/76">
+                    <a href="mailto:hello@onspot.com" className="block text-left leading-relaxed text-white/76 transition hover:text-white">
+                      hello@onspot.com
+                    </a>
+                  </div>
                 </div>
                 {/* Phone */}
-                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
-                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                <div className="grid grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/76">
+                  <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
                     <Phone className="h-4 w-4 shrink-0" />
                   </div>
-                  <a href="tel:+17185405053" className="min-w-0 break-words text-left leading-relaxed text-white/78 hover:text-white transition-colors">
-                    1-718 540 5053
-                  </a>
+                  <div className="min-w-0 text-left leading-relaxed text-white/76">
+                    <a href="tel:+17185405053" className="block text-left leading-relaxed text-white/76 transition hover:text-white">
+                      1-718 540 5053
+                    </a>
+                  </div>
                 </div>
                 {/* US Address */}
-                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
-                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                <div className="grid grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/76">
+                  <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
                     <MapPin className="h-4 w-4 shrink-0" />
                   </div>
-                  <address className="not-italic leading-relaxed text-white/78 min-w-0 break-words">
-                    US - 2248 Broadway, New York, 10024
-                  </address>
+                  <div className="min-w-0 text-left">
+                    <address className="block not-italic text-left leading-relaxed text-white/76">
+                      US - 2248 Broadway, New York, 10024
+                    </address>
+                  </div>
                 </div>
                 {/* PH Address */}
-                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
-                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                <div className="grid grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/76">
+                  <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60">
                     <MapPin className="h-4 w-4 shrink-0" />
                   </div>
-                  <address className="not-italic leading-relaxed text-white/78 min-w-0 break-words">
-                    PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
-                  </address>
+                  <div className="min-w-0 text-left">
+                    <address className="block max-w-[300px] not-italic text-left leading-relaxed text-white/76">
+                      PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+                    </address>
+                  </div>
                 </div>
               </div>
               <div className="mt-4">
@@ -167,19 +175,19 @@ export function Footer() {
           </div>
         </div>
 
-        <hr className="my-8 border-white/14" />
+        <hr className="my-8 w-full border-white/14" />
 
         {/* Bottom Row */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-          <div className="space-y-3 pb-2">
+          <div className="text-left">
             <p className="text-base sm:text-lg font-semibold text-white tracking-wide">Making Outsourcing Easy</p>
-            <p className="text-sm font-medium text-white/72">© 2025 OnSpot. All rights reserved.</p>
-            <p className="text-xs font-semibold text-white/42">Powered by OnSpot Intelligence</p>
-          </div>
-          <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3 pb-8 text-sm font-medium">
-            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-privacy">Privacy Policy</a>
-            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-terms">Terms of Service</a>
-            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-cookies">Cookie Policy</a>
+            <p className="mt-2 text-sm font-medium text-white/72">© 2025 OnSpot. All rights reserved.</p>
+            <p className="mt-3 text-xs font-semibold text-white/42">Powered by OnSpot Intelligence</p>
+            <div className="mt-5 flex flex-wrap items-center justify-start gap-x-8 gap-y-3 text-sm font-medium">
+              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-privacy">Privacy Policy</a>
+              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-terms">Terms of Service</a>
+              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-cookies">Cookie Policy</a>
+            </div>
           </div>
         </div>
       </div>

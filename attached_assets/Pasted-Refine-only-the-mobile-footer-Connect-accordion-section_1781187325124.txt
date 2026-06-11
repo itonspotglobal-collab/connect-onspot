@@ -1,0 +1,262 @@
+Refine only the mobile footer “Connect” accordion section.
+
+Current issue:
+The Connect portion in the mobile footer is not aligned like the other footer accordion sections. I want the Connect header, contact rows, icons, and text to all align left, just like the “New Verticals” section shown in the screenshot.
+
+Goal:
+Make the entire Connect portion left-aligned and consistent with the other mobile footer sections.
+
+Do not change:
+- desktop footer layout
+- footer background color
+- footer content
+- email/phone/address text
+- links
+- social icons
+- chat widget functionality
+- other footer accordion sections
+
+==================================================
+1. ALIGN CONNECT HEADER LEFT
+==================================================
+
+The Connect accordion header should match the other footer accordion headers.
+
+Use:
+
+<button className="
+  flex
+  w-full
+  items-center
+  justify-between
+  py-4
+  text-left
+  text-base
+  font-bold
+  text-white
+">
+  <span className="text-left">Connect</span>
+  <ChevronDown className="h-4 w-4 text-white/70" />
+</button>
+
+Important:
+- Do not center the Connect label.
+- The label should start at the same left edge as “New Verticals”.
+- The chevron should stay on the far right.
+
+==================================================
+2. ALIGN CONNECT CONTENT LEFT
+==================================================
+
+The expanded Connect content should align with the section title, not centered.
+
+Use this wrapper:
+
+<div className="
+  space-y-4
+  pt-2
+  text-left
+">
+
+Do not use:
+- text-center
+- items-center
+- justify-center
+- mx-auto on individual rows
+
+==================================================
+3. CONTACT ROW ALIGNMENT
+==================================================
+
+Each contact row should use the same left alignment.
+
+Use this row structure:
+
+<div className="
+  grid
+  grid-cols-[24px_1fr]
+  items-start
+  gap-3
+  text-left
+  text-sm
+  leading-relaxed
+  text-white/76
+">
+
+Icon wrapper:
+
+<div className="
+  flex
+  h-6
+  w-6
+  items-start
+  justify-start
+  pt-0.5
+  text-white/60
+">
+  ICON
+</div>
+
+Text wrapper:
+
+<div className="
+  min-w-0
+  text-left
+  leading-relaxed
+  text-white/76
+">
+  CONTACT TEXT
+</div>
+
+Important:
+- Icons should be left aligned.
+- Text should start consistently after the icon.
+- Address text should wrap from the same starting point.
+- Do not center any contact row.
+
+==================================================
+4. EMAIL AND PHONE LINKS
+==================================================
+
+Use:
+
+<a
+  href="mailto:hello@onspotglobal.com"
+  className="
+    block
+    text-left
+    leading-relaxed
+    text-white/76
+    transition
+    hover:text-white
+  "
+>
+  hello@onspotglobal.com
+</a>
+
+<a
+  href="tel:19178019294"
+  className="
+    block
+    text-left
+    leading-relaxed
+    text-white/76
+    transition
+    hover:text-white
+  "
+>
+  1-917-801-9294
+</a>
+
+==================================================
+5. ADDRESS ROWS
+==================================================
+
+Use address tags and keep them left aligned:
+
+<address className="
+  block
+  not-italic
+  text-left
+  leading-relaxed
+  text-white/76
+">
+  US - 2248 Broadway, New York, 10024
+</address>
+
+<address className="
+  block
+  max-w-[300px]
+  not-italic
+  text-left
+  leading-relaxed
+  text-white/76
+">
+  PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+</address>
+
+Important:
+- Do not center the PH address.
+- Keep it readable and naturally wrapped.
+- It should align with the email and phone text start.
+
+==================================================
+6. MOBILE FOOTER COLUMN WIDTH
+==================================================
+
+Make sure the mobile footer accordion content uses full width and left alignment:
+
+<div className="
+  w-full
+  text-left
+">
+
+If there is a parent wrapper around footer columns, make sure on mobile it uses:
+
+className="
+  w-full
+  items-stretch
+  text-left
+"
+
+Remove mobile classes like:
+- items-center
+- text-center
+- justify-center
+
+Only if they are affecting the Connect section.
+
+==================================================
+7. DIVIDER ALIGNMENT
+==================================================
+
+The divider below Connect should span full available width, like the other sections.
+
+Use:
+
+<hr className="my-8 w-full border-white/14" />
+
+==================================================
+8. COPYRIGHT AND LEGAL AREA
+==================================================
+
+Keep the copyright/legal area left aligned too.
+
+Use:
+
+<div className="text-left">
+  <p className="text-sm font-medium text-white/72">
+    © 2025 OnSpot. All rights reserved.
+  </p>
+
+  <p className="mt-3 text-xs font-semibold text-white/42">
+    Powered by OnSpot Intelligence
+  </p>
+
+  <div className="
+    mt-5
+    flex
+    flex-wrap
+    items-center
+    justify-start
+    gap-x-8
+    gap-y-3
+    text-sm
+    font-medium
+  ">
+    LEGAL LINKS
+  </div>
+</div>
+
+==================================================
+9. FINAL CHECK
+==================================================
+
+After applying:
+- Connect title aligns with New Verticals title.
+- Connect contact rows are fully left aligned.
+- Icons are aligned in one consistent left column.
+- Text starts at the same x-position for every row.
+- Long addresses wrap cleanly without centering.
+- Divider and copyright area align with the footer column.
+- Desktop footer remains unchanged.
