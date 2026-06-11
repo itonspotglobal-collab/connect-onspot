@@ -1060,7 +1060,10 @@ export default function Home() {
         <div className="relative z-10 mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
           {/* Left: eyebrow + title */}
           <div>
-            <h2 className="max-w-[430px] text-[clamp(38px,4.6vw,64px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.32em] text-white/50">
+              The Why
+            </p>
+            <h2 className="max-w-[430px] text-[clamp(38px,4.5vw,64px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
               OnSpot started
               <br />
               from a real
@@ -1070,38 +1073,46 @@ export default function Home() {
           </div>
 
           {/* Right: story card */}
-          <div className="rounded-[32px] border border-white/14 bg-white/[0.08] p-8 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:p-12">
-            <h3 className="max-w-[760px] text-[clamp(20px,2.2vw,30px)] font-semibold leading-[1.08] tracking-[-0.04em] text-white">
-              Our founders were building businesses and ran into the same wall
-              most operators eventually hit: growth was possible, but operations
-              were becoming the bottleneck.
+          <div className="rounded-[32px] border border-white/18 bg-white/[0.08] p-8 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-10 lg:p-12">
+            <h3 className="max-w-[820px] text-[clamp(30px,3.2vw,48px)] font-bold leading-[1.05] tracking-[-0.05em] text-white">
+              <span className="block">
+                Our founders were building businesses
+              </span>
+              <span className="mt-1 block text-white/88">
+                and ran into the same wall most operators hit:
+              </span>
+              <span className="mt-3 block max-w-[800px] bg-gradient-to-r from-[#B9B6FF] via-[#8EA2FF] to-[#6ED8F6] bg-clip-text text-transparent">
+                growth was possible, but operations were becoming the bottleneck.
+              </span>
             </h3>
 
-            <div className="mt-8 space-y-6 text-[clamp(15px,1.3vw,18px)] leading-relaxed text-white/72">
+            <div className="mt-8 max-w-[860px] space-y-5 text-[clamp(17px,1.45vw,21px)] leading-[1.75] text-white/76 sm:text-justify sm:[text-align-last:left]">
               <p>
-                Hiring took too long. Costs kept rising. Teams became harder to
-                manage. Founder time was being consumed by work that should have
-                been systemized.
+                <span className="font-semibold text-white">Hiring took too long.</span>{" "}
+                <span className="font-semibold text-white">Costs kept rising.</span>{" "}
+                <span className="font-semibold text-white">Teams became harder to manage.</span>{" "}
+                Founder time was being consumed by work that should have been systemized.
               </p>
               <p>
-                So instead of accepting that as normal, they built a better way.
-                What began as an internal solution became a company built to
-                help other businesses scale with more clarity, better people,
-                and less friction.
+                So instead of accepting that as normal,{" "}
+                <span className="font-semibold text-white">they built a better way.</span>{" "}
+                What began as an internal solution became a company built to help other businesses scale with{" "}
+                <span className="font-semibold text-white">more clarity, better people, and less friction.</span>
               </p>
               <p>
-                That is why OnSpot exists. Not to be another outsourcing
-                provider, but to become a trusted growth partner for businesses
-                that need more than manpower. They need intelligence that
-                removes drag, people who can lead and execute, and a support
-                system that makes both work as one.
+                That is why OnSpot exists. Not to be another outsourcing provider, but to become a{" "}
+                <span className="font-semibold text-white">trusted growth partner</span>{" "}
+                for businesses that need more than manpower. They need{" "}
+                <span className="font-semibold text-white">intelligence that removes drag</span>,{" "}
+                <span className="font-semibold text-white">people who can lead and execute</span>, and a support system that makes{" "}
+                <span className="font-semibold text-white">both work as one.</span>
               </p>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-7 flex justify-start">
               <Link
                 href="/why-onspot"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#151632] shadow-[0_16px_38px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-bold text-[#151632] shadow-[0_16px_38px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]"
               >
                 Explore How We Can Help →
               </Link>

@@ -1,0 +1,251 @@
+Refine only the new dark “THE WHY / OnSpot started from a real problem” homepage section.
+
+Current issue:
+The story card text is readable, but the paragraphs are not visually justified/balanced, and the title inside the card feels like one large block. Please apply better visual hierarchy and cleaner text justification.
+
+Do not change:
+- section placement
+- section content/copy
+- CTA text/link
+- dark background
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. KEEP THE SECTION CONTENT
+==================================================
+
+Keep all existing text exactly the same.
+
+Do not rewrite the copy.
+
+==================================================
+2. APPLY VISUAL HIERARCHY TO THE CARD TITLE
+==================================================
+
+Current card title:
+Our founders were building businesses and ran into the same wall most operators eventually hit: growth was possible, but operations were becoming the bottleneck.
+
+Instead of rendering it as one big block, break it into a clearer hierarchy.
+
+Use this structure:
+
+<h3 className="
+  max-w-[820px]
+  text-[clamp(30px,3.2vw,48px)]
+  font-bold
+  leading-[1.05]
+  tracking-[-0.05em]
+  text-white
+">
+  <span className="block">
+    Our founders were building businesses
+  </span>
+  <span className="mt-1 block text-white/88">
+    and ran into the same wall most operators hit:
+  </span>
+  <span className="
+    mt-3
+    block
+    max-w-[760px]
+    bg-gradient-to-r
+    from-[#B9B6FF]
+    via-[#8EA2FF]
+    to-[#6ED8F6]
+    bg-clip-text
+    text-transparent
+  ">
+    growth was possible, but operations became the bottleneck.
+  </span>
+</h3>
+
+Important:
+- This creates an inverted/cascading hierarchy.
+- First line is strongest.
+- Second line is slightly softer.
+- Final insight line is highlighted with brand gradient.
+- Keep the meaning the same.
+- It is okay if the exact phrase changes from “were becoming” to “became” only if needed for better line balance, but keep the original meaning. If possible, keep the original full sentence.
+
+If you want to preserve the exact original sentence, use:
+
+<span className="
+  mt-3
+  block
+  max-w-[800px]
+  bg-gradient-to-r
+  from-[#B9B6FF]
+  via-[#8EA2FF]
+  to-[#6ED8F6]
+  bg-clip-text
+  text-transparent
+">
+  growth was possible, but operations were becoming the bottleneck.
+</span>
+
+==================================================
+3. JUSTIFY / BALANCE BODY PARAGRAPHS
+==================================================
+
+Make the body paragraphs visually cleaner and justified on desktop.
+
+Use this wrapper:
+
+<div className="
+  mt-8
+  max-w-[860px]
+  space-y-6
+  text-[clamp(17px,1.45vw,21px)]
+  leading-[1.75]
+  text-white/76
+  sm:text-justify
+  sm:[text-align-last:left]
+">
+
+Inside it, keep the three paragraphs exactly.
+
+Important:
+- Use `sm:text-justify` so mobile remains normal left-aligned.
+- Use `sm:[text-align-last:left]` so last lines do not stretch awkwardly.
+- Keep a max width so the lines do not become too long.
+- Do not center-align paragraphs.
+
+On mobile, use:
+text-left
+
+==================================================
+4. MAKE IMPORTANT TERMS SUBTLY STRONGER
+==================================================
+
+Within the body paragraphs, add subtle emphasis without changing copy.
+
+Use spans for key phrases:
+
+Paragraph 1:
+- “Hiring took too long.”
+- “Costs kept rising.”
+- “Teams became harder to manage.”
+
+Paragraph 2:
+- “they built a better way”
+- “more clarity, better people, and less friction”
+
+Paragraph 3:
+- “trusted growth partner”
+- “intelligence that removes drag”
+- “people who can lead and execute”
+- “both work as one”
+
+Style emphasized spans:
+
+<span className="font-semibold text-white">
+  trusted growth partner
+</span>
+
+Do not overdo the emphasis. Only these phrases.
+
+==================================================
+5. CARD SIZE AND SPACING
+==================================================
+
+The card is large, but it should feel intentional and not bloated.
+
+Card wrapper:
+
+<div className="
+  rounded-[32px]
+  border
+  border-white/18
+  bg-white/[0.08]
+  p-8
+  shadow-[0_28px_90px_rgba(0,0,0,0.28)]
+  backdrop-blur-xl
+  sm:p-10
+  lg:p-12
+">
+
+If the section feels too tall, reduce paragraph spacing:
+
+space-y-5
+
+and button margin:
+
+mt-7
+
+==================================================
+6. CTA BUTTON ALIGNMENT
+==================================================
+
+Keep the button under the paragraphs, aligned left.
+
+Use:
+
+<div className="mt-8 flex justify-start">
+  <Link
+    href="CURRENT_EXISTING_LINK"
+    className="
+      inline-flex
+      h-12
+      items-center
+      justify-center
+      gap-2
+      rounded-full
+      bg-white
+      px-7
+      text-sm
+      font-bold
+      text-[#151632]
+      shadow-[0_16px_38px_rgba(0,0,0,0.22)]
+      transition
+      hover:-translate-y-0.5
+      hover:shadow-[0_22px_48px_rgba(0,0,0,0.30)]
+    "
+  >
+    Explore How We Can Help →
+  </Link>
+</div>
+
+==================================================
+7. LEFT SIDE TITLE HIERARCHY
+==================================================
+
+Keep the left side label and title clear:
+
+Eyebrow:
+THE WHY
+
+Left title:
+OnSpot started
+from a real
+problem.
+
+Use:
+
+<h2 className="
+  max-w-[430px]
+  text-[clamp(38px,4.5vw,64px)]
+  font-bold
+  leading-[0.98]
+  tracking-[-0.055em]
+  text-white
+">
+  OnSpot started<br />
+  from a real<br />
+  problem.
+</h2>
+
+Do not make the left title larger than the story card title.
+
+==================================================
+8. FINAL CHECK
+==================================================
+
+After applying:
+- The story headline has clear visual hierarchy.
+- The bottleneck line is highlighted.
+- Body paragraphs are justified/balanced on desktop.
+- Mobile remains readable.
+- Important phrases are subtly emphasized.
+- CTA stays left-aligned.
+- No content, links, or other sections are changed.
