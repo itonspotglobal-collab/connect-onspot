@@ -25,7 +25,7 @@ export function Footer() {
         <div className="absolute bottom-12 left-1/4 w-2 h-12 bg-white/8 rounded-full -rotate-12 animate-pulse delay-300"></div>
       </div>
 
-      <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-16 2xl:px-20 py-8 sm:py-10 relative z-10">
+      <div className="mx-auto w-full max-w-[1600px] px-6 sm:px-8 lg:px-16 2xl:px-20 py-8 pb-28 sm:py-10 md:pb-16 relative z-10">
 
         {/* ── Main layout: brand | links ── */}
         <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-[360px_1fr] xl:grid-cols-[380px_1fr] 2xl:grid-cols-[400px_1fr] lg:gap-x-16 xl:gap-x-20 items-start">
@@ -119,24 +119,44 @@ export function Footer() {
             {/* Contact Us */}
             <div className="space-y-3">
               <h3 className="font-semibold text-white text-base sm:text-lg tracking-wide border-b border-white/20 pb-2 mb-3">Contact Us</h3>
-              <ul className="space-y-2 text-white/85 text-sm sm:text-base">
-                <li className="flex items-center gap-3 hover:text-white transition-colors duration-200">
-                  <Mail className="h-4 w-4 shrink-0 text-white/70" />
-                  <span>hello@onspot.com</span>
-                </li>
-                <li className="flex items-center gap-3 hover:text-white transition-colors duration-200">
-                  <Phone className="h-4 w-4 shrink-0 text-white/70" />
-                  <span>1-718 540 5053</span>
-                </li>
-                <li className="flex items-start gap-3 hover:text-white transition-colors duration-200">
-                  <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-white/70" />
-                  <span className="max-w-[16rem] break-words">
+              <div className="space-y-5 pt-1">
+                {/* Email */}
+                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
+                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                    <Mail className="h-4 w-4 shrink-0" />
+                  </div>
+                  <a href="mailto:hello@onspot.com" className="min-w-0 break-words text-left leading-relaxed text-white/78 hover:text-white transition-colors">
+                    hello@onspot.com
+                  </a>
+                </div>
+                {/* Phone */}
+                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
+                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                    <Phone className="h-4 w-4 shrink-0" />
+                  </div>
+                  <a href="tel:+17185405053" className="min-w-0 break-words text-left leading-relaxed text-white/78 hover:text-white transition-colors">
+                    1-718 540 5053
+                  </a>
+                </div>
+                {/* US Address */}
+                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
+                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                  </div>
+                  <address className="not-italic leading-relaxed text-white/78 min-w-0 break-words">
                     US - 2248 Broadway, New York, 10024
-                    <br />
-                    PH - Unit No. 1702, 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
-                  </span>
-                </li>
-              </ul>
+                  </address>
+                </div>
+                {/* PH Address */}
+                <div className="grid grid-cols-[28px_1fr] items-start gap-3 text-sm leading-relaxed text-white/78">
+                  <div className="flex h-7 w-7 items-start justify-center pt-0.5 text-white/65">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                  </div>
+                  <address className="not-italic leading-relaxed text-white/78 min-w-0 break-words">
+                    PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+                  </address>
+                </div>
+              </div>
               <div className="mt-4">
                 <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/30 hover-elevate backdrop-blur-sm w-full min-h-[44px] text-sm sm:text-base" asChild data-testid="footer-contact-cta">
                   <Link href="/lead-intake"><Mail className="h-4 w-4 mr-2" />Contact Us</Link>
@@ -147,18 +167,19 @@ export function Footer() {
           </div>
         </div>
 
-        <Separator className="my-6 sm:my-8 bg-white/30" />
+        <hr className="my-8 border-white/14" />
 
         {/* Bottom Row */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end space-y-6 sm:space-y-8 lg:space-y-0 gap-6">
-          <div className="space-y-2 sm:space-y-2.5">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+          <div className="space-y-3 pb-2">
             <p className="text-base sm:text-lg font-semibold text-white tracking-wide">Making Outsourcing Easy</p>
-            <div className="text-xs sm:text-sm text-white/70">© 2024 OnSpot. All rights reserved.</div>
-            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-white/70 pt-1">
-              <a href="#" className="hover:text-white transition-colors duration-200" data-testid="footer-privacy">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors duration-200" data-testid="footer-terms">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors duration-200" data-testid="footer-cookies">Cookie Policy</a>
-            </div>
+            <p className="text-sm font-medium text-white/72">© 2025 OnSpot. All rights reserved.</p>
+            <p className="text-xs font-semibold text-white/42">Powered by OnSpot Intelligence</p>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3 pb-8 text-sm font-medium">
+            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-privacy">Privacy Policy</a>
+            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-terms">Terms of Service</a>
+            <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-cookies">Cookie Policy</a>
           </div>
         </div>
       </div>

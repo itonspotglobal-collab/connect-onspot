@@ -1943,7 +1943,7 @@ export default function Home() {
                       >
                         <MapPinIcon className="w-5 h-5 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-all duration-300" />
                         <span className="break-words sm:break-normal underline-offset-2 group-hover:underline">
-                          PH - Unit No. 1702, 17th Floor High Street South
+                          PH - 17th Floor High Street South
                           Corporate Plaza Tower 2, 11th Ave Cor 26th St,
                           Bonifacio Global City, Taguig
                         </span>

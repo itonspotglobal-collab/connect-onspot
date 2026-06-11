@@ -1,0 +1,235 @@
+Refine only the mobile footer “Connect” portion.
+
+Current issue:
+On mobile, the footer Connect area feels cramped and uneven. The contact items, addresses, copyright, legal links, and floating chat button are too close together and not aligned cleanly.
+
+Goal:
+Make the mobile footer Connect area cleaner and more readable:
+- better spacing between contact rows
+- cleaner icon alignment
+- addresses wrap nicely
+- copyright/legal area has clearer separation
+- floating chat button does not overlap footer content
+- keep the same content and links
+
+Do not change:
+- desktop footer layout
+- footer background color
+- footer logo
+- footer social links
+- footer column content
+- contact information
+- legal links
+- chat widget functionality
+
+==================================================
+1. MOBILE CONNECT SECTION SPACING
+==================================================
+
+On mobile only, update the Connect accordion/content area.
+
+Use this structure:
+
+<div className="space-y-5 pt-4 md:pt-0">
+  CONTACT ROWS
+</div>
+
+Each contact row should use:
+
+<div className="
+  grid
+  grid-cols-[28px_1fr]
+  items-start
+  gap-3
+  text-sm
+  leading-relaxed
+  text-white/78
+">
+
+Icon wrapper:
+
+<div className="
+  flex
+  h-7
+  w-7
+  items-start
+  justify-center
+  pt-0.5
+  text-white/65
+">
+  ICON
+</div>
+
+Text:
+
+<a or span className="
+  min-w-0
+  break-words
+  text-left
+  leading-relaxed
+  text-white/78
+">
+  ...
+</a or span>
+
+Important:
+- Icons should line up consistently on the left.
+- Text should start at the same x-position.
+- Long addresses should wrap naturally.
+- Do not center-align contact rows on mobile.
+
+==================================================
+2. CONTACT ROWS
+==================================================
+
+Keep the same contact content:
+
+Email:
+hello@onspotglobal.com
+
+Phone:
+1-917-801-9294
+
+US Address:
+US - 2248 Broadway, New York, 10024
+
+PH Address:
+PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig
+
+For address rows, use:
+
+<address className="
+  not-italic
+  leading-relaxed
+  text-white/78
+">
+  ADDRESS TEXT
+</address>
+
+==================================================
+3. FOOTER DIVIDER
+==================================================
+
+The divider before copyright should have more breathing room.
+
+Use:
+
+<hr className="my-8 border-white/14" />
+
+Do not place it too close to the PH address.
+
+==================================================
+4. COPYRIGHT AREA
+==================================================
+
+Make copyright and powered text more readable on mobile.
+
+Use:
+
+<div className="space-y-3 pb-2">
+  <p className="text-sm font-medium text-white/72">
+    © 2025 OnSpot. All rights reserved.
+  </p>
+
+  <p className="text-xs font-semibold text-white/42">
+    Powered by OnSpot Intelligence
+  </p>
+</div>
+
+==================================================
+5. LEGAL LINKS
+==================================================
+
+Make Privacy Policy and Terms of Service align cleanly.
+
+Use:
+
+<div className="
+  mt-5
+  flex
+  flex-wrap
+  items-center
+  gap-x-8
+  gap-y-3
+  pb-8
+  text-sm
+  font-medium
+">
+  <Link className="text-white/72 transition hover:text-white">
+    Privacy Policy
+  </Link>
+
+  <Link className="text-white/72 transition hover:text-white">
+    Terms of Service
+  </Link>
+</div>
+
+Do not stack them unless screen width is extremely narrow.
+
+==================================================
+6. CHAT BUTTON OVERLAP FIX
+==================================================
+
+Current issue:
+The floating chat button sits too close to the legal links on mobile.
+
+Add bottom padding to the mobile footer container:
+
+className="pb-28 md:pb-0"
+
+or if the footer already has padding, increase only mobile bottom padding by about 80px.
+
+Example:
+
+<footer className="... pb-28 md:pb-16">
+
+This gives the chat button enough space and prevents visual overlap.
+
+==================================================
+7. MOBILE ACCORDION HEADER
+==================================================
+
+For the Connect accordion title row, keep it clean:
+
+<button className="
+  flex
+  w-full
+  items-center
+  justify-between
+  py-4
+  text-left
+  text-base
+  font-bold
+  text-white
+">
+  <span>Connect</span>
+  CHEVRON_ICON
+</button>
+
+Chevron:
+className="h-4 w-4 text-white/70"
+
+==================================================
+8. RESPONSIVE SCOPE
+==================================================
+
+Apply these refinements only for mobile/tablet footer behavior.
+
+Desktop footer should stay as-is.
+
+Use responsive classes:
+- mobile default styles
+- md: or lg: overrides for desktop if needed
+
+==================================================
+FINAL CHECK
+==================================================
+
+After applying:
+- Contact rows align neatly.
+- Long PH address wraps cleanly.
+- Divider has enough spacing.
+- Copyright and powered text look organized.
+- Legal links align nicely.
+- Chat button no longer overlaps or crowds the footer.
+- Desktop footer remains unchanged.
