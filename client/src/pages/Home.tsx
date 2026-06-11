@@ -499,7 +499,7 @@ export default function Home() {
       </section>
 
       {/* ── 3. WORK DIFFERENTLY ── */}
-      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-16 text-white sm:py-20 lg:py-24">
+      <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-12 text-white sm:py-14 lg:py-16">
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           {/* Headline */}
           <div className="mx-auto max-w-[1120px] text-center mb-10">
@@ -520,26 +520,26 @@ export default function Home() {
           </div>
 
           {/* Two gradient checklist cards */}
-          <div className="mx-auto mt-12 grid max-w-[1120px] items-stretch gap-6 lg:grid-cols-2">
+          <div className="mx-auto mt-8 grid max-w-[1040px] items-stretch gap-5 lg:grid-cols-2">
             {/* Card 1: For Companies */}
-            <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#2B2578_0%,#2757B8_55%,#18A8D8_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+            <article className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(135deg,#303276_0%,#3266B4_58%,#1D9CC2_100%)] p-6 text-white shadow-[0_22px_60px_rgba(0,0,0,0.22)] sm:p-7">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)]" />
               <div className="relative z-10 flex h-full flex-col">
-                <div className="min-h-[180px]">
-                  <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                <div className="min-h-[145px]">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70">
                     For Companies
                   </p>
-                  <h3 className="max-w-[460px] text-[clamp(30px,3vw,44px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                  <h3 className="max-w-[440px] text-[clamp(26px,2.5vw,36px)] font-bold leading-[1.02] tracking-[-0.045em] text-white">
                     Hire faster. Spend less.
                   </h3>
-                  <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
+                  <p className="mt-3 max-w-[480px] text-[15px] font-semibold leading-relaxed text-white/80">
                     Build your team with direct access, flexible engagement
                     models, and talent matched around how your work actually
                     runs.
                   </p>
                 </div>
 
-                <div className="mt-6 grid gap-3">
+                <div className="mt-5 grid gap-2.5">
                   {[
                     {
                       icon: <Zap className="h-5 w-5" strokeWidth={2.2} />,
@@ -569,16 +569,16 @@ export default function Home() {
                   ].map((item) => (
                     <div
                       key={item.title}
-                      className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur"
+                      className="grid min-h-[72px] grid-cols-[38px_1fr] items-center gap-3 rounded-[18px] border border-white/16 bg-white/10 px-4 py-3 backdrop-blur"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#6EF3F1]">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12 text-[#6EF3F1]">
                         {item.icon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-base font-bold leading-tight text-white">
+                        <h4 className="text-[15px] font-bold leading-tight text-white">
                           {item.title}
                         </h4>
-                        <p className="mt-1 text-sm leading-snug text-white/70">
+                        <p className="mt-0.5 text-[13px] leading-snug text-white/68">
                           {item.sub}
                         </p>
                       </div>
@@ -586,10 +586,10 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="mt-auto flex justify-center pt-7">
+                <div className="mt-auto flex justify-center pt-5">
                   <Link
                     href="/hire-talent"
-                    className="inline-flex h-12 min-w-[240px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#2E3FA8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
+                    className="inline-flex h-11 min-w-[210px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[13px] font-bold text-[#2E3FA8] shadow-[0_12px_28px_rgba(0,0,0,0.16)] transition hover:-translate-y-0.5"
                   >
                     Find the right talent →
                   </Link>
@@ -598,23 +598,23 @@ export default function Home() {
             </article>
 
             {/* Card 2: For Professionals */}
-            <article className="relative flex h-full flex-col overflow-hidden rounded-[30px] border border-white/18 bg-[linear-gradient(135deg,#31245F_0%,#6B35F5_52%,#22B8B0_100%)] p-7 text-white shadow-[0_28px_80px_rgba(0,0,0,0.26)] sm:p-8">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_34%)]" />
+            <article className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(135deg,#392B77_0%,#6642D6_52%,#319DB0_100%)] p-6 text-white shadow-[0_22px_60px_rgba(0,0,0,0.22)] sm:p-7">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)]" />
               <div className="relative z-10 flex h-full flex-col">
-                <div className="min-h-[180px]">
-                  <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-white/72">
+                <div className="min-h-[145px]">
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70">
                     For Professionals
                   </p>
-                  <h3 className="max-w-[460px] text-[clamp(30px,3vw,44px)] font-bold leading-[1.02] tracking-[-0.05em] text-white">
+                  <h3 className="max-w-[440px] text-[clamp(26px,2.5vw,36px)] font-bold leading-[1.02] tracking-[-0.045em] text-white">
                     Real work. Real growth.
                   </h3>
-                  <p className="mt-4 max-w-[500px] text-base font-semibold leading-relaxed text-white/82">
+                  <p className="mt-3 max-w-[480px] text-[15px] font-semibold leading-relaxed text-white/80">
                     Get matched with quality opportunities, steady pipelines,
                     and flexible work that respects your terms.
                   </p>
                 </div>
 
-                <div className="mt-6 grid gap-3">
+                <div className="mt-5 grid gap-2.5">
                   {[
                     {
                       icon: (
@@ -643,16 +643,16 @@ export default function Home() {
                   ].map((item) => (
                     <div
                       key={item.title}
-                      className="grid min-h-[86px] grid-cols-[44px_1fr] items-center gap-4 rounded-2xl border border-white/18 bg-white/10 px-5 py-4 backdrop-blur"
+                      className="grid min-h-[72px] grid-cols-[38px_1fr] items-center gap-3 rounded-[18px] border border-white/16 bg-white/10 px-4 py-3 backdrop-blur"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/12 text-[#D7C9FF]">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12 text-[#D7C9FF]">
                         {item.icon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-base font-bold leading-tight text-white">
+                        <h4 className="text-[15px] font-bold leading-tight text-white">
                           {item.title}
                         </h4>
-                        <p className="mt-1 text-sm leading-snug text-white/70">
+                        <p className="mt-0.5 text-[13px] leading-snug text-white/68">
                           {item.sub}
                         </p>
                       </div>
@@ -660,10 +660,10 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="mt-auto flex justify-center pt-7">
+                <div className="mt-auto flex justify-center pt-5">
                   <Link
                     href="/find-best-matches"
-                    className="inline-flex h-12 min-w-[230px] items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-[#4B35A8] shadow-[0_16px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(0,0,0,0.24)]"
+                    className="inline-flex h-11 min-w-[210px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[13px] font-bold text-[#4B35A8] shadow-[0_12px_28px_rgba(0,0,0,0.16)] transition hover:-translate-y-0.5"
                   >
                     Find your next opportunity →
                   </Link>
@@ -880,29 +880,29 @@ export default function Home() {
       </div>
 
       {/* ── 6. TRANSFORMATION STORIES ── */}
-      <div className="relative overflow-hidden bg-[#F6F7FB] py-20 sm:py-28">
+      <div className="relative overflow-hidden bg-[#F6F7FB] py-14 sm:py-16 lg:py-20">
         <div className="pointer-events-none absolute -top-32 right-0 h-96 w-96 rounded-full bg-indigo-400/8 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-violet-400/6 blur-3xl" />
 
         <div className="container relative z-10 mx-auto px-4 sm:px-6">
           {/* Section header */}
-          <div className="mb-14 mx-auto w-full max-w-[1500px] px-0">
-            <p className="text-[18px] font-semibold uppercase tracking-[0.22em] text-[#4B46C8] lg:text-[20px]">
+          <div className="mb-8 mx-auto w-full max-w-[1500px] px-0">
+            <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#4B46C8]">
               Transformations
             </p>
-            <h2 className="mt-5 max-w-[1000px] text-[52px] font-semibold tracking-[-0.045em] leading-[0.96] text-slate-950 md:text-[64px] lg:text-[76px]">
+            <h2 className="mt-3 max-w-[1000px] text-[clamp(40px,5vw,72px)] font-semibold tracking-[-0.045em] leading-[0.98] text-slate-950">
               Real change. <span className="text-[#4B46C8]">Real results.</span>
             </h2>
-            <p className="mt-6 max-w-[680px] text-[20px] leading-[1.45] text-[#56647A] lg:text-[22px]">
+            <p className="mt-4 max-w-[720px] text-[clamp(16px,1.5vw,20px)] leading-[1.35] text-[#536077]">
               See how OnSpot helps teams move from overloaded operations to
               intelligent, scalable outsourcing partnerships.
             </p>
           </div>
 
           {/* Featured card + two smaller cards */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-stretch">
+          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
             {/* ── Featured testimonial ── */}
-            <div className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-indigo-200/70 bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 p-8 shadow-[0_24px_80px_rgba(49,46,129,0.24)] sm:p-10 lg:p-12">
+            <div className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-indigo-200/70 bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 p-7 shadow-[0_20px_60px_rgba(49,46,129,0.22)] lg:p-8">
               {/* Corner glows */}
               <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl" />
               <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-violet-400/15 blur-3xl" />
@@ -934,7 +934,7 @@ export default function Home() {
               </div>
 
               {/* Before → After */}
-              <div className="relative mt-10">
+              <div className="relative mt-7">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">
                   Before
                 </p>
@@ -942,7 +942,7 @@ export default function Home() {
                   12-Hour Workdays
                 </h3>
 
-                <div className="my-5 flex items-center gap-3">
+                <div className="my-3 flex items-center gap-3">
                   <span className="h-px flex-1 bg-white/20" />
                   <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">
                     transformed into
@@ -959,14 +959,14 @@ export default function Home() {
               </div>
 
               {/* Quote */}
-              <p className="relative mt-6 text-base leading-relaxed text-white/75">
+              <p className="relative mt-4 text-base leading-relaxed text-white/75">
                 "The professionalism and consistency of the OnSpot team.
                 Communication is always clear, and the structured daily and
                 weekly updates make it simple to stay aligned."
               </p>
 
               {/* Footer badge */}
-              <div className="mt-auto pt-8">
+              <div className="mt-auto pt-5">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/85 ring-1 ring-white/15">
                   <TrendingUp className="h-3 w-3" />
                   Client transformation
@@ -975,7 +975,7 @@ export default function Home() {
             </div>
 
             {/* ── Two smaller cards stacked ── */}
-            <div className="grid gap-6">
+            <div className="grid gap-5">
               {[
                 {
                   name: "Eric M.",
@@ -998,7 +998,7 @@ export default function Home() {
               ].map((story) => (
                 <div
                   key={story.name}
-                  className="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/75 p-7 shadow-[0_18px_60px_rgba(80,80,180,0.10)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(80,80,180,0.16)] sm:p-8"
+                  className="group relative flex flex-col overflow-hidden rounded-[26px] border border-white/70 bg-white/75 p-6 shadow-[0_14px_50px_rgba(80,80,180,0.09)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_70px_rgba(80,80,180,0.14)] lg:p-7"
                 >
                   {/* Top accent line */}
                   <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-[1.75rem] bg-gradient-to-r from-indigo-500/70 via-violet-400/70 to-cyan-300/70" />
@@ -1022,7 +1022,7 @@ export default function Home() {
                   </div>
 
                   {/* Transformation headline — compact horizontal */}
-                  <h3 className="mt-6 text-xl font-semibold leading-snug text-slate-950 sm:text-2xl">
+                  <h3 className="mt-4 text-[clamp(19px,2vw,26px)] font-semibold leading-snug text-slate-950">
                     From <span className="text-slate-700">{story.before}</span>
                     <span className="mx-2 text-indigo-400">
                       <ArrowRight className="inline h-4 w-4" />
@@ -1033,7 +1033,7 @@ export default function Home() {
                   </h3>
 
                   {/* Quote */}
-                  <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-600">
+                  <p className="mt-3 flex-1 text-[15px] leading-relaxed text-slate-600">
                     "{story.quote}"
                   </p>
                 </div>
@@ -1042,10 +1042,10 @@ export default function Home() {
           </div>
 
           {/* Start your transformation CTA */}
-          <div className="mt-10 flex justify-center">
+          <div className="mt-8 flex justify-center">
             <a
               href="/hire-talent"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-700 to-violet-600 px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_32px_rgba(67,56,202,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-700 to-violet-600 px-7 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(67,56,202,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)]"
             >
               <Sparkles className="h-4 w-4" />
               Start your transformation

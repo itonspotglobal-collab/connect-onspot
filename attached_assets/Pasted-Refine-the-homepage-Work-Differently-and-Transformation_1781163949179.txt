@@ -1,0 +1,452 @@
+Refine the homepage “Work Differently” and “Transformations” sections.
+
+Current request:
+I already like the design direction, but both sections are too large and need to fit better in one screen. Please reduce the overall size and spacing while keeping the same content and visual hierarchy.
+
+Do not change:
+- section order
+- copy/content
+- button links
+- icons
+- card structure
+- other homepage sections
+- navigation
+- footer
+
+==================================================
+1. WORK DIFFERENTLY — MAKE SECTION ~30% SMALLER
+==================================================
+
+Current issue:
+The Work Differently gradient cards are too large and occupy too much vertical space.
+
+Goal:
+Scale the section down by around 25–30% while keeping the same design.
+
+Update section wrapper spacing:
+
+<section className="
+  relative
+  overflow-hidden
+  bg-[CURRENT_DARK_BACKGROUND]
+  px-6
+  py-12
+  text-white
+  sm:py-14
+  lg:py-16
+">
+
+If current padding is py-20 / py-24, reduce it to the values above.
+
+==================================================
+2. WORK DIFFERENTLY — REDUCE HEADING SIZE
+==================================================
+
+Keep visual hierarchy:
+1. Small eyebrow
+2. Strong headline
+3. Two cards
+4. Feature rows
+5. CTA buttons
+
+Update eyebrow:
+
+<p className="
+  mb-3
+  text-[11px]
+  font-bold
+  uppercase
+  tracking-[0.30em]
+  text-white/60
+">
+  Work Differently
+</p>
+
+Update heading:
+
+<h2 className="
+  mx-auto
+  max-w-[1120px]
+  text-center
+  text-[clamp(30px,3.4vw,48px)]
+  font-bold
+  leading-[1.04]
+  tracking-[-0.05em]
+  text-white
+">
+  ...
+</h2>
+
+Keep “great work.” gradient, but reduce intensity a little:
+
+className="
+  bg-gradient-to-r
+  from-[#B4AEFF]
+  via-[#9B91FF]
+  to-[#6FAAFF]
+  bg-clip-text
+  text-transparent
+"
+
+==================================================
+3. WORK DIFFERENTLY — REDUCE CARD SIZE
+==================================================
+
+Update card grid:
+
+<div className="
+  mx-auto
+  mt-8
+  grid
+  max-w-[1040px]
+  items-stretch
+  gap-5
+  lg:grid-cols-2
+">
+
+Reduce card wrapper padding and radius:
+
+className="
+  relative
+  flex
+  h-full
+  flex-col
+  overflow-hidden
+  rounded-[26px]
+  border
+  border-white/16
+  p-6
+  text-white
+  shadow-[0_22px_60px_rgba(0,0,0,0.22)]
+  sm:p-7
+"
+
+==================================================
+4. WORK DIFFERENTLY — REDUCE PURPLE SATURATION BY ~30%
+==================================================
+
+The purple is too bright/dark. Soften both card gradients by reducing saturation and making them calmer.
+
+Companies card gradient:
+Replace current gradient with:
+
+bg-[linear-gradient(135deg,#303276_0%,#3266B4_58%,#1D9CC2_100%)]
+
+Professionals card gradient:
+Replace current gradient with:
+
+bg-[linear-gradient(135deg,#392B77_0%,#6642D6_52%,#319DB0_100%)]
+
+These should feel less neon and around 30% less saturated.
+
+Also reduce overly bright glow overlays:
+- change white overlay opacity from 0.18 to 0.10
+- change strong purple/blue glow opacity down by about 30%
+
+==================================================
+5. WORK DIFFERENTLY — COMPACT CARD TYPOGRAPHY
+==================================================
+
+Card label:
+
+className="
+  mb-3
+  text-[11px]
+  font-bold
+  uppercase
+  tracking-[0.24em]
+  text-white/70
+"
+
+Card title:
+
+className="
+  max-w-[440px]
+  text-[clamp(26px,2.5vw,36px)]
+  font-bold
+  leading-[1.02]
+  tracking-[-0.045em]
+  text-white
+"
+
+Card description:
+
+className="
+  mt-3
+  max-w-[480px]
+  text-[15px]
+  font-semibold
+  leading-relaxed
+  text-white/80
+"
+
+Header/content block:
+If using min-height, reduce it:
+
+min-h-[145px]
+
+instead of 180px.
+
+==================================================
+6. WORK DIFFERENTLY — COMPACT FEATURE ROWS
+==================================================
+
+Feature row container:
+
+<div className="mt-5 grid gap-2.5">
+
+Feature row:
+
+className="
+  grid
+  min-h-[72px]
+  grid-cols-[38px_1fr]
+  items-center
+  gap-3
+  rounded-[18px]
+  border
+  border-white/16
+  bg-white/9
+  px-4
+  py-3
+  backdrop-blur
+"
+
+Icon tile:
+
+className="
+  flex
+  h-9
+  w-9
+  items-center
+  justify-center
+  rounded-xl
+  bg-white/12
+"
+
+Icon size:
+h-4.5 w-4.5, or h-4 w-4 if needed.
+
+Feature title:
+
+className="text-[15px] font-bold leading-tight text-white"
+
+Feature description:
+
+className="mt-0.5 text-[13px] leading-snug text-white/68"
+
+==================================================
+7. WORK DIFFERENTLY — ALIGN AND COMPACT BUTTONS
+==================================================
+
+Button wrapper:
+
+<div className="mt-auto flex justify-center pt-5">
+
+Button:
+
+className="
+  inline-flex
+  h-11
+  min-w-[210px]
+  items-center
+  justify-center
+  gap-2
+  rounded-full
+  bg-white
+  px-5
+  text-[13px]
+  font-bold
+  text-[#2E3FA8]
+  shadow-[0_12px_28px_rgba(0,0,0,0.16)]
+  transition
+  hover:-translate-y-0.5
+"
+
+Both buttons must:
+- be centered
+- share the same height
+- share the same min-width
+- sit on the same baseline
+
+==================================================
+8. TRANSFORMATIONS — REDUCE CARD SIZE
+==================================================
+
+Current issue:
+Transformation cards occupy too much space. Text size is mostly okay, but the cards and spacing are too large.
+
+Goal:
+Make the section fit closer to one screen while keeping visual hierarchy.
+
+Update section wrapper:
+
+<section className="
+  bg-[#F3F6FC]
+  px-6
+  py-14
+  sm:py-16
+  lg:py-20
+">
+
+If current padding is larger, reduce it.
+
+==================================================
+9. TRANSFORMATIONS — KEEP TITLE HIERARCHY BUT REDUCE SPACING
+==================================================
+
+Eyebrow:
+Keep same style, but reduce margin-bottom if large.
+
+Title:
+If the title is too tall, use:
+
+text-[clamp(40px,5vw,72px)]
+leading-[0.98]
+
+Description:
+
+className="
+  mt-4
+  max-w-[720px]
+  text-[clamp(18px,1.6vw,24px)]
+  leading-[1.35]
+  text-[#536077]
+"
+
+Cards grid margin:
+Reduce to:
+
+mt-10
+
+instead of mt-16 or larger.
+
+==================================================
+10. TRANSFORMATIONS — COMPACT FEATURED CARD
+==================================================
+
+For the large Elad B. card, reduce padding and height.
+
+Card wrapper:
+
+className="
+  rounded-[28px]
+  p-7
+  lg:p-8
+"
+
+If there is fixed min-height, reduce it:
+
+min-h-[430px]
+
+or if currently 560px+, use:
+
+min-h-[420px]
+
+Reduce internal gaps:
+- top header margin/gap by 20–30%
+- before/after sections spacing by 20–30%
+- quote area spacing by 20–30%
+
+Keep the main before/after text readable.
+
+==================================================
+11. TRANSFORMATIONS — COMPACT SIDE CARDS
+==================================================
+
+For the Eric M. and Fernando C. cards:
+
+Card wrapper:
+
+className="
+  rounded-[26px]
+  p-6
+  lg:p-7
+"
+
+If they have fixed height, reduce to:
+
+min-h-[190px]
+
+or remove fixed height and let content define height.
+
+Reduce internal text sizes only slightly:
+- name/title can stay
+- main transformation text can be text-[clamp(22px,2vw,30px)]
+- quote can be text-[15px] or text-base with tighter leading
+
+Side card gap:
+Reduce vertical gap between cards to:
+
+gap-5
+
+==================================================
+12. TRANSFORMATIONS — DESKTOP LAYOUT FIT
+==================================================
+
+Main cards container should use:
+
+<div className="
+  mx-auto
+  mt-10
+  grid
+  max-w-[1240px]
+  gap-6
+  lg:grid-cols-[1fr_0.95fr]
+">
+
+This keeps it spacious but less oversized.
+
+==================================================
+13. TRANSFORMATIONS — CTA SPACING
+==================================================
+
+If the “Start your transformation” CTA is below the cards:
+
+Use:
+mt-8
+
+Button can be:
+h-12 px-7 text-sm
+
+Do not make it huge.
+
+==================================================
+14. VISUAL HIERARCHY REMINDER
+==================================================
+
+Apply visual hierarchy to both sections:
+
+Work Differently:
+- Small eyebrow
+- strong but reduced title
+- two equal cards
+- card label
+- card title
+- checklist rows
+- centered CTA
+
+Transformations:
+- Small eyebrow
+- strong title
+- supporting sentence
+- main large transformation card
+- smaller supporting transformation cards
+- CTA
+
+Nothing should feel randomly oversized.
+The cards should support the headline, not overpower it.
+
+==================================================
+15. FINAL CHECK
+==================================================
+
+After applying:
+- Work Differently is about 25–30% smaller overall.
+- Work Differently purple/blue gradients are less saturated and calmer.
+- Feature rows align cleanly.
+- CTA buttons are centered and aligned.
+- Transformations cards are smaller and more compact.
+- Both sections fit much closer to one screen.
+- Visual hierarchy is still clear.
+- No content, links, or other sections changed.
