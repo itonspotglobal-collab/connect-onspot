@@ -3,21 +3,55 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import {
-  Search, Filter, ArrowLeft, ArrowRight, DollarSign,
-  MapPin, BriefcaseBusiness, Layers, Zap, Users, Clock3,
-  SlidersHorizontal, X, Calendar, Code2, HeadphonesIcon,
-  BarChart2, PenLine, Settings2, ShoppingBag, FileText,
+  Search,
+  Filter,
+  ArrowLeft,
+  ArrowRight,
+  DollarSign,
+  MapPin,
+  BriefcaseBusiness,
+  Layers,
+  Zap,
+  Users,
+  Clock3,
+  SlidersHorizontal,
+  X,
+  Calendar,
+  Code2,
+  HeadphonesIcon,
+  BarChart2,
+  PenLine,
+  Settings2,
+  ShoppingBag,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { Job, Candidate } from "@shared/schema";
-import { buildRateDisplay, getJobBadges, getTimeAgo, sortJobs, type SortOption } from "@/lib/jobUtils";
-import { saveUserActivity, getTopUserInterests, scoreJobsAgainstInterests } from "@/lib/userActivityMemory";
-import { loadTalentAuth, type TalentAuthState } from "@/components/TalentLoginModal";
-import { buildTalentRecProfile, scoreJobForTalent } from "@/lib/talentRecommendations";
+import {
+  buildRateDisplay,
+  getJobBadges,
+  getTimeAgo,
+  sortJobs,
+  type SortOption,
+} from "@/lib/jobUtils";
+import {
+  saveUserActivity,
+  getTopUserInterests,
+  scoreJobsAgainstInterests,
+} from "@/lib/userActivityMemory";
+import {
+  loadTalentAuth,
+  type TalentAuthState,
+} from "@/components/TalentLoginModal";
+import {
+  buildTalentRecProfile,
+  scoreJobForTalent,
+} from "@/lib/talentRecommendations";
 
-const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+const APPLY_URL =
+  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
 const POPULAR_CHIPS = [
   "Customer Support",
@@ -43,13 +77,26 @@ const HOT_SEARCHES = [
 // Maps nav dropdown slug (?category=<slug>) → matching internal DB category values.
 // cats: [] means "All Categories" (no filter).
 // search: pre-fills the search bar for slugs with no direct DB category match.
-const NAV_SLUG_MAP: Record<string, { label: string; cats: string[]; search?: string }> = {
-  all:         { label: "All Jobs",              cats: [] },
-  development: { label: "Development & IT",      cats: ["Development", "Tech support"] },
-  design:      { label: "Design & Creative",     cats: ["Design"] },
-  marketing:   { label: "Sales & Marketing",     cats: ["Marketing", "Sales"] },
-  support:     { label: "Admin & Support",       cats: ["Admin", "Customer success", "Operations"] },
-  writing:     { label: "Writing & Translation", cats: [], search: "writing translation" },
+const NAV_SLUG_MAP: Record<
+  string,
+  { label: string; cats: string[]; search?: string }
+> = {
+  all: { label: "All Jobs", cats: [] },
+  development: {
+    label: "Development & IT",
+    cats: ["Development", "Tech support"],
+  },
+  design: { label: "Design & Creative", cats: ["Design"] },
+  marketing: { label: "Sales & Marketing", cats: ["Marketing", "Sales"] },
+  support: {
+    label: "Admin & Support",
+    cats: ["Admin", "Customer success", "Operations"],
+  },
+  writing: {
+    label: "Writing & Translation",
+    cats: [],
+    search: "writing translation",
+  },
 };
 
 const CATEGORIES = [
@@ -111,7 +158,13 @@ function getCategoryIcon(category: string | null): React.ElementType {
   return CATEGORY_ICONS[key] ?? BriefcaseBusiness;
 }
 
-function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => void }) {
+function JobCard({
+  job,
+  onNavigate,
+}: {
+  job: Job;
+  onNavigate: (id: string) => void;
+}) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
@@ -120,9 +173,13 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28 }}
+    >
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all hover:shadow-[0_8px_32px_rgba(71,78,173,0.12)] dark:border-white/10 dark:bg-white/[0.03]">
-
         {/* ── Gradient header ─────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
           {/* Left: icon + title + meta */}
@@ -132,17 +189,29 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                <h3 className="text-base font-bold leading-tight text-white truncate">{job.title}</h3>
+                <h3 className="text-base font-bold leading-tight text-white truncate">
+                  {job.title}
+                </h3>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-white/70">{job.company ?? "OnSpot"}</span>
+                <span className="text-xs text-white/70">
+                  {job.company ?? "OnSpot"}
+                </span>
                 <span className="text-white/30 text-xs">·</span>
-                {badges.length > 0
-                  ? badges.map((b) => (
-                      <span key={b.key} className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white">{b.label}</span>
-                    ))
-                  : <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white capitalize">{contractLabel}</span>
-                }
+                {badges.length > 0 ? (
+                  badges.map((b) => (
+                    <span
+                      key={b.key}
+                      className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white"
+                    >
+                      {b.label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white capitalize">
+                    {contractLabel}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -150,24 +219,32 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
           {/* Right: pay + posted */}
           <div className="shrink-0 text-right">
             <div className="text-base font-bold text-white">{pay}</div>
-            <div className="mt-0.5 text-[11px] text-white/60">Job posted {timeAgo}</div>
+            <div className="mt-0.5 text-[11px] text-white/60">
+              Job posted {timeAgo}
+            </div>
           </div>
         </div>
 
         {/* ── Metadata row ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
           {[
-            { icon: Layers,          label: "CONTRACT", value: contractLabel },
-            { icon: DollarSign,      label: "SALARY",   value: pay },
-            { icon: MapPin,          label: "LOCATION",  value: job.location ?? "Remote" },
-            { icon: Calendar,        label: "POSTED",    value: timeAgo },
+            { icon: Layers, label: "CONTRACT", value: contractLabel },
+            { icon: DollarSign, label: "SALARY", value: pay },
+            {
+              icon: MapPin,
+              label: "LOCATION",
+              value: job.location ?? "Remote",
+            },
+            { icon: Calendar, label: "POSTED", value: timeAgo },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex flex-col gap-0.5 px-4 py-3">
               <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                 <Icon className="h-3 w-3" />
                 {label}
               </div>
-              <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">{value}</div>
+              <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">
+                {value}
+              </div>
             </div>
           ))}
         </div>
@@ -175,9 +252,12 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
           {(() => {
-            const preview = (job as any).jobSummary?.trim() || job.description?.trim();
+            const preview =
+              (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
-              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{preview}</p>
+              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                {preview}
+              </p>
             ) : null;
           })()}
 
@@ -185,7 +265,10 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
           {tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300">
+                <span
+                  key={tag}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
+                >
                   {tag}
                 </span>
               ))}
@@ -196,7 +279,10 @@ function JobCard({ job, onNavigate }: { job: Job; onNavigate: (id: string) => vo
           <div className="mt-4 flex items-center gap-3">
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
-              disabled={(job as any).applicationMethod !== "built_in_form" && !job.applyLink}
+              disabled={
+                (job as any).applicationMethod !== "built_in_form" &&
+                !job.applyLink
+              }
               onClick={() => {
                 if ((job as any).applicationMethod === "built_in_form") {
                   navigate(`/jobs/${job.id}/apply`);
@@ -235,14 +321,20 @@ export default function FindWorkAllJobs() {
       return "";
     }
   }, [rawSearch]);
-  const navGroup = useMemo(() => (navSlug ? NAV_SLUG_MAP[navSlug] : undefined), [navSlug]);
+  const navGroup = useMemo(
+    () => (navSlug ? NAV_SLUG_MAP[navSlug] : undefined),
+    [navSlug],
+  );
 
   // Search bar text — initialised from nav group on first load
   const [search, setSearch] = useState(() => {
     try {
-      const slug = new URLSearchParams(window.location.search).get("category") ?? "";
+      const slug =
+        new URLSearchParams(window.location.search).get("category") ?? "";
       return NAV_SLUG_MAP[slug]?.search ?? "";
-    } catch { return ""; }
+    } catch {
+      return "";
+    }
   });
   const [category, setCategory] = useState("All Categories");
   const [location, setLocation] = useState("All Locations");
@@ -251,18 +343,24 @@ export default function FindWorkAllJobs() {
   const [sort, setSort] = useState<SortOption>("recently-posted");
   const [showFilters, setShowFilters] = useState(() => {
     try {
-      const slug = new URLSearchParams(window.location.search).get("category") ?? "";
+      const slug =
+        new URLSearchParams(window.location.search).get("category") ?? "";
       return !!slug && slug !== "all";
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   });
 
   // Skip the first render (handled by useState initialisers above);
   // on subsequent navSlug changes (same-page nav), sync dependent state.
   const isFirstRender = useRef(true);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setSearch(navGroup?.search ?? "");
-    setCategory("All Categories");   // reset any manual chip selection
+    setCategory("All Categories"); // reset any manual chip selection
     setShowFilters(!!navSlug && navSlug !== "all");
   }, [navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -292,7 +390,9 @@ export default function FindWorkAllJobs() {
 
   // Activity-based recommendations
   const [recInterests, setRecInterests] = useState<string[]>([]);
-  useEffect(() => { setRecInterests(getTopUserInterests(5)); }, []);
+  useEffect(() => {
+    setRecInterests(getTopUserInterests(5));
+  }, []);
   const recommendedJobs = useMemo<Job[]>(() => {
     if (recInterests.length === 0 || search.trim()) return [];
     return scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
@@ -300,20 +400,23 @@ export default function FindWorkAllJobs() {
 
   // Talent profile-based recommendations
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
-  useEffect(() => { setTalentAuth(loadTalentAuth()); }, []);
+  useEffect(() => {
+    setTalentAuth(loadTalentAuth());
+  }, []);
 
-  const { data: talentProfile, isLoading: isLoadingProfile } = useQuery<Candidate>({
-    queryKey: ["/api/candidates", talentAuth?.candidateId],
-    queryFn: async () => {
-      const res = await fetch(`/api/candidates/${talentAuth!.candidateId}`, {
-        headers: { Authorization: `Bearer ${talentAuth!.token}` },
-      });
-      if (!res.ok) throw new Error("Failed to load talent profile");
-      return res.json();
-    },
-    enabled: !!talentAuth?.candidateId,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: talentProfile, isLoading: isLoadingProfile } =
+    useQuery<Candidate>({
+      queryKey: ["/api/candidates", talentAuth?.candidateId],
+      queryFn: async () => {
+        const res = await fetch(`/api/candidates/${talentAuth!.candidateId}`, {
+          headers: { Authorization: `Bearer ${talentAuth!.token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load talent profile");
+        return res.json();
+      },
+      enabled: !!talentAuth?.candidateId,
+      staleTime: 5 * 60 * 1000,
+    });
 
   const talentRecs = useMemo(() => {
     if (!talentAuth || !talentProfile) {
@@ -324,7 +427,10 @@ export default function FindWorkAllJobs() {
       return { jobs: [] as Job[], hasProfile: true, hasEnoughData: false };
     }
     const scored = openJobs
-      .map((job) => ({ job, score: scoreJobForTalent(job, recProfile.keywords) }))
+      .map((job) => ({
+        job,
+        score: scoreJobForTalent(job, recProfile.keywords),
+      }))
       .filter(({ score }) => score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
@@ -347,17 +453,20 @@ export default function FindWorkAllJobs() {
       // multiple internal DB categories (e.g. "support" → Admin + Customer success).
       // If the group is empty (cats: []) it means "All Jobs" — no filter.
       // If the user manually picks a chip, that single-category filter takes precedence.
-      const navCatActive = !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
+      const navCatActive =
+        !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
       const catPass = navCatActive
         ? navGroup.cats.some(
-            (c) => (job.category ?? "").toLowerCase() === c.toLowerCase()
+            (c) => (job.category ?? "").toLowerCase() === c.toLowerCase(),
           )
         : category === "All Categories" ||
           (job.category ?? "").toLowerCase() === category.toLowerCase();
 
       const locPass =
         location === "All Locations" ||
-        (job.location ?? "remote").toLowerCase().includes(location.toLowerCase());
+        (job.location ?? "remote")
+          .toLowerCase()
+          .includes(location.toLowerCase());
 
       const typePass =
         contractType === "All Types" ||
@@ -377,7 +486,17 @@ export default function FindWorkAllJobs() {
       return queryPass && catPass && locPass && typePass && salaryPass;
     });
     return sortJobs(list, sort);
-  }, [openJobs, search, category, location, contractType, salary, sort, navSlug, navGroup]);
+  }, [
+    openJobs,
+    search,
+    category,
+    location,
+    contractType,
+    salary,
+    sort,
+    navSlug,
+    navGroup,
+  ]);
 
   function applyHotSearch(term: string) {
     setSearch(term);
@@ -406,7 +525,6 @@ export default function FindWorkAllJobs() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
-
       {/* ── HERO (full-viewport) ── */}
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0e0b3a] via-[#1a1270] to-[#0e0b3a]">
         {/* Ambient glows */}
@@ -420,11 +538,6 @@ export default function FindWorkAllJobs() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative z-10 mx-auto w-full max-w-3xl px-6 text-center"
         >
-          {/* Eyebrow */}
-          <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
-            ONSPOT CAREERS
-          </p>
-
           {/* Headline */}
           <h1 className="text-[clamp(38px,6vw,72px)] font-bold leading-[1.06] tracking-[-0.04em] text-white">
             Find your next remote role.
@@ -432,20 +545,24 @@ export default function FindWorkAllJobs() {
 
           {/* Subtext */}
           <p className="mt-5 text-[clamp(15px,1.5vw,19px)] leading-relaxed text-white/55">
-            Vetted, fully managed jobs with global companies — new roles every week.
+            Vetted, fully managed jobs with global companies — new roles every
+            week.
           </p>
 
           {/* Search form — prevents page refresh, scrolls to jobs on submit */}
           <form
-            onSubmit={(e) => { e.preventDefault(); scrollToJobs(); }}
-            className="mt-10 flex overflow-hidden rounded-2xl bg-white/10 p-1.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md"
+            onSubmit={(e) => {
+              e.preventDefault();
+              scrollToJobs();
+            }}
+            className="mt-10 flex overflow-hidden rounded-xl bg-white/10 p-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-12 w-full rounded-xl bg-transparent pl-11 pr-4 text-sm text-white placeholder-white/35 outline-none"
+                className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/35 outline-none"
                 placeholder="Search a job title, skill, or keyword..."
               />
               {search && (
@@ -454,13 +571,13 @@ export default function FindWorkAllJobs() {
                   onClick={() => setSearch("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
             <button
               type="submit"
-              className="shrink-0 rounded-xl bg-[#6235e8] px-7 text-sm font-semibold text-white transition hover:bg-[#5128d4]"
+              className="shrink-0 rounded-lg bg-[#6235e8] px-6 text-sm font-semibold text-white transition hover:bg-[#5128d4]"
             >
               Search
             </button>
@@ -475,7 +592,10 @@ export default function FindWorkAllJobs() {
               <button
                 key={term}
                 type="button"
-                onClick={() => { setSearch(term); scrollToJobs(); }}
+                onClick={() => {
+                  setSearch(term);
+                  scrollToJobs();
+                }}
                 className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
                   search.toLowerCase() === term.toLowerCase()
                     ? "border-white/60 bg-white/25 text-white"
@@ -501,9 +621,11 @@ export default function FindWorkAllJobs() {
       </div>
 
       {/* ── SEARCH FILTERS (below the fold) ── */}
-      <div ref={jobsSectionRef} className="border-b border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.02]">
+      <div
+        ref={jobsSectionRef}
+        className="border-b border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.02]"
+      >
         <div className="mx-auto max-w-7xl px-6 py-6 md:px-8">
-
           {/* Search bar — synced with hero search */}
           <div className="flex gap-3">
             <div className="relative flex-1">
@@ -515,7 +637,10 @@ export default function FindWorkAllJobs() {
                 placeholder="Search roles, skills, or keywords…"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -527,7 +652,11 @@ export default function FindWorkAllJobs() {
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
-              {hasActiveFilters && <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#474ead] text-[10px] text-white">!</span>}
+              {hasActiveFilters && (
+                <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#474ead] text-[10px] text-white">
+                  !
+                </span>
+              )}
             </Button>
           </div>
 
@@ -535,7 +664,9 @@ export default function FindWorkAllJobs() {
           <div className="mt-4">
             <div className="mb-2 flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 text-[#474ead]" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Hot Searches</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                Hot Searches
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {HOT_SEARCHES.map((term) => (
@@ -564,24 +695,29 @@ export default function FindWorkAllJobs() {
               className="mt-5 border-t border-slate-100 pt-5 dark:border-white/10"
             >
               {/* Nav category active banner */}
-              {navGroup && navGroup.cats.length > 0 && category === "All Categories" && (
-                <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 px-4 py-3">
-                  <BriefcaseBusiness className="h-4 w-4 shrink-0 text-[#474ead]" />
-                  <p className="flex-1 text-sm text-slate-700 dark:text-slate-300">
-                    Filtering by <span className="font-semibold text-[#474ead]">{navGroup.label}</span>.
-                    Pick a chip below to narrow further, or{" "}
-                    <button
-                      className="font-medium text-[#474ead] underline underline-offset-2"
-                      onClick={() => navigate("/find-work/jobs")}
-                    >
-                      clear to see all jobs
-                    </button>.
-                  </p>
-                </div>
-              )}
+              {navGroup &&
+                navGroup.cats.length > 0 &&
+                category === "All Categories" && (
+                  <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#474ead]/20 bg-[#474ead]/5 px-4 py-3">
+                    <BriefcaseBusiness className="h-4 w-4 shrink-0 text-[#474ead]" />
+                    <p className="flex-1 text-sm text-slate-700 dark:text-slate-300">
+                      Filtering by{" "}
+                      <span className="font-semibold text-[#474ead]">
+                        {navGroup.label}
+                      </span>
+                      . Pick a chip below to narrow further, or{" "}
+                      <button
+                        className="font-medium text-[#474ead] underline underline-offset-2"
+                        onClick={() => navigate("/find-work/jobs")}
+                      >
+                        clear to see all jobs
+                      </button>
+                      .
+                    </p>
+                  </div>
+                )}
 
               <div className="flex flex-wrap gap-6">
-
                 {/* Category */}
                 <div>
                   <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
@@ -682,7 +818,10 @@ export default function FindWorkAllJobs() {
               </div>
 
               {hasActiveFilters && (
-                <button onClick={resetFilters} className="mt-4 text-xs font-medium text-[#474ead] underline-offset-2 hover:underline">
+                <button
+                  onClick={resetFilters}
+                  className="mt-4 text-xs font-medium text-[#474ead] underline-offset-2 hover:underline"
+                >
                   Reset all filters
                 </button>
               )}
@@ -693,7 +832,6 @@ export default function FindWorkAllJobs() {
 
       {/* ── RESULTS ── */}
       <div className="mx-auto max-w-7xl px-6 py-10 md:px-8 md:py-14">
-
         {/* Sort + count bar */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -701,9 +839,18 @@ export default function FindWorkAllJobs() {
               <div className="h-5 w-32 animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                <span className="font-bold text-slate-900 dark:text-white">{filtered.length}</span>{" "}
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {filtered.length}
+                </span>{" "}
                 role{filtered.length !== 1 ? "s" : ""} found
-                {search && <> for "<span className="font-medium text-[#474ead]">{search}</span>"</>}
+                {search && (
+                  <>
+                    {" "}
+                    for "
+                    <span className="font-medium text-[#474ead]">{search}</span>
+                    "
+                  </>
+                )}
               </p>
             )}
           </div>
@@ -732,7 +879,10 @@ export default function FindWorkAllJobs() {
         {isLoading && (
           <div className="space-y-4">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-white/[0.06] dark:bg-white/[0.03]">
+              <div
+                key={n}
+                className="overflow-hidden rounded-2xl border border-slate-100 bg-white dark:border-white/[0.06] dark:bg-white/[0.03]"
+              >
                 <div className="h-16 animate-pulse bg-gradient-to-r from-slate-200 to-slate-100 dark:from-white/[0.08] dark:to-white/[0.04]" />
                 <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
                   {[1, 2, 3, 4].map((c) => (
@@ -747,7 +897,10 @@ export default function FindWorkAllJobs() {
                   <div className="h-3.5 w-4/5 animate-pulse rounded bg-slate-100 dark:bg-white/[0.06]" />
                   <div className="mt-3 flex gap-2">
                     {[1, 2, 3].map((t) => (
-                      <div key={t} className="h-6 w-20 animate-pulse rounded-full bg-slate-100 dark:bg-white/[0.06]" />
+                      <div
+                        key={t}
+                        className="h-6 w-20 animate-pulse rounded-full bg-slate-100 dark:bg-white/[0.06]"
+                      />
                     ))}
                   </div>
                 </div>
@@ -763,11 +916,22 @@ export default function FindWorkAllJobs() {
               <Search className="h-7 w-7 text-slate-400" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-slate-900 dark:text-white">No roles found</p>
-              <p className="mt-1 text-slate-500">Try adjusting your search or clearing the filters.</p>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                No roles found
+              </p>
+              <p className="mt-1 text-slate-500">
+                Try adjusting your search or clearing the filters.
+              </p>
             </div>
             {(search || hasActiveFilters) && (
-              <Button variant="outline" className="rounded-full" onClick={() => { setSearch(""); resetFilters(); }}>
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  setSearch("");
+                  resetFilters();
+                }}
+              >
                 Clear all
               </Button>
             )}
@@ -811,7 +975,10 @@ export default function FindWorkAllJobs() {
               </>
             ) : talentProfile && !talentRecs.hasEnoughData ? (
               <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.03]">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Complete your talent profile to get personalized job recommendations.</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Complete your talent profile to get personalized job
+                  recommendations.
+                </p>
                 <a
                   href={`/talent-profile/${talentAuth.candidateId}`}
                   className="mt-1 inline-block text-xs text-[#474ead] hover:underline dark:text-indigo-400"
@@ -879,17 +1046,40 @@ export default function FindWorkAllJobs() {
 
       {/* ── BOTTOM CTA ── */}
       {!isLoading && (
-        <div className="border-t border-slate-200/70 dark:border-white/[0.08]">
-          <div className="mx-auto max-w-7xl px-6 py-12 text-center md:px-8">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Still looking?</p>
-            <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">Apply once. We'll match you to open roles.</h2>
-            <p className="mb-8 text-slate-500">Submit a quick application and our team will reach out when a matching role opens.</p>
-            <Button
-              className="rounded-full bg-[#474ead] px-10 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)]"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
-            >
-              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0e0b3a] via-[#1a1270] to-[#0e0b3a]">
+          {/* Ambient glows */}
+          <div className="pointer-events-none absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full bg-purple-600/20 blur-[120px]" />
+          <div className="pointer-events-none absolute -right-32 bottom-0 h-[350px] w-[350px] rounded-full bg-indigo-500/15 blur-[100px]" />
+
+          <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center md:px-8">
+            {/* Eyebrow */}
+            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
+              STILL LOOKING?
+            </p>
+
+            {/* Heading */}
+            <h2 className="text-[clamp(28px,4vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] text-white">
+              Apply once. Get matched continuously.
+            </h2>
+
+            {/* Description */}
+            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
+              Submit one quick application and we'll keep matching you with
+              relevant open roles as they become available.
+            </p>
+
+            {/* CTA */}
+            <div className="mt-10">
+              <button
+                onClick={() =>
+                  window.open(APPLY_URL, "_blank", "noopener,noreferrer")
+                }
+                className="inline-flex items-center gap-2 rounded-full bg-[#6235e8] px-9 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(98,53,232,0.45)] transition hover:bg-[#5128d4]"
+              >
+                Apply in 30 seconds
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
