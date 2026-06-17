@@ -536,40 +536,44 @@ export default function FindWorkAllJobs() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative z-10 mx-auto w-full max-w-3xl px-6 text-center"
+          className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
-          {/* Headline */}
-          <h1 className="text-[clamp(38px,6vw,72px)] font-bold leading-[1.06] tracking-[-0.04em] text-white">
+          {/* Eyebrow — orientation only, lowest weight */}
+          <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/30">
+            ONSPOT CAREERS
+          </p>
+
+          {/* Headline — dominant */}
+          <h1 className="text-[clamp(36px,5.5vw,64px)] font-bold leading-[1.08] tracking-[-0.035em] text-white">
             Find your next remote role.
           </h1>
 
-          {/* Subtext */}
-          <p className="mt-5 text-[clamp(15px,1.5vw,19px)] leading-relaxed text-white/55">
-            Vetted, fully managed jobs with global companies — new roles every
-            week.
+          {/* Description — secondary, narrower to read fast */}
+          <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-white/45">
+            Vetted jobs with global companies — new roles added every week.
           </p>
 
-          {/* Search form — prevents page refresh, scrolls to jobs on submit */}
+          {/* Search bar — primary action, elevated with glow */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               scrollToJobs();
             }}
-            className="mt-10 flex overflow-hidden rounded-xl bg-white/10 p-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md"
+            className="mt-8 flex overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.09] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_32px_rgba(98,53,232,0.35)] backdrop-blur-md"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/35 outline-none"
-                placeholder="Search a job title, skill, or keyword..."
+                className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none"
+                placeholder="Job title, skill, or keyword..."
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 hover:text-white/70"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -577,16 +581,28 @@ export default function FindWorkAllJobs() {
             </div>
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-[#6235e8] px-6 text-sm font-semibold text-white transition hover:bg-[#5128d4]"
+              className="shrink-0 rounded-lg bg-[#6235e8] px-7 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(98,53,232,0.5)] transition hover:bg-[#5128d4]"
             >
               Search
             </button>
           </form>
 
-          {/* Popular chips */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">
-              POPULAR RIGHT NOW
+          {/* Browse all — secondary CTA, directly below search */}
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={scrollToJobs}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/60 transition hover:text-white"
+            >
+              Browse all {isLoading ? "…" : openJobs.length} open roles
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Popular chips — tertiary, reduced opacity */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            <span className="w-full mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/20">
+              POPULAR
             </span>
             {POPULAR_CHIPS.map((term) => (
               <button
@@ -596,26 +612,15 @@ export default function FindWorkAllJobs() {
                   setSearch(term);
                   scrollToJobs();
                 }}
-                className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                className={`rounded-full border px-3.5 py-1 text-[11px] font-medium transition ${
                   search.toLowerCase() === term.toLowerCase()
-                    ? "border-white/60 bg-white/25 text-white"
-                    : "border-white/20 bg-white/10 text-white/65 hover:border-white/40 hover:bg-white/20 hover:text-white"
+                    ? "border-white/40 bg-white/15 text-white/90"
+                    : "border-white/10 bg-white/[0.05] text-white/40 hover:border-white/25 hover:bg-white/10 hover:text-white/70"
                 }`}
               >
                 {term}
               </button>
             ))}
-          </div>
-
-          {/* Browse all link */}
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={scrollToJobs}
-              className="text-sm text-white/40 transition hover:text-white/75"
-            >
-              Browse all {isLoading ? "…" : openJobs.length} open roles →
-            </button>
           </div>
         </motion.div>
       </div>

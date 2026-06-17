@@ -1,0 +1,81 @@
+Please improve the visual hierarchy of the "/find-work/jobs" hero section.
+
+Current issue:
+The hero looks good visually, but all elements have similar emphasis. Users should immediately understand:
+1. Main goal → Find a remote role
+2. Primary action → Search
+3. Secondary action → Browse roles
+4. Optional shortcuts → Popular categories
+
+Goal:
+Create a stronger visual hierarchy so the eye naturally flows from headline → description → search → browse → category chips.
+
+Hero hierarchy updates:
+
+1. Heading (Primary Focus)
+- Keep "Find your next remote role."
+- This should remain the most visually dominant element.
+- Increase contrast and prominence.
+- Consider reducing the line break so the headline feels more intentional and easier to scan.
+- Optimize width so it doesn't feel oversized or awkwardly wrapped.
+
+2. Description (Secondary)
+- Reduce visual weight slightly.
+- Increase readability.
+- Keep it clearly supporting the headline rather than competing with it.
+- Limit line width for better reading.
+
+3. Search Bar (Primary CTA)
+- Make the search bar the second most important visual element after the headline.
+- Keep it wide and centered.
+- Search button should stand out more than surrounding elements.
+- Add slightly more visual emphasis through contrast, glow, shadow, border, or elevation.
+- Users should immediately recognize this as the main action.
+
+4. Browse Link (Secondary CTA)
+- Increase prominence slightly.
+- It currently gets lost below the chips.
+- Move it directly below the search bar OR style it more like a secondary action.
+- This should be the next action users notice after searching.
+
+5. Popular Categories (Tertiary)
+- Reduce their visual importance slightly.
+- These are supporting shortcuts, not the primary CTA.
+- Keep them available but less visually dominant than the search action.
+- Consider lighter borders, smaller size, or reduced opacity.
+
+6. Eyebrow Label
+- "ONSPOT CAREERS" should remain subtle.
+- It should help orient users but not draw attention away from the headline.
+
+7. Spacing
+Create a clear visual rhythm:
+
+Eyebrow
+↓
+Headline
+↓
+Description
+↓
+Search Bar
+↓
+Browse Roles Link
+↓
+Popular Categories
+
+This ordering should communicate importance naturally.
+
+Design Principles:
+- One clear primary action: Search
+- One clear secondary action: Browse all open roles
+- Popular categories should feel optional
+- Improve scanning and readability
+- Preserve the current dark branded gradient hero background
+- Preserve the overall premium OnSpot look and feel
+
+Acceptance criteria:
+- The user's eye is naturally drawn to the headline first.
+- The search bar feels like the primary action.
+- Browse roles is easier to discover.
+- Popular category chips feel supportive rather than competing for attention.
+- The hero feels more polished, intentional, and conversion-focused.
