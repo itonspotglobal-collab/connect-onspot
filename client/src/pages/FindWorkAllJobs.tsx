@@ -538,11 +538,6 @@ export default function FindWorkAllJobs() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
-          {/* Eyebrow — orientation only, lowest weight */}
-          <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/30">
-            ONSPOT CAREERS
-          </p>
-
           {/* Headline — dominant */}
           <h1 className="text-[clamp(36px,5.5vw,64px)] font-bold leading-[1.08] tracking-[-0.035em] text-white">
             Find your next remote role.

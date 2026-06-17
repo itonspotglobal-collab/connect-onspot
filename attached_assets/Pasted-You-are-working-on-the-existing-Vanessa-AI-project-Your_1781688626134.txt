@@ -1,0 +1,62 @@
+You are working on the existing Vanessa AI project. Your goal is to upgrade Vanessa so she can assist Job Applicants, especially with the latest Findwork, Talents, and related job-platform changes.
+
+First, inspect the existing codebase carefully. Reuse the current architecture, files, tools, knowledgebase, prompts, workflows, and Vanessa AI-related modules instead of creating a separate system.
+
+Goal:
+Make Vanessa capable of helping job applicants through the job application process.
+
+Expected capabilities:
+1. Understand applicant-related questions and intents.
+2. Use the existing knowledgebase and Vanessa AI tools where applicable.
+3. Guide applicants on how to search jobs, apply, update profiles, submit requirements, and track application-related concerns.
+4. Support Findwork, Talents, and other existing job-related modules already present in the project.
+5. Provide helpful, applicant-friendly responses using Vanessa’s existing tone/personality.
+6. Escalate or gracefully respond when data is unavailable, instead of hallucinating.
+7. Keep employer/admin/talent-side logic separated from applicant-side assistance when needed.
+
+Implementation instructions:
+- Search the existing files for Vanessa prompts, knowledgebase logic, tool calls, AI routing, intent classification, and job-platform integrations.
+- Identify where Vanessa’s current system prompt or role instructions are defined.
+- Extend Vanessa’s prompt so she explicitly supports Job Applicants.
+- Add or update applicant-specific intents such as:
+  - job_search_help
+  - application_status_help
+  - profile_update_help
+  - resume_or_cv_help
+  - requirements_help
+  - interview_guidance
+  - account_or_platform_help
+  - findwork_help
+  - talents_help
+- Reuse existing knowledgebase retrieval logic if available.
+- If there are existing tools for Findwork, Talents, jobs, applicants, applications, or users, integrate them into Vanessa’s applicant-assistance flow.
+- Do not hardcode fake data.
+- If a tool/API is unavailable, Vanessa should explain what she can do and ask for the needed information.
+- Preserve existing functionality for other Vanessa users.
+- Add clean comments where changes are made.
+- Follow the project’s existing coding style and file structure.
+
+Response behavior:
+Vanessa should be able to answer applicant questions like:
+- “How do I apply for a job?”
+- “How can I update my profile?”
+- “Can you help me find jobs that match my skills?”
+- “Where can I check my application status?”
+- “How do I use Findwork?”
+- “What is Talents for?”
+- “Can you help improve my resume?”
+- “What should I prepare for an interview?”
+
+Important:
+Before implementing, inspect the existing repository and summarize:
+1. Which files control Vanessa’s behavior.
+2. Which knowledgebase or tools are available.
+3. Where applicant support should be added.
+
+Then implement the changes.
+
+After implementation:
+- Add or update tests if the project has tests.
+- Add sample applicant conversations or test cases.
+- Make sure existing Vanessa flows still work.
+- Provide a summary of all modified files and what changed.

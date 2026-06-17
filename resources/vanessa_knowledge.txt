@@ -254,6 +254,97 @@ When uncertain, respond conversationally:
 
 Reference outcomes (cost reduction, retention, training) when possible.
 
+=== Job Applicant Guide ===
+
+This section is for job seekers and candidates who want to find work through OnSpot.
+
+--- How to Search for Jobs ---
+Visit the OnSpot job board at /find-work/jobs to browse all open roles.
+Use the search bar to find roles by keyword, job title, or skill.
+Filter by: job category, location, work setup (Remote / Hybrid / On-site), and contract type.
+Popular categories: Customer Support, Virtual Assistant, Bookkeeping, Sales, Operations, Marketing, Data Entry.
+All listed jobs are managed by OnSpot and updated in real time.
+
+--- How to Apply for a Job ---
+Go to /find-work/jobs and browse available roles.
+Click on a job card to open the full job detail page.
+On the job detail page, click the "Apply" button to open the application form.
+The form is quick — it asks for your basic information and is handled by OnSpot's recruitment team.
+You only need to apply once; OnSpot will review your application and match you to suitable roles.
+
+--- How to Create a Talent Profile (Get Matched Automatically) ---
+For the best experience, create a full talent profile at /find-best-matches.
+This is a 7-step process:
+  Step 1 — Upload your Resume or CV (PDF or DOCX format).
+  Step 2 — Review and edit your auto-extracted profile (name, contact, skills, work history, preferences).
+  Step 3 — Create an account with your email and password, or log in if you already have one.
+  Step 4 — Profile confirmed. You can continue to culture evaluation or view your profile.
+  Step 5 — Complete the Culture Evaluation (values-based questions).
+  Step 6 — See your Culture Alignment Score and breakdown.
+  Step 7 — View your personalized Job Matches based on your profile and culture score.
+The platform auto-extracts all information from your resume — no need to type everything manually.
+
+--- How to Edit or Update Your Profile ---
+Go to your public Talent Profile at /talent-profile/:id (your profile URL is shown after registration).
+Click "Sign in to manage it" or the sign-in option, then enter your talent account email and password.
+Once authenticated, all profile sections become inline-editable directly on the page.
+You can edit: name, headline, about/summary, skills, work history, education, certifications, preferences, and portfolio links.
+
+--- How to Upload or Update Your Resume ---
+During registration: upload your PDF or DOCX resume in Step 1 of /find-best-matches.
+After registration: go to your Talent Profile (/talent-profile/:id), sign in as the owner, and re-upload from the Resume section on the page.
+Your resume is stored and can be downloaded by OnSpot recruiters.
+
+--- How to Update Your Profile Photo ---
+Go to your Talent Profile, sign in as the owner, then click the profile photo area to upload a new image.
+Profile photos help recruiters and clients recognize you in the Talent Pool.
+
+--- Application Status ---
+OnSpot does not currently have a self-serve application status tracker in the portal.
+For updates on your application, contact the OnSpot recruitment team: hr@onspotglobal.com
+They handle all candidate-related inquiries and will respond promptly.
+
+--- Interview Preparation Tips ---
+OnSpot's hiring process includes: initial screening → skills/IQ/DISC assessment → behavioral (values) interview → panel evaluation.
+To prepare:
+  - Research OnSpot's 6 Core Values: People-Centric, Integrity, Beat Yesterday, Efficiency, Extreme Ownership, Intrapreneurial.
+  - Prepare examples of measurable results you've achieved in past roles.
+  - Use the STAR method (Situation, Task, Action, Result) for behavioral questions.
+  - Be ready to discuss how you align with OnSpot's values — cultural fit is weighted equally with skills.
+  - Demonstrate initiative, ownership, and a growth mindset.
+OnSpot hires for Will, Values, Results, and Skill — in that order.
+Skills gaps are coachable; behavior and value misalignment are disqualifying.
+
+--- Resume Tips ---
+Keep your resume clear, results-focused, and formatted as a PDF or DOCX.
+Highlight measurable achievements (e.g. "Handled 80+ support tickets per day with 98% CSAT").
+List specific tools and skills relevant to the role you are applying for.
+Include a brief professional summary at the top.
+The OnSpot resume parser reads PDF and DOCX formats — avoid image-only PDFs (scanned resumes may not parse correctly).
+
+--- Frequently Asked Questions (Applicants) ---
+
+Q: Do I need to create a profile to apply?
+A: No. You can apply directly from any job listing without creating a profile. However, creating a profile at /find-best-matches unlocks automatic job matching and a public Talent Profile page.
+
+Q: Is there a cost to apply or create a profile?
+A: No. Job searching, applying, and creating a talent profile on OnSpot is completely free for candidates.
+
+Q: What types of roles does OnSpot offer?
+A: OnSpot specializes in remote and hybrid roles including: Virtual Assistants, Customer Support, Bookkeeping, Sales, Operations, Marketing, Data Entry, Social Media, Executive Assistants, and Finance roles.
+
+Q: Are the jobs remote?
+A: Most roles available through OnSpot are fully remote or hybrid. Work setup is listed on every job detail page.
+
+Q: What if I don't see a job that matches my skills?
+A: Apply via /find-best-matches to create a talent profile. OnSpot will continuously match you with new roles as they become available — you only need to apply once.
+
+Q: How long does the hiring process take?
+A: OnSpot's hiring workflow is designed to move in under two weeks from application to offer for qualified candidates.
+
+Q: Who do I contact if I have a question about my application?
+A: Email hr@onspotglobal.com for all candidate-related inquiries.
+
 === Admin Training Update (2025-10-30T14:25:22.280Z) ===
 Topic: nur
 Correct statement: No, can   "Nur Laminero" instead of giving the full name.
