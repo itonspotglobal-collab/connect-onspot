@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import onspotLogo from "@assets/onspot-logo-white.png";
@@ -243,11 +243,44 @@ const dayVisuals = [
 
 export default function WhyOnSpotAbout() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const controlNavbar = () => {
+      const currentScrollY = Math.max(0, window.scrollY);
+      const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
+
+      if (scrollDelta < 10) { ticking.current = false; return; }
+
+      if (currentScrollY < 100) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 200) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+      ticking.current = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking.current) {
+        requestAnimationFrame(controlNavbar);
+        ticking.current = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-950">
       {/* ── Sticky Header ──────────────────────────────────────────────────── */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/95 backdrop-blur-xl">
+      <header className={`fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/95 backdrop-blur-xl transition-transform duration-300 ease-in-out ${isVisible ? "translate-y-0" : "-translate-y-full"}`}>
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 lg:px-8">
           <Link to="/" className="flex shrink-0 items-center">
             <img
