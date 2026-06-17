@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { motion } from "framer-motion";
@@ -18,6 +18,14 @@ import { loadTalentAuth, type TalentAuthState } from "@/components/TalentLoginMo
 import { buildTalentRecProfile, scoreJobForTalent } from "@/lib/talentRecommendations";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+
+const POPULAR_CHIPS = [
+  "Customer Support",
+  "Virtual Assistant",
+  "Bookkeeping",
+  "Sales",
+  "Operations",
+];
 
 const HOT_SEARCHES = [
   "Customer Support",
@@ -390,63 +398,113 @@ export default function FindWorkAllJobs() {
     setSalary("Any pay");
   }
 
+  // Ref to scroll to the jobs section from the hero
+  const jobsSectionRef = useRef<HTMLDivElement>(null);
+  const scrollToJobs = useCallback(() => {
+    jobsSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
 
-      {/* ── HERO ── */}
-      <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#474ead]/20 blur-[80px]" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-indigo-600/10 blur-[60px]" />
+      {/* ── HERO (full-viewport) ── */}
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0e0b3a] via-[#1a1270] to-[#0e0b3a]">
+        {/* Ambient glows */}
+        <div className="pointer-events-none absolute -left-48 -top-48 h-[600px] w-[600px] rounded-full bg-purple-600/20 blur-[140px]" />
+        <div className="pointer-events-none absolute -right-48 bottom-0 h-[500px] w-[500px] rounded-full bg-indigo-500/15 blur-[120px]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-violet-400/10 blur-[80px]" />
 
-        <div className="relative mx-auto max-w-7xl px-6 pb-12 pt-8 md:px-8 md:pb-16 md:pt-12">
-          <button
-            onClick={() => navigate("/find-work")}
-            className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative z-10 mx-auto w-full max-w-3xl px-6 text-center"
+        >
+          {/* Eyebrow */}
+          <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
+            ONSPOT CAREERS
+          </p>
+
+          {/* Headline */}
+          <h1 className="text-[clamp(38px,6vw,72px)] font-bold leading-[1.06] tracking-[-0.04em] text-white">
+            Find your next remote role.
+          </h1>
+
+          {/* Subtext */}
+          <p className="mt-5 text-[clamp(15px,1.5vw,19px)] leading-relaxed text-white/55">
+            Vetted, fully managed jobs with global companies — new roles every week.
+          </p>
+
+          {/* Search form — prevents page refresh, scrolls to jobs on submit */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); scrollToJobs(); }}
+            className="mt-10 flex overflow-hidden rounded-2xl bg-white/10 p-1.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] backdrop-blur-md"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Find Work
-          </button>
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-12 w-full rounded-xl bg-transparent pl-11 pr-4 text-sm text-white placeholder-white/35 outline-none"
+                placeholder="Search a job title, skill, or keyword..."
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="shrink-0 rounded-xl bg-[#6235e8] px-7 text-sm font-semibold text-white transition hover:bg-[#5128d4]"
+            >
+              Search
+            </button>
+          </form>
 
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <Badge className="mb-4 rounded-full bg-[#474ead] text-white hover:bg-[#474ead]">
-              {navGroup ? navGroup.label : "All Job Openings"}
-            </Badge>
-            <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
-              {navGroup && navSlug !== "all"
-                ? `${navGroup.label} roles — open now.`
-                : "Discover your next remote opportunity."}
-            </h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-400">
-              {navGroup && navSlug !== "all"
-                ? `Showing ${navGroup.label} positions managed by OnSpot. Updated in real time — apply before they fill.`
-                : "Browse every open role managed by OnSpot. Roles are updated in real time — apply before they fill."}
-            </p>
-          </motion.div>
-
-          {/* Stats */}
-          <div className="mt-8 flex flex-wrap gap-4">
-            {[
-              { icon: Users, label: "Open roles", value: isLoading ? "…" : `${openJobs.length}` },
-              { icon: Zap,   label: "Urgently hiring", value: isLoading ? "…" : `${openJobs.filter((j) => (j.proposalCount ?? 0) === 0).length}` },
-              { icon: Clock3, label: "Typical time-to-hire", value: "3–14 days" },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5">
-                <Icon className="h-4 w-4 text-[#474ead]" />
-                <div>
-                  <div className="text-[10px] text-white/40">{label}</div>
-                  <div className="text-sm font-bold text-white">{value}</div>
-                </div>
-              </div>
+          {/* Popular chips */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white/30">
+              POPULAR RIGHT NOW
+            </span>
+            {POPULAR_CHIPS.map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => { setSearch(term); scrollToJobs(); }}
+                className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                  search.toLowerCase() === term.toLowerCase()
+                    ? "border-white/60 bg-white/25 text-white"
+                    : "border-white/20 bg-white/10 text-white/65 hover:border-white/40 hover:bg-white/20 hover:text-white"
+                }`}
+              >
+                {term}
+              </button>
             ))}
           </div>
-        </div>
+
+          {/* Browse all link */}
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={scrollToJobs}
+              className="text-sm text-white/40 transition hover:text-white/75"
+            >
+              Browse all {isLoading ? "…" : openJobs.length} open roles →
+            </button>
+          </div>
+        </motion.div>
       </div>
 
-      {/* ── SEARCH + HOT SEARCHES ── */}
-      <div className="border-b border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.02]">
+      {/* ── SEARCH FILTERS (below the fold) ── */}
+      <div ref={jobsSectionRef} className="border-b border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.02]">
         <div className="mx-auto max-w-7xl px-6 py-6 md:px-8">
 
-          {/* Search bar */}
+          {/* Search bar — synced with hero search */}
           <div className="flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

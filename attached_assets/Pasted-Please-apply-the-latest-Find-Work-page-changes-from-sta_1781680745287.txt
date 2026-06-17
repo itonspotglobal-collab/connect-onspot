@@ -1,0 +1,67 @@
+Please apply the latest Find Work page changes from staging to the main site.
+
+Goal:
+Update the main site’s "/find-work/jobs" page to match the latest staging version, including the redesigned hero section, route behavior, and fixed search/filter functionality.
+
+Required changes:
+
+1. Route consolidation
+- Remove "/find-work" as a standalone page.
+- Redirect "/find-work" to "/find-work/jobs".
+- Update any navigation links that currently point to "/find-work" so they point to "/find-work/jobs".
+
+2. Full-screen hero section
+- The "/find-work/jobs" page should open with only the navbar and hero section visible.
+- The hero should fill the first viewport/screen.
+- Job filters, sorting, role count, and job cards should only appear after scrolling.
+- Use the current full-screen staging layout.
+
+3. Hero design
+- Keep the soft OnSpot purple/indigo brand gradient background.
+- Keep the centered layout.
+- Keep the larger hero content size.
+- Keep the navbar unchanged.
+- Do not return to the old dark navy hero.
+
+Hero content:
+- Eyebrow: "ONSPOT CAREERS"
+- Heading: "Find your next remote role."
+- Description: "Vetted, fully managed jobs with global companies — new roles every week."
+- Search placeholder: "Search a job title, skill, or keyword..."
+- Button: "Search"
+- Popular label: "POPULAR RIGHT NOW"
+- Chips:
+  - Customer Support
+  - Virtual Assistant
+  - Bookkeeping
+  - Sales
+  - Operations
+- Link: "Browse all 5 open roles →"
+
+4. Jobs section
+- Keep the existing job listing section below the hero.
+- Keep filters, sorting, role count, and job cards below the fold.
+- The "Browse all 5 open roles →" link should scroll down to the jobs section.
+
+5. Search and filter bug fix
+- Searching from the hero must not refresh or reload the page.
+- Prevent default form submission behavior if needed.
+- The search input should keep the typed value after clicking Search.
+- Search should filter visible job roles correctly.
+- Popular chips should apply the correct search/filter and sync with the search input.
+- Sorting and filters should continue working after a search is applied.
+- If there are no matching roles, show the existing no-results state or a clear no-results message.
+
+6. Preserve existing behavior
+- Do not change the job card design unless necessary.
+- Do not change navbar design.
+- Do not break existing filters, sorting, apply buttons, or job detail links.
+
+Acceptance criteria:
+- "/find-work/jobs" matches the latest staging version.
+- "/find-work" redirects to "/find-work/jobs".
+- On first page load, only the navbar and full-screen hero are visible.
+- Job listings appear only after scrolling.
+- Search does not refresh the page.
+- Search input does not clear after searching.
+- Popular chips, filters, sorting, and job listings all work correctly.

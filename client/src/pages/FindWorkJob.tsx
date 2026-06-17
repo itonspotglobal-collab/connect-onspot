@@ -767,7 +767,7 @@ export default function FindWorkJob() {
         </div>
         <Button
           className="rounded-full bg-[#474ead] px-6 text-white"
-          onClick={() => navigate("/find-work")}
+          onClick={() => navigate("/find-work/jobs")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Find Work
@@ -793,7 +793,7 @@ export default function FindWorkJob() {
 
           {/* Back link */}
           <button
-            onClick={() => navigate("/find-work")}
+            onClick={() => navigate("/find-work/jobs")}
             className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -1006,7 +1006,7 @@ export default function FindWorkJob() {
             <Button
               variant="outline"
               className="rounded-full px-6"
-              onClick={() => navigate("/find-work")}
+              onClick={() => navigate("/find-work/jobs")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               View all roles

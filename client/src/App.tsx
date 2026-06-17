@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -70,6 +71,13 @@ import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
 import ClientProfile from "@/pages/ClientProfile";
 
+// Redirect /find-work → /find-work/jobs (URL changes in browser)
+function FindWorkRedirect() {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate("/find-work/jobs"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
   return <ComingSoon />;
@@ -120,13 +128,13 @@ function PublicRouter() {
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
-          <Route path="/find-work" component={FindWork} />
+          <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
-          <Route path="/find-work/:category" component={FindWork} />
-          <Route path="/jobs" component={FindWork} />
+          <Route path="/find-work/:category" component={FindWorkAllJobs} />
+          <Route path="/jobs" component={FindWorkAllJobs} />
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
           <Route path="/get-hired" component={() => {
@@ -208,12 +216,12 @@ function ClientRouter() {
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/talent-pool" component={TalentPool} />
-          <Route path="/find-work" component={FindWork} />
+          <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
-          <Route path="/find-work/:category" component={FindWork} />
-          <Route path="/jobs" component={FindWork} />
+          <Route path="/find-work/:category" component={FindWorkAllJobs} />
+          <Route path="/jobs" component={FindWorkAllJobs} />
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
           <Route component={NotFound} />
