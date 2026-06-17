@@ -732,9 +732,9 @@ export function TopNavigation() {
           className="mx-auto flex items-center justify-between relative"
           style={{
             height: 'var(--nav-h)',
-            paddingLeft: 'clamp(16px, 4vw, 24px)',
-            paddingRight: 'clamp(16px, 4vw, 24px)',
-            maxWidth: 'min(1200px, 92vw)',
+            paddingLeft: 'var(--nav-px)',
+            paddingRight: 'var(--nav-px)',
+            maxWidth: '1280px',
             width: '100%',
           }}
         >
@@ -757,7 +757,7 @@ export function TopNavigation() {
             ref={navLinksRef}
             className="hidden md:flex items-center relative flex-1 justify-center"
             style={{ 
-              gap: 'clamp(8px, 1.2vw, 16px)',
+              gap: 'clamp(16px, 1.5vw, 24px)',
               flexWrap: 'nowrap',
               zIndex: 101,
             }}

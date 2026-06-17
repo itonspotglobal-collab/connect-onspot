@@ -1,0 +1,110 @@
+The navbar used in `WhyOnSpotAbout.tsx` now looks significantly better than the main/global navigation bar.
+
+I want the main navigation bar across the website to visually match the sizing, spacing, proportions, and overall feel of the WhyOnSpotAbout navbar.
+
+IMPORTANT:
+Do NOT redesign the navbar.
+Do NOT change colors, branding, navigation items, dropdown behavior, routing, or functionality.
+
+Only adjust sizing, spacing, and proportions.
+
+Tasks:
+
+1. Locate the main/global navbar component currently used across the site.
+   Examples may include:
+   - Navbar.tsx
+   - MainNavbar.tsx
+   - Header.tsx
+   - Navigation.tsx
+   - Layout component
+   - Shared navigation component
+
+2. Compare it against the navbar implementation in:
+   - client/src/pages/WhyOnSpotAbout.tsx
+
+3. Match the following characteristics:
+
+### Navbar Height
+Increase the main navbar height to match WhyOnSpotAbout.
+
+Current goal:
+- Similar visual height
+- Similar vertical breathing room
+
+Examples:
+- Increase py values if needed
+- Use consistent min-height or h-* values
+
+### Container Width
+Match the inner container sizing.
+
+Examples:
+- Same max-width
+- Same horizontal padding
+- Same content alignment
+
+### Logo
+Match:
+- logo height
+- logo visual prominence
+- spacing around logo
+
+Do NOT change the logo asset.
+
+### Navigation Links
+Match:
+- font size
+- spacing between links
+- vertical alignment
+- visual balance
+
+Avoid links appearing cramped.
+
+### CTA Button
+Match:
+- height
+- padding
+- border radius
+- font size
+- visual weight
+
+Keep existing colors and actions.
+
+### Vertical Alignment
+Ensure:
+- logo
+- nav links
+- CTA button
+
+all sit on the same visual baseline and appear centered.
+
+### Responsive Behavior
+Preserve:
+- mobile navigation
+- dropdown menus
+- existing routing
+- sticky/fixed behavior
+
+Do not break responsive layouts.
+
+### Consistency Pass
+Create a shared spacing system if appropriate.
+
+If both navbars use similar structure:
+- extract common sizing constants
+- reuse shared classes
+- reduce duplicated styling
+
+Expected Result:
+
+The main/global navbar should feel identical in scale and proportions to the WhyOnSpotAbout navbar while keeping its own colors and functionality.
+
+After implementation provide:
+
+1. Files modified
+2. Main navbar classes before
+3. Main navbar classes after
+4. Height before vs after
+5. Padding before vs after
+6. CTA sizing before vs after
+7. Any shared styling extracted
