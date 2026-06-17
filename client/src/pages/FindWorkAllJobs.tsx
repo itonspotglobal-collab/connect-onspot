@@ -526,11 +526,18 @@ export default function FindWorkAllJobs() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
       {/* ── HERO (full-viewport) ── */}
-      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#0e0b3a] via-[#1a1270] to-[#0e0b3a]">
-        {/* Ambient glows */}
+      <div
+        className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 38%, rgba(125, 92, 255, 0.38) 0%, rgba(125, 92, 255, 0.18) 26%, transparent 56%), radial-gradient(circle at 50% 68%, rgba(80, 70, 220, 0.22) 0%, transparent 46%), linear-gradient(135deg, #0b0838 0%, #1c1163 45%, #2a176f 100%)",
+        }}
+      >
+        {/* Edge ambient glows */}
         <div className="pointer-events-none absolute -left-48 -top-48 h-[600px] w-[600px] rounded-full bg-purple-600/20 blur-[140px]" />
         <div className="pointer-events-none absolute -right-48 bottom-0 h-[500px] w-[500px] rounded-full bg-indigo-500/15 blur-[120px]" />
-        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-violet-400/10 blur-[80px]" />
+        {/* Centered soft spotlight — the key glow behind hero content */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[680px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.22] blur-[110px]" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1046,10 +1053,18 @@ export default function FindWorkAllJobs() {
 
       {/* ── BOTTOM CTA ── */}
       {!isLoading && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0e0b3a] via-[#1a1270] to-[#0e0b3a]">
-          {/* Ambient glows */}
-          <div className="pointer-events-none absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full bg-purple-600/20 blur-[120px]" />
-          <div className="pointer-events-none absolute -right-32 bottom-0 h-[350px] w-[350px] rounded-full bg-indigo-500/15 blur-[100px]" />
+        <div
+          className="relative overflow-hidden"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 40%, rgba(110, 80, 240, 0.30) 0%, rgba(110, 80, 240, 0.13) 30%, transparent 56%), linear-gradient(135deg, #0b0838 0%, #1c1163 50%, #0e0b3a 100%)",
+          }}
+        >
+          {/* Edge ambient glows */}
+          <div className="pointer-events-none absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full bg-purple-600/18 blur-[120px]" />
+          <div className="pointer-events-none absolute -right-32 bottom-0 h-[350px] w-[350px] rounded-full bg-indigo-500/12 blur-[100px]" />
+          {/* Centered soft spotlight */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.18] blur-[90px]" />
 
           <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center md:px-8">
             {/* Eyebrow */}

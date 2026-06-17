@@ -1,0 +1,67 @@
+Please update the main site's "/find-work/jobs" page to match the staging design more closely.
+
+Current issue:
+The main site has the dark blue/purple gradient, but it is missing the soft gradient light/glow effect visible in staging. The staging version feels more dimensional, premium, and polished because of the subtle blurred light behind the hero content.
+
+Goal:
+Add the same soft radial gradient glow/light treatment from staging to the main site hero and closing CTA sections.
+
+Apply to:
+1. Find Work hero section
+2. Closing CTA section with:
+   "Apply once. Get matched continuously."
+
+Design requirements:
+- Keep the dark OnSpot navy/indigo/purple gradient background.
+- Add a soft, diffused purple/indigo glow behind the main content.
+- The glow should be subtle and blurred, not harsh.
+- It should feel like a soft spotlight centered behind the heading/search area.
+- Use layered radial gradients or pseudo-elements if needed.
+- The glow should create depth without reducing text readability.
+- Keep white heading text high contrast.
+- Keep supporting text readable.
+- Do not make the background flat.
+- Do not make the background too bright.
+- Do not introduce hard edges or obvious circles.
+
+Suggested implementation:
+Use layered backgrounds such as:
+
+background:
+  radial-gradient(circle at 50% 35%, rgba(125, 92, 255, 0.35) 0%, rgba(125, 92, 255, 0.16) 28%, transparent 58%),
+  radial-gradient(circle at 50% 65%, rgba(80, 70, 220, 0.22) 0%, transparent 48%),
+  linear-gradient(135deg, #0b0838 0%, #1c1163 45%, #2a176f 100%);
+
+Optional:
+- Add a ::before pseudo-element with a large blurred radial glow:
+  position absolute;
+  inset auto;
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(128, 96, 255, 0.35), transparent 70%);
+  filter: blur(80px);
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 0;
+
+Make sure:
+- Hero content stays above the glow using position relative and z-index.
+- The glow is responsive and still looks good on mobile.
+- The closing CTA uses the same visual language, but can be slightly less intense than the hero.
+
+Preserve existing staging layout:
+- Full-screen hero behavior
+- Visual hierarchy
+- Thinner search bar
+- Browse button placement
+- Popular categories styling
+- Search/filter functionality
+- Smooth scroll to jobs
+- Closing CTA copy and button
+
+Acceptance criteria:
+- Main site hero visually matches staging's soft gradient light effect.
+- Closing CTA has the same branded soft-light gradient treatment.
+- The page no longer looks flat or plain dark.
+- Text remains readable.
+- No existing functionality is broken.
