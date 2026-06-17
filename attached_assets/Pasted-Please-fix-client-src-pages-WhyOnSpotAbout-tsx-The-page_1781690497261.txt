@@ -1,0 +1,60 @@
+Please fix `client/src/pages/WhyOnSpotAbout.tsx`.
+
+The page-specific navbar should NOT be a floating rounded container/card. It should be a normal full-width horizontal navigation bar, like the main site navbar, but using the dark OnSpot color theme.
+
+Current wrong result:
+- Navbar appears as a centered floating dark rounded box.
+- It overlaps the hero section.
+- It does not match the normal website navigation style.
+
+Desired result:
+- Full-width navbar across the top.
+- Normal rectangular bar, no rounded corners.
+- Logo on the left.
+- Navigation links centered.
+- CTA button on the right.
+- Same layout behavior as the existing main/global navbar.
+- Use dark/navy background instead of purple.
+- No overlap with hero content.
+- No excessive height.
+- No floating card styling.
+
+Implementation instructions:
+1. Open `client/src/pages/WhyOnSpotAbout.tsx`.
+2. Find the custom `<header>` / navbar inside this page.
+3. Remove the floating-card styling:
+   - remove `top-4`
+   - remove `rounded-*`
+   - remove extra `shadow-*`
+   - remove excessive vertical spacing
+   - remove any wrapper that makes it look like a centered card
+4. Use a normal header structure similar to:
+
+<header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/95 backdrop-blur-xl">
+  <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+    ...
+  </div>
+</header>
+
+5. Keep the inner content constrained with `max-w-7xl mx-auto`, but the header background itself should span full width.
+6. Make sure the hero/top section has enough top padding, such as `pt-28` or equivalent, so the navbar does not cover the hero content.
+7. Match the layout of the existing normal navbar shown in the reference:
+   - logo left
+   - nav links horizontally centered
+   - CTA button right
+   - full-width rectangular bar
+8. Keep the colors dark/navy for this page:
+   - background: `bg-slate-950` or existing dark navy variable
+   - links: light slate/white
+   - CTA: purple/indigo button
+9. If the app already has a reusable main Navbar component, consider reusing it and passing a dark variant/theme instead of maintaining a separate custom navbar.
+10. Ensure there is only one navbar visible on this page.
+
+Expected result:
+The navbar should look like the regular website navbar shape and layout, but dark. No floating rounded card.
+
+After fixing, report:
+- Files changed
+- Whether the page had its own custom navbar
+- What classes were removed
+- What final header className is now used
