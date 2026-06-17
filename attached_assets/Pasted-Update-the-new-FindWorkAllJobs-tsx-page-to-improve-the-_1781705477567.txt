@@ -1,0 +1,58 @@
+Update the new `FindWorkAllJobs.tsx` page to improve the visual hierarchy based on the provided OnSpot Find Work hero screenshot.
+
+Focus on these hierarchy changes:
+
+1. Hero Section Priority
+- Make the main headline the strongest visual element.
+- Use a large, bold, centered headline:
+  “Find your next remote role.”
+- Keep the headline high contrast in white.
+- Use generous line height and spacing so it feels premium and readable.
+
+2. Supporting Text
+- Place the subtitle directly under the headline.
+- Make it smaller, lighter, and lower contrast than the headline.
+- Text:
+  “Work differently — and get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.”
+- Keep max-width narrow so it reads cleanly.
+
+3. Search Bar Hierarchy
+- Position the search bar below the subtitle with clear spacing.
+- Make it wide but not full-screen, centered.
+- Use a translucent glass-style container with subtle border.
+- Placeholder:
+  “Job title, skill, or keyword…”
+- Make the Search button visually stronger than the input using a bright purple gradient.
+
+4. Secondary CTA
+- Add “Browse all 5 open roles →” below the search bar.
+- Style it as secondary: smaller than the Search button, muted but readable.
+- Add hover state to increase brightness.
+
+5. Popular Tags
+- Place “POPULAR” label under the browse link with extra spacing.
+- Make the label very small, uppercase, letter-spaced, muted.
+- Add pill tags:
+  Customer Support, Virtual Assistant, Bookkeeping, Sales, Operations
+- Pills should be low emphasis with translucent background, border, and hover glow.
+
+6. Background and Depth
+- Use a dark purple/indigo gradient background.
+- Add subtle radial glow effects behind the hero content.
+- Keep the design clean, centered, and spacious.
+- Ensure the navbar stays visually separate with a slightly lighter translucent gradient/header background.
+
+7. Responsive Design
+- On mobile, reduce headline size, stack the search input and button vertically, and keep all content centered.
+- Ensure spacing remains comfortable on tablet and desktop.
+
+Implementation notes:
+- Modify only `FindWorkAllJobs.tsx` unless styling is already separated.
+- Use existing project styling conventions, Tailwind classes, and components where available.
+- Do not break existing search functionality or routing.
+- Preserve existing nav links and Access Portal button.
+- Add comments only where helpful.
+
+Expected result:
+The page should clearly guide the user’s eye in this order:
+Headline → subtitle → search bar → browse all roles → popular tags.

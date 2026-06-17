@@ -545,31 +545,32 @@ export default function FindWorkAllJobs() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
-          {/* Headline — dominant */}
-          <h1 className="text-[clamp(36px,5.5vw,64px)] font-bold leading-[1.08] tracking-[-0.035em] text-white">
+          {/* Headline — dominant visual anchor */}
+          <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-white">
             Find your next remote role.
           </h1>
 
-          {/* Description — secondary, narrower to read fast */}
-          <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-white/45">
-            Vetted jobs with global companies — new roles added every week.
+          {/* Subtitle — secondary: smaller, lower contrast, narrow max-width */}
+          <p className="mx-auto mt-5 max-w-[360px] text-[15px] leading-relaxed text-white/55">
+            Work differently — and get matched with quality opportunities,
+            steady pipelines, and flexible work that respects your terms.
           </p>
 
-          {/* Search bar — primary action, elevated with glow */}
+          {/* Search bar — primary action, glass container + gradient button */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               scrollToJobs();
             }}
-            className="mt-8 flex overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.09] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_32px_rgba(98,53,232,0.35)] backdrop-blur-md"
+            className="mt-9 flex overflow-hidden rounded-xl border border-white/[0.13] bg-white/[0.08] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_40px_rgba(98,53,232,0.40)] backdrop-blur-md"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none"
-                placeholder="Job title, skill, or keyword..."
+                className="h-11 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none"
+                placeholder="Job title, skill, or keyword…"
               />
               {search && (
                 <button
@@ -581,30 +582,31 @@ export default function FindWorkAllJobs() {
                 </button>
               )}
             </div>
+            {/* Gradient button — visually strongest element in the search bar */}
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-[#6235e8] px-7 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(98,53,232,0.5)] transition hover:bg-[#5128d4]"
+              className="shrink-0 rounded-lg bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-7 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(98,53,232,0.55)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
             >
               Search
             </button>
           </form>
 
-          {/* Browse all — secondary CTA, directly below search */}
-          <div className="mt-5">
+          {/* Browse all — secondary CTA: muted, smaller than Search */}
+          <div className="mt-6">
             <button
               type="button"
               onClick={scrollToJobs}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/60 transition hover:text-white"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/50 transition hover:text-white/90"
             >
               Browse all {isLoading ? "…" : openJobs.length} open roles
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Popular chips — tertiary, reduced opacity */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-            <span className="w-full mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/20">
-              POPULAR
+          {/* Popular chips — tertiary: POPULAR label + pill tags with hover glow */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+            <span className="mb-2 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+              Popular
             </span>
             {POPULAR_CHIPS.map((term) => (
               <button
@@ -614,10 +616,10 @@ export default function FindWorkAllJobs() {
                   setSearch(term);
                   scrollToJobs();
                 }}
-                className={`rounded-full border px-3.5 py-1 text-[11px] font-medium transition ${
+                className={`rounded-full border px-4 py-1 text-[11px] font-medium transition duration-200 ${
                   search.toLowerCase() === term.toLowerCase()
-                    ? "border-white/40 bg-white/15 text-white/90"
-                    : "border-white/10 bg-white/[0.05] text-white/40 hover:border-white/25 hover:bg-white/10 hover:text-white/70"
+                    ? "border-violet-400/50 bg-violet-500/20 text-white/90 shadow-[0_0_12px_rgba(139,92,246,0.45)]"
+                    : "border-white/10 bg-white/[0.05] text-white/40 hover:border-white/25 hover:bg-white/10 hover:text-white/75 hover:shadow-[0_0_10px_rgba(139,92,246,0.30)]"
                 }`}
               >
                 {term}
@@ -1067,11 +1069,6 @@ export default function FindWorkAllJobs() {
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.18] blur-[90px]" />
 
           <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center md:px-8">
-            {/* Eyebrow */}
-            <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/40">
-              STILL LOOKING?
-            </p>
-
             {/* Heading */}
             <h2 className="text-[clamp(28px,4vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] text-white">
               Apply once. Get matched continuously.
