@@ -247,8 +247,8 @@ export default function WhyOnSpotAbout() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-950">
       {/* ── Sticky Header ──────────────────────────────────────────────────── */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4 lg:px-8">
+      <header className="fixed inset-x-0 top-4 z-50 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-2xl border border-slate-800/60 bg-slate-950/90 px-6 py-3.5 shadow-lg backdrop-blur-xl lg:px-8">
           <Link to="/" className="flex shrink-0 items-center">
             <img
               src={onspotLogo}
