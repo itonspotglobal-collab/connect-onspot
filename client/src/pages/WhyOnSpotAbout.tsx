@@ -245,11 +245,11 @@ export default function WhyOnSpotAbout() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-white text-slate-950">
+    <div className="min-h-screen overflow-x-hidden bg-white text-slate-950">
       {/* ── Sticky Header ──────────────────────────────────────────────────── */}
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link to="/" className="flex items-center">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-8">
+          <Link to="/" className="flex shrink-0 items-center">
             <img
               src={onspotLogo}
               alt="OnSpot"
@@ -279,18 +279,19 @@ export default function WhyOnSpotAbout() {
             href="https://calendly.com/hello-onspotglobal/lead-intake-schedule"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-[#474ead] px-5 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]"
+            className="shrink-0 rounded-full bg-[#474ead] px-5 py-2 text-sm font-semibold text-white transition hover:scale-[1.02] hover:bg-[#5b63d6]"
           >
-            Book a Strategy Call
+            <span className="hidden sm:inline">Book a Strategy Call</span>
+            <span className="sm:hidden">Book a Call</span>
           </a>
         </div>
       </header>
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-slate-950 px-6 pb-24 pt-36 text-white lg:px-8 lg:pb-32 lg:pt-44">
+      <section className="relative overflow-hidden bg-slate-950 pb-24 pt-36 text-white lg:pb-32 lg:pt-44">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,78,173,0.26),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(142,147,255,0.18),transparent_24%),linear-gradient(to_bottom,rgba(15,23,42,1),rgba(2,6,23,1))]" />
 
-        <div className="relative mx-auto grid max-w-7xl gap-16 lg:grid-cols-12">
+        <div className="relative mx-auto grid max-w-7xl px-6 gap-16 lg:px-8 lg:grid-cols-12">
           {/* Left — headline + CTAs */}
           <div className="lg:col-span-7">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
@@ -795,10 +796,10 @@ export default function WhyOnSpotAbout() {
       {/* ── Final CTA ───────────────────────────────────────────────────────── */}
       <section
         id="contact"
-        className="relative overflow-hidden bg-slate-950 px-6 py-28 text-white lg:px-8 lg:py-36"
+        className="relative overflow-hidden bg-slate-950 py-28 text-white lg:py-36"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(71,78,173,0.3),transparent_28%),radial-gradient(circle_at_75%_70%,rgba(142,147,255,0.15),transparent_24%)]" />
-        <div className="relative mx-auto max-w-4xl text-center">
+        <div className="relative mx-auto max-w-4xl px-6 text-center lg:px-8">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
             Ready to scale?
           </div>
