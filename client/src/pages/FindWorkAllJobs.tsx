@@ -1108,38 +1108,46 @@ export default function FindWorkAllJobs() {
             </div>
 
             {/* Header */}
-            <DialogHeader className="mb-2 space-y-3 text-center">
-              <DialogTitle className="text-[1.3rem] font-bold leading-snug tracking-tight text-slate-900">
+            <DialogHeader className="text-center">
+              {/* Title — strongest element */}
+              <DialogTitle className="text-[1.35rem] font-bold leading-snug tracking-tight text-slate-900">
                 Get matched with remote opportunities
               </DialogTitle>
-              <DialogDescription className="mx-auto max-w-[320px] text-[13px] leading-relaxed text-slate-500">
-                Create your profile once and we'll continuously match you with vetted remote roles from global companies. Already have an account? Sign in to continue.
+
+              {/* Subtitle — brand-purple supporting statement */}
+              <p className="mt-3 text-[14.5px] font-semibold leading-snug text-violet-600">
+                Create one profile. Unlock ongoing job matches.
+              </p>
+
+              {/* Description — narrow for readability */}
+              <DialogDescription className="mx-auto mt-3 max-w-[270px] text-[12.5px] leading-relaxed text-slate-400">
+                We'll continuously connect you with vetted remote roles that match your skills and experience.
               </DialogDescription>
             </DialogHeader>
 
-            {/* Benefit cards */}
-            <div className="my-6 flex flex-wrap justify-center gap-2">
+            {/* Benefit cards — value propositions */}
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
               {[
-                { label: "One profile", icon: "◈" },
-                { label: "Multiple opportunities", icon: "◈" },
-                { label: "Continuous matching", icon: "◈" },
-              ].map(({ label }) => (
+                "One profile",
+                "Global opportunities",
+                "Continuous matching",
+              ].map((label) => (
                 <div
                   key={label}
-                  className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5"
+                  className="flex items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-indigo-50/60 px-3.5 py-2 shadow-[0_1px_3px_rgba(91,69,232,0.07)]"
                 >
-                  <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6]">
+                  <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_2px_6px_rgba(91,69,232,0.30)]">
                     <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
                   </span>
-                  <span className="text-[11.5px] font-semibold text-violet-700">{label}</span>
+                  <span className="text-[12px] font-semibold text-violet-700">{label}</span>
                 </div>
               ))}
             </div>
 
             {/* Buttons */}
-            <div className="flex flex-col gap-3">
+            <div className="mt-7 flex flex-col gap-3">
               {/* Primary */}
               <button
                 onClick={() => {
