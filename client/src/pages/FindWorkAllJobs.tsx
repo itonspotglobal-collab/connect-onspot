@@ -26,7 +26,6 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { Job, Candidate } from "@shared/schema";
 import {
@@ -525,19 +524,19 @@ export default function FindWorkAllJobs() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
-      {/* ── HERO (full-viewport) ── */}
+      {/* ── HERO (full-viewport, light) ── */}
       <div
         className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden"
         style={{
           background:
-            "radial-gradient(circle at 50% 38%, rgba(125, 92, 255, 0.38) 0%, rgba(125, 92, 255, 0.18) 26%, transparent 56%), radial-gradient(circle at 50% 68%, rgba(80, 70, 220, 0.22) 0%, transparent 46%), linear-gradient(135deg, #0b0838 0%, #1c1163 45%, #2a176f 100%)",
+            "radial-gradient(circle at 50% 30%, rgba(120, 92, 255, 0.14) 0%, transparent 48%), linear-gradient(180deg, #f3f1ff 0%, #f8f9fc 55%, #ffffff 100%)",
         }}
       >
-        {/* Edge ambient glows */}
-        <div className="pointer-events-none absolute -left-48 -top-48 h-[600px] w-[600px] rounded-full bg-purple-600/20 blur-[140px]" />
-        <div className="pointer-events-none absolute -right-48 bottom-0 h-[500px] w-[500px] rounded-full bg-indigo-500/15 blur-[120px]" />
-        {/* Centered soft spotlight — the key glow behind hero content */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[680px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.22] blur-[110px]" />
+        {/* Soft ambient glows — light mode */}
+        <div className="pointer-events-none absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-violet-300/20 blur-[130px]" />
+        <div className="pointer-events-none absolute -right-40 bottom-0 h-[400px] w-[400px] rounded-full bg-indigo-200/25 blur-[110px]" />
+        {/* Centered spotlight */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-400/[0.10] blur-[100px]" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -546,37 +545,37 @@ export default function FindWorkAllJobs() {
           className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
           {/* Headline — dominant visual anchor */}
-          <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-white">
+          <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-slate-900">
             Find your next remote role.
           </h1>
 
-          {/* Subtitle — secondary: smaller, lower contrast, narrow max-width */}
-          <p className="mx-auto mt-5 max-w-[360px] text-[15px] leading-relaxed text-white/55">
+          {/* Subtitle — secondary: muted, narrow column */}
+          <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
             Work differently — and get matched with quality opportunities,
             steady pipelines, and flexible work that respects your terms.
           </p>
 
-          {/* Search bar — primary action, glass container + gradient button */}
+          {/* Search bar — primary action, white card + gradient button */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               scrollToJobs();
             }}
-            className="mt-9 flex overflow-hidden rounded-xl border border-white/[0.13] bg-white/[0.08] p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_40px_rgba(98,53,232,0.40)] backdrop-blur-md"
+            className="mt-9 flex overflow-hidden rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_4px_24px_rgba(98,53,232,0.12),0_1px_4px_rgba(0,0,0,0.06)]"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-11 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-white/30 outline-none"
+                className="h-11 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none"
                 placeholder="Job title, skill, or keyword…"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/35 hover:text-white/70"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -585,27 +584,27 @@ export default function FindWorkAllJobs() {
             {/* Gradient button — visually strongest element in the search bar */}
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-7 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(98,53,232,0.55)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
+              className="shrink-0 rounded-lg bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-7 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(98,53,232,0.35)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
             >
               Search
             </button>
           </form>
 
-          {/* Browse all — secondary CTA: muted, smaller than Search */}
+          {/* Browse all — secondary CTA: clearly subordinate */}
           <div className="mt-6">
             <button
               type="button"
               onClick={scrollToJobs}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-white/50 transition hover:text-white/90"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
             >
               Browse all {isLoading ? "…" : openJobs.length} open roles
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Popular chips — tertiary: POPULAR label + pill tags with hover glow */}
+          {/* Popular chips — tertiary: subtle pills */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-            <span className="mb-2 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+            <span className="mb-2 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400">
               Popular
             </span>
             {POPULAR_CHIPS.map((term) => (
@@ -618,8 +617,8 @@ export default function FindWorkAllJobs() {
                 }}
                 className={`rounded-full border px-4 py-1 text-[11px] font-medium transition duration-200 ${
                   search.toLowerCase() === term.toLowerCase()
-                    ? "border-violet-400/50 bg-violet-500/20 text-white/90 shadow-[0_0_12px_rgba(139,92,246,0.45)]"
-                    : "border-white/10 bg-white/[0.05] text-white/40 hover:border-white/25 hover:bg-white/10 hover:text-white/75 hover:shadow-[0_0_10px_rgba(139,92,246,0.30)]"
+                    ? "border-violet-400 bg-violet-100 text-violet-800"
+                    : "border-slate-200 bg-white/70 text-slate-500 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                 }`}
               >
                 {term}
@@ -629,37 +628,20 @@ export default function FindWorkAllJobs() {
         </motion.div>
       </div>
 
-      {/* ── SEARCH FILTERS (below the fold) ── */}
+      {/* ── FILTERS PANEL (anchored, no duplicate search bar) ── */}
       <div
         ref={jobsSectionRef}
         className="border-b border-slate-200/70 bg-white/80 dark:border-white/10 dark:bg-white/[0.02]"
       >
-        <div className="mx-auto max-w-7xl px-6 py-6 md:px-8">
-          {/* Search bar — synced with hero search */}
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-11 rounded-2xl border-slate-200 bg-white pl-10 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-[#474ead]/40 dark:border-white/10 dark:bg-white/[0.04]"
-                placeholder="Search roles, skills, or keywords…"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+        <div className="mx-auto max-w-7xl px-6 py-4 md:px-8">
+          {/* Filters toggle — compact, only shown when needed */}
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className={`h-11 rounded-2xl gap-2 ${showFilters ? "border-[#474ead]/50 bg-[#474ead]/5 text-[#474ead]" : ""}`}
+              className={`h-9 rounded-full gap-2 text-sm ${showFilters ? "border-[#474ead]/50 bg-[#474ead]/5 text-[#474ead]" : ""}`}
               onClick={() => setShowFilters((v) => !v)}
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-3.5 w-3.5" />
               Filters
               {hasActiveFilters && (
                 <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#474ead] text-[10px] text-white">
@@ -667,31 +649,14 @@ export default function FindWorkAllJobs() {
                 </span>
               )}
             </Button>
-          </div>
-
-          {/* Hot Searches */}
-          <div className="mt-4">
-            <div className="mb-2 flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-[#474ead]" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                Hot Searches
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {HOT_SEARCHES.map((term) => (
-                <button
-                  key={term}
-                  onClick={() => applyHotSearch(term)}
-                  className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition ${
-                    search.toLowerCase() === term.toLowerCase()
-                      ? "border-[#474ead]/50 bg-[#474ead]/10 text-[#474ead]"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-[#474ead]/30 hover:bg-[#474ead]/5 hover:text-[#474ead] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
-                  }`}
-                >
-                  {term}
-                </button>
-              ))}
-            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="text-xs font-medium text-slate-500 hover:text-slate-800"
+              >
+                Reset filters
+              </button>
+            )}
           </div>
 
           {/* Expanded filters */}
@@ -1071,7 +1036,7 @@ export default function FindWorkAllJobs() {
           <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center md:px-8">
             {/* Heading */}
             <h2 className="text-[clamp(28px,4vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] text-white">
-              Apply once. Get matched continuously.
+              Apply once. Get matched continuously
             </h2>
 
             {/* Description */}

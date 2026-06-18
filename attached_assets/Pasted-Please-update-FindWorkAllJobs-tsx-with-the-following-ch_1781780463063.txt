@@ -1,0 +1,69 @@
+Please update `FindWorkAllJobs.tsx` with the following changes.
+
+1. Restore the light hero background style
+- Change the Find Work all-jobs hero back to the light white/grayish background shown in the reference.
+- Keep a subtle OnSpot purple/indigo gradient glow so it still feels branded.
+- Do not use the dark navy hero for this page.
+- The background should feel soft, clean, bright, and premium.
+
+Suggested background direction:
+- Base: near-white / very light gray / soft lavender.
+- Add subtle radial gradient glow behind the hero content.
+- Example:
+  `radial-gradient(circle at 50% 30%, rgba(120, 92, 255, 0.16), transparent 45%), linear-gradient(180deg, #f3f1ff 0%, #f8f9fc 55%, #ffffff 100%)`
+
+2. Remove the duplicate search/filter strip
+Remove the section shown in the second screenshot below the hero:
+- The large horizontal search bar below the hero
+- The Filters button beside it
+- The "HOT SEARCHES" label
+- The extra hot search chips:
+  - Social Media
+  - Marketing
+  - Data Entry
+  - Executive Assistant
+  - Finance
+- Any duplicate search/chip area outside the hero
+
+Important:
+- Keep the hero search bar.
+- Keep the hero popular chips.
+- Keep the job listing filters/sorting if they are part of the jobs section, but do not keep the duplicate top search strip.
+
+3. Apply stronger visual hierarchy across all sections
+Hero:
+- Heading should be the main focus.
+- Description should be secondary.
+- Search bar should be the primary action.
+- "Browse all 5 open roles →" should be easy to notice.
+- Popular chips should feel tertiary/supporting.
+
+Jobs section:
+- Role count should be clear but not overly dominant.
+- Sorting controls should feel secondary.
+- Job cards should have clear hierarchy:
+  - Job title first
+  - Company/type metadata second
+  - Salary/location/posted details third
+  - Apply button as primary action
+  - View details as secondary action
+
+Closing CTA section:
+- Make the heading the main focus.
+- Description should support the heading.
+- CTA button should be the primary action.
+- Maintain the branded gradient treatment if already implemented.
+
+4. Preserve functionality
+- Hero search should still filter jobs.
+- Search should not refresh the page.
+- Search value should remain after searching.
+- Popular chips should still filter jobs.
+- Browse link should scroll to the jobs section.
+- Sorting, filters, job cards, Apply Now, and View Details should continue working.
+
+Acceptance criteria:
+- `FindWorkAllJobs.tsx` uses the light white/grayish branded gradient hero.
+- The duplicate search/filter/hot searches strip below the hero is removed.
+- The page has a clearer visual hierarchy in hero, jobs list, and closing CTA.
+- No search/filter/job functionality is broken.
