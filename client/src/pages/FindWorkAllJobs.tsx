@@ -1074,45 +1074,63 @@ export default function FindWorkAllJobs() {
       {/* ── Apply confirmation modal ── */}
       <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
         <DialogContent className="max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-xl">
-          <DialogHeader className="mb-6 space-y-2 text-center">
-            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
-              Before we proceed
+          {/* Icon accent */}
+          <div className="mb-5 flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#7C3AED] shadow-[0_4px_16px_rgba(98,53,232,0.30)]">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+
+          <DialogHeader className="mb-3 space-y-2 text-center">
+            <DialogTitle className="text-[1.25rem] font-bold leading-tight tracking-tight text-slate-900">
+              Get matched with remote opportunities
             </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed text-slate-500">
-              Please make sure you've created an account and set up your profile
-              before submitting your application.
+            <DialogDescription className="text-[13.5px] leading-relaxed text-slate-500">
+              Create your profile once and we'll continuously match you with vetted remote roles from global companies. Already have an account? Sign in to continue your application.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-3">
-            {/* Primary: already have account */}
+          {/* Trust indicators */}
+          <div className="my-5 flex justify-center gap-5">
+            {["One profile", "Multiple opportunities", "Continuous matching"].map((label) => (
+              <div key={label} className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-600">✓</span>
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {/* Primary */}
             <button
               onClick={() => {
                 setShowApplyModal(false);
                 setShowLoginModal(true);
               }}
-              className="w-full rounded-xl bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(98,53,232,0.35)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
+              className="w-full rounded-xl bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-6 py-3.5 text-[13.5px] font-semibold text-white shadow-[0_4px_20px_rgba(98,53,232,0.40)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
             >
-              I already have an account
+              Sign in and continue
             </button>
 
-            {/* Secondary: create account */}
+            {/* Secondary */}
             <button
               onClick={() => {
                 setShowApplyModal(false);
                 navigate("/find-best-matches");
               }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="w-full rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-[13.5px] font-semibold text-slate-700 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
             >
-              Create my account
+              Create my profile
             </button>
 
-            {/* Tertiary: cancel */}
+            {/* Cancel */}
             <button
               onClick={() => setShowApplyModal(false)}
-              className="mt-1 text-sm text-slate-400 transition hover:text-slate-600"
+              className="mt-0.5 text-[12.5px] text-slate-400 transition hover:text-slate-600"
             >
-              Cancel
+              Maybe later
             </button>
           </div>
         </DialogContent>
