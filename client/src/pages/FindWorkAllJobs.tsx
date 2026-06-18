@@ -27,6 +27,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import type { Job, Candidate } from "@shared/schema";
 import {
   buildRateDisplay,
@@ -41,7 +48,9 @@ import {
   scoreJobsAgainstInterests,
 } from "@/lib/userActivityMemory";
 import {
+  TalentLoginModal,
   loadTalentAuth,
+  saveTalentAuth,
   type TalentAuthState,
 } from "@/components/TalentLoginModal";
 import {
@@ -402,6 +411,9 @@ export default function FindWorkAllJobs() {
   useEffect(() => {
     setTalentAuth(loadTalentAuth());
   }, []);
+
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const { data: talentProfile, isLoading: isLoadingProfile } =
     useQuery<Candidate>({
@@ -1048,9 +1060,7 @@ export default function FindWorkAllJobs() {
             {/* CTA */}
             <div className="mt-10">
               <button
-                onClick={() =>
-                  window.open(APPLY_URL, "_blank", "noopener,noreferrer")
-                }
+                onClick={() => setShowApplyModal(true)}
                 className="inline-flex items-center gap-2 rounded-full bg-[#6235e8] px-9 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(98,53,232,0.45)] transition hover:bg-[#5128d4]"
               >
                 Apply in 30 seconds
@@ -1059,6 +1069,67 @@ export default function FindWorkAllJobs() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Apply confirmation modal ── */}
+      <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
+        <DialogContent className="max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-xl">
+          <DialogHeader className="mb-6 space-y-2 text-center">
+            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
+              Before we proceed
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-slate-500">
+              Please make sure you've created an account and set up your profile
+              before submitting your application.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3">
+            {/* Primary: already have account */}
+            <button
+              onClick={() => {
+                setShowApplyModal(false);
+                setShowLoginModal(true);
+              }}
+              className="w-full rounded-xl bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(98,53,232,0.35)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
+            >
+              I already have an account
+            </button>
+
+            {/* Secondary: create account */}
+            <button
+              onClick={() => {
+                setShowApplyModal(false);
+                navigate("/find-best-matches");
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              Create my account
+            </button>
+
+            {/* Tertiary: cancel */}
+            <button
+              onClick={() => setShowApplyModal(false)}
+              className="mt-1 text-sm text-slate-400 transition hover:text-slate-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Talent login modal (reused) ── */}
+      {showLoginModal && (
+        <TalentLoginModal
+          profileId={null}
+          onClose={() => setShowLoginModal(false)}
+          onSuccess={(auth) => {
+            saveTalentAuth(auth);
+            setTalentAuth(auth);
+            setShowLoginModal(false);
+            window.open(APPLY_URL, "_blank", "noopener,noreferrer");
+          }}
+        />
       )}
     </div>
   );

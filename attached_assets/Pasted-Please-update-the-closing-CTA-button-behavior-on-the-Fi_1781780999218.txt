@@ -1,0 +1,58 @@
+Please update the closing CTA button behavior on the Find Work all-jobs page.
+
+Target button:
+"Apply in 30 seconds →"
+
+Current behavior:
+- The button redirects directly to the application/link step.
+
+New behavior:
+Before redirecting, show a confirmation modal asking whether the user already has an account.
+
+Modal copy:
+Title:
+"Before we proceed"
+
+Message:
+"Before we proceed with your application, please make sure you’ve created an account and set up your profile."
+
+Choices:
+1. "I already have an account"
+   - Require the user to log in.
+   - Redirect/open the existing login flow.
+   - After successful login, continue to the intended application/link step if supported.
+
+2. "Create my account"
+   - Route the user to the existing FindBestMatches feature.
+   - Use the existing FindBestMatches flow/component/route already in the codebase.
+   - Do not create a duplicate feature.
+
+3. Optional secondary action:
+   - "Cancel" or close icon
+   - Closes the modal and keeps the user on the page.
+
+Behavior requirements:
+- The modal should appear only when clicking the closing CTA button.
+- Do not show the modal on page load.
+- Do not immediately redirect before the user chooses an option.
+- Reuse existing modal/dialog styling if available.
+- Match OnSpot branding:
+  - Rounded corners
+  - Purple primary CTA
+  - Clean white/light modal surface
+  - Clear button hierarchy
+
+Technical requirements:
+- Reuse the existing authentication/login flow.
+- Reuse the existing FindBestMatches feature/route.
+- Do not duplicate account creation logic.
+- Preserve the existing destination/action after login if the app already supports redirect continuation.
+- Keep the CTA text as:
+  "Apply in 30 seconds →"
+
+Acceptance criteria:
+- Clicking "Apply in 30 seconds →" opens the modal.
+- Choosing "I already have an account" sends the user to login.
+- Choosing "Create my account" sends the user to the existing FindBestMatches feature.
+- Closing the modal does not redirect.
+- Existing jobs/search/filter functionality remains unchanged.
