@@ -162,93 +162,6 @@ const serviceDetails = {
   },
 };
 
-// Work categories for Find Work mega menu
-// paths point to /find-work/jobs?category=<slug> so the jobs listing page
-// opens pre-filtered for the selected category
-const workCategories = {
-  allJobs: {
-    title: "All Jobs",
-    subtitle: "Explore all opportunities",
-    description: "Browse all available job opportunities across every category",
-    icon: Briefcase,
-    specialties: ["All Categories", "All Skill Levels", "All Locations"],
-    demand: "Very High",
-    averageRate: "$8-65/hr",
-    path: "/find-work/jobs",
-    popular: true,
-  },
-  development: {
-    title: "Development & IT",
-    subtitle: "Build the digital future",
-    description: "Full-stack development, mobile apps, and technical solutions",
-    icon: Code,
-    specialties: ["Web Development", "Mobile Apps", "AI/ML", "DevOps"],
-    demand: "High",
-    averageRate: "$35-65/hr",
-    path: "/find-work/jobs?category=development",
-    popular: true,
-  },
-  design: {
-    title: "Design & Creative",
-    subtitle: "Visual storytelling",
-    description: "UI/UX design, branding, and creative content creation",
-    icon: PenTool,
-    specialties: ["UI/UX Design", "Branding", "Illustration", "Video Editing"],
-    demand: "High",
-    averageRate: "$25-45/hr",
-    path: "/find-work/jobs?category=design",
-    popular: true,
-  },
-  marketing: {
-    title: "Sales & Marketing",
-    subtitle: "Growth acceleration",
-    description: "Digital marketing, content strategy, and sales optimization",
-    icon: BarChart3,
-    specialties: [
-      "Digital Marketing",
-      "Content Writing",
-      "SEO/SEM",
-      "Social Media",
-    ],
-    demand: "Very High",
-    averageRate: "$20-40/hr",
-    path: "/find-work/jobs?category=marketing",
-    popular: false,
-  },
-  support: {
-    title: "Admin & Support",
-    subtitle: "Operational excellence",
-    description:
-      "Virtual assistance, customer support, and business operations",
-    icon: Headphones,
-    specialties: [
-      "Virtual Assistant",
-      "Customer Support",
-      "Data Entry",
-      "Project Management",
-    ],
-    demand: "Very High",
-    averageRate: "$8-25/hr",
-    path: "/find-work/jobs?category=support",
-    popular: false,
-  },
-  writing: {
-    title: "Writing & Translation",
-    subtitle: "Global communication",
-    description: "Content creation, technical writing, and language services",
-    icon: Globe,
-    specialties: [
-      "Content Writing",
-      "Technical Writing",
-      "Translation",
-      "Copywriting",
-    ],
-    demand: "High",
-    averageRate: "$15-35/hr",
-    path: "/find-work/jobs?category=writing",
-    popular: false,
-  },
-};
 
 // Why OnSpot sections for mega menu
 const whyOnSpotSections = {
@@ -343,12 +256,7 @@ const whyOnSpotSections = {
 
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
-  {
-    title: "Find Work",
-    path: "/find-work",
-    megaMenu: true,
-    categories: workCategories,
-  },
+  { title: "Find Work", path: "/find-work/jobs" },
   {
     title: "Why OnSpot",
     path: "/why-onspot",
