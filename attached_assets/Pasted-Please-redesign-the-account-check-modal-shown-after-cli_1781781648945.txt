@@ -1,0 +1,105 @@
+Please redesign the account-check modal shown after clicking the Find Work CTA:
+"Apply in 30 seconds →"
+
+Current issue:
+The modal copy is good, but the design feels plain and not visually engaging enough. Please make it feel more premium, polished, and conversion-focused while keeping it clean and professional.
+
+Goal:
+Create a more engaging onboarding-style modal that encourages users to either sign in or create a profile.
+
+Keep modal content:
+
+Title:
+"Get matched with remote opportunities"
+
+Description:
+"Create your profile once and we'll continuously match you with vetted remote roles from global companies. Already have an account? Sign in to continue your application."
+
+Primary CTA:
+"Sign in and continue"
+
+Secondary CTA:
+"Create my profile"
+
+Cancel:
+"Maybe later"
+
+Design improvements:
+
+1. Modal container
+- Use a softer, more premium card design.
+- Increase border radius slightly.
+- Remove the harsh black border.
+- Use a subtle shadow instead of a strong outline.
+- Add a light gradient or soft purple glow inside the modal background.
+- Keep the modal readable and clean.
+
+2. Header area
+- Make the top icon more intentional and premium.
+- Add a soft circular gradient background behind the icon.
+- Use an icon related to profile, matching, opportunity, or briefcase.
+- Add subtle glow/shadow behind the icon.
+- Center the icon and title area.
+
+3. Title and description hierarchy
+- Make the title more visually dominant.
+- Center-align title and description for a more onboarding-like feel.
+- Improve line height and spacing.
+- Keep description readable and not too wide.
+
+4. Trust indicators
+Current trust indicators feel too plain. Redesign them as small benefit cards or badges.
+
+Use:
+- "One profile"
+- "Multiple opportunities"
+- "Continuous matching"
+
+Suggested design:
+- Display them in 3 small rounded cards.
+- Each card should have a small check icon.
+- Use very light purple/lavender background.
+- Add subtle border and spacing.
+- Make them feel like product benefits, not plain text.
+
+5. Buttons
+Primary CTA:
+- Make "Sign in and continue" visually strong.
+- Use OnSpot purple gradient.
+- Add subtle shadow/glow.
+- Keep full width.
+
+Secondary CTA:
+- Keep it full width.
+- Use white/light background with soft border.
+- Add hover state.
+- It should feel clickable but secondary.
+
+Cancel:
+- Keep "Maybe later" as a low-emphasis text button.
+- Make it subtle but readable.
+
+6. Background overlay
+- Keep the page dimmed behind the modal.
+- Optional: add slight blur to background content for focus.
+- Make sure modal is clearly the focus.
+
+7. Responsiveness
+- Modal should look good on desktop and mobile.
+- On smaller screens, benefit cards can stack vertically if needed.
+- Maintain proper padding and tap targets.
+
+Behavior must stay the same:
+- Clicking "Sign in and continue" opens/routes to existing login flow.
+- Clicking "Create my profile" routes to existing FindBestMatches feature.
+- Clicking "Maybe later" or X closes the modal.
+- Do not change any search, filter, or job listing functionality.
+
+Acceptance criteria:
+- Modal feels more visually engaging and premium.
+- Design matches OnSpot branding.
+- Visual hierarchy is clear:
+  icon → title → value proposition → benefit cards → primary CTA → secondary CTA
+- Harsh black border is removed.
+- Benefit indicators are redesigned as polished badges/cards.
+- Existing modal behavior remains unchanged.

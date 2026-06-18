@@ -1073,65 +1073,103 @@ export default function FindWorkAllJobs() {
 
       {/* ── Apply confirmation modal ── */}
       <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
-        <DialogContent className="max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-xl">
-          {/* Icon accent */}
-          <div className="mb-5 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#7C3AED] shadow-[0_4px_16px_rgba(98,53,232,0.30)]">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
+        <DialogContent
+          className="max-w-[440px] overflow-hidden rounded-3xl border-0 p-0 shadow-[0_24px_64px_rgba(91,69,232,0.18),0_8px_24px_rgba(0,0,0,0.10)]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 50% -10%, rgba(124,58,237,0.10) 0%, rgba(255,255,255,0) 60%), #ffffff",
+          }}
+        >
+          {/* Top gradient band */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[180px] opacity-40"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 0%, rgba(91,69,232,0.22) 0%, rgba(124,58,237,0.08) 50%, transparent 75%)",
+            }}
+          />
 
-          <DialogHeader className="mb-3 space-y-2 text-center">
-            <DialogTitle className="text-[1.25rem] font-bold leading-tight tracking-tight text-slate-900">
-              Get matched with remote opportunities
-            </DialogTitle>
-            <DialogDescription className="text-[13.5px] leading-relaxed text-slate-500">
-              Create your profile once and we'll continuously match you with vetted remote roles from global companies. Already have an account? Sign in to continue your application.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Trust indicators */}
-          <div className="my-5 flex justify-center gap-5">
-            {["One profile", "Multiple opportunities", "Continuous matching"].map((label) => (
-              <div key={label} className="flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-600">✓</span>
-                {label}
+          <div className="relative z-10 px-8 pb-8 pt-10">
+            {/* Premium icon */}
+            <div className="mb-6 flex flex-col items-center gap-0">
+              <div className="relative flex items-center justify-center">
+                {/* Outer glow ring */}
+                <div className="absolute h-20 w-20 rounded-full bg-violet-200/40 blur-[14px]" />
+                {/* Mid ring */}
+                <div className="absolute h-16 w-16 rounded-full border border-violet-200/60 bg-violet-50/80" />
+                {/* Icon container */}
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_6px_24px_rgba(91,69,232,0.42)]">
+                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                  </svg>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div className="flex flex-col gap-2.5">
-            {/* Primary */}
-            <button
-              onClick={() => {
-                setShowApplyModal(false);
-                setShowLoginModal(true);
-              }}
-              className="w-full rounded-xl bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-6 py-3.5 text-[13.5px] font-semibold text-white shadow-[0_4px_20px_rgba(98,53,232,0.40)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
-            >
-              Sign in and continue
-            </button>
+            {/* Header */}
+            <DialogHeader className="mb-2 space-y-3 text-center">
+              <DialogTitle className="text-[1.3rem] font-bold leading-snug tracking-tight text-slate-900">
+                Get matched with remote opportunities
+              </DialogTitle>
+              <DialogDescription className="mx-auto max-w-[320px] text-[13px] leading-relaxed text-slate-500">
+                Create your profile once and we'll continuously match you with vetted remote roles from global companies. Already have an account? Sign in to continue.
+              </DialogDescription>
+            </DialogHeader>
 
-            {/* Secondary */}
-            <button
-              onClick={() => {
-                setShowApplyModal(false);
-                navigate("/find-best-matches");
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-[13.5px] font-semibold text-slate-700 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
-            >
-              Create my profile
-            </button>
+            {/* Benefit cards */}
+            <div className="my-6 flex flex-wrap justify-center gap-2">
+              {[
+                { label: "One profile", icon: "◈" },
+                { label: "Multiple opportunities", icon: "◈" },
+                { label: "Continuous matching", icon: "◈" },
+              ].map(({ label }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5"
+                >
+                  <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6]">
+                    <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </span>
+                  <span className="text-[11.5px] font-semibold text-violet-700">{label}</span>
+                </div>
+              ))}
+            </div>
 
-            {/* Cancel */}
-            <button
-              onClick={() => setShowApplyModal(false)}
-              className="mt-0.5 text-[12.5px] text-slate-400 transition hover:text-slate-600"
-            >
-              Maybe later
-            </button>
+            {/* Buttons */}
+            <div className="flex flex-col gap-3">
+              {/* Primary */}
+              <button
+                onClick={() => {
+                  setShowApplyModal(false);
+                  setShowLoginModal(true);
+                }}
+                className="w-full rounded-2xl bg-gradient-to-r from-[#5B45E8] to-[#8B5CF6] px-6 py-[13px] text-[14px] font-semibold text-white shadow-[0_6px_24px_rgba(91,69,232,0.40)] transition-all duration-150 hover:from-[#4f3ad4] hover:to-[#7c3aed] hover:shadow-[0_8px_28px_rgba(91,69,232,0.50)] active:scale-[0.985]"
+              >
+                Sign in and continue
+              </button>
+
+              {/* Secondary */}
+              <button
+                onClick={() => {
+                  setShowApplyModal(false);
+                  navigate("/find-best-matches");
+                }}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-[13px] text-[14px] font-semibold text-slate-700 shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition-all duration-150 hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-700 active:scale-[0.985]"
+              >
+                Create my profile
+              </button>
+
+              {/* Cancel */}
+              <button
+                onClick={() => setShowApplyModal(false)}
+                className="mt-1 text-[12px] font-medium text-slate-400 transition-colors hover:text-slate-600"
+              >
+                Maybe later
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
