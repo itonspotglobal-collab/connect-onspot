@@ -1107,20 +1107,20 @@ export default function FindWorkAllJobs() {
               </div>
             </div>
 
-            {/* Header */}
-            <DialogHeader className="text-center">
-              {/* Title — strongest element */}
-              <DialogTitle className="text-[1.35rem] font-bold leading-snug tracking-tight text-slate-900">
+            {/* Header — mini hero layout */}
+            <DialogHeader className="text-center sm:text-center">
+              {/* Title — hero headline */}
+              <DialogTitle className="mx-auto max-w-[340px] text-center text-[1.65rem] font-bold leading-[1.15] tracking-[-0.025em] text-slate-900">
                 Get matched with remote opportunities
               </DialogTitle>
 
-              {/* Subtitle — brand-purple supporting statement */}
-              <p className="mt-3 text-[14.5px] font-semibold leading-snug text-violet-600">
+              {/* Subtitle — brand purple, clearly separated */}
+              <p className="mx-auto mt-4 max-w-[300px] text-[14px] font-semibold leading-snug tracking-[-0.01em] text-violet-600">
                 Create one profile. Unlock ongoing job matches.
               </p>
 
-              {/* Description — narrow for readability */}
-              <DialogDescription className="mx-auto mt-3 max-w-[270px] text-[12.5px] leading-relaxed text-slate-400">
+              {/* Description — soft, narrow, readable */}
+              <DialogDescription className="mx-auto mt-3 max-w-[260px] text-[12.5px] leading-relaxed text-slate-400">
                 We'll continuously connect you with vetted remote roles that match your skills and experience.
               </DialogDescription>
             </DialogHeader>
