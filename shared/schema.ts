@@ -1130,6 +1130,36 @@ export const insertCandidateSchema = createInsertSchema(candidates).omit({
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 
+// Inquiries — client service inquiry + payment flow
+export const inquiries = pgTable("inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referenceNumber: text("reference_number").notNull().unique(), // INQ-2026-XXXX
+  fullName: text("full_name").notNull(),
+  email: varchar("email").notNull(),
+  phoneNumber: text("phone_number"),
+  company: text("company"),
+  serviceNeeded: text("service_needed").notNull(),
+  details: text("details"),
+  estimatedBudget: decimal("estimated_budget", { precision: 12, scale: 2 }),
+  status: text("status").notNull().default("pending_endorsement"), // pending_endorsement | endorsed | paid
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  referenceNumber: true,
+  status: true,
+  stripePaymentIntentId: true,
+  paidAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type Inquiry = typeof inquiries.$inferSelect;
+
 // Candidate Culture Evaluations — persisted assessment linked to a candidate
 export const candidateCultureEvaluations = pgTable(
   "candidate_culture_evaluations",

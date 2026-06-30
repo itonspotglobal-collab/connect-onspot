@@ -53,6 +53,7 @@ import {
   users as usersTable,
   clientProfiles,
   insertClientProfileSchema,
+  inquiries as inquiriesTable,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -6314,6 +6315,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: error.message || "Unable to create payment intent. Please try again.",
         requestId,
       });
+    }
+  });
+
+  // ============================================
+  // Inquiry & Payment Flow
+  // POST   /api/inquiries           — submit a new inquiry
+  // GET    /api/inquiries/:id       — fetch a single inquiry
+  // PATCH  /api/inquiries/:id/endorse — endorse/approve an inquiry
+  // POST   /api/inquiries/:id/pay   — record payment (simulated; TODO: real Stripe)
+  // ============================================
+
+  const inquirySubmitSchema = z.object({
+    fullName: z.string().min(1, "Full name is required"),
+    email: z.string().email("Valid email required"),
+    phoneNumber: z.string().optional(),
+    company: z.string().optional(),
+    serviceNeeded: z.string().min(1, "Service is required"),
+    details: z.string().optional(),
+    estimatedBudget: z.number().positive().optional(),
+  });
+
+  // Generate reference number: INQ-YYYY-XXXX
+  function generateInquiryRef(): string {
+    const year = new Date().getFullYear();
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `INQ-${year}-${rand}`;
+  }
+
+  app.post("/api/inquiries", async (req: Request, res: Response) => {
+    try {
+      const parsed = inquirySubmitSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Validation failed", details: parsed.error.errors });
+      }
+      const { fullName, email, phoneNumber, company, serviceNeeded, details, estimatedBudget } = parsed.data;
+      const referenceNumber = generateInquiryRef();
+
+      const result = await db.insert(inquiriesTable).values({
+        referenceNumber,
+        fullName,
+        email,
+        phoneNumber: phoneNumber ?? null,
+        company: company ?? null,
+        serviceNeeded,
+        details: details ?? null,
+        estimatedBudget: estimatedBudget ? String(estimatedBudget) : null,
+        status: "pending_endorsement",
+      }).returning();
+
+      res.status(201).json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Create inquiry error:", error.message);
+      res.status(500).json({ error: "Failed to create inquiry" });
+    }
+  });
+
+  app.get("/api/inquiries/:id", async (req: Request, res: Response) => {
+    try {
+      const result = await db.select().from(inquiriesTable).where(eq(inquiriesTable.id, req.params.id)).limit(1);
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Fetch inquiry error:", error.message);
+      res.status(500).json({ error: "Failed to fetch inquiry" });
+    }
+  });
+
+  app.patch("/api/inquiries/:id/endorse", async (req: Request, res: Response) => {
+    try {
+      const result = await db.update(inquiriesTable)
+        .set({ status: "endorsed", updatedAt: new Date() })
+        .where(eq(inquiriesTable.id, req.params.id))
+        .returning();
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Endorse inquiry error:", error.message);
+      res.status(500).json({ error: "Failed to endorse inquiry" });
+    }
+  });
+
+  // TODO: Replace the simulated payment below with real Stripe PaymentIntent when
+  // VITE_STRIPE_PUBLIC_KEY + STRIPE_SECRET_KEY are both configured.
+  app.post("/api/inquiries/:id/pay", async (req: Request, res: Response) => {
+    try {
+      const { paymentMethod = "Credit/Debit Card" } = req.body;
+
+      // -- Real Stripe path (activated when keys are available) --
+      if (process.env.STRIPE_SECRET_KEY) {
+        const inquiryRows = await db.select().from(inquiriesTable)
+          .where(eq(inquiriesTable.id, req.params.id)).limit(1);
+        if (!inquiryRows.length) return res.status(404).json({ error: "Inquiry not found" });
+        const inquiry = inquiryRows[0];
+
+        const Stripe = await import("stripe");
+        const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
+        const amountCents = inquiry.estimatedBudget ? Math.round(parseFloat(inquiry.estimatedBudget) * 100) : 10000;
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amountCents,
+          currency: "usd",
+          description: `OnSpot Inquiry ${inquiry.referenceNumber} — ${inquiry.serviceNeeded}`,
+          metadata: { inquiryId: inquiry.id, referenceNumber: inquiry.referenceNumber, email: inquiry.email },
+        });
+
+        await db.update(inquiriesTable)
+          .set({ status: "paid", stripePaymentIntentId: paymentIntent.id, paidAt: new Date(), updatedAt: new Date() })
+          .where(eq(inquiriesTable.id, req.params.id));
+
+        return res.json({ success: true, clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, simulated: false });
+      }
+
+      // -- Simulated path (no Stripe keys) --
+      const simId = `pi_sim_${Date.now()}`;
+      await db.update(inquiriesTable)
+        .set({ status: "paid", stripePaymentIntentId: simId, paidAt: new Date(), updatedAt: new Date() })
+        .where(eq(inquiriesTable.id, req.params.id));
+
+      const updated = await db.select().from(inquiriesTable).where(eq(inquiriesTable.id, req.params.id)).limit(1);
+      res.json({ success: true, paymentIntentId: simId, simulated: true, inquiry: updated[0] });
+    } catch (error: any) {
+      console.error("❌ Payment error:", error.message);
+      res.status(500).json({ error: "Payment failed" });
     }
   });
 

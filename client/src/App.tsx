@@ -70,6 +70,10 @@ import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
 import ClientProfile from "@/pages/ClientProfile";
+import InquiryPage from "@/pages/InquiryPage";
+import InquiryReview from "@/pages/InquiryReview";
+import InquiryPayment from "@/pages/InquiryPayment";
+import InquirySuccess from "@/pages/InquirySuccess";
 
 // Redirect /find-work → /find-work/jobs (URL changes in browser)
 function FindWorkRedirect() {
@@ -159,6 +163,10 @@ function PublicRouter() {
           <Route path="/client-verification" component={ClientVerification} />
           <Route path="/trust-safety" component={TrustSafety} />
           <Route path="/lead-intake" component={LeadIntake} />
+          <Route path="/inquiry" component={InquiryPage} />
+          <Route path="/inquiry/:id/review" component={InquiryReview} />
+          <Route path="/inquiry/:id/payment" component={InquiryPayment} />
+          <Route path="/inquiry/:id/success" component={InquirySuccess} />
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
@@ -297,6 +305,10 @@ function AppContent() {
       <Route path="/client-verification" component={PublicRouter} />
       <Route path="/trust-safety" component={PublicRouter} />
       <Route path="/lead-intake" component={PublicRouter} />
+      <Route path="/inquiry" component={PublicRouter} />
+      <Route path="/inquiry/:id/review" component={PublicRouter} />
+      <Route path="/inquiry/:id/payment" component={PublicRouter} />
+      <Route path="/inquiry/:id/success" component={PublicRouter} />
       <Route path="/investors" component={PublicRouter} />
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
