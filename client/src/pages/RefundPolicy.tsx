@@ -11,17 +11,17 @@ const LAST_UPDATED = "June 30, 2026";
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div
+      className="min-h-screen text-slate-900"
+      style={{
+        background:
+          "radial-gradient(ellipse 90% 55% at 50% -5%, rgba(139,92,246,0.09) 0%, rgba(224,218,255,0.18) 45%, transparent 70%), linear-gradient(to bottom, #F7F9FF 0%, #FAFBFF 40%, #FFFFFF 100%)",
+      }}
+    >
       <TopNavigation />
 
-      {/* Hero */}
-      <section
-        className="relative pt-10 pb-8 px-6"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -5%, rgba(139,92,246,0.08), transparent 65%), linear-gradient(to bottom, #F7F9FF, #FFFFFF 70%)",
-        }}
-      >
+      {/* Hero — starts immediately after the nav spacer */}
+      <section className="relative px-6 pt-10 pb-8">
         <div className="mx-auto max-w-3xl text-center">
           <Badge className="mb-3 rounded-full bg-[#474ead]/10 px-4 py-1 text-[#474ead] border-0 text-xs font-medium">
             <RotateCcw className="w-3 h-3 mr-1.5" />
