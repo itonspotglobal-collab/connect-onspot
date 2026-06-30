@@ -370,6 +370,19 @@ export default function Home() {
               >
                 <Link href="/find-work">Find Work</Link>
               </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-[#5B45E8]/60 text-white font-semibold backdrop-blur-xl bg-[#5B45E8]/20 rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px] hover:bg-[#5B45E8]/35 hover:border-[#5B45E8]/80"
+                asChild
+                data-testid="button-start-inquiry"
+              >
+                <Link href="/inquiry">
+                  Start Inquiry
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

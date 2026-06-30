@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { X, Sparkles, MessageCircle, Send, RotateCcw } from "lucide-react";
+import { X, Sparkles, MessageCircle, Send, RotateCcw, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +26,8 @@ export function VanessaChat({
   onClose,
   isSticky = false,
 }: VanessaChatProps) {
+  const [, navigate] = useLocation();
+
   // Use shared conversation state from context
   const {
     messages,
@@ -761,6 +764,20 @@ export function VanessaChat({
               </div>
             </div>
 
+            {/* Quick-action strip — Start Inquiry shortcut */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-violet-100/60 bg-violet-50/40 flex-shrink-0">
+              <button
+                onClick={() => { onClose(); navigate("/inquiry"); }}
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#3F4698] hover:text-[#5B45E8] transition-colors"
+                data-testid="button-widget-start-inquiry"
+              >
+                <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                Start Inquiry
+                <span className="text-[#5B45E8]">→</span>
+              </button>
+              <span className="ml-auto text-[10px] text-slate-400">Submit a service request</span>
+            </div>
+
             {/* Messages with enhanced contrast - scrollable with momentum */}
             <div className="flex-1 relative min-h-0 transition-all duration-500 ease-in-out">
               <div
@@ -1065,6 +1082,20 @@ export function VanessaChat({
               <X className="h-5 w-5" />
             </Button>
           </div>
+        </div>
+
+        {/* Quick-action strip — Start Inquiry shortcut */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-violet-100/60 bg-violet-50/40 flex-shrink-0">
+          <button
+            onClick={() => { onClose(); navigate("/inquiry"); }}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#3F4698] hover:text-[#5B45E8] transition-colors"
+            data-testid="button-modal-start-inquiry"
+          >
+            <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+            Start Inquiry
+            <span className="text-[#5B45E8]">→</span>
+          </button>
+          <span className="ml-auto text-[10px] text-slate-400">Submit a service request</span>
         </div>
 
         {/* Messages with enhanced contrast - scrollable section with momentum */}

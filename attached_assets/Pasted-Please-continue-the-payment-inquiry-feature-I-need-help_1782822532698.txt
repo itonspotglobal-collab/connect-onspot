@@ -1,0 +1,46 @@
+Please continue the payment/inquiry feature.
+
+I need help with these items:
+
+1. Tell me the exact page name and route/link for the new inquiry-to-payment feature.
+   - Example: “Inquiry Page”
+   - Example route: /inquiry or /payment-flow
+   - Also show me where this route is registered in the code.
+
+2. Add a clear button on the homepage that opens this feature.
+   - Button text: “Start Inquiry”
+   - Place it in a visible area on the homepage, preferably near the main hero CTA.
+   - Make the button match the homepage branding, colors, spacing, border radius, and typography.
+
+3. Add an additional inquiry entry point inside the Vanessa AI / FAQ chat widget.
+   - When the user hovers over or opens the Vanessa AI / FAQ widget, show an “Start Inquiry” button at the top of the widget.
+   - The button should act like an additional widget action.
+   - When clicked, it should open the inquiry page or inquiry popup.
+
+4. If a popup/modal approach is better, create an inquiry popup that matches the site branding.
+   - The popup should contain the inquiry form.
+   - It should still allow the user to proceed through endorsement and payment.
+   - Make sure it works on mobile and desktop.
+
+5. For the payment setup:
+   - Do not require Resend yet unless email confirmation is already necessary.
+   - If Resend is required, clearly tell me which secret name to add in Replit Secrets.
+   - For Stripe, clearly tell me which secret keys are needed:
+     - STRIPE_SECRET_KEY
+     - VITE_STRIPE_PUBLIC_KEY or the exact public key name used in this project
+   - Keep simulated payment working if Stripe keys are not added yet.
+
+6. Make sure the final user flow is:
+   Homepage button or Vanessa AI widget inquiry button
+   → Inquiry form
+   → Inquiry submitted / pending endorsement
+   → Endorsed
+   → Proceed to USD payment
+   → Payment success page
+
+7. After implementing, give me:
+   - The page name
+   - The route/link
+   - The homepage file that was updated
+   - The widget/chat component file that was updated
+   - Any Replit Secrets I need to add
