@@ -1,0 +1,115 @@
+Please replace the sample inquiry data in the Admin Inquiry Dashboard with real database-backed data.
+
+Goal:
+Every inquiry submitted from the /inquiry page should be saved in the database, and the Admin Inquiry Dashboard should display those real records.
+
+Current admin page:
+/admin/inquiries
+
+Required flow:
+1. User submits inquiry from /inquiry
+2. Inquiry is saved to the database
+3. Admin visits /admin/inquiries
+4. Admin dashboard shows the submitted inquiries from the database
+5. Admin can view details, update endorsement status, and track payment status
+
+Database requirements:
+Create an inquiries table/model with fields for:
+- id
+- reference_id
+- full_name
+- email
+- phone
+- company
+- service_needed
+- estimated_budget_usd
+- inquiry_details
+- inquiry_status
+- endorsement_status
+- payment_status
+- payment_amount_usd
+- payment_method
+- transaction_reference
+- receipt_url
+- admin_notes
+- submitted_at
+- updated_at
+
+Default values:
+- inquiry_status: Submitted
+- endorsement_status: Pending Endorsement
+- payment_status: Pending Payment
+- payment_amount_usd: same as estimated_budget_usd unless changed later
+- reference_id: generate format like INQ-2026-0001
+
+Backend/API requirements:
+Create or update these API routes:
+
+POST /api/inquiries
+- Saves a new inquiry to the database
+- Generates a unique reference_id
+- Returns the created inquiry
+
+GET /api/inquiries
+- Returns all inquiry records
+- Supports search/filter if possible:
+  - search by name, email, company, or reference ID
+  - filter by endorsement status
+  - filter by payment status
+  - filter by date submitted
+
+GET /api/inquiries/:id
+- Returns one inquiry record
+
+PATCH /api/inquiries/:id/endorse
+- Updates endorsement_status to Endorsed
+- Updates inquiry_status if needed
+
+PATCH /api/inquiries/:id/payment
+- Updates payment_status, payment_method, payment_amount_usd, transaction_reference, and receipt details
+
+PATCH /api/inquiries/:id/notes
+- Saves or updates internal admin notes
+
+Frontend requirements:
+Update /inquiry:
+- On Submit Inquiry, call POST /api/inquiries
+- Save the inquiry in the database
+- Redirect user to /inquiry/:id/review after successful submission
+- Show loading and error states
+
+Update /admin/inquiries:
+- Remove hardcoded/sample inquiry records
+- Fetch real data from GET /api/inquiries
+- Display real submitted records in the dashboard table
+- Keep the same current UI design shown in the admin dashboard
+- Summary cards should calculate from real database records:
+  - Total Inquiries
+  - Pending Endorsement
+  - Endorsed
+  - Pending Payment
+  - Paid / Completed
+  - Total Revenue
+
+Admin details:
+- The Details button should open real inquiry information from the database
+- Admin should be able to approve/endorse an inquiry
+- After endorsement, the record should update in the database and UI
+- Payment status should update after successful payment
+
+Important:
+- Keep simulated payment working if Stripe keys are not configured yet
+- If Stripe is configured, update payment_status to Paid after successful payment
+- Make sure data persists after page refresh
+- Do not use local sample data as the main source anymore
+- Keep sample data only as seed/demo data if needed, but the dashboard must use database records
+
+Security note:
+- Add a TODO comment that /admin/inquiries should be protected by authentication before production if auth is not yet available.
+
+After implementation, tell me:
+- What database/table/model was created
+- What API routes were added or updated
+- What frontend files were updated
+- How to test submitting an inquiry and seeing it in the admin dashboard
+- Whether the data persists after refresh

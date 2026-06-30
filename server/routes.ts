@@ -6570,6 +6570,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PATCH /api/inquiries/:id/payment — record payment details (manual or Stripe)
+  app.patch("/api/inquiries/:id/payment", async (req: Request, res: Response) => {
+    try {
+      const {
+        paymentStatus,   // "paid" | "payment_pending" | "completed"
+        paymentMethod,   // "stripe" | "manual"
+        paymentAmount,   // number (USD)
+        transactionReference, // Stripe PI id or manual reference
+        receiptUrl,      // optional URL to receipt
+      } = req.body as {
+        paymentStatus?: string;
+        paymentMethod?: string;
+        paymentAmount?: number;
+        transactionReference?: string;
+        receiptUrl?: string;
+      };
+
+      const updatePayload: Record<string, unknown> = { updatedAt: new Date() };
+      if (paymentStatus) {
+        updatePayload.status = paymentStatus;
+        if (paymentStatus === "paid" || paymentStatus === "completed") {
+          updatePayload.paidAt = new Date();
+        }
+      }
+      if (paymentMethod !== undefined) updatePayload.paymentMethod = paymentMethod;
+      if (paymentAmount !== undefined) updatePayload.paymentAmount = String(paymentAmount);
+      if (transactionReference !== undefined) updatePayload.transactionReference = transactionReference;
+      if (receiptUrl !== undefined) updatePayload.receiptUrl = receiptUrl;
+
+      const result = await db
+        .update(inquiriesTable)
+        .set(updatePayload as any)
+        .where(eq(inquiriesTable.id, req.params.id))
+        .returning();
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      console.log(`✅ Payment recorded for inquiry ${req.params.id}`);
+      res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Record payment error:", error.message);
+      res.status(500).json({ error: "Failed to record payment" });
+    }
+  });
+
   // ============================================
   // Blog Posts API (Insights page) - No Auth Required
   // Publishing, editing, and deleting posts

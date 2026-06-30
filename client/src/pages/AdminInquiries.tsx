@@ -56,9 +56,13 @@ import {
   Phone,
   StickyNote,
   Banknote,
+  Receipt,
+  Hash,
+  Link2,
+  AlertCircle,
 } from "lucide-react";
 
-// ─── Status helpers ─────────────────────────────────────────────────────────
+// ─── Derived status helpers ───────────────────────────────────────────────────
 
 type InquiryStatus =
   | "pending_endorsement"
@@ -68,47 +72,65 @@ type InquiryStatus =
   | "paid"
   | "completed";
 
-const STATUS_LABEL: Record<string, string> = {
-  pending_endorsement: "Pending Endorsement",
-  endorsed: "Endorsed",
-  rejected: "Rejected",
-  payment_pending: "Payment Pending",
-  paid: "Paid",
-  completed: "Completed",
-};
+function getEndorsementLabel(status: string): string {
+  if (status === "rejected") return "Rejected";
+  if (status === "pending_endorsement") return "Pending";
+  return "Endorsed";
+}
 
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  pending_endorsement: "secondary",
-  endorsed: "default",
-  rejected: "destructive",
-  payment_pending: "secondary",
-  paid: "default",
-  completed: "default",
-};
+function getEndorsementColor(status: string): string {
+  if (status === "rejected") return "bg-red-100 text-red-800 border-red-200";
+  if (status === "pending_endorsement") return "bg-amber-100 text-amber-800 border-amber-200";
+  return "bg-indigo-100 text-indigo-800 border-indigo-200";
+}
 
-const STATUS_COLOR: Record<string, string> = {
-  pending_endorsement: "bg-amber-100 text-amber-800 border-amber-200",
-  endorsed: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  rejected: "bg-red-100 text-red-800 border-red-200",
-  payment_pending: "bg-orange-100 text-orange-800 border-orange-200",
-  paid: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  completed: "bg-green-100 text-green-800 border-green-200",
-};
+function getPaymentLabel(status: string): string {
+  if (status === "paid") return "Paid";
+  if (status === "completed") return "Completed";
+  if (status === "payment_pending") return "Pending";
+  if (status === "rejected") return "N/A";
+  return "Pending";
+}
 
-function StatusBadge({ status }: { status: string }) {
+function getPaymentColor(status: string): string {
+  if (status === "paid" || status === "completed") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (status === "rejected") return "bg-gray-100 text-gray-500 border-gray-200";
+  return "bg-orange-100 text-orange-800 border-orange-200";
+}
+
+function getInquiryStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    pending_endorsement: "Submitted",
+    endorsed: "Endorsed",
+    rejected: "Rejected",
+    payment_pending: "Payment Pending",
+    paid: "Paid",
+    completed: "Completed",
+  };
+  return map[status] ?? status;
+}
+
+function getInquiryStatusColor(status: string): string {
+  const map: Record<string, string> = {
+    pending_endorsement: "bg-slate-100 text-slate-700 border-slate-200",
+    endorsed: "bg-indigo-100 text-indigo-800 border-indigo-200",
+    rejected: "bg-red-100 text-red-800 border-red-200",
+    payment_pending: "bg-orange-100 text-orange-800 border-orange-200",
+    paid: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    completed: "bg-green-100 text-green-800 border-green-200",
+  };
+  return map[status] ?? "bg-gray-100 text-gray-700 border-gray-200";
+}
+
+function Chip({ label, colorClass }: { label: string; colorClass: string }) {
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${STATUS_COLOR[status] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}
-    >
-      {STATUS_LABEL[status] ?? status}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${colorClass}`}>
+      {label}
     </span>
   );
 }
 
-// ─── Summary card ────────────────────────────────────────────────────────────
+// ─── Summary card ─────────────────────────────────────────────────────────────
 
 function SummaryCard({
   icon: Icon,
@@ -138,7 +160,105 @@ function SummaryCard({
   );
 }
 
-// ─── Detail modal ────────────────────────────────────────────────────────────
+// ─── Record Payment Modal ─────────────────────────────────────────────────────
+
+function RecordPaymentForm({
+  inquiry,
+  onDone,
+}: {
+  inquiry: Inquiry;
+  onDone: () => void;
+}) {
+  const { toast } = useToast();
+  const [method, setMethod] = useState(inquiry.paymentMethod ?? "manual");
+  const [amount, setAmount] = useState(
+    inquiry.paymentAmount ?? inquiry.estimatedBudget ?? "",
+  );
+  const [ref, setRef] = useState(inquiry.transactionReference ?? "");
+  const [receiptUrl, setReceiptUrl] = useState(inquiry.receiptUrl ?? "");
+
+  const paymentMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment`, {
+        paymentStatus: "paid",
+        paymentMethod: method,
+        paymentAmount: amount ? parseFloat(String(amount)) : undefined,
+        transactionReference: ref || undefined,
+        receiptUrl: receiptUrl || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({ title: "Payment recorded — status set to Paid" });
+      onDone();
+    },
+    onError: () => toast({ title: "Failed to record payment", variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3 pt-2">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        Record Manual Payment
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Payment Method</label>
+          <Select value={method} onValueChange={setMethod}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="manual">Manual / Bank Transfer</SelectItem>
+              <SelectItem value="stripe">Stripe</SelectItem>
+              <SelectItem value="check">Check</SelectItem>
+              <SelectItem value="wire">Wire Transfer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Amount (USD)</label>
+          <div className="relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+            <Input
+              className="pl-6 h-8 text-xs"
+              placeholder="5,000"
+              value={String(amount ?? "")}
+              onChange={(e) => setAmount(e.target.value as any)}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Transaction / Reference Number</label>
+        <Input
+          className="h-8 text-xs"
+          placeholder="PI-xxx, CHK-001, wire ref…"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Receipt URL (optional)</label>
+        <Input
+          className="h-8 text-xs"
+          placeholder="https://…"
+          value={receiptUrl}
+          onChange={(e) => setReceiptUrl(e.target.value)}
+        />
+      </div>
+      <Button
+        size="sm"
+        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+        onClick={() => paymentMutation.mutate()}
+        disabled={paymentMutation.isPending}
+      >
+        {paymentMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+        Confirm Payment &amp; Mark as Paid
+      </Button>
+    </div>
+  );
+}
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
 
 function InquiryDetailModal({
   inquiry,
@@ -150,19 +270,11 @@ function InquiryDetailModal({
   const { toast } = useToast();
   const [notes, setNotes] = useState(inquiry.adminNotes ?? "");
   const [editingNotes, setEditingNotes] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const statusMutation = useMutation({
-    mutationFn: ({
-      status,
-      paymentMethod,
-    }: {
-      status: string;
-      paymentMethod?: string;
-    }) =>
-      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/status`, {
-        status,
-        paymentMethod,
-      }),
+    mutationFn: ({ status, paymentMethod }: { status: string; paymentMethod?: string }) =>
+      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/status`, { status, paymentMethod }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
       toast({ title: "Status updated" });
@@ -181,173 +293,154 @@ function InquiryDetailModal({
     onError: () => toast({ title: "Failed to save notes", variant: "destructive" }),
   });
 
-  const fmtDate = (d: string | Date | null | undefined) => {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const fmtDate = (d: string | Date | null | undefined) =>
+    d ? new Date(d).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    }) : "—";
 
-  const fmtBudget = (v: string | null | undefined) => {
+  const fmtMoney = (v: string | null | undefined) => {
     if (!v) return "—";
     const n = parseFloat(v);
     return isNaN(n) ? "—" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
   };
 
-  const ActionButton = ({
-    label,
-    status,
-    paymentMethod,
-    icon: Icon,
-    className,
-    disabled,
-  }: {
-    label: string;
-    status: string;
-    paymentMethod?: string;
-    icon: React.ElementType;
-    className?: string;
-    disabled?: boolean;
-  }) => (
-    <Button
-      size="sm"
-      variant="outline"
-      className={className}
-      disabled={statusMutation.isPending || disabled}
-      onClick={() => statusMutation.mutate({ status, paymentMethod })}
-    >
-      {statusMutation.isPending ? (
-        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-      ) : (
-        <Icon className="w-3.5 h-3.5 mr-1.5" />
-      )}
-      {label}
-    </Button>
-  );
+  const isPaid = inquiry.status === "paid" || inquiry.status === "completed";
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
+          <DialogTitle className="flex items-center gap-2 text-sm">
             <FileText className="w-4 h-4 text-[#3F4698]" />
-            Inquiry — {inquiry.referenceNumber}
+            {inquiry.referenceNumber}
+            <span className="ml-1">
+              <Chip label={getInquiryStatusLabel(inquiry.status)} colorClass={getInquiryStatusColor(inquiry.status)} />
+            </span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5 mt-1">
-          {/* Status strip */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusBadge status={inquiry.status} />
-            {inquiry.paymentMethod && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md border">
-                {inquiry.paymentMethod === "stripe" ? "Stripe" : "Manual"} payment
-              </span>
-            )}
+          {/* Endorsement + Payment status row */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <BadgeCheck className="w-3.5 h-3.5" />
+              Endorsement:
+              <Chip label={getEndorsementLabel(inquiry.status)} colorClass={getEndorsementColor(inquiry.status)} />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
+              <CreditCard className="w-3.5 h-3.5" />
+              Payment:
+              <Chip label={getPaymentLabel(inquiry.status)} colorClass={getPaymentColor(inquiry.status)} />
+            </div>
           </div>
 
           {/* Customer info */}
-          <div className="grid grid-cols-2 gap-3">
-            <InfoRow icon={FileText} label="Reference" value={inquiry.referenceNumber} />
-            <InfoRow icon={BadgeCheck} label="Full Name" value={inquiry.fullName} />
-            <InfoRow icon={Mail} label="Email" value={inquiry.email} />
-            <InfoRow icon={Phone} label="Phone" value={inquiry.phoneNumber ?? "—"} />
-            <InfoRow icon={Building2} label="Company" value={inquiry.company ?? "—"} />
-            <InfoRow
-              icon={DollarSign}
-              label="Est. Budget"
-              value={fmtBudget(inquiry.estimatedBudget)}
-            />
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Customer</p>
+            <div className="grid grid-cols-2 gap-3">
+              <InfoRow icon={FileText} label="Reference" value={inquiry.referenceNumber} />
+              <InfoRow icon={BadgeCheck} label="Full Name" value={inquiry.fullName} />
+              <InfoRow icon={Mail} label="Email" value={inquiry.email} />
+              <InfoRow icon={Phone} label="Phone" value={inquiry.phoneNumber ?? "—"} />
+              <InfoRow icon={Building2} label="Company" value={inquiry.company ?? "—"} />
+              <InfoRow icon={CalendarDays} label="Submitted" value={fmtDate(inquiry.createdAt)} />
+            </div>
           </div>
 
           {/* Service details */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Service / Product Requested
-            </p>
-            <p className="text-sm font-medium text-foreground">{inquiry.serviceNeeded}</p>
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Service Request</p>
+            <p className="text-sm font-medium text-foreground mb-1">{inquiry.serviceNeeded}</p>
             {inquiry.details && (
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap bg-muted/40 rounded-lg p-3 text-xs">
                 {inquiry.details}
               </p>
             )}
           </div>
 
-          {/* Payment info */}
-          <div className="grid grid-cols-2 gap-3">
-            <InfoRow
-              icon={CreditCard}
-              label="Payment Method"
-              value={inquiry.paymentMethod ?? "—"}
-            />
-            <InfoRow
-              icon={DollarSign}
-              label="Payment Amount"
-              value={inquiry.status === "paid" || inquiry.status === "completed" ? fmtBudget(inquiry.estimatedBudget) : "—"}
-            />
-            <InfoRow
-              icon={BadgeCheck}
-              label="Stripe PI"
-              value={inquiry.stripePaymentIntentId ?? "—"}
-            />
-            <InfoRow
-              icon={CalendarDays}
-              label="Paid At"
-              value={fmtDate(inquiry.paidAt)}
-            />
-          </div>
-
-          {/* Timeline */}
-          <div className="grid grid-cols-2 gap-3">
-            <InfoRow icon={CalendarDays} label="Submitted" value={fmtDate(inquiry.createdAt)} />
-            <InfoRow icon={CalendarDays} label="Last Updated" value={fmtDate(inquiry.updatedAt)} />
+          {/* Financial details */}
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Financial</p>
+            <div className="grid grid-cols-2 gap-3">
+              <InfoRow icon={DollarSign} label="Estimated Budget" value={fmtMoney(inquiry.estimatedBudget)} />
+              <InfoRow icon={DollarSign} label="Payment Amount" value={fmtMoney(inquiry.paymentAmount ?? inquiry.estimatedBudget)} />
+              <InfoRow icon={CreditCard} label="Payment Method" value={inquiry.paymentMethod ?? "—"} />
+              <InfoRow icon={Hash} label="Transaction Reference" value={inquiry.transactionReference ?? "—"} />
+              <InfoRow icon={CalendarDays} label="Paid At" value={fmtDate(inquiry.paidAt)} />
+              <InfoRow icon={BadgeCheck} label="Stripe PI" value={inquiry.stripePaymentIntentId ?? "—"} />
+            </div>
+            {inquiry.receiptUrl && (
+              <a
+                href={inquiry.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#3F4698] underline underline-offset-2"
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                View Receipt
+              </a>
+            )}
           </div>
 
           {/* Admin actions */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Admin Actions
-            </p>
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Admin Actions</p>
             <div className="flex flex-wrap gap-2">
-              <ActionButton
-                label="Endorse"
-                status="endorsed"
-                icon={ThumbsUp}
-                disabled={inquiry.status === "endorsed"}
-              />
-              <ActionButton
-                label="Reject"
-                status="rejected"
-                icon={ThumbsDown}
+              <Button
+                size="sm" variant="outline"
+                disabled={statusMutation.isPending || inquiry.status === "endorsed" || isPaid}
+                onClick={() => statusMutation.mutate({ status: "endorsed" })}
+              >
+                <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
+                Endorse
+              </Button>
+              <Button
+                size="sm" variant="outline"
                 className="border-red-200 text-red-700 hover:bg-red-50"
-                disabled={inquiry.status === "rejected"}
-              />
-              <ActionButton
-                label="Mark Payment Pending"
-                status="payment_pending"
-                icon={Clock}
-                disabled={inquiry.status === "payment_pending"}
-              />
-              <ActionButton
-                label="Mark Paid (Manual)"
-                status="paid"
-                paymentMethod="manual"
-                icon={Banknote}
+                disabled={statusMutation.isPending || inquiry.status === "rejected"}
+                onClick={() => statusMutation.mutate({ status: "rejected" })}
+              >
+                <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />
+                Reject
+              </Button>
+              <Button
+                size="sm" variant="outline"
+                className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                disabled={statusMutation.isPending || inquiry.status === "payment_pending"}
+                onClick={() => statusMutation.mutate({ status: "payment_pending" })}
+              >
+                <Clock className="w-3.5 h-3.5 mr-1.5" />
+                Mark Payment Pending
+              </Button>
+              <Button
+                size="sm" variant="outline"
                 className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                disabled={inquiry.status === "paid" || inquiry.status === "completed"}
-              />
-              <ActionButton
-                label="Mark Completed"
-                status="completed"
-                icon={CheckCircle2}
+                disabled={isPaid}
+                onClick={() => setShowPaymentForm(!showPaymentForm)}
+              >
+                <Banknote className="w-3.5 h-3.5 mr-1.5" />
+                {isPaid ? "Paid" : "Record Payment"}
+              </Button>
+              <Button
+                size="sm" variant="outline"
                 className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                disabled={inquiry.status === "completed"}
-              />
+                disabled={statusMutation.isPending || inquiry.status === "completed"}
+                onClick={() => statusMutation.mutate({ status: "completed" })}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                Complete
+              </Button>
             </div>
+
+            {showPaymentForm && !isPaid && (
+              <div className="mt-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
+                <RecordPaymentForm
+                  inquiry={inquiry}
+                  onDone={() => setShowPaymentForm(false)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Quick links */}
@@ -360,7 +453,7 @@ function InquiryDetailModal({
                 <Link href={`/inquiry/${inquiry.id}/payment`}>Payment Page</Link>
               </Button>
             )}
-            {(inquiry.status === "paid" || inquiry.status === "completed") && (
+            {isPaid && (
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/inquiry/${inquiry.id}/success`}>Success Page</Link>
               </Button>
@@ -368,19 +461,14 @@ function InquiryDetailModal({
           </div>
 
           {/* Admin notes */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <StickyNote className="w-3.5 h-3.5" />
                 Admin Notes
               </p>
               {!editingNotes && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => setEditingNotes(true)}
-                >
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditingNotes(true)}>
                   {inquiry.adminNotes ? "Edit" : "Add Note"}
                 </Button>
               )}
@@ -390,40 +478,31 @@ function InquiryDetailModal({
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add internal notes about this inquiry..."
+                  placeholder="Internal notes…"
                   rows={3}
                   className="text-sm resize-none"
                 />
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => notesMutation.mutate()}
-                    disabled={notesMutation.isPending}
-                  >
-                    {notesMutation.isPending && (
-                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                    )}
-                    Save Notes
+                  <Button size="sm" onClick={() => notesMutation.mutate()} disabled={notesMutation.isPending}>
+                    {notesMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                    Save
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setNotes(inquiry.adminNotes ?? "");
-                      setEditingNotes(false);
-                    }}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => { setNotes(inquiry.adminNotes ?? ""); setEditingNotes(false); }}>
                     Cancel
                   </Button>
                 </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {inquiry.adminNotes ?? (
-                  <span className="italic text-muted-foreground/60">No notes yet.</span>
-                )}
+                {inquiry.adminNotes ?? <span className="italic text-muted-foreground/50">No notes yet.</span>}
               </p>
             )}
+          </div>
+
+          {/* Timeline */}
+          <div className="grid grid-cols-2 gap-3 pt-1 border-t border-muted/60">
+            <InfoRow icon={CalendarDays} label="Submitted" value={fmtDate(inquiry.createdAt)} />
+            <InfoRow icon={CalendarDays} label="Last Updated" value={fmtDate(inquiry.updatedAt)} />
           </div>
         </div>
       </DialogContent>
@@ -431,15 +510,7 @@ function InquiryDetailModal({
   );
 }
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-}) {
+function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="w-3.5 h-3.5 mt-0.5 text-muted-foreground flex-shrink-0" />
@@ -451,7 +522,7 @@ function InfoRow({
   );
 }
 
-// ─── Main admin page ─────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AdminInquiries() {
   const { toast } = useToast();
@@ -461,30 +532,28 @@ export default function AdminInquiries() {
   const [filterDate, setFilterDate] = useState("all");
   const [selected, setSelected] = useState<Inquiry | null>(null);
 
-  const { data, isLoading, error, refetch } = useQuery<{ inquiries: Inquiry[] }>({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<{ inquiries: Inquiry[] }>({
     queryKey: ["/api/inquiries"],
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const inquiries: Inquiry[] = data?.inquiries ?? [];
 
-  // ── Summary counts ──
+  // ── Summaries ──
   const total = inquiries.length;
   const pendingEndorsement = inquiries.filter((i) => i.status === "pending_endorsement").length;
   const endorsed = inquiries.filter((i) => i.status === "endorsed").length;
-  const pendingPayment = inquiries.filter(
-    (i) => i.status === "payment_pending",
-  ).length;
-  const paid = inquiries.filter(
-    (i) => i.status === "paid" || i.status === "completed",
-  ).length;
+  const pendingPayment = inquiries.filter((i) => i.status === "payment_pending" || (i.status === "endorsed")).length;
+  const paid = inquiries.filter((i) => i.status === "paid" || i.status === "completed").length;
   const totalRevenue = inquiries
     .filter((i) => i.status === "paid" || i.status === "completed")
-    .reduce((sum, i) => sum + parseFloat(i.estimatedBudget ?? "0"), 0);
+    .reduce((sum, i) => {
+      const amt = i.paymentAmount ?? i.estimatedBudget;
+      return sum + (amt ? parseFloat(amt) : 0);
+    }, 0);
 
   // ── Filtering ──
-  const endorsementStatuses = ["pending_endorsement", "endorsed", "rejected"];
-  const paymentStatuses = ["payment_pending", "paid", "completed"];
-
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     const now = Date.now();
@@ -492,47 +561,36 @@ export default function AdminInquiries() {
 
     return inquiries.filter((i) => {
       if (term) {
-        const hay =
-          `${i.fullName} ${i.email} ${i.company ?? ""} ${i.referenceNumber}`.toLowerCase();
+        const hay = `${i.fullName} ${i.email} ${i.company ?? ""} ${i.referenceNumber}`.toLowerCase();
         if (!hay.includes(term)) return false;
       }
-
       if (filterEndorsement !== "all") {
-        if (filterEndorsement === "endorsed" && i.status !== "endorsed") return false;
         if (filterEndorsement === "pending" && i.status !== "pending_endorsement") return false;
+        if (filterEndorsement === "endorsed" && !["endorsed", "payment_pending", "paid", "completed"].includes(i.status)) return false;
         if (filterEndorsement === "rejected" && i.status !== "rejected") return false;
       }
-
       if (filterPayment !== "all") {
         if (filterPayment === "paid" && i.status !== "paid" && i.status !== "completed") return false;
-        if (filterPayment === "pending" && i.status !== "payment_pending") return false;
+        if (filterPayment === "pending" && i.status !== "payment_pending" && i.status !== "endorsed") return false;
         if (filterPayment === "unpaid" && (i.status === "paid" || i.status === "completed")) return false;
       }
-
       if (filterDate !== "all" && i.createdAt) {
         const age = now - new Date(i.createdAt).getTime();
         if (filterDate === "today" && age > DAY) return false;
         if (filterDate === "week" && age > 7 * DAY) return false;
         if (filterDate === "month" && age > 30 * DAY) return false;
       }
-
       return true;
     });
   }, [inquiries, search, filterEndorsement, filterPayment, filterDate]);
 
-  const fmtDate = (d: string | Date | null | undefined) => {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  const fmtDate = (d: string | Date | null | undefined) =>
+    d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
-  const fmtBudget = (v: string | null | undefined) => {
+  const fmtMoney = (v: string | null | undefined) => {
     if (!v) return "—";
     const n = parseFloat(v);
-    return isNaN(n) ? "—" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    return isNaN(n) ? "—" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
   };
 
   if (error) {
@@ -540,15 +598,10 @@ export default function AdminInquiries() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
-            <XCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
-            <p className="font-semibold text-foreground">Failed to load inquiries</p>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">
-              {(error as Error).message}
-            </p>
-            <Button onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
-            </Button>
+            <AlertCircle className="w-10 h-10 text-destructive mx-auto mb-3" />
+            <p className="font-semibold">Failed to load inquiries</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">{(error as Error).message}</p>
+            <Button onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" />Retry</Button>
           </CardContent>
         </Card>
       </div>
@@ -557,34 +610,23 @@ export default function AdminInquiries() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Sticky header */}
       <div className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 flex-wrap">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
+            <Link href="/"><ArrowLeft className="w-4 h-4" /></Link>
           </Button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-[#3F4698]/10 flex items-center justify-center flex-shrink-0">
               <FileText className="w-4 h-4 text-[#3F4698]" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">
-                Admin — Inquiry Dashboard
-              </h1>
-              <p className="text-[11px] text-muted-foreground">
-                Track all inquiry submissions
-              </p>
+              <h1 className="text-sm font-bold text-foreground leading-tight">Admin — Inquiry Dashboard</h1>
+              <p className="text-[11px] text-muted-foreground">Real-time data from database · {total} total records</p>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button size="sm" asChild>
@@ -599,42 +641,14 @@ export default function AdminInquiries() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <SummaryCard
-            icon={BarChart3}
-            label="Total Inquiries"
-            value={total}
-            color="bg-slate-100 text-slate-600"
-          />
-          <SummaryCard
-            icon={Clock}
-            label="Pending Endorsement"
-            value={pendingEndorsement}
-            color="bg-amber-100 text-amber-700"
-          />
-          <SummaryCard
-            icon={ThumbsUp}
-            label="Endorsed"
-            value={endorsed}
-            color="bg-indigo-100 text-indigo-700"
-          />
-          <SummaryCard
-            icon={CreditCard}
-            label="Pending Payment"
-            value={pendingPayment}
-            color="bg-orange-100 text-orange-700"
-          />
-          <SummaryCard
-            icon={CheckCircle2}
-            label="Paid / Completed"
-            value={paid}
-            color="bg-emerald-100 text-emerald-700"
-          />
-          <SummaryCard
-            icon={DollarSign}
-            label="Total Revenue"
+          <SummaryCard icon={BarChart3}    label="Total Inquiries"    value={total}          color="bg-slate-100 text-slate-600" />
+          <SummaryCard icon={Clock}        label="Pending Endorsement" value={pendingEndorsement} color="bg-amber-100 text-amber-700" />
+          <SummaryCard icon={ThumbsUp}     label="Endorsed"           value={endorsed}       color="bg-indigo-100 text-indigo-700" />
+          <SummaryCard icon={CreditCard}   label="Pending Payment"    value={pendingPayment} color="bg-orange-100 text-orange-700" />
+          <SummaryCard icon={CheckCircle2} label="Paid / Completed"   value={paid}           color="bg-emerald-100 text-emerald-700" />
+          <SummaryCard icon={DollarSign}   label="Total Revenue"
             value={`$${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 0 })}`}
-            color="bg-green-100 text-green-700"
-          />
+            color="bg-green-100 text-green-700" />
         </div>
 
         {/* Filters */}
@@ -644,7 +658,7 @@ export default function AdminInquiries() {
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, email, company, or ID…"
+                  placeholder="Search name, email, company, or ref ID…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-8 h-9 text-sm"
@@ -652,12 +666,12 @@ export default function AdminInquiries() {
               </div>
               <Select value={filterEndorsement} onValueChange={setFilterEndorsement}>
                 <SelectTrigger className="w-44 h-9 text-sm">
-                  <Filter className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                  <Filter className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                   <SelectValue placeholder="Endorsement" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Endorsements</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="pending">Pending Endorsement</SelectItem>
                   <SelectItem value="endorsed">Endorsed</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
@@ -669,13 +683,13 @@ export default function AdminInquiries() {
                 <SelectContent>
                   <SelectItem value="all">All Payments</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="pending">Pending Payment</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterDate} onValueChange={setFilterDate}>
                 <SelectTrigger className="w-36 h-9 text-sm">
-                  <CalendarDays className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                  <CalendarDays className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                   <SelectValue placeholder="Date" />
                 </SelectTrigger>
                 <SelectContent>
@@ -686,17 +700,8 @@ export default function AdminInquiries() {
                 </SelectContent>
               </Select>
               {(search || filterEndorsement !== "all" || filterPayment !== "all" || filterDate !== "all") && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs h-9"
-                  onClick={() => {
-                    setSearch("");
-                    setFilterEndorsement("all");
-                    setFilterPayment("all");
-                    setFilterDate("all");
-                  }}
-                >
+                <Button size="sm" variant="ghost" className="text-xs h-9"
+                  onClick={() => { setSearch(""); setFilterEndorsement("all"); setFilterPayment("all"); setFilterDate("all"); }}>
                   Clear filters
                 </Button>
               )}
@@ -710,15 +715,14 @@ export default function AdminInquiries() {
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#3F4698]" />
               Inquiry Submissions
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {filtered.length}
-              </Badge>
+              <Badge variant="secondary" className="ml-1 text-xs">{filtered.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading from database…</span>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -731,7 +735,7 @@ export default function AdminInquiries() {
                 </p>
                 {inquiries.length === 0 && (
                   <Button size="sm" className="mt-4" asChild>
-                    <Link href="/inquiry">Submit Test Inquiry</Link>
+                    <Link href="/inquiry">Submit First Inquiry</Link>
                   </Button>
                 )}
               </div>
@@ -745,16 +749,17 @@ export default function AdminInquiries() {
                       <TableHead className="text-xs">Company</TableHead>
                       <TableHead className="text-xs">Service</TableHead>
                       <TableHead className="text-xs">Budget</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-xs">Inquiry Status</TableHead>
+                      <TableHead className="text-xs">Endorsement</TableHead>
                       <TableHead className="text-xs">Payment</TableHead>
                       <TableHead className="text-xs">Submitted</TableHead>
-                      <TableHead className="text-xs w-24">Actions</TableHead>
+                      <TableHead className="text-xs w-20">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filtered.map((inq) => (
                       <TableRow key={inq.id} className="hover-elevate">
-                        <TableCell className="font-mono text-xs text-[#3F4698] font-semibold">
+                        <TableCell className="font-mono text-xs text-[#3F4698] font-semibold whitespace-nowrap">
                           {inq.referenceNumber}
                         </TableCell>
                         <TableCell>
@@ -766,31 +771,25 @@ export default function AdminInquiries() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {inq.company ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-xs max-w-[160px]">
+                        <TableCell className="text-xs text-muted-foreground">{inq.company ?? "—"}</TableCell>
+                        <TableCell className="text-xs max-w-[140px]">
                           <span className="line-clamp-2">{inq.serviceNeeded}</span>
                         </TableCell>
-                        <TableCell className="text-xs font-medium">
+                        <TableCell className="text-xs font-medium whitespace-nowrap">
                           {inq.estimatedBudget
                             ? `$${parseFloat(inq.estimatedBudget).toLocaleString("en-US", { minimumFractionDigits: 0 })}`
                             : "—"}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={inq.status} />
+                          <Chip label={getInquiryStatusLabel(inq.status)} colorClass={getInquiryStatusColor(inq.status)} />
                         </TableCell>
                         <TableCell>
-                          {inq.status === "paid" || inq.status === "completed" ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                              <CheckCircle2 className="w-3 h-3" />
-                              {inq.paymentMethod === "manual" ? "Manual" : "Stripe"}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
+                          <Chip label={getEndorsementLabel(inq.status)} colorClass={getEndorsementColor(inq.status)} />
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell>
+                          <Chip label={getPaymentLabel(inq.status)} colorClass={getPaymentColor(inq.status)} />
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {fmtDate(inq.createdAt)}
                         </TableCell>
                         <TableCell>
@@ -813,16 +812,12 @@ export default function AdminInquiries() {
           </CardContent>
         </Card>
 
-        {/* Footer note */}
         <p className="text-[11px] text-muted-foreground/60 text-center pb-2">
-          Admin Inquiry Dashboard — OnSpot Global ·{" "}
-          <span className="text-amber-600 font-medium">
-            TODO: Protect with admin authentication before production.
-          </span>
+          All data is fetched live from PostgreSQL · Records persist across page refreshes ·{" "}
+          <span className="text-amber-600 font-medium">TODO: Protect with admin auth before production.</span>
         </p>
       </div>
 
-      {/* Detail modal */}
       {selected && (
         <InquiryDetailModal
           inquiry={selected}
