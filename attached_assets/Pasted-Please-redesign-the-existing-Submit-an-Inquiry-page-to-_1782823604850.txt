@@ -1,0 +1,105 @@
+Please redesign the existing “Submit an Inquiry” page to match the brand design and visual style of the “Find Work” page.
+
+Important:
+Do not copy the content of the Find Work page.
+Do not add a search bar.
+Only copy the design direction: background, typography, spacing, layout, visual hierarchy, colors, and overall brand feel.
+
+Goal:
+Make the inquiry page look more polished, modern, and consistent with the OnSpot brand.
+
+Design reference:
+Use the “Find Work” page as the design reference.
+
+Apply these improvements:
+
+1. Background
+- Use the same soft lavender / light purple gradient background as the Find Work page.
+- Avoid a plain white page background.
+- Make the page feel light, clean, and spacious.
+
+2. Header / Navigation
+- Keep the same existing top navigation/header.
+- Do not change the logo, menu items, or Access Portal button.
+
+3. Hero section
+- Create a centered hero section similar to the Find Work page.
+- Use a large bold headline.
+- Suggested headline: “Tell us what you need.”
+- Suggested subtext: “We’ll review your inquiry and connect you with the right team.”
+- Add a small pill label above the headline:
+  “Service Inquiry”
+- Use the same typography scale and spacing as the Find Work hero section.
+
+4. Layout
+- Remove the current heavy card-style layout if it feels too boxed.
+- Use a clean, spacious full-width section with a max-width container.
+- Keep the form centered and visually balanced.
+- Use generous spacing between sections.
+
+5. Form design
+- Keep the same form fields:
+  - Full Name
+  - Email Address
+  - Phone Number
+  - Company / Organization
+  - Service or Product Needed
+  - Estimated Budget (USD)
+  - Inquiry Details / Notes
+- Arrange fields in a clean grid:
+  - 2 columns on desktop
+  - 1 column on mobile
+- Make Inquiry Details / Notes full width.
+- Use modern input styling:
+  - rounded corners
+  - subtle border
+  - soft shadow or focus ring
+  - consistent height
+  - clear placeholder text
+
+6. Visual hierarchy
+- The headline should be the strongest visual element.
+- The subtext should be smaller and muted.
+- Form labels should be clear but not too large.
+- The Submit button should stand out as the primary action.
+- Avoid clutter and too many borders.
+
+7. CTA button
+- Use the existing OnSpot purple primary button style.
+- Button text: “Submit Inquiry”
+- Add a small arrow or icon if the project already uses icons.
+- Center the button below the form.
+- Full width on mobile, natural width on desktop.
+
+8. Stepper
+- Improve the stepper design so it feels lighter and consistent with the page.
+- Keep these steps:
+  - Inquiry Details
+  - Review & Endorse
+  - Payment
+  - Confirmation
+- Make it clean and minimal.
+- Do not let the stepper dominate the page.
+
+9. Responsiveness
+- Make sure the page looks good on desktop, tablet, and mobile.
+- Avoid cramped spacing on smaller screens.
+- Ensure inputs, labels, and buttons remain readable.
+
+10. Branding consistency
+- Match the Find Work page’s:
+  - background color
+  - gradient feel
+  - font sizes
+  - heading weight
+  - button style
+  - spacing
+  - rounded corners
+  - soft shadows
+  - overall clean layout
+
+After implementing, tell me:
+- Which file was updated
+- The route/link of the inquiry page
+- What styling changes were made
+- How to test the page
