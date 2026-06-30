@@ -563,8 +563,8 @@ export default function FindWorkAllJobs() {
 
           {/* Subtitle — secondary: muted, narrow column */}
           <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
-            Work differently — and get matched with quality opportunities,
-            steady pipelines, and flexible work that respects your terms.
+            Work differently — and get matched with global opportunities from
+            top notch companies.
           </p>
 
           {/* Search bar — primary action, white card + gradient button */}
@@ -1099,9 +1099,23 @@ export default function FindWorkAllJobs() {
                 <div className="absolute h-16 w-16 rounded-full border border-violet-200/60 bg-violet-50/80" />
                 {/* Icon container */}
                 <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_6px_24px_rgba(91,69,232,0.42)]">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                  <svg
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+                    />
                   </svg>
                 </div>
               </div>
@@ -1121,7 +1135,8 @@ export default function FindWorkAllJobs() {
 
               {/* Description — soft, narrow, readable */}
               <DialogDescription className="mx-auto mt-3 max-w-[260px] text-[12.5px] leading-relaxed text-slate-400">
-                We'll continuously connect you with vetted remote roles that match your skills and experience.
+                We'll continuously connect you with vetted remote roles that
+                match your skills and experience.
               </DialogDescription>
             </DialogHeader>
 
@@ -1137,11 +1152,23 @@ export default function FindWorkAllJobs() {
                   className="flex items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-indigo-50/60 px-3.5 py-2 shadow-[0_1px_3px_rgba(91,69,232,0.07)]"
                 >
                   <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_2px_6px_rgba(91,69,232,0.30)]">
-                    <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    <svg
+                      className="h-2 w-2 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                   </span>
-                  <span className="text-[12px] font-semibold text-violet-700">{label}</span>
+                  <span className="text-[12px] font-semibold text-violet-700">
+                    {label}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1156,7 +1183,7 @@ export default function FindWorkAllJobs() {
                 }}
                 className="w-full rounded-2xl bg-gradient-to-r from-[#5B45E8] to-[#8B5CF6] px-6 py-[13px] text-[14px] font-semibold text-white shadow-[0_6px_24px_rgba(91,69,232,0.40)] transition-all duration-150 hover:from-[#4f3ad4] hover:to-[#7c3aed] hover:shadow-[0_8px_28px_rgba(91,69,232,0.50)] active:scale-[0.985]"
               >
-                Sign in and continue
+                Sign in to continue
               </button>
 
               {/* Secondary */}

@@ -1,0 +1,116 @@
+I want you to implement a complete payment flow for our website.
+
+The flow should be:
+
+1. Customer starts an inquiry
+2. Customer fills out inquiry details
+3. Inquiry is submitted for endorsement/review
+4. Customer sees an endorsement or approval step
+5. Customer proceeds to payment
+6. Customer pays in USD
+7. Customer sees a payment success/confirmation page
+
+Use the uploaded payment flow example as a reference for the transaction journey:
+- Customer accesses the website
+- Customer selects or starts a transaction
+- Customer proceeds to checkout/payment
+- Customer fills in details
+- Customer chooses a payment method
+- Customer completes the transaction
+
+Important design requirement:
+Make the design, layout, spacing, typography, buttons, colors, cards, borders, and overall visual style match the existing homepage so the new payment flow feels consistent with the site branding.
+
+Please inspect the current homepage styles and reuse:
+- Existing primary and secondary colors
+- Existing font styles
+- Existing button styles
+- Existing card/container styles
+- Existing navbar/footer if available
+- Existing spacing and border radius patterns
+
+Build the following pages or sections:
+
+1. Inquiry Page
+- Title: “Submit an Inquiry”
+- Short description explaining that the customer can request a service or product quotation
+- Form fields:
+  - Full Name
+  - Email Address
+  - Phone Number
+  - Company / Organization
+  - Service or Product Needed
+  - Inquiry Details / Notes
+  - Estimated Budget in USD
+- CTA button: “Submit Inquiry”
+- Add validation for required fields
+
+2. Inquiry Submitted / Endorsement Page
+- Show a confirmation card after inquiry submission
+- Text: “Your inquiry has been received and is now pending endorsement.”
+- Display the submitted inquiry summary
+- Include status badge: “Pending Endorsement”
+- Add a button for demo purposes: “Approve / Endorse Inquiry”
+- After clicking approve, update status to “Endorsed”
+- Show CTA button: “Proceed to Payment”
+
+3. Payment Page
+- Title: “Payment”
+- Show order/payment summary:
+  - Service/Product name
+  - Customer name
+  - Inquiry reference number
+  - Amount in USD
+  - Status: Endorsed
+- Add payment method selection section:
+  - Credit/Debit Card
+  - Bank Transfer
+  - PayPal
+  - Other USD Payment Method
+- Add a card-style payment form:
+  - Cardholder Name
+  - Card Number
+  - Expiry Date
+  - CVV
+  - Billing Email
+- CTA button: “Pay Now”
+- This can be a frontend simulation only unless there is already a payment API available.
+
+4. Payment Success Page
+- Show success icon or checkmark
+- Message: “Payment Completed Successfully”
+- Show transaction summary:
+  - Reference number
+  - Paid amount in USD
+  - Payment method
+  - Date/time
+- CTA buttons:
+  - “Back to Home”
+  - “Download Receipt” or “View Receipt”
+
+Functional requirements:
+- Use the existing project framework and routing structure.
+- Preserve existing homepage design and branding.
+- Make the flow responsive for mobile, tablet, and desktop.
+- Use clean reusable components where possible.
+- Store the inquiry/payment state locally for now if no backend exists.
+- Generate a random inquiry reference number such as INQ-2026-0001.
+- Format all amounts in USD, for example: $250.00.
+- Add loading states for submit, endorsement, and payment actions.
+- Add friendly error and success messages.
+- Do not break existing pages.
+
+Optional backend/payment integration:
+If the project already has backend routes, create mock API endpoints for:
+- POST /api/inquiries
+- PATCH /api/inquiries/:id/endorse
+- POST /api/payments
+
+If Stripe, PayPal, Xendit, or another payment provider is already installed, integrate the payment page with the existing provider. Otherwise, create a clean simulated payment flow and leave clear TODO comments where real payment API integration should be added.
+
+Expected output:
+- Add the new inquiry-to-payment flow to the website
+- Match the homepage branding
+- Include all required pages/components
+- Ensure navigation between steps works smoothly
+- Make the UI polished, professional, and client-ready
