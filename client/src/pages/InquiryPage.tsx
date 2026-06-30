@@ -221,7 +221,7 @@ export default function InquiryPage() {
             {/* ── Form body ── */}
             <div className="p-5 sm:p-6 lg:p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
 
                   {/* Contact Information */}
                   <div>
@@ -391,8 +391,9 @@ export default function InquiryPage() {
                   {/* Submit row */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-0">
                     <Button
-                      type="submit"
+                      type="button"
                       disabled={submitMutation.isPending}
+                      onClick={() => form.handleSubmit(onSubmit)()}
                       className="sm:w-auto w-full bg-[#474ead] hover:bg-[#3d4399] text-white h-11 rounded-xl px-8 text-sm font-semibold shadow-[0_4px_24px_rgba(71,78,173,0.28)]"
                     >
                       {submitMutation.isPending ? (
