@@ -1,0 +1,96 @@
+Please refine the Inquiry page UI to better match the premium design quality of the Find Work page.
+
+The current layout is close, but there are several visual issues that need improvement.
+
+1. Hero Background
+- Remove the white strip directly below the navigation bar.
+- The hero gradient background should begin immediately below the navbar.
+- Ensure there is no white gap, margin, or padding between the navbar and hero section.
+
+2. Hero Height
+- Reduce the vertical height of the hero by approximately 35–40%.
+- There is currently too much empty whitespace.
+- The form should become visible sooner without excessive scrolling.
+
+3. Headline
+Replace:
+
+"Tell us what you need."
+
+with a more professional headline.
+
+Preferred:
+"Request Our Services"
+
+Alternative options:
+- Submit a Service Inquiry
+- Tell Us About Your Project
+- Let's Discuss Your Business Needs
+- How Can We Help Your Business?
+
+The heading should match the typography scale of the Find Work page.
+
+4. Supporting Text
+
+Replace the existing text with:
+
+"Submit your inquiry and our team will review your requirements before recommending the most suitable solution for your business."
+
+Keep the same muted typography style as the Find Work page.
+
+5. Visual Hierarchy
+
+The page should follow this order:
+
+Service Inquiry badge
+
+↓
+
+Large headline
+
+↓
+
+Supporting description
+
+↓
+
+Inquiry form
+
+Do not let the stepper compete with the headline.
+
+6. Stepper
+
+Move the stepper inside the form container so it becomes part of the form experience rather than floating independently.
+
+The order should be:
+
+Card Header
+Stepper
+Contact Information
+Company Information
+Service Details
+Submit Button
+
+7. Form Width
+
+Increase the maximum width of the inquiry form.
+
+Target width:
+1100–1200px
+
+Reduce the feeling that the page is narrow.
+
+8. Overall Polish
+
+Use the same premium design language as the Find Work page:
+- soft gradient background
+- generous spacing
+- clean typography
+- rounded corners
+- subtle shadows
+- minimal borders
+- professional visual hierarchy
+
+The page should feel like a premium SaaS landing page rather than a standard form.
+
+Do not change the existing functionality. This task is purely a UI/UX refinement while keeping the current branding and responsive behavior.
