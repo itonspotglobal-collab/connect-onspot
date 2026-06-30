@@ -120,19 +120,22 @@ export default function InquiryPage() {
   }
 
   return (
-    /* Gradient matches FindWork exactly — navbar spacer handles offset */
+    /*
+     * Background starts at the navbar's indigo (#3b3ec9) and transitions
+     * through the full 80px spacer height so there is zero visible gap.
+     * --nav-h is 80px (index.css). This gradient is scoped to this page only.
+     */
     <div
       className="min-h-screen text-slate-900"
       style={{
         background:
-          "radial-gradient(circle at top, rgba(71,78,173,0.12), transparent 32%), linear-gradient(to bottom, #f8fafc, white)",
+          "linear-gradient(to bottom, #3b3ec9 0px, #5558d8 80px, #9496e0 130px, #d0d3f5 190px, #eef0fb 270px, #f5f6fc 450px, white 700px)",
       }}
     >
       <TopNavigation />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      {/* No extra pt here — TopNavigation already renders its own spacer div */}
-      <section className="relative overflow-hidden pt-6 pb-6 px-6 md:pt-10">
+      <section className="relative overflow-hidden pt-4 pb-6 px-6 md:pt-8">
         {/* Ambient indigo glows — same as FindWork */}
         <div
           className="absolute inset-0 pointer-events-none"
