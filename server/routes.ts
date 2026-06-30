@@ -18,7 +18,7 @@ import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db } from "./db.ts";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
@@ -6511,6 +6511,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("❌ Confirm payment error:", error.message);
       res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
+  // ============================================
+  // Admin Inquiry Routes
+  // GET  /api/inquiries           — list all (TODO: protect with admin auth before production)
+  // PATCH /api/inquiries/:id/status — update status / payment method
+  // PATCH /api/inquiries/:id/notes  — update admin notes
+  // ============================================
+
+  app.get("/api/inquiries", async (_req: Request, res: Response) => {
+    try {
+      const result = await db
+        .select()
+        .from(inquiriesTable)
+        .orderBy(desc(inquiriesTable.createdAt));
+      res.json({ inquiries: result });
+    } catch (error: any) {
+      console.error("❌ List inquiries error:", error.message);
+      res.status(500).json({ error: "Failed to fetch inquiries" });
+    }
+  });
+
+  app.patch("/api/inquiries/:id/status", async (req: Request, res: Response) => {
+    try {
+      const { status, paymentMethod } = req.body as { status?: string; paymentMethod?: string };
+      if (!status) return res.status(400).json({ error: "status is required" });
+      const updatePayload: Record<string, unknown> = { status, updatedAt: new Date() };
+      if (paymentMethod !== undefined) updatePayload.paymentMethod = paymentMethod;
+      if (status === "paid") updatePayload.paidAt = new Date();
+      const result = await db
+        .update(inquiriesTable)
+        .set(updatePayload as any)
+        .where(eq(inquiriesTable.id, req.params.id))
+        .returning();
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Update inquiry status error:", error.message);
+      res.status(500).json({ error: "Failed to update inquiry status" });
+    }
+  });
+
+  app.patch("/api/inquiries/:id/notes", async (req: Request, res: Response) => {
+    try {
+      const { adminNotes } = req.body as { adminNotes: string };
+      const result = await db
+        .update(inquiriesTable)
+        .set({ adminNotes, updatedAt: new Date() })
+        .where(eq(inquiriesTable.id, req.params.id))
+        .returning();
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Update inquiry notes error:", error.message);
+      res.status(500).json({ error: "Failed to update notes" });
     }
   });
 

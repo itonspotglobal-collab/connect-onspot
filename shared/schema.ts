@@ -1131,6 +1131,7 @@ export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
 export type Candidate = typeof candidates.$inferSelect;
 
 // Inquiries — client service inquiry + payment flow
+// status: pending_endorsement | endorsed | rejected | payment_pending | paid | completed
 export const inquiries = pgTable("inquiries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   referenceNumber: text("reference_number").notNull().unique(), // INQ-2026-XXXX
@@ -1141,7 +1142,9 @@ export const inquiries = pgTable("inquiries", {
   serviceNeeded: text("service_needed").notNull(),
   details: text("details"),
   estimatedBudget: decimal("estimated_budget", { precision: 12, scale: 2 }),
-  status: text("status").notNull().default("pending_endorsement"), // pending_endorsement | endorsed | paid
+  status: text("status").notNull().default("pending_endorsement"),
+  paymentMethod: text("payment_method"), // stripe | manual
+  adminNotes: text("admin_notes"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -1152,6 +1155,8 @@ export const insertInquirySchema = createInsertSchema(inquiries).omit({
   id: true,
   referenceNumber: true,
   status: true,
+  paymentMethod: true,
+  adminNotes: true,
   stripePaymentIntentId: true,
   paidAt: true,
   createdAt: true,

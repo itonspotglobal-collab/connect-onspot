@@ -74,6 +74,7 @@ import InquiryPage from "@/pages/InquiryPage";
 import InquiryReview from "@/pages/InquiryReview";
 import InquiryPayment from "@/pages/InquiryPayment";
 import InquirySuccess from "@/pages/InquirySuccess";
+import AdminInquiries from "@/pages/AdminInquiries";
 
 // Redirect /find-work → /find-work/jobs (URL changes in browser)
 function FindWorkRedirect() {
@@ -178,6 +179,7 @@ function PublicRouter() {
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
           <Route path="/admin/find-work" component={AdminFindWork} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
+          <Route path="/admin/inquiries" component={AdminInquiries} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

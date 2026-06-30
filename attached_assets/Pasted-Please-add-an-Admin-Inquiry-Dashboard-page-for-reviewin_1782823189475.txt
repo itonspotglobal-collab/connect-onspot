@@ -1,0 +1,110 @@
+Please add an Admin Inquiry Dashboard page for reviewing and tracking all inquiry submissions.
+
+Purpose:
+This page is for our internal admin/team to easily track every inquiry from submission up to endorsement, payment, and success.
+
+Create a new admin page:
+
+Page name:
+Admin Inquiry Dashboard
+
+Suggested route:
+/admin/inquiries
+
+Main requirements:
+
+1. Show all inquiry submissions in a dashboard table.
+Each row should display:
+- Inquiry reference ID
+- Customer full name
+- Email
+- Phone number
+- Company / Organization
+- Service or Product Needed
+- Estimated Budget in USD
+- Inquiry status
+- Endorsement status
+- Payment status
+- Payment amount
+- Payment method
+- Submission date
+- Last updated date
+- Action button: “View Details”
+
+2. Add status badges:
+- Inquiry Submitted
+- Pending Endorsement
+- Endorsed
+- Payment Pending
+- Paid
+- Failed
+- Completed
+
+3. Add filters/search:
+- Search by name, email, company, or inquiry ID
+- Filter by endorsement status
+- Filter by payment status
+- Filter by date submitted
+
+4. Add summary cards at the top:
+- Total Inquiries
+- Pending Endorsements
+- Endorsed Inquiries
+- Pending Payments
+- Paid / Completed
+- Total Revenue in USD
+
+5. Add inquiry detail view:
+When admin clicks “View Details”, open a detail page or modal showing:
+- Customer information
+- Inquiry details
+- Service/product requested
+- Estimated budget
+- Endorsement status
+- Payment status
+- Payment amount
+- Payment method
+- Transaction/reference number
+- Receipt details
+- Timeline/history of actions
+
+6. Admin actions:
+Allow admin to:
+- Approve / Endorse inquiry
+- Mark inquiry as rejected
+- Mark payment as pending
+- Mark payment as paid, if manual payment is used
+- Add internal admin notes
+
+7. Make sure this admin page connects to the existing inquiry flow:
+- /inquiry
+- /inquiry/:id/review
+- /inquiry/:id/payment
+- /inquiry/:id/success
+
+8. Important:
+Use the same website branding, layout, colors, typography, buttons, cards, and spacing as the homepage.
+Make the admin dashboard clean, professional, responsive, and easy to use.
+
+9. Data handling:
+If there is no backend yet, store inquiry records locally or in the existing project storage.
+If backend routes exist, create or update these routes:
+- GET /api/inquiries
+- GET /api/inquiries/:id
+- PATCH /api/inquiries/:id/endorse
+- PATCH /api/inquiries/:id/status
+- PATCH /api/inquiries/:id/payment
+- PATCH /api/inquiries/:id/notes
+
+10. Add navigation:
+Add an admin link or route access for:
+“Admin Inquiries”
+
+Do not show the admin link publicly if the site has authentication. If there is no authentication yet, add a simple TODO comment saying this page should be protected before production.
+
+After implementing, tell me:
+- The admin page name
+- The admin route/link
+- The files created or updated
+- How inquiries are stored
+- How to test the admin review flow
