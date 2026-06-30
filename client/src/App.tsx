@@ -75,6 +75,9 @@ import InquiryReview from "@/pages/InquiryReview";
 import InquiryPayment from "@/pages/InquiryPayment";
 import InquirySuccess from "@/pages/InquirySuccess";
 import AdminInquiries from "@/pages/AdminInquiries";
+import TermsAndConditions from "@/pages/TermsAndConditions";
+import RefundPolicy from "@/pages/RefundPolicy";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 // Redirect /find-work → /find-work/jobs (URL changes in browser)
 function FindWorkRedirect() {
@@ -168,6 +171,9 @@ function PublicRouter() {
           <Route path="/inquiry/:id/review" component={InquiryReview} />
           <Route path="/inquiry/:id/payment" component={InquiryPayment} />
           <Route path="/inquiry/:id/success" component={InquirySuccess} />
+          <Route path="/terms-and-conditions" component={TermsAndConditions} />
+          <Route path="/refund-policy" component={RefundPolicy} />
+          <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />

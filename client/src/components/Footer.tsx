@@ -184,9 +184,9 @@ export function Footer() {
             <p className="mt-2 text-sm font-medium text-white/72">© 2025 OnSpot. All rights reserved.</p>
             <p className="mt-3 text-xs font-semibold text-white/42">Powered by OnSpot Intelligence</p>
             <div className="mt-5 flex flex-wrap items-center justify-start gap-x-8 gap-y-3 text-sm font-medium">
-              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-privacy">Privacy Policy</a>
-              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-terms">Terms of Service</a>
-              <a href="#" className="text-white/72 transition hover:text-white" data-testid="footer-cookies">Cookie Policy</a>
+              <Link href="/privacy-policy" className="text-white/72 transition hover:text-white" data-testid="footer-privacy">Privacy Policy</Link>
+              <Link href="/terms-and-conditions" className="text-white/72 transition hover:text-white" data-testid="footer-terms">Terms &amp; Conditions</Link>
+              <Link href="/refund-policy" className="text-white/72 transition hover:text-white" data-testid="footer-refund">Refund Policy</Link>
             </div>
           </div>
         </div>
