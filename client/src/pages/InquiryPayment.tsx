@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import {
+  useStripe,
+  useElements,
+  PaymentElement,
+  Elements,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   CreditCard,
@@ -15,12 +20,23 @@ import {
   CheckCircle2,
   Lock,
   ArrowLeft,
+  AlertCircle,
+  Mail,
 } from "lucide-react";
 
-// TODO: Replace simulated payment with Stripe Elements when VITE_STRIPE_PUBLIC_KEY is configured.
-// Pattern: import { loadStripe } from "@stripe/stripe-js"; const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-// Then wrap the form in <Elements stripe={stripePromise} options={{ clientSecret }}>
+// Stripe initialisation — mirrors the existing LegalOps pattern.
+// stripePromise is null when VITE_STRIPE_PUBLIC_KEY is not configured;
+// in that case we render a "contact us" fallback instead of the payment form.
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  console.warn("Missing VITE_STRIPE_PUBLIC_KEY - Stripe checkout will not work");
+}
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+  : null;
 
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
 function formatUSD(val: string | number | null | undefined) {
   if (!val) return "$0.00";
   const n = typeof val === "string" ? parseFloat(val) : val;
@@ -28,26 +44,134 @@ function formatUSD(val: string | number | null | undefined) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
 
-const PAYMENT_METHODS = [
-  { id: "card", label: "Credit / Debit Card", icon: CreditCard },
-  { id: "bank", label: "Bank Transfer", icon: null },
-  { id: "paypal", label: "PayPal", icon: null },
-  { id: "other", label: "Other USD Method", icon: null },
-];
+// ─────────────────────────────────────────────────────────────
+// Inner checkout form (rendered inside <Elements> provider)
+// ─────────────────────────────────────────────────────────────
+type CheckoutFormProps = {
+  inquiryId: string;
+  paymentIntentId: string;
+  amount: string;
+  onSuccess: () => void;
+};
 
+function CheckoutForm({ inquiryId, paymentIntentId, amount, onSuccess }: CheckoutFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+    try {
+      // 1. Confirm payment with Stripe (no redirect — handled in-page)
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
+
+      if (stripeError) {
+        toast({
+          title: "Payment failed",
+          description: stripeError.message ?? "Your card was declined.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      if (paymentIntent?.status !== "succeeded") {
+        toast({
+          title: "Payment incomplete",
+          description: `Payment status: ${paymentIntent?.status}. Please try again.`,
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Verify with backend and mark inquiry as paid
+      const res = await apiRequest("PATCH", `/api/inquiries/${inquiryId}/paid`, {
+        paymentIntentId: paymentIntent.id,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to record payment");
+      }
+
+      onSuccess();
+    } catch (err: any) {
+      toast({
+        title: "Error recording payment",
+        description: err.message,
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Stripe's PaymentElement renders card + wallet fields */}
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          fields: { billingDetails: { email: "auto", name: "auto" } },
+        }}
+      />
+
+      <Button
+        type="submit"
+        disabled={!stripe || !elements || isProcessing}
+        className="w-full bg-gradient-to-r from-[#3F4698] to-[#5B45E8] text-white h-11"
+      >
+        {isProcessing ? (
+          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing…</>
+        ) : (
+          <><Lock className="w-4 h-4 mr-2" />Pay Securely · {amount}</>
+        )}
+      </Button>
+    </form>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// No-key fallback UI (shown when VITE_STRIPE_PUBLIC_KEY is absent)
+// ─────────────────────────────────────────────────────────────
+function PaymentNotConfigured() {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 space-y-3 text-center">
+      <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+      <h3 className="font-semibold text-slate-800">Online payment is being set up</h3>
+      <p className="text-sm text-slate-600 leading-relaxed">
+        Our secure payment system is currently being configured. To complete your payment, please contact us directly and reference your inquiry number.
+      </p>
+      <a
+        href="mailto:hello@onspotglobal.com"
+        className="inline-flex items-center gap-2 text-sm font-medium text-[#3F4698] hover:underline"
+      >
+        <Mail className="w-4 h-4" />
+        hello@onspotglobal.com
+      </a>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main page component
+// ─────────────────────────────────────────────────────────────
 export default function InquiryPayment() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  const [selectedMethod, setSelectedMethod] = useState("card");
-  const [cardFields, setCardFields] = useState({
-    cardholderName: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    billingEmail: "",
-  });
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string>("");
+  const [intentLoading, setIntentLoading] = useState(false);
+  const [intentError, setIntentError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ inquiry: any }>({
     queryKey: ["/api/inquiries", id],
@@ -58,60 +182,29 @@ export default function InquiryPayment() {
     },
   });
 
-  const payMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/inquiries/${id}/pay`, {
-        paymentMethod: PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.label ?? "Credit/Debit Card",
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Payment failed");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      navigate(`/inquiry/${id}/success`);
-    },
-    onError: (err: Error) => {
-      toast({ title: "Payment failed", description: err.message, variant: "destructive" });
-    },
-  });
-
-  function formatCardNumber(val: string) {
-    return val.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
-  }
-
-  function formatExpiry(val: string) {
-    const digits = val.replace(/\D/g, "").slice(0, 4);
-    if (digits.length >= 3) return `${digits.slice(0, 2)} / ${digits.slice(2)}`;
-    return digits;
-  }
-
-  function handlePay(e: React.FormEvent) {
-    e.preventDefault();
-    if (selectedMethod === "card") {
-      if (!cardFields.cardholderName.trim()) {
-        toast({ title: "Cardholder name required", variant: "destructive" });
-        return;
-      }
-      if (cardFields.cardNumber.replace(/\s/g, "").length < 16) {
-        toast({ title: "Enter a valid 16-digit card number", variant: "destructive" });
-        return;
-      }
-      if (!cardFields.expiry.includes("/")) {
-        toast({ title: "Enter a valid expiry (MM / YY)", variant: "destructive" });
-        return;
-      }
-      if (cardFields.cvv.length < 3) {
-        toast({ title: "Enter a valid CVV", variant: "destructive" });
-        return;
-      }
-    }
-    payMutation.mutate();
-  }
-
   const inquiry = data?.inquiry;
-  const amount = inquiry?.estimatedBudget ? formatUSD(inquiry.estimatedBudget) : "$0.00";
+
+  // Create a PaymentIntent as soon as the inquiry is loaded and endorsed
+  useEffect(() => {
+    if (!inquiry || inquiry.status !== "endorsed" || !stripePromise) return;
+    if (clientSecret) return; // already fetched
+
+    setIntentLoading(true);
+    setIntentError(null);
+
+    apiRequest("POST", "/api/payments", { inquiryId: id })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message ?? json.error ?? "Payment setup failed");
+        setClientSecret(json.clientSecret);
+        setPaymentIntentId(json.paymentIntentId);
+      })
+      .catch((err: Error) => {
+        setIntentError(err.message);
+        toast({ title: "Payment setup failed", description: err.message, variant: "destructive" });
+      })
+      .finally(() => setIntentLoading(false));
+  }, [inquiry, id, clientSecret, toast]);
 
   if (isLoading) {
     return (
@@ -143,6 +236,8 @@ export default function InquiryPayment() {
     navigate(`/inquiry/${id}/success`);
     return null;
   }
+
+  const amount = formatUSD(inquiry.estimatedBudget);
 
   return (
     <div className="min-h-screen bg-background">
@@ -226,136 +321,67 @@ export default function InquiryPayment() {
 
               <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
                 <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>256-bit SSL encryption. Your payment is secure.</span>
+                <span>256-bit TLS encryption. Payments processed by Stripe.</span>
               </div>
             </div>
 
             {/* Payment form */}
             <div className="lg:col-span-3">
               <Card className="shadow-sm">
-                <CardContent className="p-6 space-y-6">
-                  {/* Method selection */}
-                  <div>
-                    <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Payment Method</h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      {PAYMENT_METHODS.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setSelectedMethod(m.id)}
-                          className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors text-left ${
-                            selectedMethod === m.id
-                              ? "border-[#3F4698] bg-[#3F4698]/5 text-[#3F4698]"
-                              : "border-slate-200 text-slate-600 hover:border-slate-300"
-                          }`}
-                        >
-                          {m.icon && <m.icon className="w-4 h-4 flex-shrink-0" />}
-                          {m.label}
-                        </button>
-                      ))}
+                <CardContent className="p-6 space-y-5">
+                  <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Payment Details</h2>
+
+                  {/* No Stripe key configured */}
+                  {!stripePromise && <PaymentNotConfigured />}
+
+                  {/* Stripe key present but intent still loading */}
+                  {stripePromise && intentLoading && (
+                    <div className="flex items-center justify-center py-10 gap-3 text-slate-500 text-sm">
+                      <Loader2 className="w-5 h-5 animate-spin text-[#3F4698]" />
+                      Setting up secure payment…
                     </div>
-                  </div>
-
-                  {/* Card form */}
-                  {selectedMethod === "card" && (
-                    <form onSubmit={handlePay} className="space-y-4">
-                      <div>
-                        <Label htmlFor="cardholderName">Cardholder Name</Label>
-                        <Input
-                          id="cardholderName"
-                          placeholder="Juan dela Cruz"
-                          className="mt-1"
-                          value={cardFields.cardholderName}
-                          onChange={(e) => setCardFields((p) => ({ ...p, cardholderName: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cardNumber">Card Number</Label>
-                        <div className="relative mt-1">
-                          <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <Input
-                            id="cardNumber"
-                            placeholder="1234 5678 9012 3456"
-                            className="pl-10"
-                            value={cardFields.cardNumber}
-                            onChange={(e) =>
-                              setCardFields((p) => ({ ...p, cardNumber: formatCardNumber(e.target.value) }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="expiry">Expiry Date</Label>
-                          <Input
-                            id="expiry"
-                            placeholder="MM / YY"
-                            className="mt-1"
-                            value={cardFields.expiry}
-                            onChange={(e) =>
-                              setCardFields((p) => ({ ...p, expiry: formatExpiry(e.target.value) }))
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input
-                            id="cvv"
-                            placeholder="123"
-                            className="mt-1"
-                            maxLength={4}
-                            value={cardFields.cvv}
-                            onChange={(e) =>
-                              setCardFields((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="billingEmail">Billing Email</Label>
-                        <Input
-                          id="billingEmail"
-                          placeholder="you@company.com"
-                          type="email"
-                          className="mt-1"
-                          value={cardFields.billingEmail}
-                          onChange={(e) => setCardFields((p) => ({ ...p, billingEmail: e.target.value }))}
-                        />
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={payMutation.isPending}
-                        className="w-full bg-gradient-to-r from-[#3F4698] to-[#5B45E8] text-white h-11 mt-2"
-                      >
-                        {payMutation.isPending ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing…</>
-                        ) : (
-                          <><Lock className="w-4 h-4 mr-2" />Pay Now · {amount}</>
-                        )}
-                      </Button>
-                    </form>
                   )}
 
-                  {selectedMethod !== "card" && (
-                    <div className="rounded-lg bg-slate-50 border border-slate-100 p-5 text-center text-sm text-slate-500 space-y-4">
-                      <p>
-                        You've selected <strong className="text-slate-700">{PAYMENT_METHODS.find(m => m.id === selectedMethod)?.label}</strong>.
-                        Our team will send you payment instructions via email within 24 hours.
-                      </p>
+                  {/* Intent error */}
+                  {stripePromise && !intentLoading && intentError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+                      <p className="text-sm font-medium text-red-700">{intentError}</p>
                       <Button
-                        type="button"
-                        onClick={handlePay}
-                        disabled={payMutation.isPending}
-                        className="w-full bg-gradient-to-r from-[#3F4698] to-[#5B45E8] text-white"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIntentError(null);
+                          setClientSecret(null);
+                        }}
                       >
-                        {payMutation.isPending ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing…</>
-                        ) : (
-                          <>Confirm &amp; Request Payment Instructions</>
-                        )}
+                        Retry
                       </Button>
                     </div>
+                  )}
+
+                  {/* Stripe Elements payment form */}
+                  {stripePromise && clientSecret && !intentError && (
+                    <Elements
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            colorPrimary: "#3F4698",
+                            borderRadius: "6px",
+                            fontFamily: "Inter, system-ui, sans-serif",
+                          },
+                        },
+                      }}
+                    >
+                      <CheckoutForm
+                        inquiryId={id!}
+                        paymentIntentId={paymentIntentId}
+                        amount={amount}
+                        onSuccess={() => navigate(`/inquiry/${id}/success`)}
+                      />
+                    </Elements>
                   )}
 
                   <Button
@@ -370,6 +396,7 @@ export default function InquiryPayment() {
                 </CardContent>
               </Card>
             </div>
+
           </div>
         </div>
       </section>

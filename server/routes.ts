@@ -6320,10 +6320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============================================
   // Inquiry & Payment Flow
-  // POST   /api/inquiries           — submit a new inquiry
-  // GET    /api/inquiries/:id       — fetch a single inquiry
-  // PATCH  /api/inquiries/:id/endorse — endorse/approve an inquiry
-  // POST   /api/inquiries/:id/pay   — record payment (simulated; TODO: real Stripe)
+  // POST   /api/inquiries              — submit a new inquiry
+  // GET    /api/inquiries/:id          — fetch a single inquiry
+  // PATCH  /api/inquiries/:id/endorse  — approve/endorse an inquiry
+  // POST   /api/payments               — create Stripe PaymentIntent, return clientSecret
+  // PATCH  /api/inquiries/:id/paid     — verify PI with Stripe and mark inquiry as paid
   // ============================================
 
   const inquirySubmitSchema = z.object({
@@ -6396,48 +6397,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TODO: Replace the simulated payment below with real Stripe PaymentIntent when
-  // VITE_STRIPE_PUBLIC_KEY + STRIPE_SECRET_KEY are both configured.
-  app.post("/api/inquiries/:id/pay", async (req: Request, res: Response) => {
+  // POST /api/payments — creates a Stripe PaymentIntent for an endorsed inquiry.
+  // Returns clientSecret so the frontend can confirm with Stripe Elements.
+  // Status remains "endorsed" until PATCH /api/inquiries/:id/paid verifies the confirmed PI.
+  app.post("/api/payments", async (req: Request, res: Response) => {
     try {
-      const { paymentMethod = "Credit/Debit Card" } = req.body;
+      const { inquiryId } = req.body;
+      if (!inquiryId) return res.status(400).json({ error: "inquiryId is required" });
 
-      // -- Real Stripe path (activated when keys are available) --
-      if (process.env.STRIPE_SECRET_KEY) {
-        const inquiryRows = await db.select().from(inquiriesTable)
-          .where(eq(inquiriesTable.id, req.params.id)).limit(1);
-        if (!inquiryRows.length) return res.status(404).json({ error: "Inquiry not found" });
-        const inquiry = inquiryRows[0];
+      const inquiryRows = await db.select().from(inquiriesTable)
+        .where(eq(inquiriesTable.id, inquiryId)).limit(1);
+      if (!inquiryRows.length) return res.status(404).json({ error: "Inquiry not found" });
+      const inquiry = inquiryRows[0];
 
-        const Stripe = await import("stripe");
-        const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
-        const amountCents = inquiry.estimatedBudget ? Math.round(parseFloat(inquiry.estimatedBudget) * 100) : 10000;
-
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: amountCents,
-          currency: "usd",
-          description: `OnSpot Inquiry ${inquiry.referenceNumber} — ${inquiry.serviceNeeded}`,
-          metadata: { inquiryId: inquiry.id, referenceNumber: inquiry.referenceNumber, email: inquiry.email },
-        });
-
-        await db.update(inquiriesTable)
-          .set({ status: "paid", stripePaymentIntentId: paymentIntent.id, paidAt: new Date(), updatedAt: new Date() })
-          .where(eq(inquiriesTable.id, req.params.id));
-
-        return res.json({ success: true, clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, simulated: false });
+      if (inquiry.status !== "endorsed") {
+        return res.status(400).json({ error: "Inquiry must be endorsed before payment can be taken" });
       }
 
-      // -- Simulated path (no Stripe keys) --
-      const simId = `pi_sim_${Date.now()}`;
-      await db.update(inquiriesTable)
-        .set({ status: "paid", stripePaymentIntentId: simId, paidAt: new Date(), updatedAt: new Date() })
-        .where(eq(inquiriesTable.id, req.params.id));
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(503).json({
+          error: "Payment system not configured",
+          message: "Stripe integration is not set up. Please contact hello@onspotglobal.com to arrange payment.",
+        });
+      }
 
-      const updated = await db.select().from(inquiriesTable).where(eq(inquiriesTable.id, req.params.id)).limit(1);
-      res.json({ success: true, paymentIntentId: simId, simulated: true, inquiry: updated[0] });
+      const Stripe = await import("stripe");
+      const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
+      const amountCents = inquiry.estimatedBudget ? Math.round(parseFloat(inquiry.estimatedBudget) * 100) : 10000;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: "usd",
+        description: `OnSpot Inquiry ${inquiry.referenceNumber} — ${inquiry.serviceNeeded}`,
+        receipt_email: inquiry.email,
+        metadata: { inquiryId: inquiry.id, referenceNumber: inquiry.referenceNumber, email: inquiry.email },
+      });
+
+      console.log(`✅ PaymentIntent created for inquiry ${inquiry.referenceNumber}:`, paymentIntent.id);
+      res.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
     } catch (error: any) {
-      console.error("❌ Payment error:", error.message);
-      res.status(500).json({ error: "Payment failed" });
+      console.error("❌ Create PaymentIntent error:", error.message);
+      res.status(500).json({ error: "Failed to create payment intent" });
+    }
+  });
+
+  // PATCH /api/inquiries/:id/paid — verifies the Stripe PaymentIntent status (server-side)
+  // and marks the inquiry as paid only when the charge is confirmed by Stripe.
+  app.patch("/api/inquiries/:id/paid", async (req: Request, res: Response) => {
+    try {
+      const { paymentIntentId } = req.body;
+      if (!paymentIntentId) return res.status(400).json({ error: "paymentIntentId is required" });
+
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(503).json({ error: "Payment system not configured" });
+      }
+
+      const Stripe = await import("stripe");
+      const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (paymentIntent.status !== "succeeded") {
+        return res.status(400).json({
+          error: "Payment not confirmed",
+          message: `Stripe PaymentIntent status is '${paymentIntent.status}', expected 'succeeded'.`,
+        });
+      }
+
+      const result = await db.update(inquiriesTable)
+        .set({ status: "paid", stripePaymentIntentId: paymentIntentId, paidAt: new Date(), updatedAt: new Date() })
+        .where(eq(inquiriesTable.id, req.params.id))
+        .returning();
+
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      console.log(`✅ Inquiry ${req.params.id} marked as paid via PI ${paymentIntentId}`);
+      res.json({ success: true, inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Confirm payment error:", error.message);
+      res.status(500).json({ error: "Failed to confirm payment" });
     }
   });
 
