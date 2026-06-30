@@ -1,0 +1,55 @@
+Please make one final UI refinement to the Inquiry page.
+
+Goal:
+The entire first step of the inquiry process should fit within a single desktop viewport (above the fold) whenever possible, allowing users to immediately understand the process and begin filling out the form without unnecessary scrolling.
+
+Requirements:
+
+1. Optimize the vertical spacing
+- Reduce excessive top and bottom padding in the hero section.
+- Decrease the spacing between:
+  - Navbar and hero
+  - Badge and headline
+  - Headline and supporting text
+  - Supporting text and form
+- Keep enough whitespace for readability, but avoid large empty areas.
+
+2. Reduce hero height
+- The hero should provide context without occupying most of the screen.
+- The form should begin immediately below the hero content.
+
+3. Move the form higher
+- Position the form so that the first few input fields are visible within the initial viewport.
+- Users should not need to scroll before they can start interacting with the page.
+
+4. Compact the stepper
+- Reduce the height of the stepper.
+- Reduce the padding inside each step.
+- Keep the labels readable while minimizing vertical space.
+- Ensure it still aligns with the OnSpot design system.
+
+5. Form optimization
+- Keep the current two-column layout.
+- Slightly reduce the vertical spacing between input fields.
+- Maintain comfortable spacing and accessibility.
+- Preserve all existing functionality.
+
+6. Responsive behavior
+- This optimization is primarily for desktop (1920×1080 and 1366×768).
+- Maintain proper responsiveness for tablet and mobile devices.
+- On smaller screens, allow natural scrolling while preserving usability.
+
+7. Do not compromise usability
+- Avoid making fonts, buttons, or inputs too small.
+- The design should remain clean, balanced, and professional.
+
+Target experience:
+When a user opens the Inquiry page on a standard desktop screen, they should immediately see:
+- Navigation bar
+- Service Inquiry badge
+- Headline
+- Supporting description
+- Stepper
+- Beginning of the inquiry form (at least the first row of fields)
+
+This creates a more efficient, user-friendly experience by minimizing unnecessary scrolling while maintaining the premium OnSpot visual design.

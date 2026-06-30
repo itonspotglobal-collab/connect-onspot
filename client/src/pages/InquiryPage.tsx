@@ -130,7 +130,7 @@ export default function InquiryPage() {
       <TopNavigation />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-4 pb-6 px-6 md:pt-8">
+      <section className="relative overflow-hidden pt-2 pb-4 px-6 md:pt-3">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -139,17 +139,17 @@ export default function InquiryPage() {
           }}
         />
 
-        <div className="relative mx-auto max-w-3xl text-center pb-2">
-          <Badge className="mb-5 rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] border-0 text-sm font-medium">
-            <FileText className="w-3.5 h-3.5 mr-1.5" />
+        <div className="relative mx-auto max-w-3xl text-center">
+          <Badge className="mb-3 rounded-full bg-[#474ead]/10 px-4 py-1 text-[#474ead] border-0 text-xs font-medium">
+            <FileText className="w-3 h-3 mr-1.5" />
             Service Inquiry
           </Badge>
 
-          <h1 className="text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl md:leading-[1.1]">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl md:leading-[1.12]">
             Request Our Services
           </h1>
 
-          <p className="mt-4 text-base leading-7 text-slate-500 md:text-lg max-w-2xl mx-auto">
+          <p className="mt-2 text-sm leading-6 text-slate-500 md:text-base max-w-xl mx-auto">
             Submit your inquiry and our team will review your requirements before
             recommending the most suitable solution for your business.
           </p>
@@ -157,34 +157,34 @@ export default function InquiryPage() {
       </section>
 
       {/* ── Form + Stepper ────────────────────────────────────────────────── */}
-      <section className="px-4 pb-20 sm:px-6">
+      <section className="px-4 pb-10 sm:px-6">
         {/* max-w-6xl ≈ 1152 px — the target 1100–1200 px range */}
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-[28px] border border-slate-200/70 bg-white/92 shadow-[0_24px_80px_rgba(71,78,173,0.11)] backdrop-blur-sm overflow-hidden">
+          <div className="rounded-[24px] border border-slate-200/70 bg-white/92 shadow-[0_16px_60px_rgba(71,78,173,0.09)] backdrop-blur-sm overflow-hidden">
 
-            {/* ── Stepper — inside the card, at the top ── */}
-            <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-4 sm:px-10">
+            {/* ── Stepper — compact header row ── */}
+            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-2.5 sm:px-8">
               <div className="flex items-center gap-2 max-w-2xl">
                 {STEPS.map((step, i) => (
-                  <div key={step.n} className="flex items-center gap-2 flex-1 min-w-0">
+                  <div key={step.n} className="flex items-center gap-1.5 flex-1 min-w-0">
                     <div
-                      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                         step.n === 1
                           ? "bg-[#474ead] text-white"
                           : "border border-slate-300 text-slate-400"
                       }`}
                     >
-                      {step.n === 1 ? <CheckCircle2 className="w-3.5 h-3.5" /> : step.n}
+                      {step.n === 1 ? <CheckCircle2 className="w-3 h-3" /> : step.n}
                     </div>
                     <span
-                      className={`text-xs font-medium truncate ${
+                      className={`text-[11px] font-medium truncate ${
                         step.n === 1 ? "text-[#474ead] font-semibold" : "text-slate-400"
                       }`}
                     >
                       {step.label}
                     </span>
                     {i < STEPS.length - 1 && (
-                      <div className="flex-1 h-px bg-slate-200 min-w-[12px]" />
+                      <div className="flex-1 h-px bg-slate-200 min-w-[8px]" />
                     )}
                   </div>
                 ))}
@@ -192,23 +192,23 @@ export default function InquiryPage() {
             </div>
 
             {/* ── Form body ── */}
-            <div className="p-6 sm:p-10">
+            <div className="p-5 sm:p-6 lg:p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
                   {/* Contact Information */}
                   <div>
-                    <div className="flex items-center gap-2 mb-5">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#474ead]/10">
-                        <User className="w-3.5 h-3.5 text-[#474ead]" />
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#474ead]/10">
+                        <User className="w-3 h-3 text-[#474ead]" />
                       </div>
-                      <h2 className="text-sm font-semibold text-slate-700">
+                      <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                         Contact Information
                       </h2>
                     </div>
 
                     {/* 4-column grid on large screens, 2-col on tablet, 1-col on mobile */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       <FormField
                         control={form.control}
                         name="fullName"
@@ -273,18 +273,18 @@ export default function InquiryPage() {
 
                   {/* Service Details */}
                   <div>
-                    <div className="flex items-center gap-2 mb-5">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#474ead]/10">
-                        <Layers className="w-3.5 h-3.5 text-[#474ead]" />
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#474ead]/10">
+                        <Layers className="w-3 h-3 text-[#474ead]" />
                       </div>
-                      <h2 className="text-sm font-semibold text-slate-700">
+                      <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                         Service Details
                       </h2>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {/* Service + Budget — 2 cols on desktop, full width each on mobile */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <FormField
                           control={form.control}
                           name="serviceNeeded"
@@ -350,7 +350,7 @@ export default function InquiryPage() {
                             <FormControl>
                               <Textarea
                                 placeholder="Describe your requirements, timeline, team size, or any other relevant details…"
-                                className="min-h-[120px] resize-y rounded-xl border-slate-200 bg-slate-50/70 focus-visible:ring-[#474ead]/40 focus-visible:border-[#474ead]/60 text-sm"
+                                className="min-h-[88px] resize-y rounded-xl border-slate-200 bg-slate-50/70 focus-visible:ring-[#474ead]/40 focus-visible:border-[#474ead]/60 text-sm"
                                 {...field}
                               />
                             </FormControl>
@@ -362,7 +362,7 @@ export default function InquiryPage() {
                   </div>
 
                   {/* Submit row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-0">
                     <Button
                       type="submit"
                       disabled={submitMutation.isPending}
@@ -394,7 +394,7 @@ export default function InquiryPage() {
           </div>
 
           {/* Trust signals */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1.5">
             {[
               "No commitment required",
               "Response within 24 hours",
