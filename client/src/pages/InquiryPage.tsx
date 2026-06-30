@@ -120,28 +120,22 @@ export default function InquiryPage() {
   }
 
   return (
-    /*
-     * Background starts at the navbar's indigo (#3b3ec9) and transitions
-     * through the full 80px spacer height so there is zero visible gap.
-     * --nav-h is 80px (index.css). This gradient is scoped to this page only.
-     */
     <div
       className="min-h-screen text-slate-900"
       style={{
         background:
-          "linear-gradient(to bottom, #3b3ec9 0px, #5558d8 80px, #9496e0 130px, #d0d3f5 190px, #eef0fb 270px, #f5f6fc 450px, white 700px)",
+          "radial-gradient(ellipse 90% 55% at 50% -5%, rgba(139,92,246,0.09) 0%, rgba(224,218,255,0.18) 45%, transparent 70%), linear-gradient(to bottom, #F7F9FF 0%, #FAFBFF 40%, #FFFFFF 100%)",
       }}
     >
       <TopNavigation />
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-4 pb-6 px-6 md:pt-8">
-        {/* Ambient indigo glows — same as FindWork */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at 20% 20%, rgba(71,78,173,0.14), transparent 28%), radial-gradient(circle at 80% 0%, rgba(99,102,241,0.10), transparent 24%)",
+              "radial-gradient(ellipse 70% 50% at 80% 30%, rgba(99,102,241,0.05), transparent), radial-gradient(ellipse 50% 40% at 15% 60%, rgba(139,92,246,0.04), transparent)",
           }}
         />
 
