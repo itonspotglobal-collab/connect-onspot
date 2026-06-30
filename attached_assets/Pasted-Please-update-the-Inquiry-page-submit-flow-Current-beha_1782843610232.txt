@@ -1,0 +1,54 @@
+Please update the Inquiry page submit flow.
+
+Current behavior:
+User clicks “Submit Inquiry” and proceeds to the next step.
+
+New required behavior:
+When the user clicks “Submit Inquiry”, show a Refund Policy agreement popup/modal first.
+
+The user must accept the Refund Policy before the inquiry can be submitted and before they can proceed to the Review & Endorse step.
+
+Modal requirements:
+- Title: “Refund Policy Agreement”
+- Display the existing Refund Policy content from the /refund-policy page.
+- The policy content should be scrollable inside the modal.
+- Add a required checkbox near the bottom:
+  “I have read and agree to the Refund Policy.”
+- Add two buttons:
+  - “Cancel”
+  - “Agree and Continue”
+
+Validation:
+- “Agree and Continue” must be disabled until the checkbox is checked.
+- If the user does not check the box, they cannot proceed.
+- Only after the checkbox is checked and they click “Agree and Continue” should the inquiry form submit.
+- Then redirect to the next step:
+  /inquiry/:id/review
+
+Design:
+- Match the OnSpot branding.
+- Use the same modal style as the Terms of Service and Privacy Policy popup if already created.
+- Use rounded corners, soft shadow, clean spacing, and readable typography.
+- Add a subtle overlay behind the modal.
+- Make it responsive on desktop and mobile.
+- Make the modal keyboard accessible:
+  - ESC closes modal
+  - Focus stays inside modal
+  - Buttons are reachable by keyboard
+
+Data requirement:
+When saving the inquiry, also store that the user accepted the Refund Policy.
+
+Add these fields if they do not exist yet:
+- refund_policy_accepted: boolean
+- refund_policy_accepted_at: timestamp
+
+Admin requirement:
+In the Admin Inquiry Dashboard inquiry details, show:
+- Refund Policy Accepted: Yes/No
+- Accepted Date/Time
+
+Important:
+Do not submit the inquiry before the user accepts the Refund Policy.
+Do not remove the existing Terms of Service and Privacy Policy links.
+Keep existing functionality working.

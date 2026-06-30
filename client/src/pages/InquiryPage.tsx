@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +25,8 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { TermsContent, PrivacyContent } from "@/components/LegalPolicyContent";
+import { TermsContent, PrivacyContent, RefundContent } from "@/components/LegalPolicyContent";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText,
@@ -84,6 +85,9 @@ export default function InquiryPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [legalModal, setLegalModal] = useState<"terms" | "privacy" | null>(null);
+  const [refundModal, setRefundModal] = useState(false);
+  const [refundChecked, setRefundChecked] = useState(false);
+  const pendingPayload = useRef<any>(null);
 
   const form = useForm<InquiryFormValues>({
     resolver: zodResolver(inquirySchema),
@@ -126,7 +130,20 @@ export default function InquiryPage() {
       const num = parseFloat(String(budgetStr).replace(/[^0-9.]/g, ""));
       if (!isNaN(num) && num > 0) payload.estimatedBudget = num;
     }
-    submitMutation.mutate(payload);
+    // Store the payload and show the Refund Policy agreement modal
+    pendingPayload.current = payload;
+    setRefundChecked(false);
+    setRefundModal(true);
+  }
+
+  function confirmAndSubmit() {
+    if (!pendingPayload.current || !refundChecked) return;
+    submitMutation.mutate({
+      ...pendingPayload.current,
+      refundPolicyAccepted: true,
+      refundPolicyAcceptedAt: new Date().toISOString(),
+    });
+    setRefundModal(false);
   }
 
   return (
@@ -431,7 +448,77 @@ export default function InquiryPage() {
         </div>
       </section>
 
-      {/* ── Legal Policy Modals ── */}
+      {/* ── Refund Policy Agreement Modal ── */}
+      <Dialog
+        open={refundModal}
+        onOpenChange={(open) => {
+          if (!open) { setRefundModal(false); setRefundChecked(false); }
+        }}
+      >
+        <DialogContent className="max-w-2xl w-full rounded-2xl p-0 overflow-hidden border border-slate-100 shadow-xl focus:outline-none">
+          {/* Header */}
+          <DialogHeader className="px-6 pt-5 pb-4 pr-12 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#474ead]/10 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 text-[#474ead]" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-semibold text-slate-900 leading-tight">
+                  Refund Policy Agreement
+                </DialogTitle>
+                <p className="text-xs text-slate-400 mt-0.5">Please read and accept before submitting</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Scrollable policy content */}
+          <div className="px-6 py-5 max-h-[52vh] overflow-y-auto">
+            <RefundContent />
+          </div>
+
+          {/* Checkbox + footer */}
+          <div className="px-6 pt-4 pb-5 border-t border-slate-100 bg-slate-50/60 space-y-4">
+            {/* Required checkbox */}
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <Checkbox
+                id="refund-agree"
+                checked={refundChecked}
+                onCheckedChange={(v) => setRefundChecked(Boolean(v))}
+                className="mt-0.5 flex-shrink-0 border-slate-300 data-[state=checked]:bg-[#474ead] data-[state=checked]:border-[#474ead]"
+              />
+              <span className="text-sm text-slate-700 leading-5 select-none group-hover:text-slate-900 transition-colors">
+                I have read and agree to the Refund Policy.
+              </span>
+            </label>
+
+            {/* Action buttons */}
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
+              <DialogClose asChild>
+                <Button variant="ghost" size="sm" className="w-full sm:w-auto text-slate-500">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                size="sm"
+                disabled={!refundChecked || submitMutation.isPending}
+                onClick={confirmAndSubmit}
+                className="w-full sm:w-auto bg-[#474ead] hover:bg-[#3d4399] text-white rounded-lg px-5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {submitMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  "Agree and Continue"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Terms / Privacy Modals ── */}
       <Dialog open={legalModal !== null} onOpenChange={(open) => { if (!open) setLegalModal(null); }}>
         <DialogContent className="max-w-2xl w-full rounded-2xl p-0 overflow-hidden border border-slate-100 shadow-xl focus:outline-none">
           {/* Header — the built-in DialogContent X button sits at absolute top-4 right-4 */}

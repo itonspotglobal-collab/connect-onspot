@@ -6335,6 +6335,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     serviceNeeded: z.string().min(1, "Service is required"),
     details: z.string().optional(),
     estimatedBudget: z.number().positive().optional(),
+    refundPolicyAccepted: z.boolean().optional(),
+    refundPolicyAcceptedAt: z.string().optional(),
   });
 
   // Generate reference number: INQ-YYYY-XXXX
@@ -6350,7 +6352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ error: "Validation failed", details: parsed.error.errors });
       }
-      const { fullName, email, phoneNumber, company, serviceNeeded, details, estimatedBudget } = parsed.data;
+      const { fullName, email, phoneNumber, company, serviceNeeded, details, estimatedBudget, refundPolicyAccepted, refundPolicyAcceptedAt } = parsed.data;
       const referenceNumber = generateInquiryRef();
 
       const result = await db.insert(inquiriesTable).values({
@@ -6363,6 +6365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: details ?? null,
         estimatedBudget: estimatedBudget ? String(estimatedBudget) : null,
         status: "pending_endorsement",
+        refundPolicyAccepted: refundPolicyAccepted ?? false,
+        refundPolicyAcceptedAt: refundPolicyAcceptedAt ? new Date(refundPolicyAcceptedAt) : null,
       }).returning();
 
       res.status(201).json({ inquiry: result[0] });

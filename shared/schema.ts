@@ -1150,6 +1150,8 @@ export const inquiries = pgTable("inquiries", {
   adminNotes: text("admin_notes"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   paidAt: timestamp("paid_at"),
+  refundPolicyAccepted: boolean("refund_policy_accepted").notNull().default(false),
+  refundPolicyAcceptedAt: timestamp("refund_policy_accepted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

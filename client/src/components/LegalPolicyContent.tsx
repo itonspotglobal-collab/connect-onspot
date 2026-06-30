@@ -35,6 +35,124 @@ function Divider() {
   return <div className="h-px bg-slate-100" />;
 }
 
+// ─── Refund Policy ──────────────────────────────────────────────────────────
+
+export function RefundContent() {
+  return (
+    <div className="space-y-5">
+      <p className="text-sm leading-6 text-slate-600">
+        This Refund Policy explains how refund requests are handled for payments made through the
+        OnSpot website, inquiry flow, or approved payment channels.
+      </p>
+      <Divider />
+
+      <PolicySection n={1} title="General Policy">
+        <p>
+          OnSpot values transparency and fairness. Refund eligibility depends on the type of
+          service requested, the status of the inquiry, the stage of work completed, and the terms
+          agreed between the client and OnSpot. Submitting a refund request does not automatically
+          guarantee approval. Each request will be reviewed carefully by the OnSpot team.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={2} title="Payments Made Through the Website">
+        <p>
+          If you make a payment through the OnSpot website, the payment may be linked to a service
+          inquiry, endorsed request, proposal, invoice, or approved engagement. Please review all
+          details carefully before completing payment.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={3} title="Eligible Refund Situations">
+        <p className="mb-2">A refund may be considered in the following cases:</p>
+        <ul className="space-y-1.5">
+          {[
+            "Duplicate payment was made accidentally.",
+            "Payment was made for an inquiry that OnSpot later declined or could not fulfill.",
+            "Payment amount was incorrect due to a verified system or billing error.",
+            "The service has not yet started and the refund request is submitted within a reasonable review period.",
+            "A refund is required under a written agreement between the client and OnSpot.",
+          ].map((item) => (
+            <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+              <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-emerald-500" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </PolicySection>
+
+      <PolicySection n={4} title="Non-Refundable Situations">
+        <p className="mb-2">Refunds may not be available in the following cases:</p>
+        <ul className="space-y-1.5">
+          {[
+            "Work has already started or resources have already been allocated.",
+            "The service has already been delivered, completed, or substantially performed.",
+            "The client changes their mind after approval, scheduling, onboarding, or service preparation has begun.",
+            "The client provided incorrect, incomplete, or misleading information.",
+            "The payment relates to administrative, onboarding, processing, or setup work that has already been completed.",
+            "The request is outside the agreed refund window or written service agreement.",
+          ].map((item) => (
+            <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
+              <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-red-400" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </PolicySection>
+
+      <PolicySection n={5} title="Partial Refunds">
+        <p>
+          In some cases, OnSpot may approve a partial refund. Partial refunds may apply when a
+          portion of the service has already been completed, resources have been assigned, or
+          administrative costs have already been incurred.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={6} title="Refund Review Process">
+        <p className="mb-2">
+          To request a refund, the client must contact OnSpot using the official communication
+          channels and provide:
+        </p>
+        <ul className="list-disc list-inside space-y-0.5">
+          {["Full name or company name","Email address used for the inquiry","Inquiry reference number","Payment reference or transaction ID","Payment amount","Reason for the refund request","Any supporting information"].map((i) => <li key={i}>{i}</li>)}
+        </ul>
+        <p className="mt-2">OnSpot will review the request and may contact the client for clarification.</p>
+      </PolicySection>
+
+      <PolicySection n={7} title="Processing Time">
+        <p>
+          Approved refunds will be processed through the original payment method whenever possible.
+          Processing times may vary depending on the payment provider, bank, card issuer, or
+          third-party platform. OnSpot is not responsible for delays caused by banks, card networks,
+          or third-party payment processors.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={8} title="Payment Processor Fees">
+        <p>
+          Certain payment processor, bank, or transaction fees may be non-refundable depending on
+          the policies of the third-party payment provider.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={9} title="Cancellations">
+        <p>
+          If a client wishes to cancel a service request before work begins, they should contact
+          OnSpot as soon as possible. Cancellation eligibility and refund treatment will depend on
+          the status of the inquiry, endorsement, payment, and service preparation.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={10} title="Contact Us">
+        <p>
+          For refund questions or requests, please contact OnSpot through the official contact
+          channels provided on our website.
+        </p>
+      </PolicySection>
+    </div>
+  );
+}
+
 // ─── Terms and Conditions ────────────────────────────────────────────────────
 
 const termsSections = [

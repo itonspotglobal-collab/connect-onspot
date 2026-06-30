@@ -50,6 +50,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   BadgeCheck,
+  ShieldCheck,
   CalendarDays,
   Building2,
   Mail,
@@ -381,6 +382,23 @@ function InquiryDetailModal({
                 View Receipt
               </a>
             )}
+          </div>
+
+          {/* Legal Agreements */}
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Legal Agreements</p>
+            <div className="grid grid-cols-2 gap-3">
+              <InfoRow
+                icon={ShieldCheck}
+                label="Refund Policy Accepted"
+                value={inquiry.refundPolicyAccepted ? "Yes" : "No"}
+              />
+              <InfoRow
+                icon={CalendarDays}
+                label="Accepted At"
+                value={fmtDate(inquiry.refundPolicyAcceptedAt)}
+              />
+            </div>
           </div>
 
           {/* Admin actions */}
