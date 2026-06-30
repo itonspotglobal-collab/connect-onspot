@@ -62,6 +62,15 @@ export default function InquirySuccess() {
 
   const inquiry = data?.inquiry;
 
+  // Gate: only show success if payment is actually confirmed
+  if (!inquiry || inquiry.status !== "paid") {
+    const target = inquiry?.status === "endorsed"
+      ? `/inquiry/${id}/payment`
+      : `/inquiry/${id}/review`;
+    navigate(target);
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <TopNavigation />

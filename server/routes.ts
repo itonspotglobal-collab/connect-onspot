@@ -6414,6 +6414,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Inquiry must be endorsed before payment can be taken" });
       }
 
+      // Reject payment setup if no valid budget is on file
+      if (!inquiry.estimatedBudget || isNaN(parseFloat(inquiry.estimatedBudget)) || parseFloat(inquiry.estimatedBudget) <= 0) {
+        return res.status(400).json({
+          error: "No quoted amount",
+          message: "This inquiry does not have a valid estimated budget. Please contact hello@onspotglobal.com to receive a formal quote before payment.",
+        });
+      }
+
       if (!process.env.STRIPE_SECRET_KEY) {
         return res.status(503).json({
           error: "Payment system not configured",
@@ -6423,15 +6431,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const Stripe = await import("stripe");
       const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
-      const amountCents = inquiry.estimatedBudget ? Math.round(parseFloat(inquiry.estimatedBudget) * 100) : 10000;
+      const amountCents = Math.round(parseFloat(inquiry.estimatedBudget) * 100);
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountCents,
         currency: "usd",
         description: `OnSpot Inquiry ${inquiry.referenceNumber} — ${inquiry.serviceNeeded}`,
         receipt_email: inquiry.email,
+        // Store inquiryId in metadata so PATCH /paid can verify the PI belongs to this inquiry
         metadata: { inquiryId: inquiry.id, referenceNumber: inquiry.referenceNumber, email: inquiry.email },
       });
+
+      // Persist PI id on the inquiry so /paid can verify the same PI is presented back
+      await db.update(inquiriesTable)
+        .set({ stripePaymentIntentId: paymentIntent.id, updatedAt: new Date() })
+        .where(eq(inquiriesTable.id, inquiry.id));
 
       console.log(`✅ PaymentIntent created for inquiry ${inquiry.referenceNumber}:`, paymentIntent.id);
       res.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
@@ -6452,10 +6466,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(503).json({ error: "Payment system not configured" });
       }
 
+      // Fetch inquiry first to verify the PI belongs to it
+      const inquiryRows = await db.select().from(inquiriesTable)
+        .where(eq(inquiriesTable.id, req.params.id)).limit(1);
+      if (!inquiryRows.length) return res.status(404).json({ error: "Inquiry not found" });
+      const inquiry = inquiryRows[0];
+
+      // Reject if a different PI id was presented (prevents cross-inquiry reuse)
+      if (inquiry.stripePaymentIntentId !== paymentIntentId) {
+        return res.status(400).json({
+          error: "Payment intent mismatch",
+          message: "The provided PaymentIntent does not match the one issued for this inquiry.",
+        });
+      }
+
       const Stripe = await import("stripe");
       const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
 
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      // Verify PI belongs to this inquiry via metadata
+      if (paymentIntent.metadata?.inquiryId !== req.params.id) {
+        return res.status(400).json({
+          error: "Payment intent binding mismatch",
+          message: "PaymentIntent metadata does not match this inquiry.",
+        });
+      }
+
       if (paymentIntent.status !== "succeeded") {
         return res.status(400).json({
           error: "Payment not confirmed",
