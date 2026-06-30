@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,6 +18,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { TermsContent, PrivacyContent } from "@/components/LegalPolicyContent";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText,
@@ -74,6 +83,7 @@ const inputCls =
 export default function InquiryPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [legalModal, setLegalModal] = useState<"terms" | "privacy" | null>(null);
 
   const form = useForm<InquiryFormValues>({
     resolver: zodResolver(inquirySchema),
@@ -383,9 +393,21 @@ export default function InquiryPage() {
 
                     <p className="text-xs text-slate-400 sm:ml-1">
                       By submitting you agree to our{" "}
-                      <span className="underline underline-offset-2 cursor-pointer">Terms of Service</span>
+                      <button
+                        type="button"
+                        onClick={() => setLegalModal("terms")}
+                        className="underline underline-offset-2 hover:text-[#474ead] transition-colors"
+                      >
+                        Terms of Service
+                      </button>
                       {" "}and{" "}
-                      <span className="underline underline-offset-2 cursor-pointer">Privacy Policy</span>.
+                      <button
+                        type="button"
+                        onClick={() => setLegalModal("privacy")}
+                        className="underline underline-offset-2 hover:text-[#474ead] transition-colors"
+                      >
+                        Privacy Policy
+                      </button>.
                     </p>
                   </div>
                 </form>
@@ -408,6 +430,48 @@ export default function InquiryPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Legal Policy Modals ── */}
+      <Dialog open={legalModal !== null} onOpenChange={(open) => { if (!open) setLegalModal(null); }}>
+        <DialogContent className="max-w-2xl w-full rounded-2xl p-0 overflow-hidden border border-slate-100 shadow-xl focus:outline-none">
+          {/* Header — the built-in DialogContent X button sits at absolute top-4 right-4 */}
+          <DialogHeader className="px-6 pt-5 pb-4 pr-12 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#474ead]/10 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-4 h-4 text-[#474ead]" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-semibold text-slate-900 leading-tight">
+                  {legalModal === "terms" ? "Terms of Service" : "Privacy Policy"}
+                </DialogTitle>
+                <p className="text-xs text-slate-400 mt-0.5">Last Updated: June 30, 2026</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Scrollable content */}
+          <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+            {legalModal === "terms" ? <TermsContent /> : <PrivacyContent />}
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
+            <DialogClose asChild>
+              <Button variant="ghost" size="sm" className="w-full sm:w-auto text-slate-500">
+                Close
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button
+                size="sm"
+                className="w-full sm:w-auto bg-[#474ead] hover:bg-[#3d4399] text-white rounded-lg px-5"
+              >
+                I Understand
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
