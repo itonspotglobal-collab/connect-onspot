@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,12 +61,17 @@ export default function InquiryPayment() {
         body: formData,
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({ error: "Submission failed" }));
         throw new Error(err.error || "Submission failed");
       }
       return res.json();
     },
-    onSuccess: () => navigate(`/inquiry/${id}/success`),
+    onSuccess: (data) => {
+      // Pre-seed cache so InquirySuccess immediately sees the updated inquiry
+      // without a stale-cache redirect loop back to this page
+      queryClient.setQueryData(["/api/inquiries", id], data);
+      navigate(`/inquiry/${id}/success`);
+    },
     onError: (err: Error) => {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     },

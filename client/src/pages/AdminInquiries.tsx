@@ -87,16 +87,21 @@ function getEndorsementColor(status: string): string {
   return "bg-indigo-100 text-indigo-800 border-indigo-200";
 }
 
-function getPaymentLabel(status: string): string {
+function getPaymentLabel(status: string, paymentStatus?: string | null): string {
   if (status === "paid") return "Paid";
   if (status === "completed") return "Completed";
+  if (paymentStatus === "verified") return "Paid";
+  if (paymentStatus === "pending_verification") return "For Review";
+  if (paymentStatus === "rejected") return "Resubmit";
   if (status === "payment_pending") return "Pending";
   if (status === "rejected") return "N/A";
   return "Pending";
 }
 
-function getPaymentColor(status: string): string {
-  if (status === "paid" || status === "completed") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+function getPaymentColor(status: string, paymentStatus?: string | null): string {
+  if (status === "paid" || status === "completed" || paymentStatus === "verified") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  if (paymentStatus === "pending_verification") return "bg-amber-100 text-amber-800 border-amber-200";
+  if (paymentStatus === "rejected") return "bg-red-100 text-red-800 border-red-200";
   if (status === "rejected") return "bg-gray-100 text-gray-500 border-gray-200";
   return "bg-orange-100 text-orange-800 border-orange-200";
 }
@@ -361,7 +366,7 @@ function InquiryDetailModal({
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-2">
               <CreditCard className="w-3.5 h-3.5" />
               Payment:
-              <Chip label={getPaymentLabel(inquiry.status)} colorClass={getPaymentColor(inquiry.status)} />
+              <Chip label={getPaymentLabel(inquiry.status, inquiry.paymentStatus)} colorClass={getPaymentColor(inquiry.status, inquiry.paymentStatus)} />
             </div>
           </div>
 
@@ -936,7 +941,7 @@ export default function AdminInquiries() {
                           <Chip label={getEndorsementLabel(inq.status)} colorClass={getEndorsementColor(inq.status)} />
                         </TableCell>
                         <TableCell>
-                          <Chip label={getPaymentLabel(inq.status)} colorClass={getPaymentColor(inq.status)} />
+                          <Chip label={getPaymentLabel(inq.status, inq.paymentStatus)} colorClass={getPaymentColor(inq.status, inq.paymentStatus)} />
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {fmtDate(inq.createdAt)}
