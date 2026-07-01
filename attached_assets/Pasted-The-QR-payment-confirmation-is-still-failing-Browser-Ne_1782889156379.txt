@@ -1,0 +1,86 @@
+The QR payment confirmation is still failing.
+
+Browser Network shows:
+
+POST /api/inquiries/:id/payment-confirmation
+Status: 404 Not Found
+
+Example request:
+POST /api/inquiries/83cc4a15-3588-4f8f-af33-94a563b76b20/payment-confirmation
+
+This means the frontend is calling the payment-confirmation endpoint, but the backend route is missing, registered incorrectly, or not matching the request path.
+
+Please fix this directly.
+
+Required backend route:
+POST /api/inquiries/:id/payment-confirmation
+
+This route must:
+1. Accept inquiry id from req.params.id
+2. Find the inquiry by database id OR reference_id
+3. Accept:
+   - payment_reference_number
+   - payment_notes
+   - proof of payment file, if uploaded
+4. Save payment confirmation data to the database
+5. Update:
+   - payment_status = "Pending Verification"
+   - payment_reference_number
+   - payment_proof_file_url
+   - payment_proof_file_name
+   - payment_notes
+   - payment_confirmation_submitted_at
+   - updated_at
+6. Return the updated inquiry as JSON
+
+Important:
+The route must be registered BEFORE any catch-all route or frontend fallback route.
+
+Also check:
+- If the backend uses Express, make sure this route exists in the server routes file.
+- If routes are mounted under /api, do not accidentally create /api/api/inquiries/:id/payment-confirmation.
+- If the frontend already calls /api/inquiries/:id/payment-confirmation, the backend must match that exact path.
+- If file upload is used, make sure multer or the existing upload middleware is connected to this route.
+- If no file upload middleware exists yet, still allow payment confirmation to submit with reference number only.
+
+Frontend:
+- Keep calling:
+  POST /api/inquiries/:id/payment-confirmation
+- Use FormData if a proof file is uploaded.
+- If no file is uploaded, still submit the reference number and notes.
+- Do not show “Inquiry not found” for a 404 caused by a missing route. Show the real API error.
+
+Database:
+Make sure these fields exist and persist:
+- payment_status
+- payment_reference_number
+- payment_proof_file_url
+- payment_proof_file_name
+- payment_notes
+- payment_confirmation_submitted_at
+- payment_verified_at
+- payment_rejected_at
+- admin_payment_notes
+
+Admin Dashboard:
+After payment confirmation is submitted, /admin/inquiries should show:
+- Payment Status: Pending Verification
+- Payment Reference Number
+- Proof Uploaded: Yes/No
+
+Testing:
+After fixing, please test using an existing inquiry:
+1. Open /inquiry/:id/payment
+2. Enter payment reference number
+3. Upload proof file
+4. Submit payment confirmation
+5. Confirm API returns 200
+6. Confirm redirect to /inquiry/:id/success
+7. Refresh admin dashboard
+8. Confirm payment data appears
+
+After implementation, tell me:
+- Which route file was updated
+- Why the route returned 404
+- Whether the route is now registered as POST /api/inquiries/:id/payment-confirmation
+- Whether payment confirmation saves to the database
