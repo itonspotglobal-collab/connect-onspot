@@ -6628,8 +6628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     upload.single("proofFile"),
     async (req: Request, res: Response) => {
       try {
-        const inquiryId = parseInt(req.params.id, 10);
-        if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+        const inquiryId = req.params.id;
 
         const paymentReferenceNumber = (req.body.paymentReferenceNumber ?? "").trim();
         const paymentNotes = (req.body.paymentNotes ?? "").trim();
@@ -6665,7 +6664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             paymentConfirmationSubmittedAt: new Date(),
             updatedAt: new Date(),
           } as any)
-          .where(eq(inquiriesTable.id, inquiryId as any))
+          .where(eq(inquiriesTable.id, inquiryId))
           .returning();
 
         if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
@@ -6681,8 +6680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/inquiries/:id/payment/verify — admin marks payment as verified
   app.patch("/api/inquiries/:id/payment/verify", async (req: Request, res: Response) => {
     try {
-      const inquiryId = parseInt(req.params.id, 10);
-      if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+      const inquiryId = req.params.id;
       const { adminPaymentNotes } = req.body;
 
       const result = await db
@@ -6695,7 +6693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           adminPaymentNotes: adminPaymentNotes ?? null,
           updatedAt: new Date(),
         } as any)
-        .where(eq(inquiriesTable.id, inquiryId as any))
+        .where(eq(inquiriesTable.id, inquiryId))
         .returning();
 
       if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
@@ -6710,8 +6708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/inquiries/:id/payment/reject — admin rejects payment confirmation
   app.patch("/api/inquiries/:id/payment/reject", async (req: Request, res: Response) => {
     try {
-      const inquiryId = parseInt(req.params.id, 10);
-      if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+      const inquiryId = req.params.id;
       const { adminPaymentNotes } = req.body;
 
       const result = await db
@@ -6722,7 +6719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           adminPaymentNotes: adminPaymentNotes ?? null,
           updatedAt: new Date(),
         } as any)
-        .where(eq(inquiriesTable.id, inquiryId as any))
+        .where(eq(inquiriesTable.id, inquiryId))
         .returning();
 
       if (!result.length) return res.status(404).json({ error: "Inquiry not found" });

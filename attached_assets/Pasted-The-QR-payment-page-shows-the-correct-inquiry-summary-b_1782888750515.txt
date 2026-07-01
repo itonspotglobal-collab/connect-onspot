@@ -1,0 +1,63 @@
+The QR payment page shows the correct inquiry summary, but when submitting payment confirmation it fails with “Inquiry not found.”
+
+This means the frontend can load the inquiry, but the payment-confirmation API is not finding the same record.
+
+Please fix the ID mismatch and make sure payment confirmation is saved in the database.
+
+Check and fix:
+- The route /inquiry/:id/payment
+- The API POST /api/inquiries/:id/payment-confirmation
+- The database query used inside payment-confirmation
+- The frontend submit handler
+
+Likely issue:
+The payment page may be using reference_id such as INQ-2026-1805, while the backend payment-confirmation endpoint is searching by numeric database id, or vice versa.
+
+Required fix:
+Use one consistent identifier across the whole inquiry flow.
+
+Preferred:
+Allow the backend to find inquiry by either:
+- database id
+OR
+- reference_id
+
+For example:
+When POST /api/inquiries/:id/payment-confirmation is called, the backend should search:
+- first by id
+- if not found, search by reference_id
+
+Payment data must be saved in the database:
+- payment_status = "Pending Verification"
+- payment_reference_number
+- payment_proof_file_url
+- payment_proof_file_name
+- payment_notes
+- payment_confirmation_submitted_at
+- updated_at
+
+Frontend behavior:
+- After successful payment confirmation submission, redirect to:
+  /inquiry/:id/success
+- Do not show “Inquiry not found” if the inquiry exists.
+- Show a clear success message before redirecting if needed.
+
+Admin dashboard:
+Update /admin/inquiries and inquiry details so payment confirmation data from the database is visible:
+- Payment Status
+- Payment Reference Number
+- Proof of Payment file/link
+- Payment Notes
+- Payment Confirmation Submitted At
+
+Admin actions:
+- Admin can mark payment as Verified/Paid
+- Admin can reject payment confirmation
+- These updates must also persist in the database.
+
+After fixing, tell me:
+- Why the inquiry was displayed but payment submission failed
+- Whether the route uses database id or reference_id
+- Which backend query was updated
+- Which database fields are updated when payment confirmation is submitted
+- How to test that payment confirmation persists after refresh
