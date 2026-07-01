@@ -1,0 +1,145 @@
+Please update the inquiry payment flow.
+
+We do NOT want to use Stripe or other complex online payment methods for now.
+
+Instead, use a QR code payment method.
+
+I will attach the QR code image in Replit.
+
+Current flow:
+Inquiry Form
+→ Review & Endorse
+→ Payment
+→ Success
+
+Updated payment flow:
+Inquiry Form
+→ Review & Endorse
+→ QR Code Payment
+→ Upload Payment Confirmation
+→ Success / Pending Verification
+
+Payment Page Requirements:
+Route:
+/inquiry/:id/payment
+
+Replace the Stripe payment form with a QR code payment section.
+
+The page should show:
+- Inquiry reference number
+- Customer name
+- Service or product requested
+- Amount due in USD
+- Payment instructions
+- QR code image
+- Upload proof of payment section
+
+Suggested copy:
+“Scan the QR code below to complete your payment. Once payment has been sent, please upload your confirmation number, reference number, or proof of payment. The OnSpot team will review your submission and contact you directly.”
+
+Payment confirmation fields:
+- Payment reference number / confirmation number
+- Proof of payment upload
+- Optional notes
+
+Accepted upload types:
+- JPG
+- PNG
+- PDF
+
+Add a button:
+“Submit Payment Confirmation”
+
+Validation:
+- User must enter a payment reference number OR upload proof of payment.
+- If both are empty, show an error message.
+- Do not mark payment as fully paid immediately.
+- After submission, set payment status to:
+  “Pending Verification”
+
+Success / Confirmation Page:
+Route:
+/inquiry/:id/success
+
+Update the success page message to:
+“Payment Confirmation Submitted”
+
+Supporting text:
+“Thank you. Your payment confirmation has been submitted. The OnSpot team will review your payment and contact you directly once verified.”
+
+Show summary:
+- Inquiry reference number
+- Customer name
+- Amount due
+- Payment status: Pending Verification
+- Submitted reference number
+- Uploaded proof file name, if available
+- Submission date/time
+
+Admin Dashboard Requirements:
+Update /admin/inquiries so admins can review QR payment confirmations.
+
+In the inquiry table, show:
+- Payment Status: Pending Verification
+- Payment Reference Number
+- Proof Uploaded: Yes/No
+
+In the inquiry details modal/page, show:
+- Payment reference number
+- Proof of payment file preview or download link
+- Payment notes
+- Submitted payment confirmation date/time
+
+Admin actions:
+- Mark Payment as Verified / Paid
+- Reject Payment Confirmation
+- Add admin payment notes
+
+When admin marks payment as verified:
+- payment_status should become “Paid” or “Verified”
+- inquiry_status should become “Completed” if appropriate
+
+Database Changes:
+Add or update these fields:
+- payment_status
+- payment_reference_number
+- payment_proof_file_url
+- payment_proof_file_name
+- payment_notes
+- payment_confirmation_submitted_at
+- payment_verified_at
+- payment_rejected_at
+- admin_payment_notes
+
+Backend/API Requirements:
+Update or create:
+
+POST /api/inquiries/:id/payment-confirmation
+- Accepts payment reference number
+- Accepts proof of payment upload
+- Accepts optional notes
+- Saves payment confirmation details
+- Sets payment_status to “Pending Verification”
+
+PATCH /api/inquiries/:id/payment/verify
+- Admin marks payment as verified/paid
+
+PATCH /api/inquiries/:id/payment/reject
+- Admin rejects payment confirmation and can add notes
+
+Important:
+- Remove or hide Stripe payment UI from this flow.
+- Keep any Stripe code only as unused/future TODO if needed.
+- Do not require Stripe keys.
+- Make the QR payment UI match the OnSpot brand.
+- The QR image should be easy to replace later.
+- Make the payment page responsive on mobile and desktop.
+- Make sure uploaded proof of payment persists in storage or database.
+- If the project does not support file uploads yet, implement a basic upload storage solution and document where files are stored.
+
+After implementing, tell me:
+- Where to place or upload the QR code image
+- Which payment page file was updated
+- Which API routes were added/updated
+- Which database fields were added
+- How to test the QR code payment confirmation flow

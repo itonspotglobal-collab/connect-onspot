@@ -1152,6 +1152,16 @@ export const inquiries = pgTable("inquiries", {
   paidAt: timestamp("paid_at"),
   refundPolicyAccepted: boolean("refund_policy_accepted").notNull().default(false),
   refundPolicyAcceptedAt: timestamp("refund_policy_accepted_at"),
+  // QR payment confirmation fields
+  paymentStatus: text("payment_status"), // pending_verification | verified | rejected
+  paymentReferenceNumber: text("payment_reference_number"),
+  paymentProofUrl: text("payment_proof_url"),
+  paymentProofFilename: text("payment_proof_filename"),
+  paymentNotes: text("payment_notes"),
+  paymentConfirmationSubmittedAt: timestamp("payment_confirmation_submitted_at"),
+  paymentVerifiedAt: timestamp("payment_verified_at"),
+  paymentRejectedAt: timestamp("payment_rejected_at"),
+  adminPaymentNotes: text("admin_payment_notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

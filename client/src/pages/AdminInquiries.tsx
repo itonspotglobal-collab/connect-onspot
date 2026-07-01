@@ -61,6 +61,8 @@ import {
   Hash,
   Link2,
   AlertCircle,
+  Paperclip,
+  QrCode,
 } from "lucide-react";
 
 // ─── Derived status helpers ───────────────────────────────────────────────────
@@ -272,6 +274,8 @@ function InquiryDetailModal({
   const [notes, setNotes] = useState(inquiry.adminNotes ?? "");
   const [editingNotes, setEditingNotes] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [adminPaymentNotes, setAdminPaymentNotes] = useState(inquiry.adminPaymentNotes ?? "");
+  const [showRejectForm, setShowRejectForm] = useState(false);
 
   const statusMutation = useMutation({
     mutationFn: ({ status, paymentMethod }: { status: string; paymentMethod?: string }) =>
@@ -292,6 +296,31 @@ function InquiryDetailModal({
       toast({ title: "Notes saved" });
     },
     onError: () => toast({ title: "Failed to save notes", variant: "destructive" }),
+  });
+
+  const verifyPaymentMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment/verify`, {
+        adminPaymentNotes: adminPaymentNotes.trim() || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({ title: "Payment verified — inquiry marked as Paid" });
+    },
+    onError: () => toast({ title: "Failed to verify payment", variant: "destructive" }),
+  });
+
+  const rejectPaymentMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment/reject`, {
+        adminPaymentNotes: adminPaymentNotes.trim() || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      setShowRejectForm(false);
+      toast({ title: "Payment confirmation rejected" });
+    },
+    onError: () => toast({ title: "Failed to reject payment", variant: "destructive" }),
   });
 
   const fmtDate = (d: string | Date | null | undefined) =>
@@ -401,6 +430,61 @@ function InquiryDetailModal({
             </div>
           </div>
 
+          {/* Payment Confirmation */}
+          {(inquiry.paymentStatus || inquiry.paymentConfirmationSubmittedAt) && (
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Payment Confirmation</p>
+              <div className="grid grid-cols-2 gap-3">
+                <InfoRow
+                  icon={QrCode}
+                  label="Payment Status"
+                  value={
+                    inquiry.paymentStatus === "verified" ? "Verified"
+                    : inquiry.paymentStatus === "rejected" ? "Rejected"
+                    : "Pending Verification"
+                  }
+                />
+                <InfoRow icon={Hash} label="Payment Reference" value={inquiry.paymentReferenceNumber ?? "—"} />
+                <InfoRow
+                  icon={Paperclip}
+                  label="Proof Uploaded"
+                  value={inquiry.paymentProofFilename ? "Yes" : "No"}
+                />
+                <InfoRow icon={CalendarDays} label="Submitted At" value={fmtDate(inquiry.paymentConfirmationSubmittedAt)} />
+                {inquiry.paymentStatus === "verified" && (
+                  <InfoRow icon={CalendarDays} label="Verified At" value={fmtDate(inquiry.paymentVerifiedAt)} />
+                )}
+                {inquiry.paymentStatus === "rejected" && (
+                  <InfoRow icon={CalendarDays} label="Rejected At" value={fmtDate(inquiry.paymentRejectedAt)} />
+                )}
+              </div>
+
+              {inquiry.paymentProofUrl && (
+                <a
+                  href={inquiry.paymentProofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#3F4698] underline underline-offset-2"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  {inquiry.paymentProofFilename ?? "View Proof"}
+                </a>
+              )}
+
+              {inquiry.paymentNotes && (
+                <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                  <span className="font-medium">Client notes: </span>{inquiry.paymentNotes}
+                </div>
+              )}
+
+              {inquiry.adminPaymentNotes && (
+                <div className="mt-2 rounded-md bg-amber-50 border border-amber-100 p-2 text-xs text-amber-800">
+                  <span className="font-medium">Admin notes: </span>{inquiry.adminPaymentNotes}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Admin actions */}
           <div>
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Admin Actions</p>
@@ -451,12 +535,59 @@ function InquiryDetailModal({
               </Button>
             </div>
 
+            {/* QR Payment verify / reject */}
+            {inquiry.paymentStatus === "pending_verification" && (
+              <>
+                <Button
+                  size="sm" variant="outline"
+                  className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                  disabled={verifyPaymentMutation.isPending || rejectPaymentMutation.isPending}
+                  onClick={() => verifyPaymentMutation.mutate()}
+                >
+                  {verifyPaymentMutation.isPending
+                    ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
+                  Verify Payment
+                </Button>
+                <Button
+                  size="sm" variant="outline"
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                  disabled={verifyPaymentMutation.isPending || rejectPaymentMutation.isPending}
+                  onClick={() => setShowRejectForm((v) => !v)}
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-1.5" />
+                  Reject Confirmation
+                </Button>
+              </>
+            )}
+
             {showPaymentForm && !isPaid && (
               <div className="mt-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
                 <RecordPaymentForm
                   inquiry={inquiry}
                   onDone={() => setShowPaymentForm(false)}
                 />
+              </div>
+            )}
+
+            {showRejectForm && inquiry.paymentStatus === "pending_verification" && (
+              <div className="mt-3 p-3 rounded-xl border border-red-100 bg-red-50/50 space-y-2 w-full">
+                <p className="text-xs font-medium text-red-700">Rejection reason (optional)</p>
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="Reason shown to client…"
+                  value={adminPaymentNotes}
+                  onChange={(e) => setAdminPaymentNotes(e.target.value)}
+                />
+                <Button
+                  size="sm"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  disabled={rejectPaymentMutation.isPending}
+                  onClick={() => rejectPaymentMutation.mutate()}
+                >
+                  {rejectPaymentMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+                  Confirm Rejection
+                </Button>
               </div>
             )}
           </div>
@@ -471,9 +602,9 @@ function InquiryDetailModal({
                 <Link href={`/inquiry/${inquiry.id}/payment`}>Payment Page</Link>
               </Button>
             )}
-            {isPaid && (
+            {(isPaid || inquiry.paymentStatus) && (
               <Button size="sm" variant="outline" asChild>
-                <Link href={`/inquiry/${inquiry.id}/success`}>Success Page</Link>
+                <Link href={`/inquiry/${inquiry.id}/success`}>Confirmation Page</Link>
               </Button>
             )}
           </div>

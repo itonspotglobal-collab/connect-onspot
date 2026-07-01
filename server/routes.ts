@@ -1,4 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
 import { storage, type CreateUserData } from "./storage";
@@ -6614,6 +6616,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("❌ Record payment error:", error.message);
       res.status(500).json({ error: "Failed to record payment" });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // POST /api/inquiries/:id/payment-confirmation
+  // Client uploads QR payment proof; sets paymentStatus = pending_verification
+  // ─────────────────────────────────────────────────────────────
+  app.post(
+    "/api/inquiries/:id/payment-confirmation",
+    upload.single("proofFile"),
+    async (req: Request, res: Response) => {
+      try {
+        const inquiryId = parseInt(req.params.id, 10);
+        if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+
+        const paymentReferenceNumber = (req.body.paymentReferenceNumber ?? "").trim();
+        const paymentNotes = (req.body.paymentNotes ?? "").trim();
+        const file = (req as any).file as Express.Multer.File | undefined;
+
+        if (!paymentReferenceNumber && !file) {
+          return res.status(400).json({
+            error: "Please provide a payment reference number or upload proof of payment.",
+          });
+        }
+
+        let paymentProofUrl: string | null = null;
+        let paymentProofFilename: string | null = null;
+
+        if (file) {
+          const ext = path.extname(file.originalname) || "";
+          const filename = `${randomUUID()}${ext}`;
+          const proofDir = path.join(process.cwd(), "public", "payment-proofs");
+          fs.mkdirSync(proofDir, { recursive: true });
+          fs.writeFileSync(path.join(proofDir, filename), file.buffer);
+          paymentProofUrl = `/payment-proofs/${filename}`;
+          paymentProofFilename = file.originalname;
+        }
+
+        const result = await db
+          .update(inquiriesTable)
+          .set({
+            paymentStatus: "pending_verification",
+            paymentReferenceNumber: paymentReferenceNumber || null,
+            paymentProofUrl,
+            paymentProofFilename,
+            paymentNotes: paymentNotes || null,
+            paymentConfirmationSubmittedAt: new Date(),
+            updatedAt: new Date(),
+          } as any)
+          .where(eq(inquiriesTable.id, inquiryId as any))
+          .returning();
+
+        if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+        console.log(`📤 Payment confirmation submitted for inquiry ${inquiryId}`);
+        return res.json({ inquiry: result[0] });
+      } catch (error: any) {
+        console.error("❌ Payment confirmation error:", error.message);
+        return res.status(500).json({ error: "Failed to record payment confirmation" });
+      }
+    }
+  );
+
+  // PATCH /api/inquiries/:id/payment/verify — admin marks payment as verified
+  app.patch("/api/inquiries/:id/payment/verify", async (req: Request, res: Response) => {
+    try {
+      const inquiryId = parseInt(req.params.id, 10);
+      if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+      const { adminPaymentNotes } = req.body;
+
+      const result = await db
+        .update(inquiriesTable)
+        .set({
+          paymentStatus: "verified",
+          status: "paid",
+          paidAt: new Date(),
+          paymentVerifiedAt: new Date(),
+          adminPaymentNotes: adminPaymentNotes ?? null,
+          updatedAt: new Date(),
+        } as any)
+        .where(eq(inquiriesTable.id, inquiryId as any))
+        .returning();
+
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      console.log(`✅ Payment verified for inquiry ${inquiryId}`);
+      return res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Payment verify error:", error.message);
+      return res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
+  // PATCH /api/inquiries/:id/payment/reject — admin rejects payment confirmation
+  app.patch("/api/inquiries/:id/payment/reject", async (req: Request, res: Response) => {
+    try {
+      const inquiryId = parseInt(req.params.id, 10);
+      if (isNaN(inquiryId)) return res.status(400).json({ error: "Invalid inquiry ID" });
+      const { adminPaymentNotes } = req.body;
+
+      const result = await db
+        .update(inquiriesTable)
+        .set({
+          paymentStatus: "rejected",
+          paymentRejectedAt: new Date(),
+          adminPaymentNotes: adminPaymentNotes ?? null,
+          updatedAt: new Date(),
+        } as any)
+        .where(eq(inquiriesTable.id, inquiryId as any))
+        .returning();
+
+      if (!result.length) return res.status(404).json({ error: "Inquiry not found" });
+      console.log(`❌ Payment rejected for inquiry ${inquiryId}`);
+      return res.json({ inquiry: result[0] });
+    } catch (error: any) {
+      console.error("❌ Payment reject error:", error.message);
+      return res.status(500).json({ error: "Failed to reject payment" });
     }
   });
 
