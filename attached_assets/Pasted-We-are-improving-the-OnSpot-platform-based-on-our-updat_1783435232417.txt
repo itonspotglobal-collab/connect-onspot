@@ -1,0 +1,185 @@
+We are improving the OnSpot platform based on our updated brand promise:
+
+
+
+“Work Without Limits”
+
+
+
+Brand messaging:
+
+Clients:
+
+- Hire on the spot.
+
+- Build teams with confidence.
+
+- Manage your workforce.
+
+
+
+Talent:
+
+- Find work on the spot.
+
+- Build a global career.
+
+- Work without limits.
+
+
+
+Goal:
+
+Improve the existing “Hire Talent” and “Find Work” features so they reflect this brand promise and support a pilot implementation for “Saddleman”.
+
+
+
+Context:
+
+The current Hire Talent page is mostly static and does not pass search/filter intent to the talent pool. The Find Work page is more complete and already fetches open jobs. We need the two flows to feel connected, polished, and usable for a real pilot.
+
+
+
+Tasks:
+
+
+
+1. Update brand copy across Hire Talent and Find Work
+
+- Add “Work Without Limits” as the central platform promise.
+
+- For client-facing pages, use:
+
+  “Hire on the spot. Build teams with confidence. Manage your workforce.”
+
+- For talent-facing pages, use:
+
+  “Find work on the spot. Build a global career. Work without limits.”
+
+- Make the copy feel premium, clear, and action-driven.
+
+
+
+2. Improve Hire Talent flow
+
+- When a client searches or selects filters on /hire-talent, preserve the intent when navigating to /talent-pool.
+
+- Pass query, category, coverage, and seniority as URL query params.
+
+- Update /talent-pool to read these params and pre-filter or pre-fill the talent search where applicable.
+
+- Keep existing design but improve CTA clarity:
+
+  Primary CTA: “Hire on the spot”
+
+  Secondary CTA: “Request a shortlist”
+
+
+
+3. Improve Find Work flow
+
+- Ensure /find-work/jobs?category=<slug> works correctly for all nav categories.
+
+- Make the active navigation state highlight Find Work when the user is on:
+
+  /find-work
+
+  /find-work/jobs
+
+  /find-work/job/:jobId
+
+  /jobs/:jobId
+
+  /jobs/:jobId/apply
+
+- Keep the category filtering behavior but make the UI message clearer when a category is active.
+
+
+
+4. Implement Saddleman pilot
+
+Create a pilot mode or featured pilot section for “Saddleman”.
+
+
+
+Add a configurable pilot object, for example:
+
+{
+
+  pilotName: "Saddleman",
+
+  clientType: "Pilot Client",
+
+  brandPromise: "Work Without Limits",
+
+  clientMessage: "Hire on the spot. Build teams with confidence. Manage your workforce.",
+
+  talentMessage: "Find work on the spot. Build a global career. Work without limits."
+
+}
+
+
+
+Use this pilot config to:
+
+- Add a “Saddleman Pilot” badge/section on Hire Talent.
+
+- Add a “Saddleman-ready talent” or “Recommended for Saddleman” section in Talent Pool.
+
+- Add a simple pilot tracking state using localStorage first:
+
+  - viewedHireTalent
+
+  - searchedTalent
+
+  - requestedShortlist
+
+  - viewedFindWork
+
+  - appliedToJob
+
+- Keep this implementation lightweight and frontend-first unless existing backend support already exists.
+
+
+
+5. Suggested files to inspect/update
+
+- client/src/components/TopNavigation.tsx
+
+- client/src/App.tsx
+
+- client/src/pages/HireTalentPage.tsx
+
+- client/src/pages/TalentPool.tsx
+
+- client/src/pages/FindWork.tsx
+
+- client/src/pages/FindWorkAllJobs.tsx
+
+- client/src/pages/FindWorkJob.tsx
+
+- client/src/pages/JobApplyPage.tsx
+
+
+
+6. Acceptance criteria
+
+- “Work Without Limits” appears in the correct client/talent contexts.
+
+- Hire Talent search intent is preserved when moving to Talent Pool.
+
+- Find Work nav remains active on job listing/detail/apply pages.
+
+- Saddleman pilot section is visible and configurable.
+
+- Local pilot activity tracking works without breaking existing flows.
+
+- No existing routes are removed.
+
+- Mobile navigation still works.
+
+- UI remains consistent with the current OnSpot style.
+
+
+
+Please implement this cleanly with small, readable changes. Do not rewrite the entire app. Preserve existing functionality and styling wherever possible.

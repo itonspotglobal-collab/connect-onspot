@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, Clock, CheckCircle2, Zap, Shield, Target, Award,
-  ChevronRight, Sparkles, LayoutGrid, UserCircle2,
+  ChevronRight, Sparkles, LayoutGrid, UserCircle2, Flag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
@@ -302,6 +303,30 @@ export default function HireTalentPage() {
     return "the right talent";
   }, [query]);
 
+  // ── Pilot tracking ───────────────────────────────────────────────────────
+  useEffect(() => {
+    trackPilotActivity("viewedHireTalent");
+  }, []);
+
+  useEffect(() => {
+    if (!query.trim()) return;
+    const timer = window.setTimeout(() => {
+      trackPilotActivity("searchedTalent");
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  // ── Navigate to Talent Pool with current search params ───────────────────
+  function navigateToTalentPool() {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (activeCategory !== "All") params.set("category", activeCategory);
+    if (coverage !== "All") params.set("coverage", coverage);
+    if (seniority !== "All") params.set("seniority", seniority);
+    const qs = params.toString();
+    navigate(qs ? `/talent-pool?${qs}` : "/talent-pool");
+  }
+
   // ── Handlers ─────────────────────────────────────────────────────────────
   const clearFilters = () => {
     setQuery("");
@@ -328,17 +353,23 @@ export default function HireTalentPage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
         <div className="relative mx-auto max-w-5xl px-6 py-20 text-center lg:px-8 lg:py-24">
-          <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
-            Hire Talent
-          </Badge>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
+              Hire Talent
+            </Badge>
+            <Badge className="gap-1.5 rounded-full bg-[#3F4698]/10 px-4 py-1.5 text-sm font-medium text-[#3F4698] hover:bg-[#3F4698]/10">
+              <Flag className="h-3.5 w-3.5" />
+              {PILOT_CONFIG.brandPromise}
+            </Badge>
+          </div>
 
           <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-bold tracking-tight text-slate-950 md:text-5xl lg:text-[3.5rem] lg:leading-tight">
-            Hire the right talent.{" "}
-            <span className="text-primary">Fast.</span>
+            Hire on the spot.{" "}
+            <span className="text-primary">Build with confidence.</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-            Tell us what you need or request a shortlist. We'll help you move from search to hire, quickly and confidently.
+            Build teams with confidence. Manage your workforce without limits — from first search to a shortlist-ready hire.
           </p>
 
           {/* Search box */}
@@ -358,7 +389,7 @@ export default function HireTalentPage() {
                   className="min-h-[72px] flex-1 resize-none bg-transparent text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400"
                   placeholder="Tell us what you need… e.g. I need someone to handle customer support for my e-commerce store"
                 />
-                <Button className="self-end rounded-2xl shadow-md" size="sm" onClick={() => navigate("/talent-pool")}>
+                <Button className="self-end rounded-2xl shadow-md" size="sm" onClick={navigateToTalentPool}>
                   Find talent
                 </Button>
               </div>
@@ -390,15 +421,18 @@ export default function HireTalentPage() {
             <Button
               size="lg"
               className="rounded-2xl px-6 shadow-lg"
-              onClick={() => navigate("/talent-pool")}
+              onClick={navigateToTalentPool}
             >
-              Hire talent now
+              Hire on the spot
             </Button>
             <Button
               size="lg"
               variant="secondary"
               className="rounded-2xl px-6 bg-slate-900 text-white hover:bg-slate-800"
-              onClick={() => setShortlistGenerated(true)}
+              onClick={() => {
+                trackPilotActivity("requestedShortlist");
+                setShortlistGenerated(true);
+              }}
             >
               Request a shortlist
             </Button>
@@ -425,6 +459,21 @@ export default function HireTalentPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Saddleman Pilot Banner ───────────────────────────────────────── */}
+      <div className="border-b border-[#3F4698]/10 bg-[#3F4698]/[0.04]">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3.5 lg:px-8">
+          <div className="flex items-center gap-2.5 text-sm text-[#3F4698]">
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span className="font-semibold">{PILOT_CONFIG.pilotName} Pilot</span>
+            <span className="text-slate-400">·</span>
+            <span className="font-medium">{PILOT_CONFIG.brandPromise}</span>
+          </div>
+          <p className="text-sm text-slate-500">
+            {PILOT_CONFIG.clientMessage}
+          </p>
+        </div>
+      </div>
 
       {/* ── How it works ─────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8">

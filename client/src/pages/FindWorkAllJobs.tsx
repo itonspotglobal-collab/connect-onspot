@@ -47,6 +47,7 @@ import {
   getTopUserInterests,
   scoreJobsAgainstInterests,
 } from "@/lib/userActivityMemory";
+import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 import {
   TalentLoginModal,
   loadTalentAuth,
@@ -359,6 +360,11 @@ export default function FindWorkAllJobs() {
     }
   });
 
+  // Track pilot activity on mount
+  useEffect(() => {
+    trackPilotActivity("viewedFindWork");
+  }, []);
+
   // Skip the first render (handled by useState initialisers above);
   // on subsequent navSlug changes (same-page nav), sync dependent state.
   const isFirstRender = useRef(true);
@@ -556,6 +562,16 @@ export default function FindWorkAllJobs() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
+          {/* Brand badge */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <Badge className="rounded-full bg-[#474ead]/10 px-4 py-1.5 text-sm text-[#474ead] hover:bg-[#474ead]/10">
+              Find work on the spot. Build a global career.
+            </Badge>
+            <Badge className="rounded-full bg-[#3F4698]/10 px-4 py-1.5 text-sm text-[#3F4698] hover:bg-[#3F4698]/10">
+              {PILOT_CONFIG.brandPromise}
+            </Badge>
+          </div>
+
           {/* Headline — dominant visual anchor */}
           <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-slate-900">
             Find your next remote role.
@@ -563,8 +579,8 @@ export default function FindWorkAllJobs() {
 
           {/* Subtitle — secondary: muted, narrow column */}
           <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
-            Work differently — and get matched with global opportunities from
-            top notch companies.
+            Work without limits — get matched with global opportunities from
+            top companies, faster and more human than a typical job board.
           </p>
 
           {/* Search bar — primary action, white card + gradient button */}

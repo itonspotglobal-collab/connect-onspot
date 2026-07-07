@@ -830,13 +830,29 @@ export default function TalentPool() {
   const canSeeContact = isAdmin(user) || user?.role === "talent_acquisition";
   const isClientUser = isClient(user);
 
-  // Filter state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [experienceFilter, setExperienceFilter] = useState("Any");
+  // Filter state — initialised from URL query params when navigating from HireTalentPage
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("q") ?? ""; } catch { return ""; }
+  });
+  const [activeCategory, setActiveCategory] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("category") ?? "All"; } catch { return "All"; }
+  });
+  const [experienceFilter, setExperienceFilter] = useState(() => {
+    try {
+      const sen = new URLSearchParams(window.location.search).get("seniority");
+      if (!sen || sen === "All") return "Any";
+      if (sen === "Junior") return "Entry";
+      return sen; // Mid or Senior pass through unchanged
+    } catch { return "Any"; }
+  });
   const [locationFilter, setLocationFilter] = useState("");
   const [workSetupFilter, setWorkSetupFilter] = useState("Any");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return !!(p.get("category") || p.get("seniority"));
+    } catch { return false; }
+  });
   const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
   const [selectedResult, setSelectedResult] = useState<MatchResult | null>(null);
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);

@@ -675,6 +675,8 @@ export function TopNavigation() {
               const isActive =
                 location === item.path ||
                 (item.path === "/hire-talent" && location === "/talent-pool") ||
+                (item.path === "/find-work/jobs" &&
+                  (location.startsWith("/find-work") || location.startsWith("/jobs/"))) ||
                 (hasMegaMenu &&
                   item.services &&
                   Object.values(item.services).some(

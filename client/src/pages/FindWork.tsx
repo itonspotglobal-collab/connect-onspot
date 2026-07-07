@@ -39,6 +39,7 @@ import {
   getTopUserInterests,
   scoreJobsAgainstInterests,
 } from "@/lib/userActivityMemory";
+import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 
 const APPLY_URL =
   "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
@@ -891,6 +892,7 @@ export default function OnSpotFindWorkRedesign() {
   // Refresh interest profile on mount (after hydration)
   useEffect(() => {
     setRecInterests(getTopUserInterests(5));
+    trackPilotActivity("viewedFindWork");
   }, []);
 
   const { data: dbJobs = [], isLoading: isJobsLoading } = useQuery<Job[]>({
@@ -1025,16 +1027,22 @@ export default function OnSpotFindWorkRedesign() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <Badge className="mb-5 rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] hover:bg-[#474ead]/10">
-                  Find work with global companies hiring now
-                </Badge>
+                <div className="mb-5 flex flex-wrap gap-2">
+                  <Badge className="rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] hover:bg-[#474ead]/10">
+                    Find work on the spot. Build a global career.
+                  </Badge>
+                  <Badge className="rounded-full bg-[#3F4698]/10 px-4 py-1.5 text-[#3F4698] hover:bg-[#3F4698]/10">
+                    {PILOT_CONFIG.brandPromise}
+                  </Badge>
+                </div>
                 <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl md:leading-[1.04] dark:text-white">
                   Find work that pays well — and moves you forward.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg dark:text-slate-300">
                   Get matched to premium remote opportunities across admin,
-                  support, finance, sales, marketing, and operations. Faster,
-                  smarter, and more human than a typical job board.
+                  support, finance, sales, marketing, and operations. Work
+                  without limits — faster, smarter, and more human than a
+                  typical job board.
                 </p>
               </motion.div>
 
