@@ -8,7 +8,7 @@ import {
   ChevronRight, Sparkles, LayoutGrid, UserCircle2, Flag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
+import { PILOT_CONFIG, DEFAULT_PILOT_ID, trackPilotActivity } from "@/lib/pilotConfig";
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
@@ -462,16 +462,47 @@ export default function HireTalentPage() {
 
       {/* ── Saddleman Pilot Banner ───────────────────────────────────────── */}
       <div className="border-b border-[#3F4698]/10 bg-[#3F4698]/[0.04]">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3.5 lg:px-8">
-          <div className="flex items-center gap-2.5 text-sm text-[#3F4698]">
-            <Sparkles className="h-4 w-4 shrink-0" />
-            <span className="font-semibold">{PILOT_CONFIG.pilotName} Pilot</span>
-            <span className="text-slate-400">·</span>
-            <span className="font-medium">{PILOT_CONFIG.brandPromise}</span>
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3.5 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-sm text-[#3F4698]">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="font-semibold">{PILOT_CONFIG.pilotName} Pilot</span>
+              <span className="text-slate-400">·</span>
+              <span className="font-medium">{PILOT_CONFIG.brandPromise}</span>
+            </div>
+            <p className="text-sm text-slate-500">
+              {PILOT_CONFIG.clientMessage}
+            </p>
           </div>
-          <p className="text-sm text-slate-500">
-            {PILOT_CONFIG.clientMessage}
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-full bg-[#3F4698] text-white hover:bg-[#3F4698]/90"
+              onClick={navigateToTalentPool}
+            >
+              Continue {PILOT_CONFIG.pilotName} pilot
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full border-[#3F4698]/30 text-[#3F4698]"
+              onClick={() => navigate(`/pilot/${DEFAULT_PILOT_ID}`)}
+            >
+              View pilot activity
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full border-[#3F4698]/30 text-[#3F4698]"
+              onClick={() => {
+                trackPilotActivity("requestedShortlist");
+                setShortlistGenerated(true);
+              }}
+            >
+              Request {PILOT_CONFIG.pilotName} shortlist
+            </Button>
+          </div>
         </div>
       </div>
 

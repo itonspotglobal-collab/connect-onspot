@@ -48,6 +48,7 @@ import {
   scoreJobsAgainstInterests,
 } from "@/lib/userActivityMemory";
 import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
+import { getJobPilotId } from "@/lib/pilotFiltering";
 import {
   TalentLoginModal,
   loadTalentAuth,
@@ -180,6 +181,7 @@ function JobCard({
   const tags = (job.skillTags ?? []).slice(0, 5);
   const CategoryIcon = getCategoryIcon(job.category);
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
+  const pilotId = getJobPilotId(job);
 
   return (
     <motion.div
@@ -201,6 +203,11 @@ function JobCard({
                 <h3 className="text-base font-bold leading-tight text-white truncate">
                   {job.title}
                 </h3>
+                {pilotId && (
+                  <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#3F4698]">
+                    Pilot
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-white/70">

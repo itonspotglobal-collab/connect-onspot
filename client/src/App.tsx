@@ -66,6 +66,7 @@ import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
 import HumanVirtualAssistantPage from "@/pages/HumanVirtualAssistantPage";
 import HireTalentPage from "@/pages/HireTalentPage";
+import PilotDashboard from "@/pages/PilotDashboard";
 import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
@@ -136,6 +137,8 @@ function PublicRouter() {
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
+          <Route path="/pilot/:pilotId" component={PilotDashboard} />
+          <Route path="/pilot" component={PilotDashboard} />
           <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />

@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { trackPilotActivity } from "@/lib/pilotConfig";
 
 // ─── Success Screen ────────────────────────────────────────────────────────────
 function SuccessScreen({ jobTitle, onBack }: { jobTitle: string; onBack: () => void }) {
@@ -126,6 +127,7 @@ export default function JobApplyPage() {
         throw new Error(err.error || "Submission failed");
       }
       setSubmitted(true);
+      trackPilotActivity("appliedToJob");
     } catch (err: any) {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     } finally {

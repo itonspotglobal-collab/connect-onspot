@@ -1,0 +1,1 @@
+- [Pilot/client config pattern](pilot-client-config.md) — how OnSpot models pilot clients (e.g. Saddleman) so new clients are addable by config, not code changes.

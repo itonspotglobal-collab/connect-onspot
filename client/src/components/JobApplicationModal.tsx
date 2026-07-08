@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { trackPilotActivity } from "@/lib/pilotConfig";
 import { 
   Briefcase, 
   DollarSign, 
@@ -101,6 +102,7 @@ export default function JobApplicationModal({
       return response.json();
     },
     onSuccess: () => {
+      trackPilotActivity("appliedToJob");
       // Invalidate queries to refresh job data and applications
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/search'] });
       queryClient.invalidateQueries({ queryKey: ['/api/proposals'] });
