@@ -8,26 +8,13 @@ import {
   Zap,
   Building,
   User,
-  Bot,
   ArrowRight,
-  CheckCircle2,
-  Code,
-  PenTool,
-  BarChart3,
-  Headphones,
-  Globe,
-  FileText,
-  Star,
-  Info,
   Settings,
-  Layers,
-  Calculator,
   LogOut,
   Loader2,
   Shield,
   Mail,
   Briefcase,
-  Sparkles,
   Menu,
   X,
   LogIn,
@@ -35,7 +22,6 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { NeuralBrain } from "@/components/NeuralBrain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -61,7 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/onspot-logo-cropped.png";
+import onspotLogo from "@assets/OnLogo_1783593964788.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
@@ -73,202 +59,9 @@ import {
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
-// Service definitions for mega menu
-const serviceDetails = {
-  managed: {
-    title: "Managed Services",
-    subtitle: "We manage everything",
-    description:
-      "Full end-to-end management with KPI accountability and 24/7 support",
-    icon: Zap,
-    features: [
-      "Dedicated team manager",
-      "24/7 support",
-      "KPI accountability",
-      "Process building",
-    ],
-    pricing: "From $200 + role rate",
-    scale: "5-50 FTE",
-    path: "/services/managed",
-    popular: true,
-  },
-  resourced: {
-    title: "Resourced Services",
-    subtitle: "You manage",
-    description:
-      "Direct control with cost savings - perfect for hands-on founders",
-    icon: Users,
-    features: [
-      "Flat FTE rate",
-      "Dedicated account manager",
-      "Standard support",
-      "Direct control",
-    ],
-    pricing: "From $200 + role rate",
-    scale: "1-20 FTE",
-    path: "/services/resourced",
-    popular: false,
-  },
-  enterprise: {
-    title: "Enterprise Services",
-    subtitle: "Custom at scale",
-    description:
-      "Enterprise-grade scalability with full customization for large organizations",
-    icon: Building,
-    features: [
-      "1,000+ FTE capacity",
-      "Custom integrations",
-      "Enterprise reporting",
-      "Dedicated campaign team",
-    ],
-    pricing: "Custom quote",
-    scale: ">50 FTE",
-    path: "/services/enterprise",
-    popular: false,
-  },
-  humanVA: {
-    title: "Human Virtual Assistant",
-    subtitle: "Personal productivity",
-    description:
-      "Skilled human assistants for complex tasks requiring creativity and judgment",
-    icon: User,
-    features: [
-      "Complex task handling",
-      "Creative problem solving",
-      "Personal attention",
-      "Industry expertise",
-    ],
-    pricing: "From $400/month",
-    scale: "1-5 VAs",
-    path: "/services/human-va",
-    popular: false,
-  },
-  aiVA: {
-    title: "AI-Assistant",
-    subtitle: "Automated efficiency",
-    description:
-      "AI-powered automation for repetitive tasks and data processing",
-    icon: Bot,
-    features: [
-      "24/7 availability",
-      "Data processing",
-      "Automated workflows",
-      "Cost effective",
-    ],
-    pricing: "From $99/month",
-    scale: "Unlimited tasks",
-    path: "/ai-assistant",
-    popular: false,
-  },
-};
-
-
-// Why OnSpot sections for mega menu
-const whyOnSpotSections = {
-  caseStudies: {
-    title: "Case Studies",
-    subtitle: "Real success stories",
-    description:
-      "See how we've transformed businesses and delivered measurable results",
-    icon: FileText,
-    highlights: [
-      "8X Growth Stories",
-      "ROI Case Studies",
-      "Client Transformations",
-      "Before/After Analysis",
-    ],
-    path: "/why-onspot/case-studies",
-    popular: true,
-  },
-  reviews: {
-    title: "Reviews",
-    subtitle: "Client testimonials",
-    description: "Hear directly from our clients about their OnSpot experience",
-    icon: Star,
-    highlights: [
-      "5-Star Reviews",
-      "Video Testimonials",
-      "Success Metrics",
-      "Client Feedback",
-    ],
-    path: "/why-onspot/reviews",
-    popular: false,
-  },
-  about: {
-    title: "About OnSpot",
-    subtitle: "Our story & mission",
-    description: "Learn about our journey, values, and what makes us different",
-    icon: Info,
-    highlights: [
-      "Our Story",
-      "Leadership Team",
-      "Company Values",
-      "Global Presence",
-    ],
-    path: "/why-onspot/about",
-    popular: false,
-  },
-  experience: {
-    title: "The OnSpot Experience",
-    subtitle: "How we work",
-    description: "Discover our proven 4-stage system for seamless outsourcing",
-    icon: Settings,
-    highlights: [
-      "4-Stage System",
-      "Implementation Process",
-      "Team Building",
-      "Innovation Lab",
-    ],
-    path: "/why-onspot/experience",
-    popular: true,
-  },
-  integrator: {
-    title: "The OnSpot Integrator System",
-    subtitle: "Our methodology",
-    description:
-      "Deep dive into our proprietary system for outsourcing success",
-    icon: Layers,
-    highlights: [
-      "Proven Framework",
-      "Best Practices",
-      "Process Optimization",
-      "Continuous Improvement",
-    ],
-    path: "/why-onspot/integrator-system",
-    popular: false,
-  },
-  valueCalculator: {
-    title: "Value Calculator",
-    subtitle: "Calculate your ROI",
-    description:
-      "Comprehensive calculator to assess your potential ROI and value return from outsourcing",
-    icon: Calculator,
-    highlights: [
-      "ROI Assessment",
-      "Cost Savings Analysis",
-      "Value Projection",
-      "Custom Scenarios",
-    ],
-    path: "/why-onspot/value-calculator",
-    popular: true,
-  },
-};
-
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
   { title: "Find Work", path: "/find-work/jobs" },
-  {
-    title: "Why OnSpot",
-    path: "/why-onspot",
-    megaMenu: true,
-    whyOnSpot: whyOnSpotSections,
-  },
-  {
-    title: "Solutions",
-    path: "/services",
-    megaMenu: true,
-    services: serviceDetails,
-  },
   { title: "Amazing", path: "/amazing" },
 ];
 
