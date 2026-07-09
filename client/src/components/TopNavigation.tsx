@@ -47,7 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/OnLogo_1783593964788.png";
+import onspotLogo from "@assets/on-logo-cropped.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
@@ -445,11 +445,10 @@ export function TopNavigation() {
             className="flex shrink-0 items-center relative z-10"
             data-testid="logo-home"
           >
-            <div
-              role="img"
-              aria-label="OnSpot"
-              className="nav-logo-mark"
-              style={{ backgroundImage: `url(${onspotLogo})` }}
+            <img
+              src={onspotLogo}
+              alt="OnSpot"
+              className="nav-logo-img"
             />
           </Link>
 
