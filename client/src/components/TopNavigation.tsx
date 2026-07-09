@@ -442,7 +442,7 @@ export function TopNavigation() {
           {/* Zone 1: Logo */}
           <Link
             href="/"
-            className="flex shrink-0 items-center relative z-10"
+            className="flex shrink-0 items-center gap-2.5 relative z-10"
             data-testid="logo-home"
             style={{ minWidth: 0 }}
           >
@@ -451,6 +451,12 @@ export function TopNavigation() {
               alt="OnSpot"
               className="nav-logo-img"
             />
+            <span
+              className="hidden sm:block font-bold text-white select-none"
+              style={{ fontSize: '20px', letterSpacing: '-0.03em', lineHeight: 1 }}
+            >
+              OnSpot
+            </span>
           </Link>
 
           {/* Zone 2: Desktop Navigation Links (centered) */}
