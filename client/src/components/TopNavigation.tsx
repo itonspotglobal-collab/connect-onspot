@@ -440,7 +440,7 @@ export function TopNavigation() {
           }}
         >
           {/* Left group: Logo + Nav links */}
-          <div className="flex items-center" style={{ gap: '40px' }}>
+          <div className="flex items-center" style={{ gap: '64px' }}>
 
           {/* Zone 1: Logo */}
           <Link
@@ -460,7 +460,7 @@ export function TopNavigation() {
             ref={navLinksRef}
             className="hidden md:flex items-center relative"
             style={{ 
-              gap: 'clamp(16px, 1.5vw, 24px)',
+              gap: 'clamp(20px, 2vw, 32px)',
               flexWrap: 'nowrap',
               zIndex: 101,
             }}
