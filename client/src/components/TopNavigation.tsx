@@ -445,10 +445,11 @@ export function TopNavigation() {
             className="flex shrink-0 items-center relative z-10"
             data-testid="logo-home"
           >
-            <img
-              src={onspotLogo}
-              alt="OnSpot"
-              className="nav-logo-img"
+            <div
+              role="img"
+              aria-label="OnSpot"
+              className="nav-logo-mark"
+              style={{ backgroundImage: `url(${onspotLogo})` }}
             />
           </Link>
 
