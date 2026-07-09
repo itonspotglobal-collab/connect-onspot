@@ -430,7 +430,7 @@ export function TopNavigation() {
         data-scrolled={isScrolled}
       >
         <div 
-          className="mx-auto flex items-center justify-between relative"
+          className="mx-auto flex items-center relative"
           style={{
             height: 'var(--nav-h)',
             paddingLeft: 'var(--nav-px)',
@@ -439,6 +439,9 @@ export function TopNavigation() {
             width: '100%',
           }}
         >
+          {/* Left group: Logo + Nav links */}
+          <div className="flex items-center" style={{ gap: '40px' }}>
+
           {/* Zone 1: Logo */}
           <Link
             href="/"
@@ -452,10 +455,10 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Zone 2: Desktop Navigation Links (centered) */}
+          {/* Zone 2: Desktop Navigation Links */}
           <div 
             ref={navLinksRef}
-            className="hidden md:flex items-center relative flex-1 justify-center"
+            className="hidden md:flex items-center relative"
             style={{ 
               gap: 'clamp(16px, 1.5vw, 24px)',
               flexWrap: 'nowrap',
@@ -596,9 +599,11 @@ export function TopNavigation() {
             )}
           </div>
 
+          </div>{/* end left group */}
+
           {/* Zone 3: Access Portal CTA (right) */}
           <div 
-            className="flex items-center relative z-10 flex-shrink-0"
+            className="flex items-center relative z-10 flex-shrink-0 ml-auto"
             style={{ gap: 'clamp(8px, 1vw, 12px)' }}
           >
             {/* Mobile Menu Toggle */}
