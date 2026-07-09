@@ -460,7 +460,7 @@ export function TopNavigation() {
             ref={navLinksRef}
             className="hidden md:flex items-center relative"
             style={{ 
-              gap: 'clamp(20px, 2vw, 32px)',
+              gap: 'clamp(56px, 5vw, 96px)',
               flexWrap: 'nowrap',
               zIndex: 101,
             }}
