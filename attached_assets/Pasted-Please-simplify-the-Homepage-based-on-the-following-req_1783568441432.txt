@@ -1,0 +1,52 @@
+Please simplify the Homepage based on the following requirements.
+
+Reference screenshot:
+The current Hero section shows:
+- Badge: “AI First. Humans When it Matters.”
+- Main heading: “Work Differently”
+- Subtitle: “One System. Your unfair Advantage.”
+- Supporting text: “The only outsourcing system built for the world that's coming — not the one that's leaving.”
+- Buttons: “Launch AI Assistant”, “Get Managed Team”, and “Find Work”
+
+Required changes:
+
+1. Hero Section
+- Remove the “Launch AI Assistant” button completely.
+- Change the main heading from “Work Differently” to:
+  “Work Without Limits”
+- Rename the “Get Managed Team” button to:
+  “Hire Talent”
+- Make the “Hire Talent” button navigate/connect to the Hire Talent page.
+- Keep the “Find Work” button unless the current project routing requires otherwise.
+- Preserve the current visual style, spacing, gradient background, typography, and responsive behavior as much as possible.
+
+2. Homepage Section Structure
+The Homepage should only contain 2 sections:
+- Section 1: Hero section
+- Section 2: The section with the heading/text:
+  “Get matched with vetted Philippine talent in 72 hours”
+
+3. Move Remaining Sections
+- Move all other Homepage sections that are not mentioned above to the “Amazing” page.
+- This includes all remaining content below the “Get matched with vetted Philippine talent in 72 hours” section.
+- Also move the footer to the “Amazing” page, since the Homepage should only contain the 2 sections listed above.
+
+4. Routing / Navigation
+- Ensure the new “Hire Talent” button links correctly to the existing Hire Talent page route.
+- Do not break existing navigation for the Amazing page, Hire Talent page, or Find Work page.
+- If the Hire Talent page route does not exist yet, create or use the closest existing route and clearly name it.
+
+5. Code Cleanup
+- Remove unused imports/components from the Homepage after moving sections.
+- Make sure the app builds without TypeScript, lint, or runtime errors.
+- Keep the code clean and organized by reusing existing section components when possible.
+- Do not redesign the whole site; only apply the requested content and section structure changes.
+
+Acceptance Criteria:
+- Homepage displays only the Hero section and the “Get matched with vetted Philippine talent in 72 hours” section.
+- “Launch AI Assistant” is no longer visible.
+- Hero heading says “Work Without Limits”.
+- “Get Managed Team” is changed to “Hire Talent”.
+- “Hire Talent” button navigates to the Hire Talent page.
+- All other previous Homepage sections, including the footer, are now shown on the Amazing page.
+- No broken layout, routes, imports, or console errors.

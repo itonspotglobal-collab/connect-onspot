@@ -11,11 +11,104 @@ import {
   Star,
   ChevronRight,
   Mail,
+  Phone,
+  MapPinIcon,
+  Linkedin,
+  Facebook,
+  Instagram,
+  ChevronDown,
+  TrendingUp,
+  CheckCircle2,
+  Clock,
+  Globe,
+  SlidersHorizontal,
+  User,
+  Bot,
 } from "lucide-react";
+import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { HeadSEO } from "@/components/HeadSEO";
+
+import onspotLogoCropped from "@assets/onspot-logo-cropped.png";
+
+import FlashLogo from "../assets/logos/Flash.png";
+import FutureEVLogo from "../assets/logos/FutureEV.png";
+import IPSLogo from "../assets/logos/IPS.png";
+import PinetechLogo from "../assets/logos/Pinetech.png";
+import SafewayLogo from "../assets/logos/Safeway.png";
+import VertexLogo from "../assets/logos/Vertex.png";
+
+import CollaborationThatScales from "@assets/Collaboration-that-scales_1780059195131.png";
+import ExecutiveSupport from "@assets/Executive_Support_1780638507560.png";
+import AlwaysConnected from "@assets/Always_Connected_1780638514689.png";
+import FutureOfWork from "@assets/Built_for_the_future_of_work_1780638559714.png";
+import FocusedExpertise from "@assets/Focused_expertise_1780638559714.png";
+import EngineeringTalent from "@assets/Engineering_talent_1780638559714.png";
+import AlignedEveryDay from "@assets/Aligned,_every_day_1780638559713.png";
+import WinningTogether from "@assets/winning_together_1780638637254.png";
+import CultureFirst from "@assets/Culture_first_1780638648875.png";
+
+import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
+import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
+import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
+import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
+import JaelAtendidoPhoto from "@assets/Jael_1780909035045.png";
+import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";
+import ShaneRubioPhoto from "@assets/Shane_1780657863305.png";
+import RachelCastroPhoto from "@assets/Rachel_Caztro_1774264095056.jpg";
+import JenniferDizonPhoto from "@assets/Jennifer_Dizon_1774430604160.jpg";
+import MarielTolentinoPhoto from "@assets/Mariel_Tolentino_1781014693257.png";
+import MelissaRayosPhoto from "@assets/Melissa_Nicka_Mae_Rayos_-_Talent_Acquisition_Specialist_1781015117632.png";
+
+const trustedBrands = [
+  { name: "Flash Justice", logo: FlashLogo },
+  { name: "Future Motors EV", logo: FutureEVLogo },
+  { name: "IPS by Meest", logo: IPSLogo },
+  { name: "Pinetech", logo: PinetechLogo },
+  { name: "Safeway Moving", logo: SafewayLogo },
+  { name: "Vertex Education", logo: VertexLogo },
+];
+
+function TrustedLogos() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(5);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startAutoPlay = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      if (!isPaused) {
+        setCurrentIndex((prev) => (prev + 1) % trustedBrands.length);
+      }
+    }, 2500);
+  };
+
+  const visibleBrands = Array.from(
+    { length: visibleCount },
+    (_, i) => trustedBrands[(currentIndex + i) % trustedBrands.length]
+  );
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 lg:gap-12">
+      {visibleBrands.map((brand) => (
+        <div
+          key={brand.name}
+          className="flex items-center justify-center opacity-60 grayscale transition hover:opacity-100 hover:grayscale-0"
+        >
+          <img
+            src={brand.logo}
+            alt={brand.name}
+            className="h-8 w-auto object-contain sm:h-10"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
@@ -329,7 +422,12 @@ export default function Amazing() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [captureEmail, setCaptureEmail] = useState("");
   const [captureSubmitted, setCaptureSubmitted] = useState(false);
+  const [expandedFooterSection, setExpandedFooterSection] = useState<string | null>(null);
   const pageRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleFooterSection = (section: string) => {
+    setExpandedFooterSection((prev) => (prev === section ? null : section));
+  };
   const { scrollYProgress } = useScroll({ target: pageRef, offset: ["start start", "end end"] });
   const chapterY = useTransform(scrollYProgress, [0.48, 0.72], [100, 0]);
 
@@ -817,6 +915,568 @@ export default function Amazing() {
             </div>
           </div>
         </motion.section>
+
+        {/* ── Stats strip ── */}
+        <div className="relative w-full border-y border-slate-200 bg-[#F1F2F6]">
+          <div className="mx-auto grid max-w-[1600px] grid-cols-2 divide-y divide-slate-200 md:grid-cols-4 md:divide-x md:divide-y-0 xl:grid-cols-[repeat(4,1fr)_auto]">
+            {[
+              { value: "72hrs", label: "AVG. TIME TO HIRE" },
+              { value: "200+", label: "GLOBAL CLIENTS SERVED" },
+              { value: "60%", label: "CLIENT COST SAVINGS" },
+              { value: "2,000+", label: "TALENTS MATCHED" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="flex min-h-[120px] flex-col items-center justify-center px-6 py-7 text-center"
+              >
+                <span className="text-4xl font-bold tracking-tight text-[#3F4698] sm:text-5xl">
+                  {stat.value}
+                </span>
+                <span className="mt-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+            <div className="col-span-2 flex items-center justify-center border-t border-slate-200 px-6 py-5 md:col-span-4 md:border-l-0 md:border-t xl:col-span-1 xl:border-l xl:border-t-0">
+              <a
+                href="/value-calculator"
+                className="inline-flex h-[64px] min-w-[260px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-[14px] border border-[#D9DDEB] bg-[#EEF0F8] px-8 text-[17px] font-semibold text-[#40499D] shadow-[0_6px_16px_rgba(63,73,157,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#E3E6F2] hover:shadow-[0_8px_18px_rgba(63,73,157,0.16)] focus:outline-none focus:ring-2 focus:ring-[#40499D]/25 focus:ring-offset-2 sm:w-auto"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Calculate your Savings
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Featured Insights ── */}
+        <section className="relative bg-[#F5F7FC] px-6 py-20 sm:py-24 lg:py-28">
+          <div className="mx-auto max-w-[1320px]">
+            <div className="rounded-[40px] bg-gradient-to-br from-[#4B4FC4] via-[#3568E8] to-[#13B8C8] p-8 shadow-[0_28px_90px_rgba(44,63,170,0.22)] sm:p-10 lg:p-12">
+              <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-white/65">
+                    Insights
+                  </p>
+                  <h2 className="max-w-[640px] text-[clamp(32px,4vw,56px)] font-bold leading-[0.96] tracking-[-0.055em] text-white">
+                    Ideas worth sharing.
+                  </h2>
+                  <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/75">
+                    Perspectives on customer experience, global talent, and the future of work.
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <Link
+                    href="/insights"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                  >
+                    Explore all →
+                  </Link>
+                </div>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-3">
+                {[
+                  { slug: "checklist-winning-virtual-interviews", category: "INDUSTRY TRENDS", title: "Checklist for Winning Virtual Interviews", readTime: "5 min read" },
+                  { slug: "leveraging-ghanas-tech-talent-philippines-customer-service", category: "GLOBAL OUTSOURCING", title: "Leveraging Ghana's Tech Talent and the World-Class Customer Service of the Philippines", readTime: "5 min read" },
+                  { slug: "ghana-software-development-outsourcing-goldmine", category: "TECHNOLOGY", title: "Ghana's Software Development Capabilities: An Untapped Goldmine for Outsourcing", readTime: "4 min read" },
+                ].map((post) => (
+                  <a
+                    key={post.slug}
+                    href={`/insights/${post.slug}`}
+                    className="group flex min-h-[230px] flex-col justify-between rounded-[28px] border border-white/20 bg-white/14 p-7 text-white backdrop-blur-md transition hover:-translate-y-1 hover:bg-white/20 hover:shadow-[0_22px_60px_rgba(0,0,0,0.18)]"
+                  >
+                    <div>
+                      <p className="mb-6 text-xs font-bold uppercase tracking-[0.22em] text-white/70">{post.category}</p>
+                      <h3 className="text-[24px] font-bold leading-[1.12] tracking-[-0.025em] text-white">{post.title}</h3>
+                    </div>
+                    <div className="mt-8 flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/75">{post.readTime}</span>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/16 text-white transition group-hover:bg-white group-hover:text-[#4B4FC4]">→</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <div className="mt-10 flex justify-center">
+                <Link
+                  href="/lead-intake"
+                  className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-white px-8 text-base font-bold text-[#3F46A8] shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.22)]"
+                >
+                  Talk to an Expert →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Work Differently ── */}
+        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.28),transparent_34%),linear-gradient(135deg,#151632_0%,#232B74_52%,#11142B_100%)] px-6 py-12 text-white sm:py-14 lg:py-16">
+          <div className="container relative z-10 mx-auto px-4 sm:px-6">
+            <div className="mx-auto max-w-[1120px] text-center mb-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white/60">Work Differently</p>
+              <h2 className="mx-auto max-w-[1100px] text-center text-[clamp(28px,3.4vw,50px)] font-bold leading-[1.04] tracking-[-0.05em] text-white">
+                <span className="block lg:whitespace-nowrap">Whether you're scaling a team or growing a career</span>
+                <span className="mt-1 block lg:whitespace-nowrap">— OnSpot is built for both sides of{" "}
+                  <span className="bg-gradient-to-r from-[#AFA8FF] via-[#8B7CFF] to-[#5AA7FF] bg-clip-text text-transparent">great work.</span>
+                </span>
+              </h2>
+            </div>
+            <div className="mx-auto mt-8 grid max-w-[1040px] items-stretch gap-5 lg:grid-cols-2">
+              <article className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(135deg,#303276_0%,#3266B4_58%,#1D9CC2_100%)] p-6 text-white shadow-[0_22px_60px_rgba(0,0,0,0.22)] sm:p-7">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)]" />
+                <div className="relative z-10 flex h-full flex-col">
+                  <div className="min-h-[145px]">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70">For Companies</p>
+                    <h3 className="max-w-[440px] text-[clamp(26px,2.5vw,36px)] font-bold leading-[1.02] tracking-[-0.045em] text-white">Hire faster. Spend less.</h3>
+                    <p className="mt-3 max-w-[480px] text-[15px] font-semibold leading-relaxed text-white/80">Build your team with direct access, flexible engagement models, and talent matched around how your work actually runs.</p>
+                  </div>
+                  <div className="mt-5 grid gap-2.5">
+                    {[
+                      { icon: <Zap className="h-5 w-5" strokeWidth={2.2} />, title: "Hire in days", sub: "72-hour match average" },
+                      { icon: <SlidersHorizontal className="h-5 w-5" strokeWidth={2.2} />, title: "Hire your way", sub: "Contract, project, full-time" },
+                      { icon: <Users className="h-5 w-5" strokeWidth={2.2} />, title: "No middlemen", sub: "Direct access, zero markups" },
+                      { icon: <Globe className="h-5 w-5" strokeWidth={2.2} />, title: "50+ countries", sub: "Global reach, local expertise" },
+                    ].map((item) => (
+                      <div key={item.title} className="grid min-h-[72px] grid-cols-[38px_1fr] items-center gap-3 rounded-[18px] border border-white/16 bg-white/10 px-4 py-3 backdrop-blur">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12 text-[#6EF3F1]">{item.icon}</div>
+                        <div className="min-w-0">
+                          <h4 className="text-[15px] font-bold leading-tight text-white">{item.title}</h4>
+                          <p className="mt-0.5 text-[13px] leading-snug text-white/68">{item.sub}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-auto flex justify-center pt-5">
+                    <Link href="/hire-talent" className="inline-flex h-11 min-w-[210px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[13px] font-bold text-[#2E3FA8] shadow-[0_12px_28px_rgba(0,0,0,0.16)] transition hover:-translate-y-0.5">
+                      Find the right talent →
+                    </Link>
+                  </div>
+                </div>
+              </article>
+              <article className="relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/16 bg-[linear-gradient(135deg,#392B77_0%,#6642D6_52%,#319DB0_100%)] p-6 text-white shadow-[0_22px_60px_rgba(0,0,0,0.22)] sm:p-7">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)]" />
+                <div className="relative z-10 flex h-full flex-col">
+                  <div className="min-h-[145px]">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.24em] text-white/70">For Professionals</p>
+                    <h3 className="max-w-[440px] text-[clamp(26px,2.5vw,36px)] font-bold leading-[1.02] tracking-[-0.045em] text-white">Real work. Real growth.</h3>
+                    <p className="mt-3 max-w-[480px] text-[15px] font-semibold leading-relaxed text-white/80">Get matched with quality opportunities, steady pipelines, and flexible work that respects your terms.</p>
+                  </div>
+                  <div className="mt-5 grid gap-2.5">
+                    {[
+                      { icon: <TrendingUp className="h-5 w-5" strokeWidth={2.2} />, title: "Steady pipeline", sub: "No gaps, no chasing" },
+                      { icon: <Star className="h-5 w-5" strokeWidth={2.2} />, title: "Top global brands", sub: "Builds your reputation fast" },
+                      { icon: <Clock className="h-5 w-5" strokeWidth={2.2} />, title: "Your terms", sub: "Remote, flexible schedule" },
+                      { icon: <CheckCircle2 className="h-5 w-5" strokeWidth={2.2} />, title: "Zero gatekeeping", sub: "Pure merit, open access" },
+                    ].map((item) => (
+                      <div key={item.title} className="grid min-h-[72px] grid-cols-[38px_1fr] items-center gap-3 rounded-[18px] border border-white/16 bg-white/10 px-4 py-3 backdrop-blur">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12 text-[#D7C9FF]">{item.icon}</div>
+                        <div className="min-w-0">
+                          <h4 className="text-[15px] font-bold leading-tight text-white">{item.title}</h4>
+                          <p className="mt-0.5 text-[13px] leading-snug text-white/68">{item.sub}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-auto flex justify-center pt-5">
+                    <Link href="/find-best-matches" className="inline-flex h-11 min-w-[210px] items-center justify-center gap-2 rounded-full bg-white px-5 text-[13px] font-bold text-[#4B35A8] shadow-[0_12px_28px_rgba(0,0,0,0.16)] transition hover:-translate-y-0.5">
+                      Find your next opportunity →
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Trusted By ── */}
+        <div className="relative bg-[#F5F7FC] pt-20 pb-20 sm:pt-24 sm:pb-24 lg:pt-28 lg:pb-28">
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <div className="text-center space-y-10 sm:space-y-14">
+              <h2 className="mx-auto font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 text-[clamp(30px,3vw,48px)]" style={{ textWrap: "balance", maxWidth: "58ch" }}>
+                Trusted by global brands, hundreds of entrepreneurs, and thousands of professionals worldwide.
+              </h2>
+              <TrustedLogos />
+              <div className="flex justify-center">
+                <a href="/find-best-matches" className="inline-flex items-center justify-center gap-2 rounded-full border border-violet-300 bg-white/80 px-7 py-3.5 text-base font-semibold text-violet-700 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md">
+                  Join 100+ companies hiring with OnSpot
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Superhuman Network ── */}
+        <div className="relative overflow-hidden bg-[#17152E] py-14 text-white sm:py-16 lg:py-20">
+          <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#3F4698]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-10 h-64 w-64 rounded-full bg-[#3F4698]/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 right-10 h-64 w-64 rounded-full bg-violet-700/10 blur-3xl" />
+          <div className="relative z-10 px-4 text-center">
+            <h2 className="mx-auto mt-5 max-w-[900px] px-6 text-center font-bold leading-[0.98] tracking-[-0.055em] text-white text-[clamp(36px,4.4vw,62px)]">
+              <span className="block">Real people. Real work.</span>
+              <span className="mt-1 block text-[#AAA8FF]">Real impact.</span>
+            </h2>
+          </div>
+          <div className="relative z-10 mx-auto mt-8 grid max-w-[1180px] grid-cols-2 gap-1.5 px-4 [grid-auto-rows:118px] md:grid-cols-12 md:[grid-auto-rows:138px] lg:[grid-auto-rows:155px]">
+            {[
+              { src: CollaborationThatScales, alt: "Collaboration that scales", cls: "col-span-2 row-span-2 md:col-span-6 md:row-span-2" },
+              { src: ExecutiveSupport, alt: "Executive Support", cls: "md:col-span-3" },
+              { src: AlwaysConnected, alt: "Always Connected", cls: "md:col-span-3" },
+              { src: FutureOfWork, alt: "Built for the future of work", cls: "md:col-span-3" },
+              { src: FocusedExpertise, alt: "Focused expertise", cls: "md:col-span-3" },
+              { src: EngineeringTalent, alt: "Engineering talent", cls: "md:col-span-3" },
+              { src: AlignedEveryDay, alt: "Aligned, every day", cls: "md:col-span-3" },
+              { src: WinningTogether, alt: "Winning together", cls: "md:col-span-3" },
+              { src: CultureFirst, alt: "Culture first", cls: "md:col-span-3" },
+            ].map((tile) => (
+              <div key={tile.alt} className={`group relative overflow-hidden bg-slate-800 ${tile.cls}`}>
+                <img src={tile.src} alt={tile.alt} loading="lazy" decoding="async" className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#17152E]/55 via-[#17152E]/10 to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-80" />
+                <div className="absolute bottom-3 left-3 z-20 translate-y-2 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">{tile.alt}</div>
+              </div>
+            ))}
+          </div>
+          <p className="relative z-10 mx-auto mt-7 max-w-[900px] px-6 text-center text-[clamp(17px,1.35vw,22px)] font-semibold leading-snug text-white/62">
+            Behind every workflow is a <span className="text-white">real person</span> making the work better.
+          </p>
+          <div className="relative z-10 mt-5 flex justify-center">
+            <a href="/about" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C4DFF] to-[#5B5CF6] px-6 text-sm font-bold text-white shadow-[0_16px_38px_rgba(91,92,246,0.28)] transition hover:-translate-y-0.5">
+              Meet the people behind the work →
+            </a>
+          </div>
+        </div>
+
+        {/* ── Transformation Stories ── */}
+        <div className="relative overflow-hidden bg-[#F6F7FB] py-14 sm:py-16 lg:py-20">
+          <div className="pointer-events-none absolute -top-32 right-0 h-96 w-96 rounded-full bg-indigo-400/8 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-80 w-80 rounded-full bg-violet-400/6 blur-3xl" />
+          <div className="container relative z-10 mx-auto px-4 sm:px-6">
+            <div className="mb-8 mx-auto w-full max-w-[1500px] px-0">
+              <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#4B46C8]">Transformations</p>
+              <h2 className="mt-3 max-w-[1000px] text-[clamp(40px,5vw,72px)] font-semibold tracking-[-0.045em] leading-[0.98] text-slate-950">
+                Real change. <span className="text-[#4B46C8]">Real results.</span>
+              </h2>
+              <p className="mt-4 max-w-[720px] text-[clamp(16px,1.5vw,20px)] leading-[1.35] text-[#536077]">
+                See how OnSpot helps teams move from overloaded operations to intelligent, scalable outsourcing partnerships.
+              </p>
+            </div>
+            <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
+              <div className="relative flex h-full flex-col overflow-hidden rounded-[28px] border border-indigo-200/70 bg-gradient-to-br from-indigo-950 via-indigo-900 to-violet-900 p-7 shadow-[0_20px_60px_rgba(49,46,129,0.22)] lg:p-8">
+                <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl" />
+                <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-violet-400/15 blur-3xl" />
+                <span className="pointer-events-none absolute right-8 top-4 select-none font-serif text-[120px] leading-none text-white/10">&#8220;</span>
+                <div className="relative flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20"><User className="h-6 w-6" /></div>
+                    <div>
+                      <p className="text-base font-semibold text-white">Elad B.</p>
+                      <p className="mt-0.5 text-sm text-white/65">CEO / Founder, PineTech</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15">
+                    <Zap className="h-3.5 w-3.5" />40% time saved
+                  </span>
+                </div>
+                <div className="relative mt-7">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">Before</p>
+                  <h3 className="mt-1 text-2xl font-semibold leading-snug text-white sm:text-3xl">12-Hour Workdays</h3>
+                  <div className="my-3 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-white/20" />
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15">transformed into</span>
+                    <span className="h-px flex-1 bg-white/20" />
+                  </div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">After</p>
+                  <h3 className="mt-1 text-2xl font-semibold italic leading-snug text-violet-200 sm:text-3xl">Automated Excellence</h3>
+                </div>
+                <p className="relative mt-4 text-base leading-relaxed text-white/75">"The professionalism and consistency of the OnSpot team. Communication is always clear, and the structured daily and weekly updates make it simple to stay aligned."</p>
+                <div className="mt-auto pt-5">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/85 ring-1 ring-white/15">
+                    <TrendingUp className="h-3 w-3" />Client transformation
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-5">
+                {[
+                  { name: "Eric M.", role: "Operations Director, Flash Justice", metric: "3 weeks to full team", before: "Scattered Processes", after: "Seamless Orchestration", quote: "I've worked with several outsourcing companies, but none delivered like OnSpot. Shane and Ria helped me build my team, stayed involved, and ensured success. I finally feel like I'm working with a true partner." },
+                  { name: "Fernando C.", role: "CTO, Pinetech", metric: "24/7 coverage", before: "Constant Firefighting", after: "Proactive Innovation", quote: "OnSpot's team is professional, responsive, and reliable — always going above and beyond. The efficiency and consistency they deliver gives me complete confidence." },
+                ].map((story) => (
+                  <div key={story.name} className="group relative flex flex-col overflow-hidden rounded-[26px] border border-white/70 bg-white/75 p-6 shadow-[0_14px_50px_rgba(80,80,180,0.09)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_70px_rgba(80,80,180,0.14)] lg:p-7">
+                    <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-[1.75rem] bg-gradient-to-r from-indigo-500/70 via-violet-400/70 to-cyan-300/70" />
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100"><User className="h-4 w-4" /></div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{story.name}</p>
+                          <p className="text-xs text-slate-500">{story.role}</p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200/70">{story.metric}</span>
+                    </div>
+                    <h3 className="mt-4 text-[clamp(19px,2vw,26px)] font-semibold leading-snug text-slate-950">
+                      From <span className="text-slate-700">{story.before}</span>
+                      <span className="mx-2 text-indigo-400"><ArrowRight className="inline h-4 w-4" /></span>
+                      <span className="italic text-indigo-700">{story.after}</span>
+                    </h3>
+                    <p className="mt-3 flex-1 text-[15px] leading-relaxed text-slate-600">"{story.quote}"</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-8 flex justify-center">
+              <a href="/hire-talent" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-700 to-violet-600 px-7 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(67,56,202,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(67,56,202,0.35)]">
+                <Sparkles className="h-4 w-4" />Start your transformation
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ── The Why / Origin Story ── */}
+        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.24),transparent_34%),linear-gradient(135deg,#11142B_0%,#1D2360_48%,#151632_100%)] px-6 py-12 text-white sm:py-14 lg:py-16">
+          <div className="pointer-events-none absolute right-[-12%] top-[-20%] h-[420px] w-[420px] rounded-full bg-[#2F7CF6]/20 blur-[90px]" />
+          <div className="relative z-10 mx-auto grid max-w-[1120px] gap-7 lg:grid-cols-[0.68fr_1.32fr] lg:items-start">
+            <div>
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.30em] text-[#AFA8FF]/75">The Why</p>
+              <h2 className="max-w-[360px] text-[clamp(32px,3.6vw,50px)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
+                OnSpot started<br />from a real<br />problem.
+              </h2>
+            </div>
+            <div className="rounded-[28px] border border-white/18 bg-white/[0.08] p-6 shadow-[0_22px_62px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-7 lg:p-8">
+              <h3 className="max-w-[760px] text-[clamp(24px,2.45vw,36px)] font-bold leading-[1.04] tracking-[-0.045em] text-white">
+                <span className="block">Our founders were building businesses</span>
+                <span className="mt-1 block text-white/88">and ran into the same wall most operators hit:</span>
+                <span className="mt-2 block max-w-[720px] bg-gradient-to-r from-[#B9B6FF] via-[#8EA2FF] to-[#6ED8F6] bg-clip-text text-transparent">growth was possible, but operations were becoming the bottleneck.</span>
+              </h3>
+              <div className="mt-5 max-w-[800px] space-y-3 text-[clamp(14px,1.12vw,16.5px)] leading-[1.55] text-white/76">
+                <p><span className="font-semibold text-white">Hiring took too long.</span> <span className="font-semibold text-white">Costs kept rising.</span> <span className="font-semibold text-white">Teams became harder to manage.</span> Founder time was being consumed by work that should have been systemized.</p>
+                <p>So instead of accepting that as normal, <span className="font-semibold text-white">they built a better way.</span> What began as an internal solution became a company built to help other businesses scale with <span className="font-semibold text-white">more clarity, better people, and less friction.</span></p>
+                <p>That is why OnSpot exists. Not to be another outsourcing provider, but to become a <span className="font-semibold text-white">trusted growth partner</span> for businesses that need more than manpower. They need <span className="font-semibold text-white">intelligence that removes drag</span>, <span className="font-semibold text-white">people who can lead and execute</span>, and a support system that makes <span className="font-semibold text-white">both work as one.</span></p>
+              </div>
+              <div className="mt-5 flex justify-start">
+                <Link href="/why-onspot" className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-5 text-[13px] font-bold text-[#151632] shadow-[0_12px_28px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(0,0,0,0.28)]">
+                  Explore How We Can Help →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Why OnSpot / Four Pillars ── */}
+        <section className="bg-[#F3F6FC] px-6 py-20 sm:py-24 lg:py-28">
+          <div className="mx-auto max-w-[1320px]">
+            <div className="max-w-[720px]">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-[#4B4FC4]">Why OnSpot</p>
+              <h2 className="max-w-[700px] text-[clamp(36px,4.4vw,64px)] font-bold leading-[0.96] tracking-[-0.06em] text-[#050A1F]">
+                <span className="block">Not a service provider.</span>
+                <span className="mt-1 block max-w-[480px] bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text italic text-transparent">An architect.</span>
+              </h2>
+              <p className="mt-5 max-w-[600px] text-[clamp(15px,1.2vw,18px)] leading-[1.5] text-[#536077]">
+                We design the operating layer behind modern outsourcing — combining AI-ready systems, vetted talent, and human accountability so your team can scale without losing control.
+              </p>
+            </div>
+            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { icon: <Bot className="h-6 w-6" />, label: "AI Foundation", title: "AI-first infrastructure", tagline: "Intelligent by design", body: "Every system and workflow enhanced by intelligence that amplifies human potential — not automation for its own sake.", variant: "light" as const },
+                { icon: <Users className="h-6 w-6" />, label: "Human Culture", title: "Human-centered culture", tagline: "People, not resources", body: "Elite Filipino talent treated as partners. We invest in their growth because your success depends on it.", variant: "dark" as const },
+                { icon: <Globe className="h-6 w-6" />, label: "Connected Workflow", title: "Connected ecosystem", tagline: "Seamless integration", body: "Your tools, your workflow, working in harmony. We don't disrupt what you've built — we elevate it.", variant: "light" as const },
+                { icon: <TrendingUp className="h-6 w-6" />, label: "Scalable Model", title: "Scalable excellence", tagline: "Grow without compromise", body: "Scale from 1 to 100 without losing quality, culture, or control. Same excellence at every stage.", variant: "dark" as const },
+              ].map((card) => (
+                <article key={card.title} className={card.variant === "light" ? "rounded-[24px] border border-[#DCE2F2] bg-white p-6 text-[#050A1F] shadow-[0_18px_55px_rgba(45,55,105,0.08)] transition hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(45,55,105,0.12)]" : "rounded-[24px] border border-white/14 bg-[linear-gradient(135deg,#1B1D42_0%,#2D2E78_55%,#3F46A8_100%)] p-6 text-white shadow-[0_22px_65px_rgba(24,28,74,0.22)] transition hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(24,28,74,0.30)]"}>
+                  <div className={card.variant === "light" ? "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#4B4FC4] shadow-[0_10px_30px_rgba(75,79,196,0.12)]" : "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/12 text-[#8EF3F0] shadow-[0_10px_30px_rgba(0,0,0,0.18)]"}>{card.icon}</div>
+                  <p className={card.variant === "light" ? "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#13839A]" : "mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#8EF3F0]"}>{card.label}</p>
+                  <h3 className={card.variant === "light" ? "text-xl font-bold tracking-[-0.035em] text-[#050A1F]" : "text-xl font-bold tracking-[-0.035em] text-white"}>{card.title}</h3>
+                  <p className={card.variant === "light" ? "mt-2 text-sm font-bold text-[#4B4FC4]" : "mt-2 text-sm font-bold text-[#B9B6FF]"}>{card.tagline}</p>
+                  <p className={card.variant === "light" ? "mt-3 text-sm leading-relaxed text-[#536077]" : "mt-3 text-sm leading-relaxed text-white/72"}>{card.body}</p>
+                </article>
+              ))}
+            </div>
+            <div className="mt-10 flex justify-center">
+              <Link href="#experience" className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#6B35F5] to-[#2F7CF6] px-8 text-base font-bold text-white shadow-[0_18px_45px_rgba(83,68,230,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_rgba(83,68,230,0.30)]">
+                See how it works →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── The Proof / Talent Profiles ── */}
+        <div className="relative bg-white py-20 sm:py-24 lg:py-28">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="mb-12 text-center">
+              <h2 className="mx-auto max-w-[960px] text-center text-[clamp(36px,4.4vw,64px)] font-bold tracking-[-0.06em] leading-[0.98] text-[#050A1F]">
+                The <span className="bg-gradient-to-r from-[#6B35F5] via-[#7C4DFF] to-[#3B82F6] bg-clip-text text-transparent">People</span> Behind the Platform
+              </h2>
+              <p className="mx-auto mt-4 max-w-[680px] text-center text-[clamp(15px,1.3vw,18px)] leading-[1.4] text-[#536077]">
+                <span className="block">Powered by professionals from the US, Philippines, and beyond.</span>
+                <span className="block">The Superhuman BPO Network.</span>
+              </p>
+            </div>
+            <div className="mx-auto mt-12 grid max-w-[1180px] grid-cols-2 gap-5 lg:grid-cols-4">
+              {[
+                { photo: JakeWainbergPhoto, name: "Jake Wainberg", flag: "🇺🇸", role: "Founder & President", objectPosition: "object-[center_20%]" },
+                { photo: JaelAtendidoPhoto, name: "Jael Atendido", flag: "🇵🇭", role: "Executive Assistant", objectPosition: "object-[center_8%]" },
+                { photo: NurLamineroPhoto, name: "Nur Laminero", flag: "🇵🇭", role: "CEO of OnSpot", objectPosition: "object-[center_25%]" },
+                { photo: MarielTolentinoPhoto, name: "Mariel Tolentino", flag: "🇵🇭", role: "Content Creator", objectPosition: "object-[center_28%]" },
+                { photo: MarkApostolPhoto, name: "Macky Apostol", flag: "🇵🇭", role: "Senior Recruitment Specialist", objectPosition: "object-[center_15%]" },
+                { photo: RenierMacalinoPhoto, name: "Renier Macalino", flag: "🇵🇭", role: "Virtual Assistant", objectPosition: "object-[center_15%]" },
+                { photo: ShaneRubioPhoto, name: "Shane Rubio", flag: "🇵🇭", role: "Client Success Manager", objectPosition: "object-[center_10%]" },
+                { photo: MelissaRayosPhoto, name: "Melissa Rayos", flag: "🇵🇭", role: "Talent Acquisition Specialist", objectPosition: "object-[center_10%]" },
+              ].map((person) => (
+                <div key={person.name} className="group relative overflow-hidden rounded-[22px] bg-slate-100 shadow-[0_10px_32px_rgba(0,0,0,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.14)]" style={{ aspectRatio: "3/4" }}>
+                  <img src={person.photo} alt={person.name} loading="lazy" decoding="async" className={`h-full w-full object-cover ${person.objectPosition} transition duration-500 group-hover:scale-[1.04]`} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a1f]/70 via-[#0a0a1f]/18 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <p className="text-base font-bold leading-tight text-white">{person.name} {person.flag}</p>
+                    <p className="mt-1 text-xs leading-snug text-white/75">{person.role}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-12 flex justify-center">
+              <a href="/talent-pool" className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#DCE2F2] bg-white px-7 text-sm font-semibold text-[#2E3580] shadow-[0_6px_20px_rgba(45,53,128,0.10)] transition hover:-translate-y-0.5">
+                Explore the Talent Pool →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <footer className="onspot-footer relative overflow-hidden bg-[#3F4698]">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/10 via-blue-500/5 to-transparent blur-md"></div>
+            <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
+          </div>
+
+          <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-14 2xl:px-16 py-10 sm:py-12 lg:py-14">
+            <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-[minmax(300px,360px)_1fr] xl:grid-cols-[minmax(320px,380px)_1fr] lg:gap-x-12 xl:gap-x-14 items-start">
+              <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
+                <div className="space-y-6 sm:space-y-8 relative flex flex-col items-start transition-all duration-300">
+                  <img src={onspotLogoCropped} alt="OnSpot" className="block h-auto w-[160px] sm:w-[175px] lg:w-[190px] object-contain" data-testid="footer-logo" />
+                  <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
+                    OnSpot is the only outsourcing system built for the world that's coming—pairing AI-ready operations with world-class Philippine talent to power global businesses.
+                  </p>
+                </div>
+                <div className="mt-8 flex flex-wrap items-center justify-start gap-3">
+                  {[
+                    { href: "https://www.linkedin.com/company/onspotglobal/", icon: <Linkedin className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-linkedin" },
+                    { href: "https://www.facebook.com/OnSpotGlobal", icon: <Facebook className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-facebook" },
+                    { href: "https://x.com/OnSpotTribe", icon: <SiX className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-x" },
+                    { href: "https://www.threads.com/@onspotglobal", icon: <SiThreads className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-threads" },
+                    { href: "https://www.instagram.com/onspotglobal", icon: <Instagram className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-instagram" },
+                    { href: "https://www.tiktok.com/@onspottribe", icon: <SiTiktok className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-tiktok" },
+                    { href: "https://www.youtube.com/@OnSpotGlobal", icon: <SiYoutube className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-youtube" },
+                  ].map((s) => (
+                    <a key={s.testid} href={s.href} target="_blank" rel="noopener noreferrer" data-testid={s.testid} className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group">{s.icon}</a>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-y-10 gap-x-8 xl:gap-x-10">
+                {[
+                  {
+                    key: "navigation", label: "Navigation",
+                    links: [
+                      { href: "/hire-talent", label: "Hire Talent", testid: "footer-link-hire" },
+                      { href: "/lead-intake", label: "Managed Services", testid: "footer-link-managed" },
+                      { href: "/superhuman", label: "The Superhuman Project", testid: "footer-link-ai" },
+                      { href: "/waitlist", label: "Join Waitlist", testid: "footer-link-waitlist" },
+                      { href: "/careers", label: "Careers", testid: "footer-link-careers" },
+                      { href: "/powerapp", label: "Powerapp", testid: "footer-link-powerapp" },
+                      { href: "/legal-ops", label: "LegalOps NY", testid: "footer-link-legal-ops" },
+                      { href: "/pricing", label: "Pricing", testid: "footer-link-pricing" },
+                      { href: "/faq", label: "FAQ", testid: "footer-link-faq" },
+                    ],
+                  },
+                  {
+                    key: "company", label: "Company",
+                    links: [
+                      { href: "/why-onspot", label: "Why OnSpot", testid: "footer-link-why" },
+                      { href: "/stories", label: "Amazing Stories", testid: "footer-link-stories" },
+                      { href: "/insights", label: "Insights", testid: "footer-link-insights" },
+                      { href: "/affiliate", label: "Affiliate Marketing", testid: "footer-link-affiliate" },
+                      { href: "/bpo-partner", label: "BPO Partner", testid: "footer-link-bpo" },
+                      { href: "/investors", label: "Investors Corner", testid: "footer-link-investors" },
+                      { href: "/about", label: "About Us", testid: "footer-link-about" },
+                      { href: "/operations-playbook", label: "Delivery Playbook", testid: "footer-link-playbook" },
+                    ],
+                  },
+                ].map((col) => (
+                  <div key={col.key} className="md:space-y-6 transition-all duration-300" style={{ paddingBottom: "clamp(4px, 0.6vh, 8px)" }}>
+                    <button onClick={() => toggleFooterSection(col.key)} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
+                      <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">{col.label}</h3>
+                      <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === col.key ? "rotate-180" : ""}`} />
+                    </button>
+                    <div className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${expandedFooterSection === col.key ? "opacity-100 max-h-96" : "opacity-0 max-h-0 overflow-hidden"}`} style={{ marginTop: expandedFooterSection === col.key || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
+                      {col.links.map((link) => (
+                        <Link key={link.href} href={link.href} data-testid={link.testid} className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">{link.label}</Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="md:space-y-6 transition-all duration-300" style={{ paddingBottom: "clamp(4px, 0.6vh, 8px)" }}>
+                  <button onClick={() => toggleFooterSection("verticals")} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
+                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">New Verticals</h3>
+                    <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`} />
+                  </button>
+                  <div className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${expandedFooterSection === "verticals" ? "opacity-100 max-h-96" : "opacity-0 max-h-0 overflow-hidden"}`} style={{ marginTop: expandedFooterSection === "verticals" || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
+                    {["AI Human-in-the-Loop", "Founder Ops", "Healthcare Micro-Admin", "E-commerce Ops"].map((v) => (
+                      <a key={v} href="#" className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">{v}</a>
+                    ))}
+                    <a href="#" className="block text-xs sm:text-sm font-medium text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">View all 10 →</a>
+                  </div>
+                </div>
+
+                <div className="md:space-y-6 transition-all duration-300 min-w-0">
+                  <button onClick={() => toggleFooterSection("connect")} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
+                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">Connect</h3>
+                    <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`} />
+                  </button>
+                  <div className={`w-full space-y-4 overflow-hidden text-left transition-all duration-300 md:!block md:!max-h-none md:!opacity-100 ${expandedFooterSection === "connect" ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0"}`} style={{ marginTop: expandedFooterSection === "connect" || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
+                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><Mail className="h-4 w-4 shrink-0" /></div>
+                      <div className="min-w-0 text-left leading-relaxed text-white/75">
+                        <a href="mailto:hello@onspotglobal.com" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white" data-testid="footer-email">hello@onspotglobal.com</a>
+                      </div>
+                    </div>
+                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><Phone className="h-4 w-4 shrink-0" /></div>
+                      <div className="min-w-0 text-left leading-relaxed text-white/75">
+                        <a href="tel:+19178019294" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white" data-testid="footer-phone">1-917-801-9294</a>
+                      </div>
+                    </div>
+                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><MapPinIcon className="h-4 w-4 shrink-0" /></div>
+                      <div className="min-w-0 text-left">
+                        <a href="https://www.google.com/search?q=onspot+global+new+york" target="_blank" rel="noopener noreferrer" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white">
+                          <address className="block w-full not-italic text-left leading-relaxed text-white/75">US - 2248 Broadway, New York, 10024</address>
+                        </a>
+                      </div>
+                    </div>
+                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
+                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><MapPinIcon className="h-4 w-4 shrink-0" /></div>
+                      <div className="min-w-0 text-left">
+                        <a href="https://www.google.com/search?q=onspot+global+philippines" target="_blank" rel="noopener noreferrer" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white">
+                          <address className="block w-full max-w-[310px] not-italic text-left leading-relaxed text-white/75">PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig</address>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between text-xs sm:text-sm text-white/70">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <span className="hover:text-white transition-colors duration-300">© 2025 OnSpot. All rights reserved.</span>
+                <span className="hidden sm:inline text-white/30">·</span>
+                <span className="text-[10px] sm:text-xs text-white/50">Powered by OnSpot Intelligence</span>
+              </div>
+              <div className="flex gap-6">
+                <Link href="/privacy" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-privacy">Privacy Policy</Link>
+                <Link href="/terms" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-terms">Terms of Service</Link>
+                <Link href="/cookies" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-cookies">Cookie Policy</Link>
+              </div>
+            </div>
+          </div>
+        </footer>
       </main>
     </div>
   );
