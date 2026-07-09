@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   UserCheck,
 } from "lucide-react";
+import onspotLogoHero from "@assets/onspot-logo-hero.png";
 
 export default function Home() {
   return (
@@ -24,14 +25,18 @@ export default function Home() {
         {/* Main content — centered, occupies first viewport so stats fall below fold */}
         <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
-            {/* Badge */}
-            <div
-              className="hero-fade-up inline-flex items-center justify-center gap-2.5 rounded-full border border-white/20 bg-white/[0.04] px-5 py-2.5 backdrop-blur-md"
-              data-testid="badge-superhuman-bpo"
-            >
-              <span className="text-sm font-semibold leading-snug text-white/90 sm:text-base lg:text-lg">
-                AI First. Humans When it Matters.
-              </span>
+            {/* Logo above headline */}
+            <div className="hero-fade-up" data-testid="badge-superhuman-bpo">
+              <img
+                src={onspotLogoHero}
+                alt="OnSpot"
+                style={{
+                  width: 'clamp(180px, 22vw, 260px)',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
             </div>
 
             {/* Headline */}
