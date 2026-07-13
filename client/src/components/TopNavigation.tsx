@@ -59,10 +59,13 @@ import {
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
+// Set to true when the Amazing page is ready to launch
+const SHOW_AMAZING_NAV = false;
+
 const navigationItems = [
   { title: "Hire Talent", path: "/hire-talent" },
   { title: "Find Work", path: "/find-work/jobs" },
-  { title: "Amazing", path: "/amazing" },
+  ...(SHOW_AMAZING_NAV ? [{ title: "Amazing", path: "/amazing" }] : []),
 ];
 
 export function TopNavigation() {
