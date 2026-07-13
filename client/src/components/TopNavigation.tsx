@@ -1906,13 +1906,14 @@ export function TopNavigation() {
           /* DEV ONLY: Sign Up — dark futuristic style, no backend auth */
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
+            {/* Overlay: flex-start so content starts below navbar; overflow hidden so page doesn't scroll */}
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
-              style={{ padding: 'clamp(2rem, 5vh, 4rem)', minHeight: '100vh' }}
+              className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden"
+              style={{ paddingTop: 'calc(72px + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
             >
               <div
-                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 my-auto"
-                style={{ width: 'min(90%, 520px)', maxHeight: '90vh' }}
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 flex flex-col w-full"
+                style={{ maxWidth: '520px', maxHeight: 'calc(100vh - 72px - 32px)' }}
               >
                 <DialogTitle className="sr-only">Create Account</DialogTitle>
                 <button
@@ -1922,50 +1923,51 @@ export function TopNavigation() {
                   <X className="h-6 w-6" />
                   <span className="sr-only">Close</span>
                 </button>
+                {/* Panel: flex column so inner scroll area can grow to fill */}
                 <div
-                  className="relative flex flex-col rounded-2xl overflow-hidden"
+                  className="relative flex flex-col rounded-2xl overflow-hidden flex-1 min-h-0"
                   style={{
                     background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
-                    minHeight: 'min(680px, 88vh)',
                   }}
                 >
                   <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-[400px] h-[400px] rounded-full bg-gradient-to-r from-[#3A3AF8]/15 to-[#7F3DF4]/15 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
                   </div>
-                  <div className="relative z-10 flex flex-col px-8 py-10 w-full">
+                  {/* Scrollable form content */}
+                  <div className="relative z-10 flex flex-col px-8 py-6 w-full overflow-y-auto flex-1 min-h-0">
                     <button
                       onClick={() => setModalStep(1)}
-                      className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 w-fit transition-colors duration-200"
+                      className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-5 w-fit transition-colors duration-200"
                     >
                       <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back
                     </button>
-                    <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create Account</h2>
-                    <p className="text-white/60 mb-7 text-sm">Join OnSpot and experience AI-powered outsourcing.</p>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="space-y-2">
+                    <h2 className="text-3xl font-light text-white mb-1" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create Account</h2>
+                    <p className="text-white/60 mb-4 text-sm">Join OnSpot and experience AI-powered outsourcing.</p>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="space-y-1.5">
                         <Label className="text-white/90 text-sm font-medium">First Name</Label>
-                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11" />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <Label className="text-white/90 text-sm font-medium">Last Name</Label>
-                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11" />
                       </div>
                     </div>
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-1.5 mb-3">
                       <Label className="text-white/90 text-sm font-medium">Email Address</Label>
-                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12" />
+                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11" />
                     </div>
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-1.5 mb-3">
                       <Label className="text-white/90 text-sm font-medium">Password</Label>
                       <div className="relative">
-                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
+                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11 pr-10" />
                         <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
                           {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
-                    <div className="space-y-2 mb-6">
+                    <div className="space-y-1.5 mb-4">
                       <Label className="text-white/90 text-sm font-medium">Confirm Password</Label>
                       <div className="relative">
                         <Input
@@ -1974,7 +1976,7 @@ export function TopNavigation() {
                           value={signupConfirmPassword}
                           onChange={(e) => setSignupConfirmPassword(e.target.value)}
                           autoComplete="new-password"
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10"
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11 pr-10"
                         />
                         <button type="button" onClick={() => setShowSignupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
                           {showSignupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -1984,17 +1986,17 @@ export function TopNavigation() {
                         <p className="text-xs text-red-400 mt-1">Passwords do not match.</p>
                       )}
                     </div>
-                    <div className="mb-6">
-                      <p className="text-white/90 text-sm font-medium mb-3">I am a...</p>
+                    <div className="mb-4">
+                      <p className="text-white/90 text-sm font-medium mb-2">I am a...</p>
                       <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
-                          <Building className="w-6 h-6 text-white" />
+                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/20' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <Building className="w-5 h-5 text-white" />
                           <span className="font-semibold text-white text-xs">Client</span>
                           <span className="text-white/50 text-xs leading-tight text-center">Looking for talent</span>
                           {signupRole === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
                         </button>
-                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
-                          <User className="w-6 h-6 text-white" />
+                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]' : 'border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'}`}>
+                          <User className="w-5 h-5 text-white" />
                           <span className="font-semibold text-white text-xs">Talent</span>
                           <span className="text-white/50 text-xs leading-tight text-center">Looking for jobs</span>
                           {signupRole === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
@@ -2003,7 +2005,7 @@ export function TopNavigation() {
                     </div>
                     {/* Role-specific helper text */}
                     {signupRole && (
-                      <p className="text-xs text-white/50 text-center mb-3 leading-relaxed">
+                      <p className="text-xs text-white/50 text-center mb-2 leading-relaxed">
                         {signupRole === "talent"
                           ? "Talent accounts will continue to resume upload and matching."
                           : "Client accounts will continue to the hiring portal."}
@@ -2069,7 +2071,7 @@ export function TopNavigation() {
                         {signupLoading ? "Creating account…" : <><span>Create Account</span> <ArrowRight className="w-4 h-4" /></>}
                       </span>
                     </button>
-                    <p className="text-center text-xs text-white/40 mt-4">
+                    <p className="text-center text-xs text-white/40 mt-3">
                       Already have an account?{' '}
                       <button className="text-white/60 hover:text-white underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
                     </p>

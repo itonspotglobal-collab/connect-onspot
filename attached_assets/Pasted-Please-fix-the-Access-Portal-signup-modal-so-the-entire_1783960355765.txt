@@ -1,0 +1,88 @@
+Please fix the Access Portal signup modal so the entire form fits properly within the browser viewport at normal zoom.
+
+Current issue:
+- After clicking “Access Portal” and opening the signup form, the modal is too tall.
+- The bottom portion of the form is cropped at 100% browser zoom.
+- The full form is only visible after zooming out.
+- Users should not need to zoom out to complete signup.
+
+Required changes:
+
+1. Make the modal fit within the viewport
+- Set the modal container to a maximum height based on the viewport, for example:
+  max-height: calc(100vh - 32px);
+- Keep a small margin around the modal so it does not touch the top or bottom edges.
+- The modal must remain fully accessible on standard laptop and desktop screen sizes.
+
+2. Add internal scrolling
+- If the form content is taller than the available viewport, make the modal body scroll internally.
+- Use:
+  overflow-y: auto;
+- Keep the navbar and page background unchanged.
+- Do not allow the entire page behind the modal to scroll while the modal is open.
+
+3. Position the modal correctly
+- Center the modal horizontally.
+- On taller screens, center it vertically.
+- On shorter screens, align it near the top with safe spacing instead of cutting off the bottom.
+- Avoid fixed top values that cause the form to extend beyond the viewport.
+
+4. Account for the navbar
+- The modal should start below the fixed navbar.
+- Use the actual navbar height when calculating the available modal height.
+- Do not let the navbar overlap the form’s Back link, heading, or fields.
+
+5. Reduce excessive vertical spacing where needed
+- Slightly reduce unnecessary gaps between:
+  - Form fields
+  - Labels and inputs
+  - “I am a…” section
+  - Client/Talent cards
+  - Create Account button
+  - Sign In link
+- Keep the form readable and polished.
+- Do not make the fields uncomfortably small.
+
+6. Responsive behavior
+- Desktop and laptop: the modal should fit at 100% zoom.
+- Tablet: reduce width and padding appropriately.
+- Mobile: use nearly full-screen width with safe horizontal margins and internal scrolling.
+- Make sure no field, button, or link is hidden.
+
+7. Preserve functionality
+Do not change:
+- Form validation
+- Input behavior
+- Client/Talent selection
+- Password visibility controls
+- Create Account action
+- Sign In link
+- Back button
+- Access Portal button
+- Page colors and overall branding
+
+Suggested implementation:
+- Modal overlay:
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: calc(var(--navbar-height) + 16px);
+  padding-bottom: 16px;
+  overflow: hidden;
+
+- Modal panel:
+  width: min(100% - 32px, 640px);
+  max-height: calc(100vh - var(--navbar-height) - 32px);
+  overflow-y: auto;
+
+Acceptance Criteria:
+✓ The complete signup form is usable at 100% browser zoom.
+✓ The bottom of the modal is no longer cropped.
+✓ Users can scroll inside the modal when needed.
+✓ The navbar does not overlap the modal.
+✓ The page behind the modal does not scroll.
+✓ All fields, cards, buttons, and links remain accessible.
+✓ The modal remains responsive across desktop, tablet, and mobile.
+✓ No other page elements or functionality are changed.
