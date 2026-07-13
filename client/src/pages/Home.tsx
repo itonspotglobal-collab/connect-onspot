@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Zap, ArrowRight, CircleDollarSign, UserCheck } from "lucide-react";
-import onspotLogoHero from "@assets/onspot-logo-hero.png";
+import onspotLogoHero from "@assets/on-logo-cropped.png";
 
 export default function Home() {
   return (
@@ -26,8 +26,8 @@ export default function Home() {
                 src={onspotLogoHero}
                 alt="OnSpot"
                 style={{
-                  width: "clamp(180px, 22vw, 260px)",
-                  height: "auto",
+                  height: "clamp(70px, 10vw, 90px)",
+                  width: "auto",
                   objectFit: "contain",
                   display: "block",
                 }}

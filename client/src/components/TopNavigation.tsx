@@ -47,7 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/on-logo-cropped.png";
+import onspotLogo from "@assets/OnSpot-Logo-Transp_1783598650027.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
