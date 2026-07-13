@@ -20,6 +20,10 @@ declare global {
 
 const app = express();
 
+// Trust the first proxy in Replit's deployment chain so req.ip resolves
+// correctly for rate-limiting (Replit sits behind a load-balancer / reverse proxy).
+app.set('trust proxy', 1);
+
 // Initialize Sentry early (conditional on DSN availability)
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -104,6 +108,67 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter);
 app.use('/api/dev/login', authLimiter); // Also apply to development login
 
+// ---------- Per-route rate limiters ----------
+// Values are environment-configurable so staging/prod can differ.
+
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.RATE_LIMIT_SIGNUP || '20', 10),
+  message: { error: 'Too many signup attempts. Try again later.', retryAfter: 3600 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+});
+
+const publicSearchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: parseInt(process.env.RATE_LIMIT_SEARCH || '60', 10),
+  message: { error: 'Too many search requests. Please slow down.', retryAfter: 60 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: parseInt(process.env.RATE_LIMIT_UPLOAD || '20', 10),
+  message: { error: 'Too many upload requests. Please wait.', retryAfter: 60 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+});
+
+const aiChatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: parseInt(process.env.RATE_LIMIT_AI_CHAT || '30', 10),
+  message: { error: 'Too many AI requests. Please wait a moment.', retryAfter: 60 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+});
+
+const waitlistLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: parseInt(process.env.RATE_LIMIT_WAITLIST || '10', 10),
+  message: { error: 'Too many form submissions. Try again later.', retryAfter: 3600 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip ?? 'unknown',
+});
+
+// Apply per-route limiters
+app.use('/api/signup', signupLimiter);
+app.use('/api/talent-auth', authLimiter);
+app.use('/api/profiles/search', publicSearchLimiter);
+app.use('/api/jobs', publicSearchLimiter);
+app.use('/api/candidates/search', publicSearchLimiter);
+app.use('/api/storage/upload-url', uploadLimiter);
+app.use('/api/vanessa', aiChatLimiter);
+app.use('/api/rag', aiChatLimiter);
+app.use('/api/waitlist', waitlistLimiter);
+app.use('/api/lead-intake', waitlistLimiter);
+// -----------------------------------------------
+
 // CORS configuration with credentials support
 app.use(cors({
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
@@ -130,9 +195,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// Configure payload limits for file uploads
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: false }));
+// Small JSON limit by default. Upload routes use object storage directly —
+// never base64 inside JSON. The 50 MB legacy value was a DoS risk.
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+app.use(express.urlencoded({ limit: process.env.JSON_BODY_LIMIT || '1mb', extended: false }));
 
 // Log database connection info on startup for debugging
 const logDatabaseConnection = () => {
@@ -226,14 +292,42 @@ app.use((req, res, next) => {
   
   // Setup authentication first before routes
   await setupAuth(app);
-  
-  // Start GHL sync service (automatic sync every 15 minutes)
-  const { ghlSyncService } = await import('./services/ghlSyncService');
-  ghlSyncService.startCronJob();
-  
-  // Start site crawler service (automatic crawl daily at 3:00 AM)
-  const { siteCrawlerService } = await import('./services/siteCrawlerService');
-  siteCrawlerService.startCronJob();
+
+  // ─── Health & readiness endpoints ────────────────────────────────────────
+  // /api/health — lightweight liveness check (no DB)
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // /api/ready — verifies required dependencies are reachable
+  app.get('/api/ready', async (_req, res) => {
+    try {
+      const { pool } = await import('./db');
+      await pool.query('SELECT 1');
+      res.json({ status: 'ready', db: 'ok', timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      res.status(503).json({ status: 'not ready', db: 'error', timestamp: new Date().toISOString() });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Background jobs are guarded by RUN_BACKGROUND_JOBS=true so that
+  // multiple Replit instances don't all run crons simultaneously.
+  // In production set this on exactly one worker dyno/instance.
+  // Default: enabled in development, disabled when the env var is explicitly "false".
+  const runBgJobs = process.env.RUN_BACKGROUND_JOBS !== 'false';
+
+  if (runBgJobs) {
+    // Start GHL sync service (automatic sync every 15 minutes)
+    const { ghlSyncService } = await import('./services/ghlSyncService');
+    ghlSyncService.startCronJob();
+    
+    // Start site crawler service (automatic crawl daily at 3:00 AM)
+    const { siteCrawlerService } = await import('./services/siteCrawlerService');
+    siteCrawlerService.startCronJob();
+  } else {
+    console.log('⏸  Background cron jobs disabled (RUN_BACKGROUND_JOBS=false)');
+  }
 
   // Pre-warm the RAG index into memory so the first chat request is instant.
   // This just loads the existing rag_index.json; it does NOT crawl or embed.
@@ -250,8 +344,6 @@ app.use((req, res, next) => {
       .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
 
     // Auto-generate platform knowledge if AUTO_UPDATE_VANESSA_KNOWLEDGE=true
-    // This keeps Vanessa's understanding of platform features current on each restart.
-    // Non-blocking — logs warning if it fails, never blocks server startup.
     if (process.env.AUTO_UPDATE_VANESSA_KNOWLEDGE === 'true') {
       import('./services/knowledgeBaseUpdater')
         .then(({ savePlatformKnowledge }) => savePlatformKnowledge())
@@ -265,25 +357,23 @@ app.use((req, res, next) => {
         .catch((err: any) => console.warn(`⚠️ Platform knowledge auto-update skipped: ${err.message}`));
     }
 
-    // Index website content (testimonials, people, magazine, team, case studies).
-    // This covers React-rendered content the HTML crawler misses.
-    // Runs in background; does not block startup.
-    import('./services/ragService')
-      .then(({ indexWebsiteContent }) => indexWebsiteContent())
-      .then((result) => {
-        console.log(`📄 Website content indexed at startup: ${result.chunksAdded} chunk(s)`);
-      })
-      .catch((err: any) => console.warn(`⚠️ Startup content indexing skipped: ${err.message}`));
+    if (runBgJobs) {
+      // Index website content (testimonials, people, magazine, team, case studies).
+      import('./services/ragService')
+        .then(({ indexWebsiteContent }) => indexWebsiteContent())
+        .then((result) => {
+          console.log(`📄 Website content indexed at startup: ${result.chunksAdded} chunk(s)`);
+        })
+        .catch((err: any) => console.warn(`⚠️ Startup content indexing skipped: ${err.message}`));
 
-    // Index live job listings from the database so Vanessa can answer job questions.
-    // Runs in the background; does not block startup. Updates the RAG index with
-    // all currently open jobs — preserving knowledge and site chunks.
-    import('./services/ragService')
-      .then(({ indexJobListings }) => indexJobListings())
-      .then((result) => {
-        console.log(`💼 Job listings indexed at startup: ${result.jobsIndexed} job(s), ${result.chunksAdded} chunk(s)`);
-      })
-      .catch((err: any) => console.warn(`⚠️ Startup job indexing skipped: ${err.message}`));
+      // Index live job listings from the database so Vanessa can answer job questions.
+      import('./services/ragService')
+        .then(({ indexJobListings }) => indexJobListings())
+        .then((result) => {
+          console.log(`💼 Job listings indexed at startup: ${result.jobsIndexed} job(s), ${result.chunksAdded} chunk(s)`);
+        })
+        .catch((err: any) => console.warn(`⚠️ Startup job indexing skipped: ${err.message}`));
+    }
   }
   
   // Auto-approve all admin-created (non-client-submitted) jobs that are still

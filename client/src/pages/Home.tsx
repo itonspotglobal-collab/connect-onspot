@@ -1,11 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import {
-  Zap,
-  ArrowRight,
-  CircleDollarSign,
-  UserCheck,
-} from "lucide-react";
+import { Zap, ArrowRight, CircleDollarSign, UserCheck } from "lucide-react";
 import onspotLogoHero from "@assets/onspot-logo-hero.png";
 
 export default function Home() {
@@ -31,10 +26,10 @@ export default function Home() {
                 src={onspotLogoHero}
                 alt="OnSpot"
                 style={{
-                  width: 'clamp(180px, 22vw, 260px)',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  display: 'block',
+                  width: "clamp(180px, 22vw, 260px)",
+                  height: "auto",
+                  objectFit: "contain",
+                  display: "block",
                 }}
               />
             </div>
@@ -52,13 +47,13 @@ export default function Home() {
             {/* Supporting copy */}
             <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
               <p className="text-base font-semibold leading-snug text-white/80 sm:text-lg lg:text-xl">
-                One System. Your unfair Advantage.
+                One Platform. Endless Opportunity.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                The only outsourcing system built for the world that's coming
+                Hire, onboard, manage, and scale exceptional global teams
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                — not the one that's leaving.
+                through the platform built for the future of work.
               </p>
             </div>
 

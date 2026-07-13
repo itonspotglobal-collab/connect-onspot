@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { parsePagination, pageSlice } from "./lib/paginate";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -4030,8 +4031,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/candidates", async (req, res) => {
     try {
-      const candidates = await storage.getCandidates();
-      res.json(candidates.map(sanitizeCandidate));
+      const { page, pageSize } = parsePagination(req.query);
+      const all = await storage.getCandidates();
+      const { items, meta } = pageSlice(all.map(sanitizeCandidate), page, pageSize);
+      res.json({ items, meta });
     } catch (error) {
       console.error("GET /api/candidates error:", error);
       res.status(500).json({ error: "Failed to fetch candidates" });
@@ -4270,6 +4273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Advanced Job Search - Critical for job discovery (must come before :id route)
   app.get("/api/jobs/search", async (req, res) => {
     try {
+      const { page, pageSize } = parsePagination(req.query);
       const filters = {
         category: req.query.category as string,
         contractType: req.query.contractType as string,
@@ -4284,12 +4288,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? (req.query.skills as string).split(",")
           : undefined,
         status: (req.query.status as string) || "open",
-        q: req.query.q as string, // Text search query
+        q: req.query.q as string,
       };
 
-      // Use enhanced search method that includes skills arrays
-      const jobsWithSkills = await storage.searchJobsWithSkills(filters);
-      res.json(jobsWithSkills);
+      const all = await storage.searchJobsWithSkills(filters);
+      const { items, meta } = pageSlice(all, page, pageSize);
+      res.json({ items, meta });
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ error: "Failed to search jobs" });
@@ -4360,27 +4364,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== ADMIN JOBS ====================
   app.get("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
+      const { page, pageSize } = parsePagination(req.query);
       const allJobs = await storage.listAllJobs();
-      // Enrich each job with client profile data (company name, contact name)
-      const enriched = await Promise.all(
-        allJobs.map(async (job) => {
-          try {
-            const profileResult = await query(
-              `SELECT company_name, contact_person FROM client_profiles WHERE user_id = $1 LIMIT 1`,
-              [job.clientId],
-            );
-            const profile = profileResult.rows[0];
-            return {
-              ...job,
-              clientCompanyName: profile?.company_name ?? null,
-              clientContactName: profile?.contact_person ?? null,
-            };
-          } catch {
-            return { ...job, clientCompanyName: null, clientContactName: null };
+      // Batch-fetch all needed client profiles in one query to avoid N+1
+      const clientIds = Array.from(new Set(allJobs.map((j) => j.clientId)));
+      let profileMap: Record<string, { company_name: string | null; contact_person: string | null }> = {};
+      if (clientIds.length > 0) {
+        const placeholders = clientIds.map((_, i) => `$${i + 1}`).join(", ");
+        try {
+          const profileResult = await query(
+            `SELECT user_id, company_name, contact_person FROM client_profiles WHERE user_id IN (${placeholders})`,
+            clientIds,
+          );
+          for (const row of profileResult.rows) {
+            profileMap[row.user_id] = { company_name: row.company_name, contact_person: row.contact_person };
           }
-        }),
-      );
-      res.json(enriched);
+        } catch { /* non-fatal */ }
+      }
+      const enriched = allJobs.map((job) => ({
+        ...job,
+        clientCompanyName: profileMap[job.clientId]?.company_name ?? null,
+        clientContactName: profileMap[job.clientId]?.contact_person ?? null,
+      }));
+      const { items, meta } = pageSlice(enriched, page, pageSize);
+      res.json({ items, meta });
     } catch (error) {
       console.error("Admin jobs list error:", error);
       res.status(500).json({ error: "Failed to list jobs" });
@@ -6527,13 +6534,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/inquiries/:id/notes  — update admin notes
   // ============================================
 
-  app.get("/api/inquiries", async (_req: Request, res: Response) => {
+  app.get("/api/inquiries", async (req: Request, res: Response) => {
     try {
-      const result = await db
+      const { page, pageSize } = parsePagination(req.query);
+      const all = await db
         .select()
         .from(inquiriesTable)
         .orderBy(desc(inquiriesTable.createdAt));
-      res.json({ inquiries: result });
+      const { items, meta } = pageSlice(all, page, pageSize);
+      res.json({ inquiries: items, meta });
     } catch (error: any) {
       console.error("❌ List inquiries error:", error.message);
       res.status(500).json({ error: "Failed to fetch inquiries" });

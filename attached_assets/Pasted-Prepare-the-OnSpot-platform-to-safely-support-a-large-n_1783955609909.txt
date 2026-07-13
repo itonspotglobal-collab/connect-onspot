@@ -1,0 +1,414 @@
+Prepare the OnSpot platform to safely support a large number of users and profile records.
+
+Current scope:
+- Do NOT build email marketing yet.
+- Do NOT build profile invitation links yet.
+- Do NOT build resume preloading or profile activation yet.
+- Do NOT redesign the profile pages.
+- Focus only on making the existing website and backend scalable, stable, observable, and safe for thousands to tens of thousands of talent and client records.
+
+Repository stack:
+- React + TypeScript frontend
+- Express backend
+- PostgreSQL/Neon
+- Drizzle ORM
+- React Query
+- Replit deployment
+- Existing Sentry integration
+- Existing JWT/session authentication
+- Existing object storage uploads
+
+Goal:
+The platform should be technically prepared to store and serve at least:
+- 10,000 talent users/profiles
+- 1,000 client users/profiles
+- Associated jobs, applications, documents, and skills
+
+Do not claim success only because the database can technically contain that many rows. Implement and verify pagination, indexing, request safety, error handling, and basic load testing.
+
+PHASE 1 — AUDIT BEFORE CHANGING CODE
+
+Inspect:
+- `shared/schema.ts`
+- `server/index.ts`
+- `server/routes.ts`
+- Database connection setup
+- Storage/repository layer
+- Talent/profile list endpoints
+- Client list endpoints
+- Job list endpoints
+- Application/submission list endpoints
+- Search endpoints
+- File upload endpoints
+- Auth/signup endpoints
+- React Query hooks and list pages
+
+Produce a short audit in the Replit response identifying:
+1. Endpoints that return unbounded arrays.
+2. Queries that load full tables.
+3. Missing indexes for common filtering/sorting.
+4. Routes accepting oversized payloads.
+5. Expensive synchronous work inside HTTP requests.
+6. In-memory state that will break across multiple instances.
+7. Scheduled jobs that could run more than once.
+8. N+1 database queries.
+9. Missing timeouts or error handling.
+10. Places exposing sensitive information in logs.
+
+Do not modify unrelated visual design.
+
+PHASE 2 — DATABASE READINESS
+
+Add safe Drizzle/PostgreSQL indexes for actual query patterns.
+
+Review and add indexes where needed for fields such as:
+- users.email
+- users.role
+- users.createdAt
+- profiles.userId
+- profiles.location
+- profiles.availability
+- profiles.createdAt
+- clientProfiles.userId
+- clientProfiles.industry
+- clientProfiles.createdAt
+- jobs.clientId
+- jobs.status
+- jobs.approvalStatus
+- jobs.category
+- jobs.createdAt
+- jobs.postedAt
+- applications/job submissions by jobId, talentId/clientId, status, and submitted date
+- documents by userId
+- user skills by userId and skillId
+
+Do not add indexes blindly.
+Only add indexes that match real API filters, joins, sorting, or lookup patterns.
+
+Preserve existing unique constraints.
+
+Create and apply a proper migration. Do not rely only on manually editing the database.
+
+Verify migration works on an existing database without deleting records.
+
+PHASE 3 — PAGINATION
+
+Implement a reusable pagination approach for every endpoint that can return growing collections.
+
+Apply it to:
+- Talent/profile lists
+- Client lists
+- Job lists
+- Applications
+- Job submissions
+- Documents
+- Admin tables
+- Search results
+
+Requirements:
+- Default page size: 25
+- Maximum page size: 100
+- Reject or normalize invalid page/limit values
+- Return metadata:
+  - items
+  - page or cursor
+  - pageSize
+  - total when practical
+  - totalPages when using page pagination
+  - nextCursor when using cursor pagination
+
+Do not return thousands of records in one response.
+
+Prefer cursor pagination for rapidly growing or frequently changing lists.
+Page pagination is acceptable for admin tables where total counts are needed.
+
+Update frontend React Query hooks and pages to consume the paginated response.
+
+Use:
+- Next/Previous controls
+- Load More
+- or infinite queries
+
+Do not render thousands of DOM rows at once.
+
+PHASE 4 — SEARCH AND FILTER SAFETY
+
+For database-backed search:
+- Search on the server, not by downloading all records to the browser.
+- Debounce frontend search.
+- Require a reasonable minimum search length where appropriate.
+- Use indexed filters.
+- Escape and parameterize all queries.
+- Do not build raw SQL from user input.
+- Add deterministic ordering, including an ID tie-breaker.
+
+For multi-table profile results:
+- Avoid N+1 queries.
+- Use joins, aggregation, or batched queries.
+
+PHASE 5 — REQUEST AND UPLOAD SAFETY
+
+The current Express app globally allows JSON and URL-encoded payloads up to 50 MB.
+
+Change this safely:
+- Use a small default JSON limit, such as 1 MB or lower.
+- Do not send resumes or images as base64 JSON.
+- Keep uploads on dedicated routes/direct object storage.
+- Add explicit file size limits.
+- Validate MIME type and extension.
+- Use generated unique object names.
+- Do not trust client-supplied file names.
+- Reject unsupported file types.
+- Add upload timeouts and clear errors.
+
+Do not break the existing Uppy/object-storage flow.
+
+PHASE 6 — RATE LIMITING
+
+Keep the existing authentication limiter.
+
+Add separate, configurable rate limiters for:
+- Signup
+- Login
+- Password/auth recovery if present
+- Public search
+- Waitlist/contact forms
+- Upload URL generation
+- AI/chat endpoints
+- Expensive admin operations
+
+Do not use one global limit for everything.
+
+Use environment-configurable values.
+
+Return:
+- HTTP 429
+- Retry information
+- Request ID
+- User-friendly message
+
+Make sure a shared office IP does not permanently block legitimate users.
+Use authenticated user ID as part of the key where appropriate.
+
+Configure Express `trust proxy` correctly for Replit before relying on client IP.
+
+PHASE 7 — DATABASE CONNECTIONS AND QUERY TIMEOUTS
+
+Inspect the Neon/PostgreSQL connection setup.
+
+Make sure:
+- Connections are reused.
+- A new client is not created per request.
+- Pool/concurrency settings are suitable for Replit and Neon.
+- Query timeouts are configured where supported.
+- Failed connections return controlled errors.
+- Startup validates required database configuration.
+- Transactions are used for multi-step writes such as account + profile creation.
+
+Do not expose database credentials in logs.
+Do not log the full database URL.
+
+PHASE 8 — BACKGROUND JOB SAFETY
+
+Review:
+- GoHighLevel sync cron
+- Site crawler cron
+- RAG/knowledge update startup work
+- Any other scheduled jobs
+
+Requirements:
+- Background jobs must not block HTTP startup.
+- Prevent overlapping runs.
+- Add timeouts.
+- Catch all errors.
+- Log duration and result counts.
+- Do not run duplicate cron jobs if multiple Replit instances start.
+- Use a database/advisory lock or environment-controlled worker flag.
+- Add an environment setting such as:
+  `RUN_BACKGROUND_JOBS=true`
+- Default production behavior must be documented.
+
+Do not remove existing integrations.
+
+PHASE 9 — CACHING
+
+Use caching only for stable public data such as:
+- Public job categories
+- Hot searches
+- Public job counts
+- Skill/category reference data
+
+Requirements:
+- Short TTL
+- Clear invalidation strategy
+- Do not cache authenticated/private profile responses publicly
+- Add appropriate Cache-Control headers
+- Do not introduce a Redis dependency unless clearly necessary
+
+PHASE 10 — OBSERVABILITY
+
+Keep existing request IDs and Sentry.
+
+Improve:
+- Structured server logs
+- Route
+- Method
+- Status
+- Duration
+- Request ID
+- Error code
+- Slow query/request warnings
+
+Do not log:
+- Passwords
+- JWTs
+- Authorization headers
+- Resume contents
+- Full private profiles
+- Database credentials
+
+Add:
+- `/api/health`
+- `/api/ready`
+
+`/api/health` should confirm the process is alive.
+`/api/ready` should safely verify required dependencies such as the database.
+
+Do not expose sensitive configuration through these endpoints.
+
+PHASE 11 — FRONTEND PERFORMANCE
+
+Review profile/job/admin pages for:
+- Large initial bundles
+- Unnecessary re-renders
+- Loading full datasets
+- Images without lazy loading
+- Heavy components loaded on every route
+
+Implement where appropriate:
+- Route-level lazy loading
+- React Query caching
+- Pagination
+- Loading skeletons
+- Empty states
+- Error states
+- Image lazy loading
+- Stable query keys
+- Request cancellation for abandoned searches
+
+Do not perform a full frontend rewrite.
+
+PHASE 12 — TESTING
+
+Add automated tests for:
+- Pagination validation
+- Maximum page size
+- Signup transaction
+- Duplicate email handling
+- Authentication
+- Role authorization
+- Profile creation
+- Profile update
+- Public versus private data
+- Rate limiting
+- Health/readiness endpoints
+
+Add at least one integration test that creates many records and verifies paginated access.
+
+Add a load-test script using a suitable lightweight tool or Node script.
+
+Test scenarios:
+1. Concurrent public page loads
+2. Concurrent signup attempts using unique emails
+3. Paginated talent search
+4. Paginated job search
+5. Client profile reads
+6. Admin list pages
+
+Start with a safe local/staging test:
+- 50 concurrent users
+- 5-minute duration
+- Seed at least 10,000 synthetic talent/profile records
+- Seed at least 1,000 synthetic client records
+
+Do not run destructive load tests against production.
+
+Record:
+- Success rate
+- p50 latency
+- p95 latency
+- p99 latency
+- Error rate
+- Slowest endpoints
+
+Target for ordinary read endpoints in staging:
+- Error rate below 1%
+- p95 below 1 second where practical
+- No out-of-memory crashes
+- No unbounded response sizes
+
+Do not falsely claim the target was achieved if the load test was not run.
+
+PHASE 13 — SAFE SEED DATA
+
+Create a non-production seed script for performance testing.
+
+Requirements:
+- Clearly require a development/test environment.
+- Never run automatically in production.
+- Generate unique synthetic emails.
+- Generate users, talent profiles, client profiles, skills, jobs, and applications in batches.
+- Use efficient bulk inserts.
+- Support cleanup by test run ID or email domain.
+- Do not use real personal data.
+
+PHASE 14 — DOCUMENTATION
+
+Add a short document such as:
+`docs/scalability-readiness.md`
+
+Include:
+- Current architecture
+- Pagination contract
+- Important indexes
+- Environment variables
+- Upload limits
+- Rate limits
+- Background job behavior
+- Health endpoints
+- Load-test instructions
+- Known remaining limits
+- Replit deployment notes
+- Rollback steps
+
+IMPLEMENTATION RULES
+
+- Make small, safe, reviewable changes.
+- Do not redesign pages.
+- Do not change profile content requirements.
+- Do not build marketing campaigns or invitation links.
+- Do not delete existing records.
+- Do not reset the database.
+- Do not weaken authentication.
+- Do not expose private profiles.
+- Do not hardcode production secrets.
+- Do not mark work complete without running TypeScript checks and relevant tests.
+
+FINAL VERIFICATION
+
+Before finishing:
+1. Run `npm run check`.
+2. Run automated tests.
+3. Build the production bundle.
+4. Apply migrations in a safe development environment.
+5. Seed test data only in development/staging.
+6. Run the load test.
+7. Report actual results.
+8. List files changed.
+9. List migrations created.
+10. List remaining risks.
+
+If the full scope is too large for one pass:
+- First complete the audit.
+- Then implement database indexes, pagination, request limits, health checks, and tests.
+- Stop and report remaining phases instead of making broad unsafe changes.

@@ -29,7 +29,10 @@ export const users = pgTable("users", {
   stripeAccountId: text("stripe_account_id"), // For talent payouts
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_users_role").on(table.role),
+  index("idx_users_created_at").on(table.createdAt),
+]);
 
 // User Profiles
 export const profiles = pgTable("profiles", {
@@ -52,7 +55,11 @@ export const profiles = pgTable("profiles", {
   jobSuccessScore: integer("job_success_score").default(0), // 0-100
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_profiles_location").on(table.location),
+  index("idx_profiles_availability").on(table.availability),
+  index("idx_profiles_created_at").on(table.createdAt),
+]);
 
 // Client Profiles — company/hiring details for users with role = "client"
 export const clientProfiles = pgTable("client_profiles", {
@@ -72,7 +79,10 @@ export const clientProfiles = pgTable("client_profiles", {
   timezone: text("timezone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_client_profiles_industry").on(table.industry),
+  index("idx_client_profiles_created_at").on(table.createdAt),
+]);
 
 export const insertClientProfileSchema = createInsertSchema(clientProfiles).omit({
   id: true,
@@ -98,7 +108,10 @@ export const userSkills = pgTable("user_skills", {
   level: text("level").notNull().default("intermediate"), // beginner, intermediate, expert
   yearsExperience: integer("years_experience").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_user_skills_user_id").on(table.userId),
+  index("idx_user_skills_skill_id").on(table.skillId),
+]);
 
 // Jobs/Projects
 export const jobs = pgTable("jobs", {
@@ -161,7 +174,15 @@ export const jobs = pgTable("jobs", {
   postedAt: timestamp("posted_at"),
   originalPostedAt: timestamp("original_posted_at"),
   lastRefreshedAt: timestamp("last_refreshed_at"),
-});
+}, (table) => [
+  index("idx_jobs_client_id").on(table.clientId),
+  index("idx_jobs_status").on(table.status),
+  index("idx_jobs_approval_status").on(table.approvalStatus),
+  index("idx_jobs_category").on(table.category),
+  index("idx_jobs_created_at").on(table.createdAt),
+  index("idx_jobs_posted_at").on(table.postedAt),
+  index("idx_jobs_status_approval").on(table.status, table.approvalStatus),
+]);
 
 // Proposals
 export const proposals = pgTable("proposals", {
@@ -176,11 +197,12 @@ export const proposals = pgTable("proposals", {
   clientResponse: text("client_response"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => {
-  return {
-    proposalsJobTalentUnique: uniqueIndex("proposals_job_talent_unique").on(table.jobId, table.talentId),
-  }
-});
+}, (table) => [
+  uniqueIndex("proposals_job_talent_unique").on(table.jobId, table.talentId),
+  index("idx_proposals_job_id").on(table.jobId),
+  index("idx_proposals_talent_id").on(table.talentId),
+  index("idx_proposals_status").on(table.status),
+]);
 
 // Job Skills (normalized for better querying)
 export const jobSkills = pgTable("job_skills", {
@@ -189,7 +211,10 @@ export const jobSkills = pgTable("job_skills", {
   skillId: integer("skill_id").notNull().references(() => skills.id),
   required: boolean("required").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_job_skills_job_id").on(table.jobId),
+  index("idx_job_skills_skill_id").on(table.skillId),
+]);
 
 // Lead Intake - BPO Industry Lead Generation
 export const leadIntakes = pgTable("lead_intakes", {
@@ -257,7 +282,11 @@ export const leadIntakes = pgTable("lead_intakes", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   scheduledAt: timestamp("scheduled_at"), // When appointment was scheduled
-});
+}, (table) => [
+  index("idx_lead_intakes_status").on(table.status),
+  index("idx_lead_intakes_synced_to_ghl").on(table.syncedToGhl),
+  index("idx_lead_intakes_created_at").on(table.createdAt),
+]);
 
 // Waitlist - Contact form submissions from Access Portal
 export const waitlist = pgTable("waitlist", {
@@ -274,7 +303,10 @@ export const waitlist = pgTable("waitlist", {
   ghlSyncedAt: timestamp("ghl_synced_at"),
   
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_waitlist_synced_to_ghl").on(table.syncedToGhl),
+  index("idx_waitlist_created_at").on(table.createdAt),
+]);
 
 // Contracts
 export const contracts = pgTable("contracts", {
@@ -1121,7 +1153,12 @@ export const candidates = pgTable("candidates", {
   passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_candidates_email").on(table.email),
+  index("idx_candidates_category").on(table.category),
+  index("idx_candidates_created_at").on(table.createdAt),
+  index("idx_candidates_profile_completed").on(table.profileCompleted),
+]);
 
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
   id: true,
