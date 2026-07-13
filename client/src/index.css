@@ -1296,25 +1296,26 @@ body.has-floating-bottom-right {
                 box-shadow 0.3s ease;
   }
 
-  /* Nav logo — cropped asset, no padding hacks needed */
+  /* Nav logo — transparent-padded asset; height is boosted so the
+     visible wordmark renders at ~44–48px effective size */
   .nav-logo-img {
     display: block;
     flex-shrink: 0;
-    height: 36px;
+    height: 72px;
     width: auto;
     object-fit: contain;
-    margin-left: 4px;
+    margin-left: 0px;
   }
   @media (min-width: 640px) {
     .nav-logo-img {
-      height: 38px;
-      margin-left: 6px;
+      height: 76px;
+      margin-left: 0px;
     }
   }
   @media (min-width: 1024px) {
     .nav-logo-img {
-      height: 40px;
-      margin-left: 8px;
+      height: 80px;
+      margin-left: 0px;
     }
   }
 

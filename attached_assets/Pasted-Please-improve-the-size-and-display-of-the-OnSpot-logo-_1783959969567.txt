@@ -1,0 +1,60 @@
+Please improve the size and display of the OnSpot logo in the Navigation Bar.
+
+Current Issue:
+- The OnSpot logo is too small.
+- It doesn't have enough visual presence in the navbar.
+- It appears similar to the previous issue we had with the ON logo, where the image wasn't utilizing the available space properly.
+
+Requirements:
+
+1. Increase the logo size
+- Make the OnSpot logo approximately 35–50% larger than it is now.
+- Target desktop size:
+  - Height: 40–48px
+  - Width: Auto (maintain aspect ratio)
+- The logo should be easily readable without overpowering the navigation.
+
+2. Maintain image quality
+- Keep the logo sharp and crisp.
+- Do not stretch or distort the image.
+- Use:
+  - object-fit: contain;
+  - width: auto;
+  - height: 100%;
+  - display: block;
+
+3. Check the image asset
+- If the uploaded logo contains excessive transparent padding, trim/crop the transparent whitespace before rendering it in the navbar, or compensate for it by adjusting the container so the visible logo fills the available space.
+- The logo should occupy the available height naturally instead of appearing tiny inside a large transparent canvas.
+
+4. Update the logo container
+- Increase the logo wrapper size to properly accommodate the larger logo.
+- Remove any restrictive CSS classes such as:
+  - max-width
+  - max-height
+  - w-6 / h-6
+  - overflow-hidden
+  - fixed icon sizing
+- Ensure the wrapper allows the logo to render at its intended size.
+
+5. Alignment
+- Keep the logo vertically centered within the navbar.
+- Maintain appropriate left padding (24–32px).
+- Do not change the positions of:
+  - Hire Talent
+  - Find Work
+  - Amazing
+  - Access Portal
+
+6. Responsive behavior
+- Desktop: Logo should be prominently visible.
+- Tablet: Scale down proportionally.
+- Mobile: Keep the logo readable while preserving the navbar layout.
+
+Acceptance Criteria:
+✓ The OnSpot logo is noticeably larger and easier to read.
+✓ The logo remains sharp with no distortion.
+✓ The logo is vertically centered.
+✓ No cropping or clipping occurs.
+✓ Navigation layout remains balanced.
+✓ No other navbar elements are modified.
