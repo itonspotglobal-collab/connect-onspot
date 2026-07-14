@@ -1,0 +1,396 @@
+Create a standalone Login page for both Client and Talent accounts.
+
+Purpose:
+The Access Portal login currently lives inside the navigation popup.
+
+We also need an independent page that can be shared directly with clients and talents as a link.
+
+Example use:
+- Send a Client a direct login link
+- Send a Talent a direct login link
+- They open the page, enter their credentials, choose their account type, sign in, and are redirected to their profile
+
+This must reuse the same login feature and backend endpoints as the Access Portal modal.
+
+Do NOT create a second authentication system.
+Do NOT duplicate login logic inside two unrelated components.
+Extract the shared logic so both the Access Portal modal and standalone Login page use the same implementation.
+
+Required route:
+
+/login
+
+Optional aliases:
+/sign-in
+/portal/login
+
+Primary route should be:
+/login
+
+Expected flows:
+
+Client:
+Direct login link → enter credentials → select Client → Sign In → /client-profile
+
+Talent:
+Direct login link → enter credentials → select Talent → Sign In → their existing Talent Profile
+
+Talent target:
+`/talent-profile/${candidateId}`
+
+If the project uses:
+/candidate-profile/:candidateId
+
+then use that route consistently instead.
+
+Only redirect to /find-best-matches when a Talent account has no existing candidate profile.
+
+Files to inspect:
+- client/src/components/TopNavigation.tsx
+- client/src/components/TalentLoginModal.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/lib/api.ts
+- client/src/App.tsx
+- client/src/pages/ClientProfile.tsx
+- client/src/pages/TalentProfile.tsx
+- server/routes.ts
+
+1. Extract shared login logic
+
+Create a reusable authentication service or hook, for example:
+
+client/src/hooks/usePortalLogin.ts
+
+or:
+
+client/src/lib/portalAuth.ts
+
+It should expose something like:
+
+type PortalType = "client" | "talent";
+
+async function signInToPortal(
+  portal: PortalType,
+  email: string,
+  password: string
+): Promise<PortalLoginResult>
+
+Result example:
+
+type PortalLoginResult =
+  | {
+      success: true;
+      portal: "client";
+      redirectTo: "/client-profile";
+    }
+  | {
+      success: true;
+      portal: "talent";
+      candidateId: string;
+      redirectTo: string;
+    }
+  | {
+      success: false;
+      requiresPasswordSetup?: boolean;
+      message: string;
+    };
+
+Both of these must use this shared function:
+- Access Portal Sign In form in TopNavigation
+- New standalone /login page
+
+Do not maintain separate copies of the Client and Talent login request logic.
+
+2. Client authentication
+
+When portal === "client":
+
+- Use the existing general Client login flow.
+- Call AuthContext.login() or the shared general auth API.
+- Authenticate against the users table.
+- Verify the returned role is exactly "client".
+- Refresh AuthContext if needed.
+- Redirect to:
+  /client-profile
+
+If the returned account is Talent:
+- clear any created general session
+- show:
+  “This is a Talent account. Please select Talent.”
+
+If the account does not exist:
+- show:
+  “No Client account was found with these credentials.”
+
+3. Talent authentication
+
+When portal === "talent":
+
+Use the same working Talent authentication as TalentLoginModal:
+
+POST /api/talent-auth/login
+
+Request:
+{
+  "email": normalizedEmail,
+  "password": password
+}
+
+On success:
+- create the same TalentAuthState
+- call saveTalentAuth(auth)
+- update any global Talent auth state
+- redirect to:
+  `/talent-profile/${auth.candidateId}`
+
+TalentAuthState should continue to use:
+- token
+- candidateId
+- email
+- fullName
+
+Do not authenticate Talent candidates only through the general users login endpoint.
+
+4. Existing candidate with no password
+
+If the Talent login endpoint returns:
+error === "no_password"
+
+Show a password setup step on the standalone login page.
+
+Fields:
+- Email
+- New Password
+- Confirm Password
+
+Use the same password setup endpoint and behavior already used by TalentLoginModal.
+
+After password creation:
+- save Talent auth state
+- redirect to the candidate’s existing profile
+
+Do not create a duplicate candidate record.
+
+5. Standalone page layout
+
+Create:
+
+client/src/pages/PortalLogin.tsx
+
+The page should match the existing OnSpot design:
+- dark navy/purple background
+- purple/blue gradient accents
+- OnSpot logo
+- centered login card
+- responsive mobile layout
+- accessible labels
+- password visibility toggle
+
+Recommended layout:
+
+OnSpot logo
+
+Welcome back
+Sign in to your OnSpot account.
+
+Email Address
+Password
+
+Choose your portal:
+[ Client ]
+Find and manage top outsourcing talent.
+
+[ Talent ]
+Find jobs and manage your career profile.
+
+[ Sign In ]
+
+Forgot password?
+Don’t have an account? Create Account
+
+6. Portal selection
+
+The user must select:
+- Client
+- Talent
+
+Do not infer the portal solely from the email.
+
+The selected card should have a clear active state.
+
+Client description:
+“Find and manage top outsourcing talent.”
+
+Talent description:
+“Find jobs and manage your career profile.”
+
+7. Optional query parameter
+
+Support direct role-specific links:
+
+/login?portal=client
+/login?portal=talent
+
+Behavior:
+- preselect the corresponding portal
+- user can still switch if needed
+
+This lets us send links like:
+
+Client login:
+https://your-domain.com/login?portal=client
+
+Talent login:
+https://your-domain.com/login?portal=talent
+
+Also optionally support:
+
+/login?email=user@example.com
+
+This may prefill the email field, but never put passwords in URLs.
+
+8. Already logged-in users
+
+When the /login page loads:
+
+If a Client is already logged in:
+- redirect to /client-profile
+
+If a Talent auth session exists:
+- redirect to their own Talent Profile
+
+If an Admin is logged in:
+- redirect to /admin/dashboard
+
+Do not show a login form to a valid active session unless there is an explicit “Use another account” action.
+
+9. Create Account link
+
+The standalone login page should include:
+“Don’t have an account? Create Account”
+
+Create a reusable route if needed:
+
+/register
+
+or:
+/signup
+
+The signup page may reuse the existing Create Account form from the Access Portal.
+
+Do not duplicate signup API logic.
+
+If creating /signup is outside the current task, the link may open the existing Access Portal signup flow, but a standalone /signup route is preferred for shareable links.
+
+10. Forgot Password
+
+“Forgot password?” should use the existing portal-aware forgot-password flow.
+
+Client selected:
+- reset the Client account in users
+
+Talent selected:
+- reset the candidate account in candidates
+
+Do not always reset only the users table.
+
+11. Add routes in App.tsx
+
+Import:
+
+import PortalLogin from "@/pages/PortalLogin";
+
+Add the route before broad or catch-all public routes:
+
+<Route path="/login" component={PortalLogin} />
+<Route path="/sign-in" component={PortalLogin} />
+
+Make sure a broad route such as "/" or a catch-all PublicRouter does not intercept /login first.
+
+12. Navigation behavior
+
+The existing Access Portal button must continue to work.
+
+Logged-out user:
+- Access Portal opens the existing popup
+- Sign In inside the popup uses the shared portal login handler
+
+Logged-in user:
+- Access Portal is replaced with the account/profile dropdown as currently implemented
+
+Do not replace or remove the existing Access Portal popup.
+
+13. Loading and errors
+
+While signing in:
+- disable Sign In button
+- show “Signing in…”
+
+Handle:
+- missing fields
+- no portal selected
+- invalid credentials
+- wrong portal
+- no-password candidate
+- network/server errors
+
+Do not expose raw backend errors or password hashes.
+
+14. Email normalization
+
+Before login:
+- trim whitespace
+- lowercase email
+
+Use:
+
+const normalizedEmail = email.trim().toLowerCase();
+
+Use the same normalization in:
+- login
+- signup
+- forgot password
+- password setup
+
+15. Session persistence
+
+Client:
+- continue using the current general JWT storage/AuthContext
+
+Talent:
+- continue using talent_profile_token through saveTalentAuth()
+
+Refreshing /login or the destination page must preserve the session.
+
+16. Acceptance criteria
+
+Standalone page:
+- /login loads independently.
+- It does not require opening the navigation popup.
+- Client and Talent can use the same page.
+
+Client:
+- Select Client.
+- Enter existing Client credentials.
+- Sign In succeeds.
+- Redirects to /client-profile.
+- Navbar shows Client Profile.
+
+Talent:
+- Select Talent.
+- Enter existing Talent credentials.
+- Sign In succeeds.
+- Redirects to that candidate’s existing Talent Profile.
+- Navbar shows Talent Profile.
+
+Shared implementation:
+- Access Portal and /login call the same extracted sign-in logic.
+- Fixes to authentication affect both interfaces.
+- No duplicate backend login system is created.
+
+Other:
+- /login?portal=client preselects Client.
+- /login?portal=talent preselects Talent.
+- Existing valid sessions are redirected to their profile.
+- Forgot Password remains portal-aware.
+- Existing candidate password setup remains supported.

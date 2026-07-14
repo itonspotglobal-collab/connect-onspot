@@ -79,6 +79,7 @@ import AdminInquiries from "@/pages/AdminInquiries";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import PortalLogin from "@/pages/PortalLogin";
 
 // Redirect /find-work → /find-work/jobs (URL changes in browser)
 function FindWorkRedirect() {
@@ -385,6 +386,10 @@ function AppContent() {
         return <PublicRouter />;
       }} />
       
+      {/* Standalone Login Page — must be before catch-all */}
+      <Route path="/login" component={PortalLogin} />
+      <Route path="/sign-in" component={PortalLogin} />
+
       {/* Catch all */}
       <Route component={() => <PublicRouter />} />
     </Switch>

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortalLogin } from "@/hooks/usePortalLogin";
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
@@ -71,7 +72,8 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location, navigate] = useLocation();
-  const { isAuthenticated, isLoading, user, logout, refreshAuth } = useAuth();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { signInToPortal } = usePortalLogin();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -1812,100 +1814,29 @@ export function TopNavigation() {
                             </button>
                           </div>
                         </div>
-                        {/* Sign In — talent uses /api/talent-auth/login, client uses /api/login */}
+                        {/* Sign In — shared logic via usePortalLogin hook */}
                         <button
                           onClick={async () => {
                             if (!signinEmail || !signinPassword || !signinPortal) return;
-                            const normalizedEmail = signinEmail.trim().toLowerCase();
                             setSigninLoading(true);
-                            if (process.env.NODE_ENV !== "production") {
-                              console.log("[PORTAL LOGIN]", {
-                                portal: signinPortal,
-                                normalizedEmail,
-                                endpoint: signinPortal === "client" ? "/api/login" : "/api/talent-auth/login",
-                              });
-                            }
                             try {
-                              if (signinPortal === "talent") {
-                                // ── Talent Portal login ──────────────────────────
-                                const res = await fetch("/api/talent-auth/login", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ email: normalizedEmail, password: signinPassword }),
-                                });
-                                const data = await res.json();
-                                if (!res.ok) {
-                                  if (data.error === "no_password" || data.requiresPasswordSetup) {
-                                    // Old record — no password set yet. Show inline setup form.
-                                    setSigninNeedsSetup(true);
-                                    return;
-                                  }
-                                  if (data.error === "client_account") {
-                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Client account. Please use the Client Portal." });
-                                    return;
-                                  }
-                                  const errMsg = data.error === "not_found"
-                                    ? "No account was found for this portal."
-                                    : data.error || "Incorrect email or password.";
-                                  toast({ variant: "destructive", title: "Sign in failed", description: errMsg });
+                              const result = await signInToPortal(signinPortal, signinEmail, signinPassword);
+                              if (!result.success) {
+                                if (result.requiresPasswordSetup) {
+                                  setSigninNeedsSetup(true);
                                   return;
                                 }
-                                const auth: TalentAuthState = {
-                                  token: data.token,
-                                  candidateId: data.candidate.id,
-                                  email: data.candidate.email,
-                                  fullName: data.candidate.fullName || data.candidate.email,
-                                };
-                                saveTalentAuth(auth);
-                                setTalentAuth(auth);
-                                // Reset form and close modal
-                                setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
-                                setShowPortal(false);
-                                setModalStep(1);
-                                toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
-                                navigate(`/talent-profile/${auth.candidateId}`);
-                              } else {
-                                // ── Client / Admin Portal login ──────────────────────────
-                                const res = await fetch("/api/login", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ email: normalizedEmail, password: signinPassword }),
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                  const role = (data.user?.role ?? "").toLowerCase();
-                                  if (role === "talent") {
-                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please use the Talent Portal." });
-                                    return;
-                                  }
-                                  // Persist token + user so AuthContext can read them
-                                  localStorage.setItem("onspot_jwt_token", data.token);
-                                  localStorage.setItem("onspot_user", JSON.stringify(data.user));
-                                  // Hydrate AuthContext immediately so nav reflects logged-in state
-                                  await refreshAuth();
-                                  // Reset form and close modal
-                                  setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
-                                  setShowPortal(false);
-                                  setModalStep(1);
-                                  const displayName = data.user?.first_name || data.user?.email || "back";
-                                  toast({ title: "Signed in", description: `Welcome back, ${displayName}!` });
-                                  // Navigate to the correct role-based destination
-                                  if (role === "admin") {
-                                    navigate("/admin/find-work");
-                                  } else {
-                                    navigate("/client-profile");
-                                  }
-                                } else {
-                                  // Check for cross-portal hint from backend
-                                  if (data.error === "talent_account") {
-                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please use the Talent Portal." });
-                                  } else {
-                                    toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Incorrect email or password." });
-                                  }
-                                }
+                                toast({ variant: "destructive", title: "Sign in failed", description: result.message });
+                                return;
                               }
-                            } catch {
-                              toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                              if (result.portal === "talent") {
+                                setTalentAuth(result.auth);
+                              }
+                              setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
+                              setShowPortal(false); setModalStep(1);
+                              const displayName = result.portal === "talent" ? result.auth.fullName : result.displayName;
+                              toast({ title: "Signed in", description: `Welcome back, ${displayName}!` });
+                              navigate(result.redirectTo);
                             } finally {
                               setSigninLoading(false);
                             }
