@@ -1,0 +1,50 @@
+Please make a small adjustment to the Navigation Bar layout.
+
+Current layout:
+- The navigation is working correctly.
+- However, the "Hire Talent" and "Find Work" links are positioned too far to the left.
+- They should sit closer to the "Log In" and "Sign Up" buttons, matching the spacing shown in the mockup.
+
+Requirements:
+
+1. Move the navigation links to the right
+- Shift the navigation group containing:
+  - Hire Talent
+  - Find Work
+- approximately 80–120px to the right (adjust visually to match the mockup).
+- The links should appear closer to the authentication buttons without touching them.
+
+2. Maintain spacing
+- Keep the spacing between "Hire Talent" and "Find Work" exactly as it is.
+- Only change the position of the navigation group, not the spacing between the links themselves.
+
+3. Navbar structure
+The navbar should visually resemble:
+
+[OnSpot Logo]                          Hire Talent     Find Work          Log In   Sign Up
+
+instead of
+
+[OnSpot Logo]      Hire Talent     Find Work                    Log In   Sign Up
+
+4. Implementation
+- Do not use fixed margins or absolute positioning.
+- Adjust the Flexbox layout so the navigation container naturally sits closer to the authentication buttons.
+- If necessary, reduce the width of the left navigation container or adjust its `justify-content` and `gap` values.
+- Keep the logo fixed on the left and the authentication buttons fixed on the right.
+
+5. Do NOT change
+- Logo size or position.
+- Log In button.
+- Sign Up button.
+- Navbar height.
+- Colors, fonts, hover effects, or responsive behavior.
+- Hero section.
+
+Acceptance Criteria:
+✓ The OnSpot logo remains on the left.
+✓ "Hire Talent" and "Find Work" are shifted slightly to the right.
+✓ The navigation links are visually closer to the "Log In" and "Sign Up" buttons, similar to the mockup.
+✓ The spacing between "Hire Talent" and "Find Work" remains unchanged.
+✓ The navbar remains responsive and visually balanced.
+✓ No layout shifts or console errors occur.

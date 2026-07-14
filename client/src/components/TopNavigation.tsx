@@ -445,9 +445,6 @@ export function TopNavigation() {
             width: '100%',
           }}
         >
-          {/* Left group: Logo + Nav links */}
-          <div className="flex items-center" style={{ gap: '64px' }}>
-
           {/* Zone 1: Logo */}
           <Link
             href="/"
@@ -460,6 +457,9 @@ export function TopNavigation() {
               className="nav-logo-img"
             />
           </Link>
+
+          {/* Right group: Nav Links + Auth buttons — sits flush-right of logo */}
+          <div className="ml-auto flex items-center" style={{ gap: 'clamp(32px, 4vw, 64px)' }}>
 
           {/* Zone 2: Desktop Navigation Links */}
           <div 
@@ -605,11 +605,9 @@ export function TopNavigation() {
             )}
           </div>
 
-          </div>{/* end left group */}
-
-          {/* Zone 3: Access Portal CTA (right) */}
+          {/* Zone 3: Auth + Mobile Toggle */}
           <div 
-            className="flex items-center relative z-10 flex-shrink-0 ml-auto"
+            className="flex items-center relative z-10 flex-shrink-0"
             style={{ gap: 'clamp(8px, 1vw, 12px)' }}
           >
             {/* Mobile Menu Toggle */}
@@ -781,6 +779,7 @@ export function TopNavigation() {
               </div>
             )}
           </div>
+          </div>{/* end right group */}
         </div>
       </nav>
 
