@@ -751,36 +751,34 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              /* ── Not authenticated — show Access Portal button ── */
-              <button
-                onClick={() => setShowPortal(true)}
-                className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                  boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                }}
-                data-testid="access-portal-button"
-              >
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              /* ── Not authenticated — Log In + Sign Up ── */
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  onClick={() => { setShowPortal(true); setModalStep("signin"); }}
+                  className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white/90 border border-white/25 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-200 whitespace-nowrap"
+                  data-testid="nav-login-button"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={() => { setShowPortal(true); setModalStep("signup"); }}
+                  className="relative group flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
                   style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-                    animation: 'shimmer 2s infinite',
+                    background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                    boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                   }}
-                />
-                <div
-                  className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
-                  style={{
-                    background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                    animation: 'portal-breathe 3s ease-in-out infinite',
-                    zIndex: -1,
-                  }}
-                />
-                <span className="relative z-10 flex items-center gap-2">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  Access Portal
-                </span>
-              </button>
+                  data-testid="nav-signup-button"
+                >
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                      animation: 'shimmer 2s infinite',
+                    }}
+                  />
+                  <span className="relative z-10">Sign Up</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1122,35 +1120,27 @@ export function TopNavigation() {
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => { setShowPortal(true); setIsMobileMenuOpen(false); }}
-              className="relative group w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
-              style={{
-                background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-              }}
-              data-testid="mobile-access-portal"
-            >
-              <div
-                className="absolute inset-0 opacity-0 group-active:opacity-100 transition-opacity duration-300"
+            /* ── Not authenticated — mobile Log In + Sign Up ── */
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowPortal(true); setModalStep("signin"); setIsMobileMenuOpen(false); }}
+                className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-bold text-base text-white/90 border border-white/25 hover:bg-white/10 transition-all duration-200"
+                data-testid="mobile-login-button"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => { setShowPortal(true); setModalStep("signup"); setIsMobileMenuOpen(false); }}
+                className="relative flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
-                  animation: 'shimmer 2s infinite',
+                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                  boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                 }}
-              />
-              <div
-                className="absolute inset-0 rounded-lg opacity-70 blur-lg transition-opacity duration-500"
-                style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                  animation: 'portal-breathe 3s ease-in-out infinite',
-                  zIndex: -1,
-                }}
-              />
-              <span className="relative z-10 flex items-center gap-2">
-                <Zap className="w-5 h-5 animate-pulse" />
-                Access Portal
-              </span>
-            </button>
+                data-testid="mobile-signup-button"
+              >
+                <span className="relative z-10">Sign Up</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -1,82 +1,146 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Zap, ArrowRight, CircleDollarSign, UserCheck } from "lucide-react";
-import onspotLogoHero from "@assets/on-logo-cropped.png";
+import { Zap, ArrowRight, CircleDollarSign, UserCheck, Users, Shield, Rocket } from "lucide-react";
+import bgHero from "@assets/bg_hero_1784053041636.png";
 
 export default function Home() {
   return (
     <div>
       {/* ── 1. HERO ── */}
-      <div className="relative overflow-hidden flex flex-col hero-investor">
-        {/* Elegant Gradient Overlay for Depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
+      <div
+        className="relative overflow-hidden flex flex-col"
+        style={{
+          backgroundImage: `url(${bgHero})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          minHeight: "calc(100vh - 72px)",
+        }}
+      >
+        {/* Dark overlay — strong on left for text readability, fades to transparent right */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(4,4,24,0.95) 0%, rgba(4,4,24,0.85) 35%, rgba(4,4,24,0.55) 60%, rgba(4,4,24,0.18) 100%)",
+          }}
+        />
+        {/* Subtle top/bottom vignette */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
 
-        {/* Subtle Animated Accents */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full blur-3xl animate-gentle-float"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-radial from-blue-500/10 to-transparent rounded-full blur-3xl animate-slow-spin"></div>
-        </div>
+        {/* Main content — left-aligned */}
+        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-20 xl:px-28 py-14 sm:py-20">
 
-        {/* Main content — centered, occupies first viewport so stats fall below fold */}
-        <div className="min-h-[calc(100vh-72px)] flex items-center justify-center relative z-20 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
-            {/* Logo above headline */}
-            <div className="hero-fade-up" data-testid="badge-superhuman-bpo">
-              <img
-                src={onspotLogoHero}
-                alt="OnSpot"
-                style={{
-                  height: "clamp(70px, 10vw, 90px)",
-                  width: "auto",
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </div>
+          {/* Hero text + buttons */}
+          <div className="flex-1 flex items-center">
+            <div className="w-full max-w-[700px]">
+              {/* Headline */}
+              <div className="hero-fade-up">
+                <h1
+                  className="font-bold tracking-tight leading-[1.05] text-white"
+                  style={{ fontSize: "clamp(2.6rem, 6vw, 5rem)" }}
+                >
+                  Work{" "}
+                  <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
+                    Without Limits
+                  </span>
+                </h1>
+              </div>
 
-            {/* Headline */}
-            <div className="hero-fade-up mt-8 sm:mt-10">
-              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] text-white">
-                Work{" "}
-                <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
-                  Without Limits
-                </span>
-              </h1>
-            </div>
+              {/* Supporting copy */}
+              <div className="hero-fade-up-delay mt-5 sm:mt-7">
+                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                  One Platform. Endless Opportunities.
+                </p>
+                <p className="mt-3 text-base sm:text-lg text-white/60 leading-relaxed">
+                  Built for the Future of Work.
+                </p>
+              </div>
 
-            {/* Supporting copy */}
-            <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
-              <p className="text-base font-semibold leading-snug text-white/80 sm:text-lg lg:text-xl">
-                One Platform. Endless Opportunities.
-              </p>
-              <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                Built for the Future of Work.
-              </p>
-            </div>
+              {/* CTAs */}
+              <div className="hero-fade-up-delay mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4 flex-wrap">
+                {/* Primary — gradient */}
+                <Link href="/hire-talent">
+                  <button
+                    data-testid="button-hire-talent"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl font-semibold text-base text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
+                    style={{
+                      background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
+                      boxShadow: "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    <Users className="w-4 h-4" />
+                    Hire Talent
+                  </button>
+                </Link>
 
-            {/* CTAs */}
-            <div className="hero-fade-up-delay mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/30 text-white font-medium backdrop-blur-xl bg-white/5 rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
-                asChild
-                data-testid="button-hire-talent"
-              >
-                <Link href="/hire-talent">Hire Talent</Link>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-sm sm:text-base px-6 sm:px-8 h-auto border-2 border-white/20 text-white/85 font-medium backdrop-blur-xl bg-white/[0.03] rounded-2xl w-full sm:w-auto py-3.5 min-h-[48px]"
-                asChild
-                data-testid="button-find-work"
-              >
-                <Link href="/find-work">Find Work</Link>
-              </Button>
+                {/* Secondary — outlined/glass */}
+                <Link href="/find-work">
+                  <button
+                    data-testid="button-find-work"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl font-semibold text-base text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
+                  >
+                    Find Work
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
+
+          {/* Feature strip — bottom of hero */}
+          <div className="hero-fade-up-delay mt-10">
+            <div
+              className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[760px] rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(10,10,40,0.65)",
+                border: "1px solid rgba(91,124,255,0.2)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              {/* Top Talent */}
+              <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.3)" }}
+                >
+                  <Users className="w-5 h-5 text-violet-300" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Top Talent</p>
+                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Verified professionals ready to deliver</p>
+                </div>
+              </div>
+
+              {/* Trusted Platform */}
+              <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.3)" }}
+                >
+                  <Shield className="w-5 h-5 text-violet-300" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Trusted Platform</p>
+                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Secure, reliable, and built for you</p>
+                </div>
+              </div>
+
+              {/* Endless Opportunities */}
+              <div className="flex items-start gap-4 px-6 py-5">
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.3)" }}
+                >
+                  <Rocket className="w-5 h-5 text-violet-300" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Endless Opportunities</p>
+                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Find the right match. Grow your career.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 

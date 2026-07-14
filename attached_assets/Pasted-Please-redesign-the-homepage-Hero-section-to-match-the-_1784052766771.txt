@@ -1,0 +1,208 @@
+Please redesign the homepage Hero section to match the new reference design I will provide, while preserving the requested OnSpot branding and text.
+
+Important:
+- The first reference image shows the current homepage.
+- The second reference image shows the new layout and visual direction.
+- I will upload the new hero background image directly in Replit.
+- Use the uploaded background image as the hero background.
+- Do not generate a new background image.
+
+GOAL
+
+Transform the current centered Hero section into a left-aligned, full-width hero similar to the second reference image.
+
+1. HERO BACKGROUND
+
+- Use the background image I upload in Replit.
+- Apply it as the full Hero section background.
+- Use:
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+- The Hero should fill most of the viewport beneath the navbar.
+- Add a dark navy/purple overlay or gradient so the text remains readable.
+- The left side should be darker for content visibility.
+- Preserve the background image detail on the right side.
+- Do not blur, crop excessively, stretch, or distort the image.
+
+Suggested overlay:
+- A strong dark navy overlay on the left.
+- A lighter transparent overlay toward the right.
+- The transition should feel smooth and premium.
+
+2. REMOVE THE HERO “ON” ICON
+
+- Remove the standalone “ON” logo currently displayed above “Work Without Limits”.
+- Do not place the full OnSpot logo above the Hero heading.
+- The OnSpot logo should only remain in the navigation bar.
+
+3. HERO CONTENT ALIGNMENT
+
+Change the Hero layout from centered to left-aligned.
+
+The content should appear on the left side of the Hero, similar to the second reference.
+
+Recommended layout:
+- Maximum content width: approximately 700–800px.
+- Left padding aligned with the navbar container.
+- Vertically center the content within the Hero.
+- Keep enough space below the navbar.
+
+4. HERO TEXT
+
+Use this exact content:
+
+Main heading:
+“Work Without Limits”
+
+Supporting heading:
+“One Platform. Endless Opportunities.”
+
+Description:
+“Built for the Future of Work.”
+
+Important:
+- Maintain the text:
+  “One Platform. Endless Opportunities.”
+  “Built for the Future of Work.”
+- Do not replace these with the extra wording shown in the reference.
+- Do not add “Connecting top talent with great companies.”
+- Do not place the OnSpot logo or text above the main heading.
+
+Typography:
+- Make “Work Without Limits” large and bold.
+- Keep the current gradient treatment on “Without Limits” if it works with the new background.
+- Otherwise, use white and soft lavender tones consistent with the current site.
+- Ensure strong contrast against the background.
+
+5. HERO BUTTONS
+
+Keep two buttons:
+- Hire Talent
+- Find Work
+
+Update their design to resemble the second reference:
+- “Hire Talent” should be the primary gradient button.
+- “Find Work” should be the secondary outlined or dark transparent button.
+- Add appropriate existing icons only if the project already uses them.
+- Do not add icons that require missing imports or introduce runtime errors.
+- Keep both existing routes and click behavior unchanged.
+
+Recommended layout:
+- Buttons displayed horizontally on desktop.
+- Stack vertically or wrap cleanly on mobile.
+- Use consistent button height, padding, and border radius.
+
+6. OPTIONAL FEATURE STRIP
+
+Add the bottom feature strip shown in the second reference only if it can be implemented cleanly without making the Hero overcrowded.
+
+The strip may contain three items:
+- Top Talent
+  “Verified professionals ready to deliver”
+- Trusted Platform
+  “Secure, reliable, and built for you”
+- Endless Opportunities
+  “Find the right match. Grow your career.”
+
+Requirements:
+- Place it near the bottom of the Hero.
+- Use a semi-transparent dark container with a subtle border and blur.
+- Use icons already available in the project.
+- If adding this causes responsiveness or spacing problems, prioritize the main Hero content and buttons.
+
+7. NAVIGATION BAR CHANGES
+
+Update the navbar to follow the second reference’s structure while retaining the current site branding.
+
+Navbar should contain:
+- Full OnSpot logo on the left
+- Hire Talent
+- Find Work
+- Log In
+- Sign Up
+
+Changes:
+- Replace the current single “Access Portal” button with two separate actions:
+  - Log In
+  - Sign Up
+- “Log In” should be a secondary outlined button.
+- “Sign Up” should be the primary gradient button.
+- Preserve the existing login and signup functionality.
+- If the current Access Portal opens a modal with both options, connect:
+  - Log In directly to the login view/state.
+  - Sign Up directly to the signup view/state.
+- Do not duplicate the modal or authentication logic.
+- Reuse the existing authentication component and state.
+
+Keep “Amazing” hidden using the existing feature flag or conditional rendering.
+Do not delete the Amazing page or its route.
+
+8. NAVBAR LOGO
+
+- Keep the full OnSpot logo in the navbar.
+- Ensure it is large, clear, and vertically centered.
+- Do not display the standalone ON icon in the Hero.
+- Maintain aspect ratio.
+- Do not crop or distort the logo.
+
+9. RESPONSIVENESS
+
+Desktop:
+- Left-aligned hero text.
+- Background image visible on the right.
+- Buttons in one row.
+- Navbar links and auth buttons displayed normally.
+
+Tablet:
+- Reduce hero font sizes and padding.
+- Maintain readable background positioning.
+- Prevent overlap between content and background subjects.
+
+Mobile:
+- Stack Hero content vertically.
+- Stack buttons or allow them to wrap.
+- Keep all text readable.
+- Ensure the background still provides sufficient contrast.
+- Use a mobile navigation menu if the project already has one.
+- Ensure Log In and Sign Up remain accessible.
+
+10. DO NOT CHANGE
+
+Do not alter:
+- Existing Hire Talent route
+- Existing Find Work route
+- Authentication form fields or validation
+- Login/signup submission logic
+- Signup role selection
+- Existing modal fixes
+- Other homepage sections
+- Overall brand colors unless needed for readability
+- Amazing page content or route
+
+11. CODE QUALITY
+
+- Reuse existing components where possible.
+- Remove unused Hero imports after the redesign.
+- Do not introduce undefined icons or components.
+- Ensure all required icons are correctly imported.
+- Run TypeScript, build, lint, and runtime checks.
+- Verify there are no console errors.
+
+ACCEPTANCE CRITERIA
+
+✓ Hero matches the structure and visual direction of the second reference image.
+✓ Uploaded image is used as the Hero background.
+✓ Hero content is left-aligned.
+✓ Standalone ON logo is removed from the Hero.
+✓ Full OnSpot logo remains only in the navbar.
+✓ “Work Without Limits” remains the main heading.
+✓ “One Platform. Endless Opportunities.” remains visible.
+✓ “Built for the Future of Work.” remains visible.
+✓ Hire Talent and Find Work buttons remain functional.
+✓ Access Portal is replaced with Log In and Sign Up buttons.
+✓ Log In opens the login flow.
+✓ Sign Up opens the signup flow.
+✓ Amazing remains hidden but is not deleted.
+✓ Layout is responsive.
+✓ No TypeScript, runtime, routing, or console errors.
