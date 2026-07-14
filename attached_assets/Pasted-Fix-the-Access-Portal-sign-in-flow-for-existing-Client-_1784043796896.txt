@@ -1,0 +1,333 @@
+Fix the Access Portal sign-in flow for existing Client and Talent accounts.
+
+Required final behavior:
+
+Client:
+Access Portal → Sign In → select Client Portal → successful login → Client Profile
+
+Talent:
+Access Portal → Sign In → select Talent Portal → successful login → that Talent’s existing profile
+
+Do not send existing Talent users to /find-best-matches after a successful login unless they truly have no candidate profile.
+
+Current architecture:
+The project currently has two authentication systems:
+
+1. General account authentication
+- Used by Client accounts
+- AuthContext.login()
+- authAPI.login()
+- General JWT/localStorage keys:
+  - onspot_jwt_token
+  - onspot_user
+- Records come from users table
+
+2. Talent profile authentication
+- Used by candidate/talent profiles
+- TalentLoginModal
+- POST /api/talent-auth/login
+- localStorage key:
+  - talent_profile_token
+- Response includes candidateId
+- Records come from candidates table
+
+Do not make both portal types call the same endpoint blindly.
+
+Files to inspect:
+- client/src/components/TopNavigation.tsx
+- client/src/components/TalentLoginModal.tsx
+- client/src/contexts/AuthContext.tsx
+- client/src/lib/api.ts
+- client/src/App.tsx
+- client/src/pages/ClientProfile.tsx
+- client/src/pages/TalentProfile.tsx
+- server/routes.ts
+
+1. Centralize the Access Portal sign-in handler
+
+In TopNavigation.tsx, create one handler:
+
+async function handlePortalSignIn() {
+  validate email, password, and selected portal;
+
+  if (signinPortal === "client") {
+    await handleClientSignIn();
+    return;
+  }
+
+  if (signinPortal === "talent") {
+    await handleTalentSignIn();
+    return;
+  }
+}
+
+Do not use the general AuthContext login for Talent candidates.
+
+2. Client login flow
+
+When Client Portal is selected:
+
+- Call the existing general login method:
+  await login(signinEmail, signinPassword, "client")
+
+- The backend/general login response must contain user.role.
+
+- After success, validate:
+  user.role === "client"
+
+- If the returned role is talent:
+  - log out/clear the general token
+  - show:
+    “This is a Talent account. Please use the Talent Portal.”
+
+- If the returned role is admin:
+  - show the appropriate role message or redirect to admin separately.
+
+- After valid Client login:
+  - call await refreshAuth() if necessary
+  - close the Access Portal modal
+  - reset the form state
+  - navigate to:
+    /client-profile
+
+Expected:
+Access Portal → Sign In → Client Portal → /client-profile
+
+3. Talent login flow
+
+When Talent Portal is selected:
+
+Use the same endpoint and logic as TalentLoginModal.tsx:
+
+POST /api/talent-auth/login
+
+Body:
+{
+  "email": signinEmail,
+  "password": signinPassword
+}
+
+Do not call AuthContext.login() for Talent candidates unless the architecture has been fully unified.
+
+On success, construct:
+
+const auth = {
+  token: data.token,
+  candidateId: data.candidate.id,
+  email: data.candidate.email,
+  fullName: data.candidate.fullName || data.candidate.email
+};
+
+Then:
+- call saveTalentAuth(auth)
+- update TopNavigation talentAuth state:
+  setTalentAuth(auth)
+- close the Access Portal modal
+- reset the form
+- show successful login toast
+- navigate to:
+  `/talent-profile/${auth.candidateId}`
+
+Use the actual existing Talent Profile route from App.tsx. If App.tsx uses /candidate-profile/:candidateId instead, use that exact route consistently.
+
+Expected:
+Access Portal → Sign In → Talent Portal → /talent-profile/{candidateId}
+
+4. Existing Talent with no password
+
+The working TalentLoginModal already handles:
+
+data.error === "no_password"
+
+Reuse the same behavior in Access Portal:
+
+- switch to the password setup step
+- keep the entered email
+- show:
+  “This profile exists but has no password yet. Create one to continue.”
+
+Use:
+POST /api/candidates/setup-password
+
+or the currently working candidate password setup endpoint.
+
+After setup succeeds:
+- save talent_profile_token
+- set talentAuth state
+- navigate to the returned candidate’s profile
+
+5. Correct profile route handling
+
+TopNavigation currently defaults Talent Profile to /find-best-matches.
+
+Change the Talent profile route logic:
+
+const getTalentProfileRoute = () => {
+  if (talentAuth?.candidateId) {
+    return `/talent-profile/${talentAuth.candidateId}`;
+  }
+
+  if (user?.role === "talent" && user.id) {
+    // Only use this if user.id is definitely the candidate profile id.
+    return `/talent-profile/${user.id}`;
+  }
+
+  return "/find-best-matches";
+};
+
+Then update the dropdown:
+
+Talent Profile → getTalentProfileRoute()
+
+Do not hardcode:
+Talent Profile → /find-best-matches
+
+/find-best-matches should only be the fallback for a Talent who has no existing candidate profile.
+
+6. Make authentication state update immediately
+
+After Client login:
+- AuthContext user and isAuthenticated must update immediately.
+- Navbar should change from Access Portal to Client Profile.
+
+After Talent login:
+- talentAuth state must update immediately.
+- Navbar should change from Access Portal to Talent Profile.
+
+Do not require a page refresh.
+
+7. Navbar account display rules
+
+Render the account menu in this order:
+
+if (isAuthenticated && user) {
+  show general account dropdown;
+}
+else if (talentAuth) {
+  show Talent Profile dropdown;
+}
+else {
+  show Access Portal;
+}
+
+Talent dropdown should include:
+- Talent Profile
+- Find Work
+- Settings, if supported
+- Sign Out
+
+Client dropdown should include:
+- Client Profile
+- Hire Talent
+- Settings
+- Sign Out
+
+8. Sign-out cleanup
+
+Client Sign Out:
+- clear onspot_jwt_token
+- clear onspot_user
+- reset AuthContext
+- also clear stale talent_profile_token
+
+Talent Sign Out:
+- clear talent_profile_token
+- reset talentAuth state
+- also clear stale general auth keys if they belong to a previous session
+
+After sign out:
+- navigate to /
+- navbar returns to Access Portal
+
+9. Backend validation
+
+General login endpoint:
+- authenticates users table
+- returns role
+- supports existing Client accounts
+
+Talent login endpoint:
+- authenticates candidates table
+- returns:
+  - token
+  - candidate.id
+  - candidate.email
+  - candidate.fullName
+
+Normalize email before querying:
+- trim whitespace
+- lowercase email
+
+Example:
+const normalizedEmail = email.trim().toLowerCase();
+
+Apply the same normalization during signup, login, forgot password, and password setup.
+
+10. Do not create duplicate accounts
+
+If an email exists in candidates:
+- Talent Portal must use that candidate record.
+- Do not create a second candidate.
+
+If an email exists in users with role client:
+- Client Portal must use that user record.
+- Do not create a second client.
+
+11. Add useful debugging without exposing passwords
+
+Temporarily log in development:
+
+console.log("[PORTAL LOGIN]", {
+  portal: signinPortal,
+  normalizedEmail,
+  endpoint:
+    signinPortal === "client"
+      ? "/api/login"
+      : "/api/talent-auth/login"
+});
+
+Backend logs should include:
+- whether a matching record was found
+- table checked: users or candidates
+- returned role/candidate id
+- never log password or password_hash
+
+12. Error messages
+
+Client email entered under Talent Portal:
+“This is a Client account. Please use the Client Portal.”
+
+Talent email entered under Client Portal:
+“This is a Talent account. Please use the Talent Portal.”
+
+Wrong password:
+“Incorrect email or password.”
+
+Existing candidate without password:
+“This Talent profile needs a password setup before signing in.”
+
+No matching account:
+“No account was found for this portal.”
+
+13. Acceptance criteria
+
+Client:
+- Existing Client can sign in through Access Portal.
+- Client Portal uses the users/general login endpoint.
+- Valid Client login redirects to /client-profile.
+- Navbar changes to Client Profile.
+
+Talent:
+- Existing Talent can sign in through Access Portal.
+- Talent Portal uses /api/talent-auth/login.
+- Successful login saves talent_profile_token.
+- Successful login redirects to that candidate’s actual profile.
+- Navbar changes to Talent Profile.
+- Talent Profile dropdown points to the actual candidate profile, not always /find-best-matches.
+
+General:
+- Client cannot log in through Talent Portal.
+- Talent cannot log in through Client Portal.
+- No duplicate account/profile is created.
+- Refresh preserves both Client and Talent sessions.
+- Sign Out clears the correct session.

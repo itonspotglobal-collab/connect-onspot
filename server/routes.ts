@@ -896,8 +896,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Normalize email — trim whitespace and lowercase
+      const normalizedEmail = email.trim().toLowerCase();
+
       // Basic email format validation
-      if (!validateEmail(email)) {
+      if (!validateEmail(normalizedEmail)) {
         console.error(`❌ Email format validation failed [${requestId}]`);
         return res.status(400).json({
           success: false,
@@ -906,16 +909,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Find user by email
+      // Find user by email (users table — Client / Admin accounts)
       const userQuery =
         'SELECT id, email, username, "first_name", "last_name", "password_hash", role, company FROM users WHERE email = $1';
-      const userResult = await query(userQuery, [email]);
+      const userResult = await query(userQuery, [normalizedEmail]);
+
+      console.log(`🔍 Debug [${requestId}]: Table checked = users, Record found = ${userResult.rows.length > 0}`);
 
       if (userResult.rows.length === 0) {
         console.error(
-          `❌ User not found [${requestId}]: No user with email ${email}`,
+          `❌ User not found [${requestId}]: No user with email ${normalizedEmail}`,
         );
         console.log(`🔍 Debug [${requestId}]: User record found = false`);
+
+        // Cross-portal detection: check if this email belongs to a candidate (Talent Portal)
+        try {
+          const candidateCheck = await query(
+            'SELECT id FROM candidates WHERE email = $1 LIMIT 1',
+            [normalizedEmail],
+          );
+          if (candidateCheck.rows.length > 0) {
+            console.log(`🔍 Debug [${requestId}]: Email found in candidates table — wrong portal`);
+            return res.status(401).json({
+              success: false,
+              error: "talent_account",
+              message: "This is a Talent account. Please use the Talent Portal.",
+              requestId,
+            });
+          }
+        } catch {
+          // Non-fatal — fall through to generic error
+        }
+
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
@@ -3801,10 +3826,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required" });
       }
-      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      const normalizedTalentEmail = email.trim().toLowerCase();
+      console.log(`🔍 [talent-auth/login]: Table checked = candidates, email = ***@${normalizedTalentEmail.split("@")[1]}`);
+      const candidate = await storage.getCandidateByEmail(normalizedTalentEmail);
+
       if (!candidate) {
+        // Cross-portal detection: check if this email belongs to a users (Client Portal) account
+        try {
+          const userCheck = await query(
+            'SELECT id, role FROM users WHERE email = $1 LIMIT 1',
+            [normalizedTalentEmail],
+          );
+          if (userCheck.rows.length > 0) {
+            console.log(`🔍 [talent-auth/login]: Email found in users table (role=${userCheck.rows[0].role}) — wrong portal`);
+            return res.status(401).json({
+              error: "client_account",
+              message: "This is a Client account. Please use the Client Portal.",
+            });
+          }
+        } catch {
+          // Non-fatal — fall through to generic error
+        }
+        console.log(`🔍 [talent-auth/login]: Candidate record found = false`);
         return res.status(401).json({ error: "Invalid email or password" });
       }
+      console.log(`🔍 [talent-auth/login]: Candidate record found = true, id = ${candidate.id}`);
       if (!candidate.passwordHash) {
         return res.status(403).json({
           error: "no_password",

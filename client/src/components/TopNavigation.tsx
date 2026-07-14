@@ -161,7 +161,7 @@ export function TopNavigation() {
     ];
     // talent / default
     return [
-      { label: "Talent Profile", route: "/find-best-matches", icon: User },
+      { label: "Talent Profile", route: talentAuth ? `/talent-profile/${talentAuth.candidateId}` : "/find-best-matches", icon: User },
       { label: "Find Work",      route: "/find-work/jobs",    icon: Briefcase },
       { label: "Settings",       route: "/settings",          icon: Settings },
     ];
@@ -1816,14 +1816,22 @@ export function TopNavigation() {
                         <button
                           onClick={async () => {
                             if (!signinEmail || !signinPassword || !signinPortal) return;
+                            const normalizedEmail = signinEmail.trim().toLowerCase();
                             setSigninLoading(true);
+                            if (process.env.NODE_ENV !== "production") {
+                              console.log("[PORTAL LOGIN]", {
+                                portal: signinPortal,
+                                normalizedEmail,
+                                endpoint: signinPortal === "client" ? "/api/login" : "/api/talent-auth/login",
+                              });
+                            }
                             try {
                               if (signinPortal === "talent") {
                                 // ── Talent Portal login ──────────────────────────
                                 const res = await fetch("/api/talent-auth/login", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                                  body: JSON.stringify({ email: normalizedEmail, password: signinPassword }),
                                 });
                                 const data = await res.json();
                                 if (!res.ok) {
@@ -1832,7 +1840,14 @@ export function TopNavigation() {
                                     setSigninNeedsSetup(true);
                                     return;
                                   }
-                                  toast({ variant: "destructive", title: "Sign in failed", description: data.error || "Invalid email or password." });
+                                  if (data.error === "client_account") {
+                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Client account. Please use the Client Portal." });
+                                    return;
+                                  }
+                                  const errMsg = data.error === "not_found"
+                                    ? "No account was found for this portal."
+                                    : data.error || "Incorrect email or password.";
+                                  toast({ variant: "destructive", title: "Sign in failed", description: errMsg });
                                   return;
                                 }
                                 const auth: TalentAuthState = {
@@ -1843,6 +1858,8 @@ export function TopNavigation() {
                                 };
                                 saveTalentAuth(auth);
                                 setTalentAuth(auth);
+                                // Reset form and close modal
+                                setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
                                 setShowPortal(false);
                                 setModalStep(1);
                                 toast({ title: "Signed in", description: `Welcome back, ${auth.fullName}!` });
@@ -1852,13 +1869,13 @@ export function TopNavigation() {
                                 const res = await fetch("/api/login", {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ email: signinEmail, password: signinPassword }),
+                                  body: JSON.stringify({ email: normalizedEmail, password: signinPassword }),
                                 });
                                 const data = await res.json();
                                 if (data.success) {
                                   const role = (data.user?.role ?? "").toLowerCase();
                                   if (role === "talent") {
-                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please select the Talent Portal." });
+                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please use the Talent Portal." });
                                     return;
                                   }
                                   // Persist token + user so AuthContext can read them
@@ -1866,6 +1883,8 @@ export function TopNavigation() {
                                   localStorage.setItem("onspot_user", JSON.stringify(data.user));
                                   // Hydrate AuthContext immediately so nav reflects logged-in state
                                   await refreshAuth();
+                                  // Reset form and close modal
+                                  setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
                                   setShowPortal(false);
                                   setModalStep(1);
                                   const displayName = data.user?.first_name || data.user?.email || "back";
@@ -1877,7 +1896,12 @@ export function TopNavigation() {
                                     navigate("/client-profile");
                                   }
                                 } else {
-                                  toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Invalid email or password." });
+                                  // Check for cross-portal hint from backend
+                                  if (data.error === "talent_account") {
+                                    toast({ variant: "destructive", title: "Wrong portal", description: "This is a Talent account. Please use the Talent Portal." });
+                                  } else {
+                                    toast({ variant: "destructive", title: "Sign in failed", description: data.message || "Incorrect email or password." });
+                                  }
                                 }
                               }
                             } catch {
