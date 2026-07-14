@@ -1,0 +1,94 @@
+Please update the Feature Cards section at the bottom of the Hero to match the sizing and proportions shown in the reference design.
+
+Current issue:
+- The icons inside the three feature cards are too small.
+- Compared to the reference, the icon badges don't have enough visual weight.
+- The cards themselves are correctly sized, so only the icon area needs adjustment.
+
+Reference:
+Match the proportions shown in the provided mockup.
+
+Requirements:
+
+1. Increase the icon badge size
+For all three feature cards:
+- Top Talent
+- Trusted Platform
+- Endless Opportunities
+
+Increase the purple icon badge/container by approximately 25–30%.
+
+Recommended size:
+- Current: ~40px
+- New: ~52–56px
+
+The badge should remain:
+- Circular or rounded-square (matching the existing design)
+- Same purple gradient/background
+- Same border radius
+- Same shadow/glow
+
+2. Increase the icon size
+
+Increase the icon inside each badge proportionally.
+
+Recommended:
+- Current: ~18–20px
+- New: ~24–28px
+
+Keep all icons centered both vertically and horizontally.
+
+3. Preserve spacing
+
+Do NOT enlarge the entire card.
+
+Only adjust:
+- Badge size
+- Icon size
+
+Maintain comfortable spacing between:
+- Badge
+- Heading
+- Description
+
+The layout should remain balanced.
+
+4. Keep typography unchanged
+
+Do NOT modify:
+- "Top Talent"
+- "Trusted Platform"
+- "Endless Opportunities"
+
+Do not change font sizes or weights.
+
+5. Maintain card dimensions
+
+Do NOT change:
+- Card height
+- Card width
+- Border radius
+- Background
+- Glassmorphism
+- Blur
+- Borders
+- Shadows
+
+Only improve the icon prominence.
+
+6. Responsive behavior
+
+Desktop:
+- Use the larger icons.
+
+Tablet/Mobile:
+- Scale proportionally while maintaining the layout.
+
+Acceptance Criteria:
+✓ All three icon badges are noticeably larger.
+✓ Icons are larger and easier to recognize.
+✓ Cards remain the same size.
+✓ Text spacing remains balanced.
+✓ The section closely matches the proportions of the reference design.
+✓ No layout shifts or overflow issues.
+✓ No TypeScript or runtime errors.

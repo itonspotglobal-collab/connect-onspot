@@ -100,10 +100,10 @@ export default function Home() {
               {/* Top Talent */}
               <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.3)" }}
                 >
-                  <Users className="w-5 h-5 text-violet-300" />
+                  <Users className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">Top Talent</p>
@@ -114,10 +114,10 @@ export default function Home() {
               {/* Trusted Platform */}
               <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.3)" }}
                 >
-                  <Shield className="w-5 h-5 text-violet-300" />
+                  <Shield className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">Trusted Platform</p>
@@ -128,10 +128,10 @@ export default function Home() {
               {/* Endless Opportunities */}
               <div className="flex items-start gap-4 px-6 py-5">
                 <div
-                  className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.3)" }}
                 >
-                  <Rocket className="w-5 h-5 text-violet-300" />
+                  <Rocket className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">Endless Opportunities</p>
