@@ -1,0 +1,261 @@
+Please refine the Hero section so it matches the second reference image more closely.
+
+The current implementation is close, but the proportions, spacing, text sizing, and feature strip still differ from the target design.
+
+IMPORTANT:
+- First image = current implementation.
+- Second image = target/reference.
+- Do not redesign from scratch.
+- Make focused visual adjustments only.
+
+1. ADD THE “ONSPOT” LABEL ABOVE THE HEADING
+
+The target design includes “OnSpot” above “Work Without Limits”.
+
+Requirements:
+- Add the text “OnSpot” above the main heading.
+- Use text, not the full navbar logo image.
+- Style:
+  - “On” in gold/yellow.
+  - “Spot” in white.
+- Make it large and bold enough to be visible, but smaller than the main heading.
+- Keep it left-aligned with the rest of the Hero content.
+
+Recommended desktop size:
+- 42–52px
+- Font weight: 700–800
+- Margin-bottom: 24–32px
+
+2. ADJUST THE HERO CONTENT WIDTH AND POSITION
+
+Current issue:
+- The content sits too high and too far left.
+- The target has more breathing room around the content.
+
+Required:
+- Move the Hero content slightly down.
+- Increase the left padding slightly.
+- Keep the content vertically balanced within the Hero.
+
+Suggested desktop spacing:
+- Left padding: 64–80px
+- Top padding beneath navbar: 70–100px
+- Content width: approximately 850–950px
+
+3. MAIN HEADING
+
+Keep:
+“Work Without Limits”
+
+Requirements:
+- Keep it on one line on desktop.
+- Make the heading slightly larger and heavier to match the reference.
+- Maintain:
+  - “Work” in white.
+  - “Without Limits” in lavender/purple.
+- Do not allow the heading to appear too close to the top.
+
+Recommended:
+font-size: clamp(4rem, 5.5vw, 6.5rem);
+line-height: 0.95 to 1.05;
+white-space: nowrap;
+
+4. SUPPORTING HEADING
+
+Current:
+“One Platform. Endless Opportunities.”
+
+Target:
+“One Platform. Endless Opportunity.”
+
+Please change it to the singular form exactly:
+
+“One Platform. Endless Opportunity.”
+
+Requirements:
+- Increase its font size and weight.
+- Keep it left-aligned.
+- Add more spacing above and below it.
+
+Recommended desktop size:
+- 30–40px
+- Font weight: 600–700
+
+5. DESCRIPTION TEXT
+
+Add the missing sentence from the reference:
+
+“Connecting top talent with great companies.”
+
+Then keep:
+
+“Built for the future of work.”
+
+The final copy should be:
+
+Connecting top talent with great companies.
+Built for the future of work.
+
+Requirements:
+- Display each sentence on its own line.
+- Use a larger and clearer font than the current version.
+- Use muted white/gray text.
+- Add comfortable line spacing.
+
+Recommended:
+- Font size: 21–26px
+- Line height: 1.5
+
+6. BUTTONS
+
+Make the buttons closer to the proportions in the reference.
+
+Hire Talent:
+- Increase width and height.
+- Keep purple gradient.
+- Keep the user icon.
+- Use stronger text size and padding.
+
+Find Work:
+- Increase width and height.
+- Keep the outlined dark style.
+- Use a briefcase icon, not an arrow.
+- Remove the right-arrow icon if currently shown.
+
+Recommended desktop size:
+- Height: 68–76px
+- Horizontal padding: 36–48px
+- Font size: 20–24px
+- Gap between buttons: 24–32px
+
+7. FEATURE STRIP
+
+The feature strip needs to be significantly larger and closer to the target.
+
+Current issues:
+- It is too narrow.
+- It is positioned too low and too far left.
+- Icons and text are too small.
+- The three columns feel compressed.
+
+Required:
+- Increase the total width of the feature strip.
+- Place it below the buttons with more spacing.
+- Make it span most of the left-to-middle portion of the Hero.
+- Increase its height and internal padding.
+
+Recommended desktop:
+- Width: 1100–1250px, or max-width that visually matches the reference.
+- Min-height: 180–220px.
+- Padding: 32–44px.
+- Border radius: 24–28px.
+
+8. FEATURE ICONS
+
+For all three:
+- Top Talent
+- Trusted Platform
+- Endless Opportunities
+
+Increase:
+- Icon badge size to approximately 72–88px.
+- Icon size to approximately 34–44px.
+
+Keep:
+- Purple gradient badge.
+- Rounded-square shape.
+- Same glow and border treatment.
+- Icons vertically centered.
+
+9. FEATURE TEXT
+
+Increase the feature text sizes.
+
+Headings:
+- 22–26px
+- Font weight: 600–700
+
+Descriptions:
+- 17–20px
+- Line height: 1.4–1.5
+
+Keep the exact text:
+
+Top Talent
+Verified professionals ready to deliver
+
+Trusted Platform
+Secure, reliable, and built for you
+
+Endless Opportunities
+Find the right match.
+Grow your career.
+
+10. FEATURE COLUMN SPACING
+
+- Increase horizontal spacing between columns.
+- Keep vertical divider lines between the three columns.
+- Add more space between each icon and its text.
+- Ensure “Endless Opportunities” does not wrap awkwardly unless necessary.
+
+11. BACKGROUND AND OVERLAY
+
+Keep the current background image.
+
+Adjust the overlay so it more closely matches the reference:
+- Left side remains dark enough for strong readability.
+- The background image should still be visible behind the left panel, not fully replaced by a flat solid block.
+- Use a dark navy transparent gradient instead of an entirely opaque panel.
+
+Suggested:
+background:
+linear-gradient(
+  90deg,
+  rgba(4, 5, 36, 0.98) 0%,
+  rgba(8, 9, 49, 0.92) 40%,
+  rgba(8, 9, 49, 0.55) 68%,
+  rgba(8, 9, 49, 0.15) 100%
+);
+
+12. RESPONSIVENESS
+
+Desktop:
+- Main heading stays on one line.
+- Feature strip displays in one row.
+- Buttons remain side by side.
+
+Tablet:
+- Reduce type and card dimensions proportionally.
+- Allow the heading to scale down.
+- Feature strip may wrap if necessary.
+
+Mobile:
+- Allow the heading to wrap.
+- Stack buttons.
+- Stack feature items vertically.
+- Use full-width dark overlay for readability.
+
+13. DO NOT CHANGE
+
+Do not modify:
+- Navbar structure or spacing.
+- Login and Sign Up behavior.
+- Routes.
+- Authentication modal.
+- Background image asset.
+- Floating chat button.
+- Other homepage sections.
+
+ACCEPTANCE CRITERIA
+
+✓ “OnSpot” appears above the heading with gold “On” and white “Spot”.
+✓ “Work Without Limits” stays on one line on desktop.
+✓ Supporting heading says “One Platform. Endless Opportunity.”
+✓ “Connecting top talent with great companies.” is added.
+✓ “Built for the future of work.” remains.
+✓ Buttons are larger and match the target proportions.
+✓ Find Work uses a briefcase icon instead of an arrow.
+✓ Feature strip is larger, wider, and more prominent.
+✓ Feature icons and text are noticeably larger.
+✓ Hero spacing and proportions closely match the second reference.
+✓ No overflow, broken layout, TypeScript errors, or runtime errors.

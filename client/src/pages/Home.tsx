@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Zap, ArrowRight, CircleDollarSign, UserCheck, Users, Shield, Rocket } from "lucide-react";
+import { Zap, ArrowRight, CircleDollarSign, UserCheck, Users, Shield, Rocket, Briefcase } from "lucide-react";
 import bgHero from "@assets/bg_hero_1784053041636.png";
 
 export default function Home() {
@@ -16,28 +16,37 @@ export default function Home() {
           minHeight: "calc(100vh - 72px)",
         }}
       >
-        {/* Solid dark navy panel — left half; blends into image on right */}
+        {/* Gradient overlay — dark semi-transparent on left, fades right */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgb(4,4,24) 0%, rgb(4,4,24) 44%, rgba(4,4,24,0.75) 56%, rgba(4,4,24,0.25) 72%, rgba(4,4,24,0.08) 100%)",
+              "linear-gradient(90deg, rgba(4,5,36,0.98) 0%, rgba(8,9,49,0.92) 40%, rgba(8,9,49,0.55) 68%, rgba(8,9,49,0.15) 100%)",
           }}
         />
         {/* Subtle top/bottom vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
 
         {/* Main content — left-aligned */}
-        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-20 xl:px-28 py-14 sm:py-20">
+        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-16 sm:py-20">
 
           {/* Hero text + buttons */}
           <div className="flex-1 flex items-center">
-            <div className="w-full max-w-[920px]">
+            <div className="w-full max-w-[950px]">
+
+              {/* OnSpot label */}
+              <div className="hero-fade-up mb-5 sm:mb-7">
+                <p className="font-extrabold leading-none" style={{ fontSize: "clamp(1.8rem, 2.8vw, 3rem)" }}>
+                  <span style={{ color: "#F5A623" }}>On</span>
+                  <span className="text-white">Spot</span>
+                </p>
+              </div>
+
               {/* Headline */}
               <div className="hero-fade-up">
                 <h1
-                  className="font-bold tracking-tight leading-[1.05] text-white sm:whitespace-nowrap"
-                  style={{ fontSize: "clamp(2.2rem, 4.4vw, 5.5rem)" }}
+                  className="font-bold tracking-tight leading-[0.97] text-white sm:whitespace-nowrap"
+                  style={{ fontSize: "clamp(3rem, 5.5vw, 6.5rem)" }}
                 >
                   Work{" "}
                   <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
@@ -46,29 +55,38 @@ export default function Home() {
                 </h1>
               </div>
 
-              {/* Supporting copy */}
-              <div className="hero-fade-up-delay mt-5 sm:mt-7">
-                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
-                  One Platform. Endless Opportunities.
+              {/* Supporting heading */}
+              <div className="hero-fade-up-delay mt-6 sm:mt-8">
+                <p className="font-bold text-white leading-snug" style={{ fontSize: "clamp(1.35rem, 2.4vw, 2.2rem)" }}>
+                  One Platform. Endless Opportunity.
                 </p>
-                <p className="mt-3 text-base sm:text-lg text-white/60 leading-relaxed">
-                  Built for the Future of Work.
+              </div>
+
+              {/* Description lines */}
+              <div className="hero-fade-up-delay mt-4 space-y-1">
+                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)" }}>
+                  Connecting top talent with great companies.
+                </p>
+                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)" }}>
+                  Built for the future of work.
                 </p>
               </div>
 
               {/* CTAs */}
-              <div className="hero-fade-up-delay mt-8 sm:mt-10 flex flex-col sm:flex-row gap-4 flex-wrap">
+              <div className="hero-fade-up-delay mt-10 sm:mt-12 flex flex-col sm:flex-row gap-5 sm:gap-7 flex-wrap">
                 {/* Primary — gradient */}
                 <Link href="/hire-talent">
                   <button
                     data-testid="button-hire-talent"
-                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl font-semibold text-base text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
                     style={{
                       background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
                       boxShadow: "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      fontSize: "clamp(1rem, 1.3vw, 1.2rem)",
+                      padding: "clamp(16px, 1.8vw, 22px) clamp(28px, 3vw, 44px)",
                     }}
                   >
-                    <Users className="w-4 h-4" />
+                    <Users className="w-5 h-5 flex-shrink-0" />
                     Hire Talent
                   </button>
                 </Link>
@@ -77,10 +95,14 @@ export default function Home() {
                 <Link href="/find-work">
                   <button
                     data-testid="button-find-work"
-                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl font-semibold text-base text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
+                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
+                    style={{
+                      fontSize: "clamp(1rem, 1.3vw, 1.2rem)",
+                      padding: "clamp(16px, 1.8vw, 22px) clamp(28px, 3vw, 44px)",
+                    }}
                   >
+                    <Briefcase className="w-5 h-5 flex-shrink-0" />
                     Find Work
-                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </Link>
               </div>
@@ -90,52 +112,53 @@ export default function Home() {
           {/* Feature strip — bottom of hero */}
           <div className="hero-fade-up-delay mt-10">
             <div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[760px] rounded-2xl overflow-hidden"
+              className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[1200px] rounded-3xl overflow-hidden"
               style={{
-                background: "rgba(10,10,40,0.65)",
-                border: "1px solid rgba(91,124,255,0.2)",
-                backdropFilter: "blur(12px)",
+                background: "rgba(8,8,42,0.72)",
+                border: "1px solid rgba(91,124,255,0.22)",
+                backdropFilter: "blur(16px)",
+                minHeight: "160px",
               }}
             >
               {/* Top Talent */}
-              <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
+              <div className="flex items-center gap-6 px-8 py-7 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(58,58,248,0.3)" }}
+                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Users className="w-7 h-7 text-violet-300" />
+                  <Users className="w-9 h-9 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Top Talent</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Verified professionals ready to deliver</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Top Talent</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Verified professionals ready to deliver</p>
                 </div>
               </div>
 
               {/* Trusted Platform */}
-              <div className="flex items-start gap-4 px-6 py-5 sm:border-r border-white/10">
+              <div className="flex items-center gap-6 px-8 py-7 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(58,58,248,0.3)" }}
+                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Shield className="w-7 h-7 text-violet-300" />
+                  <Shield className="w-9 h-9 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Trusted Platform</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Secure, reliable, and built for you</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Trusted Platform</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Secure, reliable, and built for you</p>
                 </div>
               </div>
 
               {/* Endless Opportunities */}
-              <div className="flex items-start gap-4 px-6 py-5">
+              <div className="flex items-center gap-6 px-8 py-7">
                 <div
-                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-                  style={{ background: "rgba(58,58,248,0.3)" }}
+                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Rocket className="w-7 h-7 text-violet-300" />
+                  <Rocket className="w-9 h-9 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Endless Opportunities</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-snug">Find the right match. Grow your career.</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Endless Opportunities</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Find the right match. Grow your career.</p>
                 </div>
               </div>
             </div>
