@@ -1,0 +1,61 @@
+Please fix the runtime error in the Access Portal signup modal.
+
+Current error:
+CheckCircle2 is not defined
+
+File:
+client/src/components/TopNavigation.tsx
+
+The error happens when clicking either the “Client” or “Talent” role option in the signup modal.
+
+Root cause:
+The component is rendering the `CheckCircle2` icon for the selected role state, but `CheckCircle2` is not imported or defined.
+
+Required fix:
+
+1. Check the existing icon imports at the top of `TopNavigation.tsx`.
+
+2. If the project uses `lucide-react`, add `CheckCircle2` to the existing import, for example:
+
+import {
+  ...existingIcons,
+  CheckCircle2
+} from "lucide-react";
+
+3. Do not create a custom `CheckCircle2` component if the project already uses lucide-react.
+
+4. Confirm both role buttons work:
+- Clicking “Client” sets `signupRole` to `"client"`.
+- Clicking “Talent” sets `signupRole` to `"talent"`.
+- The selected role displays the check icon.
+- Switching between roles updates the selected state correctly.
+
+5. Check the selected-role JSX for both buttons and make sure the icon is only rendered conditionally, for example:
+
+{signupRole === "client" && (
+  <div className="absolute top-2 right-2">
+    <CheckCircle2 className="h-4 w-4" />
+  </div>
+)}
+
+{signupRole === "talent" && (
+  <div className="absolute top-2 right-2">
+    <CheckCircle2 className="h-4 w-4" />
+  </div>
+)}
+
+6. If `CheckCircle2` is unavailable in the currently installed lucide-react version, use an icon that already exists in the project, such as `CircleCheck` or `Check`, and update both references consistently.
+
+7. Run the project checks after the fix:
+- No runtime error when selecting Client or Talent.
+- No TypeScript errors.
+- No missing import warnings.
+- The signup modal remains fully visible and scrollable.
+- Do not change the modal design or form behavior.
+
+Acceptance Criteria:
+✓ Clicking Client no longer crashes the page.
+✓ Clicking Talent no longer crashes the page.
+✓ The selected role is visually indicated.
+✓ Users can switch between Client and Talent.
+✓ No runtime, TypeScript, or console errors remain.

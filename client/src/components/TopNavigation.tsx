@@ -21,6 +21,7 @@ import {
   UserPlus,
   Eye,
   EyeOff,
+  CheckCircle2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

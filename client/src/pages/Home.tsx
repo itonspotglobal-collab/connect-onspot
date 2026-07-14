@@ -47,7 +47,7 @@ export default function Home() {
             {/* Supporting copy */}
             <div className="hero-fade-up-delay mx-auto mt-8 max-w-3xl">
               <p className="text-base font-semibold leading-snug text-white/80 sm:text-lg lg:text-xl">
-                One Platform. Endless Opportunity.
+                One Platform. Endless Opportunities.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
                 Built for the Future of Work.
