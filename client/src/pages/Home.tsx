@@ -34,14 +34,6 @@ export default function Home() {
           <div className="flex-1 flex items-center">
             <div className="w-full max-w-[950px]">
 
-              {/* OnSpot label */}
-              <div className="hero-fade-up mb-5 sm:mb-7">
-                <p className="font-extrabold leading-none" style={{ fontSize: "clamp(1.8rem, 2.8vw, 3rem)" }}>
-                  <span style={{ color: "#F5A623" }}>On</span>
-                  <span className="text-white">Spot</span>
-                </p>
-              </div>
-
               {/* Headline */}
               <div className="hero-fade-up">
                 <h1
