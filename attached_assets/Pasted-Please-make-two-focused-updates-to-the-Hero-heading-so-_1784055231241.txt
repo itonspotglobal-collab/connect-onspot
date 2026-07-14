@@ -1,0 +1,103 @@
+Please make two focused updates to the Hero heading so it matches the reference more closely.
+
+Current issue:
+- “Work Without Limits” is wrapping onto two lines.
+- The text currently sits directly over the background image.
+- In the reference design, the heading stays on one line and the left content area has a solid dark background behind it.
+
+Required changes:
+
+1. Keep “Work Without Limits” on one line
+- Prevent the heading from wrapping on desktop and large tablet screens.
+- Use a responsive font size that fits within the available content width.
+- Increase the Hero content width if needed.
+- Recommended desktop behavior:
+  - white-space: nowrap;
+  - max-width: none or a wider max-width;
+  - font-size adjusted with clamp() so it scales without wrapping.
+- Example:
+  font-size: clamp(3.5rem, 5vw, 6rem);
+  white-space: nowrap;
+
+2. Create a solid background behind the left content area
+- Add a solid dark navy section behind the Hero text and buttons, similar to the reference.
+- The solid background should cover the left portion of the Hero.
+- The uploaded background image should remain visible on the right side.
+
+Recommended desktop layout:
+- Left content panel: approximately 45–52% of the Hero width.
+- Right image area: remaining width.
+- The left panel should use a solid dark navy color that blends with the site branding.
+- Add a soft gradient transition at the right edge of the solid panel so it blends naturally into the image.
+
+Suggested structure:
+- Hero container: position relative.
+- Background image: full Hero width.
+- Left overlay panel:
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 48%;
+  background: solid dark navy;
+- Optional blending layer:
+  background: linear-gradient(
+    to right,
+    solid navy 0%,
+    solid navy 75%,
+    transparent 100%
+  );
+
+3. Keep the Hero content above the solid panel
+- Ensure all Hero text, buttons, and the feature strip remain above the overlays using proper z-index.
+- Do not lower the contrast of the text.
+
+4. Heading styling
+- Keep “Work” white.
+- Keep “Without Limits” in the existing lavender/purple gradient or solid lavender treatment.
+- Do not place each word on a separate line.
+- Do not reduce the heading so much that it loses visual impact.
+
+5. Content positioning
+- Keep the Hero content left-aligned.
+- Make sure the heading has enough width to stay on one line.
+- Recommended content width: 800–950px on large desktop screens.
+- Preserve the spacing between:
+  - Heading
+  - “One Platform. Endless Opportunities.”
+  - “Built for the Future of Work.”
+  - Buttons
+
+6. Responsive behavior
+Desktop:
+- “Work Without Limits” stays on one line.
+- Solid dark panel covers the left portion.
+- Background image remains clearly visible on the right.
+
+Tablet:
+- Reduce heading size gradually.
+- Keep one line where space allows.
+- Allow controlled wrapping only on narrower tablet widths if absolutely necessary.
+
+Mobile:
+- It is acceptable for the heading to wrap for readability.
+- Use a full-width dark overlay behind the content.
+- Keep text and buttons fully visible.
+
+7. Do not change anything else
+Do not modify:
+- Navbar
+- Logo
+- Log In and Sign Up buttons
+- Hero copy
+- Hire Talent and Find Work button behavior
+- Feature cards
+- Background image asset
+- Routes or authentication logic
+
+Acceptance Criteria:
+✓ “Work Without Limits” appears on one line on desktop.
+✓ The left side behind the Hero content uses a solid dark navy background.
+✓ The right side still shows the uploaded background image.
+✓ The transition between the solid panel and image looks smooth.
+✓ Text remains readable and high-contrast.
+✓ Mobile and tablet layouts remain responsive.
+✓ No overflow, clipping, TypeScript errors, or console errors.

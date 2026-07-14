@@ -16,28 +16,28 @@ export default function Home() {
           minHeight: "calc(100vh - 72px)",
         }}
       >
-        {/* Dark overlay — strong on left for text readability, fades to transparent right */}
+        {/* Solid dark navy panel — left half; blends into image on right */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(4,4,24,0.95) 0%, rgba(4,4,24,0.85) 35%, rgba(4,4,24,0.55) 60%, rgba(4,4,24,0.18) 100%)",
+              "linear-gradient(to right, rgb(4,4,24) 0%, rgb(4,4,24) 44%, rgba(4,4,24,0.75) 56%, rgba(4,4,24,0.25) 72%, rgba(4,4,24,0.08) 100%)",
           }}
         />
         {/* Subtle top/bottom vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
 
         {/* Main content — left-aligned */}
         <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-20 xl:px-28 py-14 sm:py-20">
 
           {/* Hero text + buttons */}
           <div className="flex-1 flex items-center">
-            <div className="w-full max-w-[700px]">
+            <div className="w-full max-w-[920px]">
               {/* Headline */}
               <div className="hero-fade-up">
                 <h1
-                  className="font-bold tracking-tight leading-[1.05] text-white"
-                  style={{ fontSize: "clamp(2.6rem, 6vw, 5rem)" }}
+                  className="font-bold tracking-tight leading-[1.05] text-white sm:whitespace-nowrap"
+                  style={{ fontSize: "clamp(2.2rem, 4.4vw, 5.5rem)" }}
                 >
                   Work{" "}
                   <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
