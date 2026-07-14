@@ -117,7 +117,6 @@ const signupLimiter = rateLimit({
   message: { error: 'Too many signup attempts. Try again later.', retryAfter: 3600 },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
 });
 
 const publicSearchLimiter = rateLimit({
@@ -126,7 +125,6 @@ const publicSearchLimiter = rateLimit({
   message: { error: 'Too many search requests. Please slow down.', retryAfter: 60 },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
 });
 
 const uploadLimiter = rateLimit({
@@ -135,7 +133,6 @@ const uploadLimiter = rateLimit({
   message: { error: 'Too many upload requests. Please wait.', retryAfter: 60 },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
 });
 
 const aiChatLimiter = rateLimit({
@@ -144,7 +141,6 @@ const aiChatLimiter = rateLimit({
   message: { error: 'Too many AI requests. Please wait a moment.', retryAfter: 60 },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
 });
 
 const waitlistLimiter = rateLimit({
@@ -153,7 +149,6 @@ const waitlistLimiter = rateLimit({
   message: { error: 'Too many form submissions. Try again later.', retryAfter: 3600 },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip ?? 'unknown',
 });
 
 // Apply per-route limiters

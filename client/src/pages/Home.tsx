@@ -50,10 +50,7 @@ export default function Home() {
                 One Platform. Endless Opportunity.
               </p>
               <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                Hire, onboard, manage, and scale exceptional global teams
-              </p>
-              <p className="mt-3 text-base sm:text-lg md:text-xl leading-relaxed text-white/55">
-                through the platform built for the future of work.
+                Built for the Future of Work.
               </p>
             </div>
 

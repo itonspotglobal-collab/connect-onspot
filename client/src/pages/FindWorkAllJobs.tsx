@@ -390,7 +390,9 @@ export default function FindWorkAllJobs() {
     queryFn: async () => {
       const res = await fetch("/api/jobs/search?status=open");
       if (!res.ok) throw new Error("Failed to load jobs");
-      return res.json();
+      const data = await res.json();
+      // API now returns paginated { items, meta } — fall back to raw array for safety
+      return Array.isArray(data) ? data : (data.items ?? []);
     },
     staleTime: 2 * 60 * 1000,
   });
