@@ -31,7 +31,7 @@ export default function Home() {
         <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-16 sm:py-20">
 
           {/* Hero text + buttons */}
-          <div className="flex-1 flex items-center">
+          <div className="flex-1 flex items-start pt-20 sm:pt-28">
             <div className="w-full max-w-[950px]">
 
               {/* Headline */}
