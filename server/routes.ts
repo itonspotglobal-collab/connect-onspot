@@ -3961,24 +3961,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const candidate = await storage.getCandidateByEmail(normalizedTalentEmail);
 
       if (!candidate) {
-        // Cross-portal detection: check if this email belongs to a users (Client Portal) account
+        // Cross-portal detection: check if this email belongs to a users (Client/Admin) account
         try {
           const userCheck = await query(
-            'SELECT id, role FROM users WHERE email = $1 LIMIT 1',
+            `SELECT id, email, first_name, last_name, password_hash, role
+             FROM users WHERE lower(email) = lower($1) LIMIT 1`,
             [normalizedTalentEmail],
           );
           if (userCheck.rows.length > 0) {
-            console.log(`🔍 [talent-auth/login]: Email found in users table (role=${userCheck.rows[0].role}) — wrong portal`);
+            const userRow = userCheck.rows[0];
+            console.log(`🔍 [talent-auth/login]: Email found in users table (role=${userRow.role})`);
+
+            if (userRow.role === "talent") {
+              // This is a legitimate Talent account that predates the candidates
+              // auto-creation fix (or whose candidates row failed to create).
+              // Verify their password then auto-create the candidates record.
+              const validPw = await verifyPassword(password, userRow.password_hash);
+              if (!validPw) {
+                return res.status(401).json({ error: "Invalid email or password" });
+              }
+              // Auto-create the missing candidates record
+              const fullName = `${userRow.first_name || ""} ${userRow.last_name || ""}`.trim() || userRow.email;
+              const autoCreate = await query(
+                `INSERT INTO candidates (full_name, email, password_hash)
+                 VALUES ($1, $2, $3)
+                 RETURNING id`,
+                [fullName, userRow.email.toLowerCase(), userRow.password_hash],
+              );
+              const newCandidateId = autoCreate.rows[0].id;
+              console.log(`✅ [talent-auth/login]: Auto-created candidates record for legacy talent user: ${newCandidateId}`);
+              // Issue talent JWT
+              let jwtSec = process.env.JWT_SECRET;
+              if (!jwtSec) jwtSec = process.env.NODE_ENV === "production" ? "" : "dev-fallback-secret";
+              if (!jwtSec) return res.status(500).json({ error: "Auth not configured" });
+              const autoToken = jwt.sign(
+                { type: "candidate", candidateId: newCandidateId, email: userRow.email.toLowerCase() },
+                jwtSec,
+                { expiresIn: "30d" },
+              );
+              return res.json({
+                success: true,
+                token: autoToken,
+                candidate: {
+                  id: newCandidateId,
+                  fullName,
+                  email: userRow.email.toLowerCase(),
+                  targetPosition: null,
+                },
+              });
+            }
+
+            // Non-talent (client/admin) user trying the Talent Portal
             return res.status(401).json({
               error: "client_account",
               message: "This is a Client account. Please use the Client Portal.",
             });
           }
-        } catch {
-          // Non-fatal — fall through to generic error
+        } catch (crossErr: any) {
+          console.warn("[talent-auth/login]: cross-portal user check failed:", crossErr.message);
         }
         console.log(`🔍 [talent-auth/login]: Candidate record found = false`);
-        return res.status(401).json({ error: "Invalid email or password" });
+        return res.status(401).json({ error: "not_found", message: "No Talent account found with this email." });
       }
       console.log(`🔍 [talent-auth/login]: Candidate record found = true, id = ${candidate.id}`);
       if (!candidate.passwordHash) {

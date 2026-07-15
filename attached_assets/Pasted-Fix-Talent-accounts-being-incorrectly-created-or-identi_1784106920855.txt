@@ -1,0 +1,448 @@
+Fix Talent accounts being incorrectly created or identified as Client accounts.
+
+CURRENT ISSUE
+
+I created a new account through Sign Up and selected Talent.
+
+When I try to log in with the correct email and password and select Talent Portal, the app says:
+
+“This is a Client account. Please use the Client Portal.”
+
+Password reset succeeds, but login still gives the same Client-account message.
+
+This proves the issue is not the password anymore.
+
+The account role is either:
+
+- being saved as `client` during Talent signup,
+- being read incorrectly during login,
+- defaulting to `client` when the role is missing,
+- or the email is linked to conflicting Client and Talent records.
+
+GOAL
+
+A user who selects Talent during signup must be saved and authenticated as:
+
+```text
+role = talent
+
+After signup or login, the user must be redirected to their own Talent Profile page.
+
+Do not change the Client flow.
+Do not remove portal-role validation.
+Do not solve this by ignoring role mismatches.
+
+==================================================================
+STEP 1 — INSPECT THE EXACT ACCOUNT
+
+For the affected Talent email, query the users table:
+
+SELECT
+  id,
+  email,
+  username,
+  role,
+  password_hash,
+  created_at,
+  updated_at
+FROM users
+WHERE lower(email) = lower('AFFECTED_TALENT_EMAIL');
+
+Also check the Talent-related tables:
+
+SELECT *
+FROM profiles
+WHERE user_id = 'USERS_ID';
+
+and, if the app uses candidates:
+
+SELECT *
+FROM candidates
+WHERE user_id = 'USERS_ID'
+   OR lower(email) = lower('AFFECTED_TALENT_EMAIL');
+
+Also check for an incorrect Client Profile:
+
+SELECT
+  id,
+  user_id,
+  email,
+  company_name,
+  contact_person
+FROM client_profiles
+WHERE user_id = 'USERS_ID'
+   OR lower(email) = lower('AFFECTED_TALENT_EMAIL');
+
+Verify:
+
+exactly one users row exists for the email
+users.role is talent
+a Talent profile/candidate exists and references that user
+no Client Profile was accidentally created for the Talent signup
+there are no duplicate user rows differing only by email case or spaces
+
+Use safe logs only:
+
+console.log({
+  userFound: Boolean(user),
+  userId: user?.id,
+  role: user?.role,
+  talentProfileFound: Boolean(talentProfile),
+  clientProfileFound: Boolean(clientProfile),
+});
+
+Do not log the password or full password hash.
+
+==================================================================
+STEP 2 — TRACE THE LIVE TALENT SIGNUP HANDLER
+
+Find the actual Sign Up handler used by the current navbar/modal.
+
+Search for:
+
+signupRole
+userType
+selectedPortal
+role:
+authAPI.signup
+/api/signup
+SignUpDialog
+TopNavigation
+DevPortalModal
+
+Add temporary logs immediately before signup:
+
+console.log("[TALENT SIGNUP] selected role", signupRole);
+console.log("[TALENT SIGNUP] request role", signupData.role);
+
+For a Talent signup, both must be:
+
+talent
+
+The request body must contain:
+
+{
+  "role": "talent"
+}
+
+Do not use a fallback such as:
+
+role: signupRole || "client"
+
+Do not use:
+
+role: userType === "talent" ? "talent" : "client"
+
+unless userType is proven to be initialized correctly.
+
+Reject signup if role is missing:
+
+if (role !== "client" && role !== "talent") {
+  return res.status(400).json({
+    success: false,
+    message: "A valid account type is required"
+  });
+}
+==================================================================
+STEP 3 — FIX THE BACKEND SIGNUP ROLE
+
+Find:
+
+POST /api/signup
+
+The backend must not default every account to Client.
+
+Normalize the submitted role:
+
+const normalizedRole =
+  typeof req.body.role === "string"
+    ? req.body.role.trim().toLowerCase()
+    : "";
+
+Validate:
+
+if (normalizedRole !== "client" && normalizedRole !== "talent") {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid account role"
+  });
+}
+
+Insert the exact role:
+
+const [createdUser] = await tx
+  .insert(users)
+  .values({
+    email: normalizedEmail,
+    username,
+    firstName,
+    lastName,
+    passwordHash,
+    role: normalizedRole
+  })
+  .returning();
+
+Do not hardcode:
+
+role: "client"
+
+Do not derive the role from whether company exists.
+
+Do not let a Zod/default schema replace talent with client.
+
+==================================================================
+STEP 4 — CREATE THE CORRECT RELATED PROFILE
+
+After creating the user:
+
+For Client:
+
+if (normalizedRole === "client") {
+  await tx.insert(clientProfiles).values({
+    userId: createdUser.id,
+    ...
+  });
+}
+
+For Talent:
+
+if (normalizedRole === "talent") {
+  await tx.insert(profiles).values({
+    userId: createdUser.id,
+    ...
+  });
+}
+
+or create the correct candidates record if that is the real Talent model.
+
+Do not create a client_profiles row for a Talent.
+
+Use one transaction so the user role and related profile cannot become inconsistent.
+
+Generate the JWT only after the correct profile record is created.
+
+==================================================================
+STEP 5 — RETURN THE CORRECT ROLE
+
+The signup response must return the role saved in the database:
+
+return res.status(201).json({
+  success: true,
+  token,
+  user: {
+    id: createdUser.id,
+    email: createdUser.email,
+    role: createdUser.role,
+    profileId: createdTalentProfile?.id
+  }
+});
+
+Do not return the frontend-selected role if the database saved something different.
+
+Add an assertion before returning:
+
+if (createdUser.role !== normalizedRole) {
+  throw new Error("Created user role does not match requested signup role");
+}
+==================================================================
+STEP 6 — FIX LOGIN ROLE DETECTION
+
+Find the real:
+
+POST /api/login
+
+After verifying the password, use:
+
+user.role
+
+from the users table as the authoritative role.
+
+Do not infer the role only by checking whether a Client Profile exists.
+
+Do not default a missing role to Client:
+
+const role = user.role || "client";
+
+Remove such defaults.
+
+Correct behavior:
+
+const role = user.role;
+
+if (role !== "client" && role !== "talent" && role !== "admin") {
+  return res.status(403).json({
+    success: false,
+    message: "This account has an invalid role. Contact support."
+  });
+}
+
+Return:
+
+{
+  success: true,
+  token,
+  user: {
+    ...,
+    role
+  }
+}
+==================================================================
+STEP 7 — FIX PORTAL VALIDATION
+
+Authenticate email and password first.
+
+Then compare the selected portal to the authenticated role.
+
+if (selectedPortal !== authenticatedUser.role) {
+  return {
+    success: false,
+    code: "PORTAL_ROLE_MISMATCH",
+    actualRole: authenticatedUser.role
+  };
+}
+
+For a Talent account selecting Talent Portal, login must succeed.
+
+Do not convert Talent to Client because:
+
+a Client Profile exists accidentally
+a Talent profile is incomplete
+a candidate record cannot be found
+profile ID is missing
+
+Missing profile data should trigger profile initialization, not a role change.
+
+==================================================================
+STEP 8 — AUDIT FRONTEND ROLE DEFAULTS
+
+Inspect:
+
+client/src/components/TopNavigation.tsx
+client/src/components/SignUpDialog.tsx
+client/src/components/PostLoginPortalSelection.tsx
+client/src/components/LoginDialog.tsx
+client/src/components/DevPortalModal.tsx
+client/src/contexts/AuthContext.tsx
+client/src/lib/api.ts
+
+Search for:
+
+|| "client"
+?? "client"
+= "client"
+userType = "client"
+portalType = "client"
+role: "client"
+
+Remove inappropriate defaults.
+
+In particular, check AuthContext.login, where an optional portal/user type may currently default to Client.
+
+The selected portal should not overwrite the role returned by the server.
+
+Bad:
+
+const mappedUser = {
+  ...loginData.user,
+  role: selectedPortal
+};
+
+Correct:
+
+const mappedUser = {
+  ...loginData.user,
+  role: loginData.user.role,
+  userType: loginData.user.role
+};
+==================================================================
+STEP 9 — TALENT PROFILE REDIRECT
+
+After successful Talent signup or login:
+
+retrieve the authenticated Talent’s profile/candidate ID
+redirect to their own Talent Profile page
+do not redirect to Client Profile
+do not redirect directly to Find Best Matches
+
+Use the existing route from App.tsx.
+
+Example only:
+
+navigate(`/talent-profile/${profileId}`);
+
+The Talent Profile page should contain a button:
+
+Finish Setting Up Your Profile
+
+which navigates to:
+
+/find-best-matches
+==================================================================
+STEP 10 — REPAIR ONLY AFFECTED TEST DATA
+
+The current test Talent account may already be stored as Client.
+
+For confirmed disposable test accounts only:
+
+inspect the current user/profile records
+delete the incorrect test records and recreate the account, or
+safely correct the role and related profile records in a transaction
+
+Do not simply update:
+
+users.role = 'talent'
+
+without also checking/removing the incorrect Client Profile and creating the correct Talent profile.
+
+Do not modify real accounts.
+
+==================================================================
+STEP 11 — PASSWORD RESET MUST NOT CHANGE ROLE
+
+Verify password reset updates only:
+
+users.password_hash
+
+It must not:
+
+change users.role
+create a Client Profile
+assign a default Client role
+recreate the user as Client
+
+Add a test confirming role remains talent after password reset.
+
+==================================================================
+STEP 12 — RATE LIMITING
+
+Clear or restart the development rate limiter before testing.
+
+Submit one request per action.
+
+Do not confuse:
+
+429 Too Many Requests
+
+with role or password failures.
+
+==================================================================
+STEP 13 — REQUIRED INTEGRATION TEST
+
+Add a Talent signup/login round-trip test:
+
+1. Generate a unique Talent email.
+2. Sign up with role = talent and password Testing123!.
+3. Confirm users.role = talent.
+4. Confirm no client_profiles row exists.
+5. Confirm a Talent profile/candidate exists.
+6. Confirm related profile user_id = users.id.
+7. Confirm signup response user.role = talent.
+8. Sign out/clear JWT.
+9. Login with the original credentials.
+10. Select Talent Portal.
+11. Confirm login returns 200.
+12. Confirm returned role = talent.
+13. Confirm redirect to Talent Profile.
+14. Reset password to Changed123!.
+15. Confirm role remains talent.
+16. Confirm login with Changed123! succeeds through Talent Portal.

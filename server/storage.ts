@@ -2891,7 +2891,8 @@ export class DbStorage extends MemStorage {
   }
 
   async getCandidateByEmail(email: string): Promise<Candidate | undefined> {
-    const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.email, email));
+    const [candidate] = await db.select().from(candidatesTable)
+      .where(sqlOp`lower(${candidatesTable.email}) = lower(${email})`);
     return candidate;
   }
 
