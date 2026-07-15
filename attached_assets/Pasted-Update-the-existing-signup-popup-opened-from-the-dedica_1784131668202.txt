@@ -1,0 +1,195 @@
+Update the existing signup popup opened from the dedicated login page so its visual design matches the login page, and fix the modal scrolling issue.
+
+Important:
+- This is a redesign of the existing shared signup component.
+- Do not create a second signup form.
+- Continue reusing `client/src/components/SignUpDialog.tsx`.
+- Do not change the signup API, validation, authentication logic, role selection, token handling, or post-signup redirects.
+- The signup dialog must still work from both the navigation bar and the dedicated login page.
+
+Current problems:
+1. The signup popup uses a white/light design that does not match the dedicated login page.
+2. The signup form becomes taller than the browser viewport.
+3. The bottom portion of the form cannot be reached or scrolled.
+4. The first role-selection screen is too wide and visually inconsistent with the login card.
+
+Design direction:
+Match the dedicated login page shown in the reference:
+- Dark navy/purple page background
+- Dark indigo modal/card
+- Thin blue-purple border
+- Rounded corners
+- White headings
+- Muted lavender secondary text
+- Dark translucent input fields
+- Blue and yellow role accents
+- Blue-to-purple gradient primary button
+- Compact centered layout
+- Subtle grid/background effect may remain behind the modal
+- Avoid the current white modal design
+
+Required visual changes:
+
+1. Modal container
+- Use a dark indigo background similar to the login card.
+- Use approximately the same border color, radius, and shadow as the login card.
+- Suggested styling direction:
+  - background: deep navy/indigo
+  - border: subtle blue-purple
+  - rounded corners: around 16px
+  - soft dark shadow
+- Remove the white modal surface.
+- Ensure all modal text has sufficient contrast.
+
+2. Modal width
+- Keep the popup compact and centered.
+- Role-selection step:
+  - desktop max width around 680–760px
+  - mobile width should use almost the full viewport with safe margins
+- Signup-form step:
+  - desktop max width around 480–540px
+- Do not use an unnecessarily wide full-screen dialog.
+
+3. Header and branding
+- Style the OnSpot logo so it works on the dark background.
+- Keep the title and subtitle centered or aligned consistently with the login page.
+- Use white for primary titles.
+- Use muted lavender/gray for supporting text.
+- Style the close button and back button in muted lavender with clear hover states.
+
+4. Role-selection cards
+- Restyle Client and Talent cards to match the portal cards on the login page.
+- Use dark translucent card backgrounds.
+- Use thin muted borders.
+- Use:
+  - blue accent/icon for Client
+  - yellow accent/icon for Talent
+- Add a clear hover state and selected/focus state.
+- Keep the content concise and avoid excessive vertical whitespace.
+- On smaller screens, stack the two cards vertically.
+- On desktop, retain a two-column layout.
+
+5. Signup form fields
+- Match the login page inputs:
+  - dark translucent field background
+  - subtle gray-purple border
+  - white entered text
+  - muted placeholder text
+  - visible focus ring using blue/purple
+- Maintain all existing labels and validation messages.
+- Keep password visibility icons readable on the dark field.
+- Preserve browser password-manager compatibility.
+
+6. Primary action
+- Style the Create Account button like the login-page Sign In button.
+- Use the same blue-to-purple gradient.
+- Use white text when enabled.
+- Preserve disabled and loading states.
+- The disabled state must still look visibly disabled but readable.
+
+7. Secondary actions
+- Restyle:
+  - LinkedIn signup
+  - back action
+  - sign-in link
+  - terms text
+- Use muted lavender text with brighter hover states.
+- Secondary buttons should use transparent/dark backgrounds with subtle borders.
+- Do not introduce bright white blocks inside the dark modal.
+
+Scrolling and viewport fix:
+
+8. Make the dialog usable at every screen height.
+- The overlay should cover the viewport.
+- The dialog content must never extend beyond the reachable viewport.
+- Add a maximum height based on the viewport, for example:
+  `max-h-[calc(100dvh-2rem)]`
+- Use `overflow-hidden` on the outer dialog container.
+- Create an internal scrollable content area using:
+  `overflow-y-auto`
+- Keep the header and close button visible when practical.
+- The full form, terms checkbox, submit button, and footer links must all be reachable by scrolling.
+- Scrolling should happen inside the modal, not leave the page stuck.
+- Use `overscroll-contain` where useful.
+- Support modern mobile viewport units such as `dvh`.
+
+Recommended structure:
+
+<DialogContent className="... max-h-[calc(100dvh-2rem)] overflow-hidden ...">
+  <div className="flex max-h-[calc(100dvh-2rem)] flex-col">
+    <div className="shrink-0">
+      modal header
+    </div>
+
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      signup step content
+    </div>
+  </div>
+</DialogContent>
+
+Alternatively, place `overflow-y-auto` directly on DialogContent, but make sure:
+- the close button remains accessible
+- the complete bottom section is reachable
+- there is adequate bottom padding
+
+9. Mobile responsiveness
+Test at:
+- 320px width
+- 375px width
+- 768px width
+- short laptop viewport heights such as 650px
+- browser zoom at 125%
+
+On mobile:
+- stack first and last name fields when necessary
+- stack Client and Talent role cards
+- maintain at least 16px side spacing
+- prevent horizontal overflow
+- make buttons full width
+- keep tap targets accessible
+
+10. Preserve functionality
+Do not modify:
+- `authAPI.signup()`
+- submitted field names
+- account-type behavior
+- password validation
+- terms validation
+- OAuth redirects
+- JWT/localStorage handling
+- Client and Talent redirect destinations
+- toast logic
+- controlled `open` / `onOpenChange` behavior added for the login page
+
+11. Accessibility
+- Preserve labels for every form input.
+- Preserve keyboard navigation.
+- Keep visible focus states.
+- Keep Escape-to-close behavior.
+- Ensure the close button has an accessible label.
+- Ensure dark-mode contrast is readable.
+- Do not remove DialogTitle or DialogDescription semantics.
+
+Acceptance criteria:
+- The popup visually matches the dedicated login page.
+- The modal uses a dark navy/indigo theme instead of white.
+- Client and Talent cards match the portal-selection design.
+- The signup form is compact and visually consistent.
+- The entire form can be scrolled to the bottom.
+- Terms, submit button, and sign-in link are reachable on short screens.
+- No horizontal scrolling occurs.
+- The navigation-bar signup entry still works.
+- The login-page Create Account entry still works.
+- Signup behavior and backend integration remain unchanged.
+- Both Client and Talent signup still work.
+- No duplicate signup implementation is created.
+
+After implementation:
+1. Test the role-selection screen.
+2. Open both Client and Talent forms.
+3. Verify internal modal scrolling.
+4. Confirm the final form controls are reachable.
+5. Test at desktop and mobile viewport sizes.
+6. Check for horizontal overflow.
+7. Check browser console warnings.
+8. Summarize the styling and layout changes without claiming any authentication logic was rewritten.

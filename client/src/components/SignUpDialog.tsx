@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, ArrowRight, Briefcase } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, ArrowRight, Briefcase, Loader2 } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -311,6 +311,10 @@ export function SignUpDialog({
     setUserType(null);
   };
 
+  // Shared dark input style matching the login page
+  const darkInput = "bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-[#3A3AF8] focus-visible:border-[#3A3AF8] h-11";
+  const darkLabel = "text-white/80 text-sm font-medium";
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
@@ -318,8 +322,8 @@ export function SignUpDialog({
     }}>
       {!hideTrigger && (
         <DialogTrigger asChild>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             className="w-40 md:w-48 h-11 bg-white text-[#474ead] border-0 font-semibold shadow-lg hover:scale-[1.02] transition-transform"
             data-testid="button-signup"
           >
@@ -328,360 +332,362 @@ export function SignUpDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
-        <DialogHeader className="text-center pb-6">
-          <div className="flex justify-center mb-4">
-            <img 
-              src={onspotLogo} 
-              alt="OnSpot" 
-              className="h-12 w-auto"
-            />
-          </div>
-          
-          {currentStep === "user-type" && (
-            <>
-              <DialogTitle className="text-2xl">Join OnSpot</DialogTitle>
-              <DialogDescription className="text-base">
-                Choose how you'd like to get started
-              </DialogDescription>
-            </>
-          )}
-          
-          {currentStep === "signup" && (
-            <>
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+
+      {/* p-0 + bg-transparent lets our inner div own all the styling */}
+      <DialogContent
+        className={[
+          "p-0 border-0 bg-transparent shadow-none overflow-visible",
+          "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
+          currentStep === "user-type"
+            ? "w-[min(720px,calc(100vw-2rem))] max-w-none sm:max-w-none"
+            : "w-[min(520px,calc(100vw-2rem))] max-w-none sm:max-w-none",
+        ].join(" ")}
+      >
+        {/* Dark card — flex column with capped height + internal scroll */}
+        <div
+          className="flex flex-col max-h-[calc(100dvh-2rem)] rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
+            border: "1px solid rgba(91,124,255,0.2)",
+            boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(91,124,255,0.1)",
+          }}
+        >
+          {/* ── Sticky header (never scrolls away) ── */}
+          <div className="shrink-0 px-6 pt-6 pb-4 pr-12 text-center">
+            <div className="flex justify-center mb-3">
+              <img src={onspotLogo} alt="OnSpot" className="h-10 w-auto" />
+            </div>
+
+            {currentStep === "user-type" && (
+              <>
+                <DialogTitle
+                  className="text-2xl font-light text-white"
+                  style={{ letterSpacing: "-0.02em" }}
+                >
+                  Join OnSpot
+                </DialogTitle>
+                <DialogDescription className="text-white/50 text-sm mt-1">
+                  Choose how you&apos;d like to get started
+                </DialogDescription>
+              </>
+            )}
+
+            {currentStep === "signup" && (
+              <div className="relative">
+                <button
+                  type="button"
                   onClick={handleBackToUserType}
-                  className="p-1 h-auto"
+                  aria-label="Back to account type selection"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1 text-white/50 hover:text-white/90 text-sm transition-colors"
                   data-testid="button-back"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                </Button>
-                <div className="text-center">
-                  <DialogTitle className="text-2xl">
-                    {userType === "client" ? "Hire Talent" : "Find Work"}
-                  </DialogTitle>
-                  <DialogDescription className="text-base">
-                    {userType === "client" 
-                      ? "Create your client account to start hiring" 
-                      : "Create your talent profile to find opportunities"
-                    }
-                  </DialogDescription>
-                </div>
+                </button>
+                <DialogTitle
+                  className="text-2xl font-light text-white"
+                  style={{ letterSpacing: "-0.02em" }}
+                >
+                  {userType === "client" ? "Hire Talent" : "Find Work"}
+                </DialogTitle>
+                <DialogDescription className="text-white/50 text-sm mt-1">
+                  {userType === "client"
+                    ? "Create your client account to start hiring"
+                    : "Create your talent profile to find opportunities"}
+                </DialogDescription>
               </div>
-            </>
-          )}
-        </DialogHeader>
+            )}
+          </div>
 
-        {currentStep === "user-type" && (
-          <div className="space-y-4">
-            {/* User Type Selection */}
-            <div className="grid grid-cols-2 gap-6">
-              <Card 
-                className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-primary/50"
-                onClick={() => handleSelectUserType("client")}
-                data-testid="card-client-signup"
-              >
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Building className="w-8 h-8 text-primary" />
+          {/* ── Scrollable body ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-6">
+
+            {/* ── Role selection step ── */}
+            {currentStep === "user-type" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Client card */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectUserType("client")}
+                  className="relative flex flex-col items-center gap-3 rounded-xl p-5 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#5B7CFF]/60 group"
+                  data-testid="card-client-signup"
+                >
+                  <div className="w-14 h-14 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
+                    <Building className="w-7 h-7 text-[#5B7CFF]" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">I'm a client hiring for talent</h3>
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
-                    Build your team with vetted professionals. Scale faster, reduce costs, and focus on growth.
-                  </p>
-                  <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                  <div>
+                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m a client hiring for talent</h3>
+                    <p className="text-white/45 text-xs leading-relaxed">
+                      Build your team with vetted professionals. Scale faster, reduce costs, and focus on growth.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 w-full text-xs text-white/35">
                     <div className="text-center">
-                      <Shield className="h-5 w-5 mx-auto text-primary mb-1" />
-                      70% Cost Savings
+                      <Shield className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
+                      70% Savings
                     </div>
                     <div className="text-center">
-                      <Zap className="h-5 w-5 mx-auto text-primary mb-1" />
+                      <Zap className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
                       8X Growth
                     </div>
                     <div className="text-center">
-                      <Mail className="h-5 w-5 mx-auto text-primary mb-1" />
+                      <Mail className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
                       24/7 Support
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </button>
 
-              <Card 
-                className="relative cursor-pointer hover-elevate transition-all duration-300 group border-2 hover:border-[hsl(var(--gold-yellow)/0.5)]"
-                onClick={() => handleSelectUserType("talent")}
-                data-testid="card-talent-signup"
-              >
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-[hsl(var(--gold-yellow)/0.1)] rounded-full flex items-center justify-center group-hover:bg-[hsl(var(--gold-yellow)/0.2)] transition-colors">
-                    <User className="w-8 h-8 text-[hsl(var(--gold-yellow)/0.8)]" />
+                {/* Talent card */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectUserType("talent")}
+                  className="relative flex flex-col items-center gap-3 rounded-xl p-5 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-400/50 group"
+                  data-testid="card-talent-signup"
+                >
+                  <div className="w-14 h-14 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
+                    <User className="w-7 h-7 text-yellow-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">I'm a talent looking for work</h3>
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
-                    Join our elite network of professionals. Access premium opportunities and competitive rates.
-                  </p>
-                  <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground">
+                  <div>
+                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m a talent looking for work</h3>
+                    <p className="text-white/45 text-xs leading-relaxed">
+                      Join our elite network of professionals. Access premium opportunities and competitive rates.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 w-full text-xs text-white/35">
                     <div className="text-center">
-                      <Briefcase className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                      <Briefcase className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
                       Premium Jobs
                     </div>
                     <div className="text-center">
-                      <Shield className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
-                      Secure Payments
+                      <Shield className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
+                      Secure Pay
                     </div>
                     <div className="text-center">
-                      <User className="h-5 w-5 mx-auto text-[hsl(var(--gold-yellow)/0.8)] mb-1" />
+                      <User className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
                       Career Growth
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {currentStep === "signup" && (
-          <>
-            {/* Professional Social Signup Options */}
-            <div className="space-y-3 mb-6">
-              <div className="text-center mb-4">
-                <p className="text-sm text-muted-foreground mb-3">
-                  {userType === "client" 
-                    ? "Join thousands of companies growing with OnSpot" 
-                    : "Join 50,000+ professionals building their careers"
-                  }
-                </p>
+                </button>
               </div>
-              
-              {isFirebaseAvailable() && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleSignup}
-                  disabled={isLoading}
-                  className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
-                  data-testid="button-google-signup"
-                >
-                  <FaGoogle className="w-5 h-5 mr-3 text-red-500" />
-                  <span className="font-medium">
-                    Sign up with Google
-                  </span>
-                </Button>
-              )}
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleLinkedInSignup}
-                disabled={isLoading}
-                className="w-full h-12 border-2 hover:border-primary/50 transition-all duration-200"
-                data-testid="button-linkedin-signup"
-              >
-                <FaLinkedin className="w-5 h-5 mr-3 text-blue-600" />
-                <span className="font-medium">
-                  Sign up with LinkedIn
-                </span>
-              </Button>
-            </div>
+            )}
 
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or create account with email</span>
-              </div>
-            </div>
-
-            {/* Benefits for selected user type */}
-            <div className="grid grid-cols-3 gap-4 py-4 border-y">
-              {userType === "client" ? (
-                <>
-                  <div className="text-center">
-                    <Zap className="h-6 w-6 mx-auto text-primary mb-2" />
-                    <p className="text-xs text-muted-foreground">8X Growth</p>
-                  </div>
-                  <div className="text-center">
-                    <Shield className="h-6 w-6 mx-auto text-primary mb-2" />
-                    <p className="text-xs text-muted-foreground">70% Cost Savings</p>
-                  </div>
-                  <div className="text-center">
-                    <Mail className="h-6 w-6 mx-auto text-primary mb-2" />
-                    <p className="text-xs text-muted-foreground">24/7 Support</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-center">
-                    <Briefcase className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
-                    <p className="text-xs text-muted-foreground">Premium Jobs</p>
-                  </div>
-                  <div className="text-center">
-                    <Shield className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
-                    <p className="text-xs text-muted-foreground">Secure Payments</p>
-                  </div>
-                  <div className="text-center">
-                    <User className="h-6 w-6 mx-auto text-[hsl(var(--premium-gold))] mb-2" />
-                    <p className="text-xs text-muted-foreground">Career Growth</p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    placeholder="Enter your first name"
-                    autoComplete="given-name"
-                    data-testid="input-first-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                    placeholder="Enter your last name"
-                    autoComplete="family-name"
-                    data-testid="input-last-name"
-                  />
-                </div>
-              </div>
-
-              {userType === "client" && (
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company Name</Label>
-                  <Input
-                    id="company"
-                    name="company"
-                    value={formData.company}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
-                    placeholder="Enter your company name"
-                    autoComplete="organization"
-                    data-testid="input-company"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  placeholder="Enter your email"
-                  autoComplete="email"
-                  data-testid="input-signup-email"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="Create a password"
-                    autoComplete="new-password"
-                    data-testid="input-signup-password"
-                  />
-                  <Button
+            {/* ── Signup form step ── */}
+            {currentStep === "signup" && (
+              <>
+                {/* Social signup buttons */}
+                <div className="space-y-2 mb-5">
+                  {isFirebaseAvailable() && (
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignup}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                      data-testid="button-google-signup"
+                    >
+                      <FaGoogle className="w-4 h-4 text-red-400" />
+                      Sign up with Google
+                    </button>
+                  )}
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={handleLinkedInSignup}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    data-testid="button-linkedin-signup"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
+                    <FaLinkedin className="w-4 h-4 text-blue-400" />
+                    Sign up with LinkedIn
+                  </button>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                  placeholder="Confirm your password"
-                  autoComplete="new-password"
-                  data-testid="input-confirm-password"
-                />
-              </div>
+                {/* Divider */}
+                <div className="relative mb-5">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span
+                      className="px-3 text-xs uppercase tracking-wider text-white/30"
+                      style={{ background: "#1a1a4e" }}
+                    >
+                      Or create account with email
+                    </span>
+                  </div>
+                </div>
 
-              {/* Terms Agreement */}
-              <div className="flex items-start space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
-                  data-testid="checkbox-terms"
-                />
-                <Label htmlFor="terms" className="text-sm leading-none">
-                  I agree to the{" "}
-                  <Button variant="ghost" className="p-0 h-auto text-sm underline hover:bg-transparent">
-                    Terms of Service
-                  </Button>
-                  {" "}and{" "}
-                  <Button variant="ghost" className="p-0 h-auto text-sm underline hover:bg-transparent">
-                    Privacy Policy
-                  </Button>
-                </Label>
-              </div>
+                {/* Email form */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="firstName" className={darkLabel}>First Name</Label>
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        data-testid="input-first-name"
+                        className={darkInput}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="lastName" className={darkLabel}>Last Name</Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        data-testid="input-last-name"
+                        className={darkInput}
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex flex-col gap-2 pt-2">
-                <Button type="submit" disabled={isLoading} className="w-full" data-testid="button-submit-signup">
-                  {isLoading ? "Creating Account..." : 
-                    userType === "client" ? "Create Client Account" : "Create Talent Profile"
-                  }
-                </Button>
-                <Button type="button" variant="outline" onClick={handleBackToUserType}>
-                  Back to Options
-                </Button>
-              </div>
-            </form>
+                  {userType === "client" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="company" className={darkLabel}>Company Name</Label>
+                      <Input
+                        id="company"
+                        name="company"
+                        value={formData.company}
+                        onChange={(e) => setFormData({...formData, company: e.target.value})}
+                        placeholder="Your company name"
+                        autoComplete="organization"
+                        data-testid="input-company"
+                        className={darkInput}
+                      />
+                    </div>
+                  )}
 
-            <Separator className="my-4" />
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className={darkLabel}>Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      data-testid="input-signup-email"
+                      className={darkInput}
+                    />
+                  </div>
 
-            {/* Additional Options */}
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">Already have an account?</p>
-              <Button 
-                variant="ghost" 
-                className="p-0 h-auto text-sm font-medium hover:bg-transparent"
-                onClick={() => {
-                  setOpen(false);
-                  resetDialog();
-                  onSignInInstead?.();
-                }}
-                data-testid="button-signin-instead"
-              >
-                Sign in instead
-              </Button>
-            </div>
-          </>
-        )}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className={darkLabel}>Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        placeholder="Min 8 characters"
+                        autoComplete="new-password"
+                        data-testid="input-signup-password"
+                        className={`${darkInput} pr-10`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirmPassword" className={darkLabel}>Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      placeholder="Repeat your password"
+                      autoComplete="new-password"
+                      data-testid="input-confirm-password"
+                      className={darkInput}
+                    />
+                    {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                      <p className="text-red-400 text-xs">Passwords do not match.</p>
+                    )}
+                  </div>
+
+                  {/* Terms */}
+                  <div className="flex items-start gap-2.5">
+                    <Checkbox
+                      id="terms"
+                      checked={agreeToTerms}
+                      onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
+                      data-testid="checkbox-terms"
+                      className="mt-0.5 border-white/30 data-[state=checked]:bg-[#3A3AF8] data-[state=checked]:border-[#3A3AF8]"
+                    />
+                    <Label htmlFor="terms" className="text-xs text-white/45 leading-relaxed cursor-pointer">
+                      I agree to the{" "}
+                      <button type="button" className="text-white/65 underline hover:text-white transition-colors">
+                        Terms of Service
+                      </button>
+                      {" "}and{" "}
+                      <button type="button" className="text-white/65 underline hover:text-white transition-colors">
+                        Privacy Policy
+                      </button>
+                    </Label>
+                  </div>
+
+                  {/* Submit button */}
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    data-testid="button-submit-signup"
+                    className="w-full px-6 py-3.5 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                    style={{
+                      background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
+                      boxShadow: "0 8px 30px rgba(58,58,248,0.35)",
+                    }}
+                  >
+                    {isLoading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Creating Account…</>
+                    ) : (
+                      <><span>{userType === "client" ? "Create Client Account" : "Create Talent Profile"}</span><ArrowRight className="w-4 h-4" /></>
+                    )}
+                  </button>
+
+                  {/* Back link */}
+                  <button
+                    type="button"
+                    onClick={handleBackToUserType}
+                    className="w-full text-center text-xs text-white/35 hover:text-white/65 transition-colors py-0.5"
+                  >
+                    Back to Options
+                  </button>
+                </form>
+
+                {/* Footer — sign in link */}
+                <div className="text-center mt-5 pt-4 border-t border-white/10">
+                  <p className="text-xs text-white/35 mb-1">Already have an account?</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      resetDialog();
+                      onSignInInstead?.();
+                    }}
+                    data-testid="button-signin-instead"
+                    className="text-xs text-white/55 hover:text-white underline transition-colors"
+                  >
+                    Sign in instead
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
