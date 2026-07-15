@@ -1,0 +1,326 @@
+The Client signup redirect is now working correctly. New Client accounts are automatically redirected to `/client-profile`.
+
+However, there is now a critical authentication issue.
+
+CURRENT BUG
+
+1. Create a new Client account.
+2. Signup succeeds.
+3. User is automatically redirected to `/client-profile`.
+4. Logout.
+5. Try logging in using the exact same email and password.
+6. Login fails with:
+
+"Invalid email or password"
+
+Additionally:
+
+- Password reset also fails.
+- The Client Profile record exists in the database.
+- The account clearly exists.
+- The credentials cannot be verified.
+
+DO NOT modify the redirect logic anymore.
+The redirect is already correct.
+
+==================================================================
+GOAL
+==================================================================
+
+Find the ROOT CAUSE why newly-created Client accounts cannot authenticate after signup.
+
+Do NOT work around the problem.
+
+==================================================================
+STEP 1
+VERIFY DATABASE
+==================================================================
+
+Do NOT only inspect client_profiles.
+
+Check BOTH tables:
+
+- users
+- client_profiles
+
+For the newly-created email verify:
+
+✓ users row exists
+✓ client_profiles row exists
+✓ users.id == client_profiles.user_id
+✓ users.role == client
+✓ users.password_hash exists
+✓ password_hash is NOT NULL
+✓ password_hash is a bcrypt hash
+
+If password_hash is missing or NULL,
+STOP.
+
+That is the bug.
+
+Do not continue until signup correctly stores the password hash.
+
+==================================================================
+STEP 2
+TRACE SIGNUP
+==================================================================
+
+Find the actual endpoint handling
+
+POST /api/signup
+
+Trace the flow completely.
+
+Verify:
+
+password
+↓
+
+validatePassword()
+
+↓
+
+hashPassword()
+
+↓
+
+INSERT users(password_hash)
+
+↓
+
+INSERT client_profiles(user_id)
+
+↓
+
+generate JWT
+
+↓
+
+return success
+
+If passwordHash is generated but never inserted into users,
+fix that.
+
+If storage.createUser ignores passwordHash,
+fix storage.
+
+==================================================================
+STEP 3
+TRACE LOGIN
+==================================================================
+
+Find the REAL login endpoint.
+
+Verify login does exactly this:
+
+normalize email
+
+↓
+
+find user by email
+
+↓
+
+verifyPassword(inputPassword, user.passwordHash)
+
+↓
+
+generate JWT
+
+↓
+
+return authenticated user
+
+Make sure login is reading
+
+user.passwordHash
+
+NOT
+
+user.password
+
+NOT
+
+user.password_hash
+
+NOT
+
+user.hash
+
+==================================================================
+STEP 4
+VERIFY PASSWORD HASHING
+==================================================================
+
+Signup and Login MUST use the SAME helper.
+
+Example:
+
+const hash = await hashPassword(password);
+
+Login:
+
+await verifyPassword(password, user.passwordHash)
+
+Do NOT create another hashing implementation.
+
+==================================================================
+STEP 5
+CHECK EMAIL NORMALIZATION
+==================================================================
+
+Signup:
+
+email.trim().toLowerCase()
+
+Login:
+
+email.trim().toLowerCase()
+
+Duplicate email check:
+
+email.trim().toLowerCase()
+
+Everything must use identical normalization.
+
+==================================================================
+STEP 6
+CHECK AUTH STORAGE
+==================================================================
+
+After login succeeds:
+
+localStorage must contain
+
+onspot_jwt_token
+
+and
+
+onspot_user
+
+Confirm AuthContext restores them correctly.
+
+==================================================================
+STEP 7
+FIX PASSWORD RESET
+==================================================================
+
+The reset feature currently cannot reset the password.
+
+Determine why.
+
+If password validation fails,
+show the exact reason.
+
+If database update fails,
+fix the update query.
+
+If reset updates client_profiles instead of users,
+fix it.
+
+The password must update
+
+users.password_hash
+
+ONLY.
+
+==================================================================
+STEP 8
+TEST
+==================================================================
+
+Create a brand-new Client account.
+
+Use
+
+Testing123!
+
+(not Testing123)
+
+Verify:
+
+✓ Signup succeeds
+
+✓ users.password_hash exists
+
+✓ Logout
+
+✓ Login succeeds
+
+✓ JWT generated
+
+✓ Redirect
+
+/client-profile
+
+✓ Navbar shows Client Profile
+
+Then:
+
+Reset password
+
+to
+
+Changed123!
+
+Login using
+
+Changed123!
+
+Verify it succeeds.
+
+==================================================================
+DO NOT FINISH UNTIL
+==================================================================
+
+The complete flow works:
+
+Signup
+
+↓
+
+Logout
+
+↓
+
+Login
+
+↓
+
+Logout
+
+↓
+
+Reset Password
+
+↓
+
+Login with new password
+
+↓
+
+Refresh
+
+↓
+
+Still authenticated
+
+==================================================================
+OUTPUT
+==================================================================
+
+When finished report ONLY:
+
+1. Root cause found
+
+2. Files modified
+
+3. Why login was failing
+
+4. Why password reset was failing
+
+5. How it was fixed
+
+6. Results of the end-to-end test
+
+Do NOT claim success unless the full signup → logout → login → reset → login flow has actually been tested successfully.

@@ -102,8 +102,9 @@ export function TopNavigation() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
   const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(true);
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
-  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(true);
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
@@ -1925,21 +1926,23 @@ export function TopNavigation() {
                     <div className="space-y-1.5 mb-3">
                       <Label className="text-white/90 text-sm font-medium">Password</Label>
                       <div className="relative">
-                        <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11 pr-10" />
-                        <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
-                          {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 8 chars, upper, lower, number, symbol" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" name="new-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11 pr-10" />
+                        <button type="button" onClick={() => setShowSignupPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
+                          {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      <p className="text-xs text-white/40">Shown in plain text so you can verify what you're saving.</p>
                     </div>
                     <div className="space-y-1.5 mb-4">
                       <Label className="text-white/90 text-sm font-medium">Confirm Password</Label>
                       <div className="relative">
                         <Input
                           type={showSignupConfirm ? "text" : "password"}
-                          placeholder="••••••••"
+                          placeholder="Repeat your password"
                           value={signupConfirmPassword}
                           onChange={(e) => setSignupConfirmPassword(e.target.value)}
                           autoComplete="new-password"
+                          name="confirm-new-password"
                           className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-11 pr-10"
                         />
                         <button type="button" onClick={() => setShowSignupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
@@ -2017,6 +2020,9 @@ export function TopNavigation() {
                             setSignupPassword("");
                             setSignupConfirmPassword("");
                             setSignupRole(null);
+                            // Reset visibility states back to defaults
+                            setShowSignupPassword(true);
+                            setShowSignupConfirm(true);
                             // Pre-seed the signin email so if the user logs out and returns,
                             // their email is already filled in
                             setSigninEmail(capturedEmail);

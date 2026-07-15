@@ -470,7 +470,7 @@ const handleRouteError = (
 // Rate limiting middleware for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: 20, // limit each IP to 20 requests per windowMs
   message: {
     success: false,
     error: "Too many attempts",
@@ -7913,14 +7913,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { email, newPassword } = req.body;
+      const { email: rawResetEmail, newPassword } = req.body;
 
-      if (!email || !newPassword) {
+      if (!rawResetEmail || !newPassword) {
         return res.status(400).json({
           success: false,
           message: "Email and newPassword are required.",
         });
       }
+
+      // Normalize email identically to signup and login
+      const email = rawResetEmail.trim().toLowerCase();
 
       if (!validateEmail(email)) {
         return res.status(400).json({
@@ -7933,7 +7936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!strengthCheck.isValid) {
         return res.status(400).json({
           success: false,
-          message: strengthCheck.errors.join(", "),
+          message: `Password requirements not met: ${strengthCheck.errors.join(", ")}`,
         });
       }
 
@@ -7943,7 +7946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Also check candidates table for talent portal
-      const candidateForReset = await storage.getCandidateByEmail(email.toLowerCase().trim());
+      const candidateForReset = await storage.getCandidateByEmail(email);
 
       if (userResult.rows.length === 0 && !candidateForReset) {
         return res.status(404).json({
