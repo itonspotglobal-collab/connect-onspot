@@ -1,0 +1,107 @@
+Fix the “Create Account” action on the dedicated OnSpot login page.
+
+Current issue:
+On the dedicated login page, clicking the “Create Account” link redirects users to the homepage instead of opening the existing signup form.
+
+Important:
+This is NOT a new signup feature. The application already has a working signup flow used by the “Sign Up” button in the navigation bar. Reuse that exact existing signup component, API integration, validation, authentication behavior, role selection, and post-signup redirects.
+
+Relevant existing code:
+- The existing signup flow is implemented in:
+  client/src/components/SignUpDialog.tsx
+- It is already imported and used by:
+  client/src/components/TopNavigation.tsx
+- The existing signup flow calls authAPI.signup(), stores the returned JWT and user information, and redirects Client and Talent users to their respective destinations.
+- Do not duplicate this signup logic or create a separate signup API implementation.
+
+Required changes:
+
+1. Locate the dedicated login-page UI containing:
+   “Don’t have an account? Create Account”
+
+2. Replace the current homepage navigation behavior of “Create Account” with an action that opens the existing SignUpDialog/signup experience.
+
+3. Refactor SignUpDialog only as much as necessary so it can be opened from both:
+   - The existing navigation-bar “Sign Up” button
+   - The “Create Account” link on the dedicated login page
+
+4. Prefer making SignUpDialog support a controlled/reusable interface, for example:
+   - open?: boolean
+   - onOpenChange?: (open: boolean) => void
+   - hideTrigger?: boolean
+   - optional custom trigger through children or trigger prop
+
+5. Preserve the current navigation-bar signup behavior. The existing “Sign Up” button must continue working exactly as it does now.
+
+6. On the dedicated login page:
+   - Clicking “Create Account” must stay on the login-page route.
+   - It must open the signup dialog rather than redirecting to `/`.
+   - Closing the signup dialog must return the user to the login screen without navigating away.
+   - The signup form should visually match the existing signup modal shown from the navigation bar.
+   - The signup form must continue supporting Client and Talent account selection.
+
+7. Do not create duplicate signup form markup, validation, API calls, or authentication logic. There must be one shared signup implementation.
+
+8. Preserve all existing signup behavior, including:
+   - Required-field validation
+   - Password confirmation and password requirements
+   - Client/Talent role selection
+   - Terms acceptance, if currently required
+   - authAPI.signup()
+   - JWT and user storage
+   - Existing success/error toast messages
+   - Client and Talent post-signup redirects
+   - Google/LinkedIn signup behavior, if currently displayed
+
+9. Make sure the “Already have an account? Sign In” action inside the signup experience closes the signup dialog and returns to the dedicated login form instead of redirecting unnecessarily.
+
+10. Do not redesign unrelated parts of the login page, navigation bar, homepage, or authentication system.
+
+Suggested implementation pattern:
+
+In SignUpDialog.tsx, support both internal and externally controlled state:
+
+- Keep internal state for the existing navigation-bar usage.
+- Use the externally provided `open` and `onOpenChange` when supplied.
+- Render the default navigation signup button only when `hideTrigger` is false.
+- Ensure resetDialog() still runs whenever the dialog closes.
+
+Example conceptual usage on the login page:
+
+const [signupOpen, setSignupOpen] = useState(false);
+
+<button
+  type="button"
+  onClick={() => setSignupOpen(true)}
+>
+  Create Account
+</button>
+
+<SignUpDialog
+  open={signupOpen}
+  onOpenChange={setSignupOpen}
+  hideTrigger
+/>
+
+Do not copy the signup form into the login-page component.
+
+Acceptance criteria:
+
+- Clicking “Create Account” on the dedicated login page opens the existing signup form.
+- The URL does not change to the homepage.
+- The signup form is the same shared feature used by the navigation bar.
+- Client signup works.
+- Talent signup works.
+- Validation and backend requests remain unchanged.
+- Closing signup returns to the login form.
+- The navigation-bar “Sign Up” button still works.
+- No duplicate signup component or API flow is introduced.
+- No regression occurs in login, logout, signup, or portal redirects.
+
+After implementing:
+1. Run the project and test both entry points.
+2. Test opening and closing the signup dialog from the login page.
+3. Test the navigation-bar signup button.
+4. Test both Client and Talent selections.
+5. Check the browser console for React errors or warnings.
+6. Summarize the files changed and explain how the shared signup component is reused.

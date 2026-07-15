@@ -26,8 +26,28 @@ import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";
 
-export function SignUpDialog() {
-  const [open, setOpen] = useState(false);
+interface SignUpDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+  onSignInInstead?: () => void;
+}
+
+export function SignUpDialog({
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
+  hideTrigger = false,
+  onSignInInstead,
+}: SignUpDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp! : internalOpen;
+
+  function setOpen(value: boolean) {
+    if (!isControlled) setInternalOpen(value);
+    onOpenChangeProp?.(value);
+  }
   const [currentStep, setCurrentStep] = useState<SignupStep>("user-type");
   const [userType, setUserType] = useState<UserType>(null);
   const [formData, setFormData] = useState({
@@ -296,16 +316,18 @@ export function SignUpDialog() {
       setOpen(isOpen);
       if (!isOpen) resetDialog();
     }}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          className="w-40 md:w-48 h-11 bg-white text-[#474ead] border-0 font-semibold shadow-lg hover:scale-[1.02] transition-transform"
-          data-testid="button-signup"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Sign Up
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button 
+            variant="default" 
+            className="w-40 md:w-48 h-11 bg-white text-[#474ead] border-0 font-semibold shadow-lg hover:scale-[1.02] transition-transform"
+            data-testid="button-signup"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Sign Up
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
@@ -648,10 +670,10 @@ export function SignUpDialog() {
               <Button 
                 variant="ghost" 
                 className="p-0 h-auto text-sm font-medium hover:bg-transparent"
-onClick={() => {
+                onClick={() => {
                   setOpen(false);
                   resetDialog();
-                  // TODO: Implement login dialog integration
+                  onSignInInstead?.();
                 }}
                 data-testid="button-signin-instead"
               >

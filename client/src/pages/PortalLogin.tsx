@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
+import { SignUpDialog } from "@/components/SignUpDialog";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
@@ -89,6 +90,7 @@ export default function PortalLogin() {
   const [email, setEmail] = useState(() => new URLSearchParams(window.location.search).get("email") || "");
 
   const [step, setStep] = useState<PageStep>("login");
+  const [signupOpen, setSignupOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -370,6 +372,7 @@ export default function PortalLogin() {
 
   // ── Main Login Step ───────────────────────────────────────────────────────
   return (
+    <>
     <CardShell>
       <div className="px-8 py-10">
         <h2 className="text-3xl font-light text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
@@ -500,14 +503,13 @@ export default function PortalLogin() {
         <div className="text-center space-y-2">
           <p className="text-white/40 text-xs">
             Don&apos;t have an account?{" "}
-            <Link href="/">
-              <span
-                className="text-white/60 hover:text-white underline transition-colors cursor-pointer"
-                onClick={() => { sessionStorage.setItem("openAccessPortal", "signup"); }}
-              >
-                Create Account
-              </span>
-            </Link>
+            <button
+              type="button"
+              className="text-white/60 hover:text-white underline transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs"
+              onClick={() => setSignupOpen(true)}
+            >
+              Create Account
+            </button>
           </p>
           <p className="text-white/40 text-xs">
             <Link href="/">
@@ -519,5 +521,12 @@ export default function PortalLogin() {
         </div>
       </div>
     </CardShell>
+    <SignUpDialog
+      open={signupOpen}
+      onOpenChange={setSignupOpen}
+      hideTrigger
+      onSignInInstead={() => setSignupOpen(false)}
+    />
+    </>
   );
 }
