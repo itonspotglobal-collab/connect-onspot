@@ -1,0 +1,673 @@
+Fix login for newly created Client accounts.
+
+
+
+Current behavior:
+
+- Client signup now succeeds.
+
+- The user is automatically logged in and redirected to `/client-profile`.
+
+- After signing out, the same email and password cannot log in.
+
+- The UI shows:
+
+  “Sign in failed — Invalid email or password.”
+
+
+
+This means signup authentication works for the initial JWT, but the saved credentials cannot be verified later.
+
+
+
+Do not change the redirect again.
+
+Do not redesign the login modal.
+
+Debug the password persistence and login verification flow.
+
+
+
+Known repository behavior:
+
+- Frontend normal login calls:
+
+  POST `/api/login`
+
+  body: `{ email, password }`
+
+- Password helpers already exist in:
+
+  `server/auth-utils.ts`
+
+  - `hashPassword(password)`
+
+  - `verifyPassword(password, hash)`
+
+- The `users` table has:
+
+  `passwordHash` mapped to database column `password_hash`
+
+
+
+PHASE 1 — VERIFY THE CREATED DATABASE RECORD
+
+
+
+Find the newly created Client user in the `users` table using the normalized email.
+
+
+
+Check these fields:
+
+- id
+
+- email
+
+- role
+
+- password_hash
+
+- created_at
+
+
+
+Do not inspect or print the actual password or full hash in logs.
+
+
+
+Log only safe diagnostics:
+
+```ts
+
+console.log({
+
+  userFound: !!user,
+
+  role: user?.role,
+
+  hasPasswordHash: !!user?.passwordHash,
+
+  passwordHashPrefix: user?.passwordHash?.slice(0, 4),
+
+});
+
+Expected bcrypt hash prefix:
+
+
+
+$2a$
+
+$2b$
+
+or $2y$
+
+
+
+If password_hash is null, empty, plaintext, or not bcrypt-formatted, signup is not persisting the password correctly.
+
+
+
+Also confirm the account is created in users, not only in client_profiles.
+
+
+
+PHASE 2 — TRACE THE ACTUAL LIVE SIGNUP ENDPOINT
+
+
+
+Find the exact signup handler used by the current Sign Up modal.
+
+
+
+Search for:
+
+
+
+/api/signup
+
+authAPI.signup
+
+signupRole
+
+signupPassword
+
+hashPassword
+
+passwordHash
+
+password_hash
+
+
+
+Add temporary safe logs identifying:
+
+
+
+which frontend component submitted signup
+
+which backend route handled signup
+
+whether password hashing ran
+
+whether the user insert included passwordHash
+
+
+
+Do not log the plaintext password or JWT.
+
+
+
+The signup route must do this before inserting the user:
+
+
+
+const normalizedEmail = email.trim().toLowerCase();
+
+const passwordHash = await hashPassword(password);
+
+
+
+const createdUser = await storage.createUser({
+
+  email: normalizedEmail,
+
+  username,
+
+  firstName,
+
+  lastName,
+
+  role,
+
+  company,
+
+  passwordHash,
+
+});
+
+
+
+Make sure the storage/database layer does not drop passwordHash because of a schema mismatch.
+
+
+
+Do not insert:
+
+
+
+password: password
+
+
+
+Do not save plaintext passwords.
+
+
+
+Do not generate a JWT and return success until the database insert containing passwordHash succeeds.
+
+
+
+PHASE 3 — TRACE THE ACTUAL LOGIN ENDPOINT
+
+
+
+Find the exact backend handler for:
+
+
+
+POST /api/login
+
+
+
+It must:
+
+
+
+const normalizedEmail = req.body.email.trim().toLowerCase();
+
+
+
+const user = await storage.getUserByEmail(normalizedEmail);
+
+
+
+if (!user || !user.passwordHash) {
+
+  return res.status(401).json({
+
+    success: false,
+
+    message: "Invalid email or password"
+
+  });
+
+}
+
+
+
+const passwordMatches = await verifyPassword(
+
+  req.body.password,
+
+  user.passwordHash
+
+);
+
+
+
+if (!passwordMatches) {
+
+  return res.status(401).json({
+
+    success: false,
+
+    message: "Invalid email or password"
+
+  });
+
+}
+
+
+
+Only after successful verification should it generate and return a JWT.
+
+
+
+Ensure login reads:
+
+
+
+user.passwordHash
+
+
+
+and not:
+
+
+
+user.password
+
+user.password_hash
+
+user.hash
+
+
+
+unless the query explicitly aliases the database column correctly.
+
+
+
+Drizzle should map:
+
+
+
+passwordHash: text("password_hash")
+
+
+
+so TypeScript code should normally use:
+
+
+
+user.passwordHash
+
+
+
+PHASE 4 — NORMALIZE EMAIL CONSISTENTLY
+
+
+
+Use the same normalization in signup and login:
+
+
+
+email.trim().toLowerCase()
+
+
+
+Apply it:
+
+
+
+before duplicate-email lookup
+
+before user insertion
+
+before login lookup
+
+
+
+Do not make login case-sensitive.
+
+
+
+Verify there are no hidden spaces in the saved email.
+
+
+
+PHASE 5 — REMOVE DUPLICATE LOGIN LOGIC
+
+
+
+The current navigation has embedded sign-in state and there are also files such as:
+
+
+
+TopNavigation.tsx
+
+LoginDialog.tsx
+
+DevPortalModal.tsx
+
+AuthContext.tsx
+
+client/src/lib/api.ts
+
+
+
+Identify which sign-in form is shown in the screenshot.
+
+
+
+Make that form use the same shared method:
+
+
+
+await authContext.login(email, password, selectedPortal)
+
+
+
+or:
+
+
+
+await authAPI.login(email, password)
+
+
+
+Do not let one Client form call:
+
+
+
+/api/dev/login
+
+a talent-only login endpoint
+
+a legacy session login endpoint
+
+
+
+The Client login shown in the screenshot must call:
+
+
+
+POST /api/login
+
+
+
+Add a temporary browser log:
+
+
+
+console.log("[LIVE LOGIN] endpoint", "/api/login");
+
+
+
+PHASE 6 — HANDLE PORTAL SELECTION CORRECTLY
+
+
+
+“Client Portal” selection should not change password verification.
+
+
+
+First authenticate email/password.
+
+
+
+Then validate the role:
+
+
+
+if (selectedPortal === "client" && user.role !== "client") {
+
+  return a role mismatch message;
+
+}
+
+
+
+Do not return “Invalid email or password” when credentials are correct but the selected portal is wrong.
+
+
+
+Use a separate message:
+
+
+
+This account is registered as a Talent account. Select Talent Portal.
+
+
+
+For a valid Client account:
+
+
+
+user.role must be client
+
+Client Portal selection must succeed
+
+redirect to /client-profile
+
+
+
+PHASE 7 — CHECK FOR TRANSACTION OR INSERT BUGS
+
+
+
+If signup creates both:
+
+
+
+users row
+
+client_profiles row
+
+
+
+wrap them in one database transaction.
+
+
+
+The users row, including passwordHash, must be inserted first.
+
+
+
+Example:
+
+
+
+await db.transaction(async (tx) => {
+
+  const [user] = await tx.insert(users).values({
+
+    email: normalizedEmail,
+
+    passwordHash,
+
+    role: "client",
+
+    ...
+
+  }).returning();
+
+
+
+  await tx.insert(clientProfiles).values({
+
+    userId: user.id,
+
+    email: normalizedEmail,
+
+    companyName: company,
+
+    ...
+
+  });
+
+});
+
+
+
+If either insert fails, do not issue a JWT.
+
+
+
+PHASE 8 — REPAIR TEST ACCOUNTS SAFELY
+
+
+
+The existing test Client accounts may have been created without valid password hashes.
+
+
+
+Do not attempt to recover their plaintext passwords.
+
+
+
+Provide one safe option:
+
+
+
+delete only the confirmed disposable test accounts and recreate them, or
+
+use the existing password-reset flow to set a new hashed password
+
+
+
+Do not bulk modify real users.
+
+Do not assign a default password.
+
+Do not store plaintext passwords.
+
+
+
+PHASE 9 — REQUIRED INTEGRATION TEST
+
+
+
+Add an automated signup/login round-trip test:
+
+
+
+1. Generate a unique Client email.
+
+2. POST /api/signup with a valid password.
+
+3. Confirm success and JWT.
+
+4. Query the created users row.
+
+5. Confirm passwordHash exists and is not equal to plaintext.
+
+6. Clear the signup JWT.
+
+7. POST /api/login using the same email/password.
+
+8. Confirm success, JWT, and user.role = client.
+
+9. Attempt login with wrong password.
+
+10. Confirm 401.
+
+
+
+Also test:
+
+
+
+uppercase email during signup and lowercase during login
+
+lowercase signup and uppercase login
+
+Client credentials with Client Portal selected
+
+Client credentials with Talent Portal selected produces role mismatch, not invalid password
+
+
+
+PHASE 10 — FINAL VERIFICATION
+
+
+
+Test using a brand-new unique Client account.
+
+
+
+Report:
+
+
+
+frontend signup component used
+
+signup endpoint used
+
+whether users.password_hash was populated
+
+login endpoint used
+
+email normalization used
+
+password comparison result without exposing the password/hash
+
+returned role
+
+final URL
+
+navbar state
+
+files changed
+
+
+
+Acceptance criteria:
+
+
+
+Create a Client account.
+
+Automatic login succeeds.
+
+Redirect goes to /client-profile.
+
+Sign out.
+
+Enter the exact same email and password.
+
+Select Client Portal.
+
+Login succeeds.
+
+Redirect goes to /client-profile.
+
+Navbar shows Client Profile.
+
+Refresh keeps the user authenticated.
+
+Wrong password still fails.
+
+Talent login continues to work.
+
+
+
+Do not report this fixed merely because signup redirects correctly.
+
+The signup-to-logout-to-login round trip must pass.
+
+
+
+
+
+The first thing Replit should verify is the new account’s row in the **`users` table**, specifically whether `password_hash` contains a bcrypt hash. A successful one-time signup JWT does not prove the password was saved correctly.

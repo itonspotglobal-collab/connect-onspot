@@ -1805,6 +1805,7 @@ export function TopNavigation() {
                         </div>
                         {/* Sign In — shared logic via usePortalLogin hook */}
                         <button
+                          type="button"
                           onClick={async () => {
                             if (!signinEmail || !signinPassword || !signinPortal) return;
                             setSigninLoading(true);
@@ -1815,7 +1816,22 @@ export function TopNavigation() {
                                   setSigninNeedsSetup(true);
                                   return;
                                 }
-                                toast({ variant: "destructive", title: "Sign in failed", description: result.message });
+                                toast({
+                                  variant: "destructive",
+                                  title: "Sign in failed",
+                                  description: (
+                                    <span>
+                                      {result.message}{" "}
+                                      <button
+                                        type="button"
+                                        className="underline font-semibold ml-1"
+                                        onClick={() => { setForgotEmail(signinEmail); setModalStep("forgot"); }}
+                                      >
+                                        Forgot password?
+                                      </button>
+                                    </span>
+                                  ) as any,
+                                });
                                 return;
                               }
                               if (result.portal === "talent") {
@@ -1961,23 +1977,28 @@ export function TopNavigation() {
                     )}
                     {/* Create Account — calls POST /api/signup, creates real DB record */}
                     <button
+                      type="button"
                       onClick={async () => {
                         if (!signupRole || !signupFirstName || !signupEmail || !signupPassword || !signupConfirmPassword) return;
                         if (signupPassword !== signupConfirmPassword) {
                           toast({ variant: "destructive", title: "Passwords do not match", description: "Please make sure both password fields are identical." });
                           return;
                         }
+                        // Capture values at click time before any async state changes
+                        const capturedEmail = signupEmail;
+                        const capturedPassword = signupPassword;
+                        const capturedRole = signupRole;
                         setSignupLoading(true);
                         try {
                           const res = await fetch("/api/signup", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                              email: signupEmail,
-                              password: signupPassword,
+                              email: capturedEmail,
+                              password: capturedPassword,
                               first_name: signupFirstName,
                               last_name: signupLastName,
-                              role: signupRole,
+                              role: capturedRole,
                             }),
                           });
                           const data = await res.json();
@@ -1989,14 +2010,24 @@ export function TopNavigation() {
                             if (data.user) {
                               localStorage.setItem("onspot_user", JSON.stringify(data.user));
                             }
+                            // Reset all signup form states so they don't linger
+                            setSignupFirstName("");
+                            setSignupLastName("");
+                            setSignupEmail("");
+                            setSignupPassword("");
+                            setSignupConfirmPassword("");
+                            setSignupRole(null);
+                            // Pre-seed the signin email so if the user logs out and returns,
+                            // their email is already filled in
+                            setSigninEmail(capturedEmail);
                             setShowPortal(false);
                             setModalStep(1);
                             // Sync AuthContext state immediately (no page reload needed)
                             await refreshAuth();
-                            navigate(signupRole === "client" ? "/client-profile" : "/find-best-matches");
+                            navigate(capturedRole === "client" ? "/client-profile" : "/find-best-matches");
                           } else if (res.status === 409) {
                             toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
-                            setSigninEmail(signupEmail);
+                            setSigninEmail(capturedEmail);
                             setModalStep("signin");
                           } else {
                             toast({ variant: "destructive", title: "Sign up failed", description: data.message || "Could not create account. Please try again." });

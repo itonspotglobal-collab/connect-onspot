@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/signup", authLimiter, async (req: Request, res: Response) => {
     try {
       const {
-        email,
+        email: rawEmail,
         username,
         password,
         first_name,
@@ -590,6 +590,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         company,
       } = req.body;
       const requestId = (req as any).requestId;
+
+      // Normalize email the same way the login route does — trim + lowercase
+      const email = rawEmail ? rawEmail.trim().toLowerCase() : rawEmail;
 
       // Debug: Log DATABASE_URL being used (mask password)
       const dbUrl = process.env.DATABASE_URL;
@@ -705,6 +708,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const passwordHash = await hashPassword(password);
 
       console.log(`🔐 Password hashed successfully [${requestId}]`);
+
+      // Self-verify the hash immediately — catches any server-side bcrypt issues
+      const selfVerify = await verifyPassword(password, passwordHash);
+      if (!selfVerify) {
+        console.error(`❌ CRITICAL: bcrypt self-verification failed immediately after hashing [${requestId}]. This should never happen.`);
+        return res.status(500).json({
+          success: false,
+          message: "An internal error occurred while securing your password. Please try again.",
+          requestId,
+        });
+      }
+      console.log(`✅ Password self-verification passed [${requestId}]`);
 
       // Generate user ID
       const userId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
