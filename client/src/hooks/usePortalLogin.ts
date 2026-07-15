@@ -7,7 +7,7 @@ export type PortalType = "client" | "talent";
 export type PortalLoginResult =
   | { success: true; portal: "client"; displayName: string; redirectTo: string }
   | { success: true; portal: "talent"; auth: TalentAuthState; redirectTo: string }
-  | { success: false; requiresPasswordSetup?: boolean; email?: string; message: string };
+  | { success: false; requiresPasswordSetup?: boolean; email?: string; rateLimited?: boolean; retryAfter?: number; message: string };
 
 export type PasswordSetupResult =
   | { success: true; auth: TalentAuthState; redirectTo: string }
@@ -41,6 +41,16 @@ export function usePortalLogin() {
           body: JSON.stringify({ email: normalizedEmail, password }),
         });
         const data = await res.json();
+
+        if (res.status === 429) {
+          const retryAfter = data.retryAfter ?? Number(res.headers.get("Retry-After") ?? 900);
+          return {
+            success: false,
+            rateLimited: true,
+            retryAfter,
+            message: data.message || "Too many attempts. Please try again shortly.",
+          };
+        }
 
         if (!res.ok) {
           if (data.error === "no_password" || data.requiresPasswordSetup) {
@@ -77,6 +87,16 @@ export function usePortalLogin() {
           body: JSON.stringify({ email: normalizedEmail, password }),
         });
         const data = await res.json();
+
+        if (res.status === 429) {
+          const retryAfter = data.retryAfter ?? Number(res.headers.get("Retry-After") ?? 900);
+          return {
+            success: false,
+            rateLimited: true,
+            retryAfter,
+            message: data.message || "Too many attempts. Please try again shortly.",
+          };
+        }
 
         if (data.success) {
           const role = (data.user?.role ?? "").toLowerCase();

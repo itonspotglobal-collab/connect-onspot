@@ -152,7 +152,7 @@ const waitlistLimiter = rateLimit({
 });
 
 // Apply per-route limiters
-app.use('/api/signup', signupLimiter);
+// NOTE: /api/signup is rate-limited inside routes.ts (signupLimiter) — do NOT add it here again.
 app.use('/api/talent-auth', authLimiter);
 app.use('/api/profiles/search', publicSearchLimiter);
 app.use('/api/jobs', publicSearchLimiter);

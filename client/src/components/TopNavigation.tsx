@@ -107,6 +107,7 @@ export function TopNavigation() {
   const [showSignupConfirm, setShowSignupConfirm] = useState(true);
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
   // Talent sign-in — password setup flow (for existing candidates without a password)
   const [signinNeedsSetup, setSigninNeedsSetup] = useState(false);
@@ -1808,6 +1809,7 @@ export function TopNavigation() {
                         <button
                           type="button"
                           onClick={async () => {
+                            if (signinLoading || rateLimitCountdown > 0) return;
                             if (!signinEmail || !signinPassword || !signinPortal) return;
                             setSigninLoading(true);
                             try {
@@ -1815,6 +1817,22 @@ export function TopNavigation() {
                               if (!result.success) {
                                 if (result.requiresPasswordSetup) {
                                   setSigninNeedsSetup(true);
+                                  return;
+                                }
+                                if (result.rateLimited) {
+                                  const secs = result.retryAfter ?? 60;
+                                  setRateLimitCountdown(secs);
+                                  const timer = setInterval(() => {
+                                    setRateLimitCountdown((prev) => {
+                                      if (prev <= 1) { clearInterval(timer); return 0; }
+                                      return prev - 1;
+                                    });
+                                  }, 1000);
+                                  toast({
+                                    variant: "destructive",
+                                    title: "Too many attempts",
+                                    description: result.message,
+                                  });
                                   return;
                                 }
                                 toast({
@@ -1847,13 +1865,17 @@ export function TopNavigation() {
                               setSigninLoading(false);
                             }
                           }}
-                          disabled={signinLoading || !signinPortal || !signinEmail || !signinPassword}
+                          disabled={signinLoading || rateLimitCountdown > 0 || !signinPortal || !signinEmail || !signinPassword}
                           className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                           style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
                         >
                           <span className="relative z-10 flex items-center justify-center gap-2">
                             {signinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {signinLoading ? "Signing in…" : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
+                            {signinLoading
+                              ? "Signing in…"
+                              : rateLimitCountdown > 0
+                                ? `Try again in ${rateLimitCountdown}s`
+                                : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
                           </span>
                         </button>
                         <p className="text-center text-xs text-white/40 mt-4">

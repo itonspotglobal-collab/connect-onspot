@@ -16,7 +16,7 @@ import { ghlService } from "./services/ghlService";
 import { sendMessageToAssistant, streamMessageToAssistant, streamWithAssistant } from "./services/openaiService";
 import { ingestKnowledgeFiles, runLearningLoop } from "./services/learningLoop";
 import * as dbManager from "./services/db_manager";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
@@ -467,20 +467,98 @@ const handleRouteError = (
   });
 };
 
-// Rate limiting middleware for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 requests per windowMs
-  message: {
-    success: false,
-    error: "Too many attempts",
-    message: "Too many login/signup attempts. Please try again later.",
+// ─── Auth rate limiters ───────────────────────────────────────────────────────
+// Each endpoint type has its own counter so login, signup, and reset never
+// share a budget. In development the limits are very generous so testing never
+// causes lock-outs; tighter production values are set via environment variables.
+//
+// NOTE: The in-memory store resets on server restart and does not coordinate
+// across multiple instances. For multi-instance deployments, replace with a
+// shared store (e.g. PostgreSQL-backed) in the future.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const isDev = process.env.NODE_ENV !== "production";
+
+// Helper: seconds until the rate-limit window resets for this request
+const retryAfterSecs = (req: Request): number => {
+  const info = (req as any).rateLimit;
+  if (info?.resetTime instanceof Date) {
+    return Math.max(1, Math.ceil((info.resetTime.getTime() - Date.now()) / 1000));
+  }
+  return 900; // safe fallback
+};
+
+// LOGIN limiter — keyed by IP + email so one user cannot block every other user
+// sharing the same Replit proxy IP.  Successful logins are NOT counted so a
+// correct password never consumes the quota.
+const loginLimiter = rateLimit({
+  windowMs: Number(process.env.AUTH_LOGIN_WINDOW_MS ?? 15 * 60 * 1000),
+  max: Number(process.env.AUTH_LOGIN_LIMIT ?? (isDev ? 100 : 20)),
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email =
+      typeof req.body?.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "unknown";
+    return `login:${ipKeyGenerator(req)}:${email}`;
   },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skipSuccessfulRequests: false, // Count successful requests
-  skipFailedRequests: false, // Count failed requests
+  handler: (req: Request, res: Response) => {
+    const secs = retryAfterSecs(req);
+    console.warn(`🚫 Login rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
+    res.status(429).set("Retry-After", String(secs)).json({
+      success: false,
+      error: "RATE_LIMITED",
+      message: "Too many failed sign-in attempts. Please try again shortly.",
+      retryAfter: secs,
+      requestId: (req as any).requestId,
+    });
+  },
 });
+
+// SIGNUP limiter — keyed by IP, 1-hour window
+const signupLimiter = rateLimit({
+  windowMs: Number(process.env.AUTH_SIGNUP_WINDOW_MS ?? 60 * 60 * 1000),
+  max: Number(process.env.AUTH_SIGNUP_LIMIT ?? (isDev ? 50 : 10)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `signup:${ipKeyGenerator(req)}`,
+  handler: (req: Request, res: Response) => {
+    const secs = retryAfterSecs(req);
+    console.warn(`🚫 Signup rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
+    res.status(429).set("Retry-After", String(secs)).json({
+      success: false,
+      error: "RATE_LIMITED",
+      message: "Too many account creation attempts. Please try again later.",
+      retryAfter: secs,
+      requestId: (req as any).requestId,
+    });
+  },
+});
+
+// PASSWORD-RESET limiter — keyed by IP
+const authResetLimiter = rateLimit({
+  windowMs: Number(process.env.AUTH_RESET_WINDOW_MS ?? 15 * 60 * 1000),
+  max: Number(process.env.AUTH_RESET_LIMIT ?? (isDev ? 50 : 5)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `reset:${ipKeyGenerator(req)}`,
+  handler: (req: Request, res: Response) => {
+    const secs = retryAfterSecs(req);
+    console.warn(`🚫 Reset rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
+    res.status(429).set("Retry-After", String(secs)).json({
+      success: false,
+      error: "RATE_LIMITED",
+      message: "Too many password reset attempts. Please try again later.",
+      retryAfter: secs,
+      requestId: (req as any).requestId,
+    });
+  },
+});
+
+// Kept for legacy routes that still reference authLimiter (talent-auth, /login, /signup)
+const authLimiter = loginLimiter;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
@@ -578,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // JWT-based signup route
-  app.post("/api/signup", authLimiter, async (req: Request, res: Response) => {
+  app.post("/api/signup", signupLimiter, async (req: Request, res: Response) => {
     try {
       const {
         email: rawEmail,
@@ -867,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // JWT-based login route
-  app.post("/api/login", authLimiter, async (req: Request, res: Response) => {
+  app.post("/api/login", loginLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
@@ -5817,7 +5895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // These are identical to the /api routes but without the prefix for production baseURL compatibility
 
   // Production login route (without /api prefix)
-  app.post("/login", authLimiter, async (req: Request, res: Response) => {
+  app.post("/login", loginLimiter, async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
       const requestId = (req as any).requestId;
@@ -6034,7 +6112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Production signup route (without /api prefix)
-  app.post("/signup", authLimiter, async (req: Request, res: Response) => {
+  app.post("/signup", signupLimiter, async (req: Request, res: Response) => {
     try {
       const {
         email,
@@ -7900,7 +7978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   - Rate limiting per email address
   //   - No user enumeration (return 200 regardless of email existence)
   // ─────────────────────────────────────────────────────────────────────────
-  app.post("/api/dev/reset-password", async (req: Request, res: Response) => {
+  app.post("/api/dev/reset-password", authResetLimiter, async (req: Request, res: Response) => {
     const isEnabled =
       process.env.NODE_ENV !== "production" ||
       process.env.ENABLE_DEV_PASSWORD_RESET === "true";

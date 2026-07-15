@@ -1,0 +1,619 @@
+Fix the authentication rate-limit issue that is blocking valid Client login after password reset.
+
+
+
+Current behavior:
+
+- Client signup works.
+
+- Password reset now works.
+
+- Logging in with the newly reset password still fails.
+
+- Browser console shows:
+
+
+
+POST /api/login → 429 Too Many Requests
+
+
+
+- UI shows:
+
+  “Too many login/signup attempts. Please try again later.”
+
+
+
+This is not currently an invalid-password issue. The login request is being rejected by the rate limiter before authentication runs.
+
+
+
+Known current configuration:
+
+- Authentication limiter allows approximately 10 requests per IP per 15 minutes.
+
+- During testing, signup, login, and password reset requests quickly exhaust the same limit.
+
+- Replit users may share or appear behind the same proxy/IP, making IP-only limiting unreliable.
+
+
+
+Do not remove rate limiting entirely.
+
+Do not weaken password authentication.
+
+Fix the limiter so valid users are not locked out unnecessarily.
+
+
+
+PHASE 1 — FIND ALL AUTH RATE LIMITERS
+
+
+
+Search the codebase for:
+
+- `rateLimit(`
+
+- `express-rate-limit`
+
+- `429`
+
+- `Too many login/signup attempts`
+
+- `Too many authentication attempts`
+
+- `authLimiter`
+
+- `/api/login`
+
+- `/api/signup`
+
+- `/api/auth`
+
+- `/api/dev/login`
+
+- `/forgot-password`
+
+- `/reset-password`
+
+
+
+Identify every limiter affecting:
+
+- POST `/api/login`
+
+- POST `/api/signup`
+
+- password reset request
+
+- password reset submission
+
+
+
+Check whether the same limiter is applied:
+
+- globally
+
+- in `server/index.ts`
+
+- again in `server/routes.ts`
+
+- directly on individual endpoints
+
+
+
+Make sure requests are not being counted twice by duplicate middleware.
+
+
+
+PHASE 2 — CONFIGURE REPLIT PROXY HANDLING
+
+
+
+Before using `req.ip`, configure Express correctly for Replit:
+
+
+
+```ts
+
+app.set("trust proxy", 1);
+
+Verify the correct setting for the current Replit deployment.
+
+
+
+Do not blindly trust every forwarded proxy in production.
+
+Use the safest correct Replit-compatible configuration.
+
+
+
+Log safe diagnostics temporarily:
+
+
+
+console.log({
+
+  ip: req.ip,
+
+  forwardedFor: req.headers["x-forwarded-for"],
+
+  route: req.path,
+
+});
+
+
+
+Do not log passwords, tokens, or authorization headers.
+
+
+
+PHASE 3 — SPLIT THE AUTH LIMITERS
+
+
+
+Do not use one shared counter for login, signup, and password reset.
+
+
+
+Create separate limiters:
+
+
+
+Login limiter
+
+Signup limiter
+
+Forgot-password limiter
+
+Reset-password limiter
+
+
+
+Suggested development/staging defaults:
+
+
+
+Login:
+
+
+
+20 failed attempts per 15 minutes
+
+successful requests should not consume or should reset the failure counter
+
+
+
+Signup:
+
+
+
+10 account creations per hour per IP
+
+duplicate/failed form validation should not unnecessarily consume the quota
+
+
+
+Forgot password:
+
+
+
+5 requests per email per hour
+
+also add a broader IP safeguard
+
+
+
+Reset password:
+
+
+
+validate by reset token
+
+separate small limit per token/IP
+
+
+
+Use environment variables:
+
+
+
+AUTH_LOGIN_LIMIT
+
+AUTH_LOGIN_WINDOW_MS
+
+AUTH_SIGNUP_LIMIT
+
+AUTH_SIGNUP_WINDOW_MS
+
+AUTH_RESET_LIMIT
+
+AUTH_RESET_WINDOW_MS
+
+
+
+Provide safe defaults.
+
+
+
+PHASE 4 — LIMIT FAILED LOGINS, NOT ALL LOGIN REQUESTS
+
+
+
+Where supported, configure the login limiter so successful logins do not count:
+
+
+
+skipSuccessfulRequests: true
+
+
+
+A correct login should not move the user closer to being blocked.
+
+
+
+Do not use skipFailedRequests: true, because failed attempts are what should be limited.
+
+
+
+If the library cannot reset counters reliably, document the behavior and use a custom key/store safely.
+
+
+
+PHASE 5 — USE A BETTER LIMIT KEY
+
+
+
+An IP-only key is not sufficient behind Replit/shared networks.
+
+
+
+For login, use a normalized combination such as:
+
+
+
+const normalizedEmail =
+
+  typeof req.body?.email === "string"
+
+    ? req.body.email.trim().toLowerCase()
+
+    : "unknown";
+
+
+
+return `${req.ip}:${normalizedEmail}`;
+
+
+
+This prevents one user’s repeated attempts from blocking every other user on the same IP.
+
+
+
+Do not reveal whether an email exists.
+
+
+
+For authenticated routes, use user ID where appropriate.
+
+
+
+PHASE 6 — USE A SHARED STORE IN PRODUCTION
+
+
+
+Check whether the current rate limiter uses the default in-memory store.
+
+
+
+The in-memory store:
+
+
+
+resets on server restart
+
+does not coordinate across multiple instances
+
+can produce inconsistent behavior
+
+
+
+For a single Replit instance, it may be acceptable temporarily.
+
+
+
+Document the limitation.
+
+
+
+If the deployment uses multiple instances, use a shared store backed by PostgreSQL or another existing shared service.
+
+
+
+Do not add Redis unless clearly necessary.
+
+
+
+PHASE 7 — IMPROVE THE 429 RESPONSE
+
+
+
+Return a structured response:
+
+
+
+{
+
+  "success": false,
+
+  "error": "RATE_LIMITED",
+
+  "message": "Too many failed sign-in attempts. Please try again shortly.",
+
+  "retryAfter": 120,
+
+  "requestId": "..."
+
+}
+
+
+
+Include:
+
+
+
+Retry-After header
+
+standard rate-limit headers
+
+request ID
+
+
+
+The frontend should read retryAfter and show:
+
+
+
+Too many failed sign-in attempts. Try again in 2 minutes.
+
+
+
+Do not show “Invalid email or password” for a 429 response.
+
+
+
+Disable the Continue button briefly after a 429 to prevent repeated submissions.
+
+
+
+PHASE 8 — PREVENT DUPLICATE FRONTEND SUBMISSIONS
+
+
+
+Inspect the live login handler in TopNavigation.tsx.
+
+
+
+The console stack shows login activity from:
+
+
+
+usePortalLogin.ts
+
+TopNavigation.tsx
+
+
+
+Check for duplicate API requests caused by:
+
+
+
+both form onSubmit and button onClick
+
+double-clicking
+
+React effects
+
+the handler being called twice
+
+multiple login functions wrapping each other
+
+retry logic from Axios or React Query
+
+
+
+Requirements:
+
+
+
+one click must send exactly one POST /api/login
+
+disable Continue while request is pending
+
+ignore a second submission while pending
+
+
+
+Use:
+
+
+
+if (signinLoading) return;
+
+setSigninLoading(true);
+
+
+
+try {
+
+  await login(...);
+
+} finally {
+
+  setSigninLoading(false);
+
+}
+
+
+
+Make the button:
+
+
+
+disabled={signinLoading}
+
+
+
+Do not attach both onClick={handleLogin} and form onSubmit={handleLogin} unless the button is type submit and only the form owns submission.
+
+
+
+PHASE 9 — DEVELOPMENT TESTING SUPPORT
+
+
+
+In development only, allow a less restrictive configurable limit.
+
+
+
+Example:
+
+
+
+const isDevelopment = process.env.NODE_ENV === "development";
+
+
+
+const loginMax = Number(
+
+  process.env.AUTH_LOGIN_LIMIT ?? (isDevelopment ? 100 : 20)
+
+);
+
+
+
+Do not disable the limiter in production.
+
+
+
+Add a documented development-only way to clear/reset the in-memory limiter:
+
+
+
+restart the Replit dev server, or
+
+expose a protected development-only reset utility
+
+
+
+Never expose a public production endpoint that clears rate limits.
+
+
+
+PHASE 10 — VERIFY PASSWORD LOGIN AFTER THE LIMITER
+
+
+
+Once the 429 is resolved, run the actual credential test:
+
+
+
+Wait for or clear the development limiter.
+
+Use the Client email.
+
+Use the newly reset password.
+
+Select Client Portal.
+
+Submit once.
+
+Confirm /api/login returns 200.
+
+Confirm response contains token and user.role = client.
+
+Confirm redirect to /client-profile.
+
+Confirm navbar shows Client Profile.
+
+
+
+If /api/login returns 401 after the limiter is cleared, then separately investigate password hashing. Do not confuse a 429 with a credential failure.
+
+
+
+PHASE 11 — AUTOMATED TESTS
+
+
+
+Add tests for:
+
+
+
+One login request sends one backend request.
+
+Successful login is not counted against the failed-login limit.
+
+Failed login attempts trigger 429 after the configured maximum.
+
+Different emails on the same IP have separate login counters.
+
+Signup requests do not consume the login counter.
+
+Forgot-password requests do not consume the login counter.
+
+Response includes Retry-After.
+
+Login works again after the rate-limit window expires.
+
+Client can log in after a successful password reset.
+
+
+
+FINAL ACCEPTANCE CRITERIA
+
+
+
+Reset Client password successfully.
+
+Submit the login form once.
+
+No duplicate requests are sent.
+
+Valid credentials return 200, not 429.
+
+User is redirected to /client-profile.
+
+Navbar shows Client Profile.
+
+Failed attempts are still safely limited.
+
+One user cannot block all users sharing the same Replit IP.
+
+Production rate limiting remains enabled.
+
+
+
+Report:
+
+
+
+Exact limiter(s) that caused the 429.
+
+Whether middleware was duplicated.
+
+The old and new limit keys.
+
+The old and new thresholds.
+
+Whether duplicate frontend requests were found.
+
+Files changed.
+
+Tests run and results.
+
+
+
+Do not mark the password as broken while /api/login is returning 429.
+
+First fix and verify the rate-limiting path.
