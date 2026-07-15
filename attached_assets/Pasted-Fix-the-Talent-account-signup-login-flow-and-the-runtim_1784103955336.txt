@@ -1,0 +1,373 @@
+Fix the Talent account signup/login flow and the runtime crash on the Talent page.
+
+CURRENT ERROR
+
+After creating a Talent account, the page crashes with:
+
+(data ?? []).filter is not a function
+
+Location:
+
+client/src/hooks/usePostedJobs.ts:15
+
+Current code approximately does:
+
+```ts
+const { data } = useQuery<Job[]>({
+  queryKey: ["/api/admin/jobs"],
+  queryFn: async () => {
+    const res = await fetch("/api/admin/jobs");
+    if (!res.ok) throw new Error("Failed to load jobs");
+    return res.json();
+  },
+});
+
+const openJobs = (data ?? []).filter((j) => j.status === "open");
+
+This assumes the API returns Job[].
+
+The backend likely now returns a paginated/object response such as:
+
+{
+  items: Job[],
+  page: number,
+  pageSize: number,
+  total: number,
+  totalPages: number
+}
+
+An object does not have .filter(), so the Talent page crashes immediately.
+
+IMPORTANT
+
+Fix the data-shape mismatch correctly.
+Do not merely suppress the Vite error overlay.
+Do not use /api/admin/jobs for a Talent/public page if it is an admin-only endpoint.
+Make Talent signup, logout, and login work with the original signup password, just like Client accounts.
+Do not break the working Client flow.
+Do not redesign the Talent page.
+==================================================================
+PART 1 — INSPECT THE ACTUAL JOB API RESPONSE
+
+Open browser Network tools and inspect the exact JSON returned by:
+
+GET /api/admin/jobs
+
+Also inspect the backend route.
+
+Determine whether it returns:
+
+Job[]
+
+or:
+
+{
+  items: Job[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+or another shape such as:
+
+{ jobs: Job[] }
+
+Do not guess.
+
+Add a temporary safe log:
+
+console.log("[usePostedJobs] response shape", {
+  isArray: Array.isArray(payload),
+  keys:
+    payload && typeof payload === "object"
+      ? Object.keys(payload)
+      : [],
+});
+
+Do not log private job contents unnecessarily.
+
+==================================================================
+PART 2 — FIX usePostedJobs TYPE AND NORMALIZATION
+
+Update:
+
+client/src/hooks/usePostedJobs.ts
+
+Define the actual response interface.
+
+Example:
+
+interface PaginatedJobsResponse {
+  items: Job[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+Normalize safely:
+
+function extractJobs(
+  data: Job[] | PaginatedJobsResponse | { jobs?: Job[] } | undefined
+): Job[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.jobs)) return data.jobs;
+  return [];
+}
+
+Then:
+
+const jobs = extractJobs(data);
+
+const openJobs = jobs.filter(
+  (job) =>
+    job.status === "open" &&
+    (!("approvalStatus" in job) ||
+      job.approvalStatus === "approved")
+);
+
+Do not use as Job[] to hide the mismatch.
+
+The React Query generic must match the real API response.
+
+==================================================================
+PART 3 — USE THE CORRECT ENDPOINT
+
+A Talent page should not normally load jobs from:
+
+/api/admin/jobs
+
+Check whether a public approved/open jobs endpoint already exists, such as:
+
+/api/jobs
+/api/jobs/public
+/api/find-work/jobs
+
+Use the existing public endpoint when available.
+
+Requirements:
+
+Talent users must not require admin authorization to view job openings.
+Only approved/open public jobs should be returned.
+Pending, rejected, and closed jobs should not appear.
+Do not expose private/admin-only fields.
+
+Preferred hook:
+
+useQuery<PaginatedJobsResponse>({
+  queryKey: ["/api/jobs", { status: "open", approvalStatus: "approved" }],
+  queryFn: async () => {
+    const response = await fetch(
+      "/api/jobs?status=open&approvalStatus=approved&page=1&pageSize=100"
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to load open jobs");
+    }
+
+    return response.json();
+  },
+});
+
+Adapt this to the actual route contract.
+
+Do not create a duplicate endpoint if a correct public endpoint already exists.
+
+==================================================================
+PART 4 — HANDLE LOADING, ERROR, AND EMPTY STATES
+
+The hook should return:
+
+{
+  openJobs,
+  isLoading,
+  isError,
+  error,
+  hasData
+}
+
+The Talent page must render:
+
+loading state while fetching
+friendly error state if the API fails
+empty state when there are no open jobs
+
+It must not crash because the response shape is unexpected.
+
+Example:
+
+if (isLoading) return <JobsSkeleton />;
+
+if (isError) {
+  return (
+    <ErrorState
+      title="Unable to load jobs"
+      description="Please refresh and try again."
+    />
+  );
+}
+==================================================================
+PART 5 — AUDIT OTHER ARRAY ASSUMPTIONS
+
+Search the frontend for code that assumes API data is always an array:
+
+(data ?? []).filter
+(data ?? []).map
+data.filter(
+data.map(
+
+Prioritize hooks/pages affected by recent pagination changes.
+
+For each endpoint that now returns { items, ... }, update its type and extraction logic.
+
+Do not globally change unrelated code without verifying the endpoint shape.
+
+==================================================================
+PART 6 — FIX TALENT SIGNUP PASSWORD PERSISTENCE
+
+Ensure Talent signup uses the same corrected account-creation flow as Client signup.
+
+The signup endpoint must:
+
+Normalize email:
+email.trim().toLowerCase()
+Validate password.
+Hash using the shared helper:
+const passwordHash = await hashPassword(password);
+Insert into users:
+{
+  email: normalizedEmail,
+  role: "talent",
+  passwordHash,
+  firstName,
+  lastName
+}
+Create the associated Talent profile using the new user ID.
+Commit both records in one transaction.
+Generate the JWT only after the transaction succeeds.
+
+Verify the storage layer does not drop passwordHash.
+
+Talent and Client signup must use the same password persistence implementation.
+
+Do not create a Talent-only plaintext or separate password field.
+
+==================================================================
+PART 7 — FIX TALENT LOGIN
+
+After Talent signup:
+
+automatic login should succeed
+redirect to the actual Talent profile/onboarding route
+navbar should show Talent Profile
+
+After signing out:
+
+the same original signup email/password must work
+select Talent Portal
+login must use the general /api/login credential verification flow
+returned user role must be talent
+
+Do not require password reset before first normal login.
+
+Portal selection must happen after credential authentication.
+
+If the credentials are correct but Client Portal is selected, show a role mismatch—not “Invalid email or password.”
+
+==================================================================
+PART 8 — CHECK DUPLICATE TALENT AUTH SYSTEMS
+
+The repository appears to have both:
+
+general JWT authentication using:
+onspot_jwt_token
+onspot_user
+a separate Talent-specific authentication state/token
+
+Inspect:
+
+client/src/contexts/AuthContext.tsx
+client/src/components/TalentLoginModal.tsx
+client/src/components/TopNavigation.tsx
+client/src/components/LoginDialog.tsx
+client/src/components/DevPortalModal.tsx
+client/src/lib/api.ts
+
+For Talent accounts created through normal signup, use the same general JWT system as Client accounts.
+
+Do not create a second incompatible session for newly signed-up Talent users.
+
+The navbar should prefer the general authenticated user when available.
+
+Expected stored user:
+
+{
+  id: string;
+  email: string;
+  role: "talent";
+  userType: "talent";
+  firstName?: string;
+  lastName?: string;
+}
+==================================================================
+PART 9 — VERIFY TALENT ROUTING
+
+Check client/src/App.tsx for the actual Talent route.
+
+Use the existing route, likely one of:
+
+/get-hired
+/talent-portal
+/find-best-matches
+
+Do not guess.
+
+After successful Talent signup/login:
+
+redirect to the actual Talent profile or onboarding page
+do not redirect to Client Profile
+do not render an admin-only page
+do not crash while loading jobs
+==================================================================
+PART 10 — RATE-LIMIT TESTING
+
+Restart or clear the development rate limiter before testing.
+
+Do not confuse:
+
+429 Too Many Requests
+
+with:
+
+401 Invalid credentials
+
+One click should issue one login request.
+
+Disable the submit button while pending.
+
+==================================================================
+PART 11 — REQUIRED AUTOMATED TESTS
+
+Add a hook/API response-shape test:
+
+1. API returns Job[] → hook returns filtered open jobs.
+2. API returns { items: Job[] } → hook returns filtered open jobs.
+3. API returns { jobs: Job[] } → hook returns filtered open jobs.
+4. API returns undefined/null/unexpected object → hook returns [] and does not crash.
+5. Pending/closed/rejected jobs are excluded.
+
+Add Talent authentication integration test:
+
+1. Generate a unique Talent email.
+2. Signup using Testing123!
+3. Confirm users row exists with role = talent.
+4. Confirm password_hash exists and is bcrypt.
+5. Confirm Talent profile references users.id.
+6. Clear JWT/sign out.
+7. Login using the original signup password.
+8. Confirm 200 and user.role = talent.
+9. Confirm redirect to Talent profile/onboarding.
+10. Confirm navbar shows Talent Profile.
+11. Confirm the Talent page loads without runtime errors.
