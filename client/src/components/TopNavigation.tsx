@@ -139,6 +139,7 @@ export function TopNavigation() {
   const getProfileRoute = () => {
     if (user?.role === "client") return "/client-profile";
     if (user?.role === "admin") return "/admin/dashboard";
+    if (talentAuth?.candidateId) return `/talent-profile/${talentAuth.candidateId}`;
     return "/find-best-matches";
   };
   const getProfileLabel = () => {
@@ -165,9 +166,10 @@ export function TopNavigation() {
     ];
     // talent / default
     return [
-      { label: "Talent Profile", route: talentAuth ? `/talent-profile/${talentAuth.candidateId}` : "/find-best-matches", icon: User },
-      { label: "Find Work",      route: "/find-work/jobs",    icon: Briefcase },
-      { label: "Settings",       route: "/settings",          icon: Settings },
+      { label: "Talent Profile",       route: talentAuth ? `/talent-profile/${talentAuth.candidateId}` : "/find-best-matches", icon: User },
+      { label: "Finish Profile Setup", route: "/find-best-matches", icon: CheckCircle2 },
+      { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
+      { label: "Settings",             route: "/settings",          icon: Settings },
     ];
   };
 
@@ -2013,6 +2015,8 @@ export function TopNavigation() {
                         const capturedEmail = signupEmail;
                         const capturedPassword = signupPassword;
                         const capturedRole = signupRole;
+                        const capturedFirstName = signupFirstName;
+                        const capturedLastName = signupLastName;
                         setSignupLoading(true);
                         try {
                           const res = await fetch("/api/signup", {
@@ -2052,7 +2056,26 @@ export function TopNavigation() {
                             setModalStep(1);
                             // Sync AuthContext state immediately (no page reload needed)
                             await refreshAuth();
-                            navigate(capturedRole === "client" ? "/client-profile" : "/find-best-matches");
+                            // Talent signup: save candidate JWT + redirect to their own profile page.
+                            // The signup endpoint now creates a candidates record and issues a
+                            // talent-specific JWT alongside the general one.
+                            if (capturedRole === "talent" && data.talentToken && data.candidateId) {
+                              const talentAuthData: TalentAuthState = {
+                                token: data.talentToken,
+                                candidateId: data.candidateId,
+                                email: capturedEmail,
+                                fullName: `${capturedFirstName} ${capturedLastName}`.trim(),
+                              };
+                              saveTalentAuth(talentAuthData);
+                              setTalentAuth(talentAuthData);
+                            }
+                            if (capturedRole === "client") {
+                              navigate("/client-profile");
+                            } else if (capturedRole === "talent" && data.candidateId) {
+                              navigate(`/talent-profile/${data.candidateId}`);
+                            } else {
+                              navigate("/find-best-matches");
+                            }
                           } else if (res.status === 409) {
                             toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
                             setSigninEmail(capturedEmail);

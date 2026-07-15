@@ -1,0 +1,378 @@
+Fix the Talent post-signup/login redirect and the blocking onboarding modal.
+
+CURRENT PROBLEM
+
+After a Talent signs up or logs in:
+
+- The app sends them to `/find-best-matches`.
+- A large “Welcome to OnSpot!” modal opens immediately.
+- The modal blocks the entire page.
+- The close `X` does not work.
+- The “Complete My Profile” button does not work.
+- The navbar “Talent Profile” button cannot be clicked because the modal overlay blocks it.
+
+This is not the desired flow.
+
+DESIRED FLOW
+
+Talent signup or Talent login
+→ automatically authenticate
+→ redirect to the Talent’s own Profile Page
+→ show a non-blocking option to finish profile setup
+→ clicking “Finish Setting Up Your Profile” opens `/find-best-matches`, where resume upload and matching setup are available
+
+Do not send the Talent directly to `/find-best-matches` immediately after signup/login.
+
+Do not let an onboarding modal trap the user.
+
+Do not break the working Client flow.
+
+==================================================================
+PART 1 — FIND THE REAL TALENT PROFILE ROUTE
+==================================================================
+
+Inspect:
+
+```text
+client/src/App.tsx
+
+Find the actual existing route for the authenticated Talent’s own profile page.
+
+Possible routes may include:
+
+/talent-profile/:id
+/talent-profile
+/profile
+/get-hired
+
+Do not guess.
+
+Also identify the existing route for:
+
+/find-best-matches
+
+Confirm that /find-best-matches is the profile completion/resume upload feature, not the primary Talent Profile landing page.
+
+==================================================================
+PART 2 — CHANGE TALENT SIGNUP REDIRECT
+
+Find the live signup handler used by the current Sign Up UI.
+
+Search:
+
+role === "talent"
+userType === "talent"
+signupRole
+authAPI.signup
+window.location.href
+navigate(
+setLocation(
+"/find-best-matches"
+"/get-hired"
+"/talent-profile"
+
+After a successful Talent signup:
+
+Save the JWT and normalized Talent user.
+Update AuthContext immediately.
+Close the signup modal.
+Determine the authenticated Talent’s profile ID.
+Redirect to the Talent Profile page.
+
+Example only:
+
+navigate(`/talent-profile/${profileId}`);
+
+Use the actual registered route and the correct profile/candidate ID.
+
+Do not redirect newly signed-up Talents directly to:
+
+/find-best-matches
+==================================================================
+PART 3 — CHANGE TALENT LOGIN REDIRECT
+
+Find the live Talent login success handler.
+
+After successful login with user.role === "talent":
+
+redirect to the authenticated Talent’s own Profile Page
+do not redirect to /find-best-matches
+do not redirect to a generic public page
+
+If the login response does not include the profile ID:
+
+fetch the Talent profile using the authenticated user ID
+then navigate to the actual profile route
+
+Example:
+
+const profile = await fetchTalentProfileByUserId(user.id);
+navigate(`/talent-profile/${profile.id}`);
+
+Do not create duplicate profiles.
+
+==================================================================
+PART 4 — FIX THE NAVBAR TALENT PROFILE BUTTON
+
+The authenticated navbar button labeled:
+
+Talent Profile
+
+must navigate to the Talent’s own Profile Page.
+
+It must not navigate directly to:
+
+/find-best-matches
+
+Inspect:
+
+client/src/components/TopNavigation.tsx
+
+The current helper may return /find-best-matches for Talent users.
+
+Replace that with the real Talent Profile route.
+
+If the route requires a profile ID, use the authenticated Talent’s profile/candidate ID from AuthContext or fetched profile state.
+
+The dropdown should include:
+
+Talent Profile
+Finish Profile / Find Best Matches
+Find Work
+Settings
+Sign Out
+
+Expected routes:
+
+Talent Profile → own profile page
+Finish Profile → /find-best-matches
+Find Work → /find-work/jobs
+==================================================================
+PART 5 — REMOVE THE BLOCKING AUTO-OPEN MODAL
+
+Find the component that renders:
+
+Welcome to OnSpot!
+Get Discovered
+Higher Earnings
+Build Reputation
+Complete My Profile
+
+Search the codebase for those exact text strings.
+
+The modal currently appears automatically on /find-best-matches and blocks all page interaction.
+
+Change its behavior:
+
+Do not automatically force it open after every signup/login.
+Do not make it impossible to dismiss.
+The user must always be able to close it.
+Clicking the X must close it.
+Clicking outside may close it unless intentionally disabled.
+Pressing Escape must close it.
+“Complete My Profile” must close or advance the modal and reveal the profile setup page.
+The overlay must not remain after the modal is closed.
+
+Correct controlled dialog behavior example:
+
+const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+<Dialog
+  open={showWelcomeModal}
+  onOpenChange={setShowWelcomeModal}
+>
+
+Close button:
+
+<button
+  type="button"
+  onClick={() => setShowWelcomeModal(false)}
+  aria-label="Close welcome dialog"
+>
+  <X />
+</button>
+
+Complete button:
+
+<Button
+  onClick={() => {
+    setShowWelcomeModal(false);
+    navigate("/find-best-matches");
+  }}
+>
+  Complete My Profile
+</Button>
+
+Do not hardcode:
+
+open={true}
+
+Do not use:
+
+onOpenChange={() => {}}
+
+Do not prevent all close events.
+
+==================================================================
+PART 6 — DO NOT SHOW THE MODAL ON THE PROFILE PAGE
+
+The Talent Profile page should load normally.
+
+It should not automatically display the large onboarding welcome modal.
+
+Instead, show a normal card/banner inside the page when the profile is incomplete:
+
+Finish setting up your profile
+
+Upload your resume and complete your information to improve your job matches.
+
+[Finish Setting Up Your Profile]
+
+The button should navigate to:
+
+/find-best-matches
+
+This should be part of the page layout, not a blocking full-screen modal.
+
+==================================================================
+PART 7 — PROFILE COMPLETION LOGIC
+
+Determine whether the Talent profile is incomplete using real data.
+
+Examples:
+
+const isIncomplete =
+  !profile.resumeUrl ||
+  !profile.title ||
+  !profile.skills?.length ||
+  (profile.profileCompletion ?? 0) < 100;
+
+Adapt to the existing schema.
+
+Show the setup CTA only if incomplete.
+
+If complete, show:
+
+Profile Complete
+
+or:
+
+Edit Profile
+
+Do not show the welcome modal repeatedly after profile completion.
+
+==================================================================
+PART 8 — FIX MODAL POINTER-EVENT / OVERLAY ISSUES
+
+The screenshot suggests the overlay may remain active and intercept clicks.
+
+Inspect the modal overlay and portal implementation.
+
+Ensure:
+
+overlay is removed from the DOM when closed
+closed modal does not have pointer-events
+z-index does not cover the navbar after closing
+no invisible full-screen div remains
+DialogOverlay and DialogContent are controlled by the same open state
+
+Use DevTools after closing and confirm no modal overlay remains.
+
+==================================================================
+PART 9 — PROFILE ID AND AUTH STATE
+
+The Talent’s profile route must use the correct profile record.
+
+After signup/login, AuthContext should contain or be able to resolve:
+
+{
+  id: userId,
+  email,
+  role: "talent",
+  profileId?: string,
+  candidateId?: string
+}
+
+Use the actual schema field.
+
+Do not confuse:
+
+users.id
+profiles.id
+candidates.id
+
+Use the ID required by the Talent Profile route.
+
+If the backend signup response does not include it, update the response or fetch it by userId.
+
+==================================================================
+PART 10 — FIX FIND BEST MATCHES RUNTIME SAFETY
+
+The /find-best-matches page previously crashed because:
+
+(data ?? []).filter is not a function
+
+Make sure that fix remains in place.
+
+The page must:
+
+safely normalize paginated job responses
+not use an admin-only jobs endpoint
+show loading, empty, and error states
+never crash on unexpected API response shape
+
+Do not redirect users there until it renders correctly.
+
+==================================================================
+PART 11 — TALENT LOGIN ROUND-TRIP
+
+A new Talent must be able to:
+
+Sign up with a valid password such as Testing123!.
+Be automatically authenticated.
+Land on their own Talent Profile page.
+See the Finish Setting Up Your Profile CTA.
+Click the CTA and open /find-best-matches.
+Access resume upload.
+Return to Talent Profile using the navbar.
+Sign out.
+Log in using the original signup credentials.
+Select Talent Portal.
+Land on the same Talent Profile page.
+
+Do not require password reset.
+
+==================================================================
+PART 12 — REQUIRED MANUAL TEST
+
+Test with a brand-new unique Talent account.
+
+Verify:
+
+Signup URL result:
+Talent Profile route
+
+Navbar:
+Talent Profile button visible
+
+Welcome modal:
+Not automatically blocking the Profile page
+
+Finish setup CTA:
+Visible on incomplete profile
+
+CTA result:
+/find-best-matches
+
+Modal on Find Best Matches:
+Can be closed with X
+Can be closed with Escape
+Complete My Profile works
+No invisible overlay remains
+
+Navbar Talent Profile:
+Clickable at all times after modal closes
+
+Logout/login:
+Original signup password works
+Login returns to Talent Profile

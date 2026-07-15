@@ -1095,6 +1095,28 @@ export default function TalentProfile() {
       {/* ── Section Tabs ── */}
       <SectionTabs visibleIds={visibleSectionIds} />
 
+      {/* ── Finish Setup Banner (shown to owners with incomplete profiles) ── */}
+      {isOwner && completionPct < 100 && (
+        <div className="mx-auto mt-4 max-w-4xl px-4 md:px-8">
+          <div className="flex flex-col gap-2 rounded-xl border border-[#474ead]/20 bg-[#474ead]/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#474ead]">Finish setting up your profile</p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Upload your resume and complete your information to improve your job matches.
+                Your profile is {completionPct}% complete.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 rounded-full bg-[#474ead] text-white"
+              onClick={() => navigate("/find-best-matches")}
+            >
+              Finish Setting Up
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── Body content ── */}
       <div className="mx-auto mt-6 max-w-4xl px-4 pb-20 md:px-8">
         <div className="grid gap-4 md:grid-cols-[1fr_280px]">

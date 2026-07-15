@@ -847,7 +847,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Client profile created [${requestId}]`);
       }
 
-      // If user is talent, create profile entry
+      // If user is talent, create profile entry + a matching candidates record
+      // so they can be redirected straight to /talent-profile/:candidateId after signup.
+      let talentCandidateId: string | null = null;
+      let talentJwtToken: string | null = null;
+
       if (role === "talent") {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
@@ -870,6 +874,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]);
 
         console.log(`✅ Talent profile created successfully [${requestId}]`);
+
+        // Also create a minimal candidates record so the talent profile page
+        // (/talent-profile/:id) works immediately after signup.
+        // We store the same password_hash in the candidates table so that
+        // /api/talent-auth/login works with the same credentials.
+        try {
+          const candidateResult = await query(
+            `INSERT INTO candidates (full_name, email, password_hash)
+             VALUES ($1, $2, $3)
+             RETURNING id`,
+            [`${first_name} ${last_name}`.trim(), email, passwordHash],
+          );
+          talentCandidateId = candidateResult.rows[0]?.id ?? null;
+          console.log(`✅ Candidate record created for talent [${requestId}]: ${talentCandidateId}`);
+        } catch (candErr: any) {
+          // Non-fatal: the talent can still sign up; they just won't have a candidate record yet.
+          console.warn(`⚠️ Could not create candidates row during signup [${requestId}]:`, candErr.message);
+        }
       }
 
       console.log(`✅ User signup successful [${requestId}]:`, {
@@ -895,6 +917,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { expiresIn: "7d" },
       );
 
+      // For talent signups also issue a 30-day candidate JWT so the profile
+      // page lets them edit their own profile without a separate login step.
+      if (role === "talent" && talentCandidateId) {
+        talentJwtToken = jwt.sign(
+          { type: "candidate", candidateId: talentCandidateId, email },
+          jwtSecret,
+          { expiresIn: "30d" },
+        );
+        console.log(`🔑 Talent JWT issued for candidate [${requestId}]: ${talentCandidateId}`);
+      }
+
       console.log(`🔑 JWT token generated for new user [${requestId}]`);
 
       res.status(201).json({
@@ -903,6 +936,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: newUser.id,
         email: newUser.email,
         role: newUser.role,
+        // Talent-specific: candidateId for the /talent-profile/:id route,
+        // talentToken for the candidate JWT (stored as talent_profile_token).
+        candidateId: talentCandidateId,
+        talentToken: talentJwtToken,
         user: {
           id: newUser.id,
           email: newUser.email,

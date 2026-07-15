@@ -143,7 +143,16 @@ interface WelcomeStepProps {
 
 function WelcomeStep({ onContinue, onSkip }: WelcomeStepProps) {
   return (
-    <div className="p-8 text-center animate-slide-up">
+    <div className="relative p-8 text-center animate-slide-up">
+      {/* Explicit close button — always visible even on the welcome screen */}
+      <button
+        type="button"
+        onClick={onSkip}
+        aria-label="Close welcome dialog"
+        className="absolute right-4 top-4 rounded-sm p-1 text-muted-foreground opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        <X className="h-5 w-5" />
+      </button>
       <DialogHeader>
         <VisuallyHidden>
           <DialogTitle>Welcome to OnSpot</DialogTitle>
