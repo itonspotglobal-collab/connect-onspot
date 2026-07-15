@@ -72,7 +72,7 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location, navigate] = useLocation();
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, logout, refreshAuth } = useAuth();
   const { signInToPortal } = usePortalLogin();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
@@ -1982,13 +1982,18 @@ export function TopNavigation() {
                           });
                           const data = await res.json();
                           if (data.success) {
-                            localStorage.setItem("dev_portal_role", signupRole);
-                            localStorage.setItem("dev_portal_email", signupEmail);
-                            localStorage.setItem("dev_portal_first_name", signupFirstName);
-                            localStorage.setItem("dev_portal_last_name", signupLastName);
+                            // Store JWT token + user so AuthContext picks it up
+                            if (data.token) {
+                              localStorage.setItem("onspot_jwt_token", data.token);
+                            }
+                            if (data.user) {
+                              localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                            }
                             setShowPortal(false);
                             setModalStep(1);
-                            navigate(signupRole === "client" ? "/hire-talent" : "/find-best-matches");
+                            // Sync AuthContext state immediately (no page reload needed)
+                            await refreshAuth();
+                            navigate(signupRole === "client" ? "/client-profile" : "/find-best-matches");
                           } else if (res.status === 409) {
                             toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
                             setSigninEmail(signupEmail);

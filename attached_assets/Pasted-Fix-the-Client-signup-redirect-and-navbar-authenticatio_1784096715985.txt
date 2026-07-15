@@ -1,0 +1,621 @@
+Fix the Client signup redirect and navbar authentication state in the actual live signup flow.
+
+
+
+Current behavior:
+
+- A user creates a new Client account.
+
+- The app redirects to `/hire-talent`.
+
+- The navbar still shows “Log In” and “Sign Up”.
+
+- It should redirect to `/client-profile`.
+
+- The navbar should immediately show a “Client Profile” account button.
+
+
+
+Important repository findings:
+
+1. `client/src/components/SignUpDialog.tsx` already contains:
+
+   - localStorage.setItem("onspot_jwt_token", signupResponse.token)
+
+   - localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user))
+
+   - Client redirect to `/client-profile`
+
+
+
+2. `client/src/components/TopNavigation.tsx` already contains role-based profile display logic:
+
+   - client → `/client-profile`
+
+   - label → “Client Profile”
+
+
+
+Therefore, do not blindly edit those same lines again.
+
+Find the actual runtime signup handler and navbar shown in the current Replit preview.
+
+
+
+PHASE 1 — IDENTIFY THE REAL LIVE FLOW
+
+
+
+Search the entire codebase for:
+
+- `"/hire-talent"`
+
+- `window.location.href`
+
+- `setLocation("/hire-talent")`
+
+- `navigate("/hire-talent")`
+
+- `"Log In"`
+
+- `"Sign Up"`
+
+- `signupRole`
+
+- `signupLoading`
+
+- `/api/signup`
+
+- `authAPI.signup`
+
+- `onspot_jwt_token`
+
+- `onspot_user`
+
+
+
+The current `TopNavigation.tsx` contains its own embedded authentication state and signup fields, including:
+
+- signupFirstName
+
+- signupLastName
+
+- signupEmail
+
+- signupPassword
+
+- signupRole
+
+- signupLoading
+
+
+
+Inspect that embedded signup handler carefully.
+
+
+
+Determine which handler is actually executed by the Sign Up button shown in the screenshot.
+
+
+
+Add temporary logs:
+
+```ts
+
+console.log("[LIVE SIGNUP] component", "COMPONENT_NAME");
+
+console.log("[LIVE SIGNUP] selected role", signupRole);
+
+console.log("[LIVE SIGNUP] response", signupResponse);
+
+
+
+PHASE 2 — USE ONE AUTH FLOW
+
+
+
+Remove or consolidate duplicate Client signup logic.
+
+
+
+Preferred behavior:
+
+
+
+All general Client and Talent signup forms should use one shared function in AuthContext or authAPI.
+
+Do not maintain separate token-storage logic in multiple UI components.
+
+Do not have one signup flow in SignUpDialog and another different flow inside TopNavigation.
+
+
+
+Create or use a shared method such as:
+
+
+
+signupAndAuthenticate(signupData)
+
+
+
+It must:
+
+
+
+POST to the real signup endpoint.
+
+Require success, token, and user.
+
+Normalize the returned user.
+
+Store the token and user using the same keys as normal login.
+
+Update AuthContext state immediately.
+
+Return the authenticated user.
+
+
+
+PHASE 3 — NORMALIZE THE CLIENT USER
+
+
+
+The stored Client user must contain:
+
+
+
+{
+
+  id: string,
+
+  email: string,
+
+  role: "client",
+
+  userType: "client",
+
+  firstName?: string,
+
+  lastName?: string,
+
+  company?: string
+
+}
+
+
+
+The backend may return snake_case fields. Map them consistently.
+
+
+
+Do not store a user with:
+
+
+
+missing role
+
+role = undefined
+
+role = company unless AuthContext normalizes it
+
+accountType without also mapping it to role
+
+
+
+Use:
+
+
+
+const normalizedUser = {
+
+  id: response.user.id,
+
+  email: response.user.email,
+
+  username: response.user.username,
+
+  firstName: response.user.first_name ?? response.user.firstName,
+
+  lastName: response.user.last_name ?? response.user.lastName,
+
+  company: response.user.company,
+
+  role: response.user.role,
+
+  userType: response.user.role,
+
+};
+
+
+
+Validate:
+
+
+
+if (normalizedUser.role !== "client" && normalizedUser.role !== "talent") {
+
+  throw new Error("Invalid account role returned by signup");
+
+}
+
+
+
+PHASE 4 — UPDATE AUTHCONTEXT BEFORE NAVIGATION
+
+
+
+Do not only write localStorage and hope a reload picks it up.
+
+
+
+Update AuthContext.tsx to expose a method such as:
+
+
+
+completeAuthentication(token, rawUser)
+
+
+
+That method should:
+
+
+
+store onspot_jwt_token
+
+store onspot_user
+
+map the user
+
+call setUser(mappedUser)
+
+call setIsAuthenticated(true)
+
+call setIsLoading(false)
+
+
+
+Then the signup component should do:
+
+
+
+const authenticatedUser = await signupAndAuthenticate(signupData);
+
+
+
+setSignupModalOpen(false);
+
+
+
+if (authenticatedUser.role === "client") {
+
+  navigate("/client-profile");
+
+} else {
+
+  navigate("/get-hired");
+
+}
+
+
+
+Use one navigation method consistently.
+
+
+
+Do not redirect successful Client signup to:
+
+
+
+/hire-talent
+
+/dashboard
+
+/client-dashboard
+
+
+
+The required Client destination is:
+
+
+
+/client-profile
+
+
+
+PHASE 5 — FIX THE NAVBAR
+
+
+
+The navbar must use:
+
+
+
+const { isAuthenticated, user, isLoading } = useAuth();
+
+
+
+Display rules:
+
+
+
+if (isLoading) {
+
+  show a small loading placeholder;
+
+} else if (isAuthenticated && user?.role === "client") {
+
+  show Client Profile account dropdown/button;
+
+} else if (isAuthenticated && user?.role === "talent") {
+
+  show Talent Profile account dropdown/button;
+
+} else {
+
+  show Log In and Sign Up;
+
+}
+
+
+
+Do not separately determine authentication from:
+
+
+
+component-local signup state
+
+a different token key
+
+dev_portal_user
+
+talent-only auth storage
+
+stale state captured before signup
+
+hardcoded logged-out buttons
+
+
+
+The Client Profile button should navigate to:
+
+
+
+/client-profile
+
+
+
+The account dropdown should include:
+
+
+
+Client Profile
+
+Hire Talent
+
+Settings
+
+Sign Out
+
+
+
+PHASE 6 — CHECK FOR DUPLICATE NAVBARS
+
+
+
+The screenshot shows separate “Log In” and “Sign Up” buttons, while another version of the repository uses an “Access Portal” button.
+
+
+
+Search for all navbar/header components:
+
+
+
+TopNavigation
+
+Header
+
+Navbar
+
+Home navigation
+
+HireTalentPage navigation
+
+public layout navigation
+
+
+
+Ensure the page is using only one canonical navigation component.
+
+
+
+If HireTalentPage.tsx or Home.tsx renders its own header, replace or update it to consume the same AuthContext.
+
+
+
+Do not leave a page-specific navbar that always shows Log In and Sign Up.
+
+
+
+PHASE 7 — VERIFY ROUTING
+
+
+
+Confirm client/src/App.tsx contains:
+
+
+
+<Route path="/client-profile" component={ClientProfile} />
+
+
+
+Do not change this route unless necessary.
+
+
+
+After successful Client signup:
+
+
+
+URL must become /client-profile
+
+ClientProfile must render
+
+no later useEffect may redirect back to /hire-talent
+
+
+
+Search for effects or route guards that redirect Clients:
+
+
+
+useEffect(...)
+
+navigate("/hire-talent")
+
+setLocation("/hire-talent")
+
+window.location.href = "/hire-talent"
+
+
+
+Remove only incorrect post-signup redirects.
+
+
+
+PHASE 8 — VERIFY THE DEPLOYED CODE
+
+
+
+Confirm the Replit workspace contains the same changes as the GitHub main branch.
+
+
+
+Run:
+
+
+
+git status
+
+git branch --show-current
+
+git log -1 --oneline
+
+
+
+Check whether the preview is running old code.
+
+
+
+Restart the Replit development server after the fix.
+
+
+
+If using a published deployment, republish it after testing.
+
+
+
+PHASE 9 — REQUIRED TEST
+
+
+
+Test with a brand-new unique Client email.
+
+
+
+In browser DevTools verify:
+
+
+
+Signup request response:
+
+{
+
+  "success": true,
+
+  "token": "...",
+
+  "user": {
+
+    "id": "...",
+
+    "email": "...",
+
+    "role": "client"
+
+  }
+
+}
+
+Local storage contains:
+
+onspot_jwt_token
+
+onspot_user
+
+onspot_user contains:
+
+{
+
+  "role": "client"
+
+}
+
+React AuthContext immediately reports:
+
+isAuthenticated = true
+
+user.role = client
+
+URL becomes:
+
+/client-profile
+
+Navbar shows:
+
+Client Profile
+
+Refreshing the page preserves the authenticated Client state.
+
+
+
+Regression tests:
+
+
+
+Existing Client login works.
+
+Talent signup redirects to /get-hired.
+
+Talent navbar shows Talent Profile.
+
+Logout returns navbar to Log In / Sign Up.
+
+Invalid signup keeps the modal open.
+
+Duplicate email shows an error.
+
+
+
+Do not report this fixed based only on code inspection.
+
+Test the real signup button shown in the current preview and provide:
+
+
+
+the actual component used
+
+the exact signup endpoint response
+
+the storage keys written
+
+the role stored
+
+the final URL
+
+the navbar state after signup
+
+files changed
+
+
+
+The most likely cause is **duplicate signup and navigation implementations**. `SignUpDialog.tsx` already points Clients to `/client-profile`, but `TopNavigation.tsx` contains another complete set of signup fields and handlers, which suggests the visible Sign Up button may not be using the corrected dialog flow.  
