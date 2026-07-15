@@ -1,0 +1,326 @@
+Fix newly created Client accounts so they can log in using the original password entered during signup. Current behavior: 1. Create a new Client account. 2. Signup succeeds. 3. User is automatically logged in and redirected to /client-profile. 4. Sign out. 5. Try logging in with the exact email and password used during signup. 6. Login fails. 7. If I reset the password, login works with the reset password. This strongly indicates that the original signup password is not being stored correctly in users.password_hash. Important: - Do not change the /client-profile redirect. - Do not redesign the UI. - Do not rely on password reset as a workaround. - Clear or restart the development rate limiter before testing so HTTP 429 does not hide the real result. ROOT CAUSE TO VERIFY Signup may be: - generating and returning a JWT, - creating a client_profiles record, - but failing to save a valid bcrypt hash in the matching users.password_hash column. Password reset works because it later updates users.password_hash correctly. STEP 1 — INSPECT THE NEW ACCOUNT After creating a brand-new test Client, inspect both tables:
+sql
+SELECT
+  id,
+  email,
+  role,
+  password_hash,
+  created_at
+FROM users
+WHERE lower(email) = lower('NEW_TEST_EMAIL');
+
+SELECT
+  id,
+  user_id,
+  email,
+  contact_person,
+  company_name
+FROM client_profiles
+WHERE lower(email) = lower('NEW_TEST_EMAIL');
+Verify:
+
+users row exists
+client_profiles row exists
+users.id = client_profiles.user_id
+users.role = 'client'
+users.password_hash is not null
+hash begins with $2a$, $2b$, or $2y$
+
+Do not log the complete password hash or plaintext password.
+
+Safe diagnostic only:
+
+console.log({
+  userFound: Boolean(user),
+  clientProfileFound: Boolean(clientProfile),
+  idsMatch: user?.id === clientProfile?.userId,
+  role: user?.role,
+  hasPasswordHash: Boolean(user?.passwordHash),
+  hashLooksLikeBcrypt:
+    user?.passwordHash?.startsWith("$2a$") ||
+    user?.passwordHash?.startsWith("$2b$") ||
+    user?.passwordHash?.startsWith("$2y$")
+});
+
+STEP 2 — FIX THE ACTUAL SIGNUP HANDLER
+
+Find the actual live handler for:
+
+POST /api/signup
+
+Search:
+
+/api/signup
+hashPassword
+passwordHash
+password_hash
+createUser
+insert(users)
+signupPassword
+signupRole
+
+The signup flow must be:
+
+const normalizedEmail = email.trim().toLowerCase();
+
+const passwordValidation = validatePasswordStrength(password);
+
+if (!passwordValidation.isValid) {
+  return res.status(400).json({
+    success: false,
+    message: passwordValidation.errors[0],
+    errors: passwordValidation.errors
+  });
+}
+
+const passwordHash = await hashPassword(password);
+
+Then save:
+
+const [createdUser] = await tx
+  .insert(users)
+  .values({
+    email: normalizedEmail,
+    username,
+    firstName,
+    lastName,
+    company,
+    role: "client",
+    passwordHash
+  })
+  .returning();
+
+Important:
+
+Use the TypeScript property passwordHash.
+Drizzle maps it to SQL column password_hash.
+Do not pass password.
+Do not pass password_hash unless using raw SQL.
+Do not omit the field.
+Do not store plaintext.
+
+STEP 3 — CHECK THE STORAGE LAYER
+
+If signup calls something like:
+
+storage.createUser(userData)
+
+inspect the method and its input schema.
+
+Make sure passwordHash is not dropped during:
+
+destructuring
+Zod parsing
+insert schema validation
+object mapping
+database insert
+
+Common broken example:
+
+const {
+  email,
+  username,
+  firstName,
+  lastName,
+  role,
+  company
+} = data;
+
+This silently drops passwordHash.
+
+Correct it so the insert includes:
+
+passwordHash: data.passwordHash
+
+STEP 4 — USE A DATABASE TRANSACTION
+
+Create the users and client_profiles records in one transaction:
+
+const createdUser = await db.transaction(async (tx) => {
+  const [user] = await tx
+    .insert(users)
+    .values({
+      email: normalizedEmail,
+      username,
+      firstName,
+      lastName,
+      company,
+      role: "client",
+      passwordHash
+    })
+    .returning();
+
+  await tx.insert(clientProfiles).values({
+    userId: user.id,
+    email: normalizedEmail,
+    contactPerson: `${firstName} ${lastName}`.trim(),
+    companyName: company
+  });
+
+  return user;
+});
+
+Generate the JWT only after the transaction succeeds.
+
+If either insert fails:
+
+do not issue a JWT
+do not return signup success
+
+STEP 5 — VERIFY LOGIN USES THE SAME HASH
+
+The /api/login handler must load the account from users, not client_profiles.
+
+const normalizedEmail = req.body.email.trim().toLowerCase();
+
+const user = await storage.getUserByEmail(normalizedEmail);
+
+if (!user || !user.passwordHash) {
+  return res.status(401).json({
+    success: false,
+    message: "Invalid email or password"
+  });
+}
+
+const passwordMatches = await verifyPassword(
+  req.body.password,
+  user.passwordHash
+);
+
+if (!passwordMatches) {
+  return res.status(401).json({
+    success: false,
+    message: "Invalid email or password"
+  });
+}
+
+Signup and login must both use the existing shared helpers from:
+
+server/auth-utils.ts
+
+Use:
+
+hashPassword
+verifyPassword
+validatePasswordStrength
+
+Do not create a second bcrypt implementation.
+
+STEP 6 — USE IDENTICAL EMAIL NORMALIZATION
+
+Use this everywhere:
+
+email.trim().toLowerCase()
+
+Apply it to:
+
+duplicate email lookup
+signup insert
+login lookup
+password reset lookup
+
+STEP 7 — PASSWORD RULE CONSISTENCY
+
+The current password policy requires:
+
+at least 8 characters
+uppercase
+lowercase
+number
+special character
+
+Use a valid test password:
+
+Testing123!
+
+Do not test signup with Testing123, because it does not contain a special character.
+
+The frontend signup form must display the same password rules as the backend.
+
+STEP 8 — DO NOT LET THE RATE LIMITER HIDE THE RESULT
+
+The current UI may return:
+
+Too many login/signup attempts
+
+Before testing:
+
+restart the Replit development server if using the in-memory limiter, or
+wait for the limit window to expire
+
+Submit only once.
+
+Confirm the request returns:
+
+200 for valid credentials
+not 429
+not 401
+
+Do not diagnose password verification while the request is still blocked by 429.
+
+STEP 9 — ADD A ROUND-TRIP TEST
+
+Add an integration test that proves signup credentials persist:
+
+1. Generate a unique Client email.
+2. Signup using `Testing123!`.
+3. Confirm signup returns success and JWT.
+4. Confirm users.password_hash exists.
+5. Confirm hash is not equal to plaintext.
+6. Confirm client_profiles.user_id matches users.id.
+7. Clear the signup token.
+8. POST /api/login with the same email and `Testing123!`.
+9. Confirm 200.
+10. Confirm JWT returned.
+11. Confirm user.role = client.
+12. Try wrong password.
+13. Confirm 401.
+
+Then test password reset separately:
+
+1. Reset password to `Changed123!`.
+2. Confirm `Testing123!` no longer works.
+3. Confirm `Changed123!` works.
+
+STEP 10 — MANUAL ACCEPTANCE TEST
+
+Use a brand-new unique Client account:
+
+Email: unique test email
+Password: Testing123!
+
+Verify:
+
+Signup succeeds.
+Redirect goes to /client-profile.
+Navbar shows Client Profile.
+Sign out.
+Clear/wait for the rate limiter if necessary.
+Log in with the original signup password Testing123!.
+Login succeeds without resetting the password.
+Redirect returns to /client-profile.
+Refresh preserves authentication.
+Password reset still works independently.
+
+FINAL REPORT
+
+Report:
+
+Root cause.
+Whether signup had been omitting or corrupting passwordHash.
+Whether the storage layer dropped the field.
+Whether the user and client profile IDs matched.
+Files changed.
+Test account flow used.
+Signup → logout → login test result.
+Password reset regression test result.
+
+Do not mark this complete until a brand-new Client account can sign up, sign out, and log back in using the original signup password without performing a password reset.
+
+
+The important distinction is:
+
+- **Automatic signup login** only proves a token was issued.
+- **Logging in after signing out** proves the original password was correctly hashed and persisted.
+
+Right now, the second part appears broken.

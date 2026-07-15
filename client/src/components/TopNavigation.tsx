@@ -101,7 +101,7 @@ export function TopNavigation() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
-  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showAuthPassword, setShowAuthPassword] = useState(true);
   const [showSignupPassword, setShowSignupPassword] = useState(true);
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [showSignupConfirm, setShowSignupConfirm] = useState(true);
@@ -1773,7 +1773,7 @@ export function TopNavigation() {
                         <div className="space-y-2 mb-6">
                           <Label className="text-white/90 text-sm font-medium">Password</Label>
                           <div className="relative">
-                            <Input type={showAuthPassword ? "text" : "password"} placeholder="••••••••" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="current-password" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
+                            <Input type={showAuthPassword ? "text" : "password"} placeholder="Enter your password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="off" className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] focus:ring-[#3A3AF8]/50 backdrop-blur-sm h-12 pr-10" />
                             <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/90 transition-colors">
                               {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
