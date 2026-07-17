@@ -1,0 +1,185 @@
+Update the dedicated Login page to better reflect our new OnSpot brand direction.
+
+This is a visual/content update only.
+Do NOT modify the authentication logic, API calls, validation, portal selection, or routing.
+
+## 1. Update branding
+
+Replace every occurrence of:
+
+"GLOBAL OUTSOURCING PLATFORM"
+
+with
+
+"WORK WITHOUT LIMITS"
+
+Use the exact capitalization shown above.
+
+This applies to the dedicated login page only.
+
+---
+
+## 2. Lighten the overall visual style
+
+Our new business direction is moving toward a lighter, cleaner premium look while still keeping the existing purple/blue OnSpot identity.
+
+Do NOT redesign the page.
+Keep the same layout and spacing.
+
+Instead, adjust the color palette:
+
+### Background
+Keep the existing dark gradient/grid background, but make it slightly brighter and less saturated.
+
+### Login Card
+Make the card lighter.
+
+Current:
+- very dark navy
+
+Target:
+- rich indigo / deep violet
+- slightly brighter than today
+- premium SaaS appearance
+
+Example direction:
+
+background:
+rgba(56, 54, 124, 0.9)
+
+instead of nearly black.
+
+---
+
+## 3. Typography
+
+Increase contrast.
+
+Use:
+
+Headings:
+- white
+
+Body text:
+- light lavender
+- slate-200 style
+
+Labels:
+- almost white
+
+Placeholder text:
+- muted lavender
+
+Avoid gray text that becomes difficult to read.
+
+---
+
+## 4. Links
+
+Make all links noticeably lighter.
+
+This includes:
+
+- Forgot password?
+- Create Account
+- Back to Home
+
+Current:
+Muted gray.
+
+Target:
+Light lavender / soft white.
+
+Hover:
+Bright white.
+
+Example Tailwind direction:
+
+text-indigo-200
+hover:text-white
+
+or
+
+text-violet-200
+hover:text-white
+
+The links should be immediately visible without looking overly bright.
+
+---
+
+## 5. Portal cards
+
+Keep the Client and Talent cards exactly as they are structurally.
+
+Only slightly brighten:
+
+- borders
+- icon colors
+- headings
+
+Increase hover contrast slightly.
+
+---
+
+## 6. Input fields
+
+Keep the existing design but improve readability.
+
+Slightly lighter field background.
+
+Higher contrast placeholder.
+
+White entered text.
+
+Keep focus ring.
+
+---
+
+## 7. Primary button
+
+Keep the existing gradient.
+
+Increase contrast slightly so the button feels more premium.
+
+Keep disabled/loading behavior unchanged.
+
+---
+
+## 8. Preserve everything else
+
+Do NOT modify:
+
+- login functionality
+- signup functionality
+- API calls
+- routing
+- validation
+- AuthContext
+- JWT handling
+- portal selection
+
+No layout changes.
+
+No spacing changes.
+
+No responsive changes.
+
+No modal changes.
+
+Only visual refinements and the branding text replacement.
+
+## Acceptance Criteria
+
+✓ "GLOBAL OUTSOURCING PLATFORM" becomes "WORK WITHOUT LIMITS"
+
+✓ Login card is slightly lighter.
+
+✓ Links are easy to see.
+
+✓ Labels are easier to read.
+
+✓ Inputs have improved contrast.
+
+✓ Overall page feels brighter while preserving the OnSpot identity.
+
+✓ No authentication behavior changes.

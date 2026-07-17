@@ -11,28 +11,33 @@ import { SignUpDialog } from "@/components/SignUpDialog";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
+// ── Shared style tokens ────────────────────────────────────────────────────
+const inputCls = "bg-white/[0.12] border-white/25 text-white placeholder:text-white/50 focus:border-[#3A3AF8] h-12";
+const labelCls = "text-white/95 text-sm font-medium";
+const backBtnCls = "flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm mb-8 transition-colors";
+
 // ── Card shell — defined at module level so it is never recreated on re-render ──
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden"
       style={{
-        background: "linear-gradient(135deg, #07071f 0%, #0d0d30 30%, #13133d 60%, #0d0d30 80%, #07071f 100%)",
+        background: "linear-gradient(135deg, #0c0c2e 0%, #13134a 30%, #19195e 60%, #13134a 80%, #0c0c2e 100%)",
       }}
     >
       {/* Background grid */}
       <div
-        className="absolute inset-0 opacity-10 pointer-events-none"
+        className="absolute inset-0 opacity-[0.15] pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)",
+            "linear-gradient(rgba(91,124,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.35) 1px, transparent 1px)",
           backgroundSize: "50px 50px",
         }}
       />
       {/* Glow orb */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div
-          className="w-[600px] h-[600px] rounded-full opacity-20 blur-3xl"
+          className="w-[600px] h-[600px] rounded-full opacity-25 blur-3xl"
           style={{ background: "radial-gradient(circle, #3A3AF8 0%, #7F3DF4 50%, transparent 80%)" }}
         />
       </div>
@@ -52,23 +57,23 @@ function CardShell({ children }: { children: React.ReactNode }) {
             OnSpot
           </span>
         </Link>
-        <p className="text-white/40 text-xs mt-1 tracking-widest uppercase">Global Outsourcing Platform</p>
+        <p className="text-violet-200/60 text-xs mt-1 tracking-widest uppercase">Work Without Limits</p>
       </div>
 
       {/* Card */}
       <div
         className="relative z-10 w-full max-w-md rounded-2xl overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
-          border: "1px solid rgba(91,124,255,0.2)",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(91,124,255,0.1)",
+          background: "linear-gradient(135deg, #28287a 0%, #32328e 40%, #38389e 70%, #32328e 100%)",
+          border: "1px solid rgba(91,124,255,0.35)",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(91,124,255,0.15)",
         }}
       >
         {children}
       </div>
 
       {/* Footer */}
-      <p className="relative z-10 mt-6 text-white/30 text-xs text-center">
+      <p className="relative z-10 mt-6 text-white/35 text-xs text-center">
         &copy; {new Date().getFullYear()} OnSpot Global. All rights reserved.
       </p>
     </div>
@@ -211,23 +216,23 @@ export default function PortalLogin() {
           <button
             type="button"
             onClick={() => { setStep("login"); setSetupPassword(""); setSetupConfirm(""); }}
-            className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 transition-colors"
+            className={backBtnCls}
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
           </button>
           <h2 className="text-3xl font-light text-white mb-2" style={{ letterSpacing: "-0.02em" }}>
             Create a Password
           </h2>
-          <p className="text-white/60 mb-6 text-sm">
+          <p className="text-violet-100/75 mb-6 text-sm">
             Your profile exists but has no password yet. Set one now to access the Talent Portal.
           </p>
-          <div className="mb-4 px-4 py-3 rounded-xl border border-white/20 bg-white/5">
-            <p className="text-white/50 text-xs mb-0.5">Signing in as</p>
+          <div className="mb-4 px-4 py-3 rounded-xl border border-white/20 bg-white/[0.08]">
+            <p className="text-violet-200/60 text-xs mb-0.5">Signing in as</p>
             <p className="text-white text-sm font-medium truncate">{email}</p>
           </div>
           <div className="space-y-4 mb-6">
             <div className="space-y-2">
-              <Label className="text-white/90 text-sm font-medium">New Password</Label>
+              <Label className={labelCls}>New Password</Label>
               <div className="relative">
                 <Input
                   id="setup-password"
@@ -237,7 +242,7 @@ export default function PortalLogin() {
                   value={setupPassword}
                   onChange={(e) => setSetupPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12 pr-10"
+                  className={`${inputCls} pr-10`}
                 />
                 <button
                   type="button"
@@ -250,7 +255,7 @@ export default function PortalLogin() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-white/90 text-sm font-medium">Confirm Password</Label>
+              <Label className={labelCls}>Confirm Password</Label>
               <Input
                 id="setup-confirm"
                 name="confirm-password"
@@ -259,7 +264,7 @@ export default function PortalLogin() {
                 value={setupConfirm}
                 onChange={(e) => setSetupConfirm(e.target.value)}
                 autoComplete="new-password"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12"
+                className={inputCls}
                 onKeyDown={(e) => e.key === "Enter" && handleSetupPassword()}
               />
               {setupConfirm && setupPassword !== setupConfirm && (
@@ -272,7 +277,7 @@ export default function PortalLogin() {
             onClick={handleSetupPassword}
             disabled={setupLoading || !setupPassword || !setupConfirm || setupPassword !== setupConfirm || setupPassword.length < 8}
             className="w-full px-8 py-4 text-base font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)", boxShadow: "0 8px 30px rgba(58,58,248,0.35)" }}
+            style={{ background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)", boxShadow: "0 8px 30px rgba(58,58,248,0.45)" }}
           >
             {setupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {setupLoading ? "Setting up…" : <><span>Create Password &amp; Sign In</span> <ArrowRight className="w-4 h-4" /></>}
@@ -290,19 +295,19 @@ export default function PortalLogin() {
           <button
             type="button"
             onClick={() => { setStep("login"); setForgotEmail(""); setForgotNewPw(""); setForgotConfirm(""); }}
-            className="flex items-center gap-1.5 text-white/60 hover:text-white/90 text-sm mb-8 transition-colors"
+            className={backBtnCls}
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
           </button>
           <h2 className="text-3xl font-light text-white mb-2" style={{ letterSpacing: "-0.02em" }}>
             Reset Password
           </h2>
-          <p className="text-white/60 mb-7 text-sm">
+          <p className="text-violet-100/75 mb-7 text-sm">
             Enter your registered email and choose a new password.
           </p>
           <div className="space-y-4 mb-6">
             <div className="space-y-2">
-              <Label className="text-white/90 text-sm font-medium">Email Address</Label>
+              <Label className={labelCls}>Email Address</Label>
               <Input
                 id="forgot-email"
                 name="email"
@@ -311,11 +316,11 @@ export default function PortalLogin() {
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 autoComplete="email"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12"
+                className={inputCls}
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/90 text-sm font-medium">New Password</Label>
+              <Label className={labelCls}>New Password</Label>
               <div className="relative">
                 <Input
                   id="forgot-new-password"
@@ -325,7 +330,7 @@ export default function PortalLogin() {
                   value={forgotNewPw}
                   onChange={(e) => setForgotNewPw(e.target.value)}
                   autoComplete="new-password"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12 pr-10"
+                  className={`${inputCls} pr-10`}
                 />
                 <button
                   type="button"
@@ -338,7 +343,7 @@ export default function PortalLogin() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-white/90 text-sm font-medium">Confirm New Password</Label>
+              <Label className={labelCls}>Confirm New Password</Label>
               <Input
                 id="forgot-confirm"
                 name="confirm-password"
@@ -347,7 +352,7 @@ export default function PortalLogin() {
                 value={forgotConfirm}
                 onChange={(e) => setForgotConfirm(e.target.value)}
                 autoComplete="new-password"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12"
+                className={inputCls}
                 onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()}
               />
               {forgotConfirm && forgotNewPw !== forgotConfirm && (
@@ -360,7 +365,7 @@ export default function PortalLogin() {
             onClick={handleForgotPassword}
             disabled={forgotLoading || !forgotEmail || !forgotNewPw || !forgotConfirm || forgotNewPw !== forgotConfirm}
             className="w-full px-8 py-4 text-base font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)", boxShadow: "0 8px 30px rgba(58,58,248,0.35)" }}
+            style={{ background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)", boxShadow: "0 8px 30px rgba(58,58,248,0.45)" }}
           >
             {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {forgotLoading ? "Resetting…" : <><span>Reset Password</span> <ArrowRight className="w-4 h-4" /></>}
@@ -378,11 +383,11 @@ export default function PortalLogin() {
         <h2 className="text-3xl font-light text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
           Welcome back
         </h2>
-        <p className="text-white/60 mb-8 text-sm">Sign in to your OnSpot account.</p>
+        <p className="text-violet-100/75 mb-8 text-sm">Sign in to your OnSpot account.</p>
 
         {/* Email */}
         <div className="space-y-2 mb-4">
-          <Label htmlFor="login-email" className="text-white/90 text-sm font-medium">Email Address</Label>
+          <Label htmlFor="login-email" className={labelCls}>Email Address</Label>
           <Input
             id="login-email"
             name="email"
@@ -391,18 +396,18 @@ export default function PortalLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12"
+            className={inputCls}
           />
         </div>
 
         {/* Password */}
         <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between">
-            <Label htmlFor="login-password" className="text-white/90 text-sm font-medium">Password</Label>
+            <Label htmlFor="login-password" className={labelCls}>Password</Label>
             <button
               type="button"
               onClick={() => { setForgotEmail(email); setStep("forgot-password"); }}
-              className="text-xs text-white/50 hover:text-white/80 transition-colors underline"
+              className="text-xs text-indigo-200 hover:text-white transition-colors underline"
             >
               Forgot password?
             </button>
@@ -416,7 +421,7 @@ export default function PortalLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-[#3A3AF8] h-12 pr-10"
+              className={`${inputCls} pr-10`}
               onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
             />
             <button
@@ -432,7 +437,7 @@ export default function PortalLogin() {
 
         {/* Portal Selection */}
         <div className="mb-6">
-          <p className="text-white/80 text-sm font-medium mb-3">Choose your portal</p>
+          <p className="text-white/90 text-sm font-medium mb-3">Choose your portal</p>
           <div className="grid grid-cols-2 gap-3">
             {/* Client */}
             <button
@@ -440,13 +445,13 @@ export default function PortalLogin() {
               onClick={() => setSelectedPortal("client")}
               className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 text-left ${
                 selectedPortal === "client"
-                  ? "border-2 border-[#5B7CFF] bg-[#3A3AF8]/20"
-                  : "border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40"
+                  ? "border-2 border-[#5B7CFF] bg-[#3A3AF8]/25"
+                  : "border border-white/30 bg-white/[0.08] hover:bg-white/[0.14] hover:border-white/55"
               }`}
             >
-              <Building className="w-6 h-6 text-[#5B7CFF]" />
+              <Building className="w-6 h-6 text-[#7B9CFF]" />
               <span className="text-white font-medium text-center">Client</span>
-              <span className="text-white/50 text-xs leading-tight text-center">
+              <span className="text-white/65 text-xs leading-tight text-center">
                 Find and manage top outsourcing talent.
               </span>
               {selectedPortal === "client" && (
@@ -464,13 +469,13 @@ export default function PortalLogin() {
               onClick={() => setSelectedPortal("talent")}
               className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 text-left ${
                 selectedPortal === "talent"
-                  ? "border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.1)]"
-                  : "border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40"
+                  ? "border-2 border-yellow-400/90 bg-yellow-400/15"
+                  : "border border-white/30 bg-white/[0.08] hover:bg-white/[0.14] hover:border-white/55"
               }`}
             >
-              <User className="w-6 h-6 text-yellow-400" />
+              <User className="w-6 h-6 text-yellow-300" />
               <span className="text-white font-medium text-center">Talent</span>
-              <span className="text-white/50 text-xs leading-tight text-center">
+              <span className="text-white/65 text-xs leading-tight text-center">
                 Find jobs and manage your career profile.
               </span>
               {selectedPortal === "talent" && (
@@ -492,7 +497,7 @@ export default function PortalLogin() {
           className="w-full px-8 py-4 text-base font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 mb-5"
           style={{
             background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
-            boxShadow: "0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+            boxShadow: "0 8px 30px rgba(58,58,248,0.45), inset 0 1px 0 rgba(255,255,255,0.2)",
           }}
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -501,11 +506,11 @@ export default function PortalLogin() {
 
         {/* Footer links */}
         <div className="text-center space-y-2">
-          <p className="text-white/40 text-xs">
+          <p className="text-white/60 text-xs">
             Don&apos;t have an account?{" "}
             <button
               type="button"
-              className="text-white/60 hover:text-white underline transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs"
+              className="text-violet-200 hover:text-white underline transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs"
               onClick={() => setSignupOpen(true)}
             >
               Create Account
@@ -513,7 +518,7 @@ export default function PortalLogin() {
           </p>
           <p className="text-white/40 text-xs">
             <Link href="/">
-              <span className="text-white/50 hover:text-white/80 transition-colors cursor-pointer flex items-center justify-center gap-1">
+              <span className="text-indigo-200 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1">
                 <ArrowLeft className="w-3 h-3" /> Back to Home
               </span>
             </Link>
