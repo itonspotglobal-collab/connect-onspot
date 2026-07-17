@@ -1,0 +1,135 @@
+Please refine the Hero section and Navigation Bar to improve responsiveness on smaller laptop screens (1366×768, 1440×900, etc.).
+
+Current issues:
+1. The Hero content is too large, causing it to feel cramped on smaller laptop screens.
+2. The Hero section nearly fills the entire viewport, leaving little breathing room.
+3. The navbar content (logo on the left and Log In / Sign Up buttons on the right) sits too close to the center. I want them pushed outward toward the edges as shown in the annotated screenshot.
+
+========================
+PART 1 — HERO RESPONSIVENESS
+========================
+
+Do NOT redesign the Hero.
+
+Instead, scale it proportionally.
+
+Desktop target:
+1920×1080 should look almost identical.
+
+For laptops (1366×768, 1440×900, 1536×864):
+Reduce the overall scale of the Hero by approximately 10–15%.
+
+Adjust the following:
+
+Main heading ("Work Without Limits")
+- Reduce font size slightly.
+- Use:
+  font-size: clamp(3.8rem, 5vw, 5.8rem);
+- Keep it on one line.
+
+Subheading
+- Reduce slightly.
+- Maintain spacing.
+
+Body text
+- Reduce by about 2px.
+
+Buttons
+- Reduce height by around 8–10%.
+- Reduce horizontal padding slightly.
+- Keep both buttons the same size.
+
+Feature cards
+- Reduce overall width by around 10%.
+- Reduce height slightly.
+- Reduce icon container size slightly.
+- Reduce icon size proportionally.
+- Maintain all spacing and typography proportions.
+
+Hero spacing
+- Reduce vertical spacing slightly so everything comfortably fits within the viewport.
+- The feature cards should remain fully visible without requiring scrolling on a standard laptop.
+
+========================
+PART 2 — NAVIGATION BAR
+========================
+
+Move the navbar content outward.
+
+Current layout:
+The logo and authentication buttons are too close to the center.
+
+Adjust as follows:
+
+LEFT SIDE
+- Move the OnSpot logo further left.
+- Reduce the left padding of the navbar.
+- Target padding:
+  padding-left: 32–40px;
+
+RIGHT SIDE
+- Move the Log In and Sign Up buttons further right.
+- Reduce the right padding.
+- Target padding:
+  padding-right: 32–40px;
+
+CENTER LINKS
+(Hire Talent / Find Work)
+
+Keep them centered between the logo and authentication buttons.
+
+Do NOT move them.
+
+Instead, increase the space between:
+- logo ↔ navigation
+- navigation ↔ auth buttons
+
+using Flexbox.
+
+Recommended structure:
+
+Navbar
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+Left: Logo
+
+Center:
+Hire Talent
+Find Work
+
+Right:
+Log In
+Sign Up
+
+Avoid using fixed margins.
+
+========================
+DO NOT CHANGE
+========================
+
+Do NOT change:
+- Background image
+- Overlay
+- Colors
+- Typography style
+- Hero copy
+- Routes
+- Buttons functionality
+- Navbar height
+- Feature card content
+
+========================
+ACCEPTANCE CRITERIA
+========================
+
+✓ Hero fits comfortably on a 1366×768 laptop without feeling oversized.
+✓ Everything remains visible without excessive scrolling.
+✓ "Work Without Limits" remains on one line.
+✓ Feature cards remain inside the Hero.
+✓ Logo sits closer to the left edge.
+✓ Log In and Sign Up sit closer to the right edge.
+✓ Hire Talent and Find Work remain centered.
+✓ The overall appearance stays consistent with the current design, only scaled and aligned more effectively.
+✓ No TypeScript, CSS, or runtime errors.

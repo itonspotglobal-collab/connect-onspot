@@ -440,16 +440,14 @@ export function TopNavigation() {
         data-scrolled={isScrolled}
       >
         <div 
-          className="mx-auto flex items-center relative"
+          className="flex items-center relative w-full"
           style={{
             height: 'var(--nav-h)',
-            paddingLeft: 'var(--nav-px)',
-            paddingRight: 'var(--nav-px)',
-            maxWidth: '1280px',
-            width: '100%',
+            paddingLeft: 'clamp(32px, 2.5vw, 40px)',
+            paddingRight: 'clamp(32px, 2.5vw, 40px)',
           }}
         >
-          {/* Zone 1: Logo */}
+          {/* Zone 1: Logo — anchored left */}
           <Link
             href="/"
             className="flex shrink-0 items-center relative z-10"
@@ -462,15 +460,12 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Right group: Nav Links + Auth buttons — sits flush-right of logo */}
-          <div className="ml-auto flex items-center" style={{ gap: 'clamp(32px, 4vw, 64px)' }}>
-
-          {/* Zone 2: Desktop Navigation Links */}
+          {/* Zone 2: Desktop Navigation Links — centered with mx-auto */}
           <div 
             ref={navLinksRef}
-            className="hidden md:flex items-center relative"
+            className="hidden md:flex items-center relative mx-auto"
             style={{ 
-              gap: 'clamp(56px, 5vw, 96px)',
+              gap: 'clamp(40px, 4vw, 80px)',
               flexWrap: 'nowrap',
               zIndex: 101,
             }}
@@ -783,7 +778,6 @@ export function TopNavigation() {
               </div>
             )}
           </div>
-          </div>{/* end right group */}
         </div>
       </nav>
 

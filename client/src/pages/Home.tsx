@@ -13,7 +13,7 @@ export default function Home() {
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          minHeight: "calc(100vh - 72px)",
+          minHeight: "calc(100dvh - 72px)",
         }}
       >
         {/* Gradient overlay — dark semi-transparent on left, fades right */}
@@ -28,17 +28,17 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
 
         {/* Main content — left-aligned */}
-        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100vh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-16 sm:py-20">
+        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100dvh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-10 sm:py-12">
 
           {/* Hero text + buttons */}
-          <div className="flex-1 flex items-start pt-20 sm:pt-28">
-            <div className="w-full max-w-[950px]">
+          <div className="flex-1 flex items-start pt-12 sm:pt-20">
+            <div className="w-full max-w-[900px]">
 
               {/* Headline */}
               <div className="hero-fade-up">
                 <h1
                   className="font-bold tracking-tight leading-[0.97] text-white sm:whitespace-nowrap"
-                  style={{ fontSize: "clamp(3rem, 5.5vw, 6.5rem)" }}
+                  style={{ fontSize: "clamp(3.8rem, 5vw, 5.8rem)" }}
                 >
                   Work{" "}
                   <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
@@ -48,24 +48,24 @@ export default function Home() {
               </div>
 
               {/* Supporting heading */}
-              <div className="hero-fade-up-delay mt-6 sm:mt-8">
-                <p className="font-bold text-white leading-snug" style={{ fontSize: "clamp(1.35rem, 2.4vw, 2.2rem)" }}>
+              <div className="hero-fade-up-delay mt-4 sm:mt-5">
+                <p className="font-bold text-white leading-snug" style={{ fontSize: "clamp(1.2rem, 2vw, 1.9rem)" }}>
                   One Platform. Endless Opportunity.
                 </p>
               </div>
 
               {/* Description lines */}
-              <div className="hero-fade-up-delay mt-4 space-y-1">
-                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)" }}>
+              <div className="hero-fade-up-delay mt-3 space-y-1">
+                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>
                   Connecting top talent with great companies.
                 </p>
-                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.95rem, 1.4vw, 1.35rem)" }}>
+                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>
                   Built for the future of work.
                 </p>
               </div>
 
               {/* CTAs */}
-              <div className="hero-fade-up-delay mt-10 sm:mt-12 flex flex-col sm:flex-row gap-5 sm:gap-7 flex-wrap">
+              <div className="hero-fade-up-delay mt-7 sm:mt-9 flex flex-col sm:flex-row gap-4 sm:gap-5 flex-wrap">
                 {/* Primary — gradient */}
                 <Link href="/hire-talent">
                   <button
@@ -74,8 +74,8 @@ export default function Home() {
                     style={{
                       background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
                       boxShadow: "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      fontSize: "clamp(1rem, 1.3vw, 1.2rem)",
-                      padding: "clamp(16px, 1.8vw, 22px) clamp(28px, 3vw, 44px)",
+                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
+                      padding: "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
                     }}
                   >
                     <Users className="w-5 h-5 flex-shrink-0" />
@@ -89,8 +89,8 @@ export default function Home() {
                     data-testid="button-find-work"
                     className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
                     style={{
-                      fontSize: "clamp(1rem, 1.3vw, 1.2rem)",
-                      padding: "clamp(16px, 1.8vw, 22px) clamp(28px, 3vw, 44px)",
+                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
+                      padding: "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
                     }}
                   >
                     <Briefcase className="w-5 h-5 flex-shrink-0" />
@@ -102,55 +102,55 @@ export default function Home() {
           </div>
 
           {/* Feature strip — bottom of hero */}
-          <div className="hero-fade-up-delay mt-10">
+          <div className="hero-fade-up-delay mt-7">
             <div
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[1200px] rounded-3xl overflow-hidden"
+              className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[1080px] rounded-3xl overflow-hidden"
               style={{
                 background: "rgba(8,8,42,0.72)",
                 border: "1px solid rgba(91,124,255,0.22)",
                 backdropFilter: "blur(16px)",
-                minHeight: "160px",
+                minHeight: "130px",
               }}
             >
               {/* Top Talent */}
-              <div className="flex items-center gap-6 px-8 py-7 sm:border-r border-white/10">
+              <div className="flex items-center gap-4 px-6 py-5 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Users className="w-9 h-9 text-violet-300" />
+                  <Users className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Top Talent</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Verified professionals ready to deliver</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Top Talent</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Verified professionals ready to deliver</p>
                 </div>
               </div>
 
               {/* Trusted Platform */}
-              <div className="flex items-center gap-6 px-8 py-7 sm:border-r border-white/10">
+              <div className="flex items-center gap-4 px-6 py-5 sm:border-r border-white/10">
                 <div
-                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Shield className="w-9 h-9 text-violet-300" />
+                  <Shield className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Trusted Platform</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Secure, reliable, and built for you</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Trusted Platform</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Secure, reliable, and built for you</p>
                 </div>
               </div>
 
               {/* Endless Opportunities */}
-              <div className="flex items-center gap-6 px-8 py-7">
+              <div className="flex items-center gap-4 px-6 py-5">
                 <div
-                  className="flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center"
+                  className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{ background: "rgba(58,58,248,0.35)" }}
                 >
-                  <Rocket className="w-9 h-9 text-violet-300" />
+                  <Rocket className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.95rem, 1.35vw, 1.35rem)" }}>Endless Opportunities</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.82rem, 1vw, 1.05rem)" }}>Find the right match. Grow your career.</p>
+                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Endless Opportunities</p>
+                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Find the right match. Grow your career.</p>
                 </div>
               </div>
             </div>
