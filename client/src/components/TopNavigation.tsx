@@ -465,7 +465,8 @@ export function TopNavigation() {
             ref={navLinksRef}
             className="hidden md:flex items-center relative ml-auto"
             style={{ 
-              gap: 'clamp(40px, 4vw, 80px)',
+              gap: 'clamp(32px, 2.5vw, 48px)',
+              marginRight: '48px',
               flexWrap: 'nowrap',
               zIndex: 101,
             }}
