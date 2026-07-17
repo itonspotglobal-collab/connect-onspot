@@ -1,0 +1,462 @@
+Update the existing /client-dashboard page to match the attached dashboard reference as closely as possible.
+
+Do not redesign or replace the existing left navigation sidebar. Focus only on the dashboard content area to the right of the sidebar.
+
+Overall Structure
+
+Use a responsive three-column dashboard layout:
+
+Main left area: approximately 66–70% width
+Right sidebar area: approximately 30–34% width
+The left area should contain:
+Home Dashboard header
+VA overview
+Attendance dashboard
+Financial overview
+Documents
+The right area should contain:
+Communication
+Requests
+Notifications
+AI Assistant
+
+The page should be dense but readable, similar to a professional HRMS or workforce-management dashboard.
+
+1. Page Header
+
+At the top of the main content area, show:
+
+Title: Home Dashboard
+
+Subtitle:
+Overview of your VA, attendance, financials and important updates
+
+Keep the header compact with minimal vertical spacing.
+
+2. VA Overview Card
+
+Create a large horizontal card spanning the full width of the main left area.
+
+Divide it into two sections.
+
+Left Section: VA Profile
+
+Display:
+
+Circular VA profile image
+VA name
+Position
+Online status badge
+
+Example:
+
+Jane Smith
+Virtual Executive Assistant
+Online badge in green
+
+Below the name, show:
+
+Email
+Time zone
+Working days
+Schedule
+
+Example values:
+
+jane.smith@onspotstaff.com
+GMT+8 (PH Time)
+Monday – Friday
+9:00 AM – 6:00 PM (PH Time)
+
+Use small icons beside each field.
+
+Right Section: Today’s Overview
+
+Display the current time prominently.
+
+Include:
+
+Current Time
+Current Date
+Time In
+Time Out
+Hours Worked Today
+This Week’s Hours
+This Month’s Hours
+
+Use a two-column details layout.
+
+Example:
+
+Current Time: 10:42 AM
+Time In: 8:58 AM
+Time Out: —
+Hours Worked Today: 1h 44m
+This Week’s Hours: 23h 15m
+This Month’s Hours: 98h 40m
+
+Use green for completed or positive values and blue for hour totals.
+
+3. Attendance Dashboard
+
+Place this card below the VA Overview on the left.
+
+It should occupy roughly half of the main content width.
+
+Card Header
+
+Show:
+
+Attendance Dashboard title
+Calendar icon
+View Calendar button aligned right
+Attendance Summary
+
+Display five compact metrics:
+
+Attendance This Month
+Late
+Absent
+Leaves
+Overtime
+
+Example values:
+
+Attendance: 98%
+Late: 2%
+Absent: 0%
+Leaves: 1 Day
+Overtime: 3h 20m
+Attendance Table
+
+Columns:
+
+Date
+Daily Time In
+Daily Time Out
+Breaks
+PTO / Leave
+Overtime
+Status
+
+Example statuses:
+
+In Progress
+Completed
+Holiday
+On Leave
+
+Use badges or small icons for statuses.
+
+The table must support:
+
+Loading state
+Empty state
+Pagination or scroll if the data becomes long
+4. Financial Overview
+
+Place this beside the Attendance Dashboard.
+
+It should occupy the other half of the main content width.
+
+Current Invoice Card
+
+Display:
+
+Invoice number
+Payment status
+Amount
+Due date
+
+Example:
+
+Invoice: INV-2025-07-001
+Status: Paid
+Amount: $1,850.00
+Due Date: Jul 20, 2025
+
+Below that, show:
+
+Next Billing Date
+Running Monthly Cost
+Security Deposit
+
+Add:
+
+View Invoice button
+Download button
+Invoice History Table
+
+Columns:
+
+Invoice Date
+Period
+Amount
+Date Paid
+Download
+
+Include at least six sample rows.
+
+Download buttons should be visible on each row.
+
+5. Documents Section
+
+Place this below the Attendance Dashboard.
+
+Split the card into two equal columns.
+
+VA Documents
+
+Include:
+
+Resume
+Profile
+Skills
+Certifications
+Employment Date
+
+Each row should display:
+
+File icon
+Document name
+Uploaded date
+
+Add a bottom button:
+
+View All VA Documents
+
+Company Documents
+
+Include:
+
+MSA
+Onboarding Document
+SOPs
+Training Materials
+Holiday Calendar
+Payroll Calendar
+Meeting Notes
+
+Each row should display:
+
+File or folder icon
+Document name
+Updated or uploaded date
+
+Add a bottom button:
+
+View All Company Documents
+
+6. Communication Panel
+
+Place this at the top of the right column.
+
+Show these contacts:
+
+Odie Galang — Delivery Manager
+Nur Laminero — CEO
+Odie Galang — Billing
+Mark Anthony Apostol — Recruitment & HR
+
+Each contact row should contain:
+
+Small circular avatar
+Name
+Role
+Message button
+Schedule Meeting button
+
+Add a bottom button:
+
+View All Contacts
+
+7. Requests Panel
+
+Place this below Communication.
+
+Create clickable rows for:
+
+Request Additional VA
+Replace VA
+Change Schedule
+Request Overtime
+Submit Feedback
+Approve PTO
+
+Each row should include:
+
+Icon
+Label
+Chevron indicator
+
+Add a bottom button:
+
+View All Requests
+
+The actions may open modal forms, drawers, or navigate to existing request pages.
+
+8. Notifications Panel
+
+Place this below Requests.
+
+Include notification items such as:
+
+VA clocked in
+VA clocked out
+Invoice generated
+Invoice due
+PTO approved
+New document uploaded
+
+Each row should show:
+
+Status icon
+Notification text
+Timestamp or date
+
+Unread notifications should have a subtle highlighted background.
+
+Add a bottom button:
+
+View All Notifications
+
+9. AI Assistant Panel
+
+Place this at the bottom of the right column.
+
+Use the existing AI assistant identity. If the product name is Vanessa, label it:
+
+AI Assistant (Vanessa)
+
+Do not introduce a different assistant name unless the existing application already uses one.
+
+Display suggested prompts as clickable rows:
+
+How many hours has my VA worked this week?
+Show me invoices from the last six months.
+When is my next billing date?
+How many days was my VA absent this year?
+
+At the bottom, include:
+
+Text input
+Send button
+Placeholder: Ask Vanessa anything about your account...
+
+The assistant should eventually support account-aware answers using:
+
+Attendance data
+Billing data
+Documents
+VA profile data
+Requests
+PTO and leave data
+
+For now, connect it to the existing assistant flow where possible. Otherwise, provide a mock interaction with a clear integration point.
+
+Visual Design
+
+Match the reference with:
+
+White cards
+Very light gray page background
+Thin gray borders
+Small border radius, approximately 8–10px
+Minimal shadows
+Compact card padding
+Blue as the primary accent
+Green for success and active statuses
+Orange for warnings
+Red for missed or overdue items
+Small professional icons
+Tight table spacing
+Clear information hierarchy
+
+Avoid:
+
+Oversized cards
+Excessive whitespace
+Heavy gradients
+Large rounded corners
+Strong shadows
+Decorative charts that are not shown in the reference
+Responsive Behavior
+Desktop
+Two-column main content section
+Right-side utility column remains visible
+VA Overview spans the full width of the left content area
+Tablet
+Attendance and Financial Overview may stack
+Right utility panels move below the main content
+Mobile
+All cards stack vertically
+Tables become horizontally scrollable
+Contact and request rows remain touch-friendly
+The AI Assistant remains accessible near the bottom of the page
+Component Structure
+
+Break the page into reusable components such as:
+
+<ClientDashboard />
+<DashboardHeader />
+<VAOverviewCard />
+<TodaysOverview />
+<AttendanceDashboard />
+<AttendanceSummary />
+<AttendanceTable />
+<FinancialOverview />
+<CurrentInvoiceCard />
+<InvoiceHistoryTable />
+<DocumentsCard />
+<DocumentList />
+<CommunicationPanel />
+<ContactRow />
+<RequestsPanel />
+<RequestActionRow />
+<NotificationsPanel />
+<NotificationRow />
+<VanessaAssistant />
+
+Use the project’s existing UI components, icons, table components, typography, and API hooks wherever possible.
+
+Data and Integration
+
+First inspect the repository for:
+
+Existing /client-dashboard route
+Existing client dashboard components
+Attendance APIs
+Invoice APIs
+Document APIs
+VA profile APIs
+Existing AI assistant or Vanessa components
+Existing modal and request workflows
+
+Do not duplicate functionality that already exists.
+
+Use real API data where available. For unavailable data, use structured mock data placed in a separate mock-data file so it can be replaced easily.
+
+Add:
+
+Loading skeletons
+Error handling
+Empty states
+Type-safe interfaces
+Reusable formatters for dates, currency, hours, and statuses
+Acceptance Criteria
+
+The implementation is complete when:
+
+The dashboard closely matches the attached reference layout.
+The existing side navigation remains unchanged.
+All requested sections are visible.
+Attendance and invoice tables are implemented.
+Documents are separated into VA and Company groups.
+Communication, Requests, Notifications, and Vanessa appear in the right column.
+The layout is responsive.
+Existing APIs and reusable components are used where available.
+Buttons have working navigation, modal behavior, or clearly defined placeholders.
+The page has loading, empty, and error states.
+No unrelated pages or global styles are broken.
+
+The attached image should be treated as the primary visual reference, especially for card placement, density, sizing, and hierarchy.
