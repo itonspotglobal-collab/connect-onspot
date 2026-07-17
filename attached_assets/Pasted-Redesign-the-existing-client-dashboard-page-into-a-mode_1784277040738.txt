@@ -1,0 +1,213 @@
+Redesign the existing /client-dashboard page into a modern, clean SaaS-style dashboard inspired by the attached reference. The dashboard should feel premium, minimal, and enterprise-ready while following the existing OnSpot branding.
+General Requirements
+Keep the existing application layout (sidebar, top navigation, authentication, routing).
+Use responsive cards with consistent spacing and rounded corners.
+Follow the existing design system and theme colors.
+Make all sections modular and reusable.
+The dashboard should provide clients with a complete overview of their Virtual Assistant(s), finances, attendance, communication, documents, and requests.
+Prioritize readability and information hierarchy.
+Dashboard Layout
+Header
+Display:
+Welcome message
+Client name
+Current date
+Notification icon
+Client Profile dropdown
+Quick Action button:
+New Request
+Section 1 — At a Glance
+This is the primary summary card.
+Display:
+VA Information
+VA Profile Photo
+VA Name
+Position
+Status badge
+Possible statuses:
+🟢 Online
+🔴 Offline
+🟡 Break
+🌴 PTO
+Today's Schedule
+Display:
+Current Time
+Time In
+Time Out
+Hours Worked Today
+This Week's Hours
+This Month's Hours
+Present these as clean statistic rows or KPI cards.
+Section 2 — Attendance Dashboard
+Create a dedicated attendance card.
+Display:
+Daily Time In
+Daily Time Out
+Break Duration
+PTO Balance
+Holidays
+Approved Leaves
+Overtime Hours
+Include:
+Attendance percentage
+Status indicator
+Weekly attendance summary
+If historical attendance exists, include a small table.
+Section 3 — Financial Overview
+This section summarizes billing information.
+Display:
+Current Invoice
+Invoice Number
+Amount
+Status
+Due Date
+Billing
+Next Billing Date
+Running Monthly Cost
+Security Deposit (if applicable)
+Previous Invoice
+Include downloadable invoices.
+Display a small invoice history table with:
+Invoice Date
+Billing Period
+Amount
+Date Paid
+Download button
+Section 4 — Documents
+Split into two cards.
+VA Documents
+Display:
+Resume
+Profile
+Skills
+Certifications
+Employment Date
+Each item should include:
+View
+Download
+Company Documents
+Display:
+Master Service Agreement (MSA)
+Onboarding Documents
+SOPs
+Training Materials
+Holiday Calendar
+Payroll Calendar
+Meeting Notes
+Each document should include:
+View
+Download
+Section 5 — Communication
+Display primary company contacts.
+Contacts:
+CEO
+Nur Laminero
+Delivery Manager
+Odie Galang
+Billing
+Odie Galang
+Recruitment & HR
+Mark Anthony Apostol
+Each contact card should include:
+Profile Avatar
+Name
+Role
+Buttons:
+Schedule Meeting
+Send Message
+Report Issue
+Section 6 — Requests
+Create a quick actions card.
+Include buttons for:
+Request Additional VA
+Replace VA
+Change Schedule
+Request Overtime
+Submit Feedback
+Approve PTO
+Use recognizable icons.
+Buttons should be large enough for quick access.
+Section 7 — Notifications
+Create a live notifications panel.
+Show recent events such as:
+✅ VA Clocked In
+✅ VA Clocked Out
+✅ Invoice Generated
+✅ Invoice Due
+✅ PTO Approved
+✅ New Document Uploaded
+Each notification should display:
+Icon
+Message
+Timestamp
+Read/Unread indicator
+Section 8 — AI Assistant (Vanessa)
+Integrate the existing AI assistant, Vanessa, directly into the dashboard as a built-in assistant that understands the client's account.
+The AI should answer contextual questions using the client's data, such as:
+"How many hours has my VA worked this week?"
+"Show me invoices from the last six months."
+"When is my next billing date?"
+"How many days was my VA absent this year?"
+"Download my latest invoice."
+"How much have I spent this month?"
+"How many PTO days remain?"
+"Show my upcoming billing schedule."
+"Who should I contact regarding payroll?"
+"Show all uploaded documents."
+The AI panel should include:
+Chat interface
+Suggested prompts
+Conversation history
+Input box
+Send button
+Place this card on the right side of the dashboard or as a floating assistant widget.
+Right Sidebar
+Include:
+Notifications
+Latest account activities.
+Communication
+Quick contact list.
+AI Assistant
+Compact version with quick questions.
+Charts
+Include visual summaries using charts.
+Examples:
+Performance
+Monthly performance chart.
+Attendance
+Attendance percentage chart.
+Invoice Trend
+Monthly billing chart.
+Hours Worked
+Weekly hours chart.
+Design Style
+The UI should follow a modern SaaS dashboard aesthetic:
+Soft shadows
+Rounded cards (12–16px)
+Spacious layout
+White backgrounds
+Light gray borders
+Purple primary color matching OnSpot branding
+Green success badges
+Orange warning badges
+Red error badges
+Responsive design
+Professional typography
+Consistent iconography
+Smooth hover animations
+Skeleton loaders for asynchronous data
+Empty states for sections with no data
+Functional Requirements
+Use existing APIs where available.
+If data is unavailable, use realistic mock data while preserving the expected structure.
+All cards should support loading and empty states.
+The page should be modular, with reusable components for:
+Stat Cards
+Contact Cards
+Document Lists
+Invoice Tables
+Notification Lists
+Request Buttons
+AI Chat Panel
+Goal
+The redesigned Client Dashboard should serve as a centralized workspace where clients can quickly monitor their Virtual Assistant, attendance, billing, documents, communications, requests, notifications, and interact with the Vanessa AI Assistant without navigating to multiple pages. It should deliver an intuitive, polished experience that aligns with modern SaaS platforms while remaining consistent with the existing OnSpot branding.
