@@ -1,0 +1,475 @@
+Redesign ONLY the dedicated OnSpot Login page to match our new brand identity.
+
+IMPORTANT:
+This is a visual redesign only.
+
+DO NOT modify:
+- authentication logic
+- login API
+- signup functionality
+- forgot password functionality
+- portal selection logic
+- routing
+- validation
+- AuthContext
+- JWT storage
+- button functionality
+
+Keep every interaction exactly the same.
+
+=========================================
+DESIGN DIRECTION
+=========================================
+
+Our old brand was:
+"Global Outsourcing Platform"
+
+Our new positioning is:
+
+"Work Without Limits"
+
+The login page should feel like:
+
+• modern AI company
+• premium SaaS
+• elegant
+• minimal
+• clean
+• calm
+• trustworthy
+
+Think of products like:
+
+- Stripe
+- Linear
+- Notion AI
+- Cursor
+- Framer
+- Vercel
+
+Avoid:
+
+❌ Dark gaming UI
+❌ Cyberpunk
+❌ Heavy gradients
+❌ Neon colors
+❌ Corporate enterprise portal
+
+=========================================
+1. BACKGROUND
+=========================================
+
+Completely replace the existing background.
+
+Remove:
+
+- dark navy background
+- dark purple gradient
+- dark glow
+
+Create a very soft premium background using layered gradients.
+
+Use something similar to:
+
+background:
+
+linear-gradient(
+135deg,
+#FCFDFF 0%,
+#F6F8FF 20%,
+#EEF4FF 45%,
+#E7F0FF 70%,
+#F8F9FF 100%
+);
+
+Then add multiple subtle radial blobs.
+
+Example:
+
+Top Left:
+
+rgba(99,102,241,.08)
+
+Upper Right:
+
+rgba(168,85,247,.08)
+
+Bottom Left:
+
+rgba(59,130,246,.06)
+
+Center:
+
+rgba(255,255,255,.45)
+
+These blobs should be VERY blurred.
+
+Blur radius:
+
+120px–220px
+
+Opacity should stay low.
+
+The page should feel bright and airy.
+
+=========================================
+2. GRID
+=========================================
+
+Keep the grid pattern.
+
+BUT
+
+Reduce visibility dramatically.
+
+Current grid is too strong.
+
+Target:
+
+border opacity around 5%
+
+It should almost disappear.
+
+Think Apple design.
+
+=========================================
+3. LOGO AREA
+=========================================
+
+Keep:
+
+OnSpot
+
+Below it:
+
+WORK WITHOUT LIMITS
+
+Center aligned.
+
+Logo color:
+
+Brand Purple
+
+Tagline:
+
+Soft slate gray.
+
+Increase spacing slightly between logo and login card.
+
+=========================================
+4. LOGIN CARD
+=========================================
+
+The dark purple card no longer matches the new brand.
+
+Replace it with a premium glass-style light card.
+
+Card:
+
+background:
+
+rgba(255,255,255,.72)
+
+backdrop blur:
+
+20px
+
+Border:
+
+1px solid rgba(255,255,255,.65)
+
+Shadow:
+
+0 20px 60px rgba(33,40,79,.08)
+
+Border radius:
+
+24px
+
+Padding:
+
+40px
+
+Width:
+
+430–460px
+
+The card should float above the background.
+
+=========================================
+5. TYPOGRAPHY
+=========================================
+
+Heading:
+
+Welcome back
+
+Color:
+
+#172554
+
+Weight:
+
+700
+
+Subtitle:
+
+#64748B
+
+Labels:
+
+#334155
+
+Portal title:
+
+#334155
+
+Portal description:
+
+#64748B
+
+Footer text:
+
+#64748B
+
+Links:
+
+Brand Purple
+
+Hover:
+
+slightly darker purple
+
+=========================================
+6. INPUTS
+=========================================
+
+Replace dark inputs.
+
+Use modern SaaS inputs.
+
+Background:
+
+rgba(255,255,255,.85)
+
+Border:
+
+#D7DCEF
+
+Radius:
+
+14px
+
+Height:
+
+52px
+
+Placeholder:
+
+#94A3B8
+
+Text:
+
+#0F172A
+
+Focus:
+
+2px ring
+
+Brand Purple
+
+=========================================
+7. PORTAL CARDS
+=========================================
+
+Keep Client/Talent layout.
+
+Style:
+
+White cards
+
+Very light border
+
+Radius:
+
+16px
+
+Hover:
+
+Lift 4px
+
+Shadow:
+
+Soft
+
+Client icon:
+
+Blue
+
+Talent icon:
+
+Gold
+
+Selected state:
+
+Purple border
+
+Very soft lavender background.
+
+=========================================
+8. BUTTON
+=========================================
+
+Keep same gradient direction.
+
+Improve colors.
+
+Use:
+
+#6D5EF7
+
+to
+
+#4F7CFF
+
+White text.
+
+Height:
+
+56px
+
+Radius:
+
+16px
+
+Hover:
+
+Lift 2px
+
+Slight shadow.
+
+=========================================
+9. LINKS
+=========================================
+
+Forgot Password
+
+Create Account
+
+Back to Home
+
+Should all use:
+
+Brand Purple
+
+Weight:
+
+500
+
+Hover:
+
+Underline
+
+Slight darkening.
+
+=========================================
+10. CHAT BUTTON
+=========================================
+
+Leave functionality unchanged.
+
+Update styling slightly.
+
+Match new blue/purple gradient.
+
+Softer shadow.
+
+=========================================
+11. ANIMATIONS
+=========================================
+
+Very subtle.
+
+Card:
+
+fade + slight upward motion.
+
+Buttons:
+
+200ms transition.
+
+Portal cards:
+
+scale 1.02
+
+Inputs:
+
+smooth border transition.
+
+=========================================
+12. RESPONSIVE
+=========================================
+
+Desktop:
+
+Centered vertically.
+
+Tablet:
+
+Reduce padding.
+
+Mobile:
+
+Full width card.
+
+24px margins.
+
+Maintain generous whitespace.
+
+=========================================
+13. KEEP THESE
+=========================================
+
+DO NOT TOUCH
+
+✓ Login functionality
+
+✓ Validation
+
+✓ API calls
+
+✓ Signup integration
+
+✓ Forgot password
+
+✓ Portal selection logic
+
+✓ JWT handling
+
+✓ Navigation
+
+✓ AuthContext
+
+Only redesign the UI.
+
+=========================================
+ACCEPTANCE CRITERIA
+=========================================
+
+✓ Background is bright and premium.
+
+✓ Login card becomes a light glassmorphism card.
+
+✓ Typography uses dark slate instead of white.
+
+✓ Inputs are white.
+
+✓ Portal cards become white with subtle borders.
+
+✓ Overall appearance resembles a modern SaaS platform.
+
+✓ Brand identity feels aligned with "Work Without Limits."
+
+✓ No functionality changes.
+
+✓ Existing login flow continues to work exactly as before.
