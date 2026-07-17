@@ -1,0 +1,144 @@
+Please update the Navigation Bar layout with the following UI changes.
+
+IMPORTANT:
+These are layout changes only. Do not modify authentication logic, routes, or functionality.
+
+====================================================
+1. MOVE "Hire Talent" AND "Find Work" CLOSER TO "Log In"
+====================================================
+
+Current issue:
+- The navigation links are too centered.
+- There is too much empty space between "Find Work" and the authentication section.
+
+Required:
+- Shift the navigation group ("Hire Talent" and "Find Work") to the right so it sits closer to the authentication area.
+- Keep the spacing between "Hire Talent" and "Find Work" the same.
+- Maintain balanced spacing between:
+  - Find Work
+  - Log In
+
+Recommended spacing:
+- Gap between "Find Work" and "Log In": approximately 40–60px.
+- Use Flexbox alignment rather than fixed margins.
+
+====================================================
+2. REPLACE THE SIGN UP BUTTON WITH A TEXT LINK
+====================================================
+
+Current issue:
+- "Sign Up" is displayed as a large purple button.
+- We want a cleaner authentication area.
+
+Required:
+- Remove the purple "Sign Up" button from the navbar.
+- Do NOT delete the Sign Up functionality or route.
+- Instead, display it as a small text link positioned directly below the "Log In" button.
+
+Desired layout:
+
+                 Log In
+            Don't have an account?
+                  Sign Up
+
+Or simply:
+
+             Log In
+             Sign Up
+
+The "Sign Up" link should:
+- Remain clickable.
+- Navigate to the same Sign Up page/modal as before.
+- Use the existing authentication flow.
+
+====================================================
+3. STYLE THE SIGN UP LINK
+====================================================
+
+The Sign Up link should:
+- Be smaller than the main navigation links.
+- Font size: 13–14px.
+- Font weight: 500.
+- Use a subtle white or light lavender color.
+- Underline or slightly brighten on hover.
+- Have a smooth transition effect.
+
+If you include helper text:
+
+"Don't have an account?"
+
+Style it with:
+- Font size: 11–12px.
+- Opacity: around 70%.
+- White/light gray.
+
+====================================================
+4. KEEP THE LOG IN BUTTON
+====================================================
+
+Do NOT modify:
+- Button size.
+- Border.
+- Colors.
+- Hover effect.
+- Click behavior.
+
+The only change is that the Sign Up button becomes a text link underneath it.
+
+====================================================
+5. ALIGNMENT
+====================================================
+
+The authentication section should become a small vertical stack:
+
+-----------------------
+|      Log In         |
+|     Sign Up         |
+-----------------------
+
+Everything should be vertically centered within the navbar.
+
+Maintain consistent spacing between:
+- Navigation links
+- Authentication section
+- Right edge of the navbar
+
+====================================================
+6. RESPONSIVENESS
+====================================================
+
+Desktop:
+- Log In button on top.
+- Sign Up link directly below.
+
+Tablet:
+- Maintain the same layout if space allows.
+
+Mobile:
+- Follow the existing mobile navigation pattern.
+- Ensure the Sign Up link remains accessible.
+
+====================================================
+DO NOT CHANGE
+====================================================
+
+Do NOT modify:
+- Navbar logo.
+- Navbar height.
+- Hero section.
+- Background.
+- Authentication logic.
+- Routes.
+- Colors (except the Sign Up link styling).
+- Responsive menu behavior.
+
+====================================================
+ACCEPTANCE CRITERIA
+====================================================
+
+✓ "Hire Talent" and "Find Work" are positioned closer to the authentication section.
+✓ The "Sign Up" button is removed from the navbar.
+✓ "Sign Up" is displayed as a small clickable text link directly below the "Log In" button.
+✓ The Log In button retains its existing appearance and functionality.
+✓ Navigation remains balanced and responsive.
+✓ No TypeScript, CSS, or runtime errors are introduced.

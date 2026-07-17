@@ -1,5 +1,14 @@
 import { Link } from "wouter";
-import { Zap, ArrowRight, CircleDollarSign, UserCheck, Users, Shield, Rocket, Briefcase } from "lucide-react";
+import {
+  Zap,
+  ArrowRight,
+  CircleDollarSign,
+  UserCheck,
+  Users,
+  Shield,
+  Rocket,
+  Briefcase,
+} from "lucide-react";
 import bgHero from "@assets/bg_hero_1784053041636.png";
 
 export default function Home() {
@@ -29,11 +38,9 @@ export default function Home() {
 
         {/* Main content — left-aligned */}
         <div className="relative z-10 flex flex-col justify-between min-h-[calc(100dvh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-10 sm:py-12">
-
           {/* Hero text + buttons */}
           <div className="flex-1 flex items-start pt-12 sm:pt-20">
             <div className="w-full max-w-[900px]">
-
               {/* Headline */}
               <div className="hero-fade-up">
                 <h1
@@ -49,18 +56,11 @@ export default function Home() {
 
               {/* Supporting heading */}
               <div className="hero-fade-up-delay mt-4 sm:mt-5">
-                <p className="font-bold text-white leading-snug" style={{ fontSize: "clamp(1.2rem, 2vw, 1.9rem)" }}>
-                  One Platform. Endless Opportunity.
-                </p>
-              </div>
-
-              {/* Description lines */}
-              <div className="hero-fade-up-delay mt-3 space-y-1">
-                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>
-                  Connecting top talent with great companies.
-                </p>
-                <p className="text-white/65 leading-relaxed" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>
-                  Built for the future of work.
+                <p
+                  className="font-bold text-white leading-snug"
+                  style={{ fontSize: "clamp(1.2rem, 2vw, 1.9rem)" }}
+                >
+                  One Platform. Endless Opportunity. For the future of work.
                 </p>
               </div>
 
@@ -72,10 +72,13 @@ export default function Home() {
                     data-testid="button-hire-talent"
                     className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
                     style={{
-                      background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
-                      boxShadow: "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      background:
+                        "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
+                      boxShadow:
+                        "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
                       fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding: "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
+                      padding:
+                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
                     }}
                   >
                     <Users className="w-5 h-5 flex-shrink-0" />
@@ -90,7 +93,8 @@ export default function Home() {
                     className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
                     style={{
                       fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding: "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
+                      padding:
+                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
                     }}
                   >
                     <Briefcase className="w-5 h-5 flex-shrink-0" />
@@ -121,8 +125,18 @@ export default function Home() {
                   <Users className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Top Talent</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Verified professionals ready to deliver</p>
+                  <p
+                    className="font-bold text-white leading-tight"
+                    style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}
+                  >
+                    Top Talent
+                  </p>
+                  <p
+                    className="text-white/55 mt-1.5 leading-snug"
+                    style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}
+                  >
+                    Verified professionals ready to deliver
+                  </p>
                 </div>
               </div>
 
@@ -135,8 +149,18 @@ export default function Home() {
                   <Shield className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Trusted Platform</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Secure, reliable, and built for you</p>
+                  <p
+                    className="font-bold text-white leading-tight"
+                    style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}
+                  >
+                    Trusted Platform
+                  </p>
+                  <p
+                    className="text-white/55 mt-1.5 leading-snug"
+                    style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}
+                  >
+                    Secure, reliable, and built for you
+                  </p>
                 </div>
               </div>
 
@@ -149,13 +173,22 @@ export default function Home() {
                   <Rocket className="w-7 h-7 text-violet-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-white leading-tight" style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}>Endless Opportunities</p>
-                  <p className="text-white/55 mt-1.5 leading-snug" style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}>Find the right match. Grow your career.</p>
+                  <p
+                    className="font-bold text-white leading-tight"
+                    style={{ fontSize: "clamp(0.875rem, 1.2vw, 1.2rem)" }}
+                  >
+                    Endless Opportunities
+                  </p>
+                  <p
+                    className="text-white/55 mt-1.5 leading-snug"
+                    style={{ fontSize: "clamp(0.78rem, 0.9vw, 0.95rem)" }}
+                  >
+                    Find the right match. Grow your career.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 

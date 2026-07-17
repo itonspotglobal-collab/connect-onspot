@@ -460,10 +460,10 @@ export function TopNavigation() {
             />
           </Link>
 
-          {/* Zone 2: Desktop Navigation Links — centered with mx-auto */}
+          {/* Zone 2: Desktop Navigation Links — pushed right toward auth */}
           <div 
             ref={navLinksRef}
-            className="hidden md:flex items-center relative mx-auto"
+            className="hidden md:flex items-center relative ml-auto"
             style={{ 
               gap: 'clamp(40px, 4vw, 80px)',
               flexWrap: 'nowrap',
@@ -748,8 +748,8 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              /* ── Not authenticated — Log In + Sign Up ── */
-              <div className="hidden md:flex items-center gap-2">
+              /* ── Not authenticated — Log In + Sign Up (text link) ── */
+              <div className="hidden md:flex flex-col items-center gap-0.5">
                 <button
                   onClick={() => { setShowPortal(true); setModalStep("signin"); }}
                   className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white/90 border border-white/25 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-200 whitespace-nowrap"
@@ -759,21 +759,11 @@ export function TopNavigation() {
                 </button>
                 <button
                   onClick={() => { setShowPortal(true); setModalStep("signup"); }}
-                  className="relative group flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                    boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                  }}
+                  className="text-white/60 hover:text-white transition-colors duration-200 whitespace-nowrap hover:underline"
+                  style={{ fontSize: '12px', fontWeight: 500 }}
                   data-testid="nav-signup-button"
                 >
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-                      animation: 'shimmer 2s infinite',
-                    }}
-                  />
-                  <span className="relative z-10">Sign Up</span>
+                  Sign Up
                 </button>
               </div>
             )}
