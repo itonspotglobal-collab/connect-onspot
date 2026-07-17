@@ -22,23 +22,24 @@ function CardShell({ children }: { children: React.ReactNode }) {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden"
       style={{
-        background: "linear-gradient(135deg, #0c0c2e 0%, #13134a 30%, #19195e 60%, #13134a 80%, #0c0c2e 100%)",
+        background: "linear-gradient(145deg, #F8FBFF 0%, #EEF5FF 25%, #E8EEFF 50%, #DDE7FF 75%, #CFD9FF 100%)",
       }}
     >
-      {/* Background grid */}
+      {/* Background grid — very subtle blueprint */}
       <div
-        className="absolute inset-0 opacity-[0.15] pointer-events-none"
+        className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(91,124,255,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.35) 1px, transparent 1px)",
+            "linear-gradient(rgba(91,124,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.12) 1px, transparent 1px)",
           backgroundSize: "50px 50px",
+          opacity: 0.55,
         }}
       />
-      {/* Glow orb */}
+      {/* Soft radial glow behind the card */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div
-          className="w-[600px] h-[600px] rounded-full opacity-25 blur-3xl"
-          style={{ background: "radial-gradient(circle, #3A3AF8 0%, #7F3DF4 50%, transparent 80%)" }}
+          className="w-[700px] h-[700px] rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(118,95,255,0.15) 0%, transparent 70%)" }}
         />
       </div>
 
