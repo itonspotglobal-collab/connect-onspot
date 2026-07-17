@@ -1,0 +1,91 @@
+Please replace the Navigation Bar logo with the new logo image that I will upload.
+
+IMPORTANT:
+Do NOT resize or modify the existing logo component.
+Completely replace the current navbar logo implementation with the new uploaded logo asset.
+
+Requirements:
+
+1. Use the uploaded logo file
+- Replace the current navigation logo with the new uploaded image.
+- Do NOT use the old logo component, SVG, text, or any fallback.
+- The uploaded logo should be the only logo rendered in the navigation bar.
+
+2. Preserve the logo's aspect ratio
+- Never stretch or squash the logo.
+- Keep its original proportions.
+- Width and height should scale automatically.
+
+3. Logo sizing
+- Make the logo visually prominent and crisp.
+- It should fit comfortably within the navbar without touching the top or bottom.
+- Target height: 48–56px on desktop.
+- Width should be automatic based on the image aspect ratio.
+- Use:
+  - `height: auto;`
+  - `width: auto;`
+  - `object-fit: contain;`
+  - `display: block;`
+
+4. Transparent background
+- The uploaded logo has a transparent background.
+- Do NOT add:
+  - background color
+  - border
+  - padding around the image
+  - rounded corners
+  - shadow
+  - glow
+- Display the logo exactly as provided.
+
+5. Alignment
+- Vertically center the logo within the navigation bar.
+- Align it with the navigation links and the Log In / Sign Up buttons.
+- Do not allow the logo to appear too high or too low.
+
+6. Navigation spacing
+- Keep the navbar layout exactly as it is.
+- Preserve:
+  - Hire Talent
+  - Find Work
+  - Log In
+  - Sign Up
+- Only replace the logo.
+- Do not change navbar height.
+
+7. Click behavior
+- The logo should continue linking to the homepage.
+
+8. Responsive behavior
+Desktop:
+- Logo height: approximately 52px.
+
+Tablet:
+- Scale proportionally.
+
+Mobile:
+- Scale down while preserving aspect ratio.
+- Never crop the logo.
+
+9. Image quality
+- Display the logo at its native resolution.
+- Do NOT crop it.
+- Do NOT zoom into it.
+- Do NOT clip any edges.
+- Do NOT compress it.
+- Ensure it appears sharp on Retina/HiDPI displays.
+
+10. Clean implementation
+- Remove any old logo-specific CSS classes or inline sizing that could interfere.
+- If there are existing `max-width`, `max-height`, `overflow: hidden`, or fixed width/height styles on the old logo wrapper, update or remove them so the new logo renders correctly.
+- Do not leave duplicate logos in the DOM.
+
+Acceptance Criteria:
+✓ Only the newly uploaded logo is displayed.
+✓ The logo is sharp, uncropped, and maintains its original proportions.
+✓ No duplicate logos appear.
+✓ The logo is vertically centered in the navbar.
+✓ The navbar layout remains unchanged.
+✓ The logo links to the homepage.
+✓ Responsive behavior is preserved.
+✓ No TypeScript, CSS, or runtime errors are introduced.
