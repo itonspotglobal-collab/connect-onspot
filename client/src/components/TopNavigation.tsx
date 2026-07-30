@@ -1500,7 +1500,7 @@ export function TopNavigation() {
                             })
                           }
                           required
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
                           data-testid="input-contact-email"
                         />
                       </div>
@@ -1525,7 +1525,7 @@ export function TopNavigation() {
                             })
                           }
                           required
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
                           data-testid="input-contact-fullname"
                         />
                       </div>
@@ -1549,7 +1549,7 @@ export function TopNavigation() {
                               businessName: e.target.value,
                             })
                           }
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
                           data-testid="input-contact-business"
                         />
                       </div>
@@ -1573,7 +1573,7 @@ export function TopNavigation() {
                               phone: e.target.value,
                             })
                           }
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
                           data-testid="input-contact-phone"
                         />
                       </div>
@@ -1627,8 +1627,8 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden"
                   style={{
-                    background: '#D8DAE8',
-                    border: '1px solid rgba(86,91,130,0.15)',
+                    background: '#C1C5DC',
+                    border: '1px solid rgba(73,78,118,0.18)',
                     boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
                     minHeight: 'min(600px, 80vh)',
                   }}
@@ -1639,7 +1639,7 @@ export function TopNavigation() {
                       <>
                         <h2 className="text-3xl font-light text-[#17182C] mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create a Password</h2>
                         <p className="text-[#555B78] mb-6 text-sm">Your profile exists but has no password yet. Set one now to access the Talent Portal.</p>
-                        <div className="mb-5 px-4 py-3 rounded-xl border border-[rgba(86,91,130,0.24)] bg-[rgba(255,255,255,0.30)]">
+                        <div className="mb-5 px-4 py-3 rounded-xl border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.30)]">
                           <p className="text-[#555B78] text-xs mb-0.5">Signing in as</p>
                           <p className="text-[#17182C] text-sm font-medium truncate">{signinEmail}</p>
                         </div>
@@ -1652,7 +1652,7 @@ export function TopNavigation() {
                               value={setupPassword}
                               onChange={(e) => setSetupPassword(e.target.value)}
                               autoComplete="new-password"
-                              className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
+                              className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
                             />
                             <button type="button" onClick={() => setShowSetupPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                               {showSetupPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -1668,7 +1668,7 @@ export function TopNavigation() {
                               value={setupConfirmPassword}
                               onChange={(e) => setSetupConfirmPassword(e.target.value)}
                               autoComplete="new-password"
-                              className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
+                              className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
                             />
                             <button type="button" onClick={() => setShowSetupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                               {showSetupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -1746,12 +1746,12 @@ export function TopNavigation() {
                         <p className="text-[#555B78] mb-7 text-sm">Welcome back to OnSpot. Choose your portal below.</p>
                         <div className="space-y-2 mb-4">
                           <Label className="text-[#30344F] text-sm font-medium">Email Address</Label>
-                          <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12" />
+                          <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12" />
                         </div>
                         <div className="space-y-2 mb-6">
                           <Label className="text-[#30344F] text-sm font-medium">Password</Label>
                           <div className="relative">
-                            <Input type={showAuthPassword ? "text" : "password"} placeholder="Enter your password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="off" className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10" />
+                            <Input type={showAuthPassword ? "text" : "password"} placeholder="Enter your password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="off" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10" />
                             <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                               {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -1769,13 +1769,13 @@ export function TopNavigation() {
                         <div className="mb-6">
                           <p className="text-[#30344F] text-sm font-medium mb-3">Select Your Portal</p>
                           <div className="grid grid-cols-2 gap-3">
-                            <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(86,91,130,0.24)] bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.32)] hover:border-[rgba(86,91,130,0.42)]'}`}>
+                            <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
                               <Building className="w-6 h-6 text-[#30344F]" />
                               <span className="font-semibold text-[#17182C] text-xs">Client Portal</span>
                               <span className="text-[#555B78] text-xs leading-tight text-center">Find and manage top outsourcing talent</span>
                               {signinPortal === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
                             </button>
-                            <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(86,91,130,0.24)] bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.32)] hover:border-[rgba(86,91,130,0.42)]'}`}>
+                            <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
                               <User className="w-6 h-6 text-[#30344F]" />
                               <span className="font-semibold text-[#17182C] text-xs">Talent Portal</span>
                               <span className="text-[#555B78] text-xs leading-tight text-center">Find jobs and manage your career profile</span>
@@ -1892,8 +1892,8 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden flex-1 min-h-0"
                   style={{
-                    background: '#D8DAE8',
-                    border: '1px solid rgba(86,91,130,0.15)',
+                    background: '#C1C5DC',
+                    border: '1px solid rgba(73,78,118,0.18)',
                     boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
                   }}
                 >
@@ -1910,21 +1910,21 @@ export function TopNavigation() {
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       <div className="space-y-1.5">
                         <Label className="text-[#30344F] text-sm font-medium">First Name</Label>
-                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
+                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[#30344F] text-sm font-medium">Last Name</Label>
-                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
+                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
                       </div>
                     </div>
                     <div className="space-y-1.5 mb-3">
                       <Label className="text-[#30344F] text-sm font-medium">Email Address</Label>
-                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
+                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
                     </div>
                     <div className="space-y-1.5 mb-3">
                       <Label className="text-[#30344F] text-sm font-medium">Password</Label>
                       <div className="relative">
-                        <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 8 chars, upper, lower, number, symbol" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" name="new-password" className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10" />
+                        <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 8 chars, upper, lower, number, symbol" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" name="new-password" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10" />
                         <button type="button" onClick={() => setShowSignupPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                           {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -1941,7 +1941,7 @@ export function TopNavigation() {
                           onChange={(e) => setSignupConfirmPassword(e.target.value)}
                           autoComplete="new-password"
                           name="confirm-new-password"
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10"
                         />
                         <button type="button" onClick={() => setShowSignupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                           {showSignupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -1954,13 +1954,13 @@ export function TopNavigation() {
                     <div className="mb-4">
                       <p className="text-[#30344F] text-sm font-medium mb-2">I am a...</p>
                       <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(86,91,130,0.24)] bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.32)] hover:border-[rgba(86,91,130,0.42)]'}`}>
+                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
                           <Building className="w-5 h-5 text-[#30344F]" />
                           <span className="font-semibold text-[#17182C] text-xs">Client</span>
                           <span className="text-[#555B78] text-xs leading-tight text-center">Looking for talent</span>
                           {signupRole === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
                         </button>
-                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(86,91,130,0.24)] bg-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.32)] hover:border-[rgba(86,91,130,0.42)]'}`}>
+                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
                           <User className="w-5 h-5 text-[#30344F]" />
                           <span className="font-semibold text-[#17182C] text-xs">Talent</span>
                           <span className="text-[#555B78] text-xs leading-tight text-center">Looking for jobs</span>
@@ -2112,8 +2112,8 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden"
                   style={{
-                    background: '#D8DAE8',
-                    border: '1px solid rgba(86,91,130,0.15)',
+                    background: '#C1C5DC',
+                    border: '1px solid rgba(73,78,118,0.18)',
                     boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
                     minHeight: 'min(560px, 80vh)',
                   }}
@@ -2137,7 +2137,7 @@ export function TopNavigation() {
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         autoComplete="email"
-                        className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
+                        className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
                       />
                     </div>
 
@@ -2151,7 +2151,7 @@ export function TopNavigation() {
                           value={forgotNewPassword}
                           onChange={(e) => setForgotNewPassword(e.target.value)}
                           autoComplete="new-password"
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
                         />
                         <button type="button" onClick={() => setShowForgotPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                           {showForgotPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -2169,7 +2169,7 @@ export function TopNavigation() {
                           value={forgotConfirmPassword}
                           onChange={(e) => setForgotConfirmPassword(e.target.value)}
                           autoComplete="new-password"
-                          className="bg-[rgba(255,255,255,0.42)] border-[rgba(86,91,130,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
+                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
                         />
                         <button type="button" onClick={() => setShowForgotConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                           {showForgotConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

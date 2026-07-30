@@ -1,0 +1,90 @@
+Please make a small color adjustment to both the Sign In and Create Account modal panels.
+
+Current issue:
+- The modal background is still too pale and close to gray-white.
+- I want it slightly darker and more visibly lavender/blue.
+- It should remain light, soft, and readable.
+- Do NOT return to the previous dark purple design.
+
+Required change:
+
+1. Modal background
+Replace the current very light panel color with a slightly deeper muted lavender-blue.
+
+Recommended solid colors:
+- #C4C7DC
+- #BEC2D9
+- #B8BDD6
+
+Preferred option:
+background: #C1C5DC;
+
+If using a subtle gradient, keep it very gentle:
+
+background:
+  linear-gradient(
+    145deg,
+    #C8CBDD 0%,
+    #B9BED8 100%
+  );
+
+Important:
+- The color should be visibly stronger than the current version.
+- It should still look light.
+- Do not make it navy, dark purple, or highly saturated.
+- Do not add grid lines, patterns, textures, or heavy transparency.
+
+2. Text contrast
+Keep the existing dark text colors, since they work well with a light panel:
+
+- Heading: #17182C
+- Labels: #30344F
+- Supporting text: #555B78
+- Placeholder text: #7C839F
+- Links: existing brand purple
+
+3. Input fields
+Make inputs slightly lighter than the new panel:
+
+background: rgba(255, 255, 255, 0.44);
+border: 1px solid rgba(73, 78, 118, 0.20);
+
+Keep text and placeholder readable.
+
+4. Client and Talent cards
+Use:
+
+background: rgba(255, 255, 255, 0.16);
+border: 1px solid rgba(73, 78, 118, 0.24);
+
+Do not change their size, spacing, or selected behavior.
+
+5. Button
+Keep the current purple gradient button unchanged.
+
+6. Apply consistently
+Apply the same updated background color to:
+- Sign In modal
+- Create Account modal
+
+7. Do not change
+Do not modify:
+- Modal dimensions
+- Form layout
+- Typography
+- Input sizes
+- Authentication logic
+- Role selection
+- Navbar
+- Homepage
+- Hero carousel
+- Routes
+
+Acceptance Criteria:
+✓ The panel is slightly darker than it is now.
+✓ The panel still looks light and soft.
+✓ The lavender-blue tone is more visible.
+✓ Text remains easy to read.
+✓ Inputs and role cards remain distinct.
+✓ Sign In and Create Account use the same color.
+✓ No grid, pattern, or dark-purple styling returns.
