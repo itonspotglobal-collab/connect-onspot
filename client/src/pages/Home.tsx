@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
   Zap,
@@ -14,23 +14,63 @@ import {
 // ── Carousel slide data ────────────────────────────────────────────────────
 const heroSlides = [
   {
+    audience: "client" as const,
+    label: "For Companies",
+    title: "Vetted talent, placed in 72 hours",
+    description:
+      "Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.",
+    primaryLabel: "Hire Talent",
+    primaryRoute: "/hire-talent",
+    secondaryLabel: "See how it works",
+    secondaryRoute: "/hire-talent",
     image:
       "https://images.unsplash.com/photo-1573497491208-6b1acb260507?auto=format&fit=crop&w=1920&q=80",
+    imagePosition: "center right",
     alt: "Professional working at laptop",
   },
   {
+    audience: "talent" as const,
+    label: "For Talent",
+    title: "Work from anywhere, for anyone",
+    description:
+      "Land long-term roles with global companies — no commute, no borders. Just meaningful work on your terms, wherever you are.",
+    primaryLabel: "Find Work",
+    primaryRoute: "/find-work",
+    secondaryLabel: "Browse roles",
+    secondaryRoute: "/find-work",
     image:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80",
+    imagePosition: "center",
     alt: "Remote team collaborating",
   },
   {
+    audience: "client" as const,
+    label: "For Companies",
+    title: "Dedicated teams, up to 70% less",
+    description:
+      "Build a dedicated remote team with payroll, compliance, and HR fully handled. Enterprise capability without the enterprise cost.",
+    primaryLabel: "Hire Talent",
+    primaryRoute: "/hire-talent",
+    secondaryLabel: "Estimate Savings",
+    secondaryRoute: "/why-onspot/value-calculator",
     image:
       "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1920&q=80",
+    imagePosition: "center",
     alt: "Team working together remotely",
   },
   {
+    audience: "talent" as const,
+    label: "For Talent",
+    title: "Grow with companies that invest in you",
+    description:
+      "Fair pay, real benefits, and career paths that go somewhere. We match you to roles built to last, not gigs that disappear.",
+    primaryLabel: "Find Work",
+    primaryRoute: "/find-work",
+    secondaryLabel: "Browse roles",
+    secondaryRoute: "/find-work",
     image:
       "https://images.unsplash.com/photo-1600880292630-ee8a00403024?auto=format&fit=crop&w=1920&q=80",
+    imagePosition: "center",
     alt: "Engaged professional in career growth",
   },
 ];
@@ -41,6 +81,8 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  const activeSlide = heroSlides[currentSlide];
 
   // Detect reduced-motion preference
   useEffect(() => {
@@ -62,21 +104,15 @@ export default function Home() {
 
   // Pause when tab is hidden
   useEffect(() => {
-    const handler = () => {
-      if (document.hidden) {
-        setIsPaused(true);
-      } else {
-        setIsPaused(false);
-      }
-    };
+    const handler = () => setIsPaused(document.hidden);
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
   }, []);
 
-  // Preload upcoming images after initial render
+  // Preload all images after initial render
   useEffect(() => {
     heroSlides.forEach((slide, i) => {
-      if (i === 0) return; // first slide loads naturally
+      if (i === 0) return;
       const img = new Image();
       img.src = slide.image;
     });
@@ -85,6 +121,23 @@ export default function Home() {
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
   };
+
+  // Pill styles per audience
+  const pillStyle =
+    activeSlide.audience === "client"
+      ? {
+          background: "rgba(58,58,248,0.18)",
+          border: "1px solid rgba(91,124,255,0.45)",
+          color: "#C4C8FF",
+        }
+      : {
+          background: "rgba(16,185,129,0.15)",
+          border: "1px solid rgba(52,211,153,0.4)",
+          color: "#6EE7C0",
+        };
+
+  const dotColor =
+    activeSlide.audience === "client" ? "#A5B4FC" : "#6EE7C0";
 
   return (
     <div>
@@ -95,7 +148,7 @@ export default function Home() {
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {/* ── Slide backgrounds (carousel layers) ── */}
+        {/* ── Slide backgrounds ── */}
         {heroSlides.map((slide, i) => (
           <div
             key={i}
@@ -106,7 +159,7 @@ export default function Home() {
               inset: 0,
               backgroundImage: `url(${slide.image})`,
               backgroundSize: "cover",
-              backgroundPosition: "center",
+              backgroundPosition: slide.imagePosition,
               backgroundRepeat: "no-repeat",
               opacity: i === currentSlide ? 1 : 0,
               transition: reducedMotion
@@ -116,12 +169,11 @@ export default function Home() {
                 !reducedMotion && i === currentSlide
                   ? "heroKenBurns 8s ease forwards"
                   : "none",
-              // Each new active slide gets a fresh animation via key trick below
             }}
           />
         ))}
 
-        {/* Gradient overlay — dark semi-transparent on left, fades right */}
+        {/* Gradient overlay */}
         <div
           className="absolute inset-0 z-[1]"
           style={{
@@ -129,19 +181,19 @@ export default function Home() {
               "linear-gradient(90deg, rgba(4,5,36,0.98) 0%, rgba(8,9,49,0.92) 40%, rgba(8,9,49,0.55) 68%, rgba(8,9,49,0.15) 100%)",
           }}
         />
-        {/* Subtle top/bottom vignette */}
+        {/* Vignette */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
 
-        {/* ── Main content — left-aligned, static across all slides ── */}
+        {/* ── Main content ── */}
         <div className="relative z-10 flex flex-col justify-between min-h-[calc(100dvh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-10 sm:py-12">
-          {/* Hero text + buttons */}
-          <div className="flex-1 flex items-start pt-12 sm:pt-20">
-            <div className="w-full max-w-[900px]">
-              {/* Headline */}
+          <div className="flex-1 flex items-start pt-10 sm:pt-16">
+            <div className="w-full max-w-[860px]">
+
+              {/* ── Static brand headline ── */}
               <div className="hero-fade-up">
                 <h1
                   className="font-bold tracking-tight leading-[0.97] text-white sm:whitespace-nowrap"
-                  style={{ fontSize: "clamp(3.8rem, 5vw, 5.8rem)" }}
+                  style={{ fontSize: "clamp(3.2rem, 4.4vw, 5.2rem)" }}
                 >
                   Work{" "}
                   <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
@@ -150,58 +202,108 @@ export default function Home() {
                 </h1>
               </div>
 
-              {/* Supporting heading */}
-              <div className="hero-fade-up-delay mt-4 sm:mt-5">
-                <p
-                  className="font-bold text-white leading-snug"
-                  style={{ fontSize: "clamp(1.2rem, 2vw, 1.9rem)" }}
+              {/* ── Rotating per-slide content ── */}
+              <div
+                key={currentSlide}
+                style={{
+                  animation: reducedMotion
+                    ? "none"
+                    : "heroSlideContentIn 0.6s ease forwards",
+                  opacity: reducedMotion ? 1 : 0,
+                }}
+              >
+                {/* Audience pill */}
+                <div className="mt-5 sm:mt-6">
+                  <span
+                    className="inline-flex items-center gap-2 rounded-full font-bold uppercase tracking-widest"
+                    style={{
+                      fontSize: "clamp(0.65rem, 0.8vw, 0.75rem)",
+                      padding: "6px 14px",
+                      ...pillStyle,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: "50%",
+                        background: dotColor,
+                        flexShrink: 0,
+                        display: "inline-block",
+                      }}
+                    />
+                    {activeSlide.label}
+                  </span>
+                </div>
+
+                {/* Slide headline */}
+                <h2
+                  className="font-bold text-white leading-tight mt-4"
+                  style={{
+                    fontSize: "clamp(1.55rem, 2.6vw, 2.6rem)",
+                    letterSpacing: "-0.02em",
+                    maxWidth: "720px",
+                  }}
                 >
-                  One Platform. Endless Opportunity. For the future of work.
+                  {activeSlide.title}
+                </h2>
+
+                {/* Slide description */}
+                <p
+                  className="text-white/70 mt-3 leading-relaxed"
+                  style={{
+                    fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
+                    maxWidth: "580px",
+                  }}
+                >
+                  {activeSlide.description}
                 </p>
-              </div>
 
-              {/* CTAs */}
-              <div className="hero-fade-up-delay mt-7 sm:mt-9 flex flex-col sm:flex-row gap-4 sm:gap-5 flex-wrap">
-                {/* Primary — gradient */}
-                <Link href="/hire-talent">
-                  <button
-                    data-testid="button-hire-talent"
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
-                      boxShadow:
-                        "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding:
-                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
-                    }}
-                  >
-                    <Users className="w-5 h-5 flex-shrink-0" />
-                    Hire Talent
-                  </button>
-                </Link>
+                {/* CTAs */}
+                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-4 sm:gap-5 flex-wrap">
+                  {/* Primary */}
+                  <Link href={activeSlide.primaryRoute}>
+                    <button
+                      className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
+                        boxShadow:
+                          "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
+                        fontSize: "clamp(0.9rem, 1.1vw, 1.05rem)",
+                        padding:
+                          "clamp(13px, 1.5vw, 17px) clamp(22px, 2.5vw, 34px)",
+                      }}
+                    >
+                      {activeSlide.audience === "client" ? (
+                        <Users className="w-5 h-5 flex-shrink-0" />
+                      ) : (
+                        <Briefcase className="w-5 h-5 flex-shrink-0" />
+                      )}
+                      {activeSlide.primaryLabel}
+                    </button>
+                  </Link>
 
-                {/* Secondary — outlined/glass */}
-                <Link href="/find-work">
-                  <button
-                    data-testid="button-find-work"
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
-                    style={{
-                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding:
-                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
-                    }}
-                  >
-                    <Briefcase className="w-5 h-5 flex-shrink-0" />
-                    Find Work
-                  </button>
-                </Link>
+                  {/* Secondary */}
+                  <Link href={activeSlide.secondaryRoute}>
+                    <button
+                      className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
+                      style={{
+                        fontSize: "clamp(0.9rem, 1.1vw, 1.05rem)",
+                        padding:
+                          "clamp(13px, 1.5vw, 17px) clamp(22px, 2.5vw, 34px)",
+                      }}
+                    >
+                      {activeSlide.secondaryLabel}
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Feature strip — bottom of hero (above controls) */}
+          {/* ── Feature strip — static, bottom of hero (above controls) ── */}
           <div className="hero-fade-up-delay mt-7 pb-16 sm:pb-14">
             <div
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[1080px] rounded-3xl overflow-hidden"
@@ -299,7 +401,7 @@ export default function Home() {
               key={i}
               role="tab"
               aria-selected={i === currentSlide}
-              aria-label={`Slide ${i + 1}: ${slide.alt}`}
+              aria-label={`Slide ${i + 1}: ${slide.label} — ${slide.title}`}
               onClick={() => goToSlide(i)}
               style={{
                 position: "relative",
@@ -314,11 +416,12 @@ export default function Home() {
                 outline: "none",
               }}
               onFocus={(e) =>
-                (e.currentTarget.style.outline = "2px solid rgba(255,255,255,0.6)")
+                (e.currentTarget.style.outline =
+                  "2px solid rgba(255,255,255,0.6)")
               }
               onBlur={(e) => (e.currentTarget.style.outline = "none")}
             >
-              {/* Past slides — full white bar */}
+              {/* Past slides */}
               {i < currentSlide && (
                 <span
                   aria-hidden="true"
@@ -341,13 +444,12 @@ export default function Home() {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    width: 0,
+                    width: reducedMotion ? "100%" : 0,
                     background: "white",
                     borderRadius: 4,
                     animation: reducedMotion
                       ? "none"
                       : `heroProgress ${SLIDE_DURATION}ms linear forwards`,
-                    ...(reducedMotion ? { width: "100%" } : {}),
                   }}
                 />
               )}

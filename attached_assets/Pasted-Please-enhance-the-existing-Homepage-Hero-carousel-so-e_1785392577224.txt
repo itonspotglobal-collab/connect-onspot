@@ -1,0 +1,292 @@
+Please enhance the existing Homepage Hero carousel so each slide can target either Clients or Talent, matching the behavior shown in the attached HTML reference and screenshots.
+
+IMPORTANT:
+- Do NOT redesign the Hero section.
+- Do NOT change the existing font family.
+- Do NOT change the existing color palette.
+- Match all new text, pills, buttons, spacing, and transitions to the current website styling.
+- Reuse the existing routes and pages already available in the project.
+
+GOAL
+
+Each carousel slide should have:
+- An audience label: “For Companies” or “For Talent”
+- A dedicated headline
+- Supporting description
+- A primary CTA
+- A secondary CTA
+- A background image
+- Correct navigation based on the slide type
+
+The carousel should rotate automatically and also allow manual selection.
+
+1. USE A SLIDE DATA STRUCTURE
+
+Create or update the Hero carousel slide configuration similar to:
+
+const heroSlides = [
+  {
+    audience: "client",
+    label: "For Companies",
+    title: "Vetted talent, placed in 72 hours",
+    description:
+      "Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.",
+    primaryLabel: "Hire Talent",
+    primaryRoute: "/hire-talent",
+    secondaryLabel: "See how it works",
+    secondaryRoute: "/hire-talent",
+    image: "/assets/hero-client-1.jpg"
+  },
+  {
+    audience: "talent",
+    label: "For Talent",
+    title: "Work from anywhere, for anyone",
+    description:
+      "Land long-term roles with global companies — no commute, no borders. Just meaningful work on your terms, wherever you are.",
+    primaryLabel: "Find Work",
+    primaryRoute: "/find-work",
+    secondaryLabel: "Browse roles",
+    secondaryRoute: "/find-work",
+    image: "/assets/hero-talent-1.jpg"
+  },
+  {
+    audience: "client",
+    label: "For Companies",
+    title: "Dedicated teams, up to 70% less",
+    description:
+      "Build a dedicated remote team with payroll, compliance, and HR fully handled.",
+    primaryLabel: "Hire Talent",
+    primaryRoute: "/hire-talent",
+    secondaryLabel: "Estimate Savings",
+    secondaryRoute: "/value-calculator",
+    image: "/assets/hero-client-2.jpg"
+  },
+  {
+    audience: "talent",
+    label: "For Talent",
+    title: "Grow with companies that invest in you",
+    description:
+      "Find long-term opportunities with global companies that support your growth.",
+    primaryLabel: "Find Work",
+    primaryRoute: "/find-work",
+    secondaryLabel: "Browse roles",
+    secondaryRoute: "/find-work",
+    image: "/assets/hero-talent-2.jpg"
+  }
+];
+
+Use the actual existing route names from the project if they differ.
+
+2. AUDIENCE LABEL
+
+Add a pill above the slide headline.
+
+For client slides:
+- Text: “FOR COMPANIES”
+- Use the existing purple/lavender brand styling.
+
+For talent slides:
+- Text: “FOR TALENT”
+- Use a teal/green treatment only if that color already exists in the project.
+- Otherwise use the existing brand palette and differentiate it subtly.
+
+Requirements:
+- Match the current site font.
+- Keep the pill small and clean.
+- Include a small dot icon if it fits the current design.
+- Do not introduce a new font or unrelated color.
+
+3. ROTATING HEADLINES
+
+Allow the slide headline and description to change with each slide.
+
+Use these examples:
+
+Client slide:
+“Vetted talent, placed in 72 hours”
+
+Talent slide:
+“Work from anywhere, for anyone”
+
+Client slide:
+“Dedicated teams, up to 70% less”
+
+Talent slide:
+“Grow with companies that invest in you”
+
+Requirements:
+- Keep the current website font family.
+- Match the existing heading weight, letter spacing, line height, and text color.
+- Do not copy the exact font appearance from the screenshot if it differs from the existing site.
+- Preserve the current visual hierarchy.
+
+4. CTA ROUTING
+
+Each button must redirect to the correct existing page.
+
+Client slides:
+- “Hire Talent” → existing Hire Talent page
+- “See how it works” → Hire Talent page or the existing relevant process section
+- “Estimate Savings” → existing Value Calculator page
+
+Talent slides:
+- “Find Work” → existing Find Work page
+- “Browse roles” → existing Find Work page or available jobs section
+
+Important:
+- Reuse the project’s existing router.
+- Use `Link`, `NavLink`, or the existing navigation helper.
+- Do not use hardcoded `window.location.href` unless that is already the project pattern.
+- Confirm the correct route names by inspecting the existing route configuration.
+- Do not create duplicate Hire Talent, Find Work, or Value Calculator pages.
+
+5. BUTTON DESIGN
+
+Keep the current button styles.
+
+Primary button:
+- Existing gradient style
+- Existing font, color, radius, height, and hover behavior
+
+Secondary button:
+- Existing outlined or glass style
+- Existing font and color
+- Do not introduce new button colors
+
+The button labels should update according to the active slide.
+
+6. STATIC VS ROTATING CONTENT
+
+Keep the existing overall Hero structure.
+
+The rotating section may include:
+- Audience pill
+- Slide headline
+- Slide description
+- Button labels and routes
+- Background image
+
+Do not change:
+- Navbar
+- Existing overall brand styling
+- Existing Hero container dimensions unless required for responsiveness
+- Feature cards, unless they currently overlap the carousel content
+
+7. AUTO-ROTATION
+
+- Rotate every 6–8 seconds.
+- Use the same smooth fade transition as the current carousel.
+- Reset the timer when the user manually selects a slide.
+- Pause on hover or focus if practical.
+- Pause while the browser tab is hidden.
+
+8. MANUAL CONTROLS
+
+Add or retain the progress bars/dots at the bottom.
+
+Requirements:
+- Show the active slide.
+- Allow direct slide selection.
+- Use current white/lavender opacity-based styling.
+- Do not overlap buttons or content.
+- Add accessible labels such as:
+  - “Go to slide 1: For Companies”
+  - “Go to slide 2: For Talent”
+
+9. BACKGROUND IMAGE AND OVERLAY
+
+Each slide should have its own background image.
+
+Requirements:
+- Preserve the current dark navy overlay.
+- Keep text readable.
+- Match the existing site colors.
+- Use:
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+Allow per-slide background positioning if needed, for example:
+- client slide: center right
+- talent slide: center
+- mobile: center
+
+10. REACT IMPLEMENTATION
+
+If the project uses React:
+- Store slide data in an array.
+- Use `useState` for the active slide.
+- Use `useEffect` for auto-rotation.
+- Clear timers correctly.
+- Avoid direct DOM manipulation.
+- Use the existing router for navigation.
+- Preload the next slide image.
+
+Suggested structure:
+
+const [currentSlide, setCurrentSlide] = useState(0);
+
+const activeSlide = heroSlides[currentSlide];
+
+Render:
+- `activeSlide.label`
+- `activeSlide.title`
+- `activeSlide.description`
+- `activeSlide.primaryLabel`
+- `activeSlide.secondaryLabel`
+- `activeSlide.image`
+
+11. RESPONSIVENESS
+
+Desktop:
+- Pill, headline, description, and buttons remain left-aligned.
+- Buttons display side by side.
+- Background image remains visible.
+
+Laptop:
+- Scale heading and spacing down proportionally.
+- Keep all content visible without clipping.
+
+Mobile:
+- Stack buttons vertically.
+- Reduce headline size.
+- Keep pills readable.
+- Allow the description to wrap naturally.
+- Ensure carousel controls remain tappable.
+
+12. ACCESSIBILITY
+
+- Use real buttons or links for CTAs.
+- Add accessible labels to controls.
+- Maintain sufficient text contrast.
+- Respect `prefers-reduced-motion`.
+- Do not auto-rotate aggressively for reduced-motion users.
+
+13. DO NOT CHANGE
+
+Do not alter:
+- Existing font family
+- Existing brand colors
+- Navbar layout
+- Logo
+- Authentication flows
+- Existing page routes
+- Existing Hire Talent page
+- Existing Find Work page
+- Existing Value Calculator page
+- Feature card text
+- Other homepage sections
+
+14. ACCEPTANCE CRITERIA
+
+✓ Slides alternate between Client and Talent messaging.
+✓ “For Companies” and “For Talent” labels display correctly.
+✓ Headline, description, and button labels update with each slide.
+✓ Hire Talent routes to the existing Hire Talent page.
+✓ Find Work and Browse Roles route to the existing Find Work page.
+✓ Estimate Savings routes to the existing Value Calculator page.
+✓ Existing fonts and colors remain unchanged.
+✓ Carousel auto-rotates and supports manual selection.
+✓ Background images change smoothly.
+✓ Layout remains responsive.
+✓ No broken routes, duplicate pages, TypeScript errors, or console errors.
