@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
@@ -404,17 +404,12 @@ function BulkConfirm({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
+// TODO: Restore AdminProtectedRoute and admin API authorization before production launch.
 export default function AdminJobApplications() {
-  const { user } = useAuth();
   const [, navigate] = useLocation();
   const rawSearch = useSearch();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  // Redirect non-admins
-  useEffect(() => {
-    if (user && user.role !== "admin") navigate("/dashboard");
-  }, [user, navigate]);
 
   // ── Filter state (synced with URL) ────────────────────────────────────────
   const [search, setSearch] = useState(() => new URLSearchParams(rawSearch).get("search") ?? "");
@@ -459,13 +454,11 @@ export default function AdminJobApplications() {
   const { data: listData, isLoading, isError, refetch } = useQuery<ListResponse>({
     queryKey: listKey,
     queryFn: () => apiFetch(`/api/admin/job-applications?${qs}`),
-    enabled: !!user && user.role === "admin",
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery<Summary>({
     queryKey: ["/api/admin/job-applications/summary"],
     queryFn: () => apiFetch("/api/admin/job-applications/summary"),
-    enabled: !!user && user.role === "admin",
     staleTime: 30_000,
   });
 
@@ -477,7 +470,6 @@ export default function AdminJobApplications() {
       const items: any[] = Array.isArray(data) ? data : (data.items ?? []);
       return items.map((j: any) => ({ id: j.id, title: j.title }));
     },
-    enabled: !!user && user.role === "admin",
     staleTime: 60_000,
   });
 
@@ -518,10 +510,6 @@ export default function AdminJobApplications() {
     setDateFrom(""); setDateTo(""); setPage(1); setSelected(new Set());
   };
   const hasFilters = search || jobFilter || statusFilter || regFilter || dateFrom || dateTo;
-
-  // ── Loading skeleton ──────────────────────────────────────────────────────
-  if (!user) return null;
-  if (user.role !== "admin") return null;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">

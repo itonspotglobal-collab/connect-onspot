@@ -1,0 +1,134 @@
+TEMPORARY ROUTING CHANGE — REMOVE ADMIN AUTH GUARD
+
+We are not implementing admin authentication yet.
+
+Replit recently added `AdminProtectedRoute` protection to:
+
+`/admin/job-applications`
+
+Remove that protection for now.
+
+Current unwanted behavior:
+
+`/admin/job-applications`
+→ wrapped with `AdminProtectedRoute`
+→ requires an authenticated admin account
+
+Required temporary behavior:
+
+Anyone who knows the URL may access:
+
+- `/admin/job-applications`
+- `/admin/find-work`
+- `/admin/insights`
+
+Update `client/src/App.tsx` so `/admin/job-applications` is registered the same
+way as the existing public admin routes.
+
+Use:
+
+<Route
+  path="/admin/job-applications"
+  component={AdminJobApplications}
+/>
+
+Do not wrap it in:
+
+- `AdminProtectedRoute`
+- `ClientProtectedRoute`
+- `TalentProtectedRoute`
+- authentication checks
+- role checks
+- login redirects
+
+Also remove any page-level redirect or authorization check inside
+`AdminJobApplications.tsx`.
+
+IMPORTANT: REMOVE BACKEND ADMIN AUTH FOR THIS FEATURE TOO
+
+The frontend route being public is not enough.
+
+Temporarily remove admin authentication middleware from the Job Applications
+API endpoints so the page can load without an account.
+
+Review endpoints such as:
+
+- GET `/api/admin/job-applications`
+- GET `/api/admin/job-applications/summary`
+- GET `/api/admin/job-applications/:applicationId`
+- PATCH `/api/admin/job-applications/:applicationId/status`
+- Any bulk status endpoint
+
+Remove middleware such as:
+
+- `authenticateAdminFlexible`
+- `authenticateJWT`
+- `requireAdmin`
+- `isAuthenticated`
+- other role checks
+
+Do not remove or alter the authentication middleware definitions globally.
+Only remove them from these job-application routes for now.
+
+Because status updates are temporarily public:
+
+1. Do not expect an authenticated admin user ID.
+2. Make `changedBy` nullable in the status-history table if needed.
+3. Record a safe temporary value such as:
+   - `changedBy = null`
+   - `changeSource = "temporary_public_admin"`
+4. Do not create a fake user ID.
+5. Do not weaken database foreign keys by inserting invalid IDs.
+
+NAVIGATION
+
+Keep the Admin dropdown available without authentication.
+
+It should include:
+
+- Admin Dashboard, only if currently available
+- Find Work
+- Job Applications
+- Insights
+- Settings, only if appropriate
+
+Do not hide Job Applications based on authentication state.
+
+SECURITY NOTE IN CODE
+
+Add a clear TODO comment near the public routes and APIs:
+
+`TODO: Restore AdminProtectedRoute and admin API authorization before production launch.`
+
+Do not display this warning to normal site visitors.
+
+TESTS
+
+Update tests to reflect the temporary setup:
+
+- `/admin/job-applications` loads without login.
+- the applications list endpoint loads without login.
+- application details load without login.
+- status updates work without login.
+- `/admin/find-work` and `/admin/insights` remain accessible.
+- no redirect to login occurs.
+
+Remove or update tests expecting 401 or 403 for these temporary public routes.
+
+Do not remove authentication from unrelated routes, including:
+
+- Talent account routes
+- Client routes
+- profile routes
+- payments
+- private messages
+- other genuinely protected APIs
+
+FINAL RESULT
+
+For this development phase, anyone with the direct link can access and manage
+the Job Applications admin page, matching the current behavior of
+`/admin/find-work` and `/admin/insights`.
+
+This is temporary and must be easy to reverse when admin authentication is
+implemented.

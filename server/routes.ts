@@ -8181,10 +8181,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/admin/job-applications/summary — status counts (admin only)
   // NOTE: must be registered BEFORE the :applicationId route to avoid Express
   //       matching the literal string "summary" as a URL parameter.
-  app.get("/api/admin/job-applications/summary", authenticateJWT, async (req: Request, res: Response) => {
+  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
+  app.get("/api/admin/job-applications/summary", async (req: Request, res: Response) => {
     try {
-      const user = (req as any).user;
-      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
 
       const [byStatus, byReg, total] = await Promise.all([
         query(`SELECT status, COUNT(*) AS count FROM job_submissions GROUP BY status`),
@@ -8212,10 +8211,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications — paginated list with search/filter/sort (admin only)
-  app.get("/api/admin/job-applications", authenticateJWT, async (req: Request, res: Response) => {
+  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
+  app.get("/api/admin/job-applications", async (req: Request, res: Response) => {
     try {
-      const user = (req as any).user;
-      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
 
       const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),   10));
       const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10)));
@@ -8311,10 +8309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId — full detail with history (admin only)
-  app.get("/api/admin/job-applications/:applicationId", authenticateJWT, async (req: Request, res: Response) => {
+  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
+  app.get("/api/admin/job-applications/:applicationId", async (req: Request, res: Response) => {
     try {
-      const user = (req as any).user;
-      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
 
       const { applicationId } = req.params;
       const [appResult, histResult] = await Promise.all([
@@ -8353,10 +8350,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
-  app.patch("/api/admin/job-applications/:applicationId/status", authenticateJWT, async (req: Request, res: Response) => {
+  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
+  app.patch("/api/admin/job-applications/:applicationId/status", async (req: Request, res: Response) => {
     try {
-      const user = (req as any).user;
-      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+      // TODO: Replace null with req.user.id once admin auth is restored.
+      const changedBy: string | null = null; // temporary — no auth in this phase
 
       const { applicationId } = req.params;
       const { status, note } = req.body ?? {};
@@ -8382,7 +8380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `INSERT INTO job_application_status_history
              (application_id, previous_status, new_status, note, changed_by)
            VALUES ($1, $2, $3, $4, $5)`,
-          [applicationId, previousStatus, status, note?.trim() || null, user.id],
+          [applicationId, previousStatus, status, note?.trim() || null, changedBy],
         );
         await query("COMMIT");
         return res.json({ success: true, application: updated.rows[0] });

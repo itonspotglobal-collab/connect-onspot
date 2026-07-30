@@ -191,6 +191,8 @@ function PublicRouter() {
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
           <Route path="/admin/find-work" component={AdminFindWork} />
+          {/* TODO: Restore AdminProtectedRoute before production launch. */}
+          <Route path="/admin/job-applications" component={AdminJobApplications} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
           <Route path="/admin/inquiries" component={AdminInquiries} />
           {/* Service pages — with TopNavigation */}
@@ -233,11 +235,6 @@ function ClientRouter() {
           <Route path="/admin/dashboard" component={() => (
             <AdminProtectedRoute>
               <AdminDashboard />
-            </AdminProtectedRoute>
-          )} />
-          <Route path="/admin/job-applications" component={() => (
-            <AdminProtectedRoute>
-              <AdminJobApplications />
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
