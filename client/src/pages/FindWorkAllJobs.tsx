@@ -174,6 +174,7 @@ function JobCard({
   job: Job;
   onNavigate: (id: string) => void;
 }) {
+  const [, navigate] = useLocation();
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
