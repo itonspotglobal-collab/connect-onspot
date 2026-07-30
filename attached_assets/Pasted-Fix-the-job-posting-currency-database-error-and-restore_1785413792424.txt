@@ -1,0 +1,401 @@
+Fix the job posting currency database error and restore existing job postings in `/admin/find-work`.
+
+
+
+Current errors:
+
+- Creating a job returns HTTP 500
+
+- Error: `column "custom_currency_code" of relation "jobs" does not exist`
+
+- `/api/admin/jobs` also returns HTTP 500
+
+- Existing jobs are no longer displayed in the admin page
+
+
+
+Important:
+
+Do not delete or recreate the jobs table.
+
+Do not remove existing job records.
+
+Apply a safe, non-destructive database migration.
+
+
+
+1. Inspect the current jobs schema
+
+
+
+Find the database schema/model/migration used for the `jobs` table.
+
+
+
+Check whether these new currency fields exist:
+
+
+
+```ts
+
+currency
+
+custom_currency_code
+
+
+
+The backend currently tries to insert or select custom_currency_code, but that column does not exist in the database.
+
+
+
+Add a safe database migration
+
+
+
+Add the missing columns to the existing jobs table without dropping data.
+
+
+
+Suggested SQL:
+
+
+
+ALTER TABLE jobs
+
+ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'PHP';
+
+
+
+ALTER TABLE jobs
+
+ADD COLUMN IF NOT EXISTS custom_currency_code VARCHAR(3);
+
+
+
+If the project uses Drizzle, Prisma, Sequelize, or another ORM:
+
+
+
+update the schema/model
+
+generate a migration
+
+execute the migration against the active database
+
+do not rely only on changing the TypeScript schema
+
+
+
+Existing jobs must automatically use:
+
+
+
+currency = PHP
+
+custom_currency_code = null
+
+Verify the actual database used by Replit
+
+
+
+Make sure the migration is run against the same database referenced by the running application’s environment variables.
+
+
+
+Check:
+
+
+
+DATABASE_URL
+
+production/development database configuration
+
+Replit database or PostgreSQL connection
+
+whether migrations are executed during startup/deployment
+
+
+
+Do not apply the migration only to an unused local database.
+
+
+
+Fix the backend jobs schema
+
+
+
+Update the shared/backend job type to support:
+
+
+
+currency: string;
+
+customCurrencyCode?: string | null;
+
+
+
+Map fields consistently between database and API:
+
+
+
+Database:
+
+currency
+
+custom_currency_code
+
+
+
+API/TypeScript:
+
+currency
+
+customCurrencyCode
+
+
+
+If the project uses snake_case everywhere, keep it consistent instead of mixing naming conventions.
+
+
+
+Fix job creation
+
+
+
+When creating a job:
+
+
+
+save the selected currency
+
+save custom_currency_code only when currency is OTHER
+
+save null for custom_currency_code when PHP, USD, EUR, GBP, AUD, CAD, SGD, or JPY is selected
+
+
+
+Example:
+
+
+
+const currency = input.currency || "PHP";
+
+
+
+const customCurrencyCode =
+
+  currency === "OTHER"
+
+    ? input.customCurrencyCode?.trim().toUpperCase()
+
+    : null;
+
+
+
+Do not require custom_currency_code for USD.
+
+
+
+For USD:
+
+
+
+currency = USD
+
+custom_currency_code = null
+
+Fix existing job loading
+
+
+
+The /api/admin/jobs GET endpoint must successfully load older job records that do not yet have currency data.
+
+
+
+Use safe defaults:
+
+
+
+currency: row.currency || "PHP",
+
+customCurrencyCode: row.custom_currency_code || null,
+
+
+
+Do not allow one missing optional currency field to cause the entire jobs endpoint to return HTTP 500.
+
+
+
+Restore existing jobs in the UI
+
+
+
+After the migration and endpoint fix:
+
+
+
+reload all existing jobs from the database
+
+confirm the admin counts are restored
+
+confirm previously created jobs are visible
+
+do not replace database results with an empty array when the request fails
+
+
+
+Improve frontend error handling:
+
+
+
+preserve the previous jobs state if a refresh request fails
+
+show an error message instead of displaying No job postings yet
+
+distinguish between:
+
+successful response with zero jobs
+
+failed request with HTTP 500
+
+
+
+Example behavior:
+
+
+
+if (!response.ok) {
+
+  throw new Error("Unable to load job postings");
+
+}
+
+
+
+// Only set jobs to [] when the API successfully returns an empty result.
+
+Add a temporary backward-compatible backend safeguard
+
+
+
+Until all environments have migrated, prevent the API from crashing if currency columns are unavailable.
+
+
+
+Preferred fix:
+
+
+
+run the database migration correctly
+
+
+
+Do not permanently hide the migration issue, but add clear error handling so the API returns a useful message rather than breaking all job loading.
+
+
+
+Confirm currency behavior
+
+
+
+Test these scenarios:
+
+
+
+PHP:
+
+
+
+currency = PHP
+
+customCurrencyCode = null
+
+
+
+USD:
+
+
+
+currency = USD
+
+customCurrencyCode = null
+
+
+
+Other/NZD:
+
+
+
+currency = OTHER
+
+customCurrencyCode = NZD
+
+
+
+All three should create successfully.
+
+
+
+Test existing and new jobs
+
+
+
+Verify:
+
+
+
+old jobs still load and default to PHP
+
+a new PHP job can be created
+
+a new USD job can be created
+
+an OTHER currency job can be created with a valid 3-letter code
+
+editing an old job does not erase unrelated fields
+
+/api/admin/jobs GET no longer returns 500
+
+/api/admin/jobs POST no longer returns 500
+
+admin counters reflect the stored jobs
+
+public Find Work pages still display jobs
+
+Do not destructively reset the database
+
+
+
+Do not:
+
+
+
+drop the jobs table
+
+truncate jobs
+
+replace the database
+
+reset migrations destructively
+
+seed over existing production records
+
+
+
+Return:
+
+
+
+the schema/model update
+
+migration file or SQL
+
+backend create/read/update fixes
+
+frontend failed-load handling
+
+a summary of the migration command that was executed
+
+
+
+The existing postings are probably not gone. The admin page is showing zero because its jobs request is failing with `500`, so it falls back to the empty state. Fix the missing database column first, then reload the jobs endpoint.
