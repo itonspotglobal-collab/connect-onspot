@@ -1874,6 +1874,15 @@ export default function FindBestMatches() {
   const [, navigate] = useLocation();
   const [phase, setPhase] = useState<Phase>("flow");
   const [flowStep, setFlowStep] = useState(0);
+
+  // ── Post-registration welcome banner ─────────────────────────────────────
+  // Set by TalentSignupFromApplication after creating a new account.
+  // Read-and-clear so it fires exactly once per registration, never on return visits.
+  const [showWelcome, setShowWelcome] = useState(() => {
+    const flag = sessionStorage.getItem("onspot_new_talent_welcome");
+    if (flag) sessionStorage.removeItem("onspot_new_talent_welcome");
+    return flag === "1";
+  });
   const [profile, setProfile] = useState<CandidateProfile>(EMPTY_PROFILE);
   const [secSkillInput, setSecSkillInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -4200,6 +4209,52 @@ export default function FindBestMatches() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Post-registration welcome banner — only shown to newly created Talent accounts */}
+      {showWelcome && (
+        <div className="border-b border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-900/20">
+          <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 lg:px-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-base font-semibold text-emerald-800 dark:text-emerald-300">
+                  🎉 Welcome to OnSpot!
+                </p>
+                <p className="mt-0.5 text-sm text-emerald-700 dark:text-emerald-400">
+                  Your Talent account has been created and your application has been submitted.
+                  Complete your Talent Profile so we can recommend the best opportunities for you.
+                </p>
+                {/* Progress steps */}
+                <ol className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <li className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    Application Submitted
+                  </li>
+                  <li className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    Account Created
+                  </li>
+                  <li className="flex items-center gap-1 opacity-60">
+                    <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-emerald-500 text-[9px] font-bold">3</span>
+                    Complete Your Talent Profile
+                  </li>
+                  <li className="flex items-center gap-1 opacity-40">
+                    <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-emerald-400 text-[9px] font-bold">4</span>
+                    Start Receiving Job Matches
+                  </li>
+                </ol>
+              </div>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => setShowWelcome(false)}
+                className="mt-0.5 shrink-0 text-emerald-500 hover:text-emerald-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="bg-white border-b border-slate-200/80">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">

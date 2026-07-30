@@ -215,7 +215,7 @@ export default function TalentSignupFromApplication() {
       localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
 
       // 4. Sync AuthContext so guards see the user as authenticated, then
-      //    redirect to the jobs board (not directly into the portal).
+      //    redirect new Talent accounts to the onboarding / Find Best Matches page.
       await refreshAuth();
 
       toast({
@@ -225,7 +225,10 @@ export default function TalentSignupFromApplication() {
         duration: 8000,
       });
 
-      navigate("/find-work/jobs");
+      // Signal the Find Best Matches page to show the post-registration welcome banner.
+      // Using sessionStorage so it fires exactly once and never pollutes the URL.
+      sessionStorage.setItem("onspot_new_talent_welcome", "1");
+      navigate("/find-best-matches");
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
       setStage("ready");

@@ -1,0 +1,112 @@
+CHANGE THE POST-REGISTRATION REDIRECT FOR NEW TALENT ACCOUNTS
+
+Update the onboarding flow after a successful Talent account creation.
+
+CURRENT FLOW
+
+Job Application
+→ Create Talent Account
+→ Link Application
+→ Redirect to
+
+/find-work/jobs
+
+NEW FLOW
+
+Job Application
+→ Create Talent Account
+→ Link Application
+→ Redirect to
+
+/find-best-matches
+
+PURPOSE
+
+The Find Best Matches page will become the onboarding experience for newly
+registered Talent users.
+
+The applicant should complete their Talent profile before continuing their job
+search.
+
+IMPLEMENTATION
+
+Only change the redirect for **newly created Talent accounts**.
+
+Do NOT change the behavior for authenticated Talent users.
+
+FINAL BEHAVIOR
+
+1. User submits a job application.
+
+2. If the user already has a Talent account:
+   - Link the application.
+   - Redirect to:
+
+   `/find-work/jobs`
+
+3. If the user creates a brand-new Talent account:
+   - Create the account.
+   - Link the pending application.
+   - Authenticate the user.
+   - Redirect to:
+
+   `/find-best-matches`
+
+4. Preserve any secure continuation token logic.
+
+Do not expose applicant information in the URL.
+
+FIND BEST MATCHES ONBOARDING
+
+When the user first lands on `/find-best-matches` after account creation:
+
+Display a welcome banner such as:
+
+"🎉 Welcome to OnSpot!
+
+Your Talent account has been created successfully and your application has been submitted.
+
+Complete your Talent Profile so we can recommend the best opportunities for you."
+
+Optionally include a progress indicator, for example:
+
+Step 1 ✓ Application Submitted
+Step 2 ✓ Account Created
+Step 3 Complete Your Talent Profile
+Step 4 Start Receiving Job Matches
+
+ONBOARDING COMPLETION
+
+Once the profile is sufficiently completed, redirect the Talent to the normal
+Find Best Matches experience.
+
+Do not interrupt existing users who visit `/find-best-matches` later.
+
+DO NOT CHANGE
+
+Keep the following behavior unchanged:
+
+• Existing authenticated Talent
+→ `/find-work/jobs`
+
+• Existing Talent logging in after an application
+→ `/find-work/jobs`
+
+• Only newly registered Talent users should be redirected to
+`/find-best-matches`.
+
+ACCEPTANCE CRITERIA
+
+✓ New Talent account
+→ `/find-best-matches`
+
+✓ Existing Talent
+→ `/find-work/jobs`
+
+✓ Application remains linked
+
+✓ User stays authenticated
+
+✓ No personal information appears in the URL
+
+✓ Existing onboarding and matching features continue to work.
