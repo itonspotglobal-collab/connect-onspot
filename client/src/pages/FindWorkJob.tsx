@@ -860,11 +860,11 @@ export default function FindWorkJob() {
             ))}
           </div>
 
-          {/* CTA — static roles use the shared APPLY_URL */}
+          {/* CTA — static roles navigate to the jobs listing */}
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
               className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
-              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+              onClick={() => navigate("/find-work/jobs")}
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -1002,18 +1002,12 @@ export default function FindWorkJob() {
           </h2>
           <p className="mb-8 text-slate-500">Don't wait — top candidates are already in the process.</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            {role.applyLink ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
-                onClick={() => window.open(role.applyLink!, "_blank", "noopener,noreferrer")}
-              >
-                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="rounded-full px-10">
-                Application not available
-              </Button>
-            )}
+            <Button
+              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
+              onClick={() => navigate("/find-work/jobs")}
+            >
+              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
             <Button
               variant="outline"
               className="rounded-full px-6"

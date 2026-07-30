@@ -36,6 +36,7 @@ import FindWork from "@/pages/FindWork";
 import FindWorkJob from "@/pages/FindWorkJob";
 import FindWorkAllJobs from "@/pages/FindWorkAllJobs";
 import JobApplyPage from "@/pages/JobApplyPage";
+import TalentSignupFromApplication from "@/pages/TalentSignupFromApplication";
 import FindBestMatches from "@/pages/FindBestMatches";
 import CandidateProfile from "@/pages/CandidateProfile";
 import Insights from "@/pages/Insights";
@@ -149,6 +150,7 @@ function PublicRouter() {
           <Route path="/jobs" component={FindWorkAllJobs} />
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
+          <Route path="/talent/signup" component={TalentSignupFromApplication} />
           <Route path="/get-hired" component={() => {
             // Allow both authenticated and non-authenticated access to GetHired
             if (isAuthenticated && user?.userType === 'talent') {
@@ -244,6 +246,7 @@ function ClientRouter() {
           <Route path="/jobs" component={FindWorkAllJobs} />
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
+          <Route path="/talent/signup" component={TalentSignupFromApplication} />
           <Route component={NotFound} />
         </Switch>
       </ClientLayout>
@@ -307,6 +310,7 @@ function AppContent() {
       <Route path="/jobs" component={PublicRouter} />
       <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
       <Route path="/jobs/:jobId" component={PublicRouter} />
+      <Route path="/talent/signup" component={TalentSignupFromApplication} />
       <Route path="/get-hired" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />

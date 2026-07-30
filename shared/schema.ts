@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -648,8 +648,11 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
 export const jobSubmissions = pgTable("job_submissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").notNull().references(() => jobs.id),
-  clientId: varchar("client_id").notNull().references(() => users.id),
-  applicantName: text("applicant_name").notNull(),
+  clientId: varchar("client_id").references(() => users.id),  // nullable for public submissions
+  // firstName / lastName replace the legacy applicantName for new public submissions
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  applicantName: text("applicant_name"),  // kept for backward-compat with old rows
   email: text("email").notNull(),
   phone: text("phone"),
   location: text("location"),
@@ -660,9 +663,20 @@ export const jobSubmissions = pgTable("job_submissions", {
   expectedSalary: text("expected_salary"),
   availability: text("availability"),
   status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired
+  talentId: varchar("talent_id").references(() => users.id),
+  registrationStatus: text("registration_status").notNull().default("pending_account"),
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const applicationTokens = pgTable("application_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  submissionId: varchar("submission_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit({
@@ -673,6 +687,7 @@ export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit
 });
 export type InsertJobSubmission = z.infer<typeof insertJobSubmissionSchema>;
 export type JobSubmission = typeof jobSubmissions.$inferSelect;
+export type ApplicationToken = typeof applicationTokens.$inferSelect;
 
 export const insertProposalSchema = createInsertSchema(proposals).omit({
   id: true,

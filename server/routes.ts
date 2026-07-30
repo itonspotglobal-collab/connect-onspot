@@ -25,7 +25,7 @@ import { eq, desc } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes, createHash } from "crypto";
 import {
   insertUserSchema,
   insertProfileSchema,
@@ -559,6 +559,25 @@ const authResetLimiter = rateLimit({
 
 // Kept for legacy routes that still reference authLimiter (talent-auth, /login, /signup)
 const authLimiter = loginLimiter;
+
+// JOB-APPLY limiter — keyed by IP, 5 submissions per minute
+const applyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 50 : 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `apply:${ipKeyGenerator(req)}`,
+  handler: (req: Request, res: Response) => {
+    const secs = retryAfterSecs(req);
+    console.warn(`🚫 Apply rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
+    res.status(429).set("Retry-After", String(secs)).json({
+      success: false,
+      error: "RATE_LIMITED",
+      message: "Too many applications submitted. Please wait a minute and try again.",
+      retryAfter: secs,
+    });
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
@@ -7897,8 +7916,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
 
-  // POST /api/jobs/:jobId/apply — public endpoint, submit a built-in application
-  app.post("/api/jobs/:jobId/apply", upload.single("resume"), async (req: Request, res: Response) => {
+  // POST /api/jobs/:jobId/apply — public endpoint, submit a built-in application (JSON body)
+  app.post("/api/jobs/:jobId/apply", applyLimiter, async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params;
       const job = await storage.getJob(jobId);
@@ -7910,59 +7929,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "This job is no longer accepting applications" });
       }
 
-      const { applicantName, email, phone, location, portfolioUrl, coverLetter, expectedSalary, availability } = req.body;
-      if (!applicantName?.trim()) return res.status(400).json({ error: "Full name is required" });
+      const { firstName, lastName, email, phone, coverLetter } = req.body;
+      if (!firstName?.trim()) return res.status(400).json({ error: "First name is required" });
+      if (!lastName?.trim()) return res.status(400).json({ error: "Last name is required" });
       if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
       if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
 
-      let resumeUrl: string | null = null;
-      let resumeFileName: string | null = null;
-
-      if (req.file) {
-        const allowedMimes = [
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ];
-        if (!allowedMimes.includes(req.file.mimetype)) {
-          return res.status(400).json({ error: "Only PDF or Word documents are allowed" });
-        }
-        if (req.file.size > 10 * 1024 * 1024) {
-          return res.status(400).json({ error: "File too large — max 10 MB" });
-        }
-        const objectStorageService = new ObjectStorageService();
-        const objectId = randomUUID();
-        const privateObjectDir = objectStorageService.getPrivateObjectDir();
-        const fullPath = `${privateObjectDir}/job-resumes/${objectId}`;
-        const parts = fullPath.split("/").filter((p: string) => p);
-        const bucketName = parts[0];
-        const objectName = parts.slice(1).join("/");
-        const bucket = objectStorageClient.bucket(bucketName);
-        const objectFile = bucket.file(objectName);
-        await objectFile.save(req.file.buffer, {
-          metadata: { contentType: req.file.mimetype, metadata: { originalName: req.file.originalname } },
-        });
-        await setObjectAclPolicy(objectFile, { visibility: "private" });
-        resumeUrl = `/objects/job-resumes/${objectId}`;
-        resumeFileName = req.file.originalname;
+      // Duplicate check — same email for same job (pending or registered)
+      const dupCheck = await query(
+        `SELECT id FROM job_submissions WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
+        [jobId, email.trim()],
+      );
+      if (dupCheck.rows.length > 0) {
+        return res.status(409).json({ error: "An application for this job with that email already exists." });
       }
 
+      const applicantName = `${firstName.trim()} ${lastName.trim()}`;
       const result = await query(
-        `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, email, phone, location, resume_url, resume_file_name, portfolio_url, cover_letter, expected_salary, availability, status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new')
-         RETURNING *`,
+        `INSERT INTO job_submissions
+           (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter, status, registration_status)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'new', 'pending_account')
+         RETURNING id`,
         [
-          jobId, job.clientId,
-          applicantName.trim(), email.trim(),
-          phone?.trim() || null, location?.trim() || null,
-          resumeUrl, resumeFileName,
-          portfolioUrl?.trim() || null, coverLetter?.trim() || null,
-          expectedSalary?.trim() || null, availability?.trim() || null,
+          jobId, job.clientId || null,
+          firstName.trim(), lastName.trim(), applicantName,
+          email.trim().toLowerCase(),
+          phone.trim(),
+          coverLetter?.trim() || null,
         ],
       );
-      return res.status(201).json(result.rows[0]);
+      const submissionId = result.rows[0].id;
+
+      // Generate a short-lived continuation token (base64url, 32 bytes)
+      const rawToken = randomBytes(32).toString("base64url");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
+
+      await query(
+        `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
+         VALUES (gen_random_uuid(), $1, $2, $3)`,
+        [submissionId, tokenHash, expiresAt],
+      );
+
+      return res.status(201).json({
+        success: true,
+        applicationId: submissionId,
+        continuationToken: rawToken,
+      });
     } catch (err: any) {
       console.error("POST /api/jobs/:jobId/apply error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/job-applications/continue/:token — resolve token → prefill data
+  app.get("/api/job-applications/continue/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      if (!token || token.length > 128) return res.status(400).json({ error: "Invalid token" });
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const r = await query(
+        `SELECT at.id AS token_id, at.submission_id, at.expires_at, at.used_at,
+                js.first_name, js.last_name, js.email, js.phone, js.job_id,
+                j.title AS job_title
+         FROM application_tokens at
+         JOIN job_submissions js ON js.id = at.submission_id
+         JOIN jobs j ON j.id = js.job_id
+         WHERE at.token_hash = $1`,
+        [tokenHash],
+      );
+      if (r.rows.length === 0) return res.status(404).json({ error: "Token not found" });
+      const row = r.rows[0];
+      if (row.used_at) return res.status(410).json({ error: "Token already used" });
+      if (new Date(row.expires_at) < new Date()) return res.status(410).json({ error: "Token expired" });
+      return res.json({
+        submissionId: row.submission_id,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        email: row.email,
+        phone: row.phone,
+        jobTitle: row.job_title,
+      });
+    } catch (err: any) {
+      console.error("GET /api/job-applications/continue error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/job-applications/link — link a talent account to a submission (requires JWT)
+  app.post("/api/job-applications/link", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id) return res.status(401).json({ error: "Unauthorized" });
+      const { submissionId, token } = req.body;
+      if (!submissionId || !token) return res.status(400).json({ error: "submissionId and token are required" });
+
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const r = await query(
+        `SELECT at.id AS token_id, at.expires_at, at.used_at, js.talent_id
+         FROM application_tokens at
+         JOIN job_submissions js ON js.id = at.submission_id
+         WHERE at.token_hash = $1 AND at.submission_id = $2`,
+        [tokenHash, submissionId],
+      );
+      if (r.rows.length === 0) return res.status(404).json({ error: "Token not found" });
+      const row = r.rows[0];
+      if (row.used_at) return res.status(410).json({ error: "Token already used" });
+      if (new Date(row.expires_at) < new Date()) return res.status(410).json({ error: "Token expired" });
+      if (row.talent_id) return res.status(409).json({ error: "Submission already linked to an account" });
+
+      // Mark token used and link talent
+      await query(`UPDATE application_tokens SET used_at = NOW() WHERE id = $1`, [row.token_id]);
+      await query(
+        `UPDATE job_submissions SET talent_id = $1, registration_status = 'registered', updated_at = NOW()
+         WHERE id = $2`,
+        [user.id, submissionId],
+      );
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("POST /api/job-applications/link error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/admin/job-applications — paginated list (admin only)
+  app.get("/api/admin/job-applications", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+
+      const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10)));
+      const offset = (page - 1) * limit;
+      const status = req.query.status as string | undefined;
+      const jobId = req.query.jobId as string | undefined;
+      const registrationStatus = req.query.registrationStatus as string | undefined;
+
+      const conditions: string[] = [];
+      const params: any[] = [];
+
+      if (status) { params.push(status); conditions.push(`js.status = $${params.length}`); }
+      if (jobId) { params.push(jobId); conditions.push(`js.job_id = $${params.length}`); }
+      if (registrationStatus) { params.push(registrationStatus); conditions.push(`js.registration_status = $${params.length}`); }
+
+      const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+      params.push(limit, offset);
+
+      const [countResult, rowsResult] = await Promise.all([
+        query(`SELECT COUNT(*) FROM job_submissions js ${where}`, params.slice(0, -2)),
+        query(
+          `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany",
+                  u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users u ON u.id = js.talent_id
+           ${where}
+           ORDER BY js.submitted_at DESC
+           LIMIT $${params.length - 1} OFFSET $${params.length}`,
+          params,
+        ),
+      ]);
+
+      return res.json({
+        total: parseInt(countResult.rows[0].count, 10),
+        page,
+        limit,
+        items: rowsResult.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
