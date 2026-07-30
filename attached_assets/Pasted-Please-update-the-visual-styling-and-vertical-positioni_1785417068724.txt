@@ -1,0 +1,152 @@
+Please update the visual styling and vertical positioning of both the Log In and Sign Up forms.
+
+IMPORTANT:
+- Do not redesign the forms.
+- Do not change the fields, labels, validation, routes, modal behavior, or authentication logic.
+- Only adjust the form panel color and spacing beneath the navigation bar.
+
+CURRENT ISSUES
+
+1. The form panel background is too dark purple.
+2. The Log In form is positioned too close to the navigation bar.
+3. The Sign Up form should use the same updated lighter panel styling for consistency.
+
+====================================================
+1. LIGHTEN THE FORM PANEL COLOR
+====================================================
+
+Update the main form container for both:
+- Log In
+- Sign Up
+
+The current dark purple background should be changed to a lighter, softer purple-blue tone that still matches the existing OnSpot color palette.
+
+Requirements:
+- Keep the text readable.
+- Keep the current white and lavender text colors.
+- Keep the current input styling unless slight contrast adjustments are needed.
+- Preserve the gradient/grid effect if already present, but make it less dark.
+
+Suggested panel background:
+
+background:
+  linear-gradient(
+    145deg,
+    rgba(54, 57, 135, 0.98),
+    rgba(73, 61, 155, 0.96)
+  );
+
+Alternative if the panel uses a solid color:
+- Use a medium muted indigo/purple rather than deep navy.
+- Example range:
+  #343887 to #4A3D9B
+
+Do not make the panel pastel or overly bright.
+It should still feel premium and consistent with the site.
+
+====================================================
+2. IMPROVE PANEL CONTRAST
+====================================================
+
+After lightening the form panel:
+
+- Keep headings bright white.
+- Keep secondary text in light lavender/gray.
+- Ensure input fields remain distinguishable from the panel.
+- Slightly increase input contrast if necessary using a semi-transparent lighter fill.
+
+Suggested input styling:
+background: rgba(255, 255, 255, 0.10);
+border: 1px solid rgba(255, 255, 255, 0.20);
+
+Do not change the size or layout of the inputs.
+
+====================================================
+3. MOVE THE LOGIN FORM LOWER
+====================================================
+
+The Log In form currently starts too close to the bottom of the navbar.
+
+Add more safe spacing between the navigation bar and the form panel.
+
+Requirements:
+- Move the Log In form downward by approximately 20–32px.
+- Apply the same safe top spacing pattern to the Sign Up form if needed.
+- Keep the form horizontally centered.
+- Do not push the bottom of the form outside the viewport.
+
+Recommended overlay/container spacing:
+
+padding-top: calc(var(--navbar-height) + 24px);
+
+or, if the navbar height is fixed:
+
+padding-top: 96px to 112px;
+
+Do not use arbitrary absolute positioning.
+
+====================================================
+4. KEEP THE FORM VIEWPORT-SAFE
+====================================================
+
+Both forms must remain fully accessible at 100% browser zoom.
+
+Use:
+- max-height: calc(100vh - var(--navbar-height) - 32px);
+- overflow-y: auto;
+
+The panel should:
+- Have safe space above and below.
+- Scroll internally on shorter screens.
+- Never overlap the navigation bar.
+- Never be cropped at the bottom.
+
+====================================================
+5. APPLY CONSISTENT STYLING
+====================================================
+
+Use the same updated panel background and spacing rules for:
+- Log In form
+- Sign Up form
+
+Do not allow one form to remain darker than the other.
+
+Keep:
+- Same border radius
+- Same width
+- Same shadow
+- Same input styles
+- Same button styles
+- Same icon styles
+- Same overall layout
+
+====================================================
+6. DO NOT CHANGE
+====================================================
+
+Do not modify:
+- Navbar
+- Logo
+- Hire Talent / Find Work links
+- Log In / Sign Up links
+- Form fields
+- Password behavior
+- Client/Talent selection
+- Validation
+- Buttons
+- Authentication logic
+- Routes
+- Background blur
+- Chat button
+
+====================================================
+ACCEPTANCE CRITERIA
+====================================================
+
+✓ Both Log In and Sign Up panels use a lighter purple-blue background.
+✓ Text and fields remain easy to read.
+✓ The Log In panel has more breathing room beneath the navbar.
+✓ Neither form overlaps the navbar.
+✓ Both forms remain fully usable at 100% zoom.
+✓ Internal scrolling still works on smaller screens.
+✓ No layout, TypeScript, runtime, or console errors are introduced.

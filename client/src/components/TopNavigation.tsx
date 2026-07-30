@@ -1609,12 +1609,12 @@ export function TopNavigation() {
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" />
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto"
-              style={{ padding: 'clamp(2rem, 5vh, 4rem)', minHeight: '100vh' }}
+              className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden"
+              style={{ paddingTop: 'calc(72px + 24px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
             >
               <div
-                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 my-auto"
-                style={{ width: 'min(90%, 520px)', maxHeight: '90vh' }}
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 flex flex-col w-full"
+                style={{ maxWidth: '520px', maxHeight: 'calc(100vh - 72px - 48px)' }}
               >
                 <DialogTitle className="sr-only">Sign In</DialogTitle>
                 <button
@@ -1627,7 +1627,7 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden"
                   style={{
-                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    background: 'linear-gradient(145deg, rgba(54,57,135,0.98) 0%, rgba(73,61,155,0.96) 100%)',
                     minHeight: 'min(600px, 80vh)',
                   }}
                 >
@@ -1882,7 +1882,7 @@ export function TopNavigation() {
             {/* Overlay: flex-start so content starts below navbar; overflow hidden so page doesn't scroll */}
             <div
               className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden"
-              style={{ paddingTop: 'calc(72px + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
+              style={{ paddingTop: 'calc(72px + 24px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
             >
               <div
                 className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 flex flex-col w-full"
@@ -1900,7 +1900,7 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden flex-1 min-h-0"
                   style={{
-                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    background: 'linear-gradient(145deg, rgba(54,57,135,0.98) 0%, rgba(73,61,155,0.96) 100%)',
                   }}
                 >
                   <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(91,124,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(91,124,255,0.3) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
@@ -2122,7 +2122,7 @@ export function TopNavigation() {
                 <div
                   className="relative flex flex-col rounded-2xl overflow-hidden"
                   style={{
-                    background: 'linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 25%, #252560 50%, #1a1a4e 75%, #0f0f3c 100%)',
+                    background: 'linear-gradient(145deg, rgba(54,57,135,0.98) 0%, rgba(73,61,155,0.96) 100%)',
                     minHeight: 'min(560px, 80vh)',
                   }}
                 >
