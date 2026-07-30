@@ -133,6 +133,7 @@ const CONTRACT_TYPES = [
   "fixed",
 ];
 
+// PHP salary ranges — only applied when job currency is PHP (or unset)
 const SALARY_RANGES = [
   "Any pay",
   "₱30,000+",
@@ -500,7 +501,11 @@ export default function FindWorkAllJobs() {
 
       const salaryPass = (() => {
         if (salary === "Any pay") return true;
-        const max = parseFloat(job.hourlyRateMax ?? job.budget ?? "0");
+        // PHP salary thresholds only apply to PHP-currency jobs;
+        // non-PHP jobs always pass to avoid comparing ₱50,000 with $1,000.
+        const jobCurrency = ((job as any).budgetCurrency || "PHP").toUpperCase();
+        if (jobCurrency !== "PHP") return true;
+        const max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
         if (salary === "₱30,000+") return max >= 30000;
         if (salary === "₱45,000+") return max >= 45000;
         if (salary === "₱60,000+") return max >= 60000;

@@ -1,0 +1,267 @@
+Update the Find Work job posting system so admins can choose the salary currency when creating or editing a job.
+
+Goal
+Right now salary/rate fields are fixed to PHP. Add a currency selector so each job can use:
+- PHP
+- USD
+- other supported currencies
+
+This must work in:
+- Add New Job Posting
+- Edit Job Posting
+- Admin job cards/details
+- Public Find Work cards
+- Job popup/modal
+- Full job details page
+
+1. Add a Currency field to the admin form
+
+In `/admin/find-work`, add a required dropdown labeled:
+
+`Currency`
+
+Place it inside the existing `SALARY / RATE` section, above or beside:
+- Fixed Monthly Budget
+- Rate Range Min
+- Rate Range Max
+
+Default value:
+- PHP for existing behavior and backward compatibility
+
+Initial options:
+- PHP — Philippine Peso
+- USD — US Dollar
+- EUR — Euro
+- GBP — British Pound
+- AUD — Australian Dollar
+- CAD — Canadian Dollar
+- SGD — Singapore Dollar
+- JPY — Japanese Yen
+- Other
+
+Keep the styling consistent with the existing admin form.
+
+2. Update the shared job type/schema
+
+Add currency-related fields to the shared job data:
+
+```ts
+type SupportedCurrency =
+  | "PHP"
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "AUD"
+  | "CAD"
+  | "SGD"
+  | "JPY"
+  | "OTHER";
+
+interface JobPosting {
+  currency: SupportedCurrency;
+  customCurrencyCode?: string;
+
+  fixedMonthlyBudget?: number | null;
+  rateRangeMin?: number | null;
+  rateRangeMax?: number | null;
+
+  // existing fields remain unchanged
+}
+For existing jobs that do not yet have a currency value:
+treat them as PHP
+do not break existing salary data
+Support “Other” currencies
+When Other is selected, show another input:
+Label:
+Currency Code
+Placeholder:
+e.g. NZD, AED, CHF
+Requirements:
+accept a 3-letter uppercase currency code
+trim spaces
+automatically convert input to uppercase
+validate that exactly 3 alphabetic characters are entered
+save it as customCurrencyCode
+Hide and clear this field when a standard currency is selected.
+Remove hardcoded peso symbols from inputs
+The salary input fields currently show a fixed ₱ prefix.
+Update the prefix dynamically based on the selected currency.
+Examples:
+PHP → ₱
+USD → $
+EUR → €
+GBP → £
+JPY → ¥
+AUD → A$
+CAD → C$
+SGD → S$
+Other → use the currency code, such as NZD
+Do not hardcode PHP in field labels like:
+Fixed Monthly Budget (₱)
+Rate Range Min (₱)
+Rate Range Max (₱)
+Replace them with neutral labels:
+Fixed Monthly Budget
+Rate Range Min
+Rate Range Max
+The selected currency should be shown by the input prefix and/or helper text.
+Add reusable currency helpers
+Create reusable helpers instead of repeating currency logic.
+Example:
+const currencySymbols: Record<string, string> = {
+  PHP: "₱",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+  CAD: "C$",
+  SGD: "S$",
+  JPY: "¥",
+};
+
+function getCurrencyCode(job: JobPosting) {
+  return job.currency === "OTHER"
+    ? job.customCurrencyCode || ""
+    : job.currency || "PHP";
+}
+
+function formatJobCurrency(
+  amount: number,
+  currency: SupportedCurrency,
+  customCurrencyCode?: string
+) {
+  const code =
+    currency === "OTHER"
+      ? customCurrencyCode || "PHP"
+      : currency || "PHP";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${code} ${amount.toLocaleString()}`;
+  }
+}
+Use one shared formatter across admin and public pages.
+Save currency on create and edit
+When creating a job:
+save currency
+save customCurrencyCode when applicable
+save the existing salary values as numbers
+When editing a job:
+prefill the selected currency
+prefill the custom currency code when applicable
+preserve existing salary values
+allow changing the currency without clearing the numeric values unless the admin edits them
+Update salary display everywhere
+Update all salary displays to use the job’s selected currency.
+Check:
+admin job posting cards
+admin preview
+FindWork.tsx live preview
+FindWork.tsx job cards
+job details popup
+FindWorkJobs.tsx
+FindWorkAllJobs.tsx
+dedicated role page
+any salary filter/result summaries
+Examples:
+PHP: ₱50,000–₱78,000/mo
+USD: $900–$1,400/mo
+EUR: €1,200–€1,800/mo
+SGD: S$2,000–S$3,000/mo
+For fixed monthly budget:
+₱50,000/mo
+$1,200/mo
+Do not convert currency values automatically. Only format the amount using the selected currency.
+Centralize salary display logic
+Create a helper such as:
+function formatJobSalary(job: JobPosting): string {
+  const code =
+    job.currency === "OTHER"
+      ? job.customCurrencyCode || "PHP"
+      : job.currency || "PHP";
+
+  if (job.fixedMonthlyBudget) {
+    return `${formatJobCurrency(
+      job.fixedMonthlyBudget,
+      job.currency,
+      job.customCurrencyCode
+    )}/mo`;
+  }
+
+  if (job.rateRangeMin && job.rateRangeMax) {
+    return `${formatJobCurrency(
+      job.rateRangeMin,
+      job.currency,
+      job.customCurrencyCode
+    )}–${formatJobCurrency(
+      job.rateRangeMax,
+      job.currency,
+      job.customCurrencyCode
+    )}/mo`;
+  }
+
+  if (job.rateRangeMin) {
+    return `${formatJobCurrency(
+      job.rateRangeMin,
+      job.currency,
+      job.customCurrencyCode
+    )}+/mo`;
+  }
+
+  return "Rate TBD";
+}
+Adapt this to the actual job data fields in the project.
+Update salary filtering
+If the public jobs page has salary range filters:
+do not compare raw amounts across different currencies as though they are equivalent
+either filter within the selected currency
+or add a separate currency filter
+or temporarily disable cross-currency salary comparisons
+Preferred implementation:
+add a Currency filter to the jobs listing page
+salary thresholds should apply only to jobs using the selected currency
+Do not silently compare ₱50,000 with $1,000 as equivalent values.
+Validation
+Add validation rules:
+currency is required
+fixed budget and min/max must be non-negative numbers
+min must not be greater than max
+when Other is selected, custom currency code is required
+custom code must contain exactly 3 letters
+Show validation messages using the existing form style.
+Backward compatibility
+For old jobs without currency:
+default to PHP
+render salary using ₱
+preserve all existing salary values
+Do not require manual migration before the app can load.
+Keep existing features intact
+Do not break:
+Apply Link
+Cultural Fit
+Refresh Posting
+Urgently Hiring
+Open/Close status
+Preview
+salary visibility rules
+public popup
+category filtering
+admin edit flow
+Output expectation
+Return updated code for:
+shared job type/schema
+currency options/constants
+reusable currency and salary formatter
+admin Add Job form
+admin Edit Job form
+validation
+create/update handlers
+public salary displays
+salary filtering adjustments if applicable
+Important:
+Currency belongs to each individual job posting. Do not create one global currency setting for the whole site.

@@ -748,7 +748,9 @@ export default function AdminFindWork() {
     queryKey: ["/api/admin/jobs"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/admin/jobs");
-      return res.json();
+      const data = await res.json();
+      // API returns { items: [...] } — extract the array
+      return Array.isArray(data) ? data : (data.items ?? []);
     },
     refetchOnWindowFocus: false,
   });

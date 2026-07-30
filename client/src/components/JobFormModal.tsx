@@ -26,7 +26,12 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { Plus, Pencil, Star, Zap, Layers, Sparkles } from "lucide-react";
 import type { Job } from "@shared/schema";
-import { getJobBadges } from "@/lib/jobUtils";
+import {
+  getJobBadges,
+  SUPPORTED_CURRENCIES,
+  getCurrencySymbol,
+  type SupportedCurrency,
+} from "@/lib/jobUtils";
 
 // ─── Quill ───────────────────────────────────────────────────────────────────
 const quillModules = {
@@ -93,6 +98,9 @@ export const defaultFormData = {
   applyLink: "",
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
+  // Currency
+  currency: "PHP",
+  customCurrencyCode: "",
 };
 
 export type JobFormData = typeof defaultFormData;
@@ -143,6 +151,9 @@ export function jobToFormData(job: Job): JobFormData {
     applyLink: (job as any).applyLink || "",
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
+    // Currency
+    currency: (job as any).budgetCurrency || "PHP",
+    customCurrencyCode: (job as any).customCurrencyCode || "",
   };
 }
 
@@ -255,6 +266,15 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       try { new URL(normalizeUrl(formData.applyLink)); }
       catch { next.applyLink = "Please enter a valid URL (e.g. https://example.com/apply)"; }
     }
+    if (formData.currency === "OTHER") {
+      const code = formData.customCurrencyCode.trim().toUpperCase();
+      if (!code) next.customCurrencyCode = "Currency code is required when 'Other' is selected";
+      else if (!/^[A-Z]{3}$/.test(code)) next.customCurrencyCode = "Enter exactly 3 letters (e.g. NZD, AED, CHF)";
+    }
+    if (formData.hourlyRateMin && formData.hourlyRateMax) {
+      if (Number(formData.hourlyRateMin) > Number(formData.hourlyRateMax))
+        next.hourlyRateMax = "Max must be greater than or equal to Min";
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -273,7 +293,12 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       description: formData.description.trim(),
       jobSummary: formData.jobSummary.trim() || null,
       status: formData.status,
-      budgetCurrency: "PHP",
+      budgetCurrency: formData.currency === "OTHER"
+        ? (formData.customCurrencyCode.trim().toUpperCase() || "PHP")
+        : formData.currency,
+      customCurrencyCode: formData.currency === "OTHER"
+        ? formData.customCurrencyCode.trim().toUpperCase() || null
+        : null,
     };
 
     if (!isEditing) payload.clientId = "admin-system";
@@ -572,7 +597,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
           {/* ── Section 2: Salary / Rate ───────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              Salary / Rate (₱ PHP)
+              Salary / Rate
             </p>
             <p className="text-xs text-muted-foreground mb-4">
               Shown on the dedicated role page and preview modal only — not on
@@ -580,31 +605,89 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               range.
             </p>
 
+            {/* Currency selector */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-currency">Currency</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(v) => {
+                    updateField("currency", v);
+                    if (v !== "OTHER") updateField("customCurrencyCode", "");
+                  }}
+                >
+                  <SelectTrigger id="modal-currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Custom currency code — visible only when OTHER is selected */}
+              {formData.currency === "OTHER" && (
+                <div className="space-y-2">
+                  <Label htmlFor="modal-custom-currency">Currency Code</Label>
+                  <Input
+                    id="modal-custom-currency"
+                    value={formData.customCurrencyCode}
+                    onChange={(e) =>
+                      updateField(
+                        "customCurrencyCode",
+                        e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3)
+                      )
+                    }
+                    placeholder="e.g. NZD, AED, CHF"
+                    maxLength={3}
+                  />
+                  {errors.customCurrencyCode && (
+                    <p className="text-xs text-red-500">{errors.customCurrencyCode}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Amount fields with dynamic currency prefix */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {(
                 [
-                  { id: "modal-budget", field: "budget", label: "Fixed Monthly Budget (₱)", placeholder: "e.g. 40000" },
-                  { id: "modal-rateMin", field: "hourlyRateMin", label: "Rate Range Min (₱)", placeholder: "e.g. 30000" },
-                  { id: "modal-rateMax", field: "hourlyRateMax", label: "Rate Range Max (₱)", placeholder: "e.g. 50000" },
+                  { id: "modal-budget", field: "budget", label: "Fixed Monthly Budget", placeholder: "e.g. 40000" },
+                  { id: "modal-rateMin", field: "hourlyRateMin", label: "Rate Range Min", placeholder: "e.g. 30000" },
+                  { id: "modal-rateMax", field: "hourlyRateMax", label: "Rate Range Max", placeholder: "e.g. 50000" },
                 ] as const
-              ).map(({ id, field, label, placeholder }) => (
-                <div className="space-y-2" key={field}>
-                  <Label htmlFor={id}>{label}</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none">
-                      ₱
-                    </span>
-                    <Input
-                      id={id}
-                      type="number"
-                      className="pl-7"
-                      value={formData[field]}
-                      onChange={(e) => updateField(field, e.target.value)}
-                      placeholder={placeholder}
-                    />
+              ).map(({ id, field, label, placeholder }) => {
+                const sym = getCurrencySymbol(formData.currency, formData.customCurrencyCode);
+                const isWide = sym.length > 1;
+                return (
+                  <div className="space-y-2" key={field}>
+                    <Label htmlFor={id}>{label}</Label>
+                    <div className="relative">
+                      <span
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none"
+                        style={{ fontSize: isWide ? "11px" : undefined }}
+                      >
+                        {sym}
+                      </span>
+                      <Input
+                        id={id}
+                        type="number"
+                        className={isWide ? "pl-9" : "pl-7"}
+                        value={formData[field]}
+                        onChange={(e) => updateField(field, e.target.value)}
+                        placeholder={placeholder}
+                      />
+                    </div>
+                    {field === "hourlyRateMax" && errors.hourlyRateMax && (
+                      <p className="text-xs text-red-500">{errors.hourlyRateMax}</p>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {previewBadges.length > 0 && (
@@ -627,7 +710,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   })}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">
-                  Top Paying: ₱50k+ budget · Multiple Slots: team/agents in title
+                  Top Paying (PHP): ₱50k+ budget · Multiple Slots: team/agents in title
                 </p>
               </div>
             )}

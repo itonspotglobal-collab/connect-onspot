@@ -124,7 +124,8 @@ export const jobs = pgTable("jobs", {
   category: text("category").notNull(),
   contractType: text("contract_type").notNull(), // hourly, fixed
   budget: decimal("budget", { precision: 10, scale: 2 }),
-  budgetCurrency: text("budget_currency").default("USD"), // USD or PHP
+  budgetCurrency: text("budget_currency").default("PHP"), // PHP, USD, EUR, etc.
+  customCurrencyCode: text("custom_currency_code"), // 3-letter code when budgetCurrency = 'OTHER'
   hourlyRateMin: decimal("hourly_rate_min", { precision: 8, scale: 2 }),
   hourlyRateMax: decimal("hourly_rate_max", { precision: 8, scale: 2 }),
   duration: text("duration"), // Less than 1 month, 1-3 months, etc.

@@ -1,8 +1,3 @@
-// ─── Job Utility Helpers ─────────────────────────────────────────────────────
-// Reusable functions for sorting, badge derivation, and timestamp formatting.
-
-// ── Sort Options ─────────────────────────────────────────────────────────────
-
 export type SortOption =
   | "recently-posted"
   | "most-applied"
@@ -11,42 +6,104 @@ export type SortOption =
   | "urgently-hiring"
   | "featured";
 
-export const SORT_OPTIONS: {
-  value: SortOption;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "recently-posted",
-    label: "Recently Posted",
-    description: "Latest opportunities first",
-  },
-  {
-    value: "most-applied",
-    label: "Most Applied",
-    description: "Highest interest roles",
-  },
-  {
-    value: "top-remote",
-    label: "Top Remote Roles",
-    description: "Work from anywhere",
-  },
-  {
-    value: "in-demand",
-    label: "In-Demand Roles",
-    description: "High-demand skills",
-  },
-  {
-    value: "urgently-hiring",
-    label: "Urgently Hiring",
-    description: "Roles filling quickly",
-  },
-  {
-    value: "featured",
-    label: "Featured Jobs",
-    description: "Hand-picked opportunities",
-  },
+// ── Currency helpers ──────────────────────────────────────────────────────────
+
+export type SupportedCurrency =
+  | "PHP"
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "AUD"
+  | "CAD"
+  | "SGD"
+  | "JPY"
+  | "OTHER";
+
+export const SUPPORTED_CURRENCIES: { value: SupportedCurrency; label: string }[] = [
+  { value: "PHP", label: "PHP — Philippine Peso" },
+  { value: "USD", label: "USD — US Dollar" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "GBP", label: "GBP — British Pound" },
+  { value: "AUD", label: "AUD — Australian Dollar" },
+  { value: "CAD", label: "CAD — Canadian Dollar" },
+  { value: "SGD", label: "SGD — Singapore Dollar" },
+  { value: "JPY", label: "JPY — Japanese Yen" },
+  { value: "OTHER", label: "Other" },
 ];
+
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  PHP: "₱",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+  CAD: "C$",
+  SGD: "S$",
+  JPY: "¥",
+};
+
+/** Returns the display symbol for a job's currency selection */
+export function getCurrencySymbol(
+  currency?: string | null,
+  customCurrencyCode?: string | null
+): string {
+  const code = (currency || "PHP").toUpperCase();
+  if (code === "OTHER") return customCurrencyCode?.toUpperCase() || "?";
+  return CURRENCY_SYMBOLS[code] || code;
+}
+
+/** Returns the ISO currency code to use for formatting */
+export function getEffectiveCurrencyCode(
+  currency?: string | null,
+  customCurrencyCode?: string | null
+): string {
+  const code = (currency || "PHP").toUpperCase();
+  if (code === "OTHER") return customCurrencyCode?.toUpperCase() || "PHP";
+  return code;
+}
+
+/** Formats a numeric amount using the job's currency */
+export function formatJobCurrency(
+  amount: number,
+  currency?: string | null,
+  customCurrencyCode?: string | null
+): string {
+  const code = getEffectiveCurrencyCode(currency, customCurrencyCode);
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    // Fallback for unknown/custom codes
+    const sym = getCurrencySymbol(currency, customCurrencyCode);
+    return `${sym}${amount.toLocaleString()}`;
+  }
+}
+
+/** Formats a job's full salary/rate display string */
+export function formatJobSalary(job: {
+  budget?: string | null;
+  hourlyRateMin?: string | null;
+  hourlyRateMax?: string | null;
+  budgetCurrency?: string | null;
+  customCurrencyCode?: string | null;
+}): string {
+  const currency = job.budgetCurrency || "PHP";
+  const customCode = job.customCurrencyCode;
+
+  if (job.hourlyRateMin && job.hourlyRateMax) {
+    return `${formatJobCurrency(Number(job.hourlyRateMin), currency, customCode)}–${formatJobCurrency(Number(job.hourlyRateMax), currency, customCode)}/mo`;
+  }
+  if (job.hourlyRateMin) {
+    return `${formatJobCurrency(Number(job.hourlyRateMin), currency, customCode)}+/mo`;
+  }
+  if (job.budget) {
+    return `${formatJobCurrency(Number(job.budget), currency, customCode)}/mo`;
+  }
+  return "Rate TBD";
+}
 
 // ── Badge Logic ───────────────────────────────────────────────────────────────
 
@@ -60,6 +117,7 @@ export function getJobBadges(job: {
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;
+  budgetCurrency?: string | null;
   proposalCount?: number | null;
   title?: string | null;
   location?: string | null;
@@ -68,19 +126,20 @@ export function getJobBadges(job: {
 }): JobBadge[] {
   const badges: JobBadge[] = [];
 
-  const budget = parseFloat(
-    job.budget || job.hourlyRateMax || job.hourlyRateMin || "0"
-  );
-  const title = (job.title || "").toLowerCase();
-
-  // Top Paying: ₱50 000+ budget
-  if (budget >= 50000) {
-    badges.push({
-      key: "top-paying",
-      label: "Top Paying",
-      className:
-        "bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
-    });
+  // Top Paying: only meaningful for PHP jobs (₱50,000+)
+  const currency = (job.budgetCurrency || "PHP").toUpperCase();
+  if (currency === "PHP") {
+    const budget = parseFloat(
+      job.budget || job.hourlyRateMax || job.hourlyRateMin || "0"
+    );
+    if (budget >= 50000) {
+      badges.push({
+        key: "top-paying",
+        label: "Top Paying",
+        className:
+          "bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
+      });
+    }
   }
 
   // Urgently Hiring: controlled by the urgentlyHiring boolean field only
@@ -94,6 +153,7 @@ export function getJobBadges(job: {
   }
 
   // Multiple Slots Open: team-oriented keywords in title
+  const title = (job.title || "").toLowerCase();
   const multiSlotWords = [
     "team",
     "agents",
@@ -146,7 +206,6 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
         .sort((a, b) => toMs(b) - toMs(a));
 
     case "in-demand": {
-      // In-demand categories & title keywords
       const cats = ["development", "marketing", "support", "design"];
       const kws = [
         "developer",
@@ -172,7 +231,6 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
         .sort((a, b) => toMs(b) - toMs(a));
 
     case "featured":
-      // Featured = high budget OR many proposals OR very recent
       return list
         .filter((j) => {
           const budget = parseFloat(j.budget || "0");
@@ -230,17 +288,17 @@ export function formatExperienceLevel(level: string): string {
   }
 }
 
+/**
+ * Backward-compatible rate display — delegates to formatJobSalary.
+ * Kept for call-sites that only pass the 3 numeric fields.
+ */
 export function buildRateDisplay(job: {
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;
+  budgetCurrency?: string | null;
+  customCurrencyCode?: string | null;
   contractType?: string;
 }): string {
-  if (job.hourlyRateMin && job.hourlyRateMax) {
-    return `₱${Number(job.hourlyRateMin).toLocaleString()}–₱${Number(job.hourlyRateMax).toLocaleString()}/month`;
-  }
-  if (job.budget) {
-    return `₱${Number(job.budget).toLocaleString()}`;
-  }
-  return "Rate TBD";
+  return formatJobSalary(job);
 }
