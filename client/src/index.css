@@ -2854,3 +2854,17 @@ body.has-floating-bottom-right {
     text-align: left !important;
   }
 }
+
+/* ── Hero Carousel ── */
+@keyframes heroKenBurns {
+  from { transform: scale(1.06); }
+  to   { transform: scale(1); }
+}
+@keyframes heroProgress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide { animation: none !important; transform: none !important; }
+  .hero-progress-fill { animation: none !important; width: 100% !important; }
+}

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnSpot — Work Without Limits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --purple:#534AB7;
+    --purple-bright:#6C63E0;
+    --teal:#0F6E56;
+    --teal-bright:#17A67F;
+    --ink:#0A0A1F;
+    --white:#FFFFFF;
+    --muted:rgba(255,255,255,0.72);
+    --amber:#F5A623;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Manrope',sans-serif;
+    background:var(--ink);
+    color:var(--white);
+    overflow-x:hidden;
+  }
+
+  /* ---------- NAV ---------- */
+  .nav{
+    position:absolute;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 56px;
+  }
+  .logo{font-weight:800;font-size:26px;letter-spacing:-0.5px;}
+  .logo span{color:var(--amber);}
+  .nav-links{display:flex;gap:44px;align-items:center;}
+  .nav-links a{color:var(--white);text-decoration:none;font-weight:600;font-size:15px;opacity:0.9;transition:opacity .2s;}
+  .nav-links a:hover{opacity:1;}
+  .nav-actions{display:flex;gap:14px;align-items:center;}
+  .btn-ghost{
+    padding:10px 22px;border:1px solid rgba(255,255,255,0.35);
+    border-radius:10px;color:var(--white);background:transparent;
+    font-weight:700;font-size:14px;cursor:pointer;transition:.2s;
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,0.1);}
+  .btn-solid{
+    padding:11px 24px;border:none;border-radius:10px;
+    background:linear-gradient(135deg,var(--purple-bright),var(--purple));
+    color:var(--white);font-weight:700;font-size:14px;cursor:pointer;
+    box-shadow:0 6px 22px rgba(108,99,224,0.5);transition:.2s;
+  }
+  .btn-solid:hover{transform:translateY(-1px);}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;height:100vh;min-height:720px;overflow:hidden;}
+
+  /* Slide backgrounds */
+  .slide{
+    position:absolute;inset:0;opacity:0;
+    transition:opacity 1.2s ease;
+    background-color:var(--ink);
+    background-size:cover;background-position:center;
+  }
+  .slide.active{opacity:1;}
+  .slide::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,
+      rgba(10,10,31,0.94) 0%,
+      rgba(10,10,31,0.82) 34%,
+      rgba(10,10,31,0.45) 70%,
+      rgba(10,10,31,0.35) 100%);
+  }
+  /* Each slide gets a themed color tint via a second overlay */
+  .slide .tint{position:absolute;inset:0;z-index:1;mix-blend-mode:overlay;opacity:.5;}
+  /* Slide 0 — Companies: focused professional at laptop */
+  .slide-0{background-image:url('https://images.unsplash.com/photo-1573497491208-6b1acb260507?auto=format&fit=crop&w=1920&q=80');}
+  .slide-0 .tint{background:radial-gradient(circle at 70% 40%,var(--purple),transparent 60%);}
+  /* Slide 1 — Talent: working from anywhere, laptop in a bright open setting */
+  .slide-1{background-image:url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80');}
+  .slide-1 .tint{background:radial-gradient(circle at 70% 40%,var(--teal),transparent 60%);}
+  /* Slide 2 — Companies: collaborating remote team */
+  .slide-2{background-image:url('https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1920&q=80');}
+  .slide-2 .tint{background:radial-gradient(circle at 70% 40%,var(--purple),transparent 60%);}
+  /* Slide 3 — Talent: engaged professional, career growth */
+  .slide-3{background-image:url('https://images.unsplash.com/photo-1600880292630-ee8a00403024?auto=format&fit=crop&w=1920&q=80');}
+  .slide-3 .tint{background:radial-gradient(circle at 70% 40%,var(--teal),transparent 60%);}
+
+  /* Slow ambient zoom on the active slide */
+  .slide.active{animation:kenburns 8s ease forwards;}
+  @keyframes kenburns{from{transform:scale(1.06);}to{transform:scale(1);}}
+
+  /* ---------- HERO CONTENT ---------- */
+  .hero-inner{
+    position:relative;z-index:10;height:100%;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:0 56px;max-width:1200px;
+  }
+  .wordmark{font-weight:800;font-size:clamp(28px,3vw,40px);letter-spacing:-1px;margin-bottom:6px;}
+  .wordmark span{color:var(--amber);}
+  .headline{
+    font-family:'Instrument Serif',serif;font-weight:400;
+    font-size:clamp(58px,8.5vw,124px);line-height:0.92;letter-spacing:-1px;
+    margin-bottom:20px;
+  }
+  .headline .without{
+    background:linear-gradient(120deg,#C9C3FF,#8E86F0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .tagline{
+    font-weight:700;font-size:clamp(20px,2.4vw,30px);
+    margin-bottom:44px;letter-spacing:-0.3px;
+  }
+
+  /* Rotating USP block — the only thing that changes */
+  .usp{max-width:620px;min-height:140px;}
+  .usp-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 16px;border-radius:999px;font-size:13px;font-weight:700;
+    letter-spacing:0.5px;text-transform:uppercase;margin-bottom:18px;
+  }
+  .usp-pill.clients{background:rgba(108,99,224,0.22);color:#C9C3FF;border:1px solid rgba(108,99,224,0.5);}
+  .usp-pill.talent{background:rgba(23,166,127,0.2);color:#7FE6C4;border:1px solid rgba(23,166,127,0.5);}
+  .usp-pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .usp-title{font-weight:800;font-size:clamp(24px,3vw,36px);line-height:1.1;margin-bottom:12px;letter-spacing:-0.5px;}
+  .usp-desc{font-size:clamp(15px,1.4vw,18px);color:var(--muted);line-height:1.55;max-width:520px;}
+
+  .usp-content{opacity:0;transform:translateY(14px);animation:fadeUp .7s ease forwards;}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+
+  /* CTAs */
+  .cta-row{display:flex;gap:16px;margin-top:38px;}
+  .cta-primary{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:16px 34px;border:none;border-radius:14px;
+    background:linear-gradient(135deg,var(--purple-bright),var(--purple));
+    color:var(--white);font-weight:700;font-size:16px;cursor:pointer;
+    box-shadow:0 10px 34px rgba(108,99,224,0.5);transition:.2s;
+  }
+  .cta-primary:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(108,99,224,0.6);}
+  .cta-secondary{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:16px 30px;border:1px solid rgba(255,255,255,0.28);
+    border-radius:14px;background:rgba(255,255,255,0.05);
+    color:var(--white);font-weight:700;font-size:16px;cursor:pointer;
+    backdrop-filter:blur(8px);transition:.2s;
+  }
+  .cta-secondary:hover{background:rgba(255,255,255,0.12);}
+
+  /* ---------- CAROUSEL CONTROLS ---------- */
+  .controls{
+    position:absolute;bottom:44px;left:56px;z-index:20;
+    display:flex;align-items:center;gap:14px;
+  }
+  .bar{
+    position:relative;width:56px;height:4px;border-radius:4px;
+    background:rgba(255,255,255,0.2);cursor:pointer;overflow:hidden;
+  }
+  .bar .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--white);border-radius:4px;}
+  .bar.active .fill{animation:progress 7s linear forwards;}
+  @keyframes progress{from{width:0;}to{width:100%;}}
+  .bar.done .fill{width:100%;}
+
+  .slide-count{position:absolute;bottom:44px;right:56px;z-index:20;font-size:14px;font-weight:600;color:var(--muted);}
+  .slide-count b{color:var(--white);font-size:18px;}
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion:reduce){
+    .slide.active,.usp-content,.bar.active .fill{animation:none;}
+    .slide.active{transform:none;}
+    .usp-content{opacity:1;transform:none;}
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:860px){
+    .nav{padding:18px 22px;}
+    .nav-links{display:none;}
+    .hero-inner{padding:0 24px;}
+    .controls{left:24px;bottom:28px;}
+    .slide-count{right:24px;bottom:28px;}
+    .cta-row{flex-direction:column;}
+    .cta-primary,.cta-secondary{justify-content:center;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">On<span>Spot</span></div>
+  <div class="nav-links">
+    <a href="#">Hire Talent</a>
+    <a href="#">Find Work</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost">Log In</button>
+    <button class="btn-solid">Sign Up</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <!-- Slide backgrounds -->
+  <div class="slide slide-0 active" data-index="0"><div class="tint"></div></div>
+  <div class="slide slide-1" data-index="1"><div class="tint"></div></div>
+  <div class="slide slide-2" data-index="2"><div class="tint"></div></div>
+  <div class="slide slide-3" data-index="3"><div class="tint"></div></div>
+
+  <div class="hero-inner">
+    <div class="wordmark">On<span>Spot</span></div>
+    <h1 class="headline">Work <span class="without">Without</span> Limits</h1>
+    <p class="tagline">One platform. Endless opportunities for the future of work.</p>
+
+    <!-- The rotating part -->
+    <div class="usp" id="usp"></div>
+
+    <div class="cta-row">
+      <button class="cta-primary" id="ctaPrimary">Hire Talent</button>
+      <button class="cta-secondary" id="ctaSecondary">Find Work</button>
+    </div>
+  </div>
+
+  <div class="controls" id="controls"></div>
+  <div class="slide-count"><b id="curNum">01</b> / 04</div>
+</section>
+
+<script>
+  const slides = [
+    {
+      audience:"clients", pill:"For Companies",
+      title:"Vetted talent, placed in 72 hours",
+      desc:"Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.",
+      primary:"Hire Talent", secondary:"See how it works"
+    },
+    {
+      audience:"talent", pill:"For Talent",
+      title:"Work from anywhere, for anyone",
+      desc:"Land long-term roles with global companies — no commute, no borders. Just meaningful work on your terms, wherever you are.",
+      primary:"Find Work", secondary:"Browse roles"
+    },
+    {
+      audience:"clients", pill:"For Companies",
+      title:"Dedicated teams, up to 70% less",
+      desc:"Your own non-shared remote team with payroll, compliance, and HR fully handled. Enterprise capability without the enterprise cost.",
+      primary:"Hire Talent", secondary:"Estimate savings"
+    },
+    {
+      audience:"talent", pill:"For Talent",
+      title:"Grow with companies that invest in you",
+      desc:"Fair pay, real benefits, and career paths that go somewhere. We match you to roles built to last, not gigs that disappear.",
+      primary:"Find Work", secondary:"Create profile"
+    }
+  ];
+
+  const slideEls = document.querySelectorAll('.slide');
+  const uspEl = document.getElementById('usp');
+  const controlsEl = document.getElementById('controls');
+  const curNumEl = document.getElementById('curNum');
+  const ctaPrimary = document.getElementById('ctaPrimary');
+  const ctaSecondary = document.getElementById('ctaSecondary');
+
+  const DURATION = 7000;
+  let current = 0;
+  let timer;
+
+  // Build progress bars
+  slides.forEach((_, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.innerHTML = '<div class="fill"></div>';
+    bar.addEventListener('click', () => goTo(i));
+    controlsEl.appendChild(bar);
+  });
+  const bars = document.querySelectorAll('.bar');
+
+  function renderUSP(i){
+    const s = slides[i];
+    uspEl.innerHTML = `
+      <div class="usp-content">
+        <span class="usp-pill ${s.audience}"><span class="dot"></span>${s.pill}</span>
+        <div class="usp-title">${s.title}</div>
+        <p class="usp-desc">${s.desc}</p>
+      </div>`;
+    ctaPrimary.textContent = s.primary;
+    ctaSecondary.textContent = s.secondary;
+  }
+
+  function goTo(i){
+    slideEls[current].classList.remove('active');
+    bars[current].classList.remove('active');
+    bars[current].classList.add('done');
+    current = i;
+    slideEls[current].classList.add('active');
+    curNumEl.textContent = String(i+1).padStart(2,'0');
+    // reset bars ahead
+    bars.forEach((b,idx)=>{ if(idx>=i) b.classList.remove('done'); });
+    // restart active bar animation
+    const activeBar = bars[current];
+    activeBar.classList.remove('active');
+    void activeBar.offsetWidth;
+    activeBar.classList.add('active');
+    renderUSP(i);
+    restart();
+  }
+
+  function next(){ goTo((current+1)%slides.length); }
+  function restart(){ clearTimeout(timer); timer = setTimeout(next, DURATION); }
+
+  // init
+  renderUSP(0);
+  bars[0].classList.add('active');
+  restart();
+</script>
+</body>
+</html>

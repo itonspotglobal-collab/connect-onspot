@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import {
   Zap,
@@ -9,34 +10,129 @@ import {
   Rocket,
   Briefcase,
 } from "lucide-react";
-import bgHero from "@assets/bg_hero_1784053041636.png";
+
+// ── Carousel slide data ────────────────────────────────────────────────────
+const heroSlides = [
+  {
+    image:
+      "https://images.unsplash.com/photo-1573497491208-6b1acb260507?auto=format&fit=crop&w=1920&q=80",
+    alt: "Professional working at laptop",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80",
+    alt: "Remote team collaborating",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1920&q=80",
+    alt: "Team working together remotely",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1600880292630-ee8a00403024?auto=format&fit=crop&w=1920&q=80",
+    alt: "Engaged professional in career growth",
+  },
+];
+
+const SLIDE_DURATION = 7000; // ms
 
 export default function Home() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Detect reduced-motion preference
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Auto-advance timer — resets whenever slide changes or pause toggles
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setTimeout(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, SLIDE_DURATION);
+    return () => clearTimeout(timer);
+  }, [currentSlide, isPaused]);
+
+  // Pause when tab is hidden
+  useEffect(() => {
+    const handler = () => {
+      if (document.hidden) {
+        setIsPaused(true);
+      } else {
+        setIsPaused(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  // Preload upcoming images after initial render
+  useEffect(() => {
+    heroSlides.forEach((slide, i) => {
+      if (i === 0) return; // first slide loads naturally
+      const img = new Image();
+      img.src = slide.image;
+    });
+  }, []);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
   return (
     <div>
       {/* ── 1. HERO ── */}
       <div
         className="relative overflow-hidden flex flex-col"
-        style={{
-          backgroundImage: `url(${bgHero})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          minHeight: "calc(100dvh - 72px)",
-        }}
+        style={{ minHeight: "calc(100dvh - 72px)" }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
+        {/* ── Slide backgrounds (carousel layers) ── */}
+        {heroSlides.map((slide, i) => (
+          <div
+            key={i}
+            aria-hidden="true"
+            className={i === currentSlide ? "hero-slide" : ""}
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${slide.image})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              opacity: i === currentSlide ? 1 : 0,
+              transition: reducedMotion
+                ? "opacity 0.15s ease"
+                : "opacity 1s ease-in-out",
+              animation:
+                !reducedMotion && i === currentSlide
+                  ? "heroKenBurns 8s ease forwards"
+                  : "none",
+              // Each new active slide gets a fresh animation via key trick below
+            }}
+          />
+        ))}
+
         {/* Gradient overlay — dark semi-transparent on left, fades right */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 z-[1]"
           style={{
             background:
               "linear-gradient(90deg, rgba(4,5,36,0.98) 0%, rgba(8,9,49,0.92) 40%, rgba(8,9,49,0.55) 68%, rgba(8,9,49,0.15) 100%)",
           }}
         />
         {/* Subtle top/bottom vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/25 via-transparent to-black/40 pointer-events-none" />
 
-        {/* Main content — left-aligned */}
+        {/* ── Main content — left-aligned, static across all slides ── */}
         <div className="relative z-10 flex flex-col justify-between min-h-[calc(100dvh-72px)] px-6 sm:px-10 lg:px-16 xl:px-20 py-10 sm:py-12">
           {/* Hero text + buttons */}
           <div className="flex-1 flex items-start pt-12 sm:pt-20">
@@ -105,8 +201,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Feature strip — bottom of hero */}
-          <div className="hero-fade-up-delay mt-7">
+          {/* Feature strip — bottom of hero (above controls) */}
+          <div className="hero-fade-up-delay mt-7 pb-16 sm:pb-14">
             <div
               className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-0 w-full max-w-[1080px] rounded-3xl overflow-hidden"
               style={{
@@ -189,6 +285,95 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── Carousel controls — progress bars ── */}
+        <div
+          className="absolute bottom-5 z-20 flex items-center gap-3"
+          style={{ left: "clamp(24px, 5vw, 80px)" }}
+          role="tablist"
+          aria-label="Hero carousel slides"
+        >
+          {heroSlides.map((slide, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={i === currentSlide}
+              aria-label={`Slide ${i + 1}: ${slide.alt}`}
+              onClick={() => goToSlide(i)}
+              style={{
+                position: "relative",
+                width: 56,
+                height: 4,
+                borderRadius: 4,
+                background: "rgba(255,255,255,0.2)",
+                cursor: "pointer",
+                border: "none",
+                padding: 0,
+                overflow: "hidden",
+                outline: "none",
+              }}
+              onFocus={(e) =>
+                (e.currentTarget.style.outline = "2px solid rgba(255,255,255,0.6)")
+              }
+              onBlur={(e) => (e.currentTarget.style.outline = "none")}
+            >
+              {/* Past slides — full white bar */}
+              {i < currentSlide && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(255,255,255,0.55)",
+                    borderRadius: 4,
+                  }}
+                />
+              )}
+              {/* Active slide — animated progress fill */}
+              {i === currentSlide && (
+                <span
+                  key={`fill-${currentSlide}`}
+                  aria-hidden="true"
+                  className="hero-progress-fill"
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 0,
+                    background: "white",
+                    borderRadius: 4,
+                    animation: reducedMotion
+                      ? "none"
+                      : `heroProgress ${SLIDE_DURATION}ms linear forwards`,
+                    ...(reducedMotion ? { width: "100%" } : {}),
+                  }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Slide counter ── */}
+        <div
+          className="absolute bottom-5 z-20"
+          style={{
+            right: "clamp(24px, 5vw, 80px)",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.65)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label={`Slide ${currentSlide + 1} of ${heroSlides.length}`}
+        >
+          <span style={{ color: "white", fontSize: 18, fontWeight: 700 }}>
+            {String(currentSlide + 1).padStart(2, "0")}
+          </span>
+          {" / "}
+          {String(heroSlides.length).padStart(2, "0")}
         </div>
       </div>
 

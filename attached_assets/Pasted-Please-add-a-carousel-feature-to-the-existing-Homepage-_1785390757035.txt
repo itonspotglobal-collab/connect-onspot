@@ -1,0 +1,218 @@
+Please add a carousel feature to the existing Homepage Hero section.
+
+IMPORTANT:
+- Do NOT redesign the homepage.
+- Do NOT change the existing text format.
+- Do NOT change the existing colors.
+- Do NOT change the current typography, buttons, navbar, feature cards, spacing, or overall visual identity.
+- Only add the carousel functionality inspired by the HTML reference file I provided.
+
+GOAL
+
+Keep the current Hero content and styling, but allow the Hero background and optional supporting message to rotate automatically between multiple slides.
+
+1. PRESERVE THE EXISTING HERO DESIGN
+
+Keep all current homepage content exactly as it is, including:
+
+- “Work Without Limits”
+- “One Platform. Endless Opportunity.”
+- “Connecting top talent with great companies.”
+- “Built for the future of work.”
+- Hire Talent button
+- Find Work button
+- Top Talent feature
+- Trusted Platform feature
+- Endless Opportunities feature
+
+Do not change:
+- Font family
+- Font sizes
+- Text colors
+- Gradient text
+- Button colors
+- Card colors
+- Navbar design
+- Content alignment
+- Existing responsive styling
+
+2. ADD MULTIPLE HERO BACKGROUND SLIDES
+
+Convert the existing Hero background into a carousel with multiple background images.
+
+I will provide or upload the background images in Replit.
+
+Use a slide data structure such as:
+
+const heroSlides = [
+  {
+    image: "/assets/hero-slide-1.jpg"
+  },
+  {
+    image: "/assets/hero-slide-2.jpg"
+  },
+  {
+    image: "/assets/hero-slide-3.jpg"
+  }
+];
+
+Requirements:
+- Use the existing Hero section dimensions.
+- Each slide should cover the complete Hero area.
+- Use:
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+- Preserve the current dark navy/purple overlay on every slide.
+- Ensure the Hero text remains readable on every image.
+
+3. KEEP THE MAIN CONTENT STATIC
+
+The existing Hero heading, description, buttons, and feature cards should remain in the same position while the background images rotate behind them.
+
+Do not make the following content disappear or change between slides:
+- Main heading
+- Supporting text
+- Buttons
+- Feature cards
+
+Only the background image should rotate by default.
+
+4. OPTIONAL ROTATING SUPPORTING MESSAGE
+
+If the current Hero component already supports changing content cleanly, you may add a small rotating supporting message beneath the existing copy.
+
+However:
+- Do not replace the existing text.
+- Do not change the main heading.
+- Do not change the existing description format.
+- The additional message must use the current font and color styles.
+- Keep this feature optional and secondary.
+
+If adding rotating text makes the Hero crowded, rotate only the background images.
+
+5. AUTO-PLAY
+
+Add automatic slide rotation.
+
+Requirements:
+- Change slide every 6–8 seconds.
+- Use a smooth fade transition.
+- Recommended transition:
+  opacity 1s ease-in-out;
+- Do not use aggressive horizontal sliding animations.
+- The transition should feel subtle and professional.
+
+6. CAROUSEL CONTROLS
+
+Add subtle carousel controls near the bottom of the Hero.
+
+Preferred style:
+- Small progress bars or dots.
+- Use existing white, lavender, or semi-transparent colors.
+- Do not introduce new colors.
+- Controls should not cover the feature cards or buttons.
+
+Requirements:
+- Clearly show the active slide.
+- Allow users to click a control to switch slides.
+- Keep controls minimal and consistent with the existing design.
+
+7. PAUSE AND ACCESSIBILITY
+
+- Pause automatic rotation when the user hovers over the Hero, if practical.
+- Pause when the browser tab is not active.
+- Add accessible labels to slide controls.
+- Support keyboard navigation where reasonable.
+- Respect `prefers-reduced-motion`.
+
+For reduced-motion users:
+- Disable the zoom animation.
+- Use an immediate or very subtle fade.
+- Keep the first slide visible and usable.
+
+8. OPTIONAL BACKGROUND ZOOM
+
+Add a very subtle slow zoom effect to the active background slide only.
+
+Example:
+- Start at scale(1.04)
+- End at scale(1)
+
+Do not move or zoom the text and feature cards.
+
+The zoom must be disabled when reduced motion is enabled.
+
+9. RESPONSIVENESS
+
+Desktop:
+- Maintain the current Hero layout.
+- Background carousel fills the Hero.
+- Controls remain near the bottom without overlapping content.
+
+Laptop:
+- Preserve the previously optimized smaller-screen sizing.
+- Make sure all Hero content and feature cards still fit.
+
+Tablet and mobile:
+- Keep the current responsive stacking behavior.
+- Use suitable background positioning for each slide.
+- Controls should remain easy to tap.
+- Do not let the carousel cause horizontal overflow.
+
+10. COMPONENT IMPLEMENTATION
+
+Use the project’s existing framework and coding style.
+
+If the site uses React:
+- Create a reusable Hero carousel state inside the existing Hero component or a dedicated `HeroCarousel` component.
+- Use `useState`, `useEffect`, and cleanup timers correctly.
+- Do not manipulate the DOM directly with `document.querySelector`.
+- Store the slide information in an array.
+- Clear the interval or timeout when the component unmounts.
+
+Suggested React behavior:
+
+- `currentSlide` state
+- automatic timer
+- `goToSlide(index)`
+- `nextSlide()`
+- pause state for hover/focus
+- CSS classes for active/inactive slides
+
+11. IMAGE PRELOADING
+
+Preload the next carousel image so transitions do not flash or show a blank background.
+
+The first image should load immediately.
+Later images may load lazily or be preloaded after initial render.
+
+12. DO NOT CHANGE
+
+Do not modify:
+- Navigation bar
+- Logo
+- Log In or Sign Up behavior
+- Authentication modal
+- Existing page routes
+- Hero wording
+- Hero text colors
+- Button styling
+- Feature-card content
+- Feature-card layout
+- Other homepage sections
+
+13. ACCEPTANCE CRITERIA
+
+✓ The Homepage Hero has an automatic background carousel.
+✓ Existing Hero text and colors remain unchanged.
+✓ Existing buttons and feature cards remain unchanged.
+✓ Background slides fade smoothly every 6–8 seconds.
+✓ Users can manually select a slide.
+✓ Carousel controls match the existing color scheme.
+✓ Text remains readable on every slide.
+✓ The carousel works on laptop, tablet, and mobile.
+✓ Reduced-motion preferences are respected.
+✓ No content overlaps, clipping, or horizontal scrolling.
+✓ No TypeScript, React, runtime, or console errors.
+✓ No existing functionality is broken.
