@@ -1,0 +1,236 @@
+Please fix the authentication modal flow and remove the old intermediate authentication screen.
+
+CURRENT ISSUES
+
+1. The Sign In form styling is now too light and disconnected from the main site design.
+2. Clicking the “Back” link from either:
+   - Sign In
+   - Create Account
+   opens an old intermediate screen that says:
+   “The first Superhuman BPO is awakening.”
+3. We no longer want that old screen to appear anywhere in the authentication flow.
+
+GOAL
+
+Keep only two authentication views:
+
+- Sign In
+- Create Account
+
+Users should move directly between these two views.
+
+The old “Superhuman BPO” screen must no longer be shown.
+
+====================================================
+1. REMOVE THE OLD INTERMEDIATE SCREEN
+====================================================
+
+Locate the authentication view/state/component containing:
+
+- “The first Superhuman BPO is awakening.”
+- “AI first. Humans when it matters.”
+- “Be the first to experience it”
+- Sign In and Sign Up buttons
+
+Remove it from the active authentication flow.
+
+Do NOT necessarily delete the component file if it may still be needed later.
+Instead:
+- Stop rendering it.
+- Remove it from the modal state transitions.
+- Do not navigate back to it from Sign In or Create Account.
+
+If the modal uses a state such as:
+
+authView = "landing" | "signin" | "signup"
+
+Remove `"landing"` from the current flow and use only:
+
+authView = "signin" | "signup"
+
+====================================================
+2. CHANGE THE BACK BUTTON BEHAVIOR
+====================================================
+
+On the Sign In form:
+
+- Replace the current “Back” behavior.
+- It must NOT open the old Superhuman BPO screen.
+
+Preferred behavior:
+- Remove the “Back” link entirely from Sign In.
+
+On the Create Account form:
+
+- Replace the current “Back” behavior.
+- It must NOT open the old screen.
+
+Preferred behavior:
+- Change “Back” to return directly to the Sign In form.
+
+Example:
+
+Sign In
+- No Back link
+- Bottom link: “Don’t have an account? Sign Up”
+
+Create Account
+- Back link → Sign In
+- Bottom link: “Already have an account? Sign In”
+
+The close “X” should continue closing the modal.
+
+====================================================
+3. DIRECT NAVBAR ACTIONS
+====================================================
+
+When the user clicks the navbar actions:
+
+- “Log In” must open the Sign In form directly.
+- “Sign Up” must open the Create Account form directly.
+
+Do not open the removed intermediate screen first.
+
+Suggested behavior:
+
+openLoginModal():
+  setAuthView("signin")
+  setModalOpen(true)
+
+openSignupModal():
+  setAuthView("signup")
+  setModalOpen(true)
+
+====================================================
+4. RESTYLE THE FORM PANEL
+====================================================
+
+The current panel is too pale and looks disconnected from the purple website.
+
+Use a plain, light muted lavender-gray background that is darker than the current near-white version but still much lighter than the original dark purple.
+
+Use a solid background close to:
+
+background: #D8DAE8;
+
+or:
+
+background: #D2D4E3;
+
+Do not use:
+- Grid lines
+- Patterns
+- Transparent glass that lets the page show through heavily
+- Dark purple gradients
+- Near-white backgrounds
+
+The panel should have one smooth, uniform color.
+
+====================================================
+5. TEXT COLORS
+====================================================
+
+Because the panel is light, use dark readable text:
+
+- Main heading: #17182C
+- Labels: #30344F
+- Supporting text: #555B78
+- Placeholder text: #858BA5
+- Links: existing brand purple
+- Close and Back icons: #555B78
+
+Do not keep white labels on the light panel.
+
+====================================================
+6. INPUT STYLING
+====================================================
+
+Use:
+
+background: rgba(255, 255, 255, 0.42);
+border: 1px solid rgba(86, 91, 130, 0.20);
+color: #20223A;
+
+Placeholder:
+
+color: #858BA5;
+
+Focus:
+
+border-color: #7167E8;
+box-shadow: 0 0 0 3px rgba(113, 103, 232, 0.14);
+
+====================================================
+7. CLIENT / TALENT CARDS
+====================================================
+
+Inactive state:
+
+background: rgba(255, 255, 255, 0.18);
+border: 1px solid rgba(86, 91, 130, 0.24);
+color: #25283F;
+
+Selected state:
+- Keep the existing purple accent.
+- Make the selected state clearly visible.
+- Do not reduce readability.
+
+====================================================
+8. BUTTON
+====================================================
+
+Keep the existing purple gradient button.
+
+Ensure:
+- Button text is white.
+- Disabled state remains visibly disabled.
+- Existing form logic is unchanged.
+
+====================================================
+9. CONSISTENCY
+====================================================
+
+Apply the same styling to both:
+- Sign In
+- Create Account
+
+They must share:
+- Panel background
+- Text colors
+- Inputs
+- Cards
+- Buttons
+- Border radius
+- Shadow
+- Spacing system
+
+====================================================
+10. DO NOT CHANGE
+====================================================
+
+Do not modify:
+- Authentication submission logic
+- Validation
+- Password visibility
+- Forgot Password
+- Client/Talent role selection
+- Routes
+- Navbar design
+- Homepage
+- Hero carousel
+- Chat button
+
+====================================================
+ACCEPTANCE CRITERIA
+====================================================
+
+✓ Clicking Log In opens Sign In directly.
+✓ Clicking Sign Up opens Create Account directly.
+✓ The old “Superhuman BPO” screen never appears.
+✓ Sign In no longer navigates back to that screen.
+✓ Create Account Back goes directly to Sign In.
+✓ The panel uses a plain light lavender-gray background.
+✓ No grid, pattern, or overly bright white styling remains.
+✓ All text and fields are readable.
+✓ Login and signup functionality remain unchanged.
+✓ No TypeScript, runtime, or console errors.
