@@ -13,7 +13,7 @@ import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 
-const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
+
 
 const roles = [
   {
@@ -70,7 +70,6 @@ const roles = [
       "Comfortable working US night shift hours (Pacific or Eastern time)",
       "Values long-term partnerships and takes ownership of outcomes",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 2,
@@ -125,7 +124,6 @@ const roles = [
       "Comfortable working US night shift hours",
       "Long-term relationship builder, not a transactional thinker",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 3,
@@ -179,7 +177,6 @@ const roles = [
       "Stays current with digital marketing trends and platform changes",
       "Flexible communicator who adapts to AU/UK client culture",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 4,
@@ -234,7 +231,6 @@ const roles = [
       "Comfortable in day-shift schedules aligned to US/AU business hours",
       "Values accuracy and process discipline over shortcuts",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 5,
@@ -288,7 +284,6 @@ const roles = [
       "Documents processes clearly so the whole team benefits",
       "Genuinely curious about how technology works under the hood",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 6,
@@ -344,7 +339,6 @@ const roles = [
       "Organized and disciplined with CRM hygiene and follow-up",
       "Team player who shares playbooks and celebrates wins together",
     ],
-    applyLink: APPLY_URL,
   },
 ];
 

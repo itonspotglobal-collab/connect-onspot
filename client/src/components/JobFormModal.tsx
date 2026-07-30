@@ -92,7 +92,7 @@ export const defaultFormData = {
   minimumInternetSpeed: "",
   systemRequirements: "",
   // Application link / method
-  applicationMethod: "external_link",
+  applicationMethod: "built_in_form",
   applyLink: "",
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
@@ -143,7 +143,7 @@ export function jobToFormData(job: Job): JobFormData {
     minimumInternetSpeed: (job as any).minimumInternetSpeed || "",
     systemRequirements: (job as any).systemRequirements || "",
     // Application link / method
-    applicationMethod: (job as any).applicationMethod || "external_link",
+    applicationMethod: (job as any).applicationMethod || "built_in_form",
     applyLink: (job as any).applyLink || "",
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
@@ -555,8 +555,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {formData.applicationMethod === "built_in_form"
-                    ? "Candidates will apply using an OnSpot application form."
-                    : "Candidates will be redirected to your external application form."}
+                    ? "Candidates will complete the application form directly on OnSpot."
+                    : "Candidates will be redirected to the external application URL."}
                 </p>
               </div>
 

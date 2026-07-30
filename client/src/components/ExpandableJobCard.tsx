@@ -97,11 +97,7 @@ export function ExpandableJobCard({
 
   function handleApply(e: React.MouseEvent) {
     e.stopPropagation();
-    if (job.applyLink) {
-      window.open(job.applyLink, "_blank", "noopener,noreferrer");
-    } else {
-      navigate(`/find-work/job/${job.id}`);
-    }
+    navigate(`/jobs/${job.id}/apply`);
   }
 
   return (
@@ -231,17 +227,10 @@ export function ExpandableJobCard({
                   View Details
                 </Button>
                 {showApply && (
-                  job.applyLink ? (
-                    <Button size="sm" onClick={handleApply}>
-                      Apply Now
-                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={handleApply}>
-                      View Role
-                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                    </Button>
-                  )
+                  <Button size="sm" onClick={handleApply}>
+                    Apply Now
+                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
                 )}
               </div>
               {adminActions && (

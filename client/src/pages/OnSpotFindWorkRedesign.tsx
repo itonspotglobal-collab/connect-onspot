@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
@@ -358,7 +359,6 @@ const ctaSteps = [
   "Stay visible for active hiring teams",
 ];
 
-const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
 // Extracts the minimum peso value from a salary string like "₱50,000–₱78,000/mo"
 function parseMinPhp(salaryStr: string): number {
@@ -747,7 +747,7 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
           <div className="flex flex-wrap items-center gap-3">
             <Button
               className="rounded-xl px-6"
-              onClick={() => window.open(APPLY_URL, "_blank")}
+              onClick={() => navigate("/find-work/jobs")}
             >
               Apply Now <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -906,7 +906,7 @@ function RoleRow({
 
                   <Button
                     className="w-full rounded-xl"
-                    onClick={() => window.open(APPLY_URL, "_blank")}
+                    onClick={() => navigate("/find-work/jobs")}
                   >
                     Apply in 30 seconds
                   </Button>
@@ -933,6 +933,7 @@ function RoleRow({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function OnSpotFindWorkRedesign() {
+  const [, navigate] = useLocation();
   const [query, setQuery] = useState("Virtual assistant, night shift, ₱50K+");
   const [schedule, setSchedule] = useState("All schedules");
   const [earning, setEarning] = useState("Any pay");

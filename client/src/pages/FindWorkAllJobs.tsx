@@ -60,8 +60,6 @@ import {
   scoreJobForTalent,
 } from "@/lib/talentRecommendations";
 
-const APPLY_URL =
-  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
 
 const POPULAR_CHIPS = [
   "Customer Support",
@@ -296,15 +294,11 @@ function JobCard({
           <div className="mt-4 flex items-center gap-3">
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
-              disabled={
-                (job as any).applicationMethod !== "built_in_form" &&
-                !job.applyLink
-              }
               onClick={() => {
-                if ((job as any).applicationMethod === "built_in_form") {
-                  navigate(`/jobs/${job.id}/apply`);
-                } else if (job.applyLink) {
+                if ((job as any).applicationMethod === "external_link" && job.applyLink) {
                   window.open(job.applyLink, "_blank", "noopener,noreferrer");
+                } else {
+                  navigate(`/jobs/${job.id}/apply`);
                 }
               }}
             >
@@ -1255,7 +1249,7 @@ export default function FindWorkAllJobs() {
             saveTalentAuth(auth);
             setTalentAuth(auth);
             setShowLoginModal(false);
-            window.open(APPLY_URL, "_blank", "noopener,noreferrer");
+            navigate("/find-work/jobs");
           }}
         />
       )}

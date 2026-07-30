@@ -590,6 +590,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("🔗 Registering API routes...");
 
+  // ── One-time safe migration: set application_method = 'built_in_form' for
+  // approved/open jobs that have no valid external apply link (empty, null, or
+  // pointing at the old LeadConnector placeholder URL).
+  // Intentionally external jobs that have a real non-LeadConnector HTTPS URL
+  // are left untouched.
+  try {
+    const migResult = await query(
+      `UPDATE jobs
+         SET application_method = 'built_in_form',
+             apply_link = NULL,
+             updated_at = NOW()
+       WHERE approval_status = 'approved'
+         AND status = 'open'
+         AND (
+               application_method IS NULL
+            OR application_method = ''
+            OR application_method != 'external_link'
+            OR apply_link IS NULL
+            OR apply_link = ''
+            OR apply_link ILIKE '%leadconnectorhq.com%'
+         )
+         AND NOT (
+               application_method = 'external_link'
+           AND apply_link IS NOT NULL
+           AND apply_link != ''
+           AND apply_link NOT ILIKE '%leadconnectorhq.com%'
+         )`,
+    );
+    if (migResult.rowCount && migResult.rowCount > 0) {
+      console.log(`✅ Migration: set ${migResult.rowCount} open job(s) to built_in_form application method`);
+    }
+  } catch (migErr: any) {
+    console.warn("⚠️  built_in_form migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -7922,8 +7957,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { jobId } = req.params;
       const job = await storage.getJob(jobId);
       if (!job) return res.status(404).json({ error: "Job not found" });
-      if ((job as any).applicationMethod !== "built_in_form") {
-        return res.status(400).json({ error: "This job does not accept built-in form applications" });
+      if ((job as any).applicationMethod === "external_link") {
+        return res.status(400).json({ error: "This job uses an external application link." });
       }
       if (job.status !== "open") {
         return res.status(400).json({ error: "This job is no longer accepting applications" });

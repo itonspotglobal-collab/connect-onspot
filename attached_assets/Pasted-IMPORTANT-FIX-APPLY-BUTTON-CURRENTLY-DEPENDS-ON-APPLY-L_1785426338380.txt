@@ -1,0 +1,95 @@
+IMPORTANT FIX — APPLY BUTTON CURRENTLY DEPENDS ON APPLY LINK
+
+The Apply Now buttons on `/find-work/jobs` currently appear to work only when
+the job has an external `applyLink`. Remove this dependency for all approved,
+open jobs displayed publicly on `/find-work/jobs`.
+
+Required behavior:
+
+1. Every approved and open job displayed on `/find-work/jobs` must have a
+   working Apply Now button.
+
+2. The Apply Now button must use the job's ID and navigate internally to:
+
+   `/find-work/job/${job.id}/apply`
+
+3. Do not disable, hide, or make the Apply Now button nonfunctional merely
+   because `job.applyLink` is empty.
+
+4. The internal application route must be the default behavior for publicly
+   available jobs.
+
+5. Update all locations where Apply Now appears, including:
+   - Find Work job cards
+   - ExpandableJobCard
+   - Find Work job-details page
+   - Featured job sections
+   - Related-job sections
+   - Any reusable job-card component
+
+6. Search for code similar to:
+   - `if (!job.applyLink)`
+   - `disabled={!job.applyLink}`
+   - `window.open(job.applyLink)`
+   - `href={job.applyLink}`
+   - `job.applicationMethod === "external_link"`
+   - hard-coded LeadConnector application URLs
+
+7. Replace the logic for open public jobs with:
+
+   `navigate(\`/find-work/job/${job.id}/apply\`)`
+
+8. Preserve external-link behavior only for jobs that are explicitly intended
+   to remain external. For the current public Find Work workflow, approved and
+   open jobs should default to `built_in_form`.
+
+ADMIN JOB FORM CHANGES
+
+Update the Add/Edit Job Posting form:
+
+1. Change the default Application Method from `External Link` to
+   `Built-in Application Form`.
+
+2. When Built-in Application Form is selected:
+   - Hide or disable the Apply Link field.
+   - Do not require an Apply Link.
+   - Save `applicationMethod = "built_in_form"`.
+   - Save `applyLink = null` or preserve it without using it.
+
+3. When External Link is selected:
+   - Display the Apply Link field.
+   - Require a valid HTTPS URL.
+   - Save `applicationMethod = "external_link"`.
+
+4. Update the helper text.
+
+   Built-in:
+   “Candidates will complete the application form directly on OnSpot.”
+
+   External:
+   “Candidates will be redirected to the external application URL.”
+
+5. Ensure editing an existing built-in job does not show an Apply Link
+   validation error.
+
+6. Create a safe migration or one-time update for existing jobs:
+
+   Set `application_method = 'built_in_form'`
+   for approved, open, publicly displayed jobs that currently have an empty,
+   placeholder, LeadConnector, or invalid Apply Link.
+
+7. Do not update intentionally external jobs without reviewing their existing
+   valid Apply Link.
+
+APPLY BUTTON ACCEPTANCE TESTS
+
+Verify the following:
+
+- A public job with no Apply Link still has a working Apply Now button.
+- Clicking it opens `/find-work/job/{jobId}/apply`.
+- The correct job title is displayed in the application form.
+- A job with `built_in_form` never opens an external URL.
+- A closed job cannot be applied to.
+- A pending or rejected job is not publicly applicable.
+- A deliberately external job opens its valid configured URL.
+- There are no remaining hard-coded LeadConnector fallbacks for built-in jobs.

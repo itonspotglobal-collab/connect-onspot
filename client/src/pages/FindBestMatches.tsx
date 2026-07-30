@@ -1870,9 +1870,6 @@ function NoStrongMatches({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const APPLY_URL =
-  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
-
 export default function FindBestMatches() {
   const [, navigate] = useLocation();
   const [phase, setPhase] = useState<Phase>("flow");
@@ -4176,7 +4173,7 @@ export default function FindBestMatches() {
                 key={match.job.id}
                 match={match}
                 rank={i}
-                onApply={() => window.open(APPLY_URL, "_blank")}
+                onApply={() => navigate(`/jobs/${match.job.id}/apply`)}
               />
             ))}
           </div>

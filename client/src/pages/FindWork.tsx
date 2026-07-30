@@ -41,9 +41,6 @@ import {
 } from "@/lib/userActivityMemory";
 import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 
-const APPLY_URL =
-  "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
-
 const roles = [
   {
     id: 1,
@@ -91,7 +88,6 @@ const roles = [
       "Career development support and performance reviews",
       "Paid leave and Philippine public holiday recognition",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 2,
@@ -138,7 +134,6 @@ const roles = [
       "Performance bonuses for top CSAT scores",
       "Career pathway into senior support or team lead roles",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 3,
@@ -185,7 +180,6 @@ const roles = [
       "Professional development and structured review cycle",
       "Paid leave and Philippine public holiday recognition",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 4,
@@ -232,7 +226,6 @@ const roles = [
       "Sales training and B2B career development",
       "Regular team incentives and recognition programs",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 5,
@@ -279,7 +272,6 @@ const roles = [
       "Portfolio-worthy work and brand exposure",
       "Remote, long-term engagement",
     ],
-    applyLink: APPLY_URL,
   },
   {
     id: 6,
@@ -326,7 +318,6 @@ const roles = [
       "High-visibility role with access to leadership",
       "Opportunities to grow into a senior ops or team lead role",
     ],
-    applyLink: APPLY_URL,
   },
 ];
 
@@ -596,18 +587,12 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
         {/* ── FOOTER ── */}
         <div className="shrink-0 border-t border-slate-100 bg-white px-6 py-4 dark:border-white/10 dark:bg-[#0f172a] md:px-10">
           <div className="flex flex-wrap items-center gap-3">
-            {role.applyLink ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]"
-                onClick={() => window.open(role.applyLink!, "_blank", "noopener,noreferrer")}
-              >
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="rounded-full px-6">
-                Application link unavailable
-              </Button>
-            )}
+            <Button
+              className="rounded-full bg-[#474ead] px-6 text-white hover:bg-[#3d439c]"
+              onClick={() => navigate("/find-work/jobs")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
 
             <Button
               variant="outline"
@@ -731,7 +716,7 @@ function JobCard({
           <div className="mt-6 flex items-center justify-between gap-3">
             <Button
               className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
-              onClick={() => window.open(APPLY_URL, "_blank")}
+              onClick={() => navigate("/find-work/jobs")}
             >
               Apply in 30 seconds
             </Button>
@@ -858,9 +843,7 @@ function DbJobCard({
           <div className="mt-5 flex items-center justify-between gap-3 pt-1">
             <Button
               className="rounded-full bg-[#474ead] px-5 text-white hover:bg-[#3d439c]"
-              onClick={() =>
-                window.open(APPLY_URL, "_blank", "noopener,noreferrer")
-              }
+              onClick={() => navigate("/find-work/jobs")}
             >
               Apply in 30 seconds
             </Button>
