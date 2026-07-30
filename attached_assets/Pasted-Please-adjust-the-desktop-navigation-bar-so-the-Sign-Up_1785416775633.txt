@@ -1,0 +1,69 @@
+Please adjust the desktop navigation bar so the “Sign Up” link appears directly next to the “Log In” button instead of underneath it.
+
+Current issue:
+- “Log In” is displayed as a button.
+- “Sign Up” is currently positioned below the button.
+- We now want both actions displayed horizontally next to each other.
+
+Required layout:
+
+[Hire Talent]   [Find Work]      [Log In]   [Sign Up]
+
+Requirements:
+
+1. Move “Sign Up” next to “Log In”
+- Place “Sign Up” immediately to the right of the “Log In” button.
+- Use a horizontal flex layout for the authentication section.
+- Keep a clean gap of approximately 12–16px between them.
+- Remove the vertical stacked layout.
+
+2. Keep existing functionality
+- “Log In” must continue opening the existing login flow.
+- “Sign Up” must continue opening the existing signup flow.
+- Do not change authentication logic, routes, modal states, or form behavior.
+
+3. Styling
+- Keep the current “Log In” button exactly as it is.
+- Keep “Sign Up” as a small text link, not a large button.
+- Vertically center the Sign Up link with the Log In button.
+- Match the existing navbar font family and colors.
+- Use a subtle hover state such as underline, increased opacity, or brighter text.
+
+Suggested styling:
+- Authentication wrapper:
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+- Sign Up link:
+  font-size: 13px to 14px;
+  font-weight: 500 or 600;
+  color: existing light lavender or white;
+  white-space: nowrap;
+
+4. Alignment
+- Keep the authentication group aligned near the right edge of the navbar.
+- Do not move the logo.
+- Do not change the positions of “Hire Talent” and “Find Work”.
+- Keep all navbar content vertically centered.
+
+5. Responsive behavior
+- Desktop and tablet: Log In and Sign Up should remain next to each other.
+- Mobile: keep both actions accessible through the existing mobile menu.
+- Prevent wrapping or overlap on smaller widths.
+
+6. Do not change
+- Navbar height
+- Logo size or asset
+- Navigation link styling
+- Hero section
+- Colors
+- Authentication modal
+- Existing routes
+
+Acceptance Criteria:
+✓ “Sign Up” appears directly to the right of “Log In”.
+✓ Both actions are vertically centered.
+✓ “Sign Up” remains a small text link.
+✓ Login and signup functionality remain unchanged.
+✓ No overlap, wrapping, TypeScript errors, or console errors.

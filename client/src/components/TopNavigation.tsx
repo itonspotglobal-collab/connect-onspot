@@ -750,7 +750,7 @@ export function TopNavigation() {
               </DropdownMenu>
             ) : (
               /* ── Not authenticated — Log In + Sign Up (text link) ── */
-              <div className="hidden md:flex flex-col items-center gap-0.5">
+              <div className="hidden md:flex flex-row items-center gap-3">
                 <button
                   onClick={() => { setShowPortal(true); setModalStep("signin"); }}
                   className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white/90 border border-white/25 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-200 whitespace-nowrap"
@@ -760,8 +760,7 @@ export function TopNavigation() {
                 </button>
                 <button
                   onClick={() => { setShowPortal(true); setModalStep("signup"); }}
-                  className="text-white/60 hover:text-white transition-colors duration-200 whitespace-nowrap hover:underline"
-                  style={{ fontSize: '12px', fontWeight: 500 }}
+                  className="text-[13px] font-semibold text-white/65 hover:text-white transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
                   Sign Up
