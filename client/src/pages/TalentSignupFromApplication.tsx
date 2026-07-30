@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PrefillData {
@@ -57,10 +58,11 @@ export default function TalentSignupFromApplication() {
   const searchParams = new URLSearchParams(window.location.search);
   const applicationToken = searchParams.get("applicationToken") ?? "";
 
-  // State machine: loading | ready | submitting | done | error
-  type Stage = "loading" | "ready" | "submitting" | "done" | "error";
+  // State machine: loading | ready | submitting | done | error | refreshing | refreshed
+  type Stage = "loading" | "ready" | "submitting" | "done" | "error" | "refreshing";
   const [stage, setStage] = useState<Stage>("loading");
   const [errorMsg, setErrorMsg] = useState("");
+  const [errorKind, setErrorKind] = useState<"expired" | "used" | "generic">("generic");
   const [prefill, setPrefill] = useState<PrefillData | null>(null);
 
   const [form, setForm] = useState({
@@ -86,13 +88,18 @@ export default function TalentSignupFromApplication() {
         const res = await fetch(`/api/job-applications/continue/${encodeURIComponent(applicationToken)}`);
         if (res.status === 410) {
           const body = await res.json().catch(() => ({}));
-          setErrorMsg(body.error === "Token already used"
-            ? "This link has already been used to create an account. Please sign in."
-            : "This link has expired. Please submit a new application.");
+          if (body.error === "Token already used") {
+            setErrorKind("used");
+            setErrorMsg("This link has already been used to create an account. Please sign in.");
+          } else {
+            setErrorKind("expired");
+            setErrorMsg("This signup link has expired. You can request a fresh link below.");
+          }
           setStage("error");
           return;
         }
         if (!res.ok) {
+          setErrorKind("generic");
           setErrorMsg("This link is invalid or has expired. Please submit a new application.");
           setStage("error");
           return;
@@ -130,6 +137,34 @@ export default function TalentSignupFromApplication() {
     if (form.confirmPassword !== form.password) next.confirmPassword = "Passwords do not match";
     setErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  const handleRefreshToken = async () => {
+    setStage("refreshing" as any);
+    try {
+      const res = await fetch("/api/job-applications/refresh-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: applicationToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // If it was already used (race condition), show appropriate message
+        setErrorKind(data.error === "Token already used" ? "used" : "generic");
+        setErrorMsg(data.error === "Token already used"
+          ? "This link has already been used to create an account. Please sign in."
+          : "Unable to refresh your link. Please submit a new application.");
+        setStage("error");
+        return;
+      }
+      // Navigate to same page with the new token
+      const newUrl = `${window.location.pathname}?applicationToken=${encodeURIComponent(data.continuationToken)}`;
+      window.location.replace(newUrl);
+    } catch {
+      setErrorKind("generic");
+      setErrorMsg("Unable to refresh your link. Please check your connection and try again.");
+      setStage("error");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -212,7 +247,8 @@ export default function TalentSignupFromApplication() {
     );
   }
 
-  if (stage === "error") {
+  if (stage === "error" || (stage as any) === "refreshing") {
+    const isRefreshing = (stage as any) === "refreshing";
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <TopNavigation />
@@ -220,10 +256,26 @@ export default function TalentSignupFromApplication() {
           <div className="mb-4 flex justify-center">
             <AlertTriangle className="h-12 w-12 text-amber-400" />
           </div>
-          <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Link unavailable</h2>
+          <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
+            {errorKind === "expired" ? "Link expired" : "Link unavailable"}
+          </h2>
           <p className="mb-8 text-sm text-slate-500">{errorMsg}</p>
           <div className="flex flex-col items-center gap-3">
-            <Button className="rounded-full bg-[#474ead] px-8 text-white hover:bg-[#3d439c]"
+            {errorKind === "expired" && (
+              <Button
+                className="rounded-full bg-[#474ead] px-8 text-white hover:bg-[#3d439c]"
+                onClick={handleRefreshToken}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Getting new link…</>
+                ) : (
+                  <><RefreshCw className="mr-2 h-4 w-4" /> Get a new link</>
+                )}
+              </Button>
+            )}
+            <Button className={`rounded-full px-8 ${errorKind !== "expired" ? "bg-[#474ead] text-white hover:bg-[#3d439c]" : ""}`}
+              variant={errorKind === "expired" ? "outline" : "default"}
               onClick={() => navigate("/find-work/jobs")}>
               Browse open roles
             </Button>

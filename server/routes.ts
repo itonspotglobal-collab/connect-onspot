@@ -7972,11 +7972,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Duplicate check — same email for same job (pending or registered)
       const dupCheck = await query(
-        `SELECT id FROM job_submissions WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
+        `SELECT id, registration_status, talent_id FROM job_submissions
+         WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
         [jobId, email.trim()],
       );
       if (dupCheck.rows.length > 0) {
-        return res.status(409).json({ error: "An application for this job with that email already exists." });
+        const existing = dupCheck.rows[0];
+        // If already linked to an account, block outright
+        if (existing.registration_status === "registered" || existing.talent_id) {
+          return res.status(409).json({
+            error: "An application for this job with that email already exists.",
+          });
+        }
+        // Pending — invalidate old tokens and re-issue a fresh one
+        await query(
+          `DELETE FROM application_tokens WHERE submission_id = $1`,
+          [existing.id],
+        );
+        const reissueToken = randomBytes(32).toString("base64url");
+        const reissueHash = createHash("sha256").update(reissueToken).digest("hex");
+        const reissueExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await query(
+          `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
+           VALUES (gen_random_uuid(), $1, $2, $3)`,
+          [existing.id, reissueHash, reissueExpiry],
+        );
+        return res.status(200).json({
+          success: true,
+          applicationId: existing.id,
+          continuationToken: reissueToken,
+        });
       }
 
       const applicantName = `${firstName.trim()} ${lastName.trim()}`;
@@ -7995,10 +8020,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const submissionId = result.rows[0].id;
 
-      // Generate a short-lived continuation token (base64url, 32 bytes)
+      // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
       const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       await query(
         `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
@@ -8047,6 +8072,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (err: any) {
       console.error("GET /api/job-applications/continue error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/job-applications/refresh-token — issue a new token for an expired (unused) submission
+  app.post("/api/job-applications/refresh-token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      if (!token || typeof token !== "string" || token.length > 128) {
+        return res.status(400).json({ error: "Invalid token" });
+      }
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const r = await query(
+        `SELECT at.id AS token_id, at.submission_id, at.used_at, at.expires_at, js.talent_id
+         FROM application_tokens at
+         JOIN job_submissions js ON js.id = at.submission_id
+         WHERE at.token_hash = $1`,
+        [tokenHash],
+      );
+      if (r.rows.length === 0) return res.status(404).json({ error: "Token not found" });
+      const row = r.rows[0];
+      // Cannot refresh a token that was already used (account already created)
+      if (row.used_at) return res.status(410).json({ error: "Token already used" });
+      // Cannot refresh if submission is already linked to an account
+      if (row.talent_id) return res.status(409).json({ error: "Submission already linked to an account" });
+
+      // Invalidate all existing tokens for this submission and issue a fresh one
+      await query(`DELETE FROM application_tokens WHERE submission_id = $1`, [row.submission_id]);
+      const newRawToken = randomBytes(32).toString("base64url");
+      const newHash = createHash("sha256").update(newRawToken).digest("hex");
+      const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await query(
+        `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
+         VALUES (gen_random_uuid(), $1, $2, $3)`,
+        [row.submission_id, newHash, newExpiry],
+      );
+      return res.json({ success: true, continuationToken: newRawToken });
+    } catch (err: any) {
+      console.error("POST /api/job-applications/refresh-token error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
