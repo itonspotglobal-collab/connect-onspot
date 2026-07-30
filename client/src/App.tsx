@@ -190,8 +190,9 @@ function PublicRouter() {
           <Route path="/admin/insights" component={AdminInsights} />
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
+          {/* TODO: Restore admin authentication and authorization before production launch. */}
+          <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route path="/admin/find-work" component={AdminFindWork} />
-          {/* TODO: Restore AdminProtectedRoute before production launch. */}
           <Route path="/admin/job-applications" component={AdminJobApplications} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
           <Route path="/admin/inquiries" component={AdminInquiries} />
@@ -230,11 +231,6 @@ function ClientRouter() {
           <Route path="/admin/csv-import" component={() => (
             <AdminProtectedRoute>
               <AdminCSVImport />
-            </AdminProtectedRoute>
-          )} />
-          <Route path="/admin/dashboard" component={() => (
-            <AdminProtectedRoute>
-              <AdminDashboard />
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />

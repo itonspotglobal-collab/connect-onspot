@@ -170,6 +170,7 @@ export function TopNavigation() {
     // TODO: Remove these public admin links before production launch.
     // Temporary: surface admin tools in the nav without requiring a logged-in admin account.
     if (!user) return [
+      { label: "Admin Dashboard",  route: "/admin/dashboard",         icon: Shield },
       { label: "Find Work",        route: "/admin/find-work",         icon: Briefcase },
       { label: "Job Applications", route: "/admin/job-applications",  icon: Users },
       { label: "Insights",         route: "/admin/insights",          icon: Eye },

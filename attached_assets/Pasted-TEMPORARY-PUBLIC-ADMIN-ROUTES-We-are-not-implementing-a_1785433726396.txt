@@ -1,0 +1,150 @@
+TEMPORARY PUBLIC ADMIN ROUTES
+
+We are not implementing admin authentication yet.
+
+Make the following admin pages accessible without login:
+
+- `/admin/dashboard`
+- `/admin/find-work`
+- `/admin/job-applications`
+- `/admin/insights`
+- `/admin/insights/create`
+- `/admin/insights/:id/edit`
+
+FRONTEND ROUTING
+
+Update `client/src/App.tsx`.
+
+Move or register `/admin/dashboard` alongside the other currently public admin
+routes.
+
+Use a direct route such as:
+
+<Route path="/admin/dashboard" component={AdminDashboard} />
+
+Do not wrap `/admin/dashboard` with:
+
+- `AdminProtectedRoute`
+- `ClientProtectedRoute`
+- `TalentProtectedRoute`
+- authentication checks
+- role checks
+- login redirects
+
+Remove the existing protected version of the same route to avoid duplicate
+route definitions.
+
+Also inspect `AdminDashboard.tsx` and remove any page-level authentication or
+role-based redirect that sends unauthenticated visitors elsewhere.
+
+IMPORTANT ROUTE ORDER
+
+Ensure the public admin routes are declared before the fallback `NotFound`
+route.
+
+Verify there is only one active definition for `/admin/dashboard`.
+
+BACKEND API ACCESS
+
+Review every API used by `AdminDashboard.tsx`.
+
+Temporarily remove admin authentication middleware from only the endpoints
+required for this dashboard to load.
+
+Examples may include:
+
+- dashboard statistics
+- total users
+- total talents
+- total clients
+- job counts
+- application counts
+- recent activity
+- revenue or payment summaries
+- system metrics
+
+Remove route middleware such as:
+
+- `authenticateAdminFlexible`
+- `authenticateJWT`
+- `requireAdmin`
+- `isAuthenticated`
+
+Do not remove the middleware definitions globally.
+
+Do not remove authentication from unrelated private features.
+
+If the dashboard contains highly sensitive information such as:
+
+- password data
+- authentication tokens
+- private messages
+- bank details
+- payout information
+- payment credentials
+- confidential client documents
+
+do not expose those fields. Return only safe summary data needed by the
+dashboard.
+
+CURRENT ISSUE
+
+Navigating to `/admin/dashboard` currently displays the generic Coming Soon
+page instead of the Admin Dashboard.
+
+Investigate:
+
+1. Whether `/admin/dashboard` is only declared inside `ClientRouter`.
+2. Whether unauthenticated users are handled by `PublicRouter`.
+3. Whether the public router has no matching `/admin/dashboard` route.
+4. Whether the request falls through to another route or domain fallback.
+5. Whether duplicate route definitions are causing the wrong page to render.
+
+Required result:
+
+Opening `/admin/dashboard` directly while logged out must render the actual
+`AdminDashboard` component.
+
+ADMIN NAVIGATION
+
+Keep the Admin navigation dropdown visible without authentication.
+
+Include:
+
+- Admin Dashboard → `/admin/dashboard`
+- Find Work → `/admin/find-work`
+- Job Applications → `/admin/job-applications`
+- Insights → `/admin/insights`
+
+Do not conditionally hide these links based on authentication.
+
+TEMPORARY TODO
+
+Add this comment near the public admin routes and affected APIs:
+
+`TODO: Restore admin authentication and authorization before production launch.`
+
+Do not show this warning in the visible interface.
+
+TESTS
+
+Verify:
+
+- Logged-out visitor can open `/admin/dashboard`.
+- Logged-out visitor can open `/admin/find-work`.
+- Logged-out visitor can open `/admin/job-applications`.
+- Logged-out visitor can open `/admin/insights`.
+- `/admin/dashboard` renders `AdminDashboard`, not Coming Soon.
+- No login redirect occurs.
+- Dashboard API requests do not return 401 or 403.
+- Talent and Client protected pages remain protected.
+- There are no duplicate `/admin/dashboard` routes.
+- TypeScript check and production build pass.
+
+FINAL RESULT
+
+For the current development phase, all listed admin pages should be accessible
+to anyone who has the URL.
+
+This is temporary and must remain easy to reverse once admin authentication is
+implemented.
