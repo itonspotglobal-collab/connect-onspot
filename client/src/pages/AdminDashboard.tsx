@@ -37,6 +37,12 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   Shield, 
   Users, 
@@ -47,7 +53,10 @@ import {
   Trash2,
   Download,
   Upload,
-  RefreshCw
+  RefreshCw,
+  Briefcase,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,11 +92,42 @@ interface User {
   role: string;
 }
 
+interface JobApplication {
+  id: string;
+  job_id: string;
+  jobTitle: string;
+  jobCompany?: string;
+  first_name: string;
+  last_name: string;
+  applicant_name: string;
+  email: string;
+  phone?: string;
+  cover_letter?: string;
+  status: string;
+  registration_status: string;
+  submitted_at: string;
+  talent_id?: string;
+  talentFirstName?: string;
+  talentLastName?: string;
+}
+
+interface JobOption {
+  id: string;
+  title: string;
+  company?: string;
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('passwords');
+
+  // Job Applications state
+  const [appStatusFilter, setAppStatusFilter] = useState('all');
+  const [appJobFilter, setAppJobFilter] = useState('all');
+  const [appPage, setAppPage] = useState(1);
+  const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
 
   // Redirect if not admin
   useEffect(() => {
@@ -121,6 +161,39 @@ export default function AdminDashboard() {
     },
     enabled: !!user && user.role === 'admin'
   });
+
+  // Fetch jobs for filter dropdown
+  const { data: jobsData } = useQuery<{ items: JobOption[] }>({
+    queryKey: ['/api/admin/jobs', { page: 1, pageSize: 200 }],
+    queryFn: async () => {
+      const data = await authAPI.get('/api/admin/jobs?page=1&pageSize=200');
+      return data;
+    },
+    enabled: !!user && user.role === 'admin'
+  });
+  const jobOptions: JobOption[] = jobsData?.items ?? [];
+
+  // Fetch job applications
+  const {
+    data: appData,
+    isFetching: appsFetching,
+    refetch: refetchApps,
+  } = useQuery<{ total: number; page: number; limit: number; items: JobApplication[] }>({
+    queryKey: [
+      '/api/admin/job-applications',
+      { page: appPage, status: appStatusFilter, jobId: appJobFilter },
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(appPage), limit: '25' });
+      if (appStatusFilter !== 'all') params.set('status', appStatusFilter);
+      if (appJobFilter !== 'all') params.set('jobId', appJobFilter);
+      return await authAPI.get(`/api/admin/job-applications?${params.toString()}`);
+    },
+    enabled: !!user && user.role === 'admin',
+  });
+  const applications = appData?.items ?? [];
+  const appsTotal = appData?.total ?? 0;
+  const appsTotalPages = Math.max(1, Math.ceil(appsTotal / 25));
 
   // Fetch resumes
   const { data: resumes = [], refetch: refetchResumes } = useQuery<Resume[]>({
@@ -280,7 +353,7 @@ export default function AdminDashboard() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="passwords" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Users & Passwords
@@ -292,6 +365,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="convert" className="flex items-center gap-2">
             <UserPlus className="w-4 h-4" />
             Convert Resumes
+          </TabsTrigger>
+          <TabsTrigger value="applications" className="flex items-center gap-2" data-testid="tab-job-applications">
+            <Briefcase className="w-4 h-4" />
+            Job Applications
           </TabsTrigger>
         </TabsList>
 
@@ -608,7 +685,261 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Job Applications Tab */}
+        <TabsContent value="applications" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5" />
+                  Job Applications
+                </CardTitle>
+                <CardDescription>
+                  {appsTotal} total submission{appsTotal !== 1 ? 's' : ''}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchApps()}
+                data-testid="button-refresh-applications"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3">
+                <Select
+                  value={appStatusFilter}
+                  onValueChange={(v) => { setAppStatusFilter(v); setAppPage(1); }}
+                >
+                  <SelectTrigger className="w-44" data-testid="filter-app-status">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                    <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="hired">Hired</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={appJobFilter}
+                  onValueChange={(v) => { setAppJobFilter(v); setAppPage(1); }}
+                >
+                  <SelectTrigger className="w-56" data-testid="filter-app-job">
+                    <SelectValue placeholder="Filter by job" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Jobs</SelectItem>
+                    {jobOptions.map((j) => (
+                      <SelectItem key={j.id} value={j.id}>
+                        {j.title}{j.company ? ` — ${j.company}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Table */}
+              {appsFetching ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : applications.length === 0 ? (
+                <p className="text-muted-foreground text-center py-10">
+                  No applications found.
+                </p>
+              ) : (
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-3 text-left font-medium">Applicant</th>
+                        <th className="px-4 py-3 text-left font-medium">Email</th>
+                        <th className="px-4 py-3 text-left font-medium">Job</th>
+                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                        <th className="px-4 py-3 text-left font-medium">Registration</th>
+                        <th className="px-4 py-3 text-left font-medium">Submitted</th>
+                        <th className="px-4 py-3 text-left font-medium"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {applications.map((app) => (
+                        <tr
+                          key={app.id}
+                          className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                          onClick={() => setSelectedApp(app)}
+                          data-testid={`app-row-${app.id}`}
+                        >
+                          <td className="px-4 py-3 font-medium">{app.applicant_name}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{app.email}</td>
+                          <td className="px-4 py-3">{app.jobTitle}</td>
+                          <td className="px-4 py-3">
+                            <AppStatusBadge status={app.status} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <RegStatusBadge status={app.registration_status} />
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {new Date(app.submitted_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
+                              data-testid={`button-view-app-${app.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {appsTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Page {appPage} of {appsTotalPages} ({appsTotal} total)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={appPage <= 1}
+                      onClick={() => setAppPage((p) => Math.max(1, p - 1))}
+                      data-testid="button-apps-prev"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={appPage >= appsTotalPages}
+                      onClick={() => setAppPage((p) => Math.min(appsTotalPages, p + 1))}
+                      data-testid="button-apps-next"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Application Detail Dialog */}
+      <Dialog open={!!selectedApp} onOpenChange={(open) => { if (!open) setSelectedApp(null); }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5" />
+              Application Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedApp && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Applicant</p>
+                  <p>{selectedApp.applicant_name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Email</p>
+                  <p>{selectedApp.email}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Phone</p>
+                  <p>{selectedApp.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Job</p>
+                  <p>{selectedApp.jobTitle}{selectedApp.jobCompany ? ` — ${selectedApp.jobCompany}` : ''}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Application Status</p>
+                  <AppStatusBadge status={selectedApp.status} />
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Registration Status</p>
+                  <RegStatusBadge status={selectedApp.registration_status} />
+                </div>
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Submitted</p>
+                  <p>{new Date(selectedApp.submitted_at).toLocaleString()}</p>
+                </div>
+                {selectedApp.talent_id && (
+                  <div>
+                    <p className="text-muted-foreground font-medium mb-1">Linked Talent</p>
+                    <p>
+                      {selectedApp.talentFirstName || ''} {selectedApp.talentLastName || ''}
+                      {!selectedApp.talentFirstName && !selectedApp.talentLastName && selectedApp.talent_id}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {selectedApp.cover_letter && (
+                <div>
+                  <p className="text-muted-foreground font-medium mb-1">Cover Letter</p>
+                  <div className="bg-muted rounded-md p-4 whitespace-pre-wrap leading-relaxed">
+                    {selectedApp.cover_letter}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function AppStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    new: 'default',
+    reviewed: 'secondary',
+    shortlisted: 'secondary',
+    hired: 'secondary',
+    rejected: 'destructive',
+  };
+  const labels: Record<string, string> = {
+    new: 'New',
+    reviewed: 'Reviewed',
+    shortlisted: 'Shortlisted',
+    hired: 'Hired',
+    rejected: 'Rejected',
+  };
+  return (
+    <Badge variant={variants[status] ?? 'outline'}>
+      {labels[status] ?? status}
+    </Badge>
+  );
+}
+
+function RegStatusBadge({ status }: { status: string }) {
+  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    pending_account: 'outline',
+    registered: 'secondary',
+  };
+  const labels: Record<string, string> = {
+    pending_account: 'Pending Account',
+    registered: 'Registered',
+  };
+  return (
+    <Badge variant={variants[status] ?? 'outline'}>
+      {labels[status] ?? status}
+    </Badge>
   );
 }
