@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PrefillData {
@@ -180,11 +180,18 @@ export default function TalentSignupFromApplication() {
       localStorage.setItem("onspot_jwt_token", authToken);
       localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
 
-      // 4. Sync AuthContext so portal guards see the user as authenticated
-      //    before we render the success screen and the portal CTA.
+      // 4. Sync AuthContext so guards see the user as authenticated, then
+      //    redirect to the jobs board (not directly into the portal).
       await refreshAuth();
 
-      setStage("done");
+      toast({
+        title: "🎉 Account created!",
+        description:
+          "Your account has been created and your application has been submitted successfully. You're now signed in and can apply for more opportunities.",
+        duration: 8000,
+      });
+
+      navigate("/find-work/jobs");
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
       setStage("ready");
@@ -225,37 +232,6 @@ export default function TalentSignupFromApplication() {
               <ArrowLeft className="mr-2 h-4 w-4" /> Go home
             </Button>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === "done") {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <TopNavigation />
-        <div className="mx-auto max-w-lg px-6 pt-24 text-center">
-          <div className="mb-6 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/20">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            </div>
-          </div>
-          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white">
-            You're all set!
-          </h2>
-          <p className="mb-1 text-slate-600 dark:text-slate-300">
-            Your account has been created and your application for{" "}
-            <span className="font-semibold">{prefill?.jobTitle}</span> has been linked.
-          </p>
-          <p className="mb-8 text-sm text-slate-500">
-            Our team will review your application and reach out within 3 business days.
-          </p>
-          <Button
-            className="rounded-full bg-[#474ead] px-10 text-white hover:bg-[#3d439c]"
-            onClick={() => navigate("/talent-portal")}
-          >
-            Go to your Talent Portal
-          </Button>
         </div>
       </div>
     );
