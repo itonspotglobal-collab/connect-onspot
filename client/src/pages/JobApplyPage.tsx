@@ -8,9 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn } from "lucide-react";
 import type { Job } from "@shared/schema";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -25,6 +32,17 @@ export default function JobApplyPage() {
 
   const [isPending, setIsPending] = useState(false);
   const [emailMismatchError, setEmailMismatchError] = useState(false);
+
+  // ── Dialog state ─────────────────────────────────────────────────────────────
+  // sign_in_required: existing Talent email found — prompt to sign in
+  const [signInDialog, setSignInDialog] = useState<{
+    open: boolean;
+    maskedEmail: string;
+    continuationToken: string;
+  }>({ open: false, maskedEmail: "", continuationToken: "" });
+
+  // account_conflict: email belongs to a Client or Admin account
+  const [conflictDialog, setConflictDialog] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -109,13 +127,27 @@ export default function JobApplyPage() {
       const data = await res.json();
 
       if (data.accountAction === "already_authenticated") {
+        // Authenticated talent — application saved and linked immediately
         toast({
           title: "Application submitted! 🎉",
           description: "Your application has been linked to your Talent account.",
         });
         navigate("/find-work/jobs");
+
+      } else if (data.accountAction === "sign_in_required") {
+        // Application saved — email belongs to an existing Talent account
+        setSignInDialog({
+          open: true,
+          maskedEmail: data.maskedEmail || form.email.trim(),
+          continuationToken: data.continuationToken,
+        });
+
+      } else if (data.accountAction === "account_conflict") {
+        // Application saved — email belongs to a Client or Admin account
+        setConflictDialog(true);
+
       } else {
-        // Unauthenticated flow — redirect to signup/login with continuation token
+        // create_account — new email, redirect to Talent signup with continuation token
         navigate(`/talent/signup?applicationToken=${encodeURIComponent(data.continuationToken)}`);
       }
     } catch (err: any) {
@@ -381,6 +413,109 @@ export default function JobApplyPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Existing-email dialog (sign_in_required) ────────────────────────────── */}
+      <Dialog
+        open={signInDialog.open}
+        onOpenChange={(open) => setSignInDialog((s) => ({ ...s, open }))}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5 text-[#474ead]" />
+              This email already has an account
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              An OnSpot Talent account already exists for{" "}
+              <span className="font-medium text-slate-700 dark:text-slate-200">
+                {signInDialog.maskedEmail}
+              </span>
+              . Sign in to link and track this application.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 flex flex-col gap-3">
+            {/* Primary: Sign In */}
+            <Button
+              className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
+              onClick={() => {
+                const token = encodeURIComponent(signInDialog.continuationToken);
+                navigate(`/portal-login?portal=talent&applicationToken=${token}`);
+              }}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+
+            {/* Secondary: Continue Browsing */}
+            <Button
+              variant="outline"
+              className="w-full rounded-full"
+              onClick={() => {
+                setSignInDialog((s) => ({ ...s, open: false }));
+                navigate("/find-work/jobs");
+              }}
+            >
+              Continue Browsing Jobs
+            </Button>
+
+            {/* Tertiary text link */}
+            <button
+              type="button"
+              className="text-center text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              onClick={() => {
+                setSignInDialog((s) => ({ ...s, open: false }));
+                navigate(`/find-work/job/${jobId}`);
+              }}
+            >
+              ← Back to Job Posting
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Account-conflict dialog (account_conflict) ───────────────────────────── */}
+      <Dialog open={conflictDialog} onOpenChange={setConflictDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-amber-500" />
+              Account type conflict
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              This email is already associated with another OnSpot account type. Please use a
+              different email or contact support.
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 -mt-1">
+            Your application has been saved. An OnSpot administrator can help link it to the correct
+            account.
+          </p>
+
+          <div className="mt-2 flex flex-col gap-3">
+            <Button
+              className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
+              onClick={() => {
+                setConflictDialog(false);
+                navigate("/find-work/jobs");
+              }}
+            >
+              Browse Jobs
+            </Button>
+            <button
+              type="button"
+              className="text-center text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              onClick={() => {
+                setConflictDialog(false);
+                navigate(`/find-work/job/${jobId}`);
+              }}
+            >
+              ← Back to Job Posting
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

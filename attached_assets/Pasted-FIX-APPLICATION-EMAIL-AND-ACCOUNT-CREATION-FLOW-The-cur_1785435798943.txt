@@ -1,0 +1,327 @@
+FIX APPLICATION EMAIL AND ACCOUNT-CREATION FLOW
+
+The current job application endpoint incorrectly rejects an application when
+the submitted email already exists.
+
+Current error:
+
+“An application for this job with that email already exists.”
+
+This behavior must be changed.
+
+CORE RULE
+
+Submitting a job application and creating a Talent account are separate
+operations.
+
+An existing email address must not prevent the application form from being
+submitted and saved.
+
+Email uniqueness should only be enforced during Talent account creation.
+
+APPLICATION SUBMISSION
+
+When the applicant submits the built-in job application form:
+
+1. Validate the application fields.
+2. Save the application in the database.
+3. Do not reject it merely because:
+   - the email belongs to an existing Talent account;
+   - the email exists in the users table;
+   - the applicant is currently logged out.
+4. After saving, determine the next account action.
+
+Remove application-submission errors such as:
+
+- “An application for this job with that email already exists.”
+- “Email already registered.”
+- Any check that treats an existing user email as an invalid application.
+
+Do not remove the unique-email validation from account registration.
+
+ACCOUNT RESOLUTION ORDER
+
+After the application is saved:
+
+1. Check whether a Talent is currently authenticated.
+
+2. If an authenticated Talent exists:
+   - link the application to the authenticated Talent ID;
+   - mark `registrationStatus = "linked"`;
+   - do not show account creation;
+   - redirect to `/find-work/jobs`.
+
+3. If no Talent is authenticated:
+   - normalize the submitted email;
+   - check whether that email belongs to an existing Talent account.
+
+4. If an existing Talent account is found:
+   - keep the application saved;
+   - set `registrationStatus = "pending_login"`;
+   - do not redirect to account creation;
+   - return an account-exists response.
+
+Suggested response:
+
+{
+  "success": true,
+  "applicationId": "...",
+  "accountAction": "sign_in_required",
+  "message": "An OnSpot Talent account already exists with this email.",
+  "continuationToken": "secure-expiring-token"
+}
+
+5. If no account exists:
+   - set `registrationStatus = "pending_account"`;
+   - redirect to the existing Talent account-creation page;
+   - use a secure continuation token;
+   - pre-fill first name, last name, email, and phone.
+
+EXISTING EMAIL PROMPT
+
+When the application is successfully saved but the email belongs to an
+existing Talent account, show a modal or dialog.
+
+Title:
+
+“This email already has an account”
+
+Message:
+
+“An OnSpot Talent account already exists for [masked email]. Sign in to link
+and track this application.”
+
+Do not display the full email unnecessarily. A masked form may be used, such
+as:
+
+`v***@onspotglobal.com`
+
+Actions:
+
+Primary button:
+“Sign In”
+
+Secondary button:
+“Continue Browsing Jobs”
+
+Optional text link:
+“Back to Job Posting”
+
+SIGN IN ACTION
+
+When the applicant clicks “Sign In”:
+
+1. Redirect to the existing Talent login page.
+2. Carry only the secure continuation token.
+3. Do not put the applicant’s email, phone, cover letter, or name in the URL.
+4. After successful login:
+   - validate the continuation token;
+   - verify the authenticated account email matches the application email;
+   - link the application to the authenticated Talent;
+   - mark `registrationStatus = "linked"`;
+   - redirect to `/find-work/jobs`.
+
+CONTINUE BROWSING ACTION
+
+When the applicant clicks “Continue Browsing Jobs”:
+
+1. Keep the saved application in the database.
+2. Do not create another Talent account.
+3. Leave:
+   - `talentId = null`
+   - `registrationStatus = "pending_login"`
+4. Close the dialog and redirect to:
+
+`/find-work/jobs`
+
+The application must remain visible on `/admin/job-applications`.
+
+BACK TO JOB POSTING ACTION
+
+When the applicant selects “Back to Job Posting”:
+
+- keep the application saved;
+- return to the specific job-detail page;
+- do not delete the application.
+
+NEW EMAIL FLOW
+
+When no Talent account exists for the email:
+
+1. Save the application.
+2. Redirect to the existing Talent account-creation page.
+3. Pre-fill:
+   - first name
+   - last name
+   - email
+   - phone
+4. Keep email read-only where appropriate.
+5. Create the account only after the user supplies a valid password and accepts
+   any required terms.
+6. Create the account with role `talent` on the server.
+7. Link the application to the new account.
+8. Redirect to `/find-work/jobs`.
+
+ACCOUNT REGISTRATION EMAIL UNIQUENESS
+
+The Talent account-creation endpoint must continue to reject an email that
+already exists.
+
+If the applicant somehow reaches the account-creation page with an existing
+email:
+
+- do not create a duplicate user;
+- show:
+  “An account already exists with this email. Please sign in instead.”
+- provide a Sign In button;
+- preserve the secure application continuation token.
+
+APPLICATION DUPLICATES
+
+Do not confuse an existing user account with an existing application.
+
+The system must allow one Talent email to apply to multiple different jobs.
+
+For example:
+
+- `talent@example.com` → IT Administrator
+- `talent@example.com` → Accounting Manager
+- `talent@example.com` → Sales Operations Specialist
+
+All three applications must be allowed.
+
+For repeated submissions to the exact same job, follow this temporary
+requirement:
+
+- allow the application to be saved;
+- create a separate application record;
+- do not reject it solely because `jobId + email` already exists.
+
+However, add an operational indicator such as:
+
+- `isRepeatApplication = true`
+- `previousApplicationCount`
+- or a “Repeat Application” badge in the admin page
+
+Do not overwrite or delete the earlier application.
+
+If the database currently has a unique constraint on:
+
+- `jobId + email`
+- normalized email + job ID
+- `jobId + talentId`
+
+remove or revise that constraint through a proper migration so repeat
+applications can be stored.
+
+Use a normal non-unique index instead for search performance.
+
+APPLICATION STATUS
+
+Each new submission should receive its own status:
+
+- `submitted`
+
+Account-linking status should be separate:
+
+- `linked`
+- `pending_login`
+- `pending_account`
+
+Do not mark an application as rejected merely because the applicant has not
+signed in.
+
+ADMIN PAGE
+
+Ensure every successfully submitted application appears on:
+
+`/admin/job-applications`
+
+Include:
+
+- applicant name;
+- email;
+- job title;
+- application status;
+- account-linking status;
+- linked Talent ID, when available;
+- repeat-application indicator;
+- submission date.
+
+Multiple applications from the same email must appear as separate rows.
+
+SECURITY
+
+- Never trust a Talent ID supplied by the frontend.
+- Use the authenticated Talent ID after login.
+- Normalize email comparisons using lowercase and trimming.
+- Do not include personal information in continuation URLs.
+- Use signed, expiring continuation tokens.
+- Do not expose whether an email belongs to an Admin or Client account in
+  unnecessary detail.
+
+NON-TALENT EMAIL CONFLICT
+
+If the submitted email belongs to an existing Client or Admin account:
+
+- save the application;
+- do not automatically change the account role;
+- do not create a duplicate Talent account;
+- show:
+  “This email is already associated with another OnSpot account type. Please
+  use a different email or contact support.”
+- allow the user to return to `/find-work/jobs`.
+
+FRONTEND SUCCESS HANDLING
+
+Update `JobApplyPage.tsx` to process these server results:
+
+- `already_authenticated`
+  → redirect to `/find-work/jobs`
+
+- `sign_in_required`
+  → show the existing-email dialog
+
+- `create_account`
+  → redirect to Talent account creation
+
+- `account_conflict`
+  → show the account-type conflict dialog
+
+Do not display “Submission failed” when the application was successfully saved.
+
+The existing-email condition is a successful application submission requiring
+a follow-up account action, not a submission error.
+
+TESTS
+
+Add tests for:
+
+1. Existing Talent email can submit an application while logged out.
+2. The application is saved before the account-exists prompt appears.
+3. Existing Talent email receives `sign_in_required`.
+4. Clicking Sign In preserves the continuation token.
+5. Successful login links the pending application.
+6. Continue Browsing leaves the application as `pending_login`.
+7. New email redirects to account creation.
+8. Account creation rejects duplicate emails.
+9. One email can apply to multiple different jobs.
+10. The same email can submit another application to the same job.
+11. Repeat applications appear separately in the admin page.
+12. Logged-in Talent is linked automatically.
+13. Client/Admin email does not create a duplicate Talent account.
+14. Existing-email result is not displayed as “Submission failed.”
+
+ACCEPTANCE CRITERIA
+
+The issue is resolved when:
+
+- An application is not rejected because the email already exists.
+- The application is always saved before account handling.
+- Existing Talent emails receive a Sign In prompt.
+- New emails proceed to Talent account creation.
+- Duplicate accounts cannot be created.
+- Applicants may continue browsing without immediately signing in.
+- Pending applications remain visible to administrators.
+- Successful sign-in links the application to the correct Talent account.
+- All successful flows return to `/find-work/jobs`.

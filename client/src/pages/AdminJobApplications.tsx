@@ -72,6 +72,7 @@ interface Application {
   coverLetter?: string;
   status: string;
   registrationStatus: string;
+  isRepeatApplication?: boolean;
   talentId?: string;
   talentFirstName?: string;
   talentLastName?: string;
@@ -670,6 +671,11 @@ export default function AdminJobApplications() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{applicantName(app)}</p>
                       {app.talentId && <span className="text-xs text-[#474ead] flex items-center gap-1 mt-0.5"><UserCheck className="h-3 w-3" /> Talent linked</span>}
+                      {app.isRepeatApplication && (
+                        <span className="inline-block mt-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          Repeat
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 max-w-[180px]">
                       <p className="truncate text-slate-800">{app.jobTitle}</p>

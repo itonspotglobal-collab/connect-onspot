@@ -665,6 +665,7 @@ export const jobSubmissions = pgTable("job_submissions", {
   status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired
   talentId: varchar("talent_id").references(() => users.id),
   registrationStatus: text("registration_status").notNull().default("pending_account"),
+  isRepeatApplication: boolean("is_repeat_application").notNull().default(false),
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

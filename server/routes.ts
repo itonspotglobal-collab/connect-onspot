@@ -625,6 +625,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  built_in_form migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add is_repeat_application column to job_submissions ──
+  try {
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS is_repeat_application boolean NOT NULL DEFAULT false`);
+  } catch (migErr: any) {
+    console.warn("⚠️  is_repeat_application migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: create job_application_status_history table and
   // map legacy 'new' status -> 'submitted' for consistency with the new status model.
   try {
@@ -7981,6 +7988,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/jobs/:jobId/apply — submit a built-in application (JSON body)
   // Supports both authenticated Talent users (fast-path, no continuation token) and
   // unauthenticated applicants (continuation token → signup/login flow).
+  // CORE RULE: the application is ALWAYS saved first. Email uniqueness is only
+  // enforced at account-creation time, not at application time.
   app.post("/api/jobs/:jobId/apply", applyLimiter, async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params;
@@ -7998,6 +8007,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!lastName?.trim()) return res.status(400).json({ error: "Last name is required" });
       if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
       if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
+
+      const normalizedEmail = email.trim().toLowerCase();
 
       // ── Optional auth: identify a logged-in Talent without blocking the public flow ──
       let authedUser: { id: string; email: string; role: string } | null = null;
@@ -8022,7 +8033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ── Authenticated user fast-path ──────────────────────────────────────────
       if (authedUser) {
-        // Reject non-talent roles (client, admin, etc.)
+        // Reject non-talent roles (client, admin, etc.) — identity guard, not email check
         if (authedUser.role !== "talent") {
           return res.status(403).json({
             error: "role_mismatch",
@@ -8031,42 +8042,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Reject email mismatch — never link to a different identity
-        if (email.trim().toLowerCase() !== authedUser.email.toLowerCase()) {
+        if (normalizedEmail !== authedUser.email.toLowerCase()) {
           return res.status(409).json({
             error: "email_mismatch",
             message: "You are signed in with a different email address. Sign out to apply using another account.",
           });
         }
 
-        // Duplicate check — talent ID (primary) then email fallback
-        const dupByTalent = await query(
-          `SELECT id FROM job_submissions WHERE job_id = $1 AND talent_id = $2 LIMIT 1`,
+        // Repeat-application indicator (allowed, but flagged for admin visibility)
+        const priorByTalent = await query(
+          `SELECT COUNT(*) FROM job_submissions WHERE job_id = $1 AND talent_id = $2`,
           [jobId, authedUser.id],
         );
-        if (dupByTalent.rows.length > 0) {
-          return res.status(409).json({ error: "You have already applied for this job." });
-        }
-        const dupByEmail = await query(
-          `SELECT id FROM job_submissions WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
-          [jobId, email.trim()],
-        );
-        if (dupByEmail.rows.length > 0) {
-          return res.status(409).json({ error: "An application for this job with that email already exists." });
-        }
+        const isRepeat = parseInt(priorByTalent.rows[0].count, 10) > 0;
 
         // Insert directly linked — no continuation token needed
         const result = await query(
           `INSERT INTO job_submissions
-             (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter, status, registration_status, talent_id)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'linked', $9)
+             (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
+              status, registration_status, talent_id, is_repeat_application)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'linked', $9, $10)
            RETURNING id`,
           [
             jobId, job.clientId || null,
             firstName.trim(), lastName.trim(), `${firstName.trim()} ${lastName.trim()}`,
-            email.trim().toLowerCase(),
+            normalizedEmail,
             phone.trim(),
             coverLetter?.trim() || null,
             authedUser.id,
+            isRepeat,
           ],
         );
 
@@ -8074,57 +8078,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           accountAction: "already_authenticated",
           applicationId: result.rows[0].id,
+          isRepeatApplication: isRepeat,
           nextUrl: "/find-work/jobs",
         });
       }
 
       // ── Unauthenticated applicant flow ────────────────────────────────────────
-      // Duplicate check — same email for same job (pending or already linked)
-      const dupCheck = await query(
-        `SELECT id, registration_status, talent_id FROM job_submissions
-         WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
-        [jobId, email.trim()],
+      // Repeat-application indicator — same job + same email already on record
+      const priorByEmail = await query(
+        `SELECT COUNT(*) FROM job_submissions WHERE job_id = $1 AND lower(email) = $2`,
+        [jobId, normalizedEmail],
       );
-      if (dupCheck.rows.length > 0) {
-        const existing = dupCheck.rows[0];
-        // If already linked to an account, block outright
-        if (existing.registration_status === "registered" || existing.registration_status === "linked" || existing.talent_id) {
-          return res.status(409).json({
-            error: "An application for this job with that email already exists.",
-          });
-        }
-        // Pending — invalidate old tokens and re-issue a fresh one
-        await query(`DELETE FROM application_tokens WHERE submission_id = $1`, [existing.id]);
-        const reissueToken = randomBytes(32).toString("base64url");
-        const reissueHash = createHash("sha256").update(reissueToken).digest("hex");
-        const reissueExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        await query(
-          `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
-           VALUES (gen_random_uuid(), $1, $2, $3)`,
-          [existing.id, reissueHash, reissueExpiry],
-        );
-        return res.status(200).json({
-          success: true,
-          applicationId: existing.id,
-          continuationToken: reissueToken,
-        });
+      const isRepeat = parseInt(priorByEmail.rows[0].count, 10) > 0;
+
+      // Determine account action by checking whether the email belongs to an existing user.
+      // The application is ALWAYS saved regardless of this check.
+      const userCheck = await query(
+        `SELECT id, email, role FROM users WHERE lower(email) = $1 LIMIT 1`,
+        [normalizedEmail],
+      );
+      const existingUser = userCheck.rows[0] || null;
+
+      let registrationStatus: string;
+      let accountAction: string;
+      let maskedEmail: string | undefined;
+
+      if (existingUser?.role === "talent") {
+        // Email belongs to a known Talent — save and prompt sign-in to link
+        registrationStatus = "pending_login";
+        accountAction = "sign_in_required";
+        const [localPart, domain] = normalizedEmail.split("@");
+        maskedEmail = `${localPart[0]}***@${domain}`;
+      } else if (existingUser) {
+        // Email belongs to a Client or Admin — save but flag conflict
+        registrationStatus = "pending_account";
+        accountAction = "account_conflict";
+      } else {
+        // Brand-new email — save and redirect to account creation
+        registrationStatus = "pending_account";
+        accountAction = "create_account";
       }
 
+      // Always insert the application first
       const applicantName = `${firstName.trim()} ${lastName.trim()}`;
-      const result = await query(
+      const insertResult = await query(
         `INSERT INTO job_submissions
-           (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter, status, registration_status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'pending_account')
+           (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
+            status, registration_status, is_repeat_application)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', $9, $10)
          RETURNING id`,
         [
           jobId, job.clientId || null,
           firstName.trim(), lastName.trim(), applicantName,
-          email.trim().toLowerCase(),
+          normalizedEmail,
           phone.trim(),
           coverLetter?.trim() || null,
+          registrationStatus,
+          isRepeat,
         ],
       );
-      const submissionId = result.rows[0].id;
+      const submissionId = insertResult.rows[0].id;
 
       // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
@@ -8137,11 +8150,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [submissionId, tokenHash, expiresAt],
       );
 
-      return res.status(201).json({
+      const responseBody: Record<string, any> = {
         success: true,
         applicationId: submissionId,
+        accountAction,
         continuationToken: rawToken,
-      });
+        isRepeatApplication: isRepeat,
+      };
+      if (accountAction === "sign_in_required") {
+        responseBody.message = "An OnSpot Talent account already exists with this email.";
+        responseBody.maskedEmail = maskedEmail;
+      } else if (accountAction === "account_conflict") {
+        responseBody.message = "This email is already associated with another OnSpot account type. Please use a different email or contact support.";
+      }
+
+      return res.status(201).json(responseBody);
     } catch (err: any) {
       console.error("POST /api/jobs/:jobId/apply error:", err);
       return res.status(500).json({ error: err.message });
@@ -8217,6 +8240,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ success: true, continuationToken: newRawToken });
     } catch (err: any) {
       console.error("POST /api/job-applications/refresh-token error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/job-applications/link-by-token — link a pending_login application after
+  // a Talent signs in via the existing-email prompt (requires JWT).
+  // Validates that the authenticated user's email matches the saved application email.
+  // TODO: Restore full production hardening (rate-limiting, audit log) before launch.
+  app.post("/api/job-applications/link-by-token", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id) return res.status(401).json({ error: "Unauthorized" });
+      const { token } = req.body;
+      if (!token || typeof token !== "string" || token.length > 128) {
+        return res.status(400).json({ error: "token is required" });
+      }
+
+      const tokenHash = createHash("sha256").update(token).digest("hex");
+      const r = await query(
+        `SELECT at.id AS token_id, at.expires_at, at.used_at,
+                js.id AS submission_id, js.email, js.talent_id
+         FROM application_tokens at
+         JOIN job_submissions js ON js.id = at.submission_id
+         WHERE at.token_hash = $1`,
+        [tokenHash],
+      );
+      if (r.rows.length === 0) return res.status(404).json({ error: "Token not found" });
+      const row = r.rows[0];
+      if (row.used_at) return res.status(410).json({ error: "Token already used" });
+      if (new Date(row.expires_at) < new Date()) return res.status(410).json({ error: "Token expired" });
+      if (row.talent_id) return res.status(409).json({ error: "Submission already linked to an account" });
+
+      // Verify the authenticated user's email matches the application email
+      if (user.email.toLowerCase() !== row.email.toLowerCase()) {
+        return res.status(409).json({
+          error: "email_mismatch",
+          message: "The signed-in account email does not match the application email.",
+        });
+      }
+
+      // Mark token used and link application to the talent
+      await query(`UPDATE application_tokens SET used_at = NOW() WHERE id = $1`, [row.token_id]);
+      await query(
+        `UPDATE job_submissions SET talent_id = $1, registration_status = 'linked', updated_at = NOW()
+         WHERE id = $2`,
+        [user.id, row.submission_id],
+      );
+      return res.json({ success: true, redirectTo: "/find-work/jobs" });
+    } catch (err: any) {
+      console.error("POST /api/job-applications/link-by-token error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -8363,6 +8436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.applicant_name AS "applicantName", js.email, js.phone,
                   js.status, js.registration_status AS "registrationStatus",
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
+                  js.is_repeat_application AS "isRepeatApplication",
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
            FROM job_submissions js
@@ -8399,6 +8473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.applicant_name AS "applicantName", js.email, js.phone, js.cover_letter AS "coverLetter",
                   js.status, js.registration_status AS "registrationStatus",
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
+                  js.is_repeat_application AS "isRepeatApplication",
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
            FROM job_submissions js

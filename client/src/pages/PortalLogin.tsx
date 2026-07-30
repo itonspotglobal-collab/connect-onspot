@@ -143,6 +143,12 @@ export default function PortalLogin() {
   const { signInToPortal, setupTalentPassword, isLoading } = usePortalLogin();
   const { toast } = useToast();
 
+  // Carry a pending application continuation token through the login flow so we
+  // can link the saved application immediately after the user signs in.
+  const [applicationToken] = useState(
+    () => new URLSearchParams(window.location.search).get("applicationToken") || "",
+  );
+
   const [selectedPortal, setSelectedPortal] = useState<PortalType | null>(() => {
     const v = new URLSearchParams(window.location.search).get("portal");
     return v === "client" || v === "talent" ? v : null;
@@ -192,6 +198,30 @@ export default function PortalLogin() {
     }
     const displayName = result.portal === "talent" ? result.auth.fullName : result.displayName;
     toast({ title: "Signed in", description: `Welcome back, ${displayName}!` });
+
+    // If the user arrived here from the "existing email" application dialog,
+    // attempt to link the pending application to the newly authenticated account.
+    if (applicationToken && result.portal === "talent") {
+      try {
+        const jwt = result.portal === "talent" ? result.auth?.token : null;
+        const linkRes = await fetch("/api/job-applications/link-by-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+          },
+          body: JSON.stringify({ token: applicationToken }),
+        });
+        if (linkRes.ok) {
+          toast({ title: "Application linked!", description: "Your saved application has been connected to your account." });
+        }
+        // On email_mismatch or any other error we still navigate — the application
+        // stays as pending_login and admins can see it.
+      } catch (_) { /* non-fatal — just navigate */ }
+      navigate("/find-work/jobs");
+      return;
+    }
+
     navigate(result.redirectTo);
   }
 
