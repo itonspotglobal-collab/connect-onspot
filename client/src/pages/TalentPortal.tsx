@@ -108,6 +108,26 @@ const TRUST_INDICATORS = [
 
 // Use imported premium features from component
 
+// Status badge config for application statuses
+const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  new:         { label: "Under Review", variant: "secondary" },
+  reviewed:    { label: "Reviewed",     variant: "secondary" },
+  shortlisted: { label: "Shortlisted",  variant: "default"   },
+  hired:       { label: "Hired",        variant: "default"   },
+  rejected:    { label: "Not Selected", variant: "destructive" },
+};
+
+interface MyApplication {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  jobCompany: string;
+  jobLocation: string | null;
+  status: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
 export default function TalentPortal() {
   const { user } = useAuth();
   // Use real profile data from useTalentProfile hook
@@ -118,6 +138,21 @@ export default function TalentPortal() {
     hasCompletedOnboarding,
     isLoading: profileLoading,
   } = useTalentProfile();
+
+  // Fetch the logged-in talent's own applications
+  const { data: myApplications, isLoading: applicationsLoading } = useQuery<MyApplication[]>({
+    queryKey: ["/api/talent/my-applications", user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("onspot_jwt_token");
+      const res = await fetch("/api/talent/my-applications", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to load applications");
+      return res.json();
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
 
   // Note: Onboarding modal is now handled globally by NewUserOnboardingWrapper
   // Removed duplicate modal logic that was causing the modal to appear twice
@@ -275,6 +310,119 @@ export default function TalentPortal() {
           </div>
         </div>
       </section>
+
+      {/* My Applications — only shown to authenticated talent users */}
+      {user && (
+        <section className="py-14 bg-muted/20 border-b" id="my-applications">
+          <div className="container mx-auto px-4">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                  My Applications
+                </h2>
+                <p className="text-muted-foreground mt-1">
+                  Track the status of your job applications in real time
+                </p>
+              </div>
+              <Badge variant="outline" className="text-sm px-3 py-1">
+                {myApplications?.length ?? 0} application{(myApplications?.length ?? 0) !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+
+            {applicationsLoading ? (
+              <div className="flex items-center gap-3 text-muted-foreground py-8">
+                <Clock className="h-5 w-5 animate-pulse" />
+                <span>Loading your applications…</span>
+              </div>
+            ) : !myApplications || myApplications.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 flex flex-col items-center gap-4 text-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground/50" />
+                  <div>
+                    <p className="font-medium text-foreground">No applications yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Browse open roles below and submit your first application
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const el = document.getElementById("opportunities");
+                      el?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    Browse Opportunities
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {myApplications.map((app) => {
+                  const statusCfg = STATUS_CONFIG[app.status] ?? { label: app.status, variant: "outline" as const };
+                  const submittedDate = new Date(app.submittedAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  });
+                  const updatedDate = new Date(app.updatedAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  });
+                  return (
+                    <Card key={app.id} className="hover-elevate">
+                      <CardContent className="p-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                          {/* Job info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-3">
+                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                <Briefcase className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate">
+                                  {app.jobTitle}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {app.jobCompany}
+                                  {app.jobLocation && (
+                                    <span> · {app.jobLocation}</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status & dates */}
+                          <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
+                            <Badge variant={statusCfg.variant} className="w-fit">
+                              {statusCfg.label}
+                            </Badge>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Applied {submittedDate}
+                              </span>
+                              {app.updatedAt !== app.submittedAt && (
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Updated {updatedDate}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* How It Works Section */}
       <section className="py-14 md:py-20 bg-background">

@@ -8201,6 +8201,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/talent/my-applications — list the authenticated talent's own job submissions
+  app.get("/api/talent/my-applications", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const result = await query(
+        `SELECT js.id, js.job_id AS "jobId", js.status, js.submitted_at AS "submittedAt",
+                js.updated_at AS "updatedAt", js.first_name AS "firstName", js.last_name AS "lastName",
+                js.cover_letter AS "coverLetter", js.phone,
+                j.title AS "jobTitle", j.company AS "jobCompany", j.location AS "jobLocation"
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.talent_id = $1
+         ORDER BY js.submitted_at DESC`,
+        [userId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/talent/my-applications error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/client/job-submissions — list submissions for all jobs posted by the authenticated client
   app.get("/api/client/job-submissions", authenticateJWT, async (req: Request, res: Response) => {
     try {
