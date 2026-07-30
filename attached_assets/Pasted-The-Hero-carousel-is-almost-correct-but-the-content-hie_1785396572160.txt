@@ -1,0 +1,70 @@
+The Hero carousel is almost correct, but the content hierarchy is wrong.
+
+Please DO NOT remove any existing content. Instead, restore the original static Hero copy while keeping the rotating carousel feature.
+
+Required changes:
+
+1. Keep the large static headline:
+   "Work Without Limits"
+
+2. Directly below it, restore the original static content:
+   - "One Platform. Endless Opportunity."
+   - "Built for the Future of Work."
+
+These two lines should ALWAYS remain visible regardless of the active carousel slide.
+
+3. Remove the carousel's replacement heading and description.
+
+For example, do NOT display:
+- "Work from anywhere, for anyone"
+- "Land long-term roles with global companies..."
+- "Vetted talent, placed in 72 hours"
+- or any other large rotating title/description.
+
+Instead, the carousel should ONLY rotate:
+- the audience badge (For Companies / For Talent)
+- the background image
+- the CTA buttons and their destinations
+
+The static text should always remain:
+
+Work Without Limits
+
+One Platform. Endless Opportunity.
+Built for the Future of Work.
+
+4. Carousel behavior:
+
+Client slide:
+- Badge: FOR COMPANIES
+- Primary Button: Hire Talent → existing Hire Talent page
+- Secondary Button: Estimated Savings → existing Value Calculator page
+
+Talent slide:
+- Badge: FOR TALENT
+- Primary Button: Find Work → existing Find Work page
+- Secondary Button: Browse Roles → existing Find Work page
+
+5. Keep:
+- Existing fonts
+- Existing colors
+- Existing spacing
+- Existing animations
+- Existing background transition
+- Existing feature cards
+- Existing responsive behavior
+
+6. The Hero should have this visual hierarchy:
+
+Work Without Limits              (static)
+
+[Audience Badge]                 (changes per slide)
+
+One Platform. Endless Opportunity.
+Built for the Future of Work.    (always static)
+
+[CTA Buttons]                    (change depending on slide)
+
+Feature Cards                    (unchanged)
+
+Only the badge, background image, and CTA buttons should change during the carousel transition. The headline and supporting text should remain fixed at all times.
