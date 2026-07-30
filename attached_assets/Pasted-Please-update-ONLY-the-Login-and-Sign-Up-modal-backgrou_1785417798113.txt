@@ -1,0 +1,143 @@
+Please update ONLY the Login and Sign Up modal backgrounds to match a lighter frosted-glass appearance similar to the attached design reference.
+
+IMPORTANT:
+Do NOT change the layout, typography, spacing, animations, or functionality.
+Do NOT change the homepage colors or navigation bar.
+Only update the visual styling of the authentication modals.
+
+========================================
+MODAL BACKGROUND
+========================================
+
+Replace the current dark purple background with a much lighter frosted color.
+
+Target appearance:
+- Soft bluish-white
+- Slight lavender tint
+- Elegant glass effect
+- Semi-transparent
+- Modern premium look
+
+Recommended background:
+
+background: rgba(236, 240, 255, 0.12);
+
+or
+
+background: rgba(245, 247, 255, 0.14);
+
+with:
+
+backdrop-filter: blur(24px);
+-webkit-backdrop-filter: blur(24px);
+
+========================================
+BORDER
+========================================
+
+Replace the dark border with:
+
+border: 1px solid rgba(255,255,255,0.18);
+
+========================================
+BOX SHADOW
+========================================
+
+Use a soft floating shadow:
+
+box-shadow:
+0 20px 60px rgba(0,0,0,0.28),
+0 0 40px rgba(120,110,255,0.10);
+
+========================================
+INPUT FIELDS
+========================================
+
+Lighten the input backgrounds.
+
+Current inputs are too dark.
+
+Use something similar to:
+
+background:
+rgba(255,255,255,0.08);
+
+border:
+1px solid rgba(255,255,255,0.14);
+
+On focus:
+
+border-color:
+rgba(120,110,255,0.65);
+
+box-shadow:
+0 0 0 3px rgba(120,110,255,0.15);
+
+========================================
+TEXT
+========================================
+
+Keep headings white.
+
+Body text:
+
+rgba(255,255,255,0.82)
+
+Placeholder:
+
+rgba(255,255,255,0.48)
+
+========================================
+BUTTON
+========================================
+
+Keep the existing purple gradient button.
+
+No changes needed.
+
+========================================
+ROLE CARDS
+(Client / Talent)
+========================================
+
+Lighten their background slightly.
+
+Inactive:
+
+rgba(255,255,255,0.04)
+
+Hover:
+
+rgba(255,255,255,0.08)
+
+Selected:
+
+Keep the existing purple accent.
+
+========================================
+OVERLAY
+========================================
+
+Keep the page behind the modal dimmed, but slightly reduce the darkness.
+
+Example:
+
+background:
+rgba(10,10,30,0.55);
+
+instead of a nearly black overlay.
+
+========================================
+DO NOT CHANGE
+========================================
+
+- Navigation bar
+- Hero section
+- Homepage
+- Carousel
+- Buttons outside authentication
+- Fonts
+- Existing spacing
+- Existing functionality
+
+Only modernize the Login and Sign Up modal styling to have a lighter frosted-glass look that matches the attached reference while preserving the current OnSpot purple branding.
