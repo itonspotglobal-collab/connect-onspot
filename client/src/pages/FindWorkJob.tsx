@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
+import { buildRateDisplay, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 
 const APPLY_URL = "https://api.leadconnectorhq.com/widget/form/36ljnIgIsA1xoBluXvSK?notrack=true";
@@ -477,7 +477,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <DollarSign className="h-4 w-4 text-[#474ead]" />
             <div>
-              <div className="text-[10px] text-white/40">Compensation (PHP)</div>
+              <div className="text-[10px] text-white/40">
+                Compensation ({getEffectiveCurrencyCode((job as any).budgetCurrency, (job as any).customCurrencyCode)})
+              </div>
               <div className="text-sm font-bold text-white">{pay}</div>
             </div>
           </div>
@@ -691,24 +693,18 @@ export default function FindWorkJob() {
   const numericId = parseInt(rawId, 10);
   const isStaticId = !isNaN(numericId) && numericId >= 1 && numericId <= 6 && String(numericId) === rawId;
 
-  // Only fetch from DB for UUID-style IDs
-  const { data: dbJob, isLoading, isError } = useQuery<Job>({
-    queryKey: ["/api/admin/jobs", rawId],
+  // Only fetch from DB for UUID-style IDs — use the public single-job endpoint
+  const { data: dbJob, isLoading, isError, error } = useQuery<Job>({
+    queryKey: ["/api/jobs", rawId],
     queryFn: async () => {
-      const res = await fetch("/api/admin/jobs");
-      if (!res.ok) throw new Error("Failed to fetch jobs");
-      const jobs: Job[] = await res.json();
-      const found = jobs.find((j) => {
-        if (j.id !== rawId) return false;
-        const approval = (j as any).approvalStatus;
-        return approval === "approved" || approval == null;
-      });
-      if (!found) throw new Error("Job not found");
-      return found;
+      const res = await fetch(`/api/jobs/${encodeURIComponent(rawId)}`);
+      if (res.status === 404) throw new Error("NOT_FOUND");
+      if (!res.ok) throw new Error("FETCH_ERROR");
+      return res.json();
     },
     enabled: !isStaticId && !!rawId,
     staleTime: 5 * 60 * 1000,
-    retry: 1,
+    retry: false,
   });
 
   // Track job view once the job details are available
@@ -743,6 +739,34 @@ export default function FindWorkJob() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-[#474ead]" />
         <p className="text-slate-500">Loading role details…</p>
+      </div>
+    );
+  }
+
+  // Error state — distinguish 404 from server/network failures
+  if (!isStaticId && isError) {
+    const is404 = (error as Error)?.message === "NOT_FOUND";
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-white/[0.06]">
+          <AlertCircle className="h-8 w-8 text-slate-400" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {is404 ? "Job not found" : "Unable to load this job right now"}
+          </h1>
+          <p className="mt-2 text-slate-500">
+            {is404
+              ? "This role may have been filled, removed, or is no longer public."
+              : "Please try again or browse all open roles."}
+          </p>
+        </div>
+        <Button
+          className="rounded-full bg-[#474ead] px-6 text-white"
+          onClick={() => navigate("/find-work/jobs")}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Find Work
+        </Button>
       </div>
     );
   }
@@ -836,27 +860,14 @@ export default function FindWorkJob() {
             ))}
           </div>
 
-          {/* CTA */}
+          {/* CTA — static roles use the shared APPLY_URL */}
           <div className="mt-8 flex flex-wrap gap-3">
-            {(job as any).applicationMethod === "built_in_form" ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
-                onClick={() => navigate(`/jobs/${job.id}/apply`)}
-              >
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : job.applyLink ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
-                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
-              >
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="rounded-full px-8">
-                Application link unavailable
-              </Button>
-            )}
+            <Button
+              className="rounded-full bg-[#474ead] px-8 py-2.5 text-white"
+              onClick={() => window.open(APPLY_URL, "_blank", "noopener,noreferrer")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </motion.div>

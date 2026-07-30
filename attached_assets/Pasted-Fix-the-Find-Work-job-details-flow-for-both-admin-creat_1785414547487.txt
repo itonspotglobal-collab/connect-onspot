@@ -1,0 +1,727 @@
+Fix the Find Work job-details flow for both admin-created jobs and client-submitted jobs.
+
+
+
+Current problems
+
+1. Clicking “View details” can crash `FindWorkJob.tsx` with:
+
+   `job is not defined`
+
+2. Opening a dynamic job URL can show:
+
+   `Job not found`
+
+3. Client Profile job submissions should remain pending until an admin approves them, then become visible in Find Work and load correctly on the details page.
+
+
+
+The immediate crash is at the static CTA because it uses `job` instead of `role`. The database-backed detail component already has valid `job` scope and uses the job-specific application method/link correctly. Files and areas to inspect
+
+- `client/src/pages/FindWorkJob.tsx`
+
+- Find Work job cards/list page
+
+- job details popup
+
+- Admin Find Work page
+
+- Client Profile job submission page
+
+- jobs API routes
+
+- shared jobs schema/types
+
+
+
+Part 1: Fix the `job is not defined` runtime error
+
+
+
+In `FindWorkJob.tsx`, there are two rendering paths:
+
+- database-backed job using `DbJobDetail`
+
+- legacy/static role using `role`
+
+
+
+The static-role CTA currently references `job`, even though only `role` exists in that branch.
+
+
+
+Replace the incorrect static-role CTA logic.
+
+
+
+Incorrect pattern:
+
+```tsx
+
+{(job as any).applicationMethod === "built_in_form" ? (
+
+  ...
+
+) : job.applyLink ? (
+
+  ...
+
+)}
+
+
+
+For the static role branch, use role instead:
+
+
+
+{role.applicationMethod === "built_in_form" ? (
+
+  <Button
+
+    onClick={() => navigate(`/jobs/${role.id}/apply`)}
+
+  >
+
+    Apply Now
+
+  </Button>
+
+) : role.applyLink ? (
+
+  <Button
+
+    onClick={() =>
+
+      window.open(role.applyLink, "_blank", "noopener,noreferrer")
+
+    }
+
+  >
+
+    Apply Now
+
+  </Button>
+
+) : (
+
+  <Button disabled>
+
+    Application link unavailable
+
+  </Button>
+
+)}
+
+
+
+If the static Role type does not include these properties, add:
+
+
+
+applicationMethod?: "external_link" | "built_in_form";
+
+applyLink?: string;
+
+
+
+Do not reference a variable that does not exist in the current render branch.
+
+
+
+Part 2: Keep DB and static render paths clearly separated
+
+
+
+Refactor the page so:
+
+
+
+DbJobDetail always receives and uses job
+
+the legacy/static fallback always uses role
+
+no JSX block mixes job and role
+
+
+
+Search the entire FindWorkJob.tsx file for:
+
+
+
+job.
+
+(job as any)
+
+
+
+Confirm every occurrence is inside DbJobDetail or another scope where job is defined.
+
+
+
+Part 3: Fix dynamic job loading
+
+
+
+The route appears to use:
+
+
+
+/find-work/job/:jobId
+
+
+
+Make sure FindWorkJob.tsx reads the same route parameter name configured in the router.
+
+
+
+Example:
+
+
+
+const params = useParams<{ jobId: string }>();
+
+const rawId = params.jobId;
+
+
+
+Verify the route definition uses :jobId, not :id or another name.
+
+
+
+If the router uses:
+
+
+
+<Route path="/find-work/job/:id" ... />
+
+
+
+then the component must use:
+
+
+
+useParams<{ id: string }>()
+
+
+
+Make the route and parameter names identical.
+
+
+
+Part 4: Use a public single-job endpoint
+
+
+
+Do not fetch every admin job from:
+
+
+
+/api/admin/jobs
+
+
+
+to render a public job details page.
+
+
+
+Create or use a public endpoint such as:
+
+
+
+GET /api/jobs/:id
+
+
+
+This endpoint should:
+
+
+
+return one approved/open public job by ID
+
+support jobs created by admins
+
+support jobs submitted by clients and later approved
+
+return 404 only when the job does not exist or is not publicly available
+
+
+
+Suggested frontend query:
+
+
+
+const {
+
+  data: dbJob,
+
+  isLoading,
+
+  isError,
+
+  error,
+
+} = useQuery<Job>({
+
+  queryKey: ["/api/jobs", rawId],
+
+  queryFn: async () => {
+
+    const res = await fetch(`/api/jobs/${encodeURIComponent(rawId)}`);
+
+
+
+    if (res.status === 404) {
+
+      throw new Error("Job not found");
+
+    }
+
+
+
+    if (!res.ok) {
+
+      throw new Error("Failed to load job");
+
+    }
+
+
+
+    return res.json();
+
+  },
+
+  enabled: Boolean(rawId) && !isStaticId,
+
+});
+
+
+
+Do not require an authenticated admin endpoint for a public job-details page.
+
+
+
+Part 5: Standardize job visibility rules
+
+
+
+Create one reusable public visibility rule.
+
+
+
+A job should be publicly visible only when:
+
+
+
+approval status is approved
+
+job status is open/published
+
+it has not been deleted
+
+
+
+Example helper:
+
+
+
+function isPublicJob(job: Job) {
+
+  const approved =
+
+    job.approvalStatus === "approved" ||
+
+    job.approvalStatus == null;
+
+
+
+  const open =
+
+    job.status === "open" ||
+
+    job.status === "published";
+
+
+
+  return approved && open && !job.deletedAt;
+
+}
+
+
+
+Adapt the exact values to the project schema.
+
+
+
+Use the same rule in:
+
+
+
+public jobs list
+
+Find Work live preview
+
+Find Work search/results
+
+single-job details endpoint
+
+
+
+Do not let the list page show a job that the details endpoint rejects.
+
+
+
+Part 6: Support Client Profile submissions
+
+
+
+Client Profile flow should be:
+
+
+
+Client submits a job
+
+Job is created with:
+
+approvalStatus = pending
+
+status = pending or draft
+
+source = client
+
+clientId = authenticated client ID
+
+It appears in Admin Find Work under Pending Approvals
+
+Admin approves it
+
+Approval updates:
+
+approvalStatus = approved
+
+status = open
+
+approvedAt = current timestamp
+
+approvedBy = admin ID
+
+postedAt = current timestamp
+
+The approved job then appears in:
+
+/find-work
+
+/find-work/jobs
+
+public job detail page
+
+
+
+A pending or declined client-submitted job must not appear publicly.
+
+
+
+Part 7: Preserve the same job ID
+
+
+
+When an admin approves a client-submitted job:
+
+
+
+update the existing job record
+
+do not create a duplicate job with a different ID
+
+keep the original job ID so links remain valid
+
+
+
+The public card link and detail lookup must use the same persisted ID.
+
+
+
+Part 8: Normalize API field mapping
+
+
+
+Ensure client-created and admin-created jobs return the same public API shape.
+
+
+
+The public job response should consistently include fields such as:
+
+
+
+{
+
+  id,
+
+  title,
+
+  company,
+
+  category,
+
+  contractType,
+
+  location,
+
+  status,
+
+  approvalStatus,
+
+  applicationMethod,
+
+  applyLink,
+
+  currency,
+
+  customCurrencyCode,
+
+  fixedMonthlyBudget,
+
+  rateRangeMin,
+
+  rateRangeMax,
+
+  description,
+
+  companyOverview,
+
+  roleMission,
+
+  keyResponsibilities,
+
+  skillsAndCompetencies,
+
+  responsibilities,
+
+  requirements,
+
+  culturalFit,
+
+  skillTags,
+
+  minimumInternetSpeed,
+
+  systemRequirements,
+
+  postedAt
+
+}
+
+
+
+Do not return different naming conventions for client and admin jobs.
+
+
+
+Part 9: Improve error states
+
+
+
+Handle loading, not-found, and server errors separately.
+
+
+
+Loading:
+
+
+
+Loading role details…
+
+
+
+404:
+
+
+
+Job not found
+
+This role may have been filled, removed, or is no longer public.
+
+
+
+Other API failure:
+
+
+
+Unable to load this job right now.
+
+Please try again.
+
+
+
+Do not show “Job not found” for all server/network errors.
+
+
+
+Part 10: Ensure View Details uses the correct route
+
+
+
+Every public job card should navigate using the actual persisted job ID:
+
+
+
+navigate(`/find-work/job/${job.id}`);
+
+
+
+Check:
+
+
+
+FindWork.tsx live preview
+
+FindWorkAllJobs.tsx
+
+FindWorkJobs.tsx
+
+job popup Show More button
+
+recommended jobs cards
+
+
+
+Do not use array indexes, temporary IDs, slugs unless the API resolves them, or mismatched route formats.
+
+
+
+Part 11: Verify currency changes did not break details
+
+
+
+The details page should use the same shared salary formatter as the listing page.
+
+
+
+Do not hardcode:
+
+
+
+Compensation (PHP)
+
+
+
+Instead show the actual currency:
+
+
+
+<div>
+
+  Compensation ({currencyCode})
+
+</div>
+
+
+
+Examples:
+
+
+
+PHP
+
+USD
+
+EUR
+
+custom three-letter currency
+
+
+
+Part 12: Testing checklist
+
+
+
+Test all of these:
+
+
+
+Admin-created job:
+
+
+
+visible in list after approval/open status
+
+View details opens successfully
+
+Apply Now works
+
+
+
+Client-submitted pending job:
+
+
+
+appears in admin pending approvals
+
+does not appear publicly
+
+
+
+Client-submitted approved job:
+
+
+
+same record ID is preserved
+
+appears publicly
+
+View details opens
+
+correct application method/link works
+
+
+
+Legacy static role:
+
+
+
+opens without job is not defined
+
+Apply Now works
+
+
+
+Invalid ID:
+
+
+
+shows real 404 state
+
+
+
+API/server failure:
+
+
+
+shows load-error state, not false 404
+
+
+
+Output expected
+
+Return updated code for:
+
+
+
+FindWorkJob.tsx
+
+public single-job API route
+
+route definition if mismatched
+
+public job visibility helper
+
+client submission approval flow
+
+public card/detail URL wiring
+
+shared API/type mapping
+
+
+
+Important:
+
+Do not fix this by simply removing approval checks. Client-submitted jobs must only become public after admin approval.

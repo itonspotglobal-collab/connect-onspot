@@ -4521,9 +4521,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/jobs/:id", async (req, res) => {
     try {
-      // Use enhanced method that includes skills array
       const jobWithSkills = await storage.getJobWithSkills(req.params.id);
       if (!jobWithSkills) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      // Only publicly expose approved + open/published jobs
+      const approval = (jobWithSkills as any).approvalStatus;
+      const isApproved = approval === "approved" || approval == null;
+      const isOpen = jobWithSkills.status === "open" || jobWithSkills.status === "published";
+      if (!isApproved || !isOpen) {
         return res.status(404).json({ error: "Job not found" });
       }
       res.json(jobWithSkills);
@@ -4752,6 +4758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status = 'open',
           approved_by = $1,
           approved_at = NOW(),
+          posted_at = COALESCE(posted_at, NOW()),
           rejected_by = NULL,
           rejected_at = NULL,
           rejection_reason = NULL,
