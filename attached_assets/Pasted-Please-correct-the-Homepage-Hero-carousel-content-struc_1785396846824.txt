@@ -1,0 +1,411 @@
+Please correct the Homepage Hero carousel content structure.
+
+
+
+IMPORTANT:
+
+
+
+- Attached is the layout structure I want. 
+
+- Match only the content hierarchy and placement from the reference.
+
+- Do NOT copy the reference font style, colors, font sizes, or exact dimensions.
+
+- Keep the website’s existing fonts, colors, gradients, button styling, and responsive design.
+
+
+
+CURRENT PROBLEM
+
+
+
+The current Hero only shows:
+
+
+
+Work Without Limits
+
+For Talent / For Companies
+
+One Platform. Endless Opportunity.
+
+Built for the Future of Work.
+
+Buttons
+
+
+
+This is incorrect because the rotating slide-specific headline and description were removed.
+
+
+
+REQUIRED CONTENT ORDER
+
+
+
+The Hero should display content in this exact order:
+
+
+
+1. Static main heading
+
+   “Work Without Limits”
+
+
+
+2. Static supporting line
+
+   “One Platform. Endless Opportunity. Built for the Future of Work.”
+
+
+
+3. Rotating audience badge
+
+   “FOR COMPANIES”
+
+   or
+
+   “FOR TALENT”
+
+
+
+4. Rotating slide headline
+
+   Example:
+
+   “Vetted talent, placed in 72 hours”
+
+   or
+
+   “Work from anywhere, for anyone”
+
+
+
+5. Rotating slide description
+
+   Example:
+
+   “Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.”
+
+
+
+6. Rotating CTA buttons
+
+
+
+7. Existing feature cards
+
+
+
+The structure should visually resemble:
+
+
+
+Work Without Limits
+
+
+
+One Platform. Endless Opportunity. Built for the Future of Work.
+
+
+
+[FOR COMPANIES]
+
+
+
+Vetted talent, placed in 72 hours
+
+
+
+Skip the months-long hiring cycle...
+
+
+
+[Hire Talent] [See how it works]
+
+
+
+[Feature cards]
+
+
+
+STATIC CONTENT
+
+
+
+Keep these visible on every slide:
+
+
+
+Main heading:
+
+“Work Without Limits”
+
+
+
+Supporting line:
+
+“One Platform. Endless Opportunity. Built for the Future of Work.”
+
+
+
+Display the supporting message as one line or a responsive wrapping sentence beneath the main heading.
+
+
+
+Do not split it into two large separate headings unless required on mobile.
+
+
+
+ROTATING CONTENT
+
+
+
+Restore the slide-specific rotating content from the carousel data:
+
+
+
+Client slide 1:
+
+- Badge: FOR COMPANIES
+
+- Headline: Vetted talent, placed in 72 hours
+
+- Description: Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.
+
+- Primary CTA: Hire Talent
+
+- Secondary CTA: See how it works
+
+
+
+Talent slide 1:
+
+- Badge: FOR TALENT
+
+- Headline: Work from anywhere, for anyone
+
+- Description: Land long-term roles with global companies — no commute, no borders. Just meaningful work on your terms, wherever you are.
+
+- Primary CTA: Find Work
+
+- Secondary CTA: Browse roles
+
+
+
+Client slide 2:
+
+- Badge: FOR COMPANIES
+
+- Headline: Dedicated teams, up to 70% less
+
+- Description: Your own non-shared remote team with payroll, compliance, and HR fully handled.
+
+- Primary CTA: Hire Talent
+
+- Secondary CTA: Estimate Savings
+
+
+
+Talent slide 2:
+
+- Badge: FOR TALENT
+
+- Headline: Grow with companies that invest in you
+
+- Description: Find long-term opportunities with global companies that support meaningful career growth.
+
+- Primary CTA: Find Work
+
+- Secondary CTA: Browse roles
+
+
+
+ROUTING
+
+
+
+Use the existing project routes:
+
+
+
+- Hire Talent → existing Hire Talent page
+
+- Find Work → existing Find Work page
+
+- Browse roles → existing Find Work page or jobs section
+
+- Estimate Savings → existing Value Calculator page
+
+- See how it works → existing Hire Talent page or matching process section
+
+
+
+Inspect the existing router and reuse the correct paths.
+
+Do not create duplicate pages.
+
+
+
+STYLING RULES
+
+
+
+Do not copy the reference design’s:
+
+- Serif font
+
+- Text sizes
+
+- Exact colors
+
+- Exact button dimensions
+
+- Exact spacing values
+
+
+
+Instead:
+
+- Use the current OnSpot font family.
+
+- Use the current white and lavender heading treatment.
+
+- Use the existing body-text color.
+
+- Use the existing primary gradient button.
+
+- Use the existing outlined secondary button.
+
+- Keep the current audience badge colors.
+
+- Match new slide text to the existing site’s visual system.
+
+
+
+LAYOUT ADJUSTMENTS
+
+
+
+- Keep the entire content left-aligned.
+
+- Place the static supporting line directly below “Work Without Limits”.
+
+- Add comfortable spacing before the audience badge.
+
+- Place the rotating headline directly below the badge.
+
+- Place the rotating description below the rotating headline.
+
+- Place buttons below the description.
+
+- Keep the feature cards beneath the buttons.
+
+- Prevent content from becoming too tall on smaller laptops.
+
+
+
+Recommended hierarchy:
+
+- Main heading: largest
+
+- Static supporting line: medium
+
+- Slide headline: strong but smaller than main heading
+
+- Slide description: normal body text
+
+- Buttons: existing sizes
+
+
+
+RESPONSIVENESS
+
+
+
+Desktop:
+
+- Main heading stays on one line.
+
+- Static supporting line stays on one line where space permits.
+
+- Rotating headline and description remain fully visible.
+
+- Buttons stay side by side.
+
+- Feature cards remain visible.
+
+
+
+Laptop:
+
+- Reduce vertical gaps and type sizes proportionally.
+
+- Keep the full carousel content visible without browser zooming.
+
+- Avoid pushing the feature cards below the viewport.
+
+
+
+Mobile:
+
+- Allow the main heading and static supporting line to wrap.
+
+- Stack CTA buttons.
+
+- Keep the rotating headline and description readable.
+
+- Stack feature cards if required.
+
+
+
+DO NOT CHANGE
+
+
+
+Do not modify:
+
+- Navbar
+
+- Navbar logo
+
+- Login and signup behavior
+
+- Existing color palette
+
+- Existing font family
+
+- Feature-card content
+
+- Carousel timing
+
+- Background-image transitions
+
+- Other homepage sections
+
+
+
+ACCEPTANCE CRITERIA
+
+
+
+✓ “Work Without Limits” remains static.
+
+✓ “One Platform. Endless Opportunity. Built for the Future of Work.” remains static beneath it.
+
+✓ The audience badge rotates.
+
+✓ The slide-specific headline is restored.
+
+✓ The slide-specific description is restored.
+
+✓ CTA labels and destinations change by slide.
+
+✓ Existing fonts, colors, and button styles are preserved.
+
+✓ The layout follows the reference hierarchy without copying its typography or sizing.
+
+✓ All content fits on laptop, tablet, and mobile screens.
+
+✓ No TypeScript, routing, runtime, or console errors.

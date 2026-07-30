@@ -189,11 +189,11 @@ export default function Home() {
           <div className="flex-1 flex items-start pt-10 sm:pt-16">
             <div className="w-full max-w-[860px]">
 
-              {/* ── Static brand headline ── */}
+              {/* 1 ── Static main heading ── */}
               <div className="hero-fade-up">
                 <h1
                   className="font-bold tracking-tight leading-[0.97] text-white sm:whitespace-nowrap"
-                  style={{ fontSize: "clamp(3.2rem, 4.4vw, 5.2rem)" }}
+                  style={{ fontSize: "clamp(2.8rem, 4vw, 5rem)" }}
                 >
                   Work{" "}
                   <span className="bg-gradient-to-r from-violet-300 via-blue-200 to-violet-300 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(167,139,250,0.45)]">
@@ -202,94 +202,113 @@ export default function Home() {
                 </h1>
               </div>
 
-              {/* ── Rotating audience pill ── */}
+              {/* 2 ── Static supporting line ── */}
+              <div className="hero-fade-up-delay mt-3 sm:mt-4">
+                <p
+                  className="font-semibold text-white/90 leading-snug"
+                  style={{ fontSize: "clamp(1rem, 1.6vw, 1.5rem)" }}
+                >
+                  One Platform. Endless Opportunity. Built for the Future of Work.
+                </p>
+              </div>
+
+              {/* 3–6 ── Rotating block: badge → headline → description → CTAs ── */}
               <div
-                key={`pill-${currentSlide}`}
-                className="mt-5 sm:mt-6"
+                key={`slide-${currentSlide}`}
                 style={{
                   animation: reducedMotion
                     ? "none"
-                    : "heroSlideContentIn 0.5s ease forwards",
+                    : "heroSlideContentIn 0.55s ease forwards",
                   opacity: reducedMotion ? 1 : 0,
                 }}
               >
-                <span
-                  className="inline-flex items-center gap-2 rounded-full font-bold uppercase tracking-widest"
+                {/* 3 — Audience badge */}
+                <div className="mt-5 sm:mt-6">
+                  <span
+                    className="inline-flex items-center gap-2 rounded-full font-bold uppercase tracking-widest"
+                    style={{
+                      fontSize: "clamp(0.6rem, 0.75vw, 0.72rem)",
+                      padding: "5px 13px",
+                      ...pillStyle,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: "50%",
+                        background: dotColor,
+                        flexShrink: 0,
+                        display: "inline-block",
+                      }}
+                    />
+                    {activeSlide.label}
+                  </span>
+                </div>
+
+                {/* 4 — Slide headline */}
+                <h2
+                  className="font-bold text-white leading-tight mt-3"
                   style={{
-                    fontSize: "clamp(0.65rem, 0.8vw, 0.75rem)",
-                    padding: "6px 14px",
-                    ...pillStyle,
+                    fontSize: "clamp(1.4rem, 2.4vw, 2.4rem)",
+                    letterSpacing: "-0.02em",
+                    maxWidth: "680px",
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: dotColor,
-                      flexShrink: 0,
-                      display: "inline-block",
-                    }}
-                  />
-                  {activeSlide.label}
-                </span>
-              </div>
+                  {activeSlide.title}
+                </h2>
 
-              {/* ── Static supporting copy — always visible ── */}
-              <div className="hero-fade-up-delay mt-4 sm:mt-5">
+                {/* 5 — Slide description */}
                 <p
-                  className="font-bold text-white leading-snug"
-                  style={{ fontSize: "clamp(1.2rem, 2vw, 1.9rem)" }}
+                  className="text-white/65 mt-2 leading-relaxed"
+                  style={{
+                    fontSize: "clamp(0.85rem, 1vw, 1rem)",
+                    maxWidth: "540px",
+                  }}
                 >
-                  One Platform. Endless Opportunity.
+                  {activeSlide.description}
                 </p>
-                <p
-                  className="font-bold text-white/80 leading-snug mt-1"
-                  style={{ fontSize: "clamp(1.1rem, 1.7vw, 1.65rem)" }}
-                >
-                  Built for the Future of Work.
-                </p>
-              </div>
 
-              {/* ── Rotating CTAs ── */}
-              <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row gap-4 sm:gap-5 flex-wrap">
-                {/* Primary */}
-                <Link href={activeSlide.primaryRoute}>
-                  <button
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
-                      boxShadow:
-                        "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding:
-                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
-                    }}
-                  >
-                    {activeSlide.audience === "client" ? (
-                      <Users className="w-5 h-5 flex-shrink-0" />
-                    ) : (
-                      <Briefcase className="w-5 h-5 flex-shrink-0" />
-                    )}
-                    {activeSlide.primaryLabel}
-                  </button>
-                </Link>
+                {/* 6 — Rotating CTAs */}
+                <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row gap-4 sm:gap-5 flex-wrap">
+                  {/* Primary */}
+                  <Link href={activeSlide.primaryRoute}>
+                    <button
+                      className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 55%, #7F3DF4 100%)",
+                        boxShadow:
+                          "0 8px 28px rgba(58,58,248,0.38), inset 0 1px 0 rgba(255,255,255,0.2)",
+                        fontSize: "clamp(0.88rem, 1vw, 1.05rem)",
+                        padding:
+                          "clamp(12px, 1.3vw, 16px) clamp(22px, 2.2vw, 32px)",
+                      }}
+                    >
+                      {activeSlide.audience === "client" ? (
+                        <Users className="w-5 h-5 flex-shrink-0" />
+                      ) : (
+                        <Briefcase className="w-5 h-5 flex-shrink-0" />
+                      )}
+                      {activeSlide.primaryLabel}
+                    </button>
+                  </Link>
 
-                {/* Secondary */}
-                <Link href={activeSlide.secondaryRoute}>
-                  <button
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
-                    style={{
-                      fontSize: "clamp(0.9rem, 1.1vw, 1.1rem)",
-                      padding:
-                        "clamp(13px, 1.5vw, 18px) clamp(24px, 2.5vw, 36px)",
-                    }}
-                  >
-                    {activeSlide.secondaryLabel}
-                  </button>
-                </Link>
+                  {/* Secondary */}
+                  <Link href={activeSlide.secondaryRoute}>
+                    <button
+                      className="w-full sm:w-auto flex items-center justify-center gap-3 rounded-xl font-semibold text-white/90 border border-white/30 bg-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/50 hover:scale-[1.02]"
+                      style={{
+                        fontSize: "clamp(0.88rem, 1vw, 1.05rem)",
+                        padding:
+                          "clamp(12px, 1.3vw, 16px) clamp(22px, 2.2vw, 32px)",
+                      }}
+                    >
+                      {activeSlide.secondaryLabel}
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
