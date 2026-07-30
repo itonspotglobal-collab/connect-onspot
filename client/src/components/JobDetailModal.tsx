@@ -86,6 +86,7 @@ export interface JobDetailModalProps {
     budget?: string | null;
     hourlyRateMin?: string | null;
     hourlyRateMax?: string | null;
+    salaryDisplay?: string | null;
     responsibilities?: string[] | null;
     requirements?: string[] | null;
     skillTags?: string[] | null;
@@ -125,12 +126,10 @@ export function JobDetailModal({
     return `${months} month${months === 1 ? "" : "s"} ago`;
   };
 
-  const rateDisplay =
-    job.hourlyRateMin && job.hourlyRateMax
-      ? `₱${job.hourlyRateMin}–${job.hourlyRateMax}/month`
-      : job.budget
-        ? `₱${job.budget}`
-        : "Rate TBD";
+  const rateDisplay = (job as any).salaryDisplay?.trim()
+    || (job.hourlyRateMin && job.hourlyRateMax
+        ? `₱${job.hourlyRateMin}–${job.hourlyRateMax}/month`
+        : job.budget ? `₱${job.budget}` : "Rate TBD");
 
   const rateLabel = job.contractType === "fixed" ? "Fixed price" : "Monthly rate";
   const skills = job.skillTags || [];

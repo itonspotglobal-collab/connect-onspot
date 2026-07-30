@@ -65,9 +65,7 @@ export const defaultFormData = {
   experienceLevel: "entry",
   jobSummary: "",
   description: "",
-  budget: "",
-  hourlyRateMin: "",
-  hourlyRateMax: "",
+  salaryDisplay: "",
   duration: "",
   status: "open",
   responsibilities: "",
@@ -116,9 +114,7 @@ export function jobToFormData(job: Job): JobFormData {
     experienceLevel: job.experienceLevel || "entry",
     jobSummary: (job as any).jobSummary || "",
     description: job.description || "",
-    budget: job.budget || "",
-    hourlyRateMin: job.hourlyRateMin || "",
-    hourlyRateMax: job.hourlyRateMax || "",
+    salaryDisplay: (job as any).salaryDisplay || "",
     duration: job.duration || "",
     status: job.status || "open",
     responsibilities: toQuillHtml(job.responsibilities as string[]),
@@ -236,9 +232,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
   const previewBadges = useMemo(
     () =>
       getJobBadges({
-        budget: formData.budget || formData.hourlyRateMax,
-        hourlyRateMin: formData.hourlyRateMin,
-        hourlyRateMax: formData.hourlyRateMax,
+        salaryDisplay: formData.salaryDisplay,
+        budgetCurrency: formData.currency,
         proposalCount: job?.proposalCount ?? 0,
         title: formData.title,
         location: formData.location,
@@ -271,10 +266,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       if (!code) next.customCurrencyCode = "Currency code is required when 'Other' is selected";
       else if (!/^[A-Z]{3}$/.test(code)) next.customCurrencyCode = "Enter exactly 3 letters (e.g. NZD, AED, CHF)";
     }
-    if (formData.hourlyRateMin && formData.hourlyRateMax) {
-      if (Number(formData.hourlyRateMin) > Number(formData.hourlyRateMax))
-        next.hourlyRateMax = "Max must be greater than or equal to Min";
-    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -302,9 +293,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     };
 
     if (!isEditing) payload.clientId = "admin-system";
-    if (formData.budget) payload.budget = formData.budget;
-    if (formData.hourlyRateMin) payload.hourlyRateMin = formData.hourlyRateMin;
-    if (formData.hourlyRateMax) payload.hourlyRateMax = formData.hourlyRateMax;
+    payload.salaryDisplay = formData.salaryDisplay.trim() || null;
     if (formData.duration) payload.duration = formData.duration;
 
     payload.responsibilities = !isEmptyQuill(formData.responsibilities)
@@ -600,9 +589,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               Salary / Rate
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              Shown on the dedicated role page and preview modal only — not on
-              the job card summary. Set a fixed budget <em>or</em> a min/max
-              range.
+              Enter exactly what you want applicants to see — e.g.{" "}
+              <em>$800/month</em>, <em>₱30,000 – ₱50,000/month</em>,{" "}
+              <em>Competitive</em>, or <em>Rate TBD</em>. Leave blank to show "Rate TBD".
             </p>
 
             {/* Currency selector */}
@@ -652,42 +641,19 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               )}
             </div>
 
-            {/* Amount fields with dynamic currency prefix */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(
-                [
-                  { id: "modal-budget", field: "budget", label: "Fixed Monthly Budget", placeholder: "e.g. 40000" },
-                  { id: "modal-rateMin", field: "hourlyRateMin", label: "Rate Range Min", placeholder: "e.g. 30000" },
-                  { id: "modal-rateMax", field: "hourlyRateMax", label: "Rate Range Max", placeholder: "e.g. 50000" },
-                ] as const
-              ).map(({ id, field, label, placeholder }) => {
-                const sym = getCurrencySymbol(formData.currency, formData.customCurrencyCode);
-                const isWide = sym.length > 1;
-                return (
-                  <div className="space-y-2" key={field}>
-                    <Label htmlFor={id}>{label}</Label>
-                    <div className="relative">
-                      <span
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm pointer-events-none"
-                        style={{ fontSize: isWide ? "11px" : undefined }}
-                      >
-                        {sym}
-                      </span>
-                      <Input
-                        id={id}
-                        type="number"
-                        className={isWide ? "pl-9" : "pl-7"}
-                        value={formData[field]}
-                        onChange={(e) => updateField(field, e.target.value)}
-                        placeholder={placeholder}
-                      />
-                    </div>
-                    {field === "hourlyRateMax" && errors.hourlyRateMax && (
-                      <p className="text-xs text-red-500">{errors.hourlyRateMax}</p>
-                    )}
-                  </div>
-                );
-              })}
+            {/* Single salary display field */}
+            <div className="space-y-2">
+              <Label htmlFor="modal-salary-display">Salary</Label>
+              <Input
+                id="modal-salary-display"
+                type="text"
+                value={formData.salaryDisplay}
+                onChange={(e) => updateField("salaryDisplay", e.target.value)}
+                placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}800/month or Competitive`}
+              />
+              <p className="text-xs text-muted-foreground">
+                This exact text appears on the public job listing. Leave blank for "Rate TBD".
+              </p>
             </div>
 
             {previewBadges.length > 0 && (

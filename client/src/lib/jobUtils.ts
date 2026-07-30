@@ -82,14 +82,21 @@ export function formatJobCurrency(
   }
 }
 
-/** Formats a job's full salary/rate display string */
+/** Formats a job's full salary/rate display string.
+ *  Prefers the free-text `salaryDisplay` field; falls back to computing
+ *  from the legacy numeric fields for backward compatibility. */
 export function formatJobSalary(job: {
+  salaryDisplay?: string | null;
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
 }): string {
+  // 1. Free-text display wins
+  if (job.salaryDisplay?.trim()) return job.salaryDisplay.trim();
+
+  // 2. Legacy numeric fallback (old jobs before salaryDisplay was added)
   const currency = job.budgetCurrency || "PHP";
   const customCode = job.customCurrencyCode;
 
@@ -114,6 +121,7 @@ export type JobBadge = {
 };
 
 export function getJobBadges(job: {
+  salaryDisplay?: string | null;
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;
@@ -129,9 +137,14 @@ export function getJobBadges(job: {
   // Top Paying: only meaningful for PHP jobs (₱50,000+)
   const currency = (job.budgetCurrency || "PHP").toUpperCase();
   if (currency === "PHP") {
-    const budget = parseFloat(
-      job.budget || job.hourlyRateMax || job.hourlyRateMin || "0"
-    );
+    // Try salaryDisplay first (extract first numeric run), then fall back to legacy fields
+    let budget = 0;
+    if (job.salaryDisplay) {
+      const match = job.salaryDisplay.replace(/[,_]/g, "").match(/[\d]+/);
+      budget = match ? parseFloat(match[0]) : 0;
+    } else {
+      budget = parseFloat(job.budget || job.hourlyRateMax || job.hourlyRateMin || "0");
+    }
     if (budget >= 50000) {
       badges.push({
         key: "top-paying",
@@ -289,10 +302,11 @@ export function formatExperienceLevel(level: string): string {
 }
 
 /**
- * Backward-compatible rate display — delegates to formatJobSalary.
- * Kept for call-sites that only pass the 3 numeric fields.
+ * Primary rate display — uses salaryDisplay first, falls back to
+ * legacy numeric fields for backward compatibility.
  */
 export function buildRateDisplay(job: {
+  salaryDisplay?: string | null;
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;

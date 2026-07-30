@@ -501,11 +501,18 @@ export default function FindWorkAllJobs() {
 
       const salaryPass = (() => {
         if (salary === "Any pay") return true;
-        // PHP salary thresholds only apply to PHP-currency jobs;
-        // non-PHP jobs always pass to avoid comparing ₱50,000 with $1,000.
+        // PHP salary thresholds only apply to PHP-currency jobs
         const jobCurrency = ((job as any).budgetCurrency || "PHP").toUpperCase();
         if (jobCurrency !== "PHP") return true;
-        const max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
+        // Parse a number from salaryDisplay first, fall back to legacy numeric fields
+        const display: string = (job as any).salaryDisplay || "";
+        let max: number;
+        if (display) {
+          const match = display.replace(/[,_]/g, "").match(/[\d]+/);
+          max = match ? parseFloat(match[0]) : 0;
+        } else {
+          max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
+        }
         if (salary === "₱30,000+") return max >= 30000;
         if (salary === "₱45,000+") return max >= 45000;
         if (salary === "₱60,000+") return max >= 60000;

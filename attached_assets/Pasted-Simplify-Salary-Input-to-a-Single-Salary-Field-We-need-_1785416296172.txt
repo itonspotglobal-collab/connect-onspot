@@ -1,0 +1,258 @@
+Simplify Salary Input to a Single Salary Field
+
+We need to simplify how salary is entered for job postings.
+
+Goal
+
+Replace the three salary inputs:
+
+Fixed Monthly Budget
+Rate Range Min
+Rate Range Max
+
+with one single Salary field.
+
+The admin should only enter exactly what they want applicants to see.
+
+Examples:
+
+₱40,000/month
+₱40,000 - ₱60,000/month
+$800/month
+$18/hour
+$2,500 - $3,500/month
+Competitive
+Rate TBD
+Negotiable
+
+This field should work together with the existing Currency selector.
+
+1. Update the Job Form
+
+In both:
+
+Add New Job
+Edit Job
+
+Remove these inputs:
+
+Fixed Monthly Budget
+Rate Range Min
+Rate Range Max
+
+Replace them with one input.
+
+Example:
+
+Salary
+------------------------------------------------
+| $800 - $1,200/month                          |
+------------------------------------------------
+
+This is exactly how the salary will appear on the public job page.
+
+Use a normal text input instead of a numeric input.
+
+Field name:
+
+salary
+
+or
+
+salaryDisplay
+
+depending on the existing schema naming.
+
+2. Keep Currency Dropdown
+
+Do NOT remove the Currency dropdown.
+
+The Currency dropdown still exists.
+
+Example:
+
+Currency
+[ USD ▼ ]
+
+Salary
+$800 - $1,200/month
+
+or
+
+Currency
+[ PHP ▼ ]
+
+Salary
+40,000 - 60,000/month
+
+The frontend should prepend the currency symbol if appropriate.
+
+3. Database
+
+Replace:
+
+fixedMonthlyBudget
+rateRangeMin
+rateRangeMax
+
+with one field:
+
+salaryDisplay
+TEXT
+
+Migration:
+
+If an existing job has:
+
+fixedMonthlyBudget = 40000
+
+convert to
+
+salaryDisplay = "40,000/month"
+
+If a job has:
+
+rateRangeMin = 30000
+rateRangeMax = 50000
+
+convert to
+
+salaryDisplay = "30,000 - 50,000/month"
+
+If both exist:
+
+Prefer the range.
+
+Do NOT lose existing salary data.
+
+4. API
+
+Update:
+
+POST
+
+PUT
+
+PATCH
+
+GET
+
+to use
+
+salaryDisplay
+
+instead of:
+
+fixedMonthlyBudget
+rateRangeMin
+rateRangeMax
+5. Public Find Work Cards
+
+Anywhere salary is shown, display:
+
+Currency Symbol + salaryDisplay
+
+Examples:
+
+₱40,000/month
+₱30,000 - ₱50,000/month
+$900/month
+Competitive
+
+No formatting logic should rebuild ranges anymore.
+
+Simply display what is stored.
+
+6. Job Details Page
+
+Replace every usage of:
+
+buildRateDisplay(...)
+
+or
+
+fixedMonthlyBudget
+rateRangeMin
+rateRangeMax
+
+with
+
+salaryDisplay
+
+The detail page should display exactly what the admin entered.
+
+7. Job Cards
+
+Update:
+
+FindWork.tsx
+FindWorkAllJobs.tsx
+FindWorkJobs.tsx
+
+to use
+
+salaryDisplay
+
+instead of rebuilding salary strings.
+
+8. Admin Preview
+
+The Preview Public Page should also display:
+
+salaryDisplay
+
+exactly as entered.
+
+9. Validation
+
+Salary is optional.
+
+If blank:
+
+Display:
+
+Rate TBD
+10. Backwards Compatibility
+
+Existing jobs must continue working.
+
+When loading an older job:
+
+If
+
+salaryDisplay
+
+is empty,
+
+automatically generate it from:
+
+fixedMonthlyBudget
+
+or
+
+rateRangeMin + rateRangeMax
+
+so old jobs continue displaying correctly without manual edits.
+
+Expected Result
+
+The Add/Edit Job form becomes much cleaner:
+
+Currency
+[ USD ▼ ]
+
+Salary
+____________________________________
+$800 - $1,200/month
+
+☑ Urgently Hiring
+
+instead of:
+
+Fixed Monthly Budget
+
+Rate Min
+
+Rate Max
+
+This keeps salary management simple, supports any currency, allows flexible formats (monthly, hourly, annual, negotiable, etc.), and remains backward compatible with all existing job postings.

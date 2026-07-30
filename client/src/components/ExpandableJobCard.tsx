@@ -65,6 +65,7 @@ export interface JobShape {
   budget?: string | null;
   hourlyRateMin?: string | null;
   hourlyRateMax?: string | null;
+  salaryDisplay?: string | null;
   responsibilities?: string[] | null;
   requirements?: string[] | null;
   skillTags?: string[] | null;
