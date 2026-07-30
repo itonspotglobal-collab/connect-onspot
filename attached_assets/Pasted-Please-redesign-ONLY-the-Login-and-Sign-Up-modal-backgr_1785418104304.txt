@@ -1,0 +1,145 @@
+Please redesign ONLY the Login and Sign Up modal background.
+
+IMPORTANT:
+Do NOT change the layout, spacing, typography, animations, or functionality.
+Only change the modal's visual background.
+
+==================================================
+REMOVE THE GRID / PATTERN
+==================================================
+
+The modal currently has visible vertical and horizontal grid lines.
+
+Remove ALL of them.
+
+Specifically remove any:
+
+- background-image
+- linear-gradient used for grid lines
+- repeating-linear-gradient
+- radial-grid pattern
+- CSS pseudo-elements (::before / ::after) used to create the grid
+- overlay elements used only for the grid effect
+
+The modal background should be COMPLETELY PLAIN.
+
+==================================================
+BACKGROUND COLOR
+==================================================
+
+Replace the current dark purple background with a smooth light frosted color.
+
+Target appearance:
+
+- Soft bluish white
+- Very light gray-blue
+- Slight lavender tint
+- Premium glass look
+
+Use something close to:
+
+background: rgba(236, 240, 250, 0.92);
+
+or
+
+background: rgba(242, 245, 252, 0.90);
+
+or
+
+#EEF2FA with 90–95% opacity.
+
+No gradients.
+No patterns.
+No texture.
+
+The background should be one uniform color.
+
+==================================================
+BACKDROP
+==================================================
+
+Keep the frosted glass blur.
+
+Example:
+
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+
+==================================================
+BORDER
+==================================================
+
+Use a subtle border.
+
+border:
+
+1px solid rgba(255,255,255,0.45);
+
+==================================================
+SHADOW
+==================================================
+
+Use a soft floating shadow.
+
+Example:
+
+box-shadow:
+0 20px 60px rgba(0,0,0,.20);
+
+==================================================
+INPUTS
+==================================================
+
+Inputs should remain slightly darker than the modal.
+
+Example:
+
+background:
+
+rgba(120,130,170,.18);
+
+border:
+
+1px solid rgba(255,255,255,.20);
+
+==================================================
+TEXT
+==================================================
+
+Because the modal is now much lighter:
+
+Title:
+#1B1B2E
+
+Labels:
+#2D3152
+
+Body:
+#4C5270
+
+Placeholder:
+#7B819C
+
+==================================================
+BUTTONS
+==================================================
+
+Keep the existing purple gradient buttons.
+
+No changes.
+
+==================================================
+DO NOT CHANGE
+==================================================
+
+- Homepage
+- Navigation
+- Hero section
+- Carousel
+- Modal size
+- Modal layout
+- Typography
+- Form fields
+- Animations
+
+Only remove the grid pattern and replace the modal background with a clean, plain, light frosted color similar to the attached reference image.
