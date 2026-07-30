@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck } from "lucide-react";
 import type { Job } from "@shared/schema";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -17,8 +18,13 @@ export default function JobApplyPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const isTalent = user?.role === "talent";
+  const isNonTalentUser = !!user && !isTalent; // client or admin
 
   const [isPending, setIsPending] = useState(false);
+  const [emailMismatchError, setEmailMismatchError] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -28,6 +34,18 @@ export default function JobApplyPage() {
     coverLetter: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+
+  // Pre-fill from authenticated talent account
+  useEffect(() => {
+    if (isTalent && user) {
+      setForm((prev) => ({
+        ...prev,
+        firstName: user.firstName || prev.firstName,
+        lastName: user.lastName || prev.lastName,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [isTalent, user]);
 
   const { data: job, isLoading, isError } = useQuery<Job>({
     queryKey: ["/api/jobs", jobId],
@@ -41,6 +59,7 @@ export default function JobApplyPage() {
   const setField = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
     if (errors[k]) setErrors((p) => ({ ...p, [k]: undefined }));
+    if (k === "email") setEmailMismatchError(false);
   };
 
   const validate = () => {
@@ -59,10 +78,16 @@ export default function JobApplyPage() {
     if (!validate()) return;
 
     setIsPending(true);
+    setEmailMismatchError(false);
     try {
+      // Include the JWT token so the server can detect an authenticated talent
+      const token = localStorage.getItem("onspot_jwt_token");
       const res = await fetch(`/api/jobs/${jobId}/apply`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
@@ -74,18 +99,33 @@ export default function JobApplyPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Submission failed" }));
-        throw new Error(err.error || "Submission failed");
+        if (err.error === "email_mismatch") {
+          setEmailMismatchError(true);
+          return;
+        }
+        throw new Error(err.message || err.error || "Submission failed");
       }
 
       const data = await res.json();
-      // Redirect to talent signup with the continuation token
-      navigate(`/talent/signup?applicationToken=${encodeURIComponent(data.continuationToken)}`);
+
+      if (data.accountAction === "already_authenticated") {
+        toast({
+          title: "Application submitted! 🎉",
+          description: "Your application has been linked to your Talent account.",
+        });
+        navigate("/find-work/jobs");
+      } else {
+        // Unauthenticated flow — redirect to signup/login with continuation token
+        navigate(`/talent/signup?applicationToken=${encodeURIComponent(data.continuationToken)}`);
+      }
     } catch (err: any) {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     } finally {
       setIsPending(false);
     }
   };
+
+  // ── Loading / error / guard screens ──────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -180,14 +220,63 @@ export default function JobApplyPage() {
           </div>
         </div>
 
+        {/* Non-talent role warning */}
+        {isNonTalentUser && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700/40 dark:bg-amber-900/20">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 text-sm text-amber-800 dark:text-amber-300">
+              <p className="font-medium">You are signed in with a non-Talent account.</p>
+              <p className="mt-0.5">Sign out or use a Talent account to apply.</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300"
+              onClick={() => navigate("/api/logout")}
+            >
+              Sign Out
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardContent className="pt-6">
             <h2 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">
               Your Application
             </h2>
-            <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-              After submitting you'll create your Talent account to track your application.
-            </p>
+
+            {/* Context-aware subtitle */}
+            {isTalent ? (
+              <div className="mb-6 flex items-center gap-2 rounded-md bg-[#474ead]/8 px-3 py-2 text-sm text-[#474ead] dark:bg-[#474ead]/20 dark:text-indigo-300">
+                <UserCheck className="h-4 w-4 shrink-0" />
+                You are applying with your OnSpot Talent account.
+              </div>
+            ) : (
+              <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+                After submitting you'll create your Talent account to track your application.
+              </p>
+            )}
+
+            {/* Email mismatch error banner */}
+            {emailMismatchError && (
+              <div className="mb-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-700/40 dark:bg-red-900/20">
+                <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                <div className="flex-1 text-sm text-red-700 dark:text-red-300">
+                  <p className="font-medium">Email address mismatch.</p>
+                  <p className="mt-0.5">You are signed in with a different email address. Sign out to apply using another account.</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-red-300 text-red-700 hover:bg-red-100"
+                  onClick={() => navigate("/api/logout")}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* First + Last Name */}
@@ -233,6 +322,9 @@ export default function JobApplyPage() {
                     onChange={(e) => setField("email", e.target.value)}
                     placeholder="you@example.com"
                     autoComplete="email"
+                    // Lock email for authenticated talents — prevents silent email mismatch
+                    readOnly={isTalent}
+                    className={isTalent ? "cursor-not-allowed bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400" : ""}
                   />
                   {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
@@ -269,8 +361,8 @@ export default function JobApplyPage() {
               <div className="pt-2">
                 <Button
                   type="submit"
-                  disabled={isPending}
-                  className="w-full rounded-full bg-[#474ead] py-2.5 text-white hover:bg-[#3d439c]"
+                  disabled={isPending || isNonTalentUser}
+                  className="w-full rounded-full bg-[#474ead] py-2.5 text-white hover:bg-[#3d439c] disabled:opacity-50"
                 >
                   {isPending ? (
                     <>

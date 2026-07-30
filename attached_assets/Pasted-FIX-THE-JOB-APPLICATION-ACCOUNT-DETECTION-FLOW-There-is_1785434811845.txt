@@ -1,0 +1,226 @@
+FIX THE JOB APPLICATION ACCOUNT-DETECTION FLOW
+
+There is a bug in the built-in application workflow.
+
+CURRENT INCORRECT BEHAVIOR
+
+1. A user creates a new Talent account after submitting their first job
+   application.
+2. The user remains signed in.
+3. The same user applies to another job.
+4. After submission, the system still redirects them to “Create your Talent
+   account.”
+
+This is incorrect because the applicant already has an authenticated Talent
+account.
+
+REQUIRED ACCOUNT-RESOLUTION ORDER
+
+After a job application is submitted, resolve the applicant account in this
+order:
+
+1. Check whether the current request belongs to an authenticated Talent.
+2. If authenticated as Talent:
+   - link the application directly to the authenticated Talent account;
+   - do not perform an account lookup only by the form email;
+   - do not generate an account-creation continuation;
+   - do not redirect to Talent signup;
+   - return a success response that redirects to `/find-work/jobs`.
+3. If not authenticated:
+   - normalize and check the submitted email;
+   - if a Talent account exists, redirect to Talent sign-in while preserving a
+     secure continuation token;
+   - if no Talent account exists, redirect to Talent account creation.
+
+AUTHENTICATED TALENT APPLICATION FLOW
+
+When a Talent user is logged in:
+
+- Load the authenticated user from the server session or verified JWT.
+- Never trust a Talent ID sent by the browser.
+- Use the authenticated Talent ID when creating or linking the application.
+- Set:
+  - `talentId = authenticatedTalent.id`
+  - `registrationStatus = "linked"`
+- Save the application and account link in one transaction where practical.
+- Return:
+
+{
+  "success": true,
+  "accountAction": "already_authenticated",
+  "applicationId": "...",
+  "nextUrl": "/find-work/jobs"
+}
+
+The frontend must redirect directly to `/find-work/jobs`.
+
+Do not show the account-creation page.
+
+APPLICATION FORM FOR LOGGED-IN TALENTS
+
+When a Talent is authenticated:
+
+1. Pre-fill:
+   - first name
+   - last name
+   - email
+   - phone, when available
+2. Retrieve these values from the authenticated account/profile.
+3. Make the email field read-only.
+4. Display helper text:
+   “You are applying with your OnSpot Talent account.”
+5. The user may edit first name, last name, and phone only if existing profile
+   rules allow it.
+6. Do not use application-form edits to silently overwrite the Talent profile
+   unless explicitly intended.
+
+EMAIL MISMATCH PROTECTION
+
+A logged-in Talent must not submit an application using another email address.
+
+Server behavior:
+
+- Compare the normalized submitted email with the authenticated Talent email.
+- If they differ, return HTTP 409 or 422:
+
+{
+  "error": "email_mismatch",
+  "message": "You are signed in with a different email address. Sign out to apply using another account."
+}
+
+Do not:
+
+- create a new Talent account;
+- link the application to another email;
+- change the authenticated account email;
+- create a duplicate account;
+- guess which identity is correct.
+
+Frontend behavior:
+
+- Normally prevent the mismatch by making email read-only.
+- If the server still returns `email_mismatch`, display the message clearly.
+- Offer a Sign Out action.
+- Preserve the job ID, but do not preserve sensitive applicant data in the URL.
+
+ROLE HANDLING
+
+If the logged-in user is a Client or Admin instead of Talent:
+
+- Do not link the application to that account.
+- Do not change the account role automatically.
+- Show:
+  “You are signed in with a non-Talent account. Sign out or use a Talent
+  account to apply.”
+- Provide a Sign Out action.
+- Do not create a Talent account using the same authenticated session.
+
+PUBLIC APPLICANT FLOW
+
+When no user is authenticated:
+
+1. Save the application.
+2. Check the submitted normalized email.
+3. If an existing Talent account is found:
+   - create a secure, expiring continuation token;
+   - redirect to Talent login;
+   - after successful login, confirm the authenticated Talent email matches;
+   - link the pending application;
+   - redirect to `/find-work/jobs`.
+4. If no Talent account is found:
+   - redirect to Talent account creation;
+   - pre-fill the application details;
+   - after registration, link the application;
+   - redirect to `/find-work/jobs`.
+
+EXISTING-TALENT LOGIN CONTINUATION
+
+When redirecting an unauthenticated applicant to sign in:
+
+- Preserve only a secure continuation token.
+- Do not put email, phone, cover letter, or application details directly in the
+  URL.
+- After login:
+  - validate the token;
+  - confirm the account email matches the pending application email;
+  - link the application idempotently;
+  - mark registration status as linked;
+  - redirect to `/find-work/jobs`.
+
+DUPLICATE APPLICATION RULE
+
+Continue preventing duplicate applications for the same:
+
+- job;
+- Talent account or normalized email.
+
+For authenticated Talents, duplicate detection should primarily use:
+
+- `jobId + talentId`
+
+Also retain normalized-email protection for legacy or pending applications.
+
+Do not allow the same Talent to submit twice by changing letter casing or form
+email.
+
+FILES TO REVIEW
+
+Inspect and update:
+
+- client/src/pages/JobApplyPage.tsx
+- Talent authentication context/provider
+- query client authentication headers/cookies
+- server/routes.ts
+- job application service/storage methods
+- Talent registration and login continuation logic
+- shared/schema.ts
+- job application database indexes
+- App.tsx routes
+
+TESTS
+
+Add tests for:
+
+1. Logged-in Talent applies to another job:
+   - application is saved;
+   - application is linked to the authenticated Talent;
+   - no account-creation redirect occurs;
+   - next URL is `/find-work/jobs`.
+
+2. Logged-in Talent application form:
+   - account email is pre-filled;
+   - account email is read-only.
+
+3. Logged-in Talent submits a different email:
+   - server rejects with `email_mismatch`;
+   - no new account is created;
+   - no incorrect link is created.
+
+4. Logged-in Client or Admin tries to apply:
+   - application is not linked;
+   - account role is not changed;
+   - clear error is returned.
+
+5. Logged-out applicant with an existing Talent email:
+   - redirected to login;
+   - application is linked after successful login.
+
+6. Logged-out applicant with a new email:
+   - redirected to account creation;
+   - application is linked after registration.
+
+7. Duplicate application by authenticated Talent:
+   - duplicate is rejected.
+
+8. Email comparison is case-insensitive.
+
+ACCEPTANCE CRITERIA
+
+The bug is fixed when:
+
+- A signed-in Talent never sees “Create your Talent account” after applying.
+- Their application is automatically linked to their current Talent account.
+- A signed-in Talent cannot apply using a different email unnoticed.
+- Existing logged-out Talent users are sent to login, not signup.
+- New users are sent to signup.
+- All successful flows end at `/find-work/jobs`.

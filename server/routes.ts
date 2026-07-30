@@ -7978,7 +7978,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
 
-  // POST /api/jobs/:jobId/apply — public endpoint, submit a built-in application (JSON body)
+  // POST /api/jobs/:jobId/apply — submit a built-in application (JSON body)
+  // Supports both authenticated Talent users (fast-path, no continuation token) and
+  // unauthenticated applicants (continuation token → signup/login flow).
   app.post("/api/jobs/:jobId/apply", applyLimiter, async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params;
@@ -7997,7 +7999,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
       if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
 
-      // Duplicate check — same email for same job (pending or registered)
+      // ── Optional auth: identify a logged-in Talent without blocking the public flow ──
+      let authedUser: { id: string; email: string; role: string } | null = null;
+      try {
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith("Bearer ")) {
+          const jwtSecret =
+            process.env.JWT_SECRET ||
+            (process.env.NODE_ENV === "development" ? "development-fallback-secret-not-for-production" : "");
+          if (jwtSecret) {
+            const decoded = jwt.verify(authHeader.slice(7), jwtSecret) as any;
+            if (decoded?.userId) {
+              const ur = await query(
+                `SELECT id, email, role FROM users WHERE id = $1`,
+                [decoded.userId],
+              );
+              if (ur.rows.length > 0) authedUser = ur.rows[0];
+            }
+          }
+        }
+      } catch (_) { /* token absent or invalid — continue as public applicant */ }
+
+      // ── Authenticated user fast-path ──────────────────────────────────────────
+      if (authedUser) {
+        // Reject non-talent roles (client, admin, etc.)
+        if (authedUser.role !== "talent") {
+          return res.status(403).json({
+            error: "role_mismatch",
+            message: "You are signed in with a non-Talent account. Sign out or use a Talent account to apply.",
+          });
+        }
+
+        // Reject email mismatch — never link to a different identity
+        if (email.trim().toLowerCase() !== authedUser.email.toLowerCase()) {
+          return res.status(409).json({
+            error: "email_mismatch",
+            message: "You are signed in with a different email address. Sign out to apply using another account.",
+          });
+        }
+
+        // Duplicate check — talent ID (primary) then email fallback
+        const dupByTalent = await query(
+          `SELECT id FROM job_submissions WHERE job_id = $1 AND talent_id = $2 LIMIT 1`,
+          [jobId, authedUser.id],
+        );
+        if (dupByTalent.rows.length > 0) {
+          return res.status(409).json({ error: "You have already applied for this job." });
+        }
+        const dupByEmail = await query(
+          `SELECT id FROM job_submissions WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
+          [jobId, email.trim()],
+        );
+        if (dupByEmail.rows.length > 0) {
+          return res.status(409).json({ error: "An application for this job with that email already exists." });
+        }
+
+        // Insert directly linked — no continuation token needed
+        const result = await query(
+          `INSERT INTO job_submissions
+             (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter, status, registration_status, talent_id)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'linked', $9)
+           RETURNING id`,
+          [
+            jobId, job.clientId || null,
+            firstName.trim(), lastName.trim(), `${firstName.trim()} ${lastName.trim()}`,
+            email.trim().toLowerCase(),
+            phone.trim(),
+            coverLetter?.trim() || null,
+            authedUser.id,
+          ],
+        );
+
+        return res.status(201).json({
+          success: true,
+          accountAction: "already_authenticated",
+          applicationId: result.rows[0].id,
+          nextUrl: "/find-work/jobs",
+        });
+      }
+
+      // ── Unauthenticated applicant flow ────────────────────────────────────────
+      // Duplicate check — same email for same job (pending or already linked)
       const dupCheck = await query(
         `SELECT id, registration_status, talent_id FROM job_submissions
          WHERE job_id = $1 AND lower(email) = lower($2) LIMIT 1`,
@@ -8006,16 +8088,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (dupCheck.rows.length > 0) {
         const existing = dupCheck.rows[0];
         // If already linked to an account, block outright
-        if (existing.registration_status === "registered" || existing.talent_id) {
+        if (existing.registration_status === "registered" || existing.registration_status === "linked" || existing.talent_id) {
           return res.status(409).json({
             error: "An application for this job with that email already exists.",
           });
         }
         // Pending — invalidate old tokens and re-issue a fresh one
-        await query(
-          `DELETE FROM application_tokens WHERE submission_id = $1`,
-          [existing.id],
-        );
+        await query(`DELETE FROM application_tokens WHERE submission_id = $1`, [existing.id]);
         const reissueToken = randomBytes(32).toString("base64url");
         const reissueHash = createHash("sha256").update(reissueToken).digest("hex");
         const reissueExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -8035,7 +8114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await query(
         `INSERT INTO job_submissions
            (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter, status, registration_status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'new', 'pending_account')
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'pending_account')
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -8050,7 +8129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
       const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       await query(
         `INSERT INTO application_tokens (id, submission_id, token_hash, expires_at)
