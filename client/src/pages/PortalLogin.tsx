@@ -96,16 +96,6 @@ function CardShell({ children }: { children: React.ReactNode }) {
           style={{ background: "rgba(255,255,255,0.45)", filter: "blur(120px)" }} />
       </div>
 
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(100,116,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(100,116,255,0.07) 1px, transparent 1px)",
-          backgroundSize: "50px 50px",
-        }}
-      />
-
       {/* Logo area */}
       <div className="relative z-10 flex flex-col items-center mb-10">
         <Link href="/">
