@@ -625,6 +625,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  built_in_form migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: create job_application_status_history table and
+  // map legacy 'new' status -> 'submitted' for consistency with the new status model.
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS job_application_status_history (
+        id              uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id  varchar   NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        previous_status text,
+        new_status      text      NOT NULL,
+        note            text,
+        changed_by      varchar   REFERENCES users(id),
+        created_at      timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_jash_application_id ON job_application_status_history(application_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_jash_changed_by     ON job_application_status_history(changed_by)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_jash_created_at     ON job_application_status_history(created_at)`);
+    const legacyResult = await query(`UPDATE job_submissions SET status = 'submitted' WHERE status = 'new'`);
+    if (legacyResult.rowCount && legacyResult.rowCount > 0) {
+      console.log(`✅ Migration: mapped ${legacyResult.rowCount} legacy 'new' submission(s) to 'submitted'`);
+    }
+    // Update column default so future inserts use 'submitted'
+    await query(`ALTER TABLE job_submissions ALTER COLUMN status SET DEFAULT 'submitted'`);
+  } catch (migErr: any) {
+    console.warn("⚠️  status history migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -8151,53 +8178,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/job-applications — paginated list (admin only)
+  // GET /api/admin/job-applications/summary — status counts (admin only)
+  // NOTE: must be registered BEFORE the :applicationId route to avoid Express
+  //       matching the literal string "summary" as a URL parameter.
+  app.get("/api/admin/job-applications/summary", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+
+      const [byStatus, byReg, total] = await Promise.all([
+        query(`SELECT status, COUNT(*) AS count FROM job_submissions GROUP BY status`),
+        query(`SELECT registration_status, COUNT(*) AS count FROM job_submissions GROUP BY registration_status`),
+        query(`SELECT COUNT(*) AS count FROM job_submissions`),
+      ]);
+
+      const byStatusMap: Record<string, number> = {};
+      for (const row of byStatus.rows) {
+        const key = row.status === "new" ? "submitted" : row.status;
+        byStatusMap[key] = (byStatusMap[key] ?? 0) + parseInt(row.count, 10);
+      }
+      const byRegMap: Record<string, number> = {};
+      for (const row of byReg.rows) byRegMap[row.registration_status] = parseInt(row.count, 10);
+
+      return res.json({
+        total: parseInt(total.rows[0].count, 10),
+        byStatus: byStatusMap,
+        byRegStatus: byRegMap,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications/summary error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/job-applications — paginated list with search/filter/sort (admin only)
   app.get("/api/admin/job-applications", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
 
-      const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
-      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10)));
+      const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),   10));
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10)));
       const offset = (page - 1) * limit;
-      const status = req.query.status as string | undefined;
-      const jobId = req.query.jobId as string | undefined;
-      const registrationStatus = req.query.registrationStatus as string | undefined;
+
+      const statusFilter           = req.query.status             as string | undefined;
+      const jobId                  = req.query.jobId              as string | undefined;
+      const registrationStatus     = req.query.registrationStatus as string | undefined;
+      const searchRaw              = req.query.search             as string | undefined;
+      const dateFrom               = req.query.dateFrom           as string | undefined;
+      const dateTo                 = req.query.dateTo             as string | undefined;
+      const sortBy                 = (req.query.sortBy as string) ?? "submittedAt";
+      const sortOrder              = (req.query.sortOrder as string)?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      const SORT_COLS: Record<string, string> = {
+        submittedAt: "js.submitted_at",
+        firstName:   "js.first_name",
+        lastName:    "js.last_name",
+        email:       "js.email",
+        status:      "js.status",
+      };
+      const orderCol = SORT_COLS[sortBy] ?? "js.submitted_at";
 
       const conditions: string[] = [];
       const params: any[] = [];
 
-      if (status) { params.push(status); conditions.push(`js.status = $${params.length}`); }
-      if (jobId) { params.push(jobId); conditions.push(`js.job_id = $${params.length}`); }
+      if (statusFilter) {
+        // Treat 'submitted' as also matching legacy 'new'
+        if (statusFilter === "submitted") {
+          params.push("submitted", "new");
+          conditions.push(`js.status = ANY(ARRAY[$${params.length - 1}, $${params.length}])`);
+        } else {
+          params.push(statusFilter);
+          conditions.push(`js.status = $${params.length}`);
+        }
+      }
+      if (jobId)              { params.push(jobId);              conditions.push(`js.job_id              = $${params.length}`); }
       if (registrationStatus) { params.push(registrationStatus); conditions.push(`js.registration_status = $${params.length}`); }
+      if (dateFrom)           { params.push(dateFrom);           conditions.push(`js.submitted_at        >= $${params.length}::date`); }
+      if (dateTo)             { params.push(dateTo);             conditions.push(`js.submitted_at        <  ($${params.length}::date + INTERVAL '1 day')`); }
+      if (searchRaw?.trim()) {
+        const term = `%${searchRaw.trim().toLowerCase()}%`;
+        params.push(term);
+        const n = params.length;
+        conditions.push(
+          `(lower(js.first_name) LIKE $${n} OR lower(js.last_name) LIKE $${n}
+             OR lower(COALESCE(js.first_name,'') || ' ' || COALESCE(js.last_name,'')) LIKE $${n}
+             OR lower(js.applicant_name) LIKE $${n}
+             OR lower(js.email)          LIKE $${n}
+             OR lower(js.phone)          LIKE $${n}
+             OR lower(j.title)           LIKE $${n})`,
+        );
+      }
 
       const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+      const countParams = [...params];
       params.push(limit, offset);
 
       const [countResult, rowsResult] = await Promise.all([
-        query(`SELECT COUNT(*) FROM job_submissions js ${where}`, params.slice(0, -2)),
         query(
-          `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany",
+          `SELECT COUNT(*) FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           ${where}`,
+          countParams,
+        ),
+        query(
+          `SELECT js.id, js.job_id AS "jobId", js.first_name AS "firstName", js.last_name AS "lastName",
+                  js.applicant_name AS "applicantName", js.email, js.phone,
+                  js.status, js.registration_status AS "registrationStatus",
+                  js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
+                  j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
            ${where}
-           ORDER BY js.submitted_at DESC
+           ORDER BY ${orderCol} ${sortOrder}
            LIMIT $${params.length - 1} OFFSET $${params.length}`,
           params,
         ),
       ]);
 
       return res.json({
+        items: rowsResult.rows,
         total: parseInt(countResult.rows[0].count, 10),
         page,
         limit,
-        items: rowsResult.rows,
       });
     } catch (err: any) {
       console.error("GET /api/admin/job-applications error:", err);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/job-applications/:applicationId — full detail with history (admin only)
+  app.get("/api/admin/job-applications/:applicationId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+
+      const { applicationId } = req.params;
+      const [appResult, histResult] = await Promise.all([
+        query(
+          `SELECT js.id, js.job_id AS "jobId", js.first_name AS "firstName", js.last_name AS "lastName",
+                  js.applicant_name AS "applicantName", js.email, js.phone, js.cover_letter AS "coverLetter",
+                  js.status, js.registration_status AS "registrationStatus",
+                  js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
+                  j.title AS "jobTitle", j.company AS "jobCompany",
+                  u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users u ON u.id = js.talent_id
+           WHERE js.id = $1`,
+          [applicationId],
+        ),
+        query(
+          `SELECT h.id, h.previous_status AS "previousStatus", h.new_status AS "newStatus",
+                  h.note, h.changed_by AS "changedBy",
+                  COALESCE(u.first_name || ' ' || u.last_name, u.email) AS "changedByName",
+                  h.created_at AS "createdAt"
+           FROM job_application_status_history h
+           LEFT JOIN users u ON u.id = h.changed_by
+           WHERE h.application_id = $1
+           ORDER BY h.created_at DESC`,
+          [applicationId],
+        ),
+      ]);
+
+      if (appResult.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      return res.json({ ...appResult.rows[0], history: histResult.rows });
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications/:id error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
+  app.patch("/api/admin/job-applications/:applicationId/status", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+
+      const { applicationId } = req.params;
+      const { status, note } = req.body ?? {};
+
+      const VALID_STATUSES = ["submitted", "under_review", "shortlisted", "interview", "offered", "hired", "rejected", "withdrawn"];
+      if (!status || !VALID_STATUSES.includes(status)) {
+        return res.status(400).json({ error: `Invalid status. Valid values: ${VALID_STATUSES.join(", ")}` });
+      }
+
+      // Fetch existing application (confirm it exists and get current status)
+      const existing = await query(`SELECT id, status FROM job_submissions WHERE id = $1`, [applicationId]);
+      if (existing.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      const previousStatus = existing.rows[0].status;
+
+      // Transactional update + history record
+      await query("BEGIN");
+      try {
+        const updated = await query(
+          `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+          [status, applicationId],
+        );
+        await query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [applicationId, previousStatus, status, note?.trim() || null, user.id],
+        );
+        await query("COMMIT");
+        return res.json({ success: true, application: updated.rows[0] });
+      } catch (txErr) {
+        await query("ROLLBACK");
+        throw txErr;
+      }
+    } catch (err: any) {
+      console.error("PATCH /api/admin/job-applications/:id/status error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 

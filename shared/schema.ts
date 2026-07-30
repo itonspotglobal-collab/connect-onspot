@@ -679,6 +679,24 @@ export const applicationTokens = pgTable("application_tokens", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const jobApplicationStatusHistory = pgTable(
+  "job_application_status_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: varchar("application_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+    previousStatus: text("previous_status"),
+    newStatus: text("new_status").notNull(),
+    note: text("note"),
+    changedBy: varchar("changed_by").references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_jash_application_id").on(table.applicationId),
+    index("idx_jash_changed_by").on(table.changedBy),
+    index("idx_jash_created_at").on(table.createdAt),
+  ],
+);
+
 export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit({
   id: true,
   submittedAt: true,
@@ -688,6 +706,7 @@ export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit
 export type InsertJobSubmission = z.infer<typeof insertJobSubmissionSchema>;
 export type JobSubmission = typeof jobSubmissions.$inferSelect;
 export type ApplicationToken = typeof applicationTokens.$inferSelect;
+export type JobApplicationStatusHistory = typeof jobApplicationStatusHistory.$inferSelect;
 
 export const insertProposalSchema = createInsertSchema(proposals).omit({
   id: true,

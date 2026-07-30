@@ -1,0 +1,494 @@
+Create (if not yet existing) an Admin Job Applications feature for the existing OnSpot
+platform.
+
+PURPOSE
+
+Administrators need a central page to monitor everyone who submits the built-in
+application form for jobs displayed on `/find-work/jobs`.
+
+Create the admin page at:
+
+`/admin/job-applications`
+
+Use “Applicants” or “Job Applications” in the UI. Do not call all applicants
+employees because they have not been hired yet.
+
+REVIEW EXISTING CODE FIRST
+
+Inspect:
+
+- client/src/App.tsx
+- client/src/pages/AdminFindWork.tsx
+- client/src/pages/JobApplyPage.tsx
+- client/src/components/ProtectedRoute.tsx
+- client/src/components/TopNavigation.tsx
+- shared/schema.ts
+- server/routes.ts
+- server/storage.ts
+- Existing job application table and application APIs
+- Existing admin authentication middleware
+- Existing admin layouts, cards, tables, dialogs, badges, and pagination styles
+
+Do not create a separate application or database connection.
+
+ROUTING AND AUTHORIZATION
+
+Add:
+
+`/admin/job-applications`
+
+Create a page such as:
+
+`client/src/pages/AdminJobApplications.tsx`
+
+Protect it using the existing `AdminProtectedRoute`.
+
+Unauthenticated users must be redirected to login.
+
+Users with Talent or Client roles must not be able to access the page or its
+APIs.
+
+Add the page to the relevant admin navigation near “Find Work.”
+
+APPLICATION STATUS MODEL
+
+Support these application statuses:
+
+- submitted
+- under_review
+- shortlisted
+- interview
+- offered
+- hired
+- rejected
+- withdrawn
+
+Display user-friendly labels:
+
+- Submitted
+- Under Review
+- Shortlisted
+- Interview
+- Offered
+- Hired
+- Rejected
+- Withdrawn
+
+If the existing database already uses different status values, safely map or
+extend them instead of creating duplicate application records.
+
+Also display the account-linking status:
+
+- Pending Account
+- Linked to Talent
+- Existing Talent
+- Account Conflict
+- Expired
+
+Do not mix account status with application status.
+
+ADMIN API
+
+Create or complete:
+
+GET `/api/admin/job-applications`
+
+Require admin authentication.
+
+Support query parameters:
+
+- page
+- limit
+- search
+- jobId
+- status
+- registrationStatus
+- dateFrom
+- dateTo
+- sortBy
+- sortOrder
+
+Default behavior:
+
+- page: 1
+- limit: 20
+- newest applications first
+
+Search should match:
+
+- applicant first name
+- applicant last name
+- applicant full name
+- email
+- phone
+- job title
+
+Return a paginated response such as:
+
+{
+  "items": [
+    {
+      "id": "...",
+      "jobId": "...",
+      "jobTitle": "IT Administrator",
+      "firstName": "Maria",
+      "lastName": "Santos",
+      "email": "maria@example.com",
+      "phone": "+63...",
+      "coverLetter": "...",
+      "status": "submitted",
+      "registrationStatus": "linked",
+      "talentId": "...",
+      "submittedAt": "...",
+      "updatedAt": "..."
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 123,
+    "totalPages": 7
+  }
+}
+
+Do not return password hashes, tokens, authentication secrets, or unrelated
+Talent profile data.
+
+APPLICATION DETAIL API
+
+Add:
+
+GET `/api/admin/job-applications/:applicationId`
+
+Require admin authentication.
+
+Return the complete application details:
+
+- applicant name
+- email
+- phone
+- cover letter
+- job title
+- job ID
+- application status
+- account-linking status
+- linked Talent ID
+- submitted date
+- last updated date
+- application status history
+
+If the Talent account is linked, return only safe operational profile details
+needed by the administrator.
+
+STATUS UPDATE API
+
+Add:
+
+PATCH `/api/admin/job-applications/:applicationId/status`
+
+Request body:
+
+{
+  "status": "under_review",
+  "note": "Application reviewed by recruitment."
+}
+
+Requirements:
+
+1. Require admin authentication.
+2. Validate the status using Zod.
+3. Confirm the application exists.
+4. Update `updatedAt`.
+5. Record the change in an application status-history table.
+6. Store:
+   - application ID
+   - previous status
+   - new status
+   - optional note
+   - admin user ID
+   - changed timestamp
+7. Make updates transactional.
+8. Never trust an admin ID supplied by the frontend.
+9. Return the updated application.
+
+STATUS HISTORY TABLE
+
+If no history table exists, add a Drizzle table such as:
+
+`job_application_status_history`
+
+Fields:
+
+- id
+- applicationId
+- previousStatus
+- newStatus
+- note
+- changedBy
+- createdAt
+
+Add foreign keys and indexes for:
+
+- applicationId
+- changedBy
+- createdAt
+
+Create and apply the proper migration.
+
+ADMIN PAGE DESIGN
+
+Build a responsive admin page consistent with the current OnSpot admin design.
+
+Page header:
+
+- Title: “Job Applications”
+- Subtitle: “Monitor and manage applications submitted through Find Work.”
+
+Summary cards:
+
+- Total Applications
+- New / Submitted
+- Under Review
+- Shortlisted
+- Interview
+- Hired
+
+The cards should reflect the currently applied date or job filters where
+practical.
+
+FILTER TOOLBAR
+
+Include:
+
+- Search input
+- Job dropdown
+- Application Status dropdown
+- Account Status dropdown
+- Date range filter
+- Reset filters button
+
+Update the URL query string when filters change so the view can be bookmarked
+or refreshed without losing filters.
+
+APPLICATION TABLE
+
+Desktop columns:
+
+- Applicant
+- Job
+- Contact
+- Application Status
+- Account Status
+- Submitted
+- Actions
+
+Applicant column:
+
+- Full name
+- linked Talent indicator when applicable
+
+Contact column:
+
+- Email
+- Phone
+
+Use status badges with clear labels.
+
+Do not rely only on badge color; the text must communicate the status.
+
+Actions:
+
+- View Application
+- Change Status
+- View Talent Profile, only when a Talent account is linked
+
+On smaller screens, render responsive application cards instead of forcing a
+wide overflowing table.
+
+APPLICATION DETAIL PANEL
+
+When the admin clicks View Application, open a dialog, drawer, or detail page.
+
+Display:
+
+- Applicant information
+- Applied job
+- Cover letter
+- Current application status
+- Account status
+- Linked Talent account
+- Submitted date
+- Last updated date
+- Status history timeline
+
+Include a status selector and optional internal note.
+
+The internal note must not be visible to the applicant unless a future feature
+explicitly supports applicant-facing messages.
+
+STATUS TRANSITIONS
+
+Allow an administrator to move applications through:
+
+Submitted
+→ Under Review
+→ Shortlisted
+→ Interview
+→ Offered
+→ Hired
+
+Also allow:
+
+- Rejected
+- Withdrawn
+
+Do not automatically mark someone as hired merely because their Talent account
+was created.
+
+When changing to Hired:
+
+- show a confirmation dialog;
+- clearly state that this changes the application status only;
+- do not automatically create payroll, employee, contract, or payment records
+  unless those features are already intentionally connected.
+
+BULK ACTIONS
+
+Add row selection and basic bulk status updates if this fits the existing admin
+patterns.
+
+At minimum support:
+
+- select multiple applications;
+- mark as Under Review;
+- mark as Rejected.
+
+Require confirmation before bulk rejection.
+
+If bulk actions would significantly complicate the first implementation, make
+them a second phase. Do not compromise the core monitoring page.
+
+EMPTY, LOADING, AND ERROR STATES
+
+Add:
+
+- loading skeletons;
+- empty state when no applications exist;
+- filtered-empty state;
+- retry action for failed requests;
+- clear unauthorized state;
+- toast confirmation after status updates.
+
+Do not display fake or placeholder applications in production.
+
+SECURITY AND PRIVACY
+
+- Admin-only APIs.
+- Use parameterized queries or Drizzle.
+- Validate all query parameters and request bodies.
+- Escape or safely render cover-letter text.
+- Do not expose application data through public endpoints.
+- Do not log applicant PII.
+- Do not place applicant PII in URLs.
+- Add reasonable maximum pagination limits.
+- Add audit/status history for changes.
+- Use generic production errors.
+
+ADMIN NAVIGATION
+
+Add a Job Applications navigation item to the existing admin interface.
+
+Suggested order:
+
+- Admin Dashboard
+- Find Work
+- Job Applications
+- Other admin tools
+
+Show an optional badge containing the number of applications with status
+`submitted`.
+
+Do not fetch the badge count separately on every component render. Use the
+existing query cache or a lightweight summary endpoint.
+
+OPTIONAL SUMMARY ENDPOINT
+
+Add:
+
+GET `/api/admin/job-applications/summary`
+
+Return counts grouped by:
+
+- status
+- registrationStatus
+- total
+
+Require admin authentication.
+
+TESTS
+
+Backend tests:
+
+- admin can list applications;
+- non-admin cannot list applications;
+- pagination works;
+- search works;
+- filtering by job works;
+- filtering by status works;
+- application detail works;
+- valid status update succeeds;
+- invalid status is rejected;
+- missing application returns 404;
+- status history is created;
+- admin identity is taken from authentication;
+- application PII is not exposed publicly.
+
+Frontend tests:
+
+- page renders applications;
+- loading and empty states;
+- filters update results;
+- application details open;
+- status update works;
+- status history renders;
+- unauthorized users cannot access the page;
+- mobile layout does not overflow.
+
+Run:
+
+- database migration;
+- TypeScript check;
+- lint;
+- tests;
+- production build.
+
+ACCEPTANCE CRITERIA
+
+The feature is complete when:
+
+1. `/admin/job-applications` exists.
+2. Only administrators can access it.
+3. Every built-in form submission appears on the page.
+4. Admins can search and filter applications.
+5. Admins can view applicant and application details.
+6. Admins can update the application status.
+7. Every status change has an audit-history record.
+8. The page clearly distinguishes application status from Talent account
+   status.
+9. A linked Talent profile can be opened from the application.
+10. Closed, rejected, or deleted jobs do not remove their historical
+    application records.
+11. The page is responsive.
+12. Type checking, tests, and production build pass.
+
+FINAL RESPONSE
+
+After implementation, report:
+
+1. Files created and changed.
+2. Database migration added.
+3. Admin routes added.
+4. Supported application statuses.
+5. How authorization is enforced.
+6. Tests and build results.
+7. Any remaining manual setup.

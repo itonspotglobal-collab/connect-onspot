@@ -161,8 +161,10 @@ export function TopNavigation() {
       { label: "Settings",       route: "/settings",       icon: Settings },
     ];
     if (user?.role === "admin") return [
-      { label: "Admin Dashboard", route: "/admin/dashboard", icon: Shield },
-      { label: "Settings",        route: "/settings",        icon: Settings },
+      { label: "Admin Dashboard",   route: "/admin/dashboard",         icon: Shield },
+      { label: "Find Work",         route: "/admin/find-work",         icon: Briefcase },
+      { label: "Job Applications",  route: "/admin/job-applications",  icon: Users },
+      { label: "Settings",          route: "/settings",                icon: Settings },
     ];
     // talent / default
     return [

@@ -62,6 +62,7 @@ import AdminInsights from "@/pages/AdminInsights";
 import AdminInsightEditor from "@/pages/AdminInsightEditor";
 import AdminImageUploader from "@/pages/AdminImageUploader";
 import AdminFindWork from "@/pages/AdminFindWork";
+import AdminJobApplications from "@/pages/AdminJobApplications";
 import ManagedServicesPage from "@/pages/ManagedServicesPage";
 import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
@@ -232,6 +233,11 @@ function ClientRouter() {
           <Route path="/admin/dashboard" component={() => (
             <AdminProtectedRoute>
               <AdminDashboard />
+            </AdminProtectedRoute>
+          )} />
+          <Route path="/admin/job-applications" component={() => (
+            <AdminProtectedRoute>
+              <AdminJobApplications />
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
