@@ -1,0 +1,454 @@
+Fix the Open Graph and social link preview system across the entire OnSpot website.
+
+Current production issue:
+When sharing links from `https://onspotglobal.com/` in Microsoft Teams and other platforms, the preview still shows:
+
+`OnSpot – The Superhuman Outsourcing System`
+
+The preview image is also broken or missing.
+
+This must be fixed for every public route, not only the homepage.
+
+Primary goal:
+Every public OnSpot URL must return correct server-rendered social metadata in the initial HTML response, including a valid preview image that social crawlers can access without JavaScript.
+
+New default branding:
+
+Title:
+`OnSpot – Work Without Limits`
+
+Default social image:
+Use the uploaded social preview image already available in the project’s public/static folder.
+
+Prefer a versioned production filename such as:
+
+`public/onspot-social-preview-v3.png`
+
+It must be available publicly at:
+
+`https://onspotglobal.com/onspot-social-preview-v3.png`
+
+Do not use `/public/` in the browser URL.
+
+────────────────────────────
+1. Diagnose the real production path
+────────────────────────────
+
+First determine exactly how production serves `onspotglobal.com`.
+
+Check:
+
+- Express or Node server entry point
+- `server/ogMiddleware.ts`
+- Static hosting configuration
+- SPA fallback configuration
+- Replit deployment configuration
+- Reverse proxy or CDN behavior
+- `client/index.html`
+- `client/src/components/HeadSEO.tsx`
+- Route definitions
+- Any alternate production entry point
+- Any generated `dist/index.html`
+- Any separate frontend deployment
+
+Confirm whether production requests are served by:
+
+- The Node server
+- A static frontend deployment
+- A CDN-cached HTML file
+- A different deployment than the Replit preview
+
+Do not assume `ogMiddleware.ts` is running. Prove whether it runs in production.
+
+────────────────────────────
+2. Replace all old title references
+────────────────────────────
+
+Search the entire repository, including generated templates and server files, for all variants of:
+
+- `The Superhuman Outsourcing System`
+- `The Superhuman OutSourcing System`
+- `OnSpot - The Superhuman Outsourcing System`
+- `OnSpot – The Superhuman Outsourcing System`
+- `OnSpot — The Superhuman Outsourcing System`
+- `OnSpot - The Superhuman OutSourcing System`
+
+Replace relevant metadata and browser-title references with:
+
+`OnSpot – Work Without Limits`
+
+Do not change historical documentation unless it affects production output.
+
+After the fix, there must be no old-title occurrence in any production HTML, metadata configuration, default SEO object, route metadata, middleware, or generated build output.
+
+────────────────────────────
+3. Implement one centralized metadata system
+────────────────────────────
+
+Create a single server-side metadata configuration for all public routes.
+
+It should contain:
+
+- Default title
+- Default description
+- Canonical URL
+- Open Graph title
+- Open Graph description
+- Open Graph URL
+- Open Graph image
+- Open Graph image type
+- Open Graph image width
+- Open Graph image height
+- Open Graph image alt text
+- Twitter card type
+- Twitter title
+- Twitter description
+- Twitter image
+
+Use defaults when a route does not have specific metadata.
+
+Default metadata:
+
+Title:
+`OnSpot – Work Without Limits`
+
+Description:
+`The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.`
+
+Image:
+`https://onspotglobal.com/onspot-social-preview-v3.png`
+
+Twitter card:
+`summary_large_image`
+
+────────────────────────────
+4. Add route-specific metadata
+────────────────────────────
+
+Support all public routes, including nested and dynamic routes.
+
+At minimum, handle:
+
+- `/`
+- `/find-work`
+- `/find-work/jobs`
+- `/find-work/jobs/:slug`
+- `/insights`
+- `/insights/:slug`
+- `/faq`
+- `/contact`
+- `/about`
+- Any other public marketing routes found in the router
+
+Use route-specific titles and descriptions when available.
+
+Examples:
+
+Homepage:
+`OnSpot – Work Without Limits`
+
+Find Work:
+`Find Work | OnSpot Global`
+
+Jobs:
+`Remote Jobs | OnSpot Global`
+
+Individual job:
+`{Job Title} | OnSpot Global`
+
+Insights:
+`Insights | OnSpot Global`
+
+Individual article:
+`{Article Title} | OnSpot Global`
+
+For dynamic pages, obtain metadata server-side from the same source used by the page. Do not depend on React running in the crawler.
+
+If dynamic content cannot be loaded, use the safe default metadata instead of returning missing or broken tags.
+
+────────────────────────────
+5. Make metadata available in raw HTML
+────────────────────────────
+
+Social crawlers may not execute JavaScript.
+
+Every route must include its correct metadata directly in the initial HTML returned by the server.
+
+The raw HTML must contain one effective instance of:
+
+```html
+<title>...</title>
+<meta name="description" content="...">
+
+<link rel="canonical" href="...">
+
+<meta property="og:title" content="...">
+<meta property="og:description" content="...">
+<meta property="og:type" content="website">
+<meta property="og:url" content="...">
+<meta property="og:image" content="https://onspotglobal.com/onspot-social-preview-v3.png">
+<meta property="og:image:secure_url" content="https://onspotglobal.com/onspot-social-preview-v3.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="OnSpot – Work Without Limits">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="...">
+<meta name="twitter:description" content="...">
+<meta name="twitter:image" content="https://onspotglobal.com/onspot-social-preview-v3.png">
+
+Do not rely only on:
+
+React Helmet
+useEffect
+Client-side DOM updates
+document.title
+HeadSEO.tsx
+JavaScript route changes
+
+Client-side metadata may remain for navigation consistency, but the initial server response is the source of truth for crawlers.
+
+────────────────────────────
+6. Fix middleware order
+────────────────────────────
+
+Ensure metadata injection happens before static files and SPA fallback.
+
+The server order should be equivalent to:
+
+app.use(ogMiddleware);
+app.use(express.static(clientDistPath));
+app.get("*", serveSpaWithInjectedMetadata);
+
+If express.static() serves index.html before the metadata middleware can modify it, fix that.
+
+Do not allow the SPA fallback to bypass metadata generation.
+
+If needed:
+
+Disable automatic index serving in express.static
+Read the production HTML template
+Inject escaped metadata
+Return the modified HTML per request
+
+Example:
+
+app.use(
+  express.static(clientDistPath, {
+    index: false,
+  }),
+);
+
+Then serve the HTML through one controlled catch-all route.
+
+────────────────────────────
+7. Prevent duplicate and stale tags
+────────────────────────────
+
+Before injecting route metadata:
+
+Remove or replace existing title tags
+Remove old description tags
+Remove old Open Graph tags
+Remove old Twitter tags
+Remove stale canonical tags
+
+The final raw HTML must not contain conflicting values.
+
+There must be exactly one effective:
+
+<title>
+Description
+Canonical URL
+og:title
+og:description
+og:url
+og:image
+twitter:title
+twitter:description
+twitter:image
+
+────────────────────────────
+8. Fix the preview image itself
+────────────────────────────
+
+Use the uploaded image from the public/static folder.
+
+Create or rename the final asset as:
+
+public/onspot-social-preview-v3.png
+
+Confirm:
+
+It is 1200 × 630 pixels
+It is a real PNG
+It is not corrupted
+It is not an SVG renamed as PNG
+It has visible content
+It is preferably below 1 MB
+It is not blocked by authentication
+It is not handled by the SPA fallback
+It does not return HTML
+It does not redirect to the homepage
+
+The production URL must be:
+
+https://onspotglobal.com/onspot-social-preview-v3.png
+
+Verify:
+
+curl -I https://onspotglobal.com/onspot-social-preview-v3.png
+
+Expected:
+
+HTTP/2 200
+content-type: image/png
+
+Also verify the response body begins with a valid PNG signature and is not an HTML document.
+
+────────────────────────────
+9. Ensure crawler access
+────────────────────────────
+
+Verify that these user agents receive the same valid metadata:
+
+facebookexternalhit/1.1
+Twitterbot
+LinkedInBot
+bingbot
+Slackbot-LinkExpanding
+Microsoft Teams-compatible link preview crawlers
+
+Check that no code blocks or challenges these bots.
+
+Review:
+
+robots.txt
+Cloudflare or CDN bot protection
+Rate limiting
+Authentication middleware
+CSP
+Hotlink protection
+User-agent filtering
+
+The HTML page and image must be publicly accessible.
+
+────────────────────────────
+10. Handle URLs consistently
+────────────────────────────
+
+Normalize:
+
+Trailing slashes
+Query parameters
+Uppercase or lowercase route variants
+Nested routes
+Dynamic slugs
+
+Examples that must all return valid metadata:
+
+https://onspotglobal.com
+https://onspotglobal.com/
+https://onspotglobal.com/?preview=v3
+https://onspotglobal.com/find-work
+https://onspotglobal.com/find-work/jobs
+https://onspotglobal.com/find-work/jobs/example-role
+https://onspotglobal.com/insights
+https://onspotglobal.com/insights/example-article
+
+Query parameters should not break route matching.
+
+Use the parsed pathname rather than comparing the entire raw URL.
+
+────────────────────────────
+11. Validate the deployed production site
+────────────────────────────
+
+Do not stop after local changes.
+
+Run the existing:
+
+Type-check
+Lint
+Tests
+Production build
+
+Deploy the changes.
+
+Then validate the actual public domain.
+
+Run:
+
+curl -s -A "facebookexternalhit/1.1" https://onspotglobal.com/
+curl -s -A "LinkedInBot" https://onspotglobal.com/find-work/jobs
+curl -s -A "Twitterbot" https://onspotglobal.com/insights
+
+For each response, confirm the raw HTML contains the expected:
+
+Title
+Description
+Canonical URL
+og:title
+og:description
+og:url
+og:image
+Twitter metadata
+
+Also test at least one dynamic job URL and one dynamic insight URL.
+
+Create an automated validation script that checks multiple public routes and fails when:
+
+The old title appears
+og:image is missing
+The image URL is relative
+Duplicate tags exist
+The image returns a non-200 response
+The image returns HTML
+The route returns incorrect metadata
+
+────────────────────────────
+12. Clear production caching
+────────────────────────────
+
+Purge or invalidate:
+
+Replit deployment cache
+CDN cache
+Reverse proxy cache
+Cached HTML output
+Old static assets
+
+Use the new image filename onspot-social-preview-v3.png to avoid previously cached broken image responses.
+
+Do not add cache-busting parameters to the permanent canonical URL or og:url.
+
+For Microsoft Teams testing, use:
+
+https://onspotglobal.com/?preview=v3
+
+Also test a route-specific URL with a harmless query parameter.
+
+────────────────────────────
+13. Required final report
+────────────────────────────
+
+Provide:
+
+Exact root cause
+Whether production was serving Node middleware or static HTML
+Files changed
+Final default title
+Final social image URL
+Image dimensions
+Image HTTP status
+Image Content-Type
+Confirmation that raw HTML contains server-rendered metadata
+Confirmation that no old title remains in production output
+Routes tested
+Crawler user agents tested
+Build and deployment result
+Cache purge performed
+Any remaining external platform cache limitation
+
+Do not claim the issue is fixed until the deployed https://onspotglobal.com/ raw response has been checked successfully.
