@@ -1,0 +1,287 @@
+Please fix the missing social-sharing preview image for OnSpot Global links, especially when links are pasted into Microsoft Teams.
+
+
+
+Current issue:
+
+When sharing a URL such as:
+
+
+
+https://onspotglobal.com/
+
+https://onspotglobal.com/find-work/jobs
+
+
+
+Microsoft Teams displays the page title and description, but the preview image is broken or missing. The preview currently shows a broken-image placeholder and alt text instead of the intended OnSpot thumbnail.
+
+
+
+Relevant project files may include:
+
+- `client/index.html`
+
+- `client/src/components/HeadSEO.tsx`
+
+- `server/ogMiddleware.ts`
+
+- Route-specific page components
+
+- Public/static image assets
+
+
+
+Please diagnose the root cause before changing anything.
+
+
+
+Required fixes:
+
+
+
+1. Inspect all Open Graph and Twitter image metadata:
+
+   - `og:image`
+
+   - `og:image:secure_url`
+
+   - `og:image:type`
+
+   - `og:image:width`
+
+   - `og:image:height`
+
+   - `og:image:alt`
+
+   - `twitter:image`
+
+   - `twitter:card`
+
+
+
+2. Ensure `og:image` and `twitter:image` use a fully qualified HTTPS URL, for example:
+
+
+
+   `https://onspotglobal.com/social-preview.jpg`
+
+
+
+   Do not use:
+
+   - Relative URLs
+
+   - Localhost URLs
+
+   - Replit development URLs
+
+   - Imported frontend asset paths
+
+   - Blob URLs
+
+   - Base64 data URLs
+
+   - URLs that require JavaScript to resolve
+
+
+
+3. Verify the image file actually exists in the publicly served static directory and can be opened directly without authentication, cookies, redirects, or JavaScript.
+
+
+
+4. Use a dedicated social-preview image with these specifications:
+
+   - Recommended size: 1200 × 630 pixels
+
+   - Format: JPG or PNG
+
+   - Correct MIME type
+
+   - Reasonable file size, preferably below 1 MB
+
+   - No SVG for the main social preview
+
+   - No transparent-only areas that could make the image appear blank
+
+   - Use the approved OnSpot branding and logo
+
+
+
+5. Ensure the image URL returns:
+
+   - HTTP 200
+
+   - A valid `Content-Type`, such as `image/jpeg` or `image/png`
+
+   - No HTML fallback page
+
+   - No 403 or 404 response
+
+   - No redirect loop
+
+   - No bot-blocking response
+
+
+
+6. Microsoft Teams and other social crawlers may not execute React or client-side JavaScript. Ensure the initial server HTML response already contains the correct Open Graph metadata.
+
+
+
+   The following tags must be visible in the raw HTML returned by the server:
+
+
+
+   `<meta property="og:title" ...>`
+
+   `<meta property="og:description" ...>`
+
+   `<meta property="og:url" ...>`
+
+   `<meta property="og:type" content="website">`
+
+   `<meta property="og:image" ...>`
+
+   `<meta property="og:image:secure_url" ...>`
+
+   `<meta property="og:image:type" ...>`
+
+   `<meta property="og:image:width" content="1200">`
+
+   `<meta property="og:image:height" content="630">`
+
+   `<meta property="og:image:alt" ...>`
+
+   `<meta name="twitter:card" content="summary_large_image">`
+
+   `<meta name="twitter:image" ...>`
+
+
+
+7. Review `server/ogMiddleware.ts` carefully:
+
+   - Confirm it injects metadata into the production HTML.
+
+   - Confirm it handles `/find-work/jobs`.
+
+   - Confirm it does not generate an incorrect image URL.
+
+   - Confirm it does not create duplicate or conflicting Open Graph tags.
+
+   - Confirm route-specific metadata is applied before the HTML response is sent.
+
+
+
+8. Review `HeadSEO.tsx`:
+
+   - Keep it consistent with the server-rendered metadata.
+
+   - Do not rely exclusively on this React component for social previews.
+
+   - Remove or correct duplicate tags if they conflict with the server output.
+
+
+
+9. Review `client/index.html`:
+
+   - Add reliable default Open Graph and Twitter metadata as a fallback.
+
+   - Ensure the default image is a valid absolute production URL.
+
+   - Do not leave stale or broken image references.
+
+
+
+10. For the `/find-work/jobs` route, use appropriate metadata such as:
+
+
+
+   Title:
+
+   `Find Work | OnSpot Global`
+
+
+
+   Description:
+
+   `Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot Global.`
+
+
+
+   Canonical URL:
+
+   `https://onspotglobal.com/find-work/jobs`
+
+
+
+   The social image can use the global OnSpot sharing image unless a dedicated Find Work image already exists.
+
+
+
+11. Check the site’s `robots.txt`, middleware, CDN, and security headers to ensure social crawlers can retrieve the image and page metadata.
+
+
+
+12. Do not modify the visible page layout, application functionality, or unrelated page content.
+
+
+
+Validation required:
+
+
+
+1. Run the existing build, type-check, lint, and test commands.
+
+2. Inspect the raw production HTML response for:
+
+   `https://onspotglobal.com/find-work/jobs`
+
+3. Confirm the Open Graph tags are present without executing JavaScript.
+
+4. Request the final `og:image` URL directly and confirm:
+
+   - HTTP status 200
+
+   - Correct image MIME type
+
+   - Actual image content rather than HTML
+
+5. Test using a crawler-like user agent, including:
+
+   - `facebookexternalhit`
+
+   - `Twitterbot`
+
+   - `LinkedInBot`
+
+   - `bingbot`
+
+6. Confirm there is only one effective `og:image` and no conflicting metadata.
+
+7. Add a cache-busting image filename or version only if needed, for example:
+
+   `https://onspotglobal.com/social-preview-v2.jpg`
+
+8. Note that Microsoft Teams may cache old previews. After deployment, test using:
+
+   - A new image filename, or
+
+   - A harmless URL query parameter on the shared page for testing
+
+
+
+Please summarize:
+
+- The exact root cause
+
+- Files changed
+
+- Final Open Graph image URL
+
+- HTTP response status and Content-Type of the image
+
+- Whether metadata is server-rendered
+
+- Validation commands and results
+
+- Any Microsoft Teams cache considerations
