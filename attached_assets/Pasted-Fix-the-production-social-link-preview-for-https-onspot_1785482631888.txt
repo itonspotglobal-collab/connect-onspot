@@ -1,0 +1,143 @@
+Fix the production social-link preview for https://onspotglobal.com/.
+
+This is not only a browser-title change. Microsoft Teams is still receiving:
+
+Title:
+OnSpot – The Superhuman Outsourcing System
+
+And the preview image is broken.
+
+A new image has already been uploaded here:
+
+public/heart.png
+
+The required social preview title is:
+
+OnSpot – Work Without Limits
+
+IMPORTANT:
+Microsoft Teams does not reliably execute React or client-side JavaScript. The correct title, description, and image must exist in the initial raw HTML returned by the production server.
+
+Please make the following changes.
+
+1. Update the homepage social metadata
+
+For https://onspotglobal.com/, the raw server response must contain:
+
+<title>OnSpot – Work Without Limits</title>
+
+<meta property="og:title" content="OnSpot – Work Without Limits">
+<meta property="og:description" content="The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://onspotglobal.com/">
+<meta property="og:image" content="https://onspotglobal.com/heart.png">
+<meta property="og:image:secure_url" content="https://onspotglobal.com/heart.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="OnSpot – Work Without Limits">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OnSpot – Work Without Limits">
+<meta name="twitter:description" content="The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.">
+<meta name="twitter:image" content="https://onspotglobal.com/heart.png">
+
+2. Update the actual server-generated metadata
+
+Inspect and update all relevant files, especially:
+
+- `server/ogMiddleware.ts`
+- `client/index.html`
+- `client/src/components/HeadSEO.tsx`
+
+Do not only update `HeadSEO.tsx`.
+
+The homepage title and Open Graph values must be injected by `server/ogMiddleware.ts` or otherwise included in the HTML before it is sent to the crawler.
+
+Search the entire project for all variants of:
+
+- `The Superhuman Outsourcing System`
+- `The Superhuman OutSourcing System`
+- `OnSpot — The Superhuman Outsourcing System`
+- `OnSpot – The Superhuman Outsourcing System`
+- `OnSpot - The Superhuman Outsourcing System`
+
+Replace relevant browser-title and social-preview references with:
+
+`OnSpot – Work Without Limits`
+
+3. Fix the social image
+
+The uploaded image is:
+
+`public/heart.png`
+
+Confirm that the production build serves it at exactly:
+
+https://onspotglobal.com/heart.png
+
+Do not use:
+
+- `/public/heart.png`
+- `public/heart.png`
+- A React import path
+- A Replit development URL
+- A relative `og:image` value
+- A local filesystem path
+
+The metadata must use the full production URL:
+
+https://onspotglobal.com/heart.png
+
+Confirm the image request returns:
+
+- HTTP 200
+- `Content-Type: image/png`
+- Actual PNG image bytes
+- No HTML fallback page
+- No authentication
+- No redirect to the homepage
+- No 404 response
+
+4. Check the image dimensions
+
+Confirm that `public/heart.png` is exactly or approximately 1200 × 630 pixels.
+
+If it is not 1200 × 630, resize or export a copy named:
+
+`public/onspot-social-preview-v2.png`
+
+Then use:
+
+https://onspotglobal.com/onspot-social-preview-v2.png
+
+Using a new filename is preferred because Microsoft Teams may have cached the broken `heart.png` response.
+
+5. Remove duplicate and conflicting tags
+
+Inspect the final HTML and ensure there is only one effective value for each of these:
+
+- `<title>`
+- `og:title`
+- `og:description`
+- `og:url`
+- `og:image`
+- `twitter:title`
+- `twitter:image`
+
+Remove stale metadata containing “The Superhuman Outsourcing System”.
+
+Do not leave the old title in `client/index.html` as a fallback.
+
+6. Fix route handling
+
+Ensure the homepage `/` is explicitly handled by `server/ogMiddleware.ts`.
+
+Do not allow the homepage to fall through to an old default metadata object.
+
+Use exact pathname matching where appropriate:
+
+```ts
+if (pathname === "/" || pathname === "") {
+  // Homepage metadata
+}
