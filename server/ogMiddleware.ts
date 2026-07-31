@@ -216,7 +216,7 @@ async function resolveOGMeta(
 
   // ── Default / homepage ────────────────────────────────────────────────────────
   return {
-    title: "OnSpot – The Superhuman Outsourcing System",
+    title: "OnSpot – Work Without Limits",
     description:
       "The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs—fusing AI-first infrastructure with human excellence.",
     image: DEFAULT_IMAGE,

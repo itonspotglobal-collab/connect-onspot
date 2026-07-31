@@ -34,8 +34,8 @@ interface HeadSEOProps {
 }
 
 export function HeadSEO({ 
-  title = "OnSpot — The Superhuman Outsourcing System",
-  description = "The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—our Superhuman Outsourcing System fuses AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.",
+  title = "OnSpot — Work Without Limits",
+  description = "The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—we fuse AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.",
   ogImage = "https://www.onspotglobal.com/assets/og/onspot-home.jpg",
   ogType = "website",
   canonical,
@@ -129,7 +129,7 @@ export function HeadSEO({
       "legalName": "OnSpot Global",
       "url": "https://www.onspotglobal.com",
       "logo": "https://www.onspotglobal.com/assets/onspot-logo.png",
-      "description": "The Superhuman Outsourcing System - AI-powered talent matching and performance management",
+      "description": "Work Without Limits - AI-powered talent matching and performance management",
       "sameAs": [
         "https://www.linkedin.com/company/onspotglobal",
         "https://www.facebook.com/onspotglobal"

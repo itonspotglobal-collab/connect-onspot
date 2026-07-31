@@ -448,7 +448,7 @@ export default function InvestorsCorner() {
 
     // Cleanup function to restore original meta tags when component unmounts
     return () => {
-      document.title = "OnSpot — The Superhuman Outsourcing System";
+      document.title = "OnSpot — Work Without Limits";
     };
   }, []);
 

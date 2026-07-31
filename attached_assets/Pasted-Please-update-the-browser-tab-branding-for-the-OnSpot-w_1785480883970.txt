@@ -1,0 +1,44 @@
+Please update the browser tab branding for the OnSpot website.
+
+Repository context:
+- The main HTML metadata appears to be in `client/index.html`.
+- SEO title handling may also exist in `client/src/components/HeadSEO.tsx`.
+- Server-rendered social/SEO metadata may exist in `server/ogMiddleware.ts`.
+
+Required changes:
+
+1. Change the browser tab title from:
+   `OnSpot - The Superhuman Outsourcing System`
+
+   to:
+   `OnSpot - Work Without Limits`
+
+2. Search the entire project for the old title and update every relevant page-title, default-title, Open Graph title, Twitter title, and server-rendered metadata reference so the old wording no longer appears unintentionally.
+
+3. Fix the favicon shown in the browser tab. The current favicon has an unwanted thin line/artifact beside or through the OnSpot logo.
+   - Identify which favicon file is referenced by `client/index.html`.
+   - Inspect all favicon-related assets, including `.ico`, `.png`, and `.svg` files.
+   - Replace or correct the favicon using the clean OnSpot logo.
+   - Keep the logo centered with sufficient transparent padding so it is not clipped at small browser-tab sizes.
+   - Remove any stray SVG path, border, background line, or export artifact.
+   - Provide appropriate favicon sizes, preferably 16×16, 32×32, and 48×48, or a correct multi-size `.ico`.
+   - Preserve transparency unless the existing branding intentionally uses a background.
+
+4. Ensure the HTML favicon declarations point to the corrected files. Remove duplicate or conflicting favicon declarations that could cause the browser to load an older asset.
+
+5. Do not alter the visible website layout, header logo, page content, functionality, or unrelated SEO copy.
+
+6. After making the changes:
+   - Run the project’s existing type-check, build, and test commands.
+   - Confirm the final HTML contains the new title.
+   - Confirm there are no remaining relevant occurrences of `The Superhuman Outsourcing System`.
+   - Confirm the favicon renders cleanly at 16×16 and 32×32 without the unwanted line.
+
+7. Browser favicon caching is aggressive. Add a version query to the favicon URL if appropriate, for example:
+   `/favicon.ico?v=2`
+
+Please summarize:
+- Files changed
+- Cause of the favicon line
+- Validation commands run
+- Whether a hard refresh or browser cache clear is required
