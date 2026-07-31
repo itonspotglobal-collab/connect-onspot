@@ -1,0 +1,73 @@
+The Microsoft Teams link preview for https://onspotglobal.com/ is still showing:
+
+- The old title: `OnSpot – The Superhuman Outsourcing System`
+- A broken/missing preview image
+
+This means the production server is still returning stale Open Graph metadata, or the new metadata is not being rendered in the initial HTML response.
+
+Please fix this at the production/server-rendering level.
+
+Required outcome for https://onspotglobal.com/:
+
+Title:
+`OnSpot – Work Without Limits`
+
+Open Graph image:
+Use the uploaded public social preview image, preferably with a new filename to bypass cached broken previews:
+
+`public/onspot-social-preview-v3.png`
+
+The public production URL must be:
+
+`https://onspotglobal.com/onspot-social-preview-v3.png`
+
+Do not use `public/` in the URL.
+
+1. Search the entire repository for all old title variants
+
+Search for:
+
+- `The Superhuman Outsourcing System`
+- `The Superhuman OutSourcing System`
+- `OnSpot – The Superhuman Outsourcing System`
+- `OnSpot - The Superhuman Outsourcing System`
+- `OnSpot — The Superhuman Outsourcing System`
+
+Replace all relevant browser-title, default SEO, Open Graph, Twitter, and server metadata values with:
+
+`OnSpot – Work Without Limits`
+
+Pay special attention to:
+
+- `server/ogMiddleware.ts`
+- `client/index.html`
+- `client/src/components/HeadSEO.tsx`
+- Any route metadata map
+- Any SEO configuration file
+- Any production HTML template
+- Any cached/static generated HTML
+
+2. Fix the initial raw HTML response
+
+Microsoft Teams does not reliably execute React JavaScript.
+
+The initial server response for `/` must already contain:
+
+```html
+<title>OnSpot – Work Without Limits</title>
+
+<meta property="og:title" content="OnSpot – Work Without Limits">
+<meta property="og:description" content="The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://onspotglobal.com/">
+<meta property="og:image" content="https://onspotglobal.com/onspot-social-preview-v3.png">
+<meta property="og:image:secure_url" content="https://onspotglobal.com/onspot-social-preview-v3.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="OnSpot – Work Without Limits">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OnSpot – Work Without Limits">
+<meta name="twitter:description" content="The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.">
+<meta name="twitter:image" content="https://onspotglobal.com/onspot-social-preview-v3.png">
