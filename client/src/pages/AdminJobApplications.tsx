@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
-  XCircle, UserCheck, Briefcase,
+  XCircle, UserCheck, Briefcase, Trash2,
 } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -377,6 +377,68 @@ function StatusDialog({
   );
 }
 
+// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
+
+function DeleteConfirmDialog({
+  app,
+  open,
+  onClose,
+  onConfirm,
+  isPending,
+}: {
+  app: Application | null;
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  if (!app) return null;
+  return (
+    <AlertDialog open={open} onOpenChange={v => !v && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this application?</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              <p>This will permanently delete this job application submission. The applicant's Talent account and profile will not be deleted.</p>
+              <dl className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm space-y-1.5">
+                <div className="flex gap-2">
+                  <dt className="text-slate-500 w-20 shrink-0">Applicant</dt>
+                  <dd className="font-medium text-slate-800">{applicantName(app)}</dd>
+                </div>
+                <div className="flex gap-2">
+                  <dt className="text-slate-500 w-20 shrink-0">Job</dt>
+                  <dd className="font-medium text-slate-800">{app.jobTitle}</dd>
+                </div>
+                {app.submittedAt && (
+                  <div className="flex gap-2">
+                    <dt className="text-slate-500 w-20 shrink-0">Submitted</dt>
+                    <dd className="text-slate-700">{fmtDate(app.submittedAt)}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onClose} disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={isPending}
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+          >
+            {isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+            ) : (
+              "Delete Application"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ─── Bulk Reject Confirm ──────────────────────────────────────────────────────
 
 function BulkConfirm({
@@ -425,6 +487,7 @@ export default function AdminJobApplications() {
   // ── Dialog state ──────────────────────────────────────────────────────────
   const [detailId, setDetailId] = useState<string | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string | null>(null);
 
@@ -503,6 +566,25 @@ export default function AdminJobApplications() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
     },
     onError: (err: any) => toast({ title: "Bulk update failed", description: err.message, variant: "destructive" }),
+  });
+
+  // ── Delete mutation ───────────────────────────────────────────────────────
+  const deleteMutation = useMutation({
+    mutationFn: (applicationId: string) =>
+      apiFetch(`/api/admin/job-applications/${applicationId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast({ title: "Application deleted successfully." });
+      setDeleteDialog(null);
+      // If the deleted row was the only item on the current page, move back
+      if (items.length === 1 && page > 1) setPage(p => p - 1);
+      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
+    },
+    onError: (err: any) => toast({
+      title: "Unable to delete the application. Please try again.",
+      description: err.message,
+      variant: "destructive",
+    }),
   });
 
   // ── Reset ─────────────────────────────────────────────────────────────────
@@ -698,6 +780,14 @@ export default function AdminJobApplications() {
                           onClick={() => setStatusDialog({ id: app.id, current: app.status })}>
                           Status
                         </Button>
+                        <Button
+                          size="sm" variant="outline"
+                          className="h-7 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                          onClick={() => setDeleteDialog(app)}
+                          aria-label={`Delete application from ${applicantName(app)}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -736,6 +826,14 @@ export default function AdminJobApplications() {
                   <Button size="sm" variant="outline" className="h-7 text-xs flex-1"
                     onClick={() => setStatusDialog({ id: app.id, current: app.status })}>
                     Change Status
+                  </Button>
+                  <Button
+                    size="sm" variant="outline"
+                    className="h-7 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                    onClick={() => setDeleteDialog(app)}
+                    aria-label={`Delete application from ${applicantName(app)}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
@@ -783,6 +881,13 @@ export default function AdminJobApplications() {
         action="rejected"
         onConfirm={() => bulkMutation.mutate({ ids: [...selected], status: "rejected" })}
         onCancel={() => setBulkAction(null)}
+      />
+      <DeleteConfirmDialog
+        app={deleteDialog}
+        open={!!deleteDialog}
+        onClose={() => setDeleteDialog(null)}
+        onConfirm={() => deleteDialog && deleteMutation.mutate(deleteDialog.id)}
+        isPending={deleteMutation.isPending}
       />
     </div>
   );

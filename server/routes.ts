@@ -8548,6 +8548,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/admin/job-applications/:applicationId — delete a single application submission (admin only)
+  // TODO: Protect application deletion with admin authorization before production.
+  app.delete("/api/admin/job-applications/:applicationId", async (req: Request, res: Response) => {
+    try {
+      const { applicationId } = req.params;
+      if (!applicationId) return res.status(400).json({ error: "applicationId is required" });
+
+      // Confirm the application exists
+      const existing = await query(
+        `SELECT id FROM job_submissions WHERE id = $1`,
+        [applicationId],
+      );
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      // Transactional delete: status history first, then the application itself
+      await query("BEGIN");
+      try {
+        await query(
+          `DELETE FROM job_application_status_history WHERE application_id = $1`,
+          [applicationId],
+        );
+        await query(
+          `DELETE FROM job_submissions WHERE id = $1`,
+          [applicationId],
+        );
+        await query("COMMIT");
+        return res.json({ success: true, message: "Application deleted successfully" });
+      } catch (txErr) {
+        await query("ROLLBACK");
+        throw txErr;
+      }
+    } catch (err: any) {
+      console.error("DELETE /api/admin/job-applications/:id error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // GET /api/talent/my-applications — list the authenticated talent's own job submissions
   app.get("/api/talent/my-applications", authenticateJWT, async (req: Request, res: Response) => {
     try {

@@ -1,0 +1,368 @@
+ADD DELETE APPLICATION FEATURE TO ADMIN JOB APPLICATIONS PAGE
+
+Target page:
+
+`/admin/job-applications`
+
+Purpose:
+
+Allow an admin/user of this page to delete a submitted job application directly
+from the UI so manual database deletion is no longer necessary.
+
+IMPORTANT DATA RULE
+
+Deleting an application must delete ONLY that specific job application
+submission.
+
+It must NOT delete:
+
+- the Talent account
+- the users table record
+- Talent profile
+- login credentials
+- skills
+- resume/profile data
+- other applications submitted by the same Talent
+- job posting
+- Client account
+- any unrelated records
+
+Example:
+
+Talent:
+Maria Santos
+maria@example.com
+
+Applications:
+1. IT Administrator
+2. Accounting Manager
+3. Sales Operations Specialist
+
+If the admin deletes only the IT Administrator application:
+
+DELETE:
+- IT Administrator application record
+
+KEEP:
+- Maria's Talent account
+- Maria's profile
+- Accounting Manager application
+- Sales Operations Specialist application
+
+FRONTEND
+
+Update:
+
+`client/src/pages/AdminJobApplications.tsx`
+
+Add a Delete action to each application row.
+
+Current Actions column contains items such as:
+
+- View
+- Status
+
+Add:
+
+- Delete
+
+Recommended UI:
+
+[ View ] [ Status ] [ Trash icon ]
+
+Use a red/destructive style for Delete.
+
+The delete action should be visually distinct from normal actions.
+
+CONFIRMATION DIALOG
+
+Never delete immediately when the button is clicked.
+
+Show a confirmation dialog:
+
+Title:
+
+`Delete this application?`
+
+Message:
+
+`This will permanently delete this job application submission. The applicant's Talent account and profile will not be deleted.`
+
+Also show context:
+
+Applicant:
+`Nur Laminero`
+
+Job:
+`Customer Service Representative`
+
+Optional:
+
+Submitted:
+`Jul 31, 2026`
+
+Buttons:
+
+Secondary:
+`Cancel`
+
+Destructive:
+`Delete Application`
+
+The destructive button should clearly say:
+
+`Delete Application`
+
+Do not use a generic button such as `OK`.
+
+BACKEND ENDPOINT
+
+Add:
+
+DELETE `/api/admin/job-applications/:applicationId`
+
+or use the project's existing API naming convention if there is already a
+pattern.
+
+Behavior:
+
+1. Validate `applicationId`.
+2. Confirm the application exists.
+3. Delete only the specified application.
+4. Return 404 when the application does not exist.
+5. Return a successful response such as:
+
+{
+  "success": true,
+  "message": "Application deleted successfully"
+}
+
+DATABASE SAFETY
+
+Review the current application schema and foreign keys before implementing.
+
+Delete only from the job application-related tables.
+
+If the application has dependent records such as:
+
+`job_application_status_history`
+
+delete those records safely as part of the same operation.
+
+Preferred options:
+
+A. Configure foreign key:
+
+`ON DELETE CASCADE`
+
+for application-specific history records only.
+
+OR
+
+B. Use a transaction:
+
+1. delete status history belonging to application
+2. delete application
+
+Do not cascade from job applications into:
+
+- users
+- profiles
+- Talent accounts
+- jobs
+
+Double-check the foreign key direction.
+
+The application should reference the Talent account.
+
+Deleting the child application must never delete the parent Talent account.
+
+TRANSACTION
+
+Perform deletion in a transaction when multiple related application records
+must be removed.
+
+Example logical transaction:
+
+BEGIN
+
+DELETE FROM job_application_status_history
+WHERE application_id = :applicationId;
+
+DELETE FROM job_applications
+WHERE id = :applicationId;
+
+COMMIT
+
+If anything fails:
+
+ROLLBACK
+
+Do not leave partial records behind.
+
+UI AFTER DELETE
+
+After successful deletion:
+
+1. Close the confirmation modal.
+2. Show success toast:
+
+`Application deleted successfully.`
+
+3. Refresh/invalidate the Job Applications query.
+
+4. Update:
+   - application table
+   - Total count
+   - Submitted count
+   - status summary cards
+   - pagination total
+
+Do not require a full browser refresh.
+
+If the deleted row was the final item on the current pagination page, handle the
+pagination gracefully.
+
+Example:
+
+Page 3 has only one application.
+
+After deleting it:
+
+move back to Page 2 rather than showing an empty Page 3 unnecessarily.
+
+ERROR HANDLING
+
+If deletion fails:
+
+- keep the dialog or page usable
+- show an error toast:
+
+`Unable to delete the application. Please try again.`
+
+Do not remove the row from the UI unless the backend deletion succeeds.
+
+Disable the Delete Application button while the delete request is processing.
+
+Example:
+
+`Deleting...`
+
+Prevent double clicks.
+
+OPTIONAL VIEW MODAL DELETE
+
+If the View Application dialog already exists, also add:
+
+`Delete Application`
+
+inside that dialog.
+
+This is optional.
+
+The table-row delete action is required.
+
+SEARCH / FILTER / PAGINATION
+
+Deletion must work regardless of:
+
+- current page
+- search query
+- selected job
+- application status filter
+- account status filter
+- date range
+
+After deletion, retain the current filters where possible.
+
+STATUS HISTORY
+
+If the application's status history is application-specific, it may be deleted
+together with the application.
+
+Do not delete global audit records unrelated to this application.
+
+If your audit requirements require retaining evidence of deletion, instead add
+a separate minimal deletion audit record such as:
+
+- applicationId
+- applicant name or ID as appropriate
+- jobId
+- deletedAt
+- deletionSource
+
+Do not retain unnecessary sensitive applicant data.
+
+For the current implementation, this is optional unless an audit system already
+exists.
+
+CURRENT TEMPORARY ADMIN ACCESS
+
+The project currently allows access to admin pages without admin authentication.
+
+Keep the delete action consistent with the project's current temporary setup.
+
+Do not introduce a new admin login requirement only for Delete.
+
+However, add a code TODO:
+
+`TODO: Protect application deletion with admin authorization before production.`
+
+Do not display this TODO in the UI.
+
+SECURITY
+
+Even during the current development phase:
+
+- validate IDs server-side
+- use Drizzle or parameterized SQL
+- do not accept a Talent ID as part of the delete request
+- do not delete records based on email
+- delete strictly by the application ID
+- do not expose raw database errors
+
+IMPORTANT
+
+Never implement deletion like:
+
+DELETE FROM users WHERE email = ...
+
+Never delete using the applicant email.
+
+Never delete a Talent account because an application was deleted.
+
+The operation must always be scoped to:
+
+`job_application.id`
+
+TESTS
+
+Add tests for:
+
+1. Application can be deleted successfully.
+2. Deleted application disappears from list.
+3. Total count decreases.
+4. Status summary count decreases correctly.
+5. Applicant Talent account still exists.
+6. Applicant profile still exists.
+7. Other applications by the same Talent remain.
+8. Job posting remains.
+9. Application status history is handled safely.
+10. Nonexistent application ID returns 404.
+11. Double-click does not create multiple delete requests.
+12. Cancel does not delete anything.
+13. Filters remain after deletion.
+14. Pagination adjusts correctly after deleting last row on a page.
+
+ACCEPTANCE CRITERIA
+
+The feature is complete when:
+
+- Each application row has a Delete action.
+- Delete requires confirmation.
+- Confirmation explicitly says Talent account will remain.
+- Only the selected application is deleted.
+- Talent/user/profile records remain untouched.
+- Other applications remain untouched.
+- Counts refresh automatically.
+- No manual database deletion is required.
