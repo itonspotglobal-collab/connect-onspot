@@ -459,6 +459,13 @@ app.use((req, res, next) => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🚀 Frontend baseURL: ${process.env.VITE_API_BASE || 'relative URLs'}`);
 
+  // API 404 guard — must come AFTER all /api/* routes and BEFORE the Vite/static catch-all.
+  // Prevents unmatched /api/* requests from falling through to index.html (which returns HTML
+  // with a 200 status, confusing JSON-expecting clients with "Unexpected token '<'" errors).
+  app.use("/api", (_req: Request, res: Response) => {
+    res.status(404).json({ success: false, error: "API endpoint not found" });
+  });
+
   // Serve static files from public folder (for Open Graph images, robots.txt, etc.)
   // This must come BEFORE Vite setup to prevent the catch-all route from intercepting static files
   const publicPath = path.resolve(import.meta.dirname, "..", "public");

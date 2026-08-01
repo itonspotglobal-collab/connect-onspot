@@ -143,6 +143,12 @@ async function apiFetch(path: string, opts?: RequestInit) {
     ...opts,
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts?.headers ?? {}) },
   });
+  const contentType = res.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    const text = await res.text();
+    console.error("API returned non-JSON response:", res.status, text.slice(0, 200));
+    throw new Error(`Request failed with status ${res.status}`);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `HTTP ${res.status}`);

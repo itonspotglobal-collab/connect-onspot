@@ -1,0 +1,309 @@
+FIX JOB APPLICATION DELETE ERROR
+
+The Delete Application feature on:
+
+`/admin/job-applications`
+
+is currently failing with:
+
+`Unexpected token '<', "<!doctype "... is not valid JSON`
+
+The frontend is expecting JSON, but the DELETE request is receiving HTML.
+
+This strongly indicates that the DELETE request is:
+
+- calling the wrong URL, OR
+- the Express DELETE endpoint is missing/not registered, OR
+- the request is falling through to the SPA/Vite HTML fallback.
+
+Please trace and fix the complete request instead of only changing the frontend
+error message.
+
+STEP 1 — INSPECT THE ACTUAL DELETE REQUEST
+
+Review:
+
+- `client/src/pages/AdminJobApplications.tsx`
+- `server/routes.ts`
+- any application service/storage code
+- Express/Vite route registration order
+
+Find the exact frontend request used when clicking the trash button.
+
+It should use the same exact path implemented by the server.
+
+Preferred API:
+
+`DELETE /api/admin/job-applications/:applicationId`
+
+Example frontend:
+
+const response = await fetch(
+  `/api/admin/job-applications/${application.id}`,
+  {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }
+);
+
+Do not accidentally call:
+
+- `/admin/job-applications/:id`
+- `/api/job-applications/:id`
+- `/api/admin/job-application/:id`
+- the page URL itself
+
+unless that is the exact backend route.
+
+STEP 2 — ENSURE THE BACKEND DELETE ROUTE EXISTS
+
+In `server/routes.ts`, explicitly register:
+
+app.delete(
+  "/api/admin/job-applications/:applicationId",
+  async (req, res) => {
+    ...
+  }
+);
+
+The endpoint must exist before the SPA fallback/static frontend handling.
+
+Do not let this API request fall through to `index.html`.
+
+TEMPORARY ADMIN ACCESS
+
+Admin authentication is intentionally not enabled yet in this development
+phase.
+
+Therefore, do not add:
+
+- `AdminProtectedRoute`
+- `authenticateAdminFlexible`
+- `authenticateJWT`
+- `requireAdmin`
+
+to this DELETE endpoint for now.
+
+Add a TODO comment:
+
+`TODO: Protect application deletion with admin authorization before production.`
+
+STEP 3 — VALIDATE THE APPLICATION
+
+Read:
+
+`req.params.applicationId`
+
+Validate that it is present and valid.
+
+Look up the application first.
+
+If it does not exist, return:
+
+HTTP 404
+
+{
+  "success": false,
+  "error": "Application not found"
+}
+
+Every response from this API must be JSON.
+
+Do not return an HTML error page.
+
+STEP 4 — DELETE ONLY THE APPLICATION SUBMISSION
+
+IMPORTANT:
+
+Deleting an application must NOT delete:
+
+- users
+- Talent account
+- Talent profile
+- login credentials
+- job posting
+- skills
+- resume/profile information
+- other applications belonging to the Talent
+
+Only delete the selected `job_applications` record and child records that
+belong exclusively to that application.
+
+If there is:
+
+`job_application_status_history`
+
+delete its rows first, or use an appropriate foreign-key cascade from history
+to application.
+
+Use a database transaction.
+
+Conceptually:
+
+BEGIN;
+
+DELETE FROM job_application_status_history
+WHERE application_id = applicationId;
+
+DELETE FROM job_applications
+WHERE id = applicationId;
+
+COMMIT;
+
+Do not perform any DELETE against the users/profiles tables.
+
+STEP 5 — RETURN JSON
+
+Successful response:
+
+HTTP 200
+
+{
+  "success": true,
+  "message": "Application deleted successfully"
+}
+
+Never return the frontend HTML document from an `/api/...` request.
+
+STEP 6 — FIX FRONTEND RESPONSE HANDLING
+
+The frontend currently appears to call `response.json()` unconditionally.
+
+Make it safer.
+
+Example logic:
+
+const response = await fetch(...);
+
+const contentType = response.headers.get("content-type");
+
+let data;
+
+if (contentType?.includes("application/json")) {
+  data = await response.json();
+} else {
+  const text = await response.text();
+
+  console.error(
+    "Delete application returned a non-JSON response:",
+    response.status,
+    text.slice(0, 200)
+  );
+
+  throw new Error(
+    `Delete request failed with status ${response.status}`
+  );
+}
+
+if (!response.ok) {
+  throw new Error(data?.error || "Unable to delete application");
+}
+
+This prevents confusing errors such as:
+
+`Unexpected token '<'`
+
+and exposes the real HTTP problem.
+
+STEP 7 — CHECK EXPRESS / VITE ROUTE ORDER
+
+Inspect server initialization.
+
+API routes must be registered before frontend SPA fallback handling.
+
+Correct conceptual order:
+
+1. Express middleware
+2. `/api/...` routes
+3. API 404 handling
+4. Vite/static assets
+5. frontend SPA fallback
+
+Do not allow unknown `/api/*` requests to return `index.html`.
+
+Add an API-specific 404 handler if needed:
+
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "API endpoint not found"
+  });
+});
+
+This should execute before the SPA fallback.
+
+Then a bad API URL returns JSON instead of HTML.
+
+STEP 8 — VERIFY THE NETWORK REQUEST
+
+Use the browser Network tab and click Delete.
+
+Verify:
+
+Request Method:
+`DELETE`
+
+Request URL:
+`/api/admin/job-applications/<actual application UUID>`
+
+Expected successful status:
+`200`
+
+Expected Content-Type:
+`application/json`
+
+Expected response:
+
+{
+  "success": true,
+  "message": "Application deleted successfully"
+}
+
+If the status is 404 and response begins with `<!doctype html>`, the route is
+still not correctly registered.
+
+STEP 9 — UI AFTER SUCCESS
+
+Only after HTTP success:
+
+- close confirmation dialog
+- show:
+  `Application deleted successfully.`
+- remove/refetch the application
+- invalidate Job Applications queries
+- refresh summary counts
+- preserve active filters/page when possible
+
+Do not remove the row optimistically before the backend confirms deletion.
+
+STEP 10 — TEST
+
+Test deleting:
+
+1. Pending Account application
+2. Linked Talent application
+3. Application with status-history records
+4. Application without status-history records
+5. Invalid application ID
+6. Already deleted application
+
+For a Linked Talent application verify:
+
+- application disappears
+- Talent account still exists
+- Talent can still log in
+- Talent profile still exists
+- other applications from that Talent remain
+
+FINAL REQUIREMENT
+
+Do not just catch or hide the:
+
+`Unexpected token '<'`
+
+error.
+
+Find why the DELETE API is returning HTML and fix the backend/frontend route
+mismatch so the endpoint always returns JSON.
