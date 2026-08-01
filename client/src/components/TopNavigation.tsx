@@ -1883,7 +1883,7 @@ export function TopNavigation() {
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" style={{ background: 'rgba(10,10,30,0.55)' }} />
             {/* Center vertically; overflow-y-auto only as a fallback for very short/zoomed viewports */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+            <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto" style={{ paddingTop: 'calc(72px + 24px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
               <div
                 className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 w-full my-auto"
                 style={{ maxWidth: '640px' }}

@@ -1,0 +1,117 @@
+ADJUST SIGN-UP MODAL VERTICAL POSITION
+
+The Sign Up modal layout is now acceptable, but it sits too close to the top
+navigation bar compared with the Sign In modal.
+
+Current issue:
+
+- Sign Up modal almost touches/overlaps the navbar.
+- Sign In modal has a more comfortable vertical gap.
+- Both modals should feel visually consistent.
+
+Target:
+
+Make the Sign Up modal start lower on the page so there is clear spacing below
+the navigation bar.
+
+REQUIREMENTS
+
+1. Match the Sign Up modal’s top spacing to the Sign In modal as closely as
+   possible.
+
+2. Keep approximately 12–24px of clear visual space between:
+
+   bottom of navbar
+   ↓
+   top edge of modal
+
+3. Do not vertically center the signup modal if that causes it to move too close
+   to the navbar on short screens.
+
+4. On short laptop screens, position the modal using a safe top offset instead
+   of pure vertical centering.
+
+Suggested behavior:
+
+Normal desktop:
+- centered vertically when there is enough room
+
+Short screens:
+- `top: calc(navbarHeight + 12px)` or equivalent
+- bottom margin at least 12px
+
+5. If the navbar height is approximately 96–100px, the modal should begin below
+   it, not underneath it.
+
+6. Keep the modal fully inside the viewport.
+
+7. Do not reintroduce internal scrolling unless required by validation errors.
+
+8. Do not change:
+   - field layout
+   - button layout
+   - Client/Talent selector
+   - authentication logic
+   - form behavior
+
+IMPLEMENTATION SUGGESTION
+
+Review the modal wrapper in `TopNavigation.tsx`.
+
+If it currently uses something like:
+
+`items-center justify-center`
+
+for all screen sizes, change the vertical alignment for short screens.
+
+Example concept:
+
+- large/tall screens:
+  `items-center`
+
+- short screens:
+  `items-start`
+  with top padding matching navbar height + spacing
+
+For example:
+
+`pt-[112px]`
+
+or calculate it based on the actual navbar height.
+
+Prefer using the real navbar height rather than a fragile arbitrary offset.
+
+VIEWPORT TESTING
+
+Verify:
+
+- 1920×1080
+- 1440×900
+- 1366×768
+- 1280×720
+
+At 1366×768 and 1280×720:
+
+- Sign Up modal must not touch the navbar
+- Close button remains visible
+- Create Account button remains visible
+- Sign In link remains visible
+
+VISUAL CONSISTENCY
+
+Compare side by side:
+
+Sign In modal
+vs
+Sign Up modal
+
+They should have approximately the same top spacing beneath the navigation bar.
+
+ACCEPTANCE CRITERIA
+
+✓ Sign Up modal no longer touches navbar
+✓ Gap visually matches Sign In modal
+✓ Modal still fits within short screens
+✓ No fields are clipped
+✓ CTA remains visible
+✓ No change to form behavior
