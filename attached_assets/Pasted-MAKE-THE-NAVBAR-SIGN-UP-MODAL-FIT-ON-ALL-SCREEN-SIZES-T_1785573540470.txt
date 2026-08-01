@@ -1,0 +1,317 @@
+MAKE THE NAVBAR SIGN-UP MODAL FIT ON ALL SCREEN SIZES
+
+Target:
+The Sign Up form opened from the top navigation.
+
+Problem:
+On smaller laptop screens and shorter browser windows, the Sign Up modal is
+too tall. The bottom CTA becomes partially hidden, so users may think there is
+no Create Account button.
+
+Goal:
+The entire modal interaction must remain usable on:
+
+- small laptops
+- standard laptops
+- large desktop monitors
+- tablets
+- mobile phones
+- short-height browser windows
+
+Do not simply shrink all text or controls excessively.
+
+CORE RESPONSIVE BEHAVIOR
+
+1. Keep the Sign Up modal inside the viewport.
+
+Use a maximum height based on the visible viewport, for example:
+
+`max-h-[calc(100dvh-2rem)]`
+
+or the equivalent existing Tailwind/CSS approach.
+
+Prefer `100dvh` over only `100vh` where supported.
+
+2. The modal must never extend beyond the visible screen.
+
+Desktop target:
+
+- top margin around 16–24px minimum
+- bottom margin around 16–24px minimum
+- modal vertically centered when enough space exists
+
+3. Separate the modal into:
+
+- Header
+- Scrollable form body
+- Sticky footer / CTA area
+
+Structure concept:
+
+┌──────────────────────────────┐
+│ Sign Up                X     │
+│ short supporting text        │
+├──────────────────────────────┤
+│                              │
+│ scrollable form content      │
+│                              │
+├──────────────────────────────┤
+│ Create Account →             │
+│ Already have account? Sign In│
+└──────────────────────────────┘
+
+4. KEEP THE CREATE ACCOUNT BUTTON VISIBLE
+
+This is the most important requirement.
+
+The primary button:
+
+`Create Account →`
+
+must remain visible at the bottom of the modal even when the form content is
+longer than the viewport.
+
+Use a sticky footer such as:
+
+- `sticky bottom-0`
+- solid/modal background
+- top border
+- appropriate padding
+- high enough z-index
+
+Do not allow form fields to visually cover the button.
+
+5. The footer should contain:
+
+- Create Account button
+- “Already have an account? Sign In”
+
+Both must remain visible without needing the user to discover them by scrolling
+to the absolute bottom.
+
+FORM BODY
+
+Make only the middle form content scrollable when required.
+
+Use something like:
+
+`overflow-y-auto`
+
+for the form body.
+
+Do NOT put the entire modal including the button inside the scrolling section.
+
+6. Reduce unnecessary vertical spacing.
+
+Current modal has too much vertical space between:
+
+- First / Last Name
+- Email
+- Password
+- Confirm Password
+- account type selector
+- CTA
+
+Reduce vertical spacing moderately.
+
+Suggested:
+
+- field group gaps: 12–16px
+- label/input gap: 4–6px
+- section gap: 16px
+- modal padding: 20–24px desktop
+- modal padding: 16px on smaller screens
+
+7. Keep First Name and Last Name side-by-side where space allows.
+
+Desktop/tablet:
+
+[ First Name        ] [ Last Name         ]
+
+Small mobile:
+
+[ First Name                            ]
+[ Last Name                             ]
+
+Use responsive grid behavior.
+
+8. Keep input height compact but accessible.
+
+Suggested:
+
+- 40px–44px input height
+- do not go below reasonable touch target sizes on mobile
+
+9. Reduce unnecessary helper-text height.
+
+Current password helper copy takes extra space.
+
+Keep it concise.
+
+For example:
+
+Password placeholder:
+`Min. 8 chars, uppercase, lowercase, number & symbol`
+
+Helper:
+`Use a strong password.`
+
+Or remove redundant helper text if the requirements are already communicated by
+the placeholder and validation messages.
+
+Do not remove validation feedback.
+
+ACCOUNT TYPE SECTION
+
+The current Client / Talent cards consume considerable vertical height.
+
+Make them more compact.
+
+Desktop layout:
+
+[ Client                  ] [ Talent                  ]
+[ Looking for talent      ] [ Looking for jobs       ]
+
+Target each selector card height around 80–95px instead of oversized cards.
+
+Keep:
+
+- icon
+- role label
+- short description
+- selected state
+
+Do not reduce accessibility.
+
+MODAL WIDTH
+
+Keep desktop width around:
+
+`max-w-lg`
+or approximately 560–650px
+
+Do not make the modal unnecessarily wide on large monitors.
+
+For mobile:
+
+- width: `calc(100vw - 24px)` or similar
+- max width maintained
+- avoid touching screen edges
+
+SHORT SCREEN HANDLING
+
+Test specifically on short laptop screens such as:
+
+- 1366 × 768
+- 1280 × 720
+- 1440 × 800
+
+At these sizes:
+
+- Modal header must be visible
+- Create Account button must be visible
+- Sign In link must be visible
+- Only the middle form section may scroll if necessary
+
+The user must never need to guess that a CTA exists below the fold.
+
+VERY SHORT VIEWPORTS
+
+For extremely short browser windows:
+
+- allow the form body to scroll
+- keep header and footer fixed/sticky within the modal
+- never clip the close button
+- never clip the Create Account button
+
+MOBILE
+
+Test:
+
+- 390 × 844
+- 375 × 667
+- 360 × 640
+
+On mobile:
+
+- First/Last Name stack
+- Client/Talent cards may stack if necessary
+- Modal can use nearly full-screen height
+- Keep CTA sticky at bottom
+- Respect safe-area insets where possible
+- Avoid horizontal scrolling
+
+LARGE SCREENS
+
+On 1920×1080 and larger:
+
+- Keep the modal centered
+- Do not stretch it vertically just because more screen space is available
+- Keep the form compact and visually balanced
+
+DO NOT
+
+Do not use:
+
+- CSS transform scale to shrink the whole modal
+- browser zoom hacks
+- fixed pixel heights that clip content
+- `overflow: hidden` on the form body
+- tiny text
+- tiny touch targets
+- absolute-positioned CTA over form fields
+
+ACCESSIBILITY
+
+Preserve:
+
+- keyboard navigation
+- tab order
+- focus trapping inside modal
+- Escape-to-close behavior
+- visible focus states
+- accessible labels
+- close-button accessibility
+- screen-reader-friendly form errors
+
+FORM VALIDATION
+
+When validation errors appear:
+
+- the form body may scroll
+- keep the sticky CTA visible
+- scroll/focus the first invalid field
+- do not hide error messages just to save space
+
+TARGET RESULT
+
+At 1366 × 768 or 1280 × 720:
+
+The user should immediately see:
+
+- modal
+- key form fields
+- role selector
+- Create Account button
+- Sign In link
+
+without the CTA being clipped or hidden.
+
+ACCEPTANCE TESTS
+
+Verify:
+
+1. 1920×1080 — modal centered and compact
+2. 1440×900 — everything visible
+3. 1366×768 — CTA visible
+4. 1280×720 — CTA visible
+5. 1024×768 — usable without clipping
+6. 390×844 — mobile usable
+7. 375×667 — mobile usable
+8. Browser zoom at 100%
+9. Validation errors do not hide CTA
+10. Close button remains visible
+11. No horizontal scroll
+12. Form submission behavior remains unchanged
+13. Client/Talent selection logic remains unchanged
+14. Authentication and routing logic remain unchanged

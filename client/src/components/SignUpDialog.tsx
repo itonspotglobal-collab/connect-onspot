@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +18,6 @@ import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import axios from "axios";
 import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
 
 type UserType = "client" | "talent" | null;
@@ -81,186 +78,95 @@ export function SignUpDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic required field validation
+
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Information", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
     if (userType === "client" && !formData.company) {
-      toast({
-        title: "Company Required",
-        description: "Company name is required for client accounts",
-        variant: "destructive",
-      });
+      toast({ title: "Company Required", description: "Company name is required for client accounts", variant: "destructive" });
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Passwords do not match. Please check and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Password Mismatch", description: "Passwords do not match. Please check and try again.", variant: "destructive" });
       return;
     }
 
-    // Frontend password validation
     if (formData.password.length < 8) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long",
-        variant: "destructive",
-      });
+      toast({ title: "Password Too Short", description: "Password must be at least 8 characters long", variant: "destructive" });
       return;
     }
 
     if (!agreeToTerms) {
-      toast({
-        title: "Terms Required",
-        description: "Please agree to the terms and conditions to continue",
-        variant: "destructive",
-      });
+      toast({ title: "Terms Required", description: "Please agree to the terms and conditions to continue", variant: "destructive" });
       return;
     }
 
-    // Ensure userType is not null before proceeding
     if (!userType) {
-      toast({
-        title: "Account Type Required",
-        description: "Please select an account type (Client or Talent) to continue",
-        variant: "destructive",
-      });
+      toast({ title: "Account Type Required", description: "Please select an account type (Client or Talent) to continue", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
     try {
-      // Call the real signup API with correct snake_case field names as required by backend
       const signupData = {
         email: formData.email.trim(),
-        username: formData.email.split('@')[0], // Generate username from email
+        username: formData.email.split("@")[0],
         password: formData.password,
-        first_name: formData.firstName.trim(),   // snake_case as required by backend API
-        last_name: formData.lastName.trim(),     // snake_case as required by backend API
-        role: userType, // Now TypeScript knows this is "client" | "talent"
-        ...(userType === "client" && { company: formData.company.trim() })
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        role: userType,
+        ...(userType === "client" && { company: formData.company.trim() }),
       };
 
-      console.log('🚀 Sending signup request with data:', {
-        ...signupData,
-        password: '[REDACTED]' // Don't log password
-      });
-
-      // Step 1: First call signup API using authAPI for proper URL configuration
-      console.log('🚀 Step 1: Calling signup API...');
+      console.log("🚀 Sending signup request with data:", { ...signupData, password: "[REDACTED]" });
+      console.log("🚀 Step 1: Calling signup API...");
       const signupResponse = await authAPI.signup(signupData);
-      
+
       if (signupResponse.success) {
         const accountType = userType === "client" ? "Client" : "Talent";
-        console.log('✅ Step 1 complete: Signup successful', signupResponse);
-        
-        toast({
-          title: `Welcome to OnSpot!`,
-          description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...`,
-        });
-        
-        // Step 2: The signup response now includes a JWT token directly.
-        // Store it the same way authAPI.login() does, then navigate.
-        // Full-page reload lets AuthContext re-initialize from localStorage
-        // cleanly — no React state race conditions with any ProtectedRoute.
+        console.log("✅ Step 1 complete: Signup successful", signupResponse);
+
+        toast({ title: `Welcome to OnSpot!`, description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...` });
+
         if (signupResponse.token && signupResponse.user) {
-          console.log('✅ Step 2: Token received from signup, storing...');
+          console.log("✅ Step 2: Token received from signup, storing...");
           localStorage.setItem("onspot_jwt_token", signupResponse.token);
           localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
 
-          toast({
-            title: "Logged In Successfully",
-            description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!`,
-          });
+          toast({ title: "Logged In Successfully", description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!` });
 
           setOpen(false);
           resetDialog();
 
-          // Client → public client profile page (no auth guard, loads immediately)
-          // Talent → /get-hired (public route, renders TalentPortal when authenticated)
           if (userType === "talent") {
             window.location.href = "/get-hired";
           } else {
             window.location.href = "/client-profile";
           }
         } else {
-          console.error('❌ Step 2 failed: Signup response missing token', signupResponse);
-          toast({
-            title: "Auto-Login Failed",
-            description: "Account created successfully. Please log in manually to continue.",
-            variant: "destructive",
-          });
+          console.error("❌ Step 2 failed: Signup response missing token", signupResponse);
+          toast({ title: "Auto-Login Failed", description: "Account created successfully. Please log in manually to continue.", variant: "destructive" });
         }
       } else {
-        // Show specific error message from backend
         const errorMessage = signupResponse.message || "Failed to create account. Please try again.";
-        console.error('❌ Step 1 failed: Signup failed:', {
-          message: signupResponse.message,
-          response: signupResponse
-        });
-        
-        toast({
-          title: "Account Creation Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        console.error("❌ Step 1 failed: Signup failed:", { message: signupResponse.message, response: signupResponse });
+        toast({ title: "Account Creation Failed", description: errorMessage, variant: "destructive" });
       }
     } catch (error: any) {
-      console.error("❌ Signup error:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
-      
-      // Handle different types of errors with specific messages
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        toast({
-          title: "Network Error",
-          description: "Unable to connect to the server. Please check your connection and try again.",
-          variant: "destructive",
-        });
+      console.error("❌ Signup error:", { message: error.message, response: error.response?.data, status: error.response?.status });
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        toast({ title: "Network Error", description: "Unable to connect to the server. Please check your connection and try again.", variant: "destructive" });
       } else if (error.response?.status === 400) {
-        // Backend validation error
-        const errorMessage = error.response.data?.message || "Invalid signup information provided";
-        toast({
-          title: "Validation Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        toast({ title: "Validation Error", description: error.response.data?.message || "Invalid signup information provided", variant: "destructive" });
       } else if (error.response?.status === 409) {
-        // Conflict error (user already exists)
-        toast({
-          title: "Account Already Exists",
-          description: "An account with this email already exists. Please log in instead.",
-          variant: "destructive",
-        });
+        toast({ title: "Account Already Exists", description: "An account with this email already exists. Please log in instead.", variant: "destructive" });
       } else if (error.response?.status >= 500) {
-        // Server error
-        toast({
-          title: "Server Error",
-          description: "Our servers are experiencing issues. Please try again in a few moments.",
-          variant: "destructive",
-        });
+        toast({ title: "Server Error", description: "Our servers are experiencing issues. Please try again in a few moments.", variant: "destructive" });
       } else {
-        // Generic error with backend message if available
-        const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred during signup";
-        toast({
-          title: "Signup Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        toast({ title: "Signup Failed", description: error.response?.data?.message || error.message || "An unexpected error occurred during signup", variant: "destructive" });
       }
     } finally {
       setIsLoading(false);
@@ -270,16 +176,10 @@ export function SignUpDialog({
   const handleGoogleSignup = async () => {
     setIsLoading(true);
     try {
-      // Close dialog immediately to prevent UI issues during redirect
       setOpen(false);
-      // Redirect to backend Google OAuth
-      window.location.href = '/api/auth/google';
+      window.location.href = "/api/auth/google";
     } catch (error: any) {
-      toast({
-        title: "Google Sign-Up Failed",
-        description: "Unable to initiate Google sign-up. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Google Sign-Up Failed", description: "Unable to initiate Google sign-up. Please try again.", variant: "destructive" });
       setIsLoading(false);
     }
   };
@@ -287,16 +187,10 @@ export function SignUpDialog({
   const handleLinkedInSignup = async () => {
     setIsLoading(true);
     try {
-      // Close dialog immediately to prevent UI issues during redirect
       setOpen(false);
-      // Redirect to backend LinkedIn OAuth
-      window.location.href = '/api/auth/linkedin';
+      window.location.href = "/api/auth/linkedin";
     } catch (error: any) {
-      toast({
-        title: "LinkedIn Sign-Up Failed",
-        description: "Unable to initiate LinkedIn sign-up. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "LinkedIn Sign-Up Failed", description: "Unable to initiate LinkedIn sign-up. Please try again.", variant: "destructive" });
       setIsLoading(false);
     }
   };
@@ -311,15 +205,18 @@ export function SignUpDialog({
     setUserType(null);
   };
 
-  // Shared dark input style matching the login page
-  const darkInput = "bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-[#3A3AF8] focus-visible:border-[#3A3AF8] h-11";
+  // Shared dark input style
+  const darkInput = "bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-[#3A3AF8] focus-visible:border-[#3A3AF8] h-10";
   const darkLabel = "text-white/80 text-sm font-medium";
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) resetDialog();
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) resetDialog();
+      }}
+    >
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button
@@ -339,8 +236,8 @@ export function SignUpDialog({
           "p-0 border-0 bg-transparent shadow-none overflow-visible",
           "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
           currentStep === "user-type"
-            ? "w-[min(720px,calc(100vw-2rem))] max-w-none sm:max-w-none"
-            : "w-[min(520px,calc(100vw-2rem))] max-w-none sm:max-w-none",
+            ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
+            : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
         ].join(" ")}
       >
         {/* Dark card — flex column with capped height + internal scroll */}
@@ -353,20 +250,17 @@ export function SignUpDialog({
           }}
         >
           {/* ── Sticky header (never scrolls away) ── */}
-          <div className="shrink-0 px-6 pt-6 pb-4 pr-12 text-center">
-            <div className="flex justify-center mb-3">
-              <img src={onspotLogo} alt="OnSpot" className="h-10 w-auto" />
+          <div className="shrink-0 px-6 pt-5 pb-3 pr-12 text-center">
+            <div className="flex justify-center mb-2.5">
+              <img src={onspotLogo} alt="OnSpot" className="h-8 w-auto" />
             </div>
 
             {currentStep === "user-type" && (
               <>
-                <DialogTitle
-                  className="text-2xl font-light text-white"
-                  style={{ letterSpacing: "-0.02em" }}
-                >
+                <DialogTitle className="text-xl font-light text-white" style={{ letterSpacing: "-0.02em" }}>
                   Join OnSpot
                 </DialogTitle>
-                <DialogDescription className="text-white/50 text-sm mt-1">
+                <DialogDescription className="text-white/50 text-sm mt-0.5">
                   Choose how you&apos;d like to get started
                 </DialogDescription>
               </>
@@ -383,13 +277,10 @@ export function SignUpDialog({
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
-                <DialogTitle
-                  className="text-2xl font-light text-white"
-                  style={{ letterSpacing: "-0.02em" }}
-                >
+                <DialogTitle className="text-xl font-light text-white" style={{ letterSpacing: "-0.02em" }}>
                   {userType === "client" ? "Hire Talent" : "Find Work"}
                 </DialogTitle>
-                <DialogDescription className="text-white/50 text-sm mt-1">
+                <DialogDescription className="text-white/50 text-sm mt-0.5">
                   {userType === "client"
                     ? "Create your client account to start hiring"
                     : "Create your talent profile to find opportunities"}
@@ -399,40 +290,30 @@ export function SignUpDialog({
           </div>
 
           {/* ── Scrollable body ── */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-6">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-4">
 
             {/* ── Role selection step ── */}
             {currentStep === "user-type" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Client card */}
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("client")}
-                  className="relative flex flex-col items-center gap-3 rounded-xl p-5 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#5B7CFF]/60 group"
+                  className="relative flex flex-col items-center gap-2.5 rounded-xl p-4 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#5B7CFF]/60 group"
                   data-testid="card-client-signup"
                 >
-                  <div className="w-14 h-14 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
-                    <Building className="w-7 h-7 text-[#5B7CFF]" />
+                  <div className="w-11 h-11 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
+                    <Building className="w-5 h-5 text-[#5B7CFF]" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m a client hiring for talent</h3>
+                    <h3 className="text-sm font-semibold text-white mb-1">I&apos;m a client hiring for talent</h3>
                     <p className="text-white/45 text-xs leading-relaxed">
-                      Build your team with vetted professionals. Scale faster, reduce costs, and focus on growth.
+                      Build your team with vetted professionals. Scale faster and reduce costs.
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 w-full text-xs text-white/35">
-                    <div className="text-center">
-                      <Shield className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
-                      70% Savings
-                    </div>
-                    <div className="text-center">
-                      <Zap className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
-                      8X Growth
-                    </div>
-                    <div className="text-center">
-                      <Mail className="h-4 w-4 mx-auto text-[#5B7CFF] mb-1" />
-                      24/7 Support
-                    </div>
+                  <div className="flex items-center gap-4 text-xs text-white/35">
+                    <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-[#5B7CFF]" />70% Savings</span>
+                    <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-[#5B7CFF]" />8X Growth</span>
                   </div>
                 </button>
 
@@ -440,31 +321,21 @@ export function SignUpDialog({
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("talent")}
-                  className="relative flex flex-col items-center gap-3 rounded-xl p-5 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-400/50 group"
+                  className="relative flex flex-col items-center gap-2.5 rounded-xl p-4 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-400/50 group"
                   data-testid="card-talent-signup"
                 >
-                  <div className="w-14 h-14 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
-                    <User className="w-7 h-7 text-yellow-400" />
+                  <div className="w-11 h-11 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
+                    <User className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m a talent looking for work</h3>
+                    <h3 className="text-sm font-semibold text-white mb-1">I&apos;m a talent looking for work</h3>
                     <p className="text-white/45 text-xs leading-relaxed">
-                      Join our elite network of professionals. Access premium opportunities and competitive rates.
+                      Join our elite network. Access premium opportunities and competitive rates.
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 w-full text-xs text-white/35">
-                    <div className="text-center">
-                      <Briefcase className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
-                      Premium Jobs
-                    </div>
-                    <div className="text-center">
-                      <Shield className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
-                      Secure Pay
-                    </div>
-                    <div className="text-center">
-                      <User className="h-4 w-4 mx-auto text-yellow-400 mb-1" />
-                      Career Growth
-                    </div>
+                  <div className="flex items-center gap-4 text-xs text-white/35">
+                    <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5 text-yellow-400" />Premium Jobs</span>
+                    <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-yellow-400" />Secure Pay</span>
                   </div>
                 </button>
               </div>
@@ -474,13 +345,13 @@ export function SignUpDialog({
             {currentStep === "signup" && (
               <>
                 {/* Social signup buttons */}
-                <div className="space-y-2 mb-5">
+                <div className="space-y-2 mb-3">
                   {isFirebaseAvailable() && (
                     <button
                       type="button"
                       onClick={handleGoogleSignup}
                       disabled={isLoading}
-                      className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-3 h-10 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                       data-testid="button-google-signup"
                     >
                       <FaGoogle className="w-4 h-4 text-red-400" />
@@ -491,7 +362,7 @@ export function SignUpDialog({
                     type="button"
                     onClick={handleLinkedInSignup}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-3 h-10 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                     data-testid="button-linkedin-signup"
                   >
                     <FaLinkedin className="w-4 h-4 text-blue-400" />
@@ -500,7 +371,7 @@ export function SignUpDialog({
                 </div>
 
                 {/* Divider */}
-                <div className="relative mb-5">
+                <div className="relative mb-3">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/10" />
                   </div>
@@ -514,29 +385,29 @@ export function SignUpDialog({
                   </div>
                 </div>
 
-                {/* Email form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email form — id lets the sticky footer button submit it */}
+                <form id="signup-form" onSubmit={handleSubmit} className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <Label htmlFor="firstName" className={darkLabel}>First Name</Label>
                       <Input
                         id="firstName"
                         name="firstName"
                         value={formData.firstName}
-                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                         placeholder="First name"
                         autoComplete="given-name"
                         data-testid="input-first-name"
                         className={darkInput}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <Label htmlFor="lastName" className={darkLabel}>Last Name</Label>
                       <Input
                         id="lastName"
                         name="lastName"
                         value={formData.lastName}
-                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                         placeholder="Last name"
                         autoComplete="family-name"
                         data-testid="input-last-name"
@@ -546,13 +417,13 @@ export function SignUpDialog({
                   </div>
 
                   {userType === "client" && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <Label htmlFor="company" className={darkLabel}>Company Name</Label>
                       <Input
                         id="company"
                         name="company"
                         value={formData.company}
-                        onChange={(e) => setFormData({...formData, company: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                         placeholder="Your company name"
                         autoComplete="organization"
                         data-testid="input-company"
@@ -561,14 +432,14 @@ export function SignUpDialog({
                     </div>
                   )}
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <Label htmlFor="email" className={darkLabel}>Email</Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="you@example.com"
                       autoComplete="email"
                       data-testid="input-signup-email"
@@ -576,7 +447,7 @@ export function SignUpDialog({
                     />
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <Label htmlFor="password" className={darkLabel}>Password</Label>
                     <div className="relative">
                       <Input
@@ -584,8 +455,8 @@ export function SignUpDialog({
                         name="password"
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
-                        onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        placeholder="Min 8 characters"
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Min. 8 chars"
                         autoComplete="new-password"
                         data-testid="input-signup-password"
                         className={`${darkInput} pr-10`}
@@ -601,14 +472,14 @@ export function SignUpDialog({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <Label htmlFor="confirmPassword" className={darkLabel}>Confirm Password</Label>
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
                       type="password"
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       placeholder="Repeat your password"
                       autoComplete="new-password"
                       data-testid="input-confirm-password"
@@ -632,61 +503,72 @@ export function SignUpDialog({
                       I agree to the{" "}
                       <button type="button" className="text-white/65 underline hover:text-white transition-colors">
                         Terms of Service
-                      </button>
-                      {" "}and{" "}
+                      </button>{" "}
+                      and{" "}
                       <button type="button" className="text-white/65 underline hover:text-white transition-colors">
                         Privacy Policy
                       </button>
                     </Label>
                   </div>
-
-                  {/* Submit button */}
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    data-testid="button-submit-signup"
-                    className="w-full px-6 py-3.5 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-                    style={{
-                      background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
-                      boxShadow: "0 8px 30px rgba(58,58,248,0.35)",
-                    }}
-                  >
-                    {isLoading ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Creating Account…</>
-                    ) : (
-                      <><span>{userType === "client" ? "Create Client Account" : "Create Talent Profile"}</span><ArrowRight className="w-4 h-4" /></>
-                    )}
-                  </button>
-
-                  {/* Back link */}
-                  <button
-                    type="button"
-                    onClick={handleBackToUserType}
-                    className="w-full text-center text-xs text-white/35 hover:text-white/65 transition-colors py-0.5"
-                  >
-                    Back to Options
-                  </button>
                 </form>
-
-                {/* Footer — sign in link */}
-                <div className="text-center mt-5 pt-4 border-t border-white/10">
-                  <p className="text-xs text-white/35 mb-1">Already have an account?</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      resetDialog();
-                      onSignInInstead?.();
-                    }}
-                    data-testid="button-signin-instead"
-                    className="text-xs text-white/55 hover:text-white underline transition-colors"
-                  >
-                    Sign in instead
-                  </button>
-                </div>
               </>
             )}
           </div>
+
+          {/* ── Sticky footer — CTA always visible, never scrolls away ── */}
+          {currentStep === "signup" && (
+            <div
+              className="shrink-0 px-6 py-4 border-t border-white/10"
+              style={{ background: "linear-gradient(to bottom, transparent, #1a1a4e 20%)" }}
+            >
+              {/* Primary CTA — references the form by id */}
+              <button
+                type="submit"
+                form="signup-form"
+                disabled={isLoading}
+                data-testid="button-submit-signup"
+                className="w-full px-6 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
+                  boxShadow: "0 8px 30px rgba(58,58,248,0.35)",
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Creating Account…
+                  </>
+                ) : (
+                  <>
+                    <span>{userType === "client" ? "Create Client Account" : "Create Talent Profile"}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Secondary: back + sign-in */}
+              <div className="flex items-center justify-between mt-3">
+                <button
+                  type="button"
+                  onClick={handleBackToUserType}
+                  className="text-xs text-white/35 hover:text-white/65 transition-colors"
+                >
+                  ← Back to options
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    resetDialog();
+                    onSignInInstead?.();
+                  }}
+                  data-testid="button-signin-instead"
+                  className="text-xs text-white/55 hover:text-white underline transition-colors"
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
