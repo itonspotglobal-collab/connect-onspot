@@ -1641,10 +1641,9 @@ export function TopNavigation() {
                     background: '#C1C5DC',
                     border: '1px solid rgba(73,78,118,0.18)',
                     boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
-                    minHeight: 'min(600px, 80vh)',
                   }}
                 >
-                  <div className="relative z-10 flex flex-col px-8 py-10 w-full">
+                  <div className="relative z-10 flex flex-col px-6 py-5 w-full">
                     {signinNeedsSetup ? (
                       /* ── Password Setup form (old candidate records with NULL password_hash) ── */
                       <>
@@ -1753,22 +1752,22 @@ export function TopNavigation() {
                     ) : (
                       /* ── Normal Sign In form ── */
                       <>
-                        <h2 className="text-3xl font-light text-[#17182C] mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Sign In</h2>
-                        <p className="text-[#555B78] mb-7 text-sm">Welcome back to OnSpot. Choose your portal below.</p>
-                        <div className="space-y-2 mb-4">
-                          <Label className="text-[#30344F] text-sm font-medium">Email Address</Label>
-                          <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12" />
+                        <h2 className="text-2xl font-light text-[#17182C] mb-1" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Sign In</h2>
+                        <p className="text-[#555B78] mb-3 text-sm">Welcome back to OnSpot.</p>
+                        <div className="space-y-1 mb-3">
+                          <Label className="text-[#30344F] text-xs font-medium">Email Address</Label>
+                          <Input type="email" placeholder="you@example.com" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10" />
                         </div>
-                        <div className="space-y-2 mb-6">
-                          <Label className="text-[#30344F] text-sm font-medium">Password</Label>
+                        <div className="space-y-1 mb-2">
+                          <Label className="text-[#30344F] text-xs font-medium">Password</Label>
                           <div className="relative">
-                            <Input type={showAuthPassword ? "text" : "password"} placeholder="Enter your password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="off" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10" />
+                            <Input type={showAuthPassword ? "text" : "password"} placeholder="Enter your password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} autoComplete="off" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10 pr-10" />
                             <button type="button" onClick={() => setShowAuthPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
                               {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
                         </div>
-                        <div className="flex justify-end -mt-3 mb-4">
+                        <div className="flex justify-end mb-3">
                           <button
                             type="button"
                             onClick={() => { setForgotEmail(signinEmail); setModalStep("forgot"); }}
@@ -1777,20 +1776,24 @@ export function TopNavigation() {
                             Forgot password?
                           </button>
                         </div>
-                        <div className="mb-6">
-                          <p className="text-[#30344F] text-sm font-medium mb-3">Select Your Portal</p>
+                        <div className="mb-3">
+                          <p className="text-[#30344F] text-xs font-medium mb-2">Select Your Portal</p>
                           <div className="grid grid-cols-2 gap-3">
-                            <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
-                              <Building className="w-6 h-6 text-[#30344F]" />
-                              <span className="font-semibold text-[#17182C] text-xs">Client Portal</span>
-                              <span className="text-[#555B78] text-xs leading-tight text-center">Find and manage top outsourcing talent</span>
-                              {signinPortal === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                            <button type="button" onClick={() => setSigninPortal("client")} className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${signinPortal === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
+                              <Building className="w-5 h-5 text-[#30344F] shrink-0" />
+                              <div className="text-left">
+                                <p className="font-semibold text-[#17182C] text-xs leading-tight">Client Portal</p>
+                                <p className="text-[#555B78] text-xs leading-tight">Manage talent</p>
+                              </div>
+                              {signinPortal === "client" && <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
                             </button>
-                            <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex flex-col items-center gap-2 rounded-xl p-4 text-sm transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
-                              <User className="w-6 h-6 text-[#30344F]" />
-                              <span className="font-semibold text-[#17182C] text-xs">Talent Portal</span>
-                              <span className="text-[#555B78] text-xs leading-tight text-center">Find jobs and manage your career profile</span>
-                              {signinPortal === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                            <button type="button" onClick={() => setSigninPortal("talent")} className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${signinPortal === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
+                              <User className="w-5 h-5 text-[#30344F] shrink-0" />
+                              <div className="text-left">
+                                <p className="font-semibold text-[#17182C] text-xs leading-tight">Talent Portal</p>
+                                <p className="text-[#555B78] text-xs leading-tight">Find jobs &amp; manage profile</p>
+                              </div>
+                              {signinPortal === "talent" && <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
                             </button>
                           </div>
                         </div>
@@ -1855,7 +1858,7 @@ export function TopNavigation() {
                             }
                           }}
                           disabled={signinLoading || rateLimitCountdown > 0 || !signinPortal || !signinEmail || !signinPassword}
-                          className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          className="relative group w-full px-8 py-2.5 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                           style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
                         >
                           <span className="relative z-10 flex items-center justify-center gap-2">
@@ -1867,7 +1870,7 @@ export function TopNavigation() {
                                 : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
                           </span>
                         </button>
-                        <p className="text-center text-xs text-[#858BA5] mt-4">
+                        <p className="text-center text-xs text-[#858BA5] mt-2.5">
                           Don't have an account?{' '}
                           <button className="text-[#555B78] hover:text-[#17182C] underline transition-colors" onClick={() => setModalStep("signup")}>Sign Up</button>
                         </p>

@@ -1,0 +1,217 @@
+FIX SIGN IN / LOGIN MODAL FOR SMALLER SCREENS
+
+The Sign In modal currently does not fit properly on shorter screens such as
+1280×720 and 1366×768.
+
+The primary Sign In/Login button is pushed below the visible viewport.
+
+This must be fixed.
+
+TARGET
+
+Review the Sign In/Login modal used by the top navigation, likely inside:
+
+`client/src/components/TopNavigation.tsx`
+
+or the related authentication modal component.
+
+GOAL
+
+On smaller laptop screens, the user must be able to see all of the following
+without wondering whether a button exists:
+
+- Sign In title
+- Email field
+- Password field
+- Forgot password link
+- Portal selector
+- Sign In button
+- Any secondary signup link
+- Close button
+
+The primary CTA must always be visible.
+
+DESKTOP / LAPTOP LAYOUT
+
+Keep the existing visual design, but make the modal more compact.
+
+Recommended layout:
+
+┌──────────────────────────────────────┐
+│ Sign In                           X  │
+│ Welcome back to OnSpot.              │
+│                                      │
+│ Email Address                        │
+│ [................................]   │
+│                                      │
+│ Password                             │
+│ [................................]   │
+│                    Forgot password?  │
+│                                      │
+│ Select Your Portal                   │
+│ [ Client Portal ] [ Talent Portal ]  │
+│                                      │
+│ [            Sign In →             ] │
+│       Don’t have an account? Sign Up │
+└──────────────────────────────────────┘
+
+REDUCE VERTICAL HEIGHT
+
+1. Reduce large gaps between:
+   - title/subtitle
+   - email/password
+   - password and forgot-password link
+   - portal selector
+   - CTA
+
+2. Use roughly:
+   - 10–12px between field groups
+   - 4–6px label-to-input gap
+   - 12–16px between sections
+
+3. Use compact input height:
+   - approximately 40–44px
+
+4. Reduce modal padding on short screens:
+   - around 16–20px
+
+PORTAL SELECTOR
+
+The current Client Portal / Talent Portal cards are too tall.
+
+Make them more compact.
+
+Target height:
+- approximately 72–90px
+
+Short-screen option:
+- around 64–72px
+
+Keep:
+- icon
+- title
+- one short description
+
+Shorten descriptions if needed.
+
+Suggested text:
+
+Client Portal
+“Manage talent”
+
+Talent Portal
+“Find jobs & manage profile”
+
+Do not remove the role distinction.
+
+SIGN IN BUTTON
+
+The primary Sign In button must be visible without scrolling on normal short
+laptop screens.
+
+Keep it:
+- full width
+- approximately 42–44px height
+- immediately below portal selection
+
+Do not place it below a large amount of empty spacing.
+
+SHORT SCREEN MODE
+
+For viewport heights below around 780px:
+
+- reduce top/bottom modal padding
+- reduce section gaps
+- reduce portal card height
+- shorten helper text
+- keep modal below navbar with a safe top gap
+- keep the Sign In button visible
+
+For viewport heights below around 700px:
+
+- use a compact modal layout
+- allow only the middle content to scroll if absolutely necessary
+- keep the CTA/footer visible
+
+MODAL POSITION
+
+The modal should not overlap the navbar.
+
+Match the same safe top spacing being used for the improved Sign Up modal.
+
+For short screens:
+- use top alignment with navbar-aware padding
+- do not rely only on vertical centering
+
+CTA FOOTER
+
+If the modal still cannot fit naturally at very short heights, split it into:
+
+- Header
+- Scrollable form body
+- Footer
+
+Footer contains:
+- Sign In button
+- “Don’t have an account? Sign Up”
+
+Keep footer visible.
+
+However, do not use internal scrolling for standard 1280×720 or 1366×768 if a
+compact layout can fit naturally.
+
+MOBILE
+
+For mobile widths:
+
+- single-column layout
+- portal options may stack
+- scrolling is acceptable
+- CTA must remain easy to reach
+- no horizontal scrolling
+
+TEST VIEWPORTS
+
+Test:
+
+- 1920×1080
+- 1440×900
+- 1366×768
+- 1280×720
+- 1024×768
+- 390×844
+- 375×667
+- 360×640
+
+At 1280×720 and 1366×768, confirm that these are visible at the same time:
+
+- title
+- email
+- password
+- forgot password
+- portal selector
+- Sign In button
+- close button
+
+The user should not need to scroll just to discover the primary Sign In button.
+
+DO NOT
+
+Do not:
+- shrink the entire modal with transform
+- hide the CTA
+- reduce fonts to tiny sizes
+- use fixed heights that clip content
+- let portal cards consume excessive vertical space
+- allow the button to sit below the viewport
+
+ACCEPTANCE CRITERIA
+
+✓ Sign In button visible on short screens
+✓ Close button visible
+✓ Modal stays below navbar
+✓ Portal selector remains usable
+✓ No clipping
+✓ No unnecessary internal scrollbar
+✓ Mobile remains responsive
+✓ Existing login/authentication logic unchanged
