@@ -220,17 +220,17 @@ export default function JobApplyPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <TopNavigation />
-      <div className="mx-auto max-w-2xl px-4 pb-24 pt-10 sm:px-6">
+      <div className="mx-auto max-w-2xl px-4 pb-10 pt-5 sm:px-6">
         {/* Back */}
         <button
           onClick={() => navigate(`/find-work/job/${jobId}`)}
-          className="mb-6 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+          className="mb-3 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Back to job
         </button>
 
         {/* Job header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -273,20 +273,20 @@ export default function JobApplyPage() {
         )}
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="p-5">
             <h2 className="mb-1 text-lg font-semibold text-slate-900 dark:text-white">
               Your Application
             </h2>
 
             {/* Context-aware subtitle */}
             {isTalent ? (
-              <div className="mb-6 flex items-center gap-2 rounded-md bg-[#474ead]/8 px-3 py-2 text-sm text-[#474ead] dark:bg-[#474ead]/20 dark:text-indigo-300">
+              <div className="mb-4 flex items-center gap-2 rounded-md bg-[#474ead]/8 px-3 py-2 text-sm text-[#474ead] dark:bg-[#474ead]/20 dark:text-indigo-300">
                 <UserCheck className="h-4 w-4 shrink-0" />
                 You are applying with your OnSpot Talent account.
               </div>
             ) : (
-              <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                After submitting you'll create your Talent account to track your application.
+              <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                Submit your application to continue.
               </p>
             )}
 
@@ -310,9 +310,9 @@ export default function JobApplyPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* First + Last Name */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstName">
                     First Name <span className="text-red-500">*</span>
@@ -342,7 +342,7 @@ export default function JobApplyPage() {
               </div>
 
               {/* Email + Phone */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">
                     Email Address <span className="text-red-500">*</span>
@@ -381,20 +381,20 @@ export default function JobApplyPage() {
                 <Label htmlFor="coverLetter">Cover Letter / Message</Label>
                 <Textarea
                   id="coverLetter"
-                  rows={5}
+                  rows={3}
                   value={form.coverLetter}
                   onChange={(e) => setField("coverLetter", e.target.value)}
                   placeholder="Tell us why you're a great fit for this role..."
-                  className="resize-none"
+                  className="min-h-[90px] resize-y"
                 />
               </div>
 
               {/* Submit */}
-              <div className="pt-2">
+              <div>
                 <Button
                   type="submit"
                   disabled={isPending || isNonTalentUser}
-                  className="w-full rounded-full bg-[#474ead] py-2.5 text-white hover:bg-[#3d439c] disabled:opacity-50"
+                  className="h-10 w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c] disabled:opacity-50"
                 >
                   {isPending ? (
                     <>

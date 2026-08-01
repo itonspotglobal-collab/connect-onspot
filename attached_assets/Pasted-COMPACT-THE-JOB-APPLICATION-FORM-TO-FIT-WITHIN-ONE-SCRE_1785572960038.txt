@@ -1,0 +1,297 @@
+COMPACT THE JOB APPLICATION FORM TO FIT WITHIN ONE SCREEN
+
+Adjust the existing built-in job application page so the main application form
+fits within a typical desktop/laptop viewport without requiring vertical
+scrolling.
+
+Target page:
+
+`/jobs/:jobId/apply`
+
+Primary file to review:
+
+`client/src/pages/JobApplyPage.tsx`
+
+Do not redesign the page completely. Keep the existing OnSpot visual style,
+layout, colors, components, and responsiveness.
+
+GOAL
+
+On a typical 1366x768 or 1440x900 desktop/laptop screen, the user should be able
+to see:
+
+- Back to job
+- Job status
+- Job title
+- Company/location
+- Entire application form
+- Submit Application button
+
+without scrolling.
+
+DESKTOP COMPACT LAYOUT
+
+1. Reduce the top spacing between the navbar and the application content.
+
+Current page has too much empty vertical space above the form.
+
+Reduce the application container top padding substantially.
+
+For example:
+
+- change large values such as `pt-10`, `pt-12`, `pt-16`, etc.
+- target approximately `pt-5` or `pt-6` on desktop
+
+2. Reduce spacing in the job header.
+
+Make the job header more compact:
+
+- Back to job: smaller bottom margin
+- Open badge: smaller vertical margin
+- Job title: slightly smaller if needed
+- Company + location: keep on the same row
+- Reduce space between the header and form card
+
+Target roughly:
+
+Back link
+↓ 12–16px
+Status + Job Title
+↓ 4–6px
+Company / Location
+↓ 16–20px
+Application card
+
+3. Reduce application card padding.
+
+Use approximately:
+
+`p-5`
+
+instead of overly large card padding.
+
+Keep enough breathing room, but avoid excessive whitespace.
+
+4. Reduce spacing between form sections.
+
+Use approximately:
+
+`space-y-3` or `space-y-4`
+
+instead of `space-y-5`, `space-y-6`, or larger.
+
+5. Keep First Name + Last Name in one row on desktop.
+
+Layout:
+
+[ First Name                ] [ Last Name                 ]
+
+6. Keep Email + Phone in one row on desktop.
+
+Layout:
+
+[ Email Address             ] [ Phone Number              ]
+
+Use:
+
+`grid grid-cols-1 sm:grid-cols-2 gap-3`
+
+or the equivalent existing responsive classes.
+
+7. Reduce input height slightly.
+
+Use the existing Input component but target a compact height such as:
+
+`h-9` or `h-10`
+
+Do not make fields too small for accessibility.
+
+8. Make labels slightly more compact.
+
+Reduce label-to-input spacing.
+
+For example:
+
+`space-y-1`
+
+instead of larger spacing.
+
+9. Reduce the Cover Letter textarea height.
+
+The current textarea occupies too much vertical space.
+
+Use approximately:
+
+- `min-h-[90px]`
+or
+- `min-h-[100px]`
+
+on desktop.
+
+Do not make it taller than approximately 110px by default.
+
+Allow the user to resize vertically if the current textarea component supports
+it.
+
+10. Reduce the space above the Submit Application button.
+
+The button should appear immediately after the cover letter with approximately
+12–16px spacing.
+
+11. Keep the button full-width.
+
+Keep:
+
+`Submit Application →`
+
+as the primary CTA.
+
+Target button height around:
+
+`h-10` or `h-11`
+
+12. Compact the required-fields helper text.
+
+Keep:
+
+`Required fields are marked with *`
+
+but reduce its top margin.
+
+13. Keep the form card width close to the current width.
+
+Do not make it extremely wide.
+
+Target:
+
+`max-w-xl`
+or
+`max-w-2xl`
+
+depending on the current implementation.
+
+The current approximately 600–650px form width is acceptable.
+
+REMOVE / SHORTEN UNNECESSARY COPY
+
+Current text:
+
+“After submitting you'll create your Talent account to track your application.”
+
+Shorten it to:
+
+“Submit your application to continue.”
+
+OR, preferably, make it dynamic:
+
+If logged out:
+
+“Submit your application to continue.”
+
+If logged in as Talent:
+
+“You are applying with your OnSpot Talent account.”
+
+This saves vertical space and better reflects the current application/account
+flow.
+
+TARGET DESKTOP STRUCTURE
+
+Visually aim for:
+
+------------------------------------------------
+← Back to job
+
+Open
+IT Administrator
+OnSpot   Remote
+
+┌──────────────────────────────────────────────┐
+│ Your Application                             │
+│ Submit your application to continue.         │
+│                                              │
+│ First Name           Last Name               │
+│ [.................] [.....................]   │
+│                                              │
+│ Email Address        Phone Number             │
+│ [.................] [.....................]   │
+│                                              │
+│ Cover Letter / Message                       │
+│ [                                          ] │
+│ [                                          ] │
+│                                              │
+│ [          Submit Application →            ] │
+│           Required fields marked *           │
+└──────────────────────────────────────────────┘
+------------------------------------------------
+
+RESPONSIVE BEHAVIOR
+
+Do not force this compact two-column layout on small phones.
+
+On mobile:
+
+- First Name and Last Name stack vertically.
+- Email and Phone stack vertically.
+- Keep comfortable touch targets.
+- Allow normal page scrolling.
+- Keep card side padding around 16px.
+
+The “fit in one screen” requirement is primarily for desktop/laptop widths.
+
+VIEWPORT TARGET
+
+Test at minimum:
+
+- 1366 × 768
+- 1440 × 900
+- 1920 × 1080
+- 768 × 1024
+- 390 × 844
+
+For 1366 × 768:
+
+The Submit Application button should be visible without vertical scrolling if
+browser zoom is 100% and there are no validation errors.
+
+Do not use:
+
+- CSS transform scaling
+- browser zoom tricks
+- fixed heights that clip content
+- `overflow: hidden` on the entire page
+- absolute positioning for form fields
+
+The form should fit naturally through better spacing.
+
+VALIDATION STATES
+
+When validation errors appear, the page may become slightly taller and scroll.
+That is acceptable.
+
+Do not hide validation messages just to force the form into the viewport.
+
+ACCESSIBILITY
+
+Keep:
+
+- proper labels
+- keyboard navigation
+- visible focus states
+- accessible input sizes
+- readable text
+- sufficient contrast
+
+Do not reduce font sizes below reasonable accessibility standards.
+
+FINAL CHECK
+
+After making the changes:
+
+1. Run the page at 1366 × 768.
+2. Confirm the Submit Application button is visible without scrolling.
+3. Confirm the form does not feel visually cramped.
+4. Confirm mobile fields stack correctly.
+5. Confirm validation errors still display correctly.
+6. Confirm the form submission behavior is unchanged.
+7. Confirm no routing or account-flow logic was modified.
