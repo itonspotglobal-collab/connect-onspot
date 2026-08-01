@@ -1879,222 +1879,228 @@ export function TopNavigation() {
             </div>
           </DialogPortal>
         ) : modalStep === "signup" ? (
-          /* DEV ONLY: Sign Up — dark futuristic style, no backend auth */
+          /* Sign Up — compact two-column card, centered vertically, fits 1280×720 */
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" style={{ background: 'rgba(10,10,30,0.55)' }} />
-            {/* Overlay: flex-start so content starts below navbar; overflow hidden so page doesn't scroll */}
-            <div
-              className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden"
-              style={{ paddingTop: 'calc(72px + 24px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
-            >
+            {/* Center vertically; overflow-y-auto only as a fallback for very short/zoomed viewports */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
               <div
-                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 flex flex-col w-full"
-                style={{ maxWidth: '520px', maxHeight: 'calc(100vh - 72px - 32px)' }}
+                className="relative animate-in fade-in slide-in-from-bottom-6 duration-500 w-full my-auto"
+                style={{ maxWidth: '640px' }}
               >
                 <DialogTitle className="sr-only">Create Account</DialogTitle>
-                <button
-                  onClick={() => setShowPortal(false)}
-                  className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[#555B78]"
-                >
-                  <X className="h-6 w-6" />
-                  <span className="sr-only">Close</span>
-                </button>
-                {/* Panel: flex column so inner scroll area can grow to fill */}
+                {/* Card */}
                 <div
-                  className="relative flex flex-col rounded-2xl overflow-hidden flex-1 min-h-0"
+                  className="relative rounded-2xl"
                   style={{
                     background: '#C1C5DC',
                     border: '1px solid rgba(73,78,118,0.18)',
                     boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
                   }}
                 >
-                  {/* Scrollable form content */}
-                  <div className="relative z-10 flex flex-col px-8 py-6 w-full overflow-y-auto flex-1 min-h-0">
+                  {/* ── Header row: title + close button ── */}
+                  <div className="flex items-start justify-between px-6 pt-5 pb-3">
+                    <div>
+                      <h2 className="text-2xl font-light text-[#17182C]" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create Account</h2>
+                      <p className="text-[#555B78] text-sm mt-0.5">Join OnSpot as a Client or Talent.</p>
+                    </div>
                     <button
-                      onClick={() => setModalStep("signin")}
-                      className="flex items-center gap-1.5 text-[#555B78] hover:text-[#17182C] text-sm mb-5 w-fit transition-colors duration-200"
+                      onClick={() => setShowPortal(false)}
+                      aria-label="Close"
+                      className="ml-4 mt-1 shrink-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[#555B78]"
                     >
-                      <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back to Sign In
+                      <X className="h-5 w-5" />
+                      <span className="sr-only">Close</span>
                     </button>
-                    <h2 className="text-3xl font-light text-[#17182C] mb-1" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Create Account</h2>
-                    <p className="text-[#555B78] mb-4 text-sm">Join OnSpot and experience AI-powered outsourcing.</p>
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[#30344F] text-sm font-medium">First Name</Label>
-                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
+                  </div>
+
+                  {/* ── Form body — two-column grid, no internal scroll on normal viewports ── */}
+                  <div className="px-6 pb-5">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+
+                      {/* Row 1: First Name | Last Name */}
+                      <div className="space-y-1">
+                        <Label className="text-[#30344F] text-xs font-medium">First Name</Label>
+                        <Input placeholder="John" value={signupFirstName} onChange={(e) => setSignupFirstName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10" />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[#30344F] text-sm font-medium">Last Name</Label>
-                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
+                      <div className="space-y-1">
+                        <Label className="text-[#30344F] text-xs font-medium">Last Name</Label>
+                        <Input placeholder="Doe" value={signupLastName} onChange={(e) => setSignupLastName(e.target.value)} className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10" />
                       </div>
-                    </div>
-                    <div className="space-y-1.5 mb-3">
-                      <Label className="text-[#30344F] text-sm font-medium">Email Address</Label>
-                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11" />
-                    </div>
-                    <div className="space-y-1.5 mb-3">
-                      <Label className="text-[#30344F] text-sm font-medium">Password</Label>
-                      <div className="relative">
-                        <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 8 chars, upper, lower, number, symbol" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" name="new-password" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10" />
-                        <button type="button" onClick={() => setShowSignupPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
-                          {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+
+                      {/* Row 2: Email — full width */}
+                      <div className="col-span-2 space-y-1">
+                        <Label className="text-[#30344F] text-xs font-medium">Email Address</Label>
+                        <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} autoComplete="email" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10" />
                       </div>
-                      <p className="text-xs text-[#858BA5]">Shown in plain text so you can verify what you're saving.</p>
-                    </div>
-                    <div className="space-y-1.5 mb-4">
-                      <Label className="text-[#30344F] text-sm font-medium">Confirm Password</Label>
-                      <div className="relative">
-                        <Input
-                          type={showSignupConfirm ? "text" : "password"}
-                          placeholder="Repeat your password"
-                          value={signupConfirmPassword}
-                          onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                          autoComplete="new-password"
-                          name="confirm-new-password"
-                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-11 pr-10"
-                        />
-                        <button type="button" onClick={() => setShowSignupConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
-                          {showSignupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+
+                      {/* Row 3: Password | Confirm Password */}
+                      <div className="space-y-1">
+                        <Label className="text-[#30344F] text-xs font-medium">Password</Label>
+                        <div className="relative">
+                          <Input type={showSignupPassword ? "text" : "password"} placeholder="Min. 8 chars" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} autoComplete="new-password" name="new-password" className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10 pr-10" />
+                          <button type="button" onClick={() => setShowSignupPassword(v => !v)} aria-label={showSignupPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
+                            {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
-                      {signupConfirmPassword && signupPassword !== signupConfirmPassword && (
-                        <p className="text-xs text-red-400 mt-1">Passwords do not match.</p>
-                      )}
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-[#30344F] text-sm font-medium mb-2">I am a...</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setSignupRole("client")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
-                          <Building className="w-5 h-5 text-[#30344F]" />
-                          <span className="font-semibold text-[#17182C] text-xs">Client</span>
-                          <span className="text-[#555B78] text-xs leading-tight text-center">Looking for talent</span>
-                          {signupRole === "client" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
-                        </button>
-                        <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex flex-col items-center gap-1.5 rounded-xl p-3 text-sm transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
-                          <User className="w-5 h-5 text-[#30344F]" />
-                          <span className="font-semibold text-[#17182C] text-xs">Talent</span>
-                          <span className="text-[#555B78] text-xs leading-tight text-center">Looking for jobs</span>
-                          {signupRole === "talent" && <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
-                        </button>
+                      <div className="space-y-1">
+                        <Label className="text-[#30344F] text-xs font-medium">Confirm Password</Label>
+                        <div className="relative">
+                          <Input
+                            type={showSignupConfirm ? "text" : "password"}
+                            placeholder="Repeat password"
+                            value={signupConfirmPassword}
+                            onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                            autoComplete="new-password"
+                            name="confirm-new-password"
+                            className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-10 pr-10"
+                          />
+                          <button type="button" onClick={() => setShowSignupConfirm(v => !v)} aria-label={showSignupConfirm ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
+                            {showSignupConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {signupConfirmPassword && signupPassword !== signupConfirmPassword && (
+                          <p className="text-xs text-red-500 mt-0.5">Passwords do not match.</p>
+                        )}
                       </div>
-                    </div>
-                    {/* Role-specific helper text */}
-                    {signupRole && (
-                      <p className="text-xs text-[#555B78] text-center mb-2 leading-relaxed">
-                        {signupRole === "talent"
-                          ? "Talent accounts will continue to resume upload and matching."
-                          : "Client accounts will continue to the hiring portal."}
-                      </p>
-                    )}
-                    {/* Create Account — calls POST /api/signup, creates real DB record */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!signupRole || !signupFirstName || !signupEmail || !signupPassword || !signupConfirmPassword) return;
-                        if (signupPassword !== signupConfirmPassword) {
-                          toast({ variant: "destructive", title: "Passwords do not match", description: "Please make sure both password fields are identical." });
-                          return;
-                        }
-                        // Capture values at click time before any async state changes
-                        const capturedEmail = signupEmail;
-                        const capturedPassword = signupPassword;
-                        const capturedRole = signupRole;
-                        const capturedFirstName = signupFirstName;
-                        const capturedLastName = signupLastName;
-                        setSignupLoading(true);
-                        try {
-                          const res = await fetch("/api/signup", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              email: capturedEmail,
-                              password: capturedPassword,
-                              first_name: signupFirstName,
-                              last_name: signupLastName,
-                              role: capturedRole,
-                            }),
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            // Store JWT token + user so AuthContext picks it up
-                            if (data.token) {
-                              localStorage.setItem("onspot_jwt_token", data.token);
+
+                      {/* Row 4: Role selector — full width, compact horizontal cards ~60px tall */}
+                      <div className="col-span-2 space-y-1.5">
+                        <p className="text-[#30344F] text-xs font-medium">I am a…</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button type="button" onClick={() => setSignupRole("client")} className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${signupRole === "client" ? 'border-2 border-[#5B7CFF] bg-[#3A3AF8]/10' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
+                            <Building className="w-5 h-5 text-[#30344F] shrink-0" />
+                            <div className="text-left">
+                              <p className="font-semibold text-[#17182C] text-xs leading-tight">Client</p>
+                              <p className="text-[#555B78] text-xs leading-tight">Hire talent</p>
+                            </div>
+                            {signupRole === "client" && <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#5B7CFF] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                          </button>
+                          <button type="button" onClick={() => setSignupRole("talent")} className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 ${signupRole === "talent" ? 'border-2 border-[hsl(var(--gold-yellow)/0.8)] bg-[hsl(var(--gold-yellow)/0.12)]' : 'border border-[rgba(73,78,118,0.24)] bg-[rgba(255,255,255,0.16)] hover:bg-[rgba(255,255,255,0.28)] hover:border-[rgba(73,78,118,0.40)]'}`}>
+                            <User className="w-5 h-5 text-[#30344F] shrink-0" />
+                            <div className="text-left">
+                              <p className="font-semibold text-[#17182C] text-xs leading-tight">Talent</p>
+                              <p className="text-[#555B78] text-xs leading-tight">Find work</p>
+                            </div>
+                            {signupRole === "talent" && <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[hsl(var(--gold-yellow)/0.8)] flex items-center justify-center"><CheckCircle2 className="w-3 h-3 text-white" /></div>}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Row 5: Create Account button — full width */}
+                      <div className="col-span-2 mt-1">
+                        {/* Create Account — calls POST /api/signup, creates real DB record */}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!signupRole || !signupFirstName || !signupEmail || !signupPassword || !signupConfirmPassword) return;
+                            if (signupPassword !== signupConfirmPassword) {
+                              toast({ variant: "destructive", title: "Passwords do not match", description: "Please make sure both password fields are identical." });
+                              return;
                             }
-                            if (data.user) {
-                              localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                            // Capture values at click time before any async state changes
+                            const capturedEmail = signupEmail;
+                            const capturedPassword = signupPassword;
+                            const capturedRole = signupRole;
+                            const capturedFirstName = signupFirstName;
+                            const capturedLastName = signupLastName;
+                            setSignupLoading(true);
+                            try {
+                              const res = await fetch("/api/signup", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  email: capturedEmail,
+                                  password: capturedPassword,
+                                  first_name: signupFirstName,
+                                  last_name: signupLastName,
+                                  role: capturedRole,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                // Store JWT token + user so AuthContext picks it up
+                                if (data.token) {
+                                  localStorage.setItem("onspot_jwt_token", data.token);
+                                }
+                                if (data.user) {
+                                  localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                                }
+                                // Reset all signup form states so they don't linger
+                                setSignupFirstName("");
+                                setSignupLastName("");
+                                setSignupEmail("");
+                                setSignupPassword("");
+                                setSignupConfirmPassword("");
+                                setSignupRole(null);
+                                // Reset visibility states back to defaults
+                                setShowSignupPassword(true);
+                                setShowSignupConfirm(true);
+                                // Pre-seed the signin email so if the user logs out and returns,
+                                // their email is already filled in
+                                setSigninEmail(capturedEmail);
+                                setShowPortal(false);
+                                setModalStep("signin");
+                                // Sync AuthContext state immediately (no page reload needed)
+                                await refreshAuth();
+                                // Talent signup: save candidate JWT + redirect to their own profile page.
+                                // The signup endpoint now creates a candidates record and issues a
+                                // talent-specific JWT alongside the general one.
+                                if (capturedRole === "talent" && data.talentToken && data.candidateId) {
+                                  const talentAuthData: TalentAuthState = {
+                                    token: data.talentToken,
+                                    candidateId: data.candidateId,
+                                    email: capturedEmail,
+                                    fullName: `${capturedFirstName} ${capturedLastName}`.trim(),
+                                  };
+                                  saveTalentAuth(talentAuthData);
+                                  setTalentAuth(talentAuthData);
+                                }
+                                if (capturedRole === "client") {
+                                  navigate("/client-profile");
+                                } else if (capturedRole === "talent" && data.candidateId) {
+                                  navigate(`/talent-profile/${data.candidateId}`);
+                                } else {
+                                  navigate("/find-best-matches");
+                                }
+                              } else if (res.status === 409) {
+                                toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
+                                setSigninEmail(capturedEmail);
+                                setModalStep("signin");
+                              } else {
+                                toast({ variant: "destructive", title: "Sign up failed", description: data.message || "Could not create account. Please try again." });
+                              }
+                            } catch {
+                              toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
+                            } finally {
+                              setSignupLoading(false);
                             }
-                            // Reset all signup form states so they don't linger
-                            setSignupFirstName("");
-                            setSignupLastName("");
-                            setSignupEmail("");
-                            setSignupPassword("");
-                            setSignupConfirmPassword("");
-                            setSignupRole(null);
-                            // Reset visibility states back to defaults
-                            setShowSignupPassword(true);
-                            setShowSignupConfirm(true);
-                            // Pre-seed the signin email so if the user logs out and returns,
-                            // their email is already filled in
-                            setSigninEmail(capturedEmail);
-                            setShowPortal(false);
-                            setModalStep("signin");
-                            // Sync AuthContext state immediately (no page reload needed)
-                            await refreshAuth();
-                            // Talent signup: save candidate JWT + redirect to their own profile page.
-                            // The signup endpoint now creates a candidates record and issues a
-                            // talent-specific JWT alongside the general one.
-                            if (capturedRole === "talent" && data.talentToken && data.candidateId) {
-                              const talentAuthData: TalentAuthState = {
-                                token: data.talentToken,
-                                candidateId: data.candidateId,
-                                email: capturedEmail,
-                                fullName: `${capturedFirstName} ${capturedLastName}`.trim(),
-                              };
-                              saveTalentAuth(talentAuthData);
-                              setTalentAuth(talentAuthData);
-                            }
-                            if (capturedRole === "client") {
-                              navigate("/client-profile");
-                            } else if (capturedRole === "talent" && data.candidateId) {
-                              navigate(`/talent-profile/${data.candidateId}`);
-                            } else {
-                              navigate("/find-best-matches");
-                            }
-                          } else if (res.status === 409) {
-                            toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
-                            setSigninEmail(capturedEmail);
-                            setModalStep("signin");
-                          } else {
-                            toast({ variant: "destructive", title: "Sign up failed", description: data.message || "Could not create account. Please try again." });
+                          }}
+                          disabled={
+                            signupLoading ||
+                            !signupRole ||
+                            !signupFirstName ||
+                            !signupEmail ||
+                            !signupPassword ||
+                            !signupConfirmPassword ||
+                            signupPassword !== signupConfirmPassword
                           }
-                        } catch {
-                          toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
-                        } finally {
-                          setSignupLoading(false);
-                        }
-                      }}
-                      disabled={
-                        signupLoading ||
-                        !signupRole ||
-                        !signupFirstName ||
-                        !signupEmail ||
-                        !signupPassword ||
-                        !signupConfirmPassword ||
-                        signupPassword !== signupConfirmPassword
-                      }
-                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        {signupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                        {signupLoading ? "Creating account…" : <><span>Create Account</span> <ArrowRight className="w-4 h-4" /></>}
-                      </span>
-                    </button>
-                    <p className="text-center text-xs text-[#858BA5] mt-3">
-                      Already have an account?{' '}
-                      <button className="text-[#555B78] hover:text-[#17182C] underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
-                    </p>
+                          className="relative group w-full px-8 py-2.5 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
+                        >
+                          <span className="relative z-10 flex items-center justify-center gap-2">
+                            {signupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            {signupLoading ? "Creating account…" : <><span>Create Account</span> <ArrowRight className="w-4 h-4" /></>}
+                          </span>
+                        </button>
+                        <p className="text-center text-xs text-[#858BA5] mt-2.5">
+                          Already have an account?{' '}
+                          <button className="text-[#555B78] hover:text-[#17182C] underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
+                        </p>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
               </div>

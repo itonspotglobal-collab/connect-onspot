@@ -1,0 +1,379 @@
+REDESIGN THE SIGN-UP MODAL FOR SHORT LAPTOP SCREENS
+
+The current Sign Up modal still looks poor on smaller laptop screens.
+
+The latest implementation added `overflow-y-auto`, but this only makes the
+modal scroll internally. The actual layout is still too tall and vertically
+compressed.
+
+Do not keep solving this by adding more scrolling.
+
+Instead, redesign the desktop/laptop modal so the complete signup form fits
+naturally within short screens such as 1280×720 and 1366×768.
+
+TARGET
+
+Review the Sign Up modal inside:
+
+`client/src/components/TopNavigation.tsx`
+
+The browser inspector currently shows a large scrollable body similar to:
+
+`flex flex-col ... overflow-y-auto flex-1 min-h-0`
+
+Restructure this component.
+
+DESKTOP / LAPTOP DESIGN
+
+For screens wider than approximately 768px, use a compact two-column signup
+layout.
+
+Target structure:
+
+┌────────────────────────────────────────────────────┐
+│ Create Account                                  X  │
+│ Join OnSpot as a Client or Talent                  │
+├────────────────────────────────────────────────────┤
+│ First Name             │ Last Name                 │
+│ [....................] │ [.......................]  │
+│                                                    │
+│ Email Address                                       │
+│ [................................................]  │
+│                                                    │
+│ Password               │ Confirm Password          │
+│ [....................] │ [.......................]  │
+│                                                    │
+│ I am a...                                           │
+│ [ Client — Hire Talent ] [ Talent — Find Work ]    │
+│                                                    │
+│ [              Create Account →                  ] │
+│             Already have an account? Sign In       │
+└────────────────────────────────────────────────────┘
+
+The entire modal should fit within a 720px-high viewport without requiring
+scrolling under normal conditions.
+
+MODAL DIMENSIONS
+
+Desktop/laptop:
+
+- width: approximately 600–680px
+- max-width: around 680px
+- height: auto
+- max-height: `calc(100dvh - 32px)`
+- centered horizontally
+- centered vertically only if enough space exists
+- on short screens, use approximately 12–16px top/bottom viewport margin
+
+Do not make the modal 100% height on laptop screens.
+
+Do not make the normal desktop form internally scrollable if all content can
+fit naturally.
+
+COMPACT FORM GRID
+
+Use:
+
+`grid grid-cols-2 gap-x-4 gap-y-3`
+
+or equivalent.
+
+Fields:
+
+Row 1:
+- First Name
+- Last Name
+
+Row 2:
+- Email Address spanning both columns
+
+Row 3:
+- Password
+- Confirm Password
+
+Row 4:
+- account type selector spanning both columns
+
+This removes a significant amount of unnecessary vertical height.
+
+FIRST / LAST NAME
+
+Keep both fields on the same row for laptop and desktop widths.
+
+PASSWORD / CONFIRM PASSWORD
+
+Place both password fields on the same row for laptop and desktop widths.
+
+This is a major change from the current layout and is necessary to reduce
+height.
+
+EMAIL
+
+Keep Email Address full-width.
+
+FORM SPACING
+
+Use compact but readable spacing:
+
+- modal padding: 20–24px
+- field vertical gap: 10–12px
+- label-to-input gap: 4px
+- section gap: 12–16px
+
+Avoid large values such as:
+
+- `space-y-6`
+- `space-y-8`
+- excessive `py-*`
+- excessive bottom margins
+
+INPUT HEIGHT
+
+Use approximately:
+
+`h-10`
+
+or around 40px.
+
+Keep inputs accessible and readable.
+
+PASSWORD COPY
+
+Remove this sentence:
+
+“Shown in plain text so you can verify what you're saving.”
+
+It adds unnecessary height and is confusing.
+
+Instead, use a concise helper only when needed:
+
+`8+ chars with uppercase, lowercase, number & symbol`
+
+Prefer showing this only below the Password field or as validation feedback.
+
+ROLE SELECTOR
+
+The current Client and Talent cards are too tall.
+
+Redesign them as compact horizontal cards.
+
+Desktop example:
+
+┌───────────────────────────┐  ┌───────────────────────────┐
+│ 🏢  Client                │  │ 👤  Talent                │
+│     Looking for talent    │  │     Looking for jobs      │
+└───────────────────────────┘  └───────────────────────────┘
+
+Target height:
+
+60–72px.
+
+Keep:
+
+- icon
+- title
+- subtitle
+- selected border/state
+
+Remove excess vertical padding.
+
+Remove or shorten text such as:
+
+“Talent accounts will continue to resume upload and matching.”
+
+This copy is not necessary inside the signup form and consumes valuable
+vertical space.
+
+If some explanation is required, reduce it to:
+
+`Talent profiles can be completed after signup.`
+
+or omit it entirely.
+
+CTA
+
+The Create Account button should be part of the natural modal layout on desktop
+and visible without scrolling.
+
+Keep it:
+
+- full width
+- approximately 42–44px height
+- directly below role selection
+- modest top margin
+
+Do NOT hide it at the bottom of a scrolling container.
+
+SIGN IN LINK
+
+Place:
+
+`Already have an account? Sign In`
+
+directly below the Create Account button.
+
+Keep this visible on 1280×720 and 1366×768.
+
+CLOSE BUTTON
+
+The close X must remain inside the modal header.
+
+Do not allow it to overlap First Name / Last Name.
+
+The screenshot currently shows content appearing too close to the top edge.
+
+Add a dedicated header section so fields never appear behind or beside the
+close button.
+
+SHORT-LAPTOP MODE
+
+Add viewport-height-specific compact styling.
+
+Example behavior:
+
+`@media (max-height: 760px)`
+
+or equivalent:
+
+- modal padding: 16px 20px
+- reduce header margin
+- use 40px inputs
+- use 60–64px role cards
+- reduce form gaps to 10px
+- hide nonessential helper text
+- do NOT shrink fonts excessively
+
+The modal should still look intentionally designed, not squeezed.
+
+DO NOT USE INTERNAL SCROLLING ON NORMAL LAPTOP WIDTHS UNLESS NECESSARY
+
+At:
+
+- 1280×720
+- 1366×768
+- 1440×800
+
+the complete signup form should fit naturally.
+
+Only introduce an internal scrollbar when:
+
+- validation errors make the form taller;
+- browser height is unusually small;
+- accessibility/font scaling requires additional room.
+
+MOBILE BEHAVIOR
+
+For widths below approximately 640px:
+
+Switch back to a single-column layout.
+
+Mobile:
+
+First Name
+Last Name
+Email
+Password
+Confirm Password
+Client / Talent
+Create Account
+Sign In
+
+On mobile, scrolling is acceptable.
+
+Do not force the two-column laptop layout onto narrow phones.
+
+For very small mobile screens, use a full-screen or near-full-screen sheet.
+
+IMPORTANT RESPONSIVE DISTINCTION
+
+Do not treat:
+
+1280×720 laptop
+
+the same as:
+
+375×667 mobile.
+
+Laptop:
+- compact two-column card
+- minimal/no scrolling
+
+Mobile:
+- single column
+- scrolling allowed
+- full-height sheet when needed
+
+REMOVE CURRENT VISUAL PROBLEMS
+
+Fix all of the following visible issues:
+
+1. First Name / Last Name being partially clipped at the top.
+2. Close button overlapping content.
+3. Large internal scrollbar dominating the modal.
+4. Create Account button appearing too close to or below the viewport edge.
+5. Sign In link being partially hidden.
+6. Role cards consuming too much height.
+7. Excessive helper copy.
+8. Modal feeling like a compressed long form.
+
+DO NOT
+
+Do not:
+
+- use `transform: scale(...)`
+- zoom the modal
+- hide content
+- reduce text to tiny sizes
+- make input heights below reasonable accessibility sizes
+- use `overflow-y-auto` as the primary desktop solution
+- place CTA underneath a scrollable container
+- use fixed pixel height that clips validation errors
+
+TEST EXACT VIEWPORTS
+
+Test:
+
+Desktop / laptop:
+- 1920×1080
+- 1440×900
+- 1366×768
+- 1280×720
+- 1024×768
+
+Mobile:
+- 390×844
+- 375×667
+- 360×640
+
+At 1280×720 and 1366×768, confirm that ALL of these are visible at once:
+
+- modal title
+- First Name / Last Name
+- Email
+- Password / Confirm Password
+- Client / Talent selector
+- Create Account button
+- Sign In link
+- Close button
+
+No scrolling should be required in the normal empty form state.
+
+VALIDATION
+
+When validation messages appear, scrolling is acceptable.
+
+Do not suppress error messages just to maintain one-screen height.
+
+FINAL REQUIREMENT
+
+Prioritize restructuring over shrinking.
+
+The form should become shorter because of better layout:
+
+- First + Last on one row
+- Password + Confirm Password on one row
+- compact role cards
+- less helper copy
+- tighter spacing
+
+not because the entire UI was scaled down.
