@@ -755,6 +755,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  email tables migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add role taxonomy columns to jobs table ──────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS professional_role_name TEXT`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS original_role_name TEXT`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_function TEXT`);
+    // Backfill existing rows from legacy title / category columns
+    await query(`UPDATE jobs SET professional_role_name = title WHERE professional_role_name IS NULL OR professional_role_name = ''`);
+    await query(`UPDATE jobs SET job_function = category WHERE job_function IS NULL OR job_function = ''`);
+    console.log("✅ Migration: role taxonomy columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  role taxonomy migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(

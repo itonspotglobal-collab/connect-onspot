@@ -21,6 +21,9 @@ import { useToast } from "@/hooks/use-toast";
 
 export interface ParsedJobRecord {
   title: string;
+  professionalRoleName?: string;
+  originalRoleName?: string;
+  jobFunction?: string;
   category: string;
   description: string;
   contractType: string;
@@ -84,6 +87,10 @@ const EXP_MAP: Record<string, string> = {
 
 const HEADER_ALIASES: Record<string, keyof ParsedJobRecord> = {
   "job title": "title", title: "title", position: "title", role: "title",
+  "professional role name": "professionalRoleName", "professional role": "professionalRoleName",
+  "original role": "originalRoleName", "original role name": "originalRoleName",
+    "alternative role": "originalRoleName", "original title": "originalRoleName",
+  "function": "jobFunction", "job function": "jobFunction",
   department: "category", division: "category", team: "category",
   "employment type": "contractType", "job type": "contractType", type: "contractType",
   "work setup": "location", "work arrangement": "location",
@@ -151,8 +158,11 @@ function validateRecord(
   if (!rec.category?.trim()) errors.push("Missing department / category");
 
   return {
-    title: rec.title?.trim() ?? "",
-    category: normaliseCategory(rec.category),
+    title: rec.professionalRoleName?.trim() || rec.title?.trim() || "",
+    professionalRoleName: rec.professionalRoleName?.trim() || rec.title?.trim() || "",
+    originalRoleName: rec.originalRoleName?.trim() || undefined,
+    jobFunction: rec.jobFunction?.trim() || rec.category?.trim() || "",
+    category: normaliseCategory(rec.jobFunction || rec.category),
     description: rec.description?.trim() ?? "",
     contractType: normaliseContractType(rec.contractType),
     experienceLevel: normaliseExperience(rec.experienceLevel),
@@ -195,8 +205,11 @@ function rowsToRecords(
       };
 
       const raw: Partial<ParsedJobRecord> = {
-        title:           get("title"),
-        category:        get("category"),
+        title:                get("title"),
+        professionalRoleName: get("professionalRoleName"),
+        originalRoleName:     get("originalRoleName"),
+        jobFunction:          get("jobFunction"),
+        category:             get("category") ?? get("jobFunction"),
         description:     get("description"),
         contractType:    get("contractType"),
         experienceLevel: get("experienceLevel"),
@@ -581,6 +594,8 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
 
   const raw: Partial<ParsedJobRecord> = {
     title,
+    professionalRoleName: title,
+    jobFunction:      division,
     category:         division,
     description,
     reportingTo:      sec["reportingTo"]?.trim(),
@@ -617,9 +632,12 @@ async function parseFile(file: File): Promise<ParsedJobRecord[]> {
 
 async function submitJob(record: ParsedJobRecord): Promise<void> {
   const body: Record<string, unknown> = {
-    title:           record.title,
-    description:     record.description,
-    category:        record.category,
+    title:                record.professionalRoleName || record.title,
+    professionalRoleName: record.professionalRoleName || record.title,
+    originalRoleName:     record.originalRoleName || null,
+    jobFunction:          record.jobFunction || record.category,
+    description:          record.description,
+    category:             record.jobFunction || record.category,
     contractType:    record.contractType,
     experienceLevel: record.experienceLevel,
     location:        record.location || "Remote",

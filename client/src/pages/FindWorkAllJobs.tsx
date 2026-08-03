@@ -189,7 +189,7 @@ function JobCard({
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const tags = (job.skillTags ?? []).slice(0, 5);
-  const CategoryIcon = getCategoryIcon(job.category);
+  const CategoryIcon = getCategoryIcon((job as any).jobFunction || job.category);
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
   const pilotId = getJobPilotId(job);
 
@@ -211,7 +211,7 @@ function JobCard({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                 <h3 className="text-base font-bold leading-tight text-white truncate">
-                  {job.title}
+                  {(job as any).professionalRoleName || job.title}
                 </h3>
                 {pilotId && (
                   <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#3F4698]">
@@ -219,6 +219,11 @@ function JobCard({
                   </span>
                 )}
               </div>
+              {(job as any).originalRoleName && (
+                <p className="text-[11px] italic text-white/65 truncate leading-tight mb-0.5">
+                  {(job as any).originalRoleName}
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-white/70">
                   {job.company ?? "OnSpot"}
@@ -476,6 +481,9 @@ export default function FindWorkAllJobs() {
       const queryPass =
         !q ||
         job.title.toLowerCase().includes(q) ||
+        ((job as any).professionalRoleName ?? "").toLowerCase().includes(q) ||
+        ((job as any).originalRoleName ?? "").toLowerCase().includes(q) ||
+        ((job as any).jobFunction ?? "").toLowerCase().includes(q) ||
         (job.description ?? "").toLowerCase().includes(q) ||
         (job.category ?? "").toLowerCase().includes(q) ||
         (job.location ?? "").toLowerCase().includes(q) ||
@@ -487,7 +495,7 @@ export default function FindWorkAllJobs() {
       // If the user manually picks a chip, that single-category filter takes precedence.
       const navCatActive =
         !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
-      const normJobCat = normalizeCategory(job.category ?? "");
+      const normJobCat = normalizeCategory((job as any).jobFunction || job.category || "");
       const catPass = navCatActive
         ? navGroup.cats.some((c) => normJobCat === normalizeCategory(c))
         : category === "All Categories" ||

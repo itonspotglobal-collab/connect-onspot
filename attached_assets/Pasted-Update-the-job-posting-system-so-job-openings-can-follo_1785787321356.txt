@@ -1,0 +1,529 @@
+Update the job posting system so job openings can follow a structured role taxonomy similar to this:
+
+- Professional Role Name
+- Original Role / Alternative Role Name
+- Function
+
+Example:
+
+Professional Role Name:
+Senior Account Executive – Salesforce Solutions
+
+Original Role / Alternative Role:
+Account Executive / Business Development Representative
+
+Function:
+Sales
+
+Goal:
+Admins and clients should be able to enter a polished public-facing role title, preserve the original/internal role title, and assign the job to a broader business function.
+
+This should work in:
+- Add New Job Posting
+- Edit Job Posting
+- Admin Find Work page
+- Client Profile job submission
+- Pending approval review
+- Find Work job cards
+- Job details popup
+- Full job details page
+- Search and filtering
+
+1. Update the shared job schema
+
+Add these fields to the shared Job type/schema:
+
+```ts
+professionalRoleName: string;
+originalRoleName?: string | null;
+jobFunction: string;
+
+Field meaning:
+
+professionalRoleName
+The polished public-facing title shown to candidates.
+
+originalRoleName
+The original, internal, client-provided, legacy, or alternative job title.
+
+jobFunction
+The broader functional group used for organization and filtering.
+
+Examples:
+
+{
+  professionalRoleName:
+    "Senior Account Executive – Salesforce Solutions",
+
+  originalRoleName:
+    "Account Executive / Business Development Representative",
+
+  jobFunction:
+    "Sales"
+}
+
+Keep the existing title field temporarily for backward compatibility.
+
+Preferred compatibility behavior:
+
+title = professionalRoleName
+
+Do not remove the existing title column until all current pages and API routes have migrated.
+
+Update the Add/Edit Job Posting form
+
+In JobFormModal.tsx, replace or restructure the current Job Title and Category area.
+
+Add these fields:
+
+A. Professional Role Name
+
+Label:
+Professional Role Name
+
+Required:
+Yes
+
+Placeholder:
+e.g. Senior Account Executive – Salesforce Solutions
+
+Helper text:
+This is the polished role title that applicants will see publicly.
+
+B. Original Role / Alternative Role
+
+Label:
+Original Role / Alternative Role
+
+Required:
+No
+
+Placeholder:
+e.g. Account Executive / Business Development Representative
+
+Helper text:
+Use this for the original client title, internal title, or common alternative role names.
+
+C. Function
+
+Label:
+Function
+
+Required:
+Yes
+
+Use a text input, not a fixed dropdown.
+
+Placeholder:
+e.g. Sales, Customer Success, Engineering
+
+Helper text:
+The broader professional function used for organization, search, and filtering.
+
+Suggested form layout:
+
+Professional Role Name *
+[ Senior Account Executive – Salesforce Solutions ]
+
+Original Role / Alternative Role
+[ Account Executive / Business Development Representative ]
+
+Function *
+[ Sales ]
+Map existing fields safely
+
+For older jobs:
+
+professionalRoleName =
+  job.professionalRoleName ||
+  job.title ||
+  "";
+
+originalRoleName =
+  job.originalRoleName ||
+  null;
+
+jobFunction =
+  job.jobFunction ||
+  job.category ||
+  "";
+
+For new and edited jobs:
+
+payload.professionalRoleName =
+  formData.professionalRoleName.trim();
+
+payload.title =
+  formData.professionalRoleName.trim();
+
+payload.originalRoleName =
+  formData.originalRoleName.trim() || null;
+
+payload.jobFunction =
+  formData.jobFunction.trim();
+
+payload.category =
+  formData.jobFunction.trim();
+
+Keep title and category synchronized temporarily so current public pages, filters, and APIs do not break.
+
+Update validation
+
+Required validation:
+
+if (!formData.professionalRoleName.trim()) {
+  errors.professionalRoleName =
+    "Professional role name is required";
+}
+
+if (!formData.jobFunction.trim()) {
+  errors.jobFunction =
+    "Function is required";
+}
+
+originalRoleName remains optional.
+
+Trim all three values before saving.
+
+Update the database
+
+Add columns safely without deleting existing jobs.
+
+Suggested PostgreSQL migration:
+
+ALTER TABLE jobs
+ADD COLUMN IF NOT EXISTS professional_role_name TEXT;
+
+ALTER TABLE jobs
+ADD COLUMN IF NOT EXISTS original_role_name TEXT;
+
+ALTER TABLE jobs
+ADD COLUMN IF NOT EXISTS job_function TEXT;
+
+Backfill existing jobs:
+
+UPDATE jobs
+SET professional_role_name = title
+WHERE professional_role_name IS NULL
+   OR professional_role_name = '';
+
+UPDATE jobs
+SET job_function = category
+WHERE job_function IS NULL
+   OR job_function = '';
+
+After backfilling, make required fields non-null only if appropriate:
+
+ALTER TABLE jobs
+ALTER COLUMN professional_role_name SET NOT NULL;
+
+ALTER TABLE jobs
+ALTER COLUMN job_function SET NOT NULL;
+
+Do not drop the existing title or category columns yet.
+
+Update API field mapping
+
+Support the new fields in:
+
+admin job create API
+admin job update API
+client job create API
+client job update API
+pending approval API
+public jobs API
+single public job API
+
+Database fields:
+
+professional_role_name
+original_role_name
+job_function
+
+TypeScript/API fields:
+
+professionalRoleName
+originalRoleName
+jobFunction
+
+Make sure client-submitted jobs retain these values when approved by an admin.
+
+Update public job cards
+
+Use professionalRoleName as the main title.
+
+Example:
+
+<h3>{job.professionalRoleName || job.title}</h3>
+
+Show the original role name only when it exists.
+
+Suggested display:
+
+Senior Account Executive – Salesforce Solutions
+Account Executive / Business Development Representative
+
+Function: Sales
+
+Style the original role as secondary text:
+
+{job.originalRoleName && (
+  <p className="mt-1 text-sm italic text-slate-500">
+    {job.originalRoleName}
+  </p>
+)}
+
+Do not make the card visually crowded.
+
+Update the full job details page
+
+In FindWorkJob.tsx, show:
+
+Professional Role Name
+Original Role / Alternative Role
+Function
+
+Recommended hero layout:
+
+Senior Account Executive – Salesforce Solutions
+
+Original role:
+Account Executive / Business Development Representative
+
+Function:
+Sales
+
+The main heading should always use:
+
+job.professionalRoleName || job.title
+Update the admin job list
+
+The admin job card should show:
+
+Professional Role Name
+Original Role / Alternative Role
+Function
+
+Example:
+
+Senior Account Executive – Salesforce Solutions
+Original: Account Executive / Business Development Representative
+
+Sales · Remote · Full-time
+
+Keep existing actions:
+
+Edit
+Open/Close
+Approve/Reject
+Preview
+Refresh
+Delete
+Copy Link
+Update client-submitted job review
+
+When a client submits a job:
+
+professionalRoleName
+originalRoleName
+jobFunction
+
+must be preserved in pending approval.
+
+Admins should be able to edit these fields before approval.
+
+When approved:
+
+update the existing job record
+do not create a duplicate
+retain the same job ID
+expose the approved values publicly
+Update filtering
+
+Use jobFunction as the primary function filter.
+
+Examples:
+
+Sales
+Customer Success
+Project & Program Management
+Engineering
+Information Technology (IT)
+Marketing
+Artificial Intelligence
+Business Development
+Operations
+
+Filtering should normalize values only for matching:
+
+function normalizeFunction(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+Do not alter the saved text.
+
+Update search
+
+Search should match:
+
+job.professionalRoleName
+job.originalRoleName
+job.jobFunction
+job.title
+job.category
+job.description
+job.skillTags
+
+Example:
+
+Searching for:
+Business Development Representative
+
+should return:
+
+Senior Account Executive – Salesforce Solutions
+
+when that phrase appears in originalRoleName.
+
+Suggested function examples
+
+Allow free text, but examples include:
+
+Sales
+Customer Success
+Project & Program Management
+Engineering
+Information Technology (IT)
+Marketing
+Artificial Intelligence
+Business Development
+Operations
+Finance
+Human Resources
+Design & Creative
+Writing & Translation
+Administrative Support
+
+Do not restrict this to a hardcoded enum or dropdown.
+
+Update bulk upload if supported
+
+If the project has Bulk Upload, add columns:
+
+Professional Role Name
+Original Role Name
+Function
+
+Map them to:
+
+professionalRoleName
+originalRoleName
+jobFunction
+
+Keep support for old upload files using:
+
+Job Title
+Category
+
+as fallback fields.
+
+Backward compatibility
+
+Existing jobs should continue working without manual edits.
+
+Fallback rules:
+
+const displayTitle =
+  job.professionalRoleName ||
+  job.title ||
+  "Untitled role";
+
+const displayFunction =
+  job.jobFunction ||
+  job.category ||
+  "Other";
+
+Do not make old postings disappear because these new fields are missing.
+
+Test cases
+
+Test creating and editing these examples:
+
+Example 1:
+
+Professional Role Name:
+Senior Account Executive – Salesforce Solutions
+
+Original Role:
+Account Executive / Business Development Representative
+
+Function:
+Sales
+
+Example 2:
+
+Professional Role Name:
+Salesforce Training & Enablement Specialist
+
+Original Role:
+SaaS/System Trainer/SME
+
+Function:
+Customer Success
+
+Example 3:
+
+Professional Role Name:
+AI Solutions & Automation Engineer
+
+Original Role:
+AI / Automation Engineer
+
+Function:
+Artificial Intelligence
+
+Example 4:
+
+Professional Role Name:
+Executive Operations Coordinator
+
+Original Role:
+Operations & Executive Support
+
+Function:
+Operations
+
+Verify:
+
+create succeeds
+edit form is prefilled
+database stores all fields
+client submission preserves all fields
+admin approval preserves all fields
+public job cards display the professional name
+details page displays the original name and function
+search finds both professional and original names
+function filtering works
+old jobs still display correctly
+Important constraints
+Do not combine all information into one title string
+Store Professional Role Name, Original Role Name, and Function separately
+Do not make Function a fixed dropdown
+Do not delete the existing title/category fields yet
+Do not break current job postings
+Use a non-destructive database migration
+
+The ideal structure is:
+
+| Field | Purpose |
+|---|---|
+| **Professional Role Name** | Clean public-facing title |
+| **Original Role / Alternative Role** | Client’s original or commonly used title |
+| **Function** | Broad organizational and filtering group |
+
+This will let you maintain professional titles while still preserving the wording clients originally submitted.

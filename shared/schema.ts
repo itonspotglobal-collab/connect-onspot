@@ -118,6 +118,10 @@ export const jobs = pgTable("jobs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => users.id),
   title: text("title").notNull(),
+  // Role taxonomy (v2) — keeps title/category in sync for backward compat
+  professionalRoleName: text("professional_role_name"),
+  originalRoleName: text("original_role_name"),
+  jobFunction: text("job_function"),
   description: text("description").notNull(),
   company: text("company").default("OnSpot Global"),
   location: text("location").default("Remote"),

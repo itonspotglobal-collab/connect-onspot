@@ -60,6 +60,9 @@ export const defaultFormData = {
   title: "",
   company: "OnSpot",
   location: "Remote",
+  professionalRoleName: "",
+  originalRoleName: "",
+  jobFunction: "",
   category: "",
   contractType: "",
   experienceLevel: "entry",
@@ -109,6 +112,9 @@ export function jobToFormData(job: Job): JobFormData {
     title: job.title || "",
     company: job.company || "OnSpot",
     location: job.location || "Remote",
+    professionalRoleName: (job as any).professionalRoleName || job.title || "",
+    originalRoleName: (job as any).originalRoleName || "",
+    jobFunction: (job as any).jobFunction || job.category || "",
     category: job.category || "",
     contractType: job.contractType || "",
     experienceLevel: job.experienceLevel || "entry",
@@ -252,9 +258,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof JobFormData, string>> = {};
-    if (!formData.title.trim()) next.title = "Job title is required";
+    if (!formData.professionalRoleName.trim()) next.professionalRoleName = "Professional role name is required";
     if (!formData.description.trim()) next.description = "Role overview is required";
-    if (!formData.category.trim()) next.category = "Category is required";
+    if (!formData.jobFunction.trim()) next.jobFunction = "Function is required";
     if (!formData.contractType.trim()) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
     if (formData.applicationMethod === "external_link" && formData.applyLink.trim()) {
@@ -275,10 +281,13 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (!validate()) return;
 
     const payload: any = {
-      title: formData.title.trim(),
+      professionalRoleName: formData.professionalRoleName.trim(),
+      title: formData.professionalRoleName.trim(),
+      originalRoleName: formData.originalRoleName.trim() || null,
+      jobFunction: formData.jobFunction.trim(),
       company: formData.company.trim() || "OnSpot",
       location: formData.location,
-      category: formData.category.trim(),
+      category: formData.jobFunction.trim(),
       contractType: formData.contractType.trim(),
       experienceLevel: formData.experienceLevel,
       description: formData.description.trim(),
@@ -388,17 +397,20 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="modal-title">
-                  Job Title <span className="text-red-500">*</span>
+                <Label htmlFor="modal-professional-role">
+                  Professional Role Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="modal-title"
-                  value={formData.title}
-                  onChange={(e) => updateField("title", e.target.value)}
-                  placeholder="e.g. Customer Service Representative"
+                  id="modal-professional-role"
+                  value={formData.professionalRoleName}
+                  onChange={(e) => updateField("professionalRoleName", e.target.value)}
+                  placeholder="e.g. Senior Account Executive – Salesforce Solutions"
                 />
-                {errors.title && (
-                  <p className="text-xs text-red-500">{errors.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  The polished role title that applicants will see publicly.
+                </p>
+                {errors.professionalRoleName && (
+                  <p className="text-xs text-red-500">{errors.professionalRoleName}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -410,6 +422,21 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   placeholder="OnSpot"
                 />
               </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="modal-original-role">
+                Original Role / Alternative Role
+              </Label>
+              <Input
+                id="modal-original-role"
+                value={formData.originalRoleName}
+                onChange={(e) => updateField("originalRoleName", e.target.value)}
+                placeholder="e.g. Account Executive / Business Development Representative"
+              />
+              <p className="text-xs text-muted-foreground">
+                The original client title, internal title, or common alternative names.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
@@ -431,18 +458,21 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="modal-category">
-                  Category <span className="text-red-500">*</span>
+                <Label htmlFor="modal-job-function">
+                  Function <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="modal-category"
+                  id="modal-job-function"
                   type="text"
-                  value={formData.category}
-                  onChange={(e) => updateField("category", e.target.value)}
-                  placeholder="e.g. Admin & Support, Healthcare, Accounting"
+                  value={formData.jobFunction}
+                  onChange={(e) => updateField("jobFunction", e.target.value)}
+                  placeholder="e.g. Sales, Customer Success, Engineering"
                 />
-                {errors.category && (
-                  <p className="text-xs text-red-500">{errors.category}</p>
+                <p className="text-xs text-muted-foreground">
+                  The broad functional group for organisation and filtering.
+                </p>
+                {errors.jobFunction && (
+                  <p className="text-xs text-red-500">{errors.jobFunction}</p>
                 )}
               </div>
 

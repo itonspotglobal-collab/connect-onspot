@@ -465,7 +465,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">Posted {timeAgo}</span>
           </div>
 
-          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl lg:text-[42px]">{job.title}</h1>
+          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl lg:text-[42px]">
+            {(job as any).professionalRoleName || job.title}
+          </h1>
+          {(job as any).originalRoleName && (
+            <p className="mt-2 text-base italic text-slate-400">
+              {(job as any).originalRoleName}
+            </p>
+          )}
           <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot"}</p>
 
           <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
@@ -481,7 +488,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
               { icon: MapPin, label: "Location", value: job.location ?? "Remote" },
-              { icon: BriefcaseBusiness, label: "Category", value: job.category },
+              { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
               { icon: Layers, label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">

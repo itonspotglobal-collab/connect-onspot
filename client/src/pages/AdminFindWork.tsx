@@ -252,7 +252,7 @@ function AdminJobRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <h3 className="text-base font-bold text-slate-900 dark:text-white truncate">
-              {job.title}
+              {(job as any).professionalRoleName || job.title}
             </h3>
             {/* Job open/closed badge */}
             <span
@@ -270,6 +270,13 @@ function AdminJobRow({
             </span>
           </div>
 
+          {/* Original role name */}
+          {(job as any).originalRoleName && (
+            <p className="mb-1 text-xs italic text-slate-500 dark:text-slate-400 truncate">
+              Original: {(job as any).originalRoleName}
+            </p>
+          )}
+
           {/* Rejection reason */}
           {approvalStatus === "rejected" && (job as any).rejectionReason && (
             <p className="mb-1.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
@@ -279,7 +286,7 @@ function AdminJobRow({
           )}
 
           <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
+            <span className="capitalize">{((job as any).jobFunction || job.category)?.replace(/-/g, " ")}</span>
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span>{job.location || "Remote"}</span>
             {pay && (
@@ -415,7 +422,7 @@ function AdminJobRow({
               <AlertDialogHeader>
                 <AlertDialogTitle>Refresh posting date?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will reset &ldquo;{job.title}&rdquo; so it appears as posted today on the job board. No other details will change.
+                  This will reset &ldquo;{(job as any).professionalRoleName || job.title}&rdquo; so it appears as posted today on the job board. No other details will change.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -435,7 +442,7 @@ function AdminJobRow({
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will cancel &ldquo;{job.title}&rdquo;. It will no longer appear on the Find Work page.
+                  This will cancel &ldquo;{(job as any).professionalRoleName || job.title}&rdquo;. It will no longer appear on the Find Work page.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
