@@ -82,6 +82,16 @@ const HOT_SEARCHES = [
   "Finance",
 ];
 
+// Normalise a category string for fuzzy filter matching only — never alters saved values.
+function normalizeCategory(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 // Maps nav dropdown slug (?category=<slug>) → matching internal DB category values.
 // cats: [] means "All Categories" (no filter).
 // search: pre-fills the search bar for slugs with no direct DB category match.
@@ -477,12 +487,11 @@ export default function FindWorkAllJobs() {
       // If the user manually picks a chip, that single-category filter takes precedence.
       const navCatActive =
         !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
+      const normJobCat = normalizeCategory(job.category ?? "");
       const catPass = navCatActive
-        ? navGroup.cats.some(
-            (c) => (job.category ?? "").toLowerCase() === c.toLowerCase(),
-          )
+        ? navGroup.cats.some((c) => normJobCat === normalizeCategory(c))
         : category === "All Categories" ||
-          (job.category ?? "").toLowerCase() === category.toLowerCase();
+          normJobCat === normalizeCategory(category);
 
       const locPass =
         location === "All Locations" ||

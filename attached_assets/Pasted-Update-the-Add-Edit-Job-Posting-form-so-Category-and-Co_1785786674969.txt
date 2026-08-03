@@ -1,0 +1,279 @@
+Update the Add/Edit Job Posting form so `Category` and `Contract Type` are free-text input fields instead of dropdowns.
+
+Repository:
+`itonspotglobal-collab/connect-onspot`
+
+Primary file:
+`client/src/components/JobFormModal.tsx`
+
+Goal:
+Admins and clients should be able to type any Category and Contract Type value they want when creating or editing a job posting.
+
+Current behavior:
+- `Category` is a dropdown with fixed options
+- `Contract Type` is a dropdown with fixed options
+
+New behavior:
+- `Category` becomes a normal text input
+- `Contract Type` becomes a normal text input
+- custom values must be saved to the database
+- existing jobs must continue loading and editing correctly
+
+1. Replace the Category dropdown
+
+Find the current Category `Select` block in `JobFormModal.tsx`.
+
+Replace it with an `Input`.
+
+Expected structure:
+
+```tsx
+<div className="space-y-2">
+  <Label htmlFor="modal-category">
+    Category <span className="text-red-500">*</span>
+  </Label>
+
+  <Input
+    id="modal-category"
+    type="text"
+    value={formData.category}
+    onChange={(e) => updateField("category", e.target.value)}
+    placeholder="e.g. Admin & Support, Healthcare, Accounting"
+  />
+
+  {errors.category && (
+    <p className="text-xs text-red-500">{errors.category}</p>
+  )}
+</div>
+
+Remove the fixed category options such as:
+
+support
+development
+design
+marketing
+writing
+media
+
+Do not convert the typed value to a slug automatically when saving.
+
+Replace the Contract Type dropdown
+
+Find the current Contract Type Select block.
+
+Replace it with an Input.
+
+Expected structure:
+
+<div className="space-y-2">
+  <Label htmlFor="modal-contract-type">
+    Contract Type <span className="text-red-500">*</span>
+  </Label>
+
+  <Input
+    id="modal-contract-type"
+    type="text"
+    value={formData.contractType}
+    onChange={(e) => updateField("contractType", e.target.value)}
+    placeholder="e.g. Full-time, Part-time, Contract, Freelance"
+  />
+
+  {errors.contractType && (
+    <p className="text-xs text-red-500">{errors.contractType}</p>
+  )}
+</div>
+
+Remove the fixed options:
+
+full-time
+part-time
+contract
+Preserve create/edit behavior
+
+Keep these existing form fields in defaultFormData:
+
+category: "support",
+contractType: "full-time",
+
+But change the default display values to readable text:
+
+category: "",
+contractType: "",
+
+or, if defaults are still desired:
+
+category: "Admin & Support",
+contractType: "Full-time",
+
+Preferred:
+
+blank defaults for new jobs
+existing values loaded for edit mode
+
+The current jobToFormData() already reads:
+
+category: job.category || "support",
+contractType: job.contractType || "full-time",
+
+Update it to:
+
+category: job.category || "",
+contractType: job.contractType || "",
+
+This prevents old fallback slug values from being inserted into new forms.
+
+Keep validation
+
+Keep both fields required.
+
+Use trimmed validation:
+
+if (!formData.category.trim()) {
+  next.category = "Category is required";
+}
+
+if (!formData.contractType.trim()) {
+  next.contractType = "Contract type is required";
+}
+Save trimmed strings
+
+In the submit payload, change:
+
+category: formData.category,
+contractType: formData.contractType,
+
+to:
+
+category: formData.category.trim(),
+contractType: formData.contractType.trim(),
+
+This ensures manually typed values save cleanly.
+
+Confirm database compatibility
+
+Inspect the shared schema and database columns for:
+
+category
+contract_type or contractType
+
+Make sure both are stored as text/varchar fields, not enums.
+
+If either field currently uses a database enum:
+
+migrate it to text or varchar
+preserve all existing values
+do not drop or recreate the jobs table
+
+Example PostgreSQL migration only if needed:
+
+ALTER TABLE jobs
+ALTER COLUMN category TYPE TEXT
+USING category::text;
+
+ALTER TABLE jobs
+ALTER COLUMN contract_type TYPE TEXT
+USING contract_type::text;
+
+Only apply this if the current database columns are enum-constrained.
+
+Update backend validation
+
+Check the create/update job API handlers and validation schema.
+
+Make sure they accept arbitrary non-empty strings for:
+
+category
+contractType
+
+Replace enum validation like:
+
+z.enum([...])
+
+with:
+
+z.string().trim().min(1, "Category is required")
+
+and:
+
+z.string().trim().min(1, "Contract type is required")
+
+Do this for both:
+
+admin job creation/editing
+client job creation/editing
+Preserve public display
+
+Public pages should display the exact values entered by the admin/client.
+
+Check:
+
+FindWork.tsx
+FindWorkAllJobs.tsx
+FindWorkJob.tsx
+job popup/modal
+admin job cards
+client profile job cards
+
+Do not title-case, slugify, or remap custom values unless only for display formatting.
+
+Protect category filtering
+
+Because Category is now free text, existing navbar/category filters may no longer match exact predefined slugs.
+
+Do not break the current Find Work category filtering.
+
+Add a normalization helper for filtering only:
+
+function normalizeCategory(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+Use category aliases only for matching/filtering.
+
+Examples:
+
+Admin & Support
+Administrative Support
+Customer Support
+
+can still map to the public admin-support group where appropriate.
+
+Do not change the saved database value.
+
+Apply the change in both modes
+
+JobFormModal is shared by:
+
+admin mode
+client mode
+
+Make sure the new free-text fields work for both:
+
+/admin/find-work
+client profile job posting flow
+Test checklist
+
+Verify:
+
+create job with Category Healthcare Operations
+create job with Contract Type Project-based
+edit an existing job and preserve its values
+client submits a custom category
+admin approves it
+public job card shows the exact custom values
+category filters still work through normalized matching
+database stores the values correctly
+no enum validation error occurs
+Important constraints
+Do not keep a hidden fixed list behind the inputs
+Do not hardcode new options
+Do not break existing jobs
+Do not change Experience Level, Work Setup, Duration, or Status dropdowns
+Only Category and Contract Type should become free-text fields
+
+The payload already sends both values directly as strings, so the main frontend change is straightforward. The part to verify carefully is whether the backend validation or database columns are enum-constrained.

@@ -60,8 +60,8 @@ export const defaultFormData = {
   title: "",
   company: "OnSpot",
   location: "Remote",
-  category: "support",
-  contractType: "full-time",
+  category: "",
+  contractType: "",
   experienceLevel: "entry",
   jobSummary: "",
   description: "",
@@ -109,8 +109,8 @@ export function jobToFormData(job: Job): JobFormData {
     title: job.title || "",
     company: job.company || "OnSpot",
     location: job.location || "Remote",
-    category: job.category || "support",
-    contractType: job.contractType || "full-time",
+    category: job.category || "",
+    contractType: job.contractType || "",
     experienceLevel: job.experienceLevel || "entry",
     jobSummary: (job as any).jobSummary || "",
     description: job.description || "",
@@ -254,8 +254,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     const next: Partial<Record<keyof JobFormData, string>> = {};
     if (!formData.title.trim()) next.title = "Job title is required";
     if (!formData.description.trim()) next.description = "Role overview is required";
-    if (!formData.category) next.category = "Category is required";
-    if (!formData.contractType) next.contractType = "Contract type is required";
+    if (!formData.category.trim()) next.category = "Category is required";
+    if (!formData.contractType.trim()) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
     if (formData.applicationMethod === "external_link" && formData.applyLink.trim()) {
       try { new URL(normalizeUrl(formData.applyLink)); }
@@ -278,8 +278,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       title: formData.title.trim(),
       company: formData.company.trim() || "OnSpot",
       location: formData.location,
-      category: formData.category,
-      contractType: formData.contractType,
+      category: formData.category.trim(),
+      contractType: formData.contractType.trim(),
       experienceLevel: formData.experienceLevel,
       description: formData.description.trim(),
       jobSummary: formData.jobSummary.trim() || null,
@@ -431,25 +431,16 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
 
               <div className="space-y-2">
-                <Label>
+                <Label htmlFor="modal-category">
                   Category <span className="text-red-500">*</span>
                 </Label>
-                <Select
+                <Input
+                  id="modal-category"
+                  type="text"
                   value={formData.category}
-                  onValueChange={(v) => updateField("category", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="support">Admin & Support</SelectItem>
-                    <SelectItem value="development">Development & IT</SelectItem>
-                    <SelectItem value="design">Design & Creative</SelectItem>
-                    <SelectItem value="marketing">Sales & Marketing</SelectItem>
-                    <SelectItem value="writing">Writing & Translation</SelectItem>
-                    <SelectItem value="media">Audio, Video & Animation</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => updateField("category", e.target.value)}
+                  placeholder="e.g. Admin & Support, Healthcare, Accounting"
+                />
                 {errors.category && (
                   <p className="text-xs text-red-500">{errors.category}</p>
                 )}
@@ -480,22 +471,16 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
               <div className="space-y-2">
-                <Label>
+                <Label htmlFor="modal-contract-type">
                   Contract Type <span className="text-red-500">*</span>
                 </Label>
-                <Select
+                <Input
+                  id="modal-contract-type"
+                  type="text"
                   value={formData.contractType}
-                  onValueChange={(v) => updateField("contractType", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-time">Full-time</SelectItem>
-                    <SelectItem value="part-time">Part-time</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => updateField("contractType", e.target.value)}
+                  placeholder="e.g. Full-time, Part-time, Contract, Freelance"
+                />
                 {errors.contractType && (
                   <p className="text-xs text-red-500">{errors.contractType}</p>
                 )}
