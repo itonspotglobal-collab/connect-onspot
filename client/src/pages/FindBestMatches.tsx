@@ -1306,12 +1306,28 @@ function computeValuesAlignment(
 
 // ─── canProceed per step ──────────────────────────────────────────────────────
 
+// ─── Validation helpers ───────────────────────────────────────────────────────
+
+const EMAIL_FORMAT_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_FORMAT_RX = /[\d\s\-+().]{7,}/;
+
+function isValidEmail(v: string): boolean {
+  return EMAIL_FORMAT_RX.test(v.trim());
+}
+function isValidPhone(v: string): boolean {
+  return PHONE_FORMAT_RX.test(v.trim()) && v.replace(/\D/g, "").length >= 7;
+}
+
 function canProceed(step: number, p: CandidateProfile): boolean {
   switch (step) {
     case 0:
       return true; // Upload is optional
     case 1:
       return (
+        !!p.fullName.trim() &&
+        isValidEmail(p.email) &&
+        isValidPhone(p.phone) &&
+        !!p.location.trim() &&
         !!p.targetPosition.trim() &&
         !!p.jobCategory &&
         !!p.yearsOfExperience &&
@@ -1956,21 +1972,22 @@ export default function FindBestMatches() {
         setExtractParseError(result.parseError);
       } else {
         setExtracted(result);
-        // Hydrate profile with extracted values, keeping any already-set fields
+        // Hydrate profile with extracted values — suggestions only, never overwrite user edits
         setProfile((prev) => ({
           ...prev,
-          fullName: result.fullName || prev.fullName,
-          targetPosition: result.targetPosition || prev.targetPosition,
-          jobCategory: result.jobCategory || prev.jobCategory,
-          yearsOfExperience: result.yearsOfExperience || prev.yearsOfExperience,
-          seniority: result.seniority || prev.seniority,
-          coreSkills: result.coreSkills.length
-            ? result.coreSkills
-            : prev.coreSkills,
-          secondarySkills: result.secondarySkills.length
-            ? result.secondarySkills
-            : prev.secondarySkills,
-          summary: result.summary || prev.summary,
+          fullName: prev.fullName || result.fullName,
+          email: prev.email || result.email,
+          phone: prev.phone || result.phone,
+          location: prev.location || result.location,
+          targetPosition: prev.targetPosition || result.targetPosition,
+          jobCategory: prev.jobCategory || result.jobCategory,
+          yearsOfExperience: prev.yearsOfExperience || result.yearsOfExperience,
+          seniority: prev.seniority || result.seniority,
+          coreSkills: prev.coreSkills.length ? prev.coreSkills
+            : result.coreSkills.length ? result.coreSkills : prev.coreSkills,
+          secondarySkills: prev.secondarySkills.length ? prev.secondarySkills
+            : result.secondarySkills.length ? result.secondarySkills : prev.secondarySkills,
+          summary: prev.summary || result.summary,
         }));
       }
     } catch {
@@ -2524,7 +2541,7 @@ export default function FindBestMatches() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">
               Full Name{" "}
-              <span className="text-slate-400 font-normal">(optional)</span>
+              <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
             </Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -2532,32 +2549,38 @@ export default function FindBestMatches() {
                 placeholder="e.g. Maria Santos"
                 value={profile.fullName}
                 onChange={(e) => setField("fullName", e.target.value)}
-                className="rounded-xl pl-9"
+                className={`rounded-xl pl-9 ${flowStep === 1 && !profile.fullName.trim() ? "border-red-300 focus-visible:ring-red-400" : ""}`}
               />
             </div>
+            {flowStep === 1 && !profile.fullName.trim() && (
+              <p className="text-xs text-red-500">Please enter your full name.</p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">
                 Email{" "}
-                <span className="text-slate-400 font-normal">(optional)</span>
+                <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   type="email"
-                  placeholder="you@email.com"
+                  placeholder="e.g. maria@gmail.com"
                   value={profile.email}
                   onChange={(e) => setField("email", e.target.value)}
-                  className="rounded-xl pl-9"
+                  className={`rounded-xl pl-9 ${flowStep === 1 && profile.email && !isValidEmail(profile.email) ? "border-red-300 focus-visible:ring-red-400" : ""}`}
                 />
               </div>
+              {flowStep === 1 && profile.email && !isValidEmail(profile.email) && (
+                <p className="text-xs text-red-500">Please enter a valid email address.</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-slate-700">
-                Phone{" "}
-                <span className="text-slate-400 font-normal">(optional)</span>
+                Phone Number{" "}
+                <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
               </Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -2566,16 +2589,19 @@ export default function FindBestMatches() {
                   placeholder="+63 912 345 6789"
                   value={profile.phone}
                   onChange={(e) => setField("phone", e.target.value)}
-                  className="rounded-xl pl-9"
+                  className={`rounded-xl pl-9 ${flowStep === 1 && profile.phone && !isValidPhone(profile.phone) ? "border-red-300 focus-visible:ring-red-400" : ""}`}
                 />
               </div>
+              {flowStep === 1 && profile.phone && !isValidPhone(profile.phone) && (
+                <p className="text-xs text-red-500">Please enter a valid phone number.</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700">
               Location{" "}
-              <span className="text-slate-400 font-normal">(optional)</span>
+              <span className="text-[#474ead] text-xs font-semibold ml-1">Required</span>
             </Label>
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -2583,9 +2609,12 @@ export default function FindBestMatches() {
                 placeholder="e.g. Cebu City, Philippines"
                 value={profile.location}
                 onChange={(e) => setField("location", e.target.value)}
-                className="rounded-xl pl-9"
+                className={`rounded-xl pl-9 ${flowStep === 1 && !profile.location.trim() ? "border-red-300 focus-visible:ring-red-400" : ""}`}
               />
             </div>
+            {flowStep === 1 && !profile.location.trim() && (
+              <p className="text-xs text-red-500">Please enter your current location.</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -3025,13 +3054,22 @@ export default function FindBestMatches() {
         </div>
 
         {/* Required fields reminder */}
-        {!ready && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-xs font-medium text-amber-700">
-              Please complete: Target Job Position, Job Category, Years of
-              Experience, Seniority Level, and at least one Core Skill to
-              continue.
+        {flowStep === 1 && !canProceed(1, profile) && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-1">
+            <p className="text-xs font-semibold text-amber-700 mb-1">
+              Please fill in all required fields before continuing:
             </p>
+            <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
+              {!profile.fullName.trim() && <li>Full Name</li>}
+              {!isValidEmail(profile.email) && <li>Email — valid email required</li>}
+              {!isValidPhone(profile.phone) && <li>Phone Number</li>}
+              {!profile.location.trim() && <li>Location</li>}
+              {!profile.targetPosition.trim() && <li>Target Job Position</li>}
+              {!profile.jobCategory && <li>Job Category</li>}
+              {!profile.yearsOfExperience && <li>Years of Experience</li>}
+              {!profile.seniority && <li>Seniority Level</li>}
+              {profile.coreSkills.length === 0 && <li>At least one Core Skill</li>}
+            </ul>
           </div>
         )}
       </div>

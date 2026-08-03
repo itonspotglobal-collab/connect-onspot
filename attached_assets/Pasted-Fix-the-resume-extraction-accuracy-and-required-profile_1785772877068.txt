@@ -1,0 +1,419 @@
+Fix the resume extraction accuracy and required profile fields in FindBestMatches.tsx.
+
+There are 2 main problems:
+
+1. Resume parsing is still inaccurate.
+2. Important personal information fields are marked optional when they should be required.
+
+==================================================
+PROBLEM 1 — WRONG NAME EXTRACTION
+==================================================
+
+Current bug:
+
+After uploading a resume, the Full Name field is sometimes populated with a school/university name.
+
+Example of incorrect result:
+"Cebu Institute Of Technology University"
+
+This is NOT a person's name.
+It is an education institution.
+
+The resume parser must not treat:
+- school names
+- universities
+- companies
+- section headings
+- job titles
+as candidate names.
+
+Fix the name extraction logic.
+
+==================================================
+NAME EXTRACTION REQUIREMENTS
+==================================================
+
+When extracting Full Name from a resume:
+
+1. Prioritize the resume header / contact section
+2. Look near:
+   - email
+   - phone number
+   - address/location
+3. Prefer a likely human full name with:
+   - 2 to 5 words
+   - proper/title capitalization
+   - optional middle initials
+4. Reject organization/institution keywords
+
+Reject candidate name values containing terms like:
+- University
+- College
+- Institute
+- School
+- Academy
+- Corporation
+- Corp
+- Inc
+- Ltd
+- Company
+- Technologies
+- Solutions
+- Department
+- Education
+
+Also reject section headings such as:
+- Education
+- Tertiary Education
+- Work Experience
+- Experience
+- Skills
+- About Me
+- Summary
+- Career Objective
+- References
+- Projects
+
+Example:
+
+WRONG:
+Cebu Institute Of Technology University
+
+RIGHT:
+A real person's full name from the resume header.
+
+==================================================
+USE CONFIDENCE-BASED EXTRACTION
+==================================================
+
+Create a stronger extraction strategy instead of taking the first matching line.
+
+Example concept:
+
+scorePotentialName(line):
+
++ strong score if:
+- close to top of resume
+- near email or phone
+- 2–5 words
+- mostly alphabetic
+- title case
+
+negative score if:
+- contains University
+- contains College
+- contains Institute
+- contains Inc
+- contains Department
+- matches section heading
+- looks like company/job title
+
+Only populate Full Name if confidence is high enough.
+
+If no confident name is found:
+
+leave Full Name blank.
+
+DO NOT GUESS.
+
+==================================================
+EMAIL EXTRACTION
+==================================================
+
+Extract email using a reliable email regex.
+
+If a valid email exists in the uploaded resume:
+- prefill the Email field
+
+Do not use placeholder values such as:
+you@email.com
+
+If extraction fails:
+- leave the field blank
+- require the user to enter it manually
+
+==================================================
+PHONE EXTRACTION
+==================================================
+
+Extract the candidate phone number if present.
+
+Support formats such as:
+- +63...
+- 09...
+- spaces
+- hyphens
+- parentheses
+
+Normalize only if safe.
+
+If the phone cannot be confidently extracted:
+leave it blank.
+
+==================================================
+LOCATION EXTRACTION
+==================================================
+
+Try to extract candidate location/address from the contact/header section.
+
+Prioritize:
+- city
+- province/state
+- country
+- address near phone/email
+
+Do not infer a location from a school/company unless it is clearly identified as the candidate's location.
+
+If uncertain:
+leave it blank.
+
+==================================================
+IMPORTANT — REQUIRED PROFILE FIELDS
+==================================================
+
+Change these fields from OPTIONAL to REQUIRED:
+
+- Full Name
+- Email
+- Phone Number
+- Location
+
+Current labels such as:
+
+Full Name (optional)
+Email (optional)
+Phone (optional)
+Location (optional)
+
+must become:
+
+Full Name — Required
+Email — Required
+Phone Number — Required
+Location — Required
+
+==================================================
+VALIDATION
+==================================================
+
+Do not allow the candidate to proceed to the next step until all required fields are valid.
+
+Required validation:
+
+Full Name:
+- must not be empty
+- should not contain obvious school/company keywords
+- minimum reasonable length
+
+Email:
+- required
+- valid email format
+
+Phone:
+- required
+- valid phone format
+- allow international numbers
+
+Location:
+- required
+- non-empty
+
+Target Job Position:
+- remain required
+
+Job Category:
+- remain required
+
+==================================================
+INLINE ERROR MESSAGES
+==================================================
+
+Use clear inline validation.
+
+Examples:
+
+Full Name:
+"Please enter your full name."
+
+Email:
+"Please enter a valid email address."
+
+Phone:
+"Please enter a valid phone number."
+
+Location:
+"Please enter your current location."
+
+If resume parsing populated a suspicious value:
+show:
+"We couldn't confidently identify this field from your resume. Please review it."
+
+==================================================
+RESUME DATA SHOULD BE SUGGESTIONS ONLY
+==================================================
+
+Important:
+
+Resume extraction must populate initial values only.
+
+The profile form remains the source of truth.
+
+The user must be able to:
+- edit extracted values
+- correct incorrect values
+- add missing information
+
+Do not continuously overwrite user changes.
+
+==================================================
+HYDRATION / FORM STATE
+==================================================
+
+Ensure extracted resume data hydrates the form only once.
+
+Do NOT:
+- reset form state on every render
+- overwrite edited values after resume parsing
+- remount the form while typing
+
+Use stable form state.
+
+==================================================
+JOB POSITION EXTRACTION
+==================================================
+
+Also review Target Job Position extraction.
+
+Current behavior may produce values such as:
+"Software Developer (Alliance Software Inc.)"
+
+Prefer:
+"Software Developer"
+
+Company name should be stored separately in Work History.
+
+Do not combine:
+Job Title + Company
+
+into Target Job Position.
+
+Example:
+
+WRONG:
+Software Developer (Alliance Software Inc.)
+
+RIGHT:
+Software Developer
+
+Work History:
+Company:
+Alliance Software Inc.
+
+==================================================
+JOB CATEGORY EXTRACTION
+==================================================
+
+Make category selection more accurate.
+
+Example:
+
+Software Developer
+should map primarily to:
+Development
+
+not:
+Tech Support
+
+Do not classify a candidate as Tech Support simply because their resume contains technical words.
+
+Category mapping should be driven primarily by:
+- current/latest position
+- target position
+- dominant work history
+
+Skills should be secondary evidence.
+
+Examples:
+
+Software Developer
+→ Development
+
+IT Administrator
+→ Tech Support / IT Infrastructure
+
+Executive Assistant
+→ Admin
+
+Bookkeeper
+→ Finance
+
+Customer Service Representative
+→ Customer Support
+
+Team Manager / Operations Manager
+→ Operations
+
+==================================================
+IMPORTANT MATCHING IMPACT
+==================================================
+
+These profile fields feed the Find Best Matches engine.
+
+Incorrect extraction causes incorrect job recommendations.
+
+Therefore:
+
+Candidate identity extraction
+→ profile review
+→ target position/category
+→ culture evaluation
+→ job matching
+
+must remain reliable.
+
+Do not use bad extracted data to drive job matching.
+
+==================================================
+VISUAL REQUIREMENTS
+==================================================
+
+Keep the current design shown in FindBestMatches.tsx.
+
+Do not redesign the page.
+
+Only update:
+- extraction accuracy
+- field labels
+- validation
+- helper/error messaging
+
+Keep existing:
+- colors
+- cards
+- typography
+- spacing
+- layout
+- chips/buttons
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+✓ School/university names cannot be used as Full Name
+✓ Company names cannot be used as Full Name
+✓ Section headings cannot be used as Full Name
+✓ Name extraction prioritizes header/contact area
+✓ Email is extracted when available
+✓ Phone is extracted when available
+✓ Location is extracted when available
+✓ Full Name is REQUIRED
+✓ Email is REQUIRED
+✓ Phone Number is REQUIRED
+✓ Location is REQUIRED
+✓ User cannot continue with missing required fields
+✓ Suspicious extracted values are flagged
+✓ User can correct all extracted data
+✓ User edits are never overwritten
+✓ "Software Developer (Company)" is normalized to "Software Developer"
+✓ Software Developer maps to Development, not Tech Support
+✓ Existing visual design remains unchanged
