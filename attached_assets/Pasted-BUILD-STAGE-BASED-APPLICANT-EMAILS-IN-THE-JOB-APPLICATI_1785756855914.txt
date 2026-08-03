@@ -1,0 +1,1157 @@
+BUILD STAGE-BASED APPLICANT EMAILS IN THE JOB APPLICATION DASHBOARD
+
+Work inside the existing OnSpot application. Do not create a separate app,
+database, authentication system, or email platform.
+
+TARGET PAGE
+
+`/admin/job-applications`
+
+PURPOSE
+
+Recruiters need to send stage-specific emails to applicants directly from the
+Job Applications dashboard.
+
+The feature should feel similar to the existing Admin Insights editor:
+
+- editable content;
+- reusable saved templates;
+- preview mode;
+- draft/published state where appropriate;
+- a clear send action.
+
+The actual email must be sent using the existing Microsoft 365 / Outlook
+environment through Microsoft Graph.
+
+CURRENT ADMIN ACCESS
+
+Admin authentication is intentionally not implemented yet.
+
+Keep this feature consistent with the current temporary public admin pages.
+
+Do not introduce `AdminProtectedRoute` or backend admin authorization only for
+this feature.
+
+Add clear code comments:
+
+`TODO: Protect applicant email features with admin authorization before production.`
+
+REVIEW EXISTING CODE FIRST
+
+Inspect:
+
+- `client/src/pages/AdminJobApplications.tsx`
+- `client/src/pages/AdminInsights.tsx`
+- `client/src/pages/AdminInsightEditor.tsx`
+- `client/src/App.tsx`
+- `client/src/components/TopNavigation.tsx`
+- existing Dialog, Drawer, Tabs, Select, Textarea, Input, Button, Badge, Toast
+  and rich-text components;
+- `shared/schema.ts`
+- `server/routes.ts`
+- `server/storage.ts`
+- existing job-application APIs;
+- application stage/status-history implementation;
+- existing email or Microsoft integration services;
+- Replit environment-variable conventions.
+
+Reuse existing components, layouts, request helpers, error handling, database
+patterns, and UI styles.
+
+Do not duplicate existing email functionality if it already exists.
+
+==================================================
+PART 1 — ADD EMAIL ACTION TO APPLICATION DASHBOARD
+==================================================
+
+Add an email action to every application row.
+
+Current actions:
+
+- View
+- Status
+- Delete
+
+Updated actions:
+
+- View
+- Status
+- Email
+- Delete
+
+Use a Mail icon with accessible text or tooltip.
+
+Desktop example:
+
+[ View ] [ Status ] [ Email ] [ Trash ]
+
+On mobile, place actions inside an overflow menu if required.
+
+Clicking Email must open an Applicant Email Composer for the selected
+application.
+
+Do not immediately send an email when the button is clicked.
+
+==================================================
+PART 2 — EMAIL COMPOSER
+==================================================
+
+Create a reusable component such as:
+
+`client/src/components/ApplicantEmailComposer.tsx`
+
+It may open as a large dialog, drawer, or dedicated editor page.
+
+Recommended desktop width:
+
+- approximately 900–1100px;
+- responsive;
+- maximum height inside the viewport;
+- scrollable content where necessary.
+
+COMPOSER HEADER
+
+Display:
+
+- Applicant name
+- Applicant email
+- Applied job
+- Current application stage
+- Current application status
+- Account-linking status
+
+Example:
+
+Applicant: Maria Santos
+Email: maria@example.com
+Position: IT Administrator
+Current Stage: Assessment
+Status: Active
+
+COMPOSER FIELDS
+
+Include:
+
+1. Email template
+2. From name
+3. Reply-to address
+4. Recipient
+5. Subject
+6. Email body
+7. Optional call-to-action button
+8. Preview
+9. Send Test Email
+10. Send Email
+
+Recipient email must come from the selected application.
+
+Do not allow the browser to send an arbitrary applicant ID or Talent ID as the
+source of truth.
+
+The backend must load the selected application by its application ID.
+
+RECIPIENT FIELD
+
+Show the applicant email as read-only.
+
+If the application does not have a valid email:
+
+- disable Send Email;
+- display a clear validation message.
+
+FROM SETTINGS
+
+The authorized Microsoft 365 sender mailbox must come from server environment
+configuration.
+
+Example:
+
+`APPLICATION_EMAIL_FROM=careers@onspotglobal.com`
+
+The sender mailbox must not be freely editable by normal frontend input.
+
+The visible From Name may be editable, such as:
+
+`OnSpot Careers`
+
+Reply-to may be configurable, but validate it server-side.
+
+SUBJECT
+
+Make the subject editable.
+
+Example:
+
+`Your application has advanced to the Initial Interview — {{jobTitle}}`
+
+BODY EDITOR
+
+Reuse the rich-text editing approach from Admin Insights if practical.
+
+Support:
+
+- paragraphs;
+- headings;
+- bold;
+- italic;
+- links;
+- bullet lists;
+- numbered lists;
+- CTA button;
+- basic alignment where existing editor support allows it.
+
+Do not allow unsafe arbitrary JavaScript or scripts.
+
+Sanitize stored and rendered HTML.
+
+PLAIN-TEXT VERSION
+
+Generate or store a plain-text fallback.
+
+If practical, derive it safely from the HTML body.
+
+==================================================
+PART 3 — TEMPLATE VARIABLES
+==================================================
+
+Support variables such as:
+
+- `{{firstName}}`
+- `{{lastName}}`
+- `{{fullName}}`
+- `{{email}}`
+- `{{jobTitle}}`
+- `{{companyName}}`
+- `{{applicationStatus}}`
+- `{{currentStage}}`
+- `{{submittedDate}}`
+- `{{assessmentLink}}`
+- `{{interviewDate}}`
+- `{{interviewTime}}`
+- `{{interviewTimezone}}`
+- `{{interviewLink}}`
+- `{{recruiterName}}`
+- `{{profileUrl}}`
+- `{{findBestMatchesUrl}}`
+
+Show an Insert Variable dropdown in the editor.
+
+When a template is loaded, render an applicant-specific preview.
+
+Do not permanently replace variables in the saved template itself.
+
+Validate unknown variables and show a warning before sending.
+
+Do not send unresolved placeholders such as `{{interviewDate}}` without warning.
+
+==================================================
+PART 4 — EMAIL TEMPLATE MANAGEMENT
+==================================================
+
+Create an email-template management page:
+
+`/admin/email-templates`
+
+Add it to the Admin navigation near:
+
+- Find Work
+- Job Applications
+- Insights
+- Email Templates
+
+Create a page such as:
+
+`client/src/pages/AdminEmailTemplates.tsx`
+
+The experience should be similar to Admin Insights:
+
+- list templates;
+- create template;
+- edit template;
+- duplicate template;
+- activate/deactivate template;
+- preview template;
+- send test email;
+- save draft;
+- publish;
+- archive where appropriate.
+
+Suggested editor route:
+
+`/admin/email-templates/create`
+
+`/admin/email-templates/:templateId/edit`
+
+TEMPLATE CATEGORIES
+
+Support at least:
+
+- Application Received
+- Assessment Invitation
+- Assessment Reminder
+- Assessment Passed
+- Assessment Failed
+- Initial Interview Invitation
+- Initial Interview Passed
+- Initial Interview Failed
+- Final Interview Invitation
+- Client Interview Invitation
+- Offer
+- Hired
+- General Rejection
+- Custom Applicant Email
+
+Suggested stable template keys:
+
+- `application_received`
+- `assessment_invitation`
+- `assessment_reminder`
+- `assessment_passed`
+- `assessment_failed`
+- `initial_interview_invitation`
+- `initial_interview_passed`
+- `initial_interview_failed`
+- `final_interview_invitation`
+- `client_interview_invitation`
+- `offer_sent`
+- `hired_welcome`
+- `application_rejected`
+- `custom_applicant_email`
+
+Do not depend only on the editable template name.
+
+Use stable internal template keys.
+
+==================================================
+PART 5 — DATABASE
+==================================================
+
+Inspect the existing schema first.
+
+If these tables do not already exist, add them through Drizzle migrations.
+
+EMAIL TEMPLATES TABLE
+
+Create a table such as:
+
+`applicant_email_templates`
+
+Fields:
+
+- id
+- templateKey
+- name
+- description
+- category
+- subject
+- htmlBody
+- textBody
+- fromName
+- replyTo
+- ctaLabel
+- ctaUrl
+- isActive
+- publicationStatus
+- createdAt
+- updatedAt
+- publishedAt
+- createdBy nullable
+- updatedBy nullable
+
+Suggested publication statuses:
+
+- draft
+- published
+- archived
+
+Add a unique index on `templateKey` where appropriate.
+
+EMAIL COMMUNICATIONS TABLE
+
+Create:
+
+`job_application_emails`
+
+Fields:
+
+- id
+- applicationId
+- templateId nullable
+- templateKey nullable
+- recipientEmail
+- fromEmail
+- fromName
+- replyTo
+- subject
+- htmlBody
+- textBody
+- applicationStage
+- sendStatus
+- provider
+- providerMessageId nullable
+- errorCode nullable
+- errorMessage nullable
+- sentAt nullable
+- createdAt
+- createdBy nullable
+- retryCount default 0
+- lastRetryAt nullable
+
+Suggested send statuses:
+
+- draft
+- queued
+- sending
+- sent
+- failed
+
+Use provider value:
+
+`microsoft_graph`
+
+STATUS / STAGE HISTORY
+
+Keep email history separate from application-stage history.
+
+Do not overwrite previous communications when another email is sent.
+
+Every email attempt should remain traceable.
+
+FOREIGN KEYS
+
+`job_application_emails.applicationId` must reference the application.
+
+Deleting an application may delete its email history only if this matches the
+current application-deletion policy.
+
+Never cascade deletion from application email records into:
+
+- users;
+- Talent accounts;
+- profiles;
+- jobs.
+
+==================================================
+PART 6 — MICROSOFT GRAPH SERVICE
+==================================================
+
+Create or extend a backend service such as:
+
+`server/services/microsoftGraphEmailService.ts`
+
+Use server-side Microsoft Graph authentication.
+
+Required environment variables:
+
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `APPLICATION_EMAIL_FROM`
+- `APPLICATION_EMAIL_FROM_NAME`
+- optional `APPLICATION_EMAIL_REPLY_TO`
+- `PUBLIC_APP_URL`
+
+Never expose these values in React code or API responses.
+
+Use the Microsoft OAuth client-credentials flow.
+
+Obtain an access token server-side.
+
+Send the email through the configured Microsoft 365 mailbox.
+
+Do not use the applicant's email as the sender.
+
+Do not store Microsoft access tokens permanently in the database.
+
+Cache an access token in memory only until shortly before expiration if useful.
+
+Handle token refresh safely.
+
+SEND-MAIL IMPLEMENTATION
+
+Build a service method conceptually similar to:
+
+`sendApplicantEmail({ to, subject, htmlBody, textBody, replyTo })`
+
+Return a structured result:
+
+{
+  success: true,
+  provider: "microsoft_graph",
+  providerMessageId: "..."
+}
+
+or:
+
+{
+  success: false,
+  provider: "microsoft_graph",
+  errorCode: "...",
+  errorMessage: "..."
+}
+
+Do not expose raw Microsoft credentials or token responses.
+
+==================================================
+PART 7 — API ENDPOINTS
+==================================================
+
+Use project conventions, but support functionality equivalent to:
+
+TEMPLATES
+
+GET `/api/admin/email-templates`
+
+GET `/api/admin/email-templates/:templateId`
+
+POST `/api/admin/email-templates`
+
+PATCH `/api/admin/email-templates/:templateId`
+
+POST `/api/admin/email-templates/:templateId/publish`
+
+POST `/api/admin/email-templates/:templateId/duplicate`
+
+DELETE or archive:
+
+`/api/admin/email-templates/:templateId`
+
+Prefer archive over permanent deletion for published templates that have
+communication history.
+
+PREVIEW
+
+POST `/api/admin/job-applications/:applicationId/email-preview`
+
+Request:
+
+{
+  "templateId": "...",
+  "subject": "...",
+  "htmlBody": "...",
+  "textBody": "...",
+  "variables": {
+    "assessmentLink": "...",
+    "interviewDate": "...",
+    "interviewTime": "...",
+    "interviewTimezone": "...",
+    "interviewLink": "..."
+  }
+}
+
+The backend must:
+
+- load the application;
+- resolve applicant/job variables;
+- merge allowed supplemental variables;
+- sanitize the output;
+- return rendered subject/body;
+- identify unresolved variables.
+
+SEND TEST
+
+POST `/api/admin/job-applications/:applicationId/email-test`
+
+Request:
+
+{
+  "testRecipient": "recruiter@onspotglobal.com",
+  "subject": "...",
+  "htmlBody": "...",
+  "textBody": "...",
+  "variables": {}
+}
+
+Requirements:
+
+- validate test email;
+- clearly prefix the subject with `[TEST]`;
+- do not record the test email as an applicant communication;
+- optionally record it in technical logs without applicant PII.
+
+SEND APPLICANT EMAIL
+
+POST `/api/admin/job-applications/:applicationId/send-email`
+
+Request:
+
+{
+  "templateId": "...",
+  "subject": "...",
+  "htmlBody": "...",
+  "textBody": "...",
+  "replyTo": "...",
+  "variables": {},
+  "updateStage": false,
+  "newStage": null,
+  "newStatus": null,
+  "note": null
+}
+
+Backend behavior:
+
+1. Validate request with Zod.
+2. Load the application by application ID.
+3. Confirm it has a valid recipient email.
+4. Resolve variables server-side.
+5. Reject or warn about unresolved required variables.
+6. Create a `job_application_emails` row with `sending`.
+7. Send through Microsoft Graph.
+8. Update row to `sent` or `failed`.
+9. Return a safe result.
+
+Never trust recipient email supplied by the browser.
+
+The recipient must come from the selected application.
+
+COMMUNICATION HISTORY
+
+GET `/api/admin/job-applications/:applicationId/emails`
+
+Return:
+
+- subject;
+- template;
+- stage;
+- sent/failed status;
+- sent date;
+- provider;
+- retry count;
+- error summary;
+- safe preview.
+
+RETRY
+
+POST `/api/admin/job-applications/:applicationId/emails/:emailId/retry`
+
+Retry only failed emails.
+
+Do not duplicate successful communications unless the recruiter intentionally
+chooses Resend.
+
+==================================================
+PART 8 — APPLICATION STAGE WORKFLOW
+==================================================
+
+Extend the application model if necessary to distinguish:
+
+APPLICATION STATUS
+
+- active
+- rejected
+- withdrawn
+- hired
+
+CURRENT STAGE
+
+- application_submitted
+- assessment
+- initial_interview
+- final_interview
+- client_interview
+- offer
+- hired
+
+Also retain existing display statuses where needed for backward compatibility.
+
+Do not automatically remove existing values without migration/mapping.
+
+Suggested display:
+
+Status: Active
+Stage: Assessment
+
+or:
+
+Status: Rejected
+Rejected At: Initial Interview
+
+STAGE ACTIONS
+
+Add context-aware actions such as:
+
+For Application Submitted:
+
+- Send Application Confirmation
+- Move to Assessment & Send Email
+- Reject Application & Send Email
+
+For Assessment:
+
+- Resend Assessment Invitation
+- Assessment Passed → Initial Interview
+- Assessment Failed → Reject
+
+For Initial Interview:
+
+- Send Interview Reminder
+- Interview Passed → Final Interview
+- Interview Failed → Reject
+
+For Final Interview:
+
+- Advance to Client Interview
+- Send Offer
+- Reject
+
+Do not make stage transitions irreversible.
+
+Record every change in stage/status history.
+
+==================================================
+PART 9 — COMBINED “UPDATE & SEND” FLOW
+==================================================
+
+The preferred recruiter workflow is:
+
+1. Select a stage action.
+2. Open email composer.
+3. Load the mapped template.
+4. Edit the email.
+5. Preview it.
+6. Confirm.
+7. Update stage/status.
+8. Send email.
+9. Record both actions.
+
+Example:
+
+`Assessment Passed → Initial Interview`
+
+opens:
+
+Title:
+`Advance to Initial Interview`
+
+Template:
+`Initial Interview Invitation`
+
+The recruiter can fill:
+
+- interview date;
+- interview time;
+- timezone;
+- meeting link;
+- recruiter name.
+
+Primary button:
+
+`Advance & Send Email`
+
+Use a database transaction for the local database changes where practical.
+
+However, Microsoft Graph is an external service and cannot be part of a normal
+database transaction.
+
+Handle this reliably:
+
+1. Save intended stage transition and outgoing communication record.
+2. Send email.
+3. Mark communication sent or failed.
+4. Clearly show the final result.
+
+If stage update succeeds but email sending fails, show:
+
+`Application advanced to Initial Interview, but the email failed to send.`
+
+Provide:
+
+`Retry Email`
+
+Do not silently roll back or hide the stage change.
+
+Alternatively, before the action, provide a checkbox:
+
+`Only update the stage if the email sends successfully.`
+
+Use the simpler reliable behavior unless existing product requirements specify
+otherwise.
+
+==================================================
+PART 10 — EMAIL COMPOSER UX
+==================================================
+
+Use tabs or a split layout.
+
+Suggested tabs:
+
+- Compose
+- Preview
+- History
+
+COMPOSE TAB
+
+Display:
+
+- template selector;
+- subject;
+- variables;
+- rich-text body;
+- CTA settings;
+- reply-to;
+- stage/status update options.
+
+PREVIEW TAB
+
+Render:
+
+- Desktop preview
+- Mobile-width preview
+- Plain-text preview
+
+The preview should show the resolved applicant data.
+
+Do not use an unsafe raw iframe without appropriate sandboxing.
+
+HISTORY TAB
+
+Show previous applicant communications:
+
+- Application confirmation
+- Assessment invitation
+- Interview invitation
+- Rejection email
+- etc.
+
+Each row should display:
+
+- subject;
+- stage;
+- sent date;
+- sent/failed status;
+- template;
+- resend/retry action.
+
+FOOTER BUTTONS
+
+Recommended:
+
+- Cancel
+- Save as Draft
+- Send Test
+- Preview
+- Send Email
+
+For a combined stage action:
+
+- Cancel
+- Send Test
+- Advance & Send Email
+
+CONFIRMATION
+
+Before final sending, show:
+
+`Send this email to Maria Santos?`
+
+Display:
+
+- recipient;
+- subject;
+- related application;
+- stage change, if any.
+
+Buttons:
+
+- Cancel
+- Send Email
+
+or:
+
+- Cancel
+- Advance & Send Email
+
+Disable final send while processing.
+
+Prevent double-click duplicate emails.
+
+==================================================
+PART 11 — DASHBOARD DISPLAY
+==================================================
+
+Add communication indicators to the application table.
+
+Possible additions:
+
+- mail icon with most recent email status;
+- count of sent emails;
+- failed-email warning;
+- last contacted date.
+
+Avoid making the table too wide.
+
+A compact Contacted column could display:
+
+`3 emails`
+`Last: Aug 3`
+
+or:
+
+- green mail icon: last email sent;
+- red warning icon: last email failed.
+
+In the View Application drawer, add:
+
+`Communication History`
+
+with the full timeline.
+
+==================================================
+PART 12 — DEFAULT EMAIL TEMPLATES
+==================================================
+
+Seed editable templates.
+
+APPLICATION RECEIVED
+
+Subject:
+
+`Application received — {{jobTitle}} | OnSpot`
+
+Body:
+
+`Hi {{firstName}},`
+
+`Thank you for applying for the {{jobTitle}} position at OnSpot. We have
+successfully received your application.`
+
+`Our recruitment team will review your information and contact you regarding
+the next steps.`
+
+`Regards,`
+`OnSpot Careers`
+
+ASSESSMENT INVITATION
+
+Subject:
+
+`Next step: Assessment for {{jobTitle}}`
+
+Include:
+
+- assessment instructions;
+- assessment link;
+- deadline if supplied;
+- support contact.
+
+INITIAL INTERVIEW INVITATION
+
+Subject:
+
+`You have advanced to the Initial Interview — {{jobTitle}}`
+
+Include:
+
+- date;
+- time;
+- timezone;
+- meeting link;
+- preparation instructions.
+
+ASSESSMENT FAILED
+
+Use respectful wording.
+
+Do not expose internal scores unless intentionally included.
+
+INITIAL INTERVIEW FAILED / REJECTION
+
+Use respectful, neutral wording.
+
+Avoid language making legal or discriminatory claims.
+
+These are starter templates only.
+
+Admins must be able to edit them.
+
+==================================================
+PART 13 — AUTOMATIC APPLICATION CONFIRMATION
+==================================================
+
+The initial Application Received email may be automatic.
+
+After a valid application is successfully saved:
+
+1. Save application.
+2. Attempt to queue/send Application Received email.
+3. Continue the account flow normally.
+
+Do not make the application submission fail because email sending fails.
+
+If sending fails:
+
+- application remains saved;
+- record failed email status;
+- make Retry available in the dashboard.
+
+Later-stage emails remain recruiter-triggered through buttons.
+
+==================================================
+PART 14 — ERROR HANDLING
+==================================================
+
+Display clear outcomes.
+
+Successful:
+
+`Email sent successfully to m***@example.com.`
+
+Failed:
+
+`The application was updated, but the email could not be sent.`
+
+Include a Retry action where appropriate.
+
+Do not expose raw Microsoft Graph responses to the browser.
+
+Log technical errors without logging full email content or unnecessary PII.
+
+Every API response must be JSON.
+
+Do not let `/api/...` errors fall through to the frontend HTML document.
+
+==================================================
+PART 15 — SECURITY AND PRIVACY
+==================================================
+
+- Store Microsoft credentials only in Replit Secrets.
+- Never expose Graph access tokens.
+- Validate all email addresses.
+- Sanitize HTML.
+- Block script tags and dangerous URLs.
+- Do not trust application IDs, emails, Talent IDs, stages, or roles from the
+  frontend without server-side validation.
+- Load applicant recipient data from the database.
+- Avoid applicant PII in URLs.
+- Avoid full email bodies in normal server logs.
+- Add rate limiting to send and test-send endpoints.
+- Prevent accidental duplicate sends.
+- Keep an audit/communication record.
+- Restrict external links to safe HTTP/HTTPS URLs.
+- Add admin authorization TODO comments for the current temporary public-admin
+  phase.
+
+==================================================
+PART 16 — RESPONSIVENESS
+==================================================
+
+The composer must work on:
+
+- 1920×1080
+- 1440×900
+- 1366×768
+- 1280×720
+- 1024×768
+- 390×844
+
+Desktop:
+
+- split editor/preview is acceptable.
+
+Short laptop:
+
+- tabs are preferable to a cramped split view.
+
+Mobile:
+
+- stack fields;
+- allow scrolling;
+- keep send action visible;
+- no horizontal overflow.
+
+==================================================
+PART 17 — TESTS
+==================================================
+
+BACKEND
+
+Test:
+
+1. List templates.
+2. Create/edit/publish template.
+3. Render known variables.
+4. Warn on unknown variables.
+5. Preview email.
+6. Send test email.
+7. Send applicant email.
+8. Recipient comes from application record.
+9. Browser-supplied recipient is ignored/rejected.
+10. Successful communication history record.
+11. Failed Graph request creates failed history.
+12. Retry failed email.
+13. Prevent duplicate send from double-click.
+14. Application remains intact when email fails.
+15. Talent account remains untouched.
+16. Stage history and email history are both recorded.
+17. Invalid application returns 404.
+18. APIs always return JSON.
+
+FRONTEND
+
+Test:
+
+1. Email button opens composer.
+2. Correct applicant/job loads.
+3. Template selector works.
+4. Subject/body are editable.
+5. Variable insertion works.
+6. Preview renders.
+7. Test email works.
+8. Final confirmation appears.
+9. Successful send updates history.
+10. Failed send shows Retry.
+11. Stage-and-send action works.
+12. Composer is responsive.
+13. Send is disabled for invalid/missing email.
+14. Existing View, Status, Delete, filtering, and pagination still work.
+
+Run:
+
+- Drizzle migration;
+- TypeScript check;
+- lint;
+- automated tests;
+- production build.
+
+Fix all implementation-related errors.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+The feature is complete when:
+
+1. Every application row has an Email action.
+2. Clicking Email opens an editable composer.
+3. Recruiters can choose stage-specific templates.
+4. Recruiters can edit subject and body.
+5. Recruiters can insert applicant/job variables.
+6. Recruiters can preview desktop, mobile, and text versions.
+7. Recruiters can send a test email.
+8. Recruiters confirm before final sending.
+9. Emails are sent through Microsoft Graph / Microsoft 365.
+10. Every send attempt is recorded.
+11. Failed sends can be retried.
+12. Application stage can optionally update with the email action.
+13. Communication history appears in the application details.
+14. Initial application confirmation may be sent automatically.
+15. Later-stage emails are recruiter-triggered.
+16. Templates are editable from `/admin/email-templates`.
+17. No Talent account, profile, application, or job is deleted or overwritten.
+18. Current dashboard filters, pagination, status updates, and deletion remain
+    functional.
+
+FINAL RESPONSE
+
+After implementation, report:
+
+1. Files created and changed.
+2. Database migrations.
+3. Microsoft Graph service added.
+4. Replit Secrets required.
+5. API endpoints added.
+6. Default templates seeded.
+7. Application-stage actions supported.
+8. Test and build results.
+9. Microsoft Entra configuration still required.
+10. Any remaining manual setup.
