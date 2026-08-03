@@ -346,7 +346,7 @@ type Role = (typeof roles)[number];
 
 function BulletRow({ text, color }: { text: string; color: string }) {
   return (
-    <li className="flex items-start gap-2.5 text-base leading-7 text-slate-600 dark:text-slate-300">
+    <li className={`flex items-start gap-2.5 ${contentTextClass}`}>
       <span className={`mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />
       {text}
     </li>
@@ -380,13 +380,17 @@ function isHtml(str: string) {
   return str.trimStart().startsWith("<");
 }
 
+/** Shared class for all long-form paragraph and list-item text */
+const contentTextClass =
+  "text-left sm:text-justify text-base leading-7 text-slate-600 dark:text-slate-300";
+
 /** Renders a section body that may be either plain-text bullets or rich HTML */
 function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: string }) {
   if (items.length === 0) return null;
   if (items.length === 1 && isHtml(items[0])) {
     return (
       <div
-        className="prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert"
+        className="prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-p:text-left sm:prose-p:text-justify prose-li:text-left sm:prose-li:text-justify prose-p:leading-7 prose-li:leading-7"
         dangerouslySetInnerHTML={{ __html: items[0] }}
       />
     );
@@ -534,12 +538,12 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             label="Job Description"
           >
             {companyOverview?.trim() && (
-              <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
                 {companyOverview.trim()}
               </p>
             )}
             {roleMission?.trim() && (
-              <p className={`max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300 whitespace-pre-wrap${companyOverview?.trim() ? " mt-4" : ""}`}>
+              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}${companyOverview?.trim() ? " mt-4" : ""}`}>
                 {roleMission.trim()}
               </p>
             )}
@@ -550,7 +554,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
             label="Job Description"
           >
-            <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">{job.description}</p>
+            <p className={`max-w-3xl ${contentTextClass}`}>{job.description}</p>
           </Section>
         ) : null}
 
@@ -561,7 +565,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-blue-50 dark:bg-blue-900/30"
             label="Responsibilities"
           >
-            <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+            <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
               {keyResponsibilities.trim()}
             </p>
           </Section>
@@ -582,7 +586,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
             label="Skills Needed"
           >
-            <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+            <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
               {skillsAndCompetencies.trim()}
             </p>
           </Section>
@@ -618,7 +622,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Wifi className="h-3.5 w-3.5" /> Internet Speed
                   </div>
-                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{minimumInternetSpeed.trim()}</p>
+                  <p className="text-left sm:text-justify text-sm leading-6 text-slate-700 dark:text-slate-300">{minimumInternetSpeed.trim()}</p>
                 </div>
               )}
               {systemRequirements?.trim() && (
@@ -626,7 +630,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Monitor className="h-3.5 w-3.5" /> Equipment
                   </div>
-                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{systemRequirements.trim()}</p>
+                  <p className="text-left sm:text-justify text-sm leading-6 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{systemRequirements.trim()}</p>
                 </div>
               )}
             </div>
@@ -889,7 +893,7 @@ export default function FindWorkJob() {
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#474ead]" />
             <div>
               <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
-              <p className="text-[15px] leading-7 text-slate-700 dark:text-slate-300">{role.why}</p>
+              <p className="text-left sm:text-justify text-[15px] leading-7 text-slate-700 dark:text-slate-300">{role.why}</p>
             </div>
           </div>
         </div>
@@ -900,7 +904,7 @@ export default function FindWorkJob() {
           iconBg="bg-indigo-50 dark:bg-indigo-900/30"
           label="Overview"
         >
-          <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">{role.overview}</p>
+          <p className={`max-w-3xl ${contentTextClass}`}>{role.overview}</p>
         </Section>
 
         {/* About this role */}
@@ -909,7 +913,7 @@ export default function FindWorkJob() {
           iconBg="bg-slate-100 dark:bg-white/[0.06]"
           label="About this role"
         >
-          <p className="max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">{role.description}</p>
+          <p className={`max-w-3xl ${contentTextClass}`}>{role.description}</p>
         </Section>
 
         {/* Responsibilities */}

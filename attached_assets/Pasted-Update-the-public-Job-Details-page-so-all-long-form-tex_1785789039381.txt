@@ -1,0 +1,168 @@
+Update the public Job Details page so all long-form text content is justified, while preserving the current compact layout, spacing, typography, responsiveness, and OnSpot styling.
+
+Primary file:
+- `client/src/pages/FindWorkJob.tsx`
+
+GOAL
+
+Apply justified text alignment to the readable job content sections so paragraphs and longer list items have clean left and right edges.
+
+Sections that should use justified alignment include:
+- Job Description
+- Skills Needed
+- Responsibilities
+- Skills & Requirements
+- Qualifications
+- Growth Path
+- System Requirements descriptions
+- Any other long-form job content sections
+
+IMPLEMENTATION
+
+1. PARAGRAPHS
+
+Apply:
+
+```tsx
+text-justify
+
+together with justified alignment:
+
+text-justify
+
+or, if Tailwind’s text-justify utility is unavailable in the current configuration, use:
+
+style={{ textAlign: "justify" }}
+
+Preferred example:
+
+<p className="text-base leading-7 text-slate-600 text-justify dark:text-slate-300">
+  {job.description}
+</p>
+
+Make sure the browser output has:
+
+text-align: justify;
+LIST ITEMS
+
+Apply justified alignment to the text inside longer bullet or numbered list items.
+
+Example:
+
+<li className="text-base leading-7 text-slate-600 text-justify dark:text-slate-300">
+  {item}
+</li>
+
+Keep:
+
+bullets aligned normally
+current indentation
+existing list spacing
+existing bullet colors
+
+Do not justify the bullet marker itself. Only justify the list item content.
+
+DO NOT JUSTIFY UI LABELS
+
+Do not apply justification to:
+
+section headings
+job title
+company name
+metadata labels and values
+buttons
+badges
+tags
+short card labels
+salary/rate values
+navigation items
+
+These should remain left-aligned or centered according to the existing design.
+
+RESPONSIVE BEHAVIOR
+
+Avoid awkward spacing on narrow mobile screens.
+
+Use responsive justification if needed:
+
+text-left sm:text-justify
+
+This means:
+
+mobile: left-aligned for readability
+tablet and desktop: justified
+
+Apply this responsive approach to paragraphs and list items if full justification creates large word gaps on mobile.
+
+Preferred class:
+
+text-left sm:text-justify
+RICH TEXT CONTENT
+
+If some content is rendered through:
+
+dangerouslySetInnerHTML
+a rich-text renderer
+reusable content components
+generated <p>, <ul>, <ol>, and <li> tags
+
+Make sure justification is applied to the generated paragraph and list-item elements as well.
+
+For example, update the rich-text wrapper with Tailwind typography selectors:
+
+className="
+  prose max-w-none
+  prose-p:text-left sm:prose-p:text-justify
+  prose-li:text-left sm:prose-li:text-justify
+  prose-p:leading-7
+  prose-li:leading-7
+  dark:prose-invert
+"
+
+Use syntax compatible with the project’s existing Tailwind and typography setup.
+
+PRESERVE CURRENT DESIGN
+
+Do not change:
+
+current compact spacing
+current font sizes
+content width
+section icon styling
+section dividers
+hero layout
+Apply button
+mobile layout
+dark mode behavior
+job data or API logic
+CODE QUALITY
+
+Avoid manually repeating justification classes in every section if the page already uses a reusable content renderer.
+
+Prefer one of these approaches:
+
+update the shared rich-text/content component
+create a reusable contentTextClass
+apply typography descendant selectors to the section wrapper
+
+Example:
+
+const contentTextClass =
+  "text-left sm:text-justify text-base leading-7 text-slate-600 dark:text-slate-300";
+EXPECTED RESULT
+
+After the update:
+
+paragraphs are justified on tablet and desktop
+longer bullet items are justified
+mobile text remains readable without excessive word spacing
+headings, buttons, badges, tags, and metadata are not justified
+the current minimal design remains unchanged
+
+After implementing, provide:
+
+the exact files changed
+where text justification was applied
+whether responsive text-left sm:text-justify was used
+confirmation that headings and UI labels were not affected
+confirmation that dark mode and mobile layout still work
