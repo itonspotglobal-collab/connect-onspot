@@ -25,8 +25,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
-  XCircle, UserCheck, Briefcase, Trash2,
+  XCircle, UserCheck, Briefcase, Trash2, Mail,
 } from "lucide-react";
+import { lazy, Suspense } from "react";
+
+const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -494,6 +497,7 @@ export default function AdminJobApplications() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
+  const [emailDialog, setEmailDialog] = useState<Application | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string | null>(null);
 
@@ -788,6 +792,14 @@ export default function AdminJobApplications() {
                         </Button>
                         <Button
                           size="sm" variant="outline"
+                          className="h-7 px-2 text-xs border-[#474ead]/30 text-[#474ead] hover:bg-[#474ead]/10 hover:border-[#474ead]/50"
+                          onClick={() => setEmailDialog(app)}
+                          aria-label={`Email ${applicantName(app)}`}
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm" variant="outline"
                           className="h-7 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                           onClick={() => setDeleteDialog(app)}
                           aria-label={`Delete application from ${applicantName(app)}`}
@@ -832,6 +844,14 @@ export default function AdminJobApplications() {
                   <Button size="sm" variant="outline" className="h-7 text-xs flex-1"
                     onClick={() => setStatusDialog({ id: app.id, current: app.status })}>
                     Change Status
+                  </Button>
+                  <Button
+                    size="sm" variant="outline"
+                    className="h-7 px-2 text-xs border-[#474ead]/30 text-[#474ead] hover:bg-[#474ead]/10"
+                    onClick={() => setEmailDialog(app)}
+                    aria-label={`Email ${applicantName(app)}`}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     size="sm" variant="outline"
@@ -895,6 +915,20 @@ export default function AdminJobApplications() {
         onConfirm={() => deleteDialog && deleteMutation.mutate(deleteDialog.id)}
         isPending={deleteMutation.isPending}
       />
+      <Suspense fallback={null}>
+        <ApplicantEmailComposer
+          application={emailDialog ? {
+            id: emailDialog.id,
+            email: emailDialog.email,
+            firstName: emailDialog.firstName,
+            lastName: emailDialog.lastName,
+            applicantName: emailDialog.applicantName,
+            jobTitle: emailDialog.jobTitle,
+          } : null}
+          open={!!emailDialog}
+          onClose={() => setEmailDialog(null)}
+        />
+      </Suspense>
     </div>
   );
 }

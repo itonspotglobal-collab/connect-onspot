@@ -161,11 +161,12 @@ export function TopNavigation() {
       { label: "Settings",       route: "/settings",       icon: Settings },
     ];
     if (user?.role === "admin") return [
-      { label: "Admin Dashboard",   route: "/admin/dashboard",         icon: Shield },
-      { label: "Find Work",         route: "/admin/find-work",         icon: Briefcase },
-      { label: "Job Applications",  route: "/admin/job-applications",  icon: Users },
-      { label: "Insights",          route: "/admin/insights",          icon: Eye },
-      { label: "Settings",          route: "/settings",                icon: Settings },
+      { label: "Admin Dashboard",   route: "/admin/dashboard",          icon: Shield },
+      { label: "Find Work",         route: "/admin/find-work",          icon: Briefcase },
+      { label: "Job Applications",  route: "/admin/job-applications",   icon: Users },
+      { label: "Email Templates",   route: "/admin/email-templates",    icon: Mail },
+      { label: "Insights",          route: "/admin/insights",           icon: Eye },
+      { label: "Settings",          route: "/settings",                 icon: Settings },
     ];
     // TODO: Remove these public admin links before production launch.
     // Temporary: surface admin tools in the nav without requiring a logged-in admin account.
@@ -173,6 +174,7 @@ export function TopNavigation() {
       { label: "Admin Dashboard",  route: "/admin/dashboard",         icon: Shield },
       { label: "Find Work",        route: "/admin/find-work",         icon: Briefcase },
       { label: "Job Applications", route: "/admin/job-applications",  icon: Users },
+      { label: "Email Templates",  route: "/admin/email-templates",   icon: Mail },
       { label: "Insights",         route: "/admin/insights",          icon: Eye },
     ];
     // talent / default

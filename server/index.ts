@@ -398,6 +398,54 @@ app.use((req, res, next) => {
   const { seedPosts } = await import('./seeds/seedPosts');
   const { storage } = await import('./storage');
   await seedPosts(storage);
+
+  // Run email table migrations before seeding so the tables exist on a fresh DB
+  try {
+    const { query: dbQuery } = await import('./db');
+    await dbQuery(`
+      CREATE TABLE IF NOT EXISTS applicant_email_templates (
+        id           uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         text      NOT NULL,
+        subject      text      NOT NULL,
+        body_html    text      NOT NULL,
+        category     text      NOT NULL,
+        stage        text,
+        is_published boolean   NOT NULL DEFAULT false,
+        is_default   boolean   NOT NULL DEFAULT false,
+        is_archived  boolean   NOT NULL DEFAULT false,
+        variables    jsonb     NOT NULL DEFAULT '[]',
+        created_at   timestamp NOT NULL DEFAULT now(),
+        updated_at   timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_aet_category     ON applicant_email_templates(category)`);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_aet_stage        ON applicant_email_templates(stage)`);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_aet_is_published ON applicant_email_templates(is_published)`);
+    await dbQuery(`
+      CREATE TABLE IF NOT EXISTS job_application_emails (
+        id             uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id varchar   NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        template_id    uuid      REFERENCES applicant_email_templates(id) ON DELETE SET NULL,
+        subject        text      NOT NULL,
+        body_html      text      NOT NULL,
+        sent_to        text      NOT NULL,
+        sent_by        varchar   REFERENCES users(id),
+        status         text      NOT NULL DEFAULT 'sent',
+        error_message  text,
+        is_test        boolean   NOT NULL DEFAULT false,
+        sent_at        timestamp NOT NULL DEFAULT now(),
+        created_at     timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_application_id ON job_application_emails(application_id)`);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_sent_at         ON job_application_emails(sent_at)`);
+  } catch (migErr: any) {
+    console.warn("⚠️  Email tables early migration skipped:", migErr.message);
+  }
+
+  // Seed default applicant email templates (idempotent — name-based deduplication)
+  const { seedEmailTemplates } = await import('./seeds/seedEmailTemplates');
+  await seedEmailTemplates();
   
   const server = await registerRoutes(app);
 

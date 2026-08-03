@@ -63,6 +63,8 @@ import AdminInsightEditor from "@/pages/AdminInsightEditor";
 import AdminImageUploader from "@/pages/AdminImageUploader";
 import AdminFindWork from "@/pages/AdminFindWork";
 import AdminJobApplications from "@/pages/AdminJobApplications";
+import AdminEmailTemplates from "@/pages/AdminEmailTemplates";
+import AdminEmailTemplateEditor from "@/pages/AdminEmailTemplateEditor";
 import ManagedServicesPage from "@/pages/ManagedServicesPage";
 import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
@@ -194,6 +196,9 @@ function PublicRouter() {
           <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route path="/admin/find-work" component={AdminFindWork} />
           <Route path="/admin/job-applications" component={AdminJobApplications} />
+          <Route path="/admin/email-templates" component={AdminEmailTemplates} />
+          <Route path="/admin/email-templates/create" component={AdminEmailTemplateEditor} />
+          <Route path="/admin/email-templates/:id/edit" component={AdminEmailTemplateEditor} />
           <Route path="/admin/image-uploader" component={AdminImageUploader} />
           <Route path="/admin/inquiries" component={AdminInquiries} />
           {/* Service pages — with TopNavigation */}

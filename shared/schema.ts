@@ -1289,3 +1289,54 @@ export type InsertCultureEvaluation = z.infer<
 >;
 export type CultureEvaluation =
   typeof candidateCultureEvaluations.$inferSelect;
+
+// ── Applicant Email Templates ─────────────────────────────────────────────────
+
+export const applicantEmailTemplates = pgTable("applicant_email_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  bodyHtml: text("body_html").notNull(),
+  category: text("category").notNull(),
+  stage: text("stage"),
+  isPublished: boolean("is_published").notNull().default(false),
+  isDefault: boolean("is_default").notNull().default(false),
+  isArchived: boolean("is_archived").notNull().default(false),
+  variables: jsonb("variables").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_aet_category").on(table.category),
+  index("idx_aet_stage").on(table.stage),
+  index("idx_aet_is_published").on(table.isPublished),
+]);
+
+export const jobApplicationEmails = pgTable("job_application_emails", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: varchar("application_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+  templateId: uuid("template_id").references(() => applicantEmailTemplates.id, { onDelete: "set null" }),
+  subject: text("subject").notNull(),
+  bodyHtml: text("body_html").notNull(),
+  sentTo: text("sent_to").notNull(),
+  sentBy: varchar("sent_by").references(() => users.id),
+  status: text("status").notNull().default("sent"),
+  errorMessage: text("error_message"),
+  isTest: boolean("is_test").notNull().default(false),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_jae_application_id").on(table.applicationId),
+  index("idx_jae_sent_at").on(table.sentAt),
+]);
+
+export const insertApplicantEmailTemplateSchema = createInsertSchema(applicantEmailTemplates).omit({
+  id: true, createdAt: true, updatedAt: true,
+});
+export type InsertApplicantEmailTemplate = z.infer<typeof insertApplicantEmailTemplateSchema>;
+export type ApplicantEmailTemplate = typeof applicantEmailTemplates.$inferSelect;
+
+export const insertJobApplicationEmailSchema = createInsertSchema(jobApplicationEmails).omit({
+  id: true, sentAt: true, createdAt: true,
+});
+export type InsertJobApplicationEmail = z.infer<typeof insertJobApplicationEmailSchema>;
+export type JobApplicationEmail = typeof jobApplicationEmails.$inferSelect;

@@ -579,6 +579,58 @@ const applyLimiter = rateLimit({
   },
 });
 
+// ── Auto application-received email (non-blocking helper) ─────────────────────
+async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
+  try {
+    const appData = await query(
+      `SELECT js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
+              js.status, js.submitted_at,
+              j.title AS job_title, j.company AS job_company, j.location AS job_location
+       FROM job_submissions js
+       JOIN jobs j ON j.id = js.job_id
+       WHERE js.id = $1`,
+      [submissionId],
+    );
+    if (appData.rows.length === 0) return;
+    const row = appData.rows[0];
+
+    const tpl = await query(
+      `SELECT id, subject, body_html FROM applicant_email_templates
+       WHERE category = 'application_received' AND is_published = true AND is_archived = false
+       ORDER BY is_default DESC LIMIT 1`,
+      [],
+    );
+    if (tpl.rows.length === 0) return; // no published template — skip silently
+
+    const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+    const ctx = buildEmailContext({
+      firstName: row.first_name, lastName: row.last_name,
+      applicantName: row.applicant_name, email: row.email, phone: row.phone,
+      jobTitle: row.job_title, jobCompany: row.job_company, jobLocation: row.job_location,
+      status: row.status, submittedAt: row.submitted_at,
+    });
+    const resolvedSubject = resolveVariables(tpl.rows[0].subject, ctx).resolved;
+    const resolvedBody = resolveVariables(tpl.rows[0].body_html, ctx).resolved;
+
+    const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+    const sendResult = await sendApplicantEmail({ to: row.email, subject: resolvedSubject, bodyHtml: resolvedBody });
+
+    await query(
+      `INSERT INTO job_application_emails
+         (application_id, template_id, subject, body_html, sent_to, status, error_message, is_test)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, false)`,
+      [
+        submissionId, tpl.rows[0].id,
+        resolvedSubject, resolvedBody, row.email,
+        sendResult.success ? "sent" : "failed",
+        sendResult.success ? null : sendResult.error,
+      ],
+    );
+  } catch (e: any) {
+    console.warn("fireAutoApplicationEmail (non-fatal):", e?.message);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
@@ -657,6 +709,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await query(`ALTER TABLE job_submissions ALTER COLUMN status SET DEFAULT 'submitted'`);
   } catch (migErr: any) {
     console.warn("⚠️  status history migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: create applicant_email_templates and job_application_emails tables ──
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS applicant_email_templates (
+        id           uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         text      NOT NULL,
+        subject      text      NOT NULL,
+        body_html    text      NOT NULL,
+        category     text      NOT NULL,
+        stage        text,
+        is_published boolean   NOT NULL DEFAULT false,
+        is_default   boolean   NOT NULL DEFAULT false,
+        is_archived  boolean   NOT NULL DEFAULT false,
+        variables    jsonb     NOT NULL DEFAULT '[]',
+        created_at   timestamp NOT NULL DEFAULT now(),
+        updated_at   timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_aet_category     ON applicant_email_templates(category)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_aet_stage        ON applicant_email_templates(stage)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_aet_is_published ON applicant_email_templates(is_published)`);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS job_application_emails (
+        id             uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id varchar   NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        template_id    uuid      REFERENCES applicant_email_templates(id) ON DELETE SET NULL,
+        subject        text      NOT NULL,
+        body_html      text      NOT NULL,
+        sent_to        text      NOT NULL,
+        sent_by        varchar   REFERENCES users(id),
+        status         text      NOT NULL DEFAULT 'sent',
+        error_message  text,
+        is_test        boolean   NOT NULL DEFAULT false,
+        sent_at        timestamp NOT NULL DEFAULT now(),
+        created_at     timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_jae_application_id ON job_application_emails(application_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_jae_sent_at         ON job_application_emails(sent_at)`);
+  } catch (migErr: any) {
+    console.warn("⚠️  email tables migration skipped:", migErr.message);
   }
 
   // Protected Dashboard Routes with Role-Based Access Control
@@ -8074,6 +8170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ],
         );
 
+        // Non-blocking: fire application-received email — must not affect response
+        fireAutoApplicationEmail(result.rows[0].id);
+
         return res.status(201).json({
           success: true,
           accountAction: "already_authenticated",
@@ -8138,6 +8237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
       );
       const submissionId = insertResult.rows[0].id;
+
+      // Non-blocking: fire application-received email — must not affect response
+      fireAutoApplicationEmail(submissionId);
 
       // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
@@ -8564,9 +8666,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Application not found" });
       }
 
-      // Transactional delete: status history first, then the application itself
+      // Transactional delete: child rows first, then the application itself
       await query("BEGIN");
       try {
+        await query(
+          `DELETE FROM job_application_emails WHERE application_id = $1`,
+          [applicationId],
+        );
         await query(
           `DELETE FROM job_application_status_history WHERE application_id = $1`,
           [applicationId],
@@ -8791,6 +8897,493 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: "An error occurred while resetting the password.",
       });
+    }
+  });
+
+  // ── Email Templates — CRUD + publish/archive/duplicate ──────────────────────
+
+  // GET /api/admin/email-templates — list all (non-archived by default)
+  app.get("/api/admin/email-templates", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const includeArchived = req.query.archived === "true";
+      const result = await query(
+        `SELECT id, name, subject, category, stage, is_published AS "isPublished",
+                is_default AS "isDefault", is_archived AS "isArchived",
+                variables, created_at AS "createdAt", updated_at AS "updatedAt"
+         FROM applicant_email_templates
+         ${includeArchived ? "" : "WHERE is_archived = false"}
+         ORDER BY is_default DESC, category, name`,
+        [],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/email-templates error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/email-templates/:id — get single template
+  app.get("/api/admin/email-templates/:id", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        `SELECT id, name, subject, body_html AS "bodyHtml", category, stage,
+                is_published AS "isPublished", is_default AS "isDefault",
+                is_archived AS "isArchived", variables,
+                created_at AS "createdAt", updated_at AS "updatedAt"
+         FROM applicant_email_templates WHERE id = $1`,
+        [id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("GET /api/admin/email-templates/:id error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/email-templates — create template
+  app.post("/api/admin/email-templates", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { name, subject, bodyHtml, category, stage, isPublished, isDefault, variables } = req.body;
+      if (!name?.trim() || !subject?.trim() || !bodyHtml?.trim() || !category?.trim()) {
+        return res.status(400).json({ error: "name, subject, bodyHtml, and category are required" });
+      }
+      const result = await query(
+        `INSERT INTO applicant_email_templates
+           (name, subject, body_html, category, stage, is_published, is_default, variables)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, name, subject, category, stage, is_published AS "isPublished",
+                   is_default AS "isDefault", is_archived AS "isArchived",
+                   created_at AS "createdAt"`,
+        [
+          name.trim(), subject.trim(), bodyHtml, category.trim(),
+          stage ?? null, !!isPublished, !!isDefault,
+          JSON.stringify(variables ?? []),
+        ],
+      );
+      return res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      console.error("POST /api/admin/email-templates error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // PATCH /api/admin/email-templates/:id — update template
+  app.patch("/api/admin/email-templates/:id", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const existing = await query(
+        `SELECT id FROM applicant_email_templates WHERE id = $1`, [id],
+      );
+      if (existing.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+
+      const { name, subject, bodyHtml, category, stage, isPublished, isDefault, variables } = req.body;
+      const result = await query(
+        `UPDATE applicant_email_templates SET
+           name = COALESCE($1, name),
+           subject = COALESCE($2, subject),
+           body_html = COALESCE($3, body_html),
+           category = COALESCE($4, category),
+           stage = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE stage END,
+           is_published = COALESCE($6, is_published),
+           is_default = COALESCE($7, is_default),
+           variables = COALESCE($8, variables),
+           updated_at = NOW()
+         WHERE id = $9
+         RETURNING id, name, subject, category, stage,
+                   is_published AS "isPublished", is_default AS "isDefault",
+                   is_archived AS "isArchived", updated_at AS "updatedAt"`,
+        [
+          name?.trim() ?? null,
+          subject?.trim() ?? null,
+          bodyHtml ?? null,
+          category?.trim() ?? null,
+          stage !== undefined ? (stage ?? null) : null,
+          isPublished !== undefined ? !!isPublished : null,
+          isDefault !== undefined ? !!isDefault : null,
+          variables !== undefined ? JSON.stringify(variables) : null,
+          id,
+        ],
+      );
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/email-templates/:id error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/admin/email-templates/:id — delete template
+  app.delete("/api/admin/email-templates/:id", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const existing = await query(
+        `SELECT id FROM applicant_email_templates WHERE id = $1`, [id],
+      );
+      if (existing.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+      await query(`DELETE FROM applicant_email_templates WHERE id = $1`, [id]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("DELETE /api/admin/email-templates/:id error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/email-templates/:id/publish — toggle published status
+  app.post("/api/admin/email-templates/:id/publish", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        `UPDATE applicant_email_templates
+         SET is_published = NOT is_published, updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, is_published AS "isPublished"`,
+        [id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("POST /api/admin/email-templates/:id/publish error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/email-templates/:id/archive — toggle archived status
+  app.post("/api/admin/email-templates/:id/archive", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        `UPDATE applicant_email_templates
+         SET is_archived = NOT is_archived, is_published = false, updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, is_archived AS "isArchived", is_published AS "isPublished"`,
+        [id],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("POST /api/admin/email-templates/:id/archive error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/email-templates/:id/duplicate — copy template with new name
+  app.post("/api/admin/email-templates/:id/duplicate", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const src = await query(
+        `SELECT * FROM applicant_email_templates WHERE id = $1`, [id],
+      );
+      if (src.rows.length === 0) return res.status(404).json({ error: "Template not found" });
+      const t = src.rows[0];
+      const result = await query(
+        `INSERT INTO applicant_email_templates
+           (name, subject, body_html, category, stage, is_published, is_default, variables)
+         VALUES ($1, $2, $3, $4, $5, false, false, $6)
+         RETURNING id, name, subject, category, stage,
+                   is_published AS "isPublished", is_default AS "isDefault",
+                   created_at AS "createdAt"`,
+        [
+          `${t.name} (Copy)`, t.subject, t.body_html,
+          t.category, t.stage, t.variables ?? "[]",
+        ],
+      );
+      return res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      console.error("POST /api/admin/email-templates/:id/duplicate error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/email-templates/variables — list supported template variables
+  app.get("/api/admin/email-template-variables", authenticateAdminFlexible, requireAdmin, async (_req: any, res: Response) => {
+    try {
+      const { SUPPORTED_VARIABLES } = await import("./services/emailVariableResolver.ts");
+      return res.json(SUPPORTED_VARIABLES);
+    } catch (err: any) {
+      console.error("GET /api/admin/email-template-variables error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── Application Email Routes ──────────────────────────────────────────────────
+  // TODO: Protect all application email routes with admin authorization before production.
+
+  // POST /api/admin/job-applications/:id/email/preview — resolve variables, return HTML
+  app.post("/api/admin/job-applications/:id/email/preview", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { templateId, subject, bodyHtml } = req.body;
+
+      // Load application + job
+      const appRow = await query(
+        `SELECT js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
+                js.status, js.submitted_at,
+                j.title AS job_title, j.company AS job_company, j.location AS job_location
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1`,
+        [id],
+      );
+      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      const app_ = appRow.rows[0];
+
+      let subjectRaw = subject;
+      let bodyRaw = bodyHtml;
+
+      // Load from template if requested
+      if (templateId && (!subjectRaw || !bodyRaw)) {
+        const tpl = await query(
+          `SELECT subject, body_html FROM applicant_email_templates WHERE id = $1`, [templateId],
+        );
+        if (tpl.rows.length > 0) {
+          subjectRaw = subjectRaw ?? tpl.rows[0].subject;
+          bodyRaw = bodyRaw ?? tpl.rows[0].body_html;
+        }
+      }
+
+      if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
+
+      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const ctx = buildEmailContext({
+        firstName: app_.first_name, lastName: app_.last_name,
+        applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
+        jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
+        status: app_.status, submittedAt: app_.submitted_at,
+      });
+
+      const subjectResult = resolveVariables(subjectRaw ?? "", ctx);
+      const bodyResult = resolveVariables(bodyRaw, ctx);
+
+      return res.json({
+        subject: subjectResult.resolved,
+        bodyHtml: bodyResult.resolved,
+        unresolvedKeys: [...new Set([...subjectResult.unresolvedKeys, ...bodyResult.unresolvedKeys])],
+      });
+    } catch (err: any) {
+      console.error("POST /api/admin/job-applications/:id/email/preview error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/job-applications/:id/email/test — send a test email (prefixes subject with [TEST])
+  app.post("/api/admin/job-applications/:id/email/test", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { templateId, subject, bodyHtml, testRecipient } = req.body;
+      if (!testRecipient?.trim()) return res.status(400).json({ error: "testRecipient is required for test sends" });
+
+      const appRow = await query(
+        `SELECT js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
+                js.status, js.submitted_at,
+                j.title AS job_title, j.company AS job_company, j.location AS job_location
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1`,
+        [id],
+      );
+      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      const app_ = appRow.rows[0];
+
+      let subjectRaw = subject;
+      let bodyRaw = bodyHtml;
+      if (templateId && (!subjectRaw || !bodyRaw)) {
+        const tpl = await query(
+          `SELECT subject, body_html FROM applicant_email_templates WHERE id = $1`, [templateId],
+        );
+        if (tpl.rows.length > 0) {
+          subjectRaw = subjectRaw ?? tpl.rows[0].subject;
+          bodyRaw = bodyRaw ?? tpl.rows[0].body_html;
+        }
+      }
+      if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
+
+      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const ctx = buildEmailContext({
+        firstName: app_.first_name, lastName: app_.last_name,
+        applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
+        jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
+        status: app_.status, submittedAt: app_.submitted_at,
+      });
+      const resolvedSubject = `[TEST] ${resolveVariables(subjectRaw ?? "", ctx).resolved}`;
+      const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
+
+      const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+      const sendResult = await sendApplicantEmail({
+        to: testRecipient.trim(),
+        subject: resolvedSubject,
+        bodyHtml: resolvedBody,
+      });
+
+      if (!sendResult.success) {
+        return res.status(502).json({ error: `Email send failed: ${sendResult.error}` });
+      }
+      return res.json({ success: true, sentTo: testRecipient.trim() });
+    } catch (err: any) {
+      console.error("POST /api/admin/job-applications/:id/email/test error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/job-applications/:id/email/send — send email + optionally update stage
+  // TODO: Protect with admin authorization before production.
+  app.post("/api/admin/job-applications/:id/email/send", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { templateId, subject, bodyHtml, updateStage } = req.body;
+      // Derive sentBy from the authenticated admin — never trust the request body for audit integrity
+      const sentBy: string | null = req.user?.id ?? null;
+
+      // Always load email from DB — never trust browser-supplied recipient
+      const appRow = await query(
+        `SELECT js.id, js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
+                js.status, js.submitted_at,
+                j.title AS job_title, j.company AS job_company, j.location AS job_location
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1`,
+        [id],
+      );
+      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      const app_ = appRow.rows[0];
+
+      let subjectRaw = subject;
+      let bodyRaw = bodyHtml;
+      let resolvedTemplateId = templateId ?? null;
+
+      if (templateId && (!subjectRaw || !bodyRaw)) {
+        const tpl = await query(
+          `SELECT subject, body_html FROM applicant_email_templates WHERE id = $1`, [templateId],
+        );
+        if (tpl.rows.length > 0) {
+          subjectRaw = subjectRaw ?? tpl.rows[0].subject;
+          bodyRaw = bodyRaw ?? tpl.rows[0].body_html;
+        }
+      }
+      if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
+      if (!subjectRaw) return res.status(400).json({ error: "subject is required" });
+
+      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const ctx = buildEmailContext({
+        firstName: app_.first_name, lastName: app_.last_name,
+        applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
+        jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
+        status: app_.status, submittedAt: app_.submitted_at,
+      });
+      const resolvedSubject = resolveVariables(subjectRaw, ctx).resolved;
+      const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
+
+      const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+      const sendResult = await sendApplicantEmail({
+        to: app_.email,
+        subject: resolvedSubject,
+        bodyHtml: resolvedBody,
+      });
+
+      const emailStatus = sendResult.success ? "sent" : "failed";
+      const emailErr = sendResult.success ? null : sendResult.error;
+
+      // Log the email attempt
+      await query(
+        `INSERT INTO job_application_emails
+           (application_id, template_id, subject, body_html, sent_to, sent_by, status, error_message, is_test)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)`,
+        [id, resolvedTemplateId, resolvedSubject, resolvedBody, app_.email, sentBy ?? null, emailStatus, emailErr],
+      );
+
+      // Optionally update application stage — failure here must not block email response
+      if (updateStage && sendResult.success) {
+        try {
+          await query(
+            `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+            [updateStage, id],
+          );
+          await query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [id, app_.status, updateStage, "Stage updated via email send", sentBy ?? null],
+          );
+        } catch (stageErr: any) {
+          console.warn("Email send: stage update failed (non-fatal):", stageErr.message);
+        }
+      }
+
+      if (!sendResult.success) {
+        return res.status(502).json({ error: `Email delivery failed: ${sendResult.error}` });
+      }
+      return res.json({ success: true, sentTo: app_.email });
+    } catch (err: any) {
+      console.error("POST /api/admin/job-applications/:id/email/send error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/job-applications/:id/email/history — list sent emails for an application
+  app.get("/api/admin/job-applications/:id/email/history", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await query(
+        `SELECT jae.id, jae.subject, jae.sent_to AS "sentTo",
+                jae.status, jae.error_message AS "errorMessage",
+                jae.is_test AS "isTest", jae.sent_at AS "sentAt",
+                aet.name AS "templateName",
+                u.first_name AS "senderFirstName", u.last_name AS "senderLastName"
+         FROM job_application_emails jae
+         LEFT JOIN applicant_email_templates aet ON aet.id = jae.template_id
+         LEFT JOIN users u ON u.id = jae.sent_by
+         WHERE jae.application_id = $1
+         ORDER BY jae.sent_at DESC`,
+        [id],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications/:id/email/history error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/admin/job-applications/:id/email/:emailId/retry — retry a failed email
+  app.post("/api/admin/job-applications/:id/email/:emailId/retry", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const { id, emailId } = req.params;
+      const emailRow = await query(
+        `SELECT * FROM job_application_emails WHERE id = $1 AND application_id = $2`,
+        [emailId, id],
+      );
+      if (emailRow.rows.length === 0) return res.status(404).json({ error: "Email record not found" });
+      const prev = emailRow.rows[0];
+
+      // Reload recipient from DB
+      const appRow = await query(
+        `SELECT email FROM job_submissions WHERE id = $1`, [id],
+      );
+      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
+      const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+      const sendResult = await sendApplicantEmail({
+        to: appRow.rows[0].email,
+        subject: prev.subject,
+        bodyHtml: prev.body_html,
+      });
+
+      const newStatus = sendResult.success ? "sent" : "failed";
+      await query(
+        `INSERT INTO job_application_emails
+           (application_id, template_id, subject, body_html, sent_to, sent_by, status, error_message, is_test)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)`,
+        [id, prev.template_id, prev.subject, prev.body_html,
+         appRow.rows[0].email, prev.sent_by, newStatus,
+         sendResult.success ? null : sendResult.error],
+      );
+
+      if (!sendResult.success) {
+        return res.status(502).json({ error: `Retry failed: ${sendResult.error}` });
+      }
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("POST /api/admin/job-applications/:id/email/:emailId/retry error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 
