@@ -1,0 +1,325 @@
+Redesign the public Job Details page to be more compact, minimal, and easier to scan.
+
+Use the attached LinkedIn job details screenshot only as visual inspiration for spacing, typography, and information hierarchy. Do not copy LinkedIn’s exact layout, colors, components, or branding.
+
+Current page:
+- `client/src/pages/FindWorkJob.tsx`
+- The page currently has too much vertical whitespace
+- Body text is too large
+- Sections feel too far apart
+- The content width and spacing make the page unnecessarily long
+- Lists and paragraphs need a clearer visual hierarchy
+
+GOAL
+
+Create a clean, professional, compact job details layout that:
+- is easy to read
+- uses smaller and more consistent text sizes
+- reduces excessive whitespace
+- keeps the existing OnSpot brand and navigation
+- keeps all current job data and functionality
+- remains responsive on desktop, tablet, and mobile
+
+DO NOT:
+- copy LinkedIn exactly
+- remove existing job information
+- change API behavior or database fields
+- break the Apply button or existing routes
+- redesign the entire website
+- make the page look cramped
+
+1. CONTENT CONTAINER
+
+Use a narrower readable content area for the job description content.
+
+Suggested desktop structure:
+
+```tsx
+<main className="mx-auto w-full max-w-5xl px-5 sm:px-6 lg:px-8">
+
+For long-form text, keep the actual reading column around:
+
+max-w-3xl
+
+Do not allow paragraphs to stretch across the full browser width.
+
+REDUCE HERO HEIGHT
+
+The top job information/hero section currently uses too much vertical space.
+
+Update it so:
+
+the job title remains prominent but not oversized
+metadata cards are more compact
+vertical padding is reduced
+the Apply button remains visible
+the hero should not occupy most of the initial viewport
+
+Suggested sizing:
+
+Job title: text-3xl md:text-4xl
+Company/subtitle: text-sm md:text-base
+Metadata labels: text-xs
+Metadata values: text-sm md:text-base
+Hero vertical padding: approximately py-8 md:py-10
+Metadata card padding: approximately p-3 md:p-4
+
+Preserve the current dark blue/purple OnSpot design.
+
+COMPACT SECTION SPACING
+
+Reduce the spacing between content sections.
+
+Replace oversized combinations such as:
+
+py-16
+py-20
+mt-16
+mb-16
+gap-12
+
+with more compact values where appropriate:
+
+section vertical padding: py-7 md:py-9
+section margin: my-6 md:my-8
+heading bottom margin: mb-3 or mb-4
+divider spacing: my-6 or my-8
+
+Avoid giving every section a very large top and bottom margin.
+
+TYPOGRAPHY
+
+Use a smaller and more consistent type scale.
+
+Recommended scale:
+
+Job page title:
+
+text-3xl md:text-4xl font-bold
+
+Main section headings such as:
+
+Job Description
+Skills Needed
+Responsibilities
+System Requirements
+Growth Path
+Skills & Tags
+
+Use:
+
+text-xl md:text-2xl font-semibold tracking-tight
+
+Body paragraphs:
+
+text-base leading-7 text-slate-600
+
+On smaller screens:
+
+text-[15px] leading-6
+
+List text:
+
+text-base leading-7
+
+Supporting labels:
+
+text-xs or text-sm
+
+Avoid body text using text-lg, text-xl, or excessive line height unless it is genuinely a heading.
+
+SECTION HEADER DESIGN
+
+Keep the current icons, but make section headers more compact.
+
+Suggested structure:
+
+<div className="flex items-center gap-3 mb-4">
+  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50">
+    {icon}
+  </div>
+
+  <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">
+    Job Description
+  </h2>
+</div>
+
+Do not use very large icon containers or excessive spacing around headings.
+
+PARAGRAPH FORMATTING
+
+Render job description paragraphs with a readable width and consistent spacing.
+
+Suggested classes:
+
+className="max-w-3xl text-base leading-7 text-slate-600"
+
+If content contains multiple paragraphs:
+
+preserve paragraph breaks
+use space-y-4
+do not render the entire description as one oversized block
+safely preserve existing formatting
+LIST FORMATTING
+
+Responsibilities, skills, and requirements should look cleaner and denser.
+
+Suggested list styling:
+
+<ul className="space-y-2 pl-5 text-base leading-7 text-slate-600">
+
+Use:
+
+small bullets
+moderate indentation
+no huge gaps between items
+no extra empty bullet rows
+no list item containing only a heading such as Technical Expertise: unless it is styled deliberately
+
+If rich-text content produces empty list items, filter or avoid rendering empty values.
+
+SYSTEM REQUIREMENTS
+
+Keep the System Requirements section working.
+
+Display its fields in a compact layout, for example:
+
+<div className="grid gap-4 sm:grid-cols-2">
+
+Possible cards:
+
+Minimum Internet Speed
+Required Equipment / System Requirements
+
+Use subtle cards:
+
+rounded-xl border border-slate-200 bg-white p-4
+
+Do not use very tall cards for short values.
+
+Only render this section when at least one system requirement field contains a non-empty value.
+
+SKILLS AND TAGS
+
+Make tags smaller and more compact.
+
+Suggested classes:
+
+inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700
+
+Use:
+
+flex flex-wrap gap-2
+
+Avoid oversized pills and large gaps.
+
+APPLY CALL-TO-ACTION
+
+Make the final Apply section more compact.
+
+Current CTA appears to use too much vertical space.
+
+Update it so:
+
+it remains visually distinct
+heading is no larger than text-2xl
+vertical padding is around py-8 md:py-10
+buttons remain clearly visible
+buttons can appear side by side on desktop and stack on mobile
+
+Do not remove:
+
+Apply Now button
+View all roles button
+existing application behavior
+RESPONSIVE BEHAVIOR
+
+Desktop:
+
+centered content
+controlled reading width
+compact spacing
+metadata may use a multi-column grid
+
+Mobile:
+
+use px-4
+hero metadata stacks cleanly
+no horizontal overflow
+headings should not be oversized
+buttons can become full width
+body text should remain readable
+DARK MODE
+
+Preserve all existing dark-mode support.
+
+Check all updated classes for:
+
+text colors
+backgrounds
+borders
+icon containers
+cards
+section dividers
+
+Use appropriate dark: variants matching the existing project.
+
+CODE QUALITY
+
+While updating the page:
+
+reuse small components for repeated section headers if helpful
+avoid duplicated JSX
+preserve current animations only if they do not create layout gaps
+remove unnecessary wrappers that add vertical space
+do not add a new UI library
+do not use inline styles unless already required
+use the project’s existing Tailwind patterns
+VISUAL DIRECTION
+
+The final page should feel:
+
+minimal
+professional
+compact
+readable
+modern
+clearly branded as OnSpot
+
+Use LinkedIn only as inspiration for:
+
+restrained text sizing
+compact content rhythm
+readable line length
+simple heading hierarchy
+efficient use of vertical space
+
+Do not replicate:
+
+LinkedIn header
+LinkedIn button styles exactly
+LinkedIn fonts
+LinkedIn colors
+LinkedIn layout one-to-one
+
+EXPECTED RESULT
+
+The redesigned page should:
+
+show more meaningful job information above the fold
+reduce overall page length
+use smaller body text
+have tighter section spacing
+remain easy to scan
+preserve every existing job detail
+preserve the Apply flow
+work in light and dark mode
+
+After implementing, provide:
+
+the exact files changed
+a summary of the spacing changes
+a summary of the typography changes
+any reusable component created
+confirmation that no job fields or functionality were removed
+confirmation that desktop and mobile layouts were tested
