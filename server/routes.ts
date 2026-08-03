@@ -4457,7 +4457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/candidates/:id", async (req: any, res) => {
     try {
-      // Accept either a talent JWT (owner) or an admin/TA user JWT
+      // Accept: (a) candidate JWT (owner), (b) staff JWT, or (c) talent user JWT whose email matches
       const authHeader = req.headers["authorization"];
       const token = authHeader?.split(" ")[1];
       if (!token) return res.status(401).json({ error: "Authentication required" });
@@ -4474,7 +4474,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isTalentOwner = decoded.type === "candidate" && decoded.candidateId === profileId;
       const isStaffUser = decoded.userId && ["admin", "talent_acquisition", "client"].includes(decoded.role);
 
-      if (!isTalentOwner && !isStaffUser) {
+      // Allow talent users (standard user JWT) to update their own candidate record if email matches
+      let isTalentUserOwner = false;
+      if (!isTalentOwner && !isStaffUser && decoded.role === "talent" && decoded.email) {
+        const candidateRow = await query(
+          `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+          [profileId],
+        );
+        if (candidateRow.rows.length > 0 &&
+            candidateRow.rows[0].email?.toLowerCase() === decoded.email.toLowerCase()) {
+          isTalentUserOwner = true;
+        }
+      }
+
+      if (!isTalentOwner && !isStaffUser && !isTalentUserOwner) {
         return res.status(403).json({ error: "You are not authorized to edit this profile" });
       }
 
@@ -4486,6 +4499,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("PATCH /api/candidates/:id error:", error);
       res.status(500).json({ error: "Failed to update candidate" });
+    }
+  });
+
+  // GET /api/candidates/me — find the candidate record for the authenticated talent user by email
+  app.get("/api/candidates/me", authenticateJWT, async (req: any, res) => {
+    try {
+      const userEmail = req.user?.email;
+      if (!userEmail) return res.status(400).json({ error: "No email on authenticated user" });
+      const result = await query(
+        `SELECT id, full_name AS "fullName", email, phone, location,
+                target_position AS "targetPosition", category,
+                experience_years AS "experienceYears", seniority,
+                core_skills AS "coreSkills", secondary_skills AS "secondarySkills",
+                work_history AS "workHistory", preferences, summary,
+                profile_completed AS "profileCompleted", culture_score AS "cultureScore",
+                created_at AS "createdAt"
+         FROM candidates WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        [userEmail],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "No candidate profile found" });
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("GET /api/candidates/me error:", error);
+      res.status(500).json({ error: "Failed to fetch candidate" });
     }
   });
 

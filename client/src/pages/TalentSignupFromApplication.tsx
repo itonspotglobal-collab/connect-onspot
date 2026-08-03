@@ -228,6 +228,10 @@ export default function TalentSignupFromApplication() {
       // Signal the Find Best Matches page to show the post-registration welcome banner.
       // Using sessionStorage so it fires exactly once and never pollutes the URL.
       sessionStorage.setItem("onspot_new_talent_welcome", "1");
+      // Pass candidateId so Find Best Matches can PATCH (not POST) the profile on first save.
+      if (signupData.candidateId) {
+        sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
+      }
       navigate("/find-best-matches");
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });

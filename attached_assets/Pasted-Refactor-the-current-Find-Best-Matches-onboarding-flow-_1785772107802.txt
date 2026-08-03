@@ -1,0 +1,524 @@
+Refactor the current Find Best Matches onboarding flow to work correctly with the NEW Talent registration implementation.
+
+IMPORTANT CONTEXT
+
+We recently changed the Talent registration/application flow.
+
+New Talent users are now:
+
+Job Application
+→ Create Talent Account
+→ Link Application
+→ Authenticate Talent
+→ Redirect to /find-best-matches
+
+Because the Talent account has ALREADY been created and the user is ALREADY authenticated before reaching /find-best-matches, remove the Account Creation / Account Setup step that currently exists inside FindBestMatches.tsx.
+
+We must not ask a Talent to create an account twice.
+
+==================================================
+NEW FIND BEST MATCHES FLOW
+==================================================
+
+The Find Best Matches flow should now be:
+
+Step 1 — Resume / Profile Setup
+Step 2 — Review & Complete Talent Profile
+Step 3 — Profile Saved / Completed
+Step 4 — Cultural Evaluation
+Step 5 — Culture Result
+Step 6 — Relevant Job Openings
+
+Account creation is NO LONGER part of FindBestMatches.tsx.
+
+Account registration happens before this flow.
+
+==================================================
+1. REMOVE ACCOUNT CREATION FROM FIND BEST MATCHES
+==================================================
+
+Inspect FindBestMatches.tsx and remove the internal account creation/setup steps.
+
+Remove UI and flow states related to things such as:
+
+- Create Your Account
+- Account Setup
+- Login / Signup selection
+- Email/password account creation form
+- Confirm Password
+- Account creation success step
+- Duplicate account check inside FindBestMatches
+- Temporary account creation logic
+- accountCreated flow state if it only exists for the old onboarding flow
+
+Do NOT remove the actual Talent authentication system used by the new registration/login implementation.
+
+Only remove the duplicate account-creation experience from FindBestMatches.
+
+==================================================
+2. USE THE CURRENT AUTHENTICATED TALENT
+==================================================
+
+FindBestMatches should now assume that a newly registered Talent arriving from the registration flow is already authenticated.
+
+Use the existing AuthContext / authentication state.
+
+Retrieve the current Talent user from the authenticated session.
+
+Use the authenticated user's:
+
+- user/talent ID
+- email
+- name if available
+- candidate/talent profile ID if available
+
+Do not create another account record.
+
+Do not generate another Talent ID.
+
+Do not create duplicate Candidate/Talent users.
+
+==================================================
+3. KEEP THE NEW REGISTRATION WELCOME EXPERIENCE
+==================================================
+
+Preserve the recently implemented new Talent welcome behavior.
+
+New Talent registrations are redirected to:
+
+/find-best-matches
+
+The one-time welcome banner should continue to work.
+
+Example:
+
+“Welcome to OnSpot!
+
+Your Talent account has been created successfully and your application has been submitted.
+
+Complete your Talent Profile so we can recommend the best opportunities for you.”
+
+Keep the existing sessionStorage flag / new Talent welcome logic if currently used.
+
+Do not break this behavior.
+
+==================================================
+4. STEP 1 — RESUME / PROFILE SETUP
+==================================================
+
+The first actual onboarding action inside Find Best Matches should now be profile setup.
+
+Allow the Talent to:
+
+- Upload resume
+OR
+- manually complete their profile
+
+If a resume is uploaded:
+
+extract candidate details and prefill the Talent profile.
+
+Continue supporting extraction of:
+
+- Full Name
+- Email
+- Phone
+- Location
+- Current / Most Recent Position
+- Target Position
+- Job Category / Niche
+- Years of Experience
+- Seniority
+- Skills
+- Professional Summary
+- Work History
+
+Resume values should only be defaults.
+
+The Talent must be able to review and edit them.
+
+==================================================
+5. STEP 2 — REVIEW & COMPLETE TALENT PROFILE
+==================================================
+
+After resume extraction, show the profile review screen.
+
+The candidate should verify/edit:
+
+Basic Information
+- Full Name
+- Email
+- Phone
+- Location
+
+Professional Information
+- Target Job Position
+- Job Category / Niche
+- Years of Experience
+- Seniority Level
+
+Skills
+- Core Skills
+- Secondary Skills
+
+Work History
+- Job Title
+- Company
+- Start / End dates
+- Responsibilities
+
+Preferences
+- Work Setup
+- Shift
+- Employment Type
+
+Professional Summary
+
+IMPORTANT:
+
+Do not create a new candidate/account here.
+
+Update the profile belonging to the CURRENT AUTHENTICATED TALENT.
+
+==================================================
+6. LINK PROFILE TO AUTHENTICATED USER
+==================================================
+
+This is critical.
+
+When saving the Talent profile:
+
+use the authenticated user's ID / Talent ID.
+
+The database relationship should effectively be:
+
+Talent Account
+    ↓
+Talent/Candidate Profile
+    ↓
+Culture Evaluation
+    ↓
+Applications / Job Matches
+
+Do not create unrelated candidate records based only on email if the authenticated user already exists.
+
+Prefer the authenticated user ID as the primary relationship.
+
+Email can remain unique but should not be the main frontend identity mechanism once authenticated.
+
+==================================================
+7. PROFILE SAVE / COMPLETION
+==================================================
+
+When the Talent finishes reviewing their profile:
+
+Save/update the profile in the database.
+
+Mark profile completion appropriately, such as:
+
+profileCompleted = true
+
+or use the existing equivalent field.
+
+After successful save, show a confirmation state such as:
+
+“Your Talent Profile is ready.”
+
+“Your profile has been saved successfully. Next, complete the OnSpot Culture Evaluation.”
+
+Buttons:
+
+Primary:
+Continue to Cultural Evaluation
+
+Optional secondary:
+View My Profile
+
+If View My Profile already exists, keep it and route the user to their Talent Profile page.
+
+==================================================
+8. CULTURAL EVALUATION
+==================================================
+
+After profile completion, proceed directly to Cultural Evaluation.
+
+There should be NO account creation step between Profile and Culture Evaluation.
+
+Flow:
+
+Profile
+→ Culture Evaluation
+
+Continue evaluating alignment with the OnSpot values:
+
+- People First
+- Beat Yesterday
+- Fast-Fast-Fast
+- Integrity Matters
+- Extreme Ownership
+- We Are Intrapreneurs
+
+==================================================
+9. SAVE CULTURAL EVALUATION TO CURRENT TALENT
+==================================================
+
+Keep the database-backed culture evaluation behavior.
+
+The Cultural Evaluation must be saved against the CURRENT authenticated Talent/candidate.
+
+Use:
+
+authenticatedTalentId / candidateProfileId
+
+Do not create a new candidate record for the assessment.
+
+Save:
+
+- answers
+- individual value scores
+- overall score
+- alignment level
+- strengths
+- growth areas if applicable
+- summary
+- completedAt
+
+Relationship should be:
+
+Talent
+→ Candidate/Talent Profile
+→ Culture Evaluation
+
+==================================================
+10. CULTURE RESULT
+==================================================
+
+After successful evaluation save, show the Culture Result screen.
+
+Do NOT go immediately to job recommendations.
+
+Show:
+
+- Overall Culture Alignment
+- OnSpot Values Score
+- strongest aligned values
+- summary
+- strengths
+
+Then provide:
+
+“Continue to Relevant Job Openings”
+
+==================================================
+11. RELEVANT JOB OPENINGS
+==================================================
+
+After Culture Result, show relevant job openings.
+
+Keep the strict matching behavior.
+
+Only use ACTIVE REAL JOBS from the same source used by FindWorkAllJobs.tsx.
+
+Matching should primarily use the saved Talent Profile:
+
+1. Target Job Position
+2. Job Family / Niche
+3. Skills
+4. Seniority / Experience
+5. Work Preferences
+6. Culture Fit as a supporting factor
+
+Culture Fit must never make an unrelated role appear.
+
+Example:
+
+Developer
+→ Developer / Engineering jobs
+
+Do NOT recommend:
+- Virtual Assistant
+- Accountant
+- IT Administrator unless the profile genuinely indicates system administration
+- unrelated job families
+
+If there is no appropriate posted role:
+
+show:
+
+“No strong role matches are available right now.”
+
+Do not display weak matches just to fill the page.
+
+==================================================
+12. AUTHENTICATION GUARD
+==================================================
+
+Because this is now part of Talent onboarding, inspect how authentication is implemented.
+
+If a user lands on /find-best-matches while NOT authenticated:
+
+do not show an account creation form inside FindBestMatches.
+
+Instead, use the project's existing Login / Sign Up behavior.
+
+For example:
+
+Unauthenticated user
+→ prompt/login through existing authentication flow
+
+Authenticated Talent
+→ Find Best Matches onboarding
+
+Do not build a second authentication system.
+
+==================================================
+13. EXISTING TALENT USERS
+==================================================
+
+Do not break existing authenticated Talent users who visit /find-best-matches.
+
+If their profile is already complete:
+
+do not force them through account creation or unnecessary onboarding.
+
+Depending on existing implementation:
+
+- load their saved profile
+- allow them to update it
+- allow retaking Culture Evaluation if supported
+- allow viewing current matches
+
+New Talent onboarding and returning Talent usage should share the same profile data.
+
+==================================================
+14. UPDATED STEPPER
+==================================================
+
+Update the Find Best Matches stepper.
+
+OLD FLOW may currently contain:
+- Upload
+- Profile
+- Account
+- Confirmation
+- Culture
+- Culture Result
+- Jobs
+
+REMOVE:
+- Account
+- Account Confirmation
+
+NEW FLOW:
+
+Step 1 — Talent Profile
+Step 2 — Review Profile
+Step 3 — Culture Evaluation
+Step 4 — Culture Result
+Step 5 — Job Matches
+
+Or, if Resume Upload remains a separate visual step:
+
+Step 1 — Resume
+Step 2 — Profile
+Step 3 — Culture
+Step 4 — Culture Result
+Step 5 — Matches
+
+Use whichever fits the existing component structure best.
+
+==================================================
+15. IMPORTANT CLEANUP
+==================================================
+
+After removing the old account step, inspect FindBestMatches.tsx for:
+
+- dead state variables
+- unused account form fields
+- old signup API calls
+- duplicate email validation
+- password state
+- confirmPassword state
+- account-stage enums
+- account creation mutations
+- obsolete navigation branches
+- unused imports/components
+
+Remove dead code cleanly.
+
+Do not just hide the Account UI while leaving obsolete logic running.
+
+==================================================
+16. DO NOT CHANGE THE NEW REGISTRATION FLOW
+==================================================
+
+Do NOT undo the new Talent registration redirect.
+
+New account flow must remain:
+
+Create Talent Account
+→ authenticate
+→ /find-best-matches
+
+Preserve:
+- linked job application
+- authenticated session
+- secure continuation token behavior
+- one-time welcome banner
+
+==================================================
+EXPECTED FINAL FLOW
+==================================================
+
+NEW TALENT:
+
+Apply / Register
+        ↓
+Talent Account Created
+        ↓
+Authenticated
+        ↓
+/find-best-matches
+        ↓
+Resume / Talent Profile
+        ↓
+Review & Complete Profile
+        ↓
+Save Profile to authenticated Talent
+        ↓
+Cultural Evaluation
+        ↓
+Save Culture Evaluation
+        ↓
+Culture Result
+        ↓
+Relevant Job Openings
+
+
+RETURNING TALENT:
+
+Login
+        ↓
+Existing Talent Account
+        ↓
+Profile / Find Best Matches
+        ↓
+Use existing saved profile
+        ↓
+Culture / Matches as applicable
+
+
+CRITICAL ACCEPTANCE CRITERIA:
+
+✓ Account creation is completely removed from FindBestMatches.tsx
+✓ Newly registered Talent is not asked to register twice
+✓ FindBestMatches uses the authenticated Talent identity
+✓ Resume/profile data is saved to that Talent
+✓ Cultural Evaluation is linked to that same Talent
+✓ Existing account/profile records are reused
+✓ No duplicate Talent/Candidate accounts are created
+✓ New registration redirect to /find-best-matches still works
+✓ Welcome banner still works
+✓ Relevant job matching still works
+✓ Existing Talent users are not broken
+✓ No obsolete account-creation code remains inside FindBestMatches
