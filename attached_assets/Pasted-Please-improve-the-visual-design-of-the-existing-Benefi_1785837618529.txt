@@ -1,0 +1,146 @@
+Please improve the visual design of the existing Benefits metadata card on the public job details page.
+
+CURRENT ISSUE
+
+Benefits are currently displayed as one plain text string, for example:
+
+Benefits
+SSS PAG-IBIG PHIL-HEALTH Bonus
+
+This looks visually flat and is difficult to scan.
+
+GOAL
+
+Keep the existing Benefits metadata card, but make the content much easier to read and more visually appealing.
+
+DESIGN DIRECTION
+
+1. Keep the existing metadata card
+- Do NOT create a new section.
+- Keep the same card/container used for Benefits.
+- Preserve consistency with Location, Function, Contract, Compensation, etc.
+
+2. Display individual benefits as chips/tags
+If the stored Benefits value contains multiple items, visually separate them into small rounded pills.
+
+Example:
+
+Benefits
+
+[ SSS ] [ PAG-IBIG ] [ PHILHEALTH ] [ Bonus ]
+
+Suggested styling:
+- Small rounded pills
+- Soft lavender / purple-tinted background
+- Subtle border
+- Light text contrast appropriate for the current dark job-details background
+- Compact horizontal and vertical padding
+- Small gap between chips
+- Wrap naturally onto additional lines
+
+3. Parsing behavior
+The admin Benefits field should remain free-text and fully customizable.
+
+Do NOT change JobFormModal back into predefined benefit options.
+
+For display only, intelligently split benefit text when possible using separators such as:
+- New lines
+- Commas
+- Semicolons
+
+Example input:
+
+SSS
+PAG-IBIG
+PHILHEALTH
+Performance Bonus
+
+Display:
+
+[ SSS ]
+[ PAG-IBIG ]
+[ PHILHEALTH ]
+[ Performance Bonus ]
+
+Example input:
+
+HMO, 1 dependent, paid leave, internet allowance
+
+Display:
+
+[ HMO ]
+[ 1 dependent ]
+[ Paid leave ]
+[ Internet allowance ]
+
+4. Important fallback
+Do not blindly split normal sentences.
+
+If the Benefits value appears to be a descriptive sentence such as:
+
+"HMO coverage is provided after regularization with one dependent included."
+
+Then render it as clean body text instead of turning every word into a chip.
+
+Only use chips when the value clearly contains a list of benefits.
+
+5. Improve card hierarchy
+Inside the Benefits card:
+
+- Icon + "Benefits" label should remain subtle.
+- Benefit values should be the main focus.
+- Add a little more spacing between the label and the benefit chips.
+- Avoid oversized text.
+- Keep the card compact.
+
+Suggested structure:
+
+[icon] Benefits
+
+[ SSS ] [ PAG-IBIG ]
+[ PHILHEALTH ] [ Bonus ]
+
+6. Optional icon refinement
+If the project already uses an icon library, use an appropriate existing icon such as:
+- Gift
+- Heart/health
+- Shield
+- Sparkles
+
+Do not add a new icon package just for this.
+
+7. Responsive behavior
+Desktop:
+- Chips wrap naturally inside the card.
+
+Mobile:
+- Chips should remain readable.
+- Avoid horizontal overflow.
+- Allow wrapping to multiple lines.
+
+8. Preserve admin flexibility
+Do NOT change:
+- Benefits textarea/input in JobFormModal
+- benefits data model
+- create/edit behavior
+- free-text capability
+
+This is only a public-display improvement.
+
+9. Reuse formatting
+If Benefits appears in multiple public components, create/reuse a small shared helper/component such as:
+
+<BenefitsDisplay benefits={job.benefits} />
+
+Avoid duplicating parsing/rendering logic.
+
+ACCEPTANCE CRITERIA
+
+✓ Benefits card remains part of the existing metadata layout.
+✓ List-like benefits are shown as clean individual chips.
+✓ Benefits wrap properly.
+✓ Descriptive sentences still render naturally as text.
+✓ Admin can still enter any free-text Benefits value.
+✓ No predefined benefits are introduced.
+✓ Layout works on desktop and mobile.
+✓ Existing job details functionality is unchanged.

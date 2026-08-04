@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
+import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 
 
 const roles = [
@@ -519,13 +520,16 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
               { icon: Layers, label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
               ...( ((job as any).benefits as string | null | undefined)?.trim()
-                ? [{ icon: Gift, label: "Benefits", value: ((job as any).benefits as string).trim() }]
+                ? [{ icon: Gift, label: "Benefits", value: ((job as any).benefits as string).trim(), isBenefits: true }]
                 : []
               ),
-            ].map(({ icon: Icon, label, value }) => (
+            ].map(({ icon: Icon, label, value, isBenefits }) => (
               <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
                 <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>
-                <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
+                {isBenefits
+                  ? <BenefitsDisplay benefits={value} dark />
+                  : <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
+                }
               </div>
             ))}
           </div>
