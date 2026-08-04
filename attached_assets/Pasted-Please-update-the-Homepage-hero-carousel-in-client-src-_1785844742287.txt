@@ -1,0 +1,253 @@
+Please update the Homepage hero carousel in `client/src/pages/Home.tsx`.
+
+GOAL
+
+The current homepage hero carousel has 4 slides.
+
+Reduce it to exactly 3 slides:
+
+1. FOR EVERYONE
+2. FOR COMPANIES
+3. FOR TALENT
+
+Only change the rotating slide content/data needed for these 3 states.
+
+Do NOT redesign the hero.
+
+==================================================
+1. KEEP THE EXISTING HERO STRUCTURE
+==================================================
+
+Preserve the current hero layout and visual system, including:
+
+- Background image / background transitions
+- Dark gradient overlay
+- Static "Work Without Limits" branding if currently part of the implementation
+- Existing typography
+- Existing spacing
+- Existing CTA styling
+- Existing feature cards
+- Carousel animations/transitions
+- Slide indicators
+- Autoplay behavior
+- Responsive behavior
+- Navbar
+- Chat widget
+
+This task is primarily a carousel-content reduction/refinement.
+
+==================================================
+2. CAROUSEL SHOULD HAVE EXACTLY 3 SLIDES
+==================================================
+
+Replace the existing 4-slide sequence with:
+
+SLIDE 1 — FOR EVERYONE
+
+Badge:
+"FOR EVERYONE"
+
+Headline:
+"Lower cost for companies. Higher pay for talent."
+
+Description:
+"One marketplace where great work gets done — matched in 72 hours, with no middlemen taking a cut."
+
+Purpose:
+This is the broad OnSpot value proposition for both companies and talent.
+
+==================================================
+SLIDE 2 — FOR COMPANIES
+
+Badge:
+"FOR COMPANIES"
+
+Headline:
+"The talent you need, for up to 70% less"
+
+Description:
+"Skip marketplace chaos and agency overhead. Get matched with skilled professionals in 72 hours — direct, no middlemen."
+
+Purpose:
+Focus specifically on the company/hiring value proposition.
+
+==================================================
+SLIDE 3 — FOR TALENT
+
+Badge:
+"FOR TALENT"
+
+Headline:
+"Paid what your work is actually worth"
+
+Description:
+"Real opportunities with global clients — no bidding wars, no cut taken off the top. Work from wherever you call home."
+
+Purpose:
+Focus specifically on the talent/job-seeker value proposition.
+
+==================================================
+3. REMOVE THE EXTRA / FOURTH SLIDE
+==================================================
+
+Remove whichever current slide is no longer needed so that the carousel contains exactly 3 entries.
+
+Important:
+- Do not leave unused slide data behind.
+- Update any slide count logic.
+- Update carousel indicator count.
+- Update any `01 / 04` style counter to show `01 / 03`, `02 / 03`, `03 / 03`.
+- Ensure next/previous looping works correctly with 3 slides.
+- Ensure autoplay wraps correctly from slide 3 back to slide 1.
+
+==================================================
+4. CTA BEHAVIOR
+==================================================
+
+Reuse the existing CTA components and project routes.
+
+For Everyone:
+Use the most appropriate existing actions for both audiences if the current carousel supports two CTAs.
+
+Suggested:
+Primary: "Hire Talent"
+Secondary: "Find Work"
+
+For Companies:
+Primary:
+"Hire Talent"
+
+Secondary:
+Reuse the current relevant company secondary action, such as:
+"See how it works"
+
+For Talent:
+Primary:
+"Find Work"
+
+Secondary:
+Reuse the existing relevant talent action, such as:
+"Browse roles"
+
+IMPORTANT:
+Inspect existing routing and reuse the current routes.
+Do not create duplicate pages or new routes.
+
+==================================================
+5. BADGE COLORS
+==================================================
+
+Keep the current audience-badge visual language.
+
+Suggested:
+- FOR EVERYONE → neutral/white/lavender treatment
+- FOR COMPANIES → existing company purple treatment
+- FOR TALENT → existing talent green treatment
+
+Do not redesign the badges.
+
+==================================================
+6. VISUAL HIERARCHY
+==================================================
+
+Preserve the existing hierarchy:
+
+Audience badge
+↓
+Slide headline
+↓
+Description
+↓
+CTA buttons
+↓
+Feature cards
+
+Headline should remain the strongest rotating element.
+
+Do not change the font family or overall hero design.
+
+==================================================
+7. FEATURE CARDS
+==================================================
+
+Keep the existing feature cards currently shown at the bottom of the hero, such as:
+
+- Top Talent
+- Trusted Platform
+- Endless Opportunities
+
+Do not change their content or styling for this task.
+
+==================================================
+8. BACKGROUND IMAGES
+==================================================
+
+Keep the existing hero background-image system.
+
+If the current slides each map to a background image:
+- Reuse the best matching 3 existing images.
+- Remove the background mapping for the deleted fourth slide.
+- Do not add new assets unless absolutely necessary.
+
+==================================================
+9. RESPONSIVENESS
+==================================================
+
+Desktop:
+- All 3 slides should fit exactly as the current hero does.
+- Keep CTA buttons and feature cards visible.
+
+Laptop:
+- Preserve current responsive scaling.
+
+Mobile:
+- Keep headline readable.
+- Allow natural wrapping.
+- Stack buttons if that is already existing behavior.
+- Carousel should still rotate through exactly 3 slides.
+
+==================================================
+10. TECHNICAL CLEANUP
+==================================================
+
+Inspect the current carousel data/configuration in `Home.tsx`.
+
+Update:
+- Slide data array
+- Total slide count
+- Indicator dots/bars
+- Numeric slide counter
+- Autoplay boundary logic
+- Previous/next logic
+- Any audience-specific conditions tied to the removed slide
+
+Remove unused slide-specific assets/constants/imports if they are no longer used anywhere else.
+
+Do not rewrite working carousel logic unnecessarily.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+✓ Homepage hero contains exactly 3 carousel slides.
+
+✓ The slides are:
+1. For Everyone
+2. For Companies
+3. For Talent
+
+✓ Copy matches the provided text.
+
+✓ The fourth slide is fully removed.
+
+✓ Counter shows `/ 03`, not `/ 04`.
+
+✓ Carousel indicators show 3 states only.
+
+✓ Autoplay and looping work correctly.
+
+✓ Existing hero styling, imagery, feature cards, animations, and responsive behavior are preserved.
+
+✓ Existing CTA routes continue working.
+
+✓ No TypeScript, runtime, routing, or console errors are introduced.

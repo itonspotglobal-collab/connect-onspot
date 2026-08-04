@@ -14,11 +14,26 @@ import {
 // ── Carousel slide data ────────────────────────────────────────────────────
 const heroSlides = [
   {
+    audience: "everyone" as const,
+    label: "For Everyone",
+    title: "Lower cost for companies. Higher pay for talent.",
+    description:
+      "One marketplace where great work gets done — matched in 72 hours, with no middlemen taking a cut.",
+    primaryLabel: "Hire Talent",
+    primaryRoute: "/hire-talent",
+    secondaryLabel: "Find Work",
+    secondaryRoute: "/find-work",
+    image:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80",
+    imagePosition: "center",
+    alt: "Remote team collaborating",
+  },
+  {
     audience: "client" as const,
     label: "For Companies",
-    title: "Vetted talent, placed in 72 hours",
+    title: "The talent you need, for up to 70% less",
     description:
-      "Skip the months-long hiring cycle. Get dedicated, pre-screened Philippine professionals working for you in as little as three days.",
+      "Skip marketplace chaos and agency overhead. Get matched with skilled professionals in 72 hours — direct, no middlemen.",
     primaryLabel: "Hire Talent",
     primaryRoute: "/hire-talent",
     secondaryLabel: "See how it works",
@@ -31,43 +46,13 @@ const heroSlides = [
   {
     audience: "talent" as const,
     label: "For Talent",
-    title: "Work from anywhere, for anyone",
+    title: "Paid what your work is actually worth",
     description:
-      "Land long-term roles with global companies — no commute, no borders. Just meaningful work on your terms, wherever you are.",
+      "Real opportunities with global clients — no bidding wars, no cut taken off the top. Work from wherever you call home.",
     primaryLabel: "Find Work",
     primaryRoute: "/find-work",
     secondaryLabel: "Browse roles",
-    secondaryRoute: "/find-work",
-    image:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1920&q=80",
-    imagePosition: "center",
-    alt: "Remote team collaborating",
-  },
-  {
-    audience: "client" as const,
-    label: "For Companies",
-    title: "Dedicated teams, up to 70% less",
-    description:
-      "Build a dedicated remote team with payroll, compliance, and HR fully handled. Enterprise capability without the enterprise cost.",
-    primaryLabel: "Hire Talent",
-    primaryRoute: "/hire-talent",
-    secondaryLabel: "Estimate Savings",
-    secondaryRoute: "/why-onspot/value-calculator",
-    image:
-      "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1920&q=80",
-    imagePosition: "center",
-    alt: "Team working together remotely",
-  },
-  {
-    audience: "talent" as const,
-    label: "For Talent",
-    title: "Grow with companies that invest in you",
-    description:
-      "Fair pay, real benefits, and career paths that go somewhere. We match you to roles built to last, not gigs that disappear.",
-    primaryLabel: "Find Work",
-    primaryRoute: "/find-work",
-    secondaryLabel: "Browse roles",
-    secondaryRoute: "/find-work",
+    secondaryRoute: "/find-work/jobs",
     image:
       "https://images.unsplash.com/photo-1600880292630-ee8a00403024?auto=format&fit=crop&w=1920&q=80",
     imagePosition: "center",
@@ -130,14 +115,24 @@ export default function Home() {
           border: "1px solid rgba(91,124,255,0.45)",
           color: "#C4C8FF",
         }
-      : {
+      : activeSlide.audience === "talent"
+      ? {
           background: "rgba(16,185,129,0.15)",
           border: "1px solid rgba(52,211,153,0.4)",
           color: "#6EE7C0",
+        }
+      : /* everyone — soft lavender/neutral */ {
+          background: "rgba(196,184,255,0.12)",
+          border: "1px solid rgba(196,184,255,0.3)",
+          color: "#E2DCFF",
         };
 
   const dotColor =
-    activeSlide.audience === "client" ? "#A5B4FC" : "#6EE7C0";
+    activeSlide.audience === "client"
+      ? "#A5B4FC"
+      : activeSlide.audience === "talent"
+      ? "#6EE7C0"
+      : "#C4C8FF";
 
   return (
     <div>
