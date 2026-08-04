@@ -128,6 +128,7 @@ export default function AdminDashboard() {
   const [appJobFilter, setAppJobFilter] = useState('all');
   const [appPage, setAppPage] = useState(1);
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+  const [editingStatus, setEditingStatus] = useState<string>('');
 
   // TODO: Restore admin role check before production launch.
 
@@ -264,6 +265,38 @@ export default function AdminDashboard() {
         variant: 'destructive'
       });
     }
+  });
+
+  // Update application status mutation
+  const updateAppStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      return await authAPI.patch(`/api/admin/job-applications/${id}`, { status });
+    },
+    onSuccess: (_, variables) => {
+      toast({ title: 'Status Updated', description: 'Application status has been updated.' });
+      // Update selectedApp in-place so dialog reflects new status immediately
+      setSelectedApp((prev) => prev ? { ...prev, status: variables.status } : prev);
+      // Optimistically update the table row via query cache
+      queryClient.setQueryData(
+        ['/api/admin/job-applications', { page: appPage, status: appStatusFilter, jobId: appJobFilter }],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item: JobApplication) =>
+              item.id === variables.id ? { ...item, status: variables.status } : item
+            ),
+          };
+        }
+      );
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Update Failed',
+        description: error.response?.data?.error || 'Failed to update status',
+        variant: 'destructive',
+      });
+    },
   });
 
   // Convert resume to talent mutation
@@ -759,7 +792,7 @@ export default function AdminDashboard() {
                         <tr
                           key={app.id}
                           className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
-                          onClick={() => setSelectedApp(app)}
+                          onClick={() => { setSelectedApp(app); setEditingStatus(''); }}
                           data-testid={`app-row-${app.id}`}
                         >
                           <td className="px-4 py-3 font-medium">{app.applicant_name}</td>
@@ -778,7 +811,7 @@ export default function AdminDashboard() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
+                              onClick={(e) => { e.stopPropagation(); setSelectedApp(app); setEditingStatus(''); }}
                               data-testid={`button-view-app-${app.id}`}
                             >
                               <Eye className="w-4 h-4" />
@@ -825,7 +858,12 @@ export default function AdminDashboard() {
       </Tabs>
 
       {/* Application Detail Dialog */}
-      <Dialog open={!!selectedApp} onOpenChange={(open) => { if (!open) setSelectedApp(null); }}>
+      <Dialog
+        open={!!selectedApp}
+        onOpenChange={(open) => {
+          if (!open) { setSelectedApp(null); setEditingStatus(''); }
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -852,9 +890,45 @@ export default function AdminDashboard() {
                   <p className="text-muted-foreground font-medium mb-1">Job</p>
                   <p>{selectedApp.jobTitle}{selectedApp.jobCompany ? ` — ${selectedApp.jobCompany}` : ''}</p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground font-medium mb-1">Application Status</p>
-                  <AppStatusBadge status={selectedApp.status} />
+                <div className="col-span-2">
+                  <p className="text-muted-foreground font-medium mb-2">Application Status</p>
+                  <div className="flex items-center gap-3">
+                    <Select
+                      value={editingStatus || selectedApp.status}
+                      onValueChange={setEditingStatus}
+                    >
+                      <SelectTrigger className="w-44" data-testid="select-app-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="reviewed">Reviewed</SelectItem>
+                        <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                        <SelectItem value="hired">Hired</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      disabled={
+                        updateAppStatusMutation.isPending ||
+                        !editingStatus ||
+                        editingStatus === selectedApp.status
+                      }
+                      onClick={() => {
+                        if (editingStatus && editingStatus !== selectedApp.status) {
+                          updateAppStatusMutation.mutate({ id: selectedApp.id, status: editingStatus });
+                        }
+                      }}
+                      data-testid="button-save-app-status"
+                    >
+                      {updateAppStatusMutation.isPending ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+                      ) : (
+                        'Save Status'
+                      )}
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <p className="text-muted-foreground font-medium mb-1">Registration Status</p>

@@ -8782,25 +8782,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/talent/my-applications — list the authenticated talent's own job submissions
-  app.get("/api/talent/my-applications", authenticateJWT, async (req: Request, res: Response) => {
+  // PATCH /api/admin/job-applications/:id — update application status (admin only)
+  app.patch("/api/admin/job-applications/:id", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+
+      const { id } = req.params;
+      const { status } = req.body;
+      const validStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
+      if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be one of: new, reviewed, shortlisted, rejected, hired" });
+      }
+
       const result = await query(
-        `SELECT js.id, js.job_id AS "jobId", js.status, js.submitted_at AS "submittedAt",
-                js.updated_at AS "updatedAt", js.first_name AS "firstName", js.last_name AS "lastName",
-                js.cover_letter AS "coverLetter", js.phone,
-                j.title AS "jobTitle", j.company AS "jobCompany", j.location AS "jobLocation"
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
-         WHERE js.talent_id = $1
-         ORDER BY js.submitted_at DESC`,
-        [userId],
+        `UPDATE job_submissions SET status = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [status, id],
       );
-      return res.json(result.rows);
+      if (result.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      return res.json(result.rows[0]);
     } catch (err: any) {
-      console.error("GET /api/talent/my-applications error:", err);
+      console.error("PATCH /api/admin/job-applications/:id error:", err);
       return res.status(500).json({ error: err.message });
     }
   });

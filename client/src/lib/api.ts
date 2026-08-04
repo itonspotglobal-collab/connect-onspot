@@ -147,6 +147,16 @@ export const authAPI = {
     }
   },
 
+  patch: async (url: string, data: any) => {
+    try {
+      const response = await api.patch(url, data);
+      return response.data;
+    } catch (error) {
+      console.error("AuthAPI PATCH error:", error);
+      throw error;
+    }
+  },
+
   delete: async (url: string) => {
     try {
       const response = await api.delete(url);
