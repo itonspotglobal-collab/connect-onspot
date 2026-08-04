@@ -736,6 +736,8 @@ export default function FindWorkJob() {
         tags: dbJob.skillTags ?? undefined,
         page: "FindWorkJob",
       });
+      // Increment server-side view count (fire-and-forget; non-critical)
+      fetch(`/api/jobs/${dbJob.id}/view`, { method: "POST" }).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbJob, isStaticId, rawId]);

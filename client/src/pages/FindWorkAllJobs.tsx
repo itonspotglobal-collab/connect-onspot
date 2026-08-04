@@ -52,13 +52,7 @@ import {
   scoreJobForTalent,
 } from "@/lib/talentRecommendations";
 
-const POPULAR_CHIPS = [
-  "Customer Support",
-  "Virtual Assistant",
-  "Bookkeeping",
-  "Sales",
-  "Operations",
-];
+// POPULAR_CHIPS replaced by dynamic /api/jobs/popular query
 
 const HOT_SEARCHES = [
   "Customer Support",
@@ -404,6 +398,19 @@ export default function FindWorkAllJobs() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Popular jobs — top 5 open+approved by view count, fallback to newest
+  const { data: popularJobs = [], isLoading: isLoadingPopular } = useQuery<
+    { id: string; title: string; professional_role_name: string | null }[]
+  >({
+    queryKey: ["/api/jobs/popular"],
+    queryFn: async () => {
+      const res = await fetch("/api/jobs/popular");
+      if (!res.ok) throw new Error("Failed to load popular jobs");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Debounced search tracking
   useEffect(() => {
     if (!search.trim()) return;
@@ -669,23 +676,26 @@ export default function FindWorkAllJobs() {
             <span className="mb-2 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400">
               Popular
             </span>
-            {POPULAR_CHIPS.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => {
-                  setSearch(term);
-                  scrollToJobs();
-                }}
-                className={`rounded-full border px-4 py-1 text-[11px] font-medium transition duration-200 ${
-                  search.toLowerCase() === term.toLowerCase()
-                    ? "border-violet-400 bg-violet-100 text-violet-800"
-                    : "border-slate-200 bg-white/70 text-slate-500 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
-                }`}
-              >
-                {term}
-              </button>
-            ))}
+            {isLoadingPopular
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="h-[26px] w-24 animate-pulse rounded-full border border-slate-200 bg-slate-100"
+                  />
+                ))
+              : popularJobs.map((job) => {
+                  const label = job.professional_role_name || job.title;
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      onClick={() => navigate(`/find-work/job/${job.id}`)}
+                      className="rounded-full border border-slate-200 bg-white/70 px-4 py-1 text-[11px] font-medium text-slate-500 transition duration-200 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
           </div>
         </motion.div>
       </div>

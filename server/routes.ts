@@ -768,6 +768,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  role taxonomy migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add view_count column to jobs table ──────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS view_count integer NOT NULL DEFAULT 0`);
+    console.log("✅ Migration: jobs.view_count column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  view_count migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -4750,6 +4758,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ error: "Failed to search jobs" });
+    }
+  });
+
+  // ── Popular jobs (top 5 open+approved by view count, fallback to newest) ─────
+  app.get("/api/jobs/popular", async (req, res) => {
+    try {
+      const result = await query(
+        `SELECT id, title, professional_role_name
+         FROM jobs
+         WHERE status = 'open' AND approval_status = 'approved'
+         ORDER BY COALESCE(view_count, 0) DESC, created_at DESC
+         LIMIT 5`
+      );
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Popular jobs error:", error);
+      res.status(500).json({ error: "Failed to get popular jobs" });
+    }
+  });
+
+  // ── Increment job view count (idempotent; caller rate-limits) ─────────────
+  app.post("/api/jobs/:id/view", async (req, res) => {
+    try {
+      await query(
+        `UPDATE jobs SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1`,
+        [req.params.id]
+      );
+      res.json({ ok: true });
+    } catch (error) {
+      // Non-critical — swallow silently so it never breaks the detail page
+      res.json({ ok: false });
     }
   });
 

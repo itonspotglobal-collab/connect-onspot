@@ -1,0 +1,118 @@
+Please update the "POPULAR" section in `FindWorkAllJobs.tsx` so it is dynamic and based on real job engagement data.
+
+GOAL
+
+Replace the current hardcoded popular category chips with the Top 5 most viewed active job openings.
+
+Current hardcoded examples such as:
+- Customer Support
+- Virtual Assistant
+- Bookkeeping
+- Sales
+- Operations
+
+should no longer be static.
+
+NEW BEHAVIOR
+
+1. Track job views
+- Use the existing jobs data source/database.
+- Each job opening should have a view count or equivalent engagement metric.
+- Increment the view count when a user opens/views the job detail page.
+- Avoid counting accidental duplicate views repeatedly in the same session if there is already an existing mechanism for this.
+- If an existing analytics/view-count feature already exists in the codebase, reuse it instead of creating duplicate tracking logic.
+
+2. Popular section
+Under the "POPULAR" label, show the Top 5 active job openings ranked by most views.
+
+Ranking:
+- Highest view count first.
+- Limit to 5 jobs only.
+- Only include active/published/open job listings.
+- Exclude archived, closed, deleted, draft, or unavailable jobs.
+
+3. Display
+Each popular item should display the job title.
+
+Example:
+
+POPULAR
+
+[ Customer Support Specialist ]
+[ Virtual Assistant ]
+[ Accounting Manager ]
+[ Sales Development Rep ]
+[ Operations Coordinator ]
+
+Keep the existing pill/chip visual style.
+
+4. Interaction
+When a user clicks a popular job chip:
+- Do not just search for the generic category.
+- Either:
+  A. Open that specific job's detail page, OR
+  B. Apply that exact job title to the current search/filter and scroll to the matching result.
+
+Preferred behavior:
+Open the specific job detail page if the existing job cards already have a dedicated job details route.
+
+5. Realtime / fresh data
+The Popular section should be generated from current backend/database data, not hardcoded values.
+
+Whenever job view counts change, the Top 5 should reflect the latest rankings the next time the page data is fetched/refreshed.
+
+If the project already uses:
+- React Query
+- SWR
+- TanStack Query
+- existing API polling/refetch logic
+
+reuse that pattern.
+
+Do not introduce aggressive polling if it is unnecessary.
+
+6. Fallback behavior
+If fewer than 5 jobs have view data:
+- Show the available jobs ranked by views.
+- Fill the remaining spots using the most recently posted active jobs if appropriate.
+
+If view counts do not exist yet:
+- Gracefully fall back to recent active jobs rather than showing an empty section.
+
+7. Loading state
+While popular jobs are loading:
+- Show subtle skeleton pills or preserve the layout.
+- Avoid layout shift.
+
+8. Keep visual hierarchy
+The "POPULAR" section remains tertiary/supporting content.
+
+Do not make it more visually prominent than:
+- Hero headline
+- Search bar
+- Browse all roles link
+
+Keep:
+- Small "POPULAR" label
+- Compact rounded chips
+- Light border/background
+- Current spacing and centered alignment
+
+9. Technical cleanup
+- Remove the hardcoded popular category array from `FindWorkAllJobs.tsx` if it is no longer used.
+- Reuse existing job types/interfaces.
+- Avoid duplicate API calls where job analytics are already fetched.
+- Handle null/undefined view counts safely.
+- Ensure no console errors.
+
+ACCEPTANCE CRITERIA
+
+✓ Popular section is no longer hardcoded.
+✓ It displays the Top 5 most viewed active job openings.
+✓ Jobs are sorted by view count descending.
+✓ Closed/draft/archived jobs are excluded.
+✓ Clicking a chip leads to the relevant job.
+✓ View data comes from the existing backend/database.
+✓ Section has a graceful fallback if analytics are unavailable.
+✓ Existing hero search and job filtering continue working.
+✓ Visual styling stays consistent with the current design.
