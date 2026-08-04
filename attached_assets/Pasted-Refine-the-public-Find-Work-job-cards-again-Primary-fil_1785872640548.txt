@@ -1,0 +1,442 @@
+Refine the public Find Work job cards again.
+
+Primary file:
+- `client/src/pages/FindWorkAllJobs.tsx`
+
+Also inspect any reusable job-card component if the card is rendered elsewhere.
+
+GOAL
+
+I want the card layout to be much closer to the attached inspiration in structure, specifically:
+
+- keep the OnSpot gradient header from the OLD layout
+- use a compact initials avatar/logo on the left
+- show the job title and company beside it
+- show compact badges directly under the company/title:
+  - Urgently Hiring
+  - Remote / Hybrid / Onsite
+  - Full Time / Part Time / Contract
+- show salary prominently on the right
+- keep the job description / card preview summary visible underneath
+- REMOVE the separate metadata section boxes for:
+  - Contract
+  - Location
+  - Function
+  - Posted
+- do not show those details as large individual columns anymore
+
+The inspiration is more minimal because those important details are represented as small badges instead of a dedicated metadata row.
+
+IMPORTANT:
+Do not remove the description. The description / card preview summary is one of the most important parts of the card and should remain clearly visible.
+
+1. BRING BACK THE GRADIENT HEADER
+
+Restore the old OnSpot gradient header.
+
+Use the existing gradient from the previous version of the card if possible.
+
+Example visual direction:
+
+```tsx
+bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+
+Prefer reusing the project's existing gradient classes rather than inventing new brand colors.
+
+The gradient should contain:
+
+initials avatar
+job title
+company
+badges
+salary
+posted date if we still want to keep it
+
+Do NOT restore the old metadata row underneath.
+
+CARD STRUCTURE
+
+Use this structure:
+
+<article>
+  {/* Gradient header */}
+  <header>
+    {/* avatar + title + company + badges */}
+    {/* salary + posted date */}
+  </header>
+
+  {/* Description */}
+  <div>
+    {/* card preview summary */}
+    {/* skills */}
+    {/* buttons */}
+  </div>
+</article>
+
+There should no longer be a dedicated four-column metadata section between the header and description.
+
+LEFT SIDE OF HEADER
+
+Use a compact initials avatar.
+
+Example:
+
+IA
+IT Administrator
+OnSpot
+
+[Remote] [Full Time]
+
+If urgent hiring is enabled:
+
+[Urgently Hiring] [Remote] [Full Time]
+
+Suggested desktop JSX:
+
+<div className="flex items-start gap-3">
+  <div className="
+    flex h-10 w-10 shrink-0 items-center justify-center
+    rounded-xl
+    bg-white/15
+    text-sm font-semibold
+    text-white
+    ring-1 ring-white/15
+  ">
+    {getRoleInitials(job.title)}
+  </div>
+
+  <div className="min-w-0">
+    <h3 className="text-base md:text-lg font-semibold text-white">
+      {job.title}
+    </h3>
+
+    <p className="text-xs md:text-sm text-white/75">
+      {job.company}
+    </p>
+
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {/* badges */}
+    </div>
+  </div>
+</div>
+INITIALS LOGO
+
+Keep the initials-based role avatar from the latest implementation.
+
+Examples:
+
+IT Administrator → IA
+Virtual Assistant → VA
+Data Migration Developer → DM
+Content & Growth Marketer → CG
+
+Make sure initials are generated dynamically from the title.
+
+Do not go back to generic role icons.
+
+BADGES — THIS IS IMPORTANT
+
+I specifically want the badge format from the inspiration.
+
+Display these as compact pills under the title/company:
+
+Urgently Hiring:
+
+bg-amber-100/95 text-amber-800
+
+Remote:
+
+bg-violet-100/95 text-violet-700
+
+Hybrid:
+
+bg-sky-100/95 text-sky-700
+
+Onsite:
+
+bg-slate-100/95 text-slate-700
+
+Full Time:
+
+bg-emerald-100/95 text-emerald-700
+
+Part Time:
+
+bg-cyan-100/95 text-cyan-700
+
+Contract:
+
+bg-orange-100/95 text-orange-700
+
+Suggested shared badge style:
+
+inline-flex items-center rounded-md px-2 py-1 text-[10px] md:text-[11px] font-medium
+
+These badges should replace the old Contract / Location metadata boxes.
+
+Important:
+
+Urgently Hiring remains optional/manual
+do not reintroduce automatic urgent hiring logic
+REMOVE THE METADATA ROW
+
+Remove the existing row/section that separately displays:
+
+CONTRACT
+Full Time
+
+LOCATION
+Remote
+
+FUNCTION
+Development
+
+POSTED
+5 Months Ago
+
+This is the part I no longer want.
+
+Do not leave empty borders or spacing after removing it.
+
+The card should flow directly:
+
+Gradient header
+↓
+Description
+↓
+Skills
+↓
+Buttons
+FUNCTION / CATEGORY
+
+The Function / Category field should not have its own large metadata box anymore.
+
+If we still want to expose it on the card, make it a subtle small label or badge only if needed.
+
+Preferred:
+
+do not show it prominently
+keep it available on the full job details page
+
+Do not remove it from the data model.
+
+POSTED DATE
+
+Do not use a full metadata box for Posted.
+
+Keep it subtle on the top-right under salary:
+
+Example:
+
+₱10,000 – ₱15,000/month
+Posted 5 months ago
+
+Suggested:
+
+<p className="mt-1 text-[11px] text-white/65">
+  Posted {formattedPostedDate}
+</p>
+
+This preserves the information without adding another section.
+
+SALARY
+
+Keep salary on the top-right of the gradient header.
+
+Example:
+
+₱10,000 – ₱15,000/month
+Posted 5 months ago
+
+Suggested:
+
+<div className="shrink-0 text-left sm:text-right">
+  <p className="text-base md:text-lg font-semibold text-white">
+    {formattedSalary}
+  </p>
+
+  <p className="mt-1 text-[11px] text-white/65">
+    Posted {formattedPostedDate}
+  </p>
+</div>
+
+Keep existing salary formatting and fallback behavior.
+
+Do not hardcode amounts.
+
+DESCRIPTION — MUST REMAIN PROMINENT
+
+Keep the Card Preview Summary directly below the gradient header.
+
+This should be the primary content area of the card.
+
+Use the existing summary field:
+
+cardPreviewSummary
+jobSummary
+or whatever field is currently implemented
+
+Do not use the full role description unless summary fallback is required.
+
+Suggested styling:
+
+<p className="
+  line-clamp-2
+  text-sm
+  leading-6
+  text-slate-600
+  dark:text-slate-300
+">
+  {summary}
+</p>
+
+If the summary is long:
+
+visually clamp it to 2 or 3 lines
+do not add a save-time character limit
+
+Fallback:
+
+use cleaned/truncated full job description only if summary is missing
+SKILLS
+
+Keep skills/tags below the description.
+
+Use small neutral pills.
+
+Example:
+
+[Problem Solving] [CRM] [Technical Support]
+
+Suggested:
+
+<div className="mt-3 flex flex-wrap gap-2">
+
+Limit to around 3–4 visible tags.
+
+If more exist:
+
++2 more
+BUTTONS
+
+Keep:
+
+Apply Now
+View details
+
+Place them under the skills with compact spacing.
+
+Suggested:
+
+<div className="mt-4 flex flex-wrap gap-2">
+
+Keep the primary Apply button in OnSpot gradient/brand styling.
+
+Keep View details secondary.
+
+Do not change routing or application behavior.
+
+GRADIENT HEADER SPACING
+
+The gradient should be compact, not as tall as the original version.
+
+Suggested:
+
+px-5 py-4
+
+Use:
+
+flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between
+
+This gives us the old visual identity without bringing back the oversized card.
+
+FINAL DESKTOP LAYOUT
+
+The final card should roughly look like:
+
+┌──────────────────────────────────────────────────────────────┐
+│ GRADIENT                                                     │
+│                                                              │
+│ [IA]  IT Administrator                 ₱10–15k/month          │
+│       OnSpot                           Posted 5 months ago    │
+│       [Remote] [Full Time]                                   │
+│       [Urgently Hiring] if enabled                           │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│ We are seeking a proactive Remote IT Administrator...        │
+│                                                              │
+│ [Problem Solving] [CRM] [Technical Support]                  │
+│                                                              │
+│ [Apply Now] [View details →]                                 │
+└──────────────────────────────────────────────────────────────┘
+
+There should NOT be an additional Contract / Location / Function / Posted row.
+
+MOBILE
+
+On mobile:
+
+avatar/title remains at top
+badges wrap
+salary moves below title if needed
+description remains full width
+buttons remain easy to tap
+no horizontal scrolling
+DARK MODE
+
+Preserve dark mode for the content section.
+
+Gradient header can remain consistent in both modes.
+
+Ensure:
+
+description is readable
+skill pills are readable
+borders remain subtle
+secondary button works in dark mode
+DO NOT REMOVE DATA OR FUNCTIONALITY
+
+Do not remove from the backend or job model:
+
+Contract
+Location
+Category/Function
+Posted date
+Salary
+Description
+Skills
+
+We are only changing how they are presented on the card.
+
+Contract and Location are now represented by badges.
+Posted date moves beside salary.
+Function/category can remain available on the full details page.
+
+EXPECTED RESULT
+
+The card should now feel like a combination of:
+
+the minimal structure of the inspiration
+the OnSpot gradient identity from the old design
+
+The key visual hierarchy should be:
+
+Job title
+Salary
+Urgently Hiring / Remote / Full Time badges
+Job description
+Skills
+Actions
+
+After implementing, provide:
+
+exact files changed
+confirmation that the four-column metadata row was removed
+confirmation that Remote and Full Time now appear as badges
+confirmation that Urgently Hiring uses the same compact badge format
+confirmation that the gradient header was restored
+confirmation that the job description/card summary remains visible
+confirmation that Posted date was moved to the salary area
+confirmation that no job fields or functionality were deleted
+
+This should get much closer to what you're describing: **the old gradient identity, but the minimal information hierarchy of the inspiration**.
