@@ -156,16 +156,18 @@ function getRoleInitials(title: string): string {
 
 // ── Badge palette — semi-transparent, designed to sit on the gradient header ──
 const BADGE_STYLES: Record<string, string> = {
-  urgent:        "bg-amber-100/95   text-amber-800",
-  "top-paying":  "bg-amber-100/95   text-amber-800",
-  "multiple-slots": "bg-indigo-100/95 text-indigo-800",
-  remote:        "bg-violet-100/95  text-violet-700",
-  hybrid:        "bg-sky-100/95     text-sky-700",
-  onsite:        "bg-slate-100/95   text-slate-700",
-  "full-time":   "bg-emerald-100/95 text-emerald-700",
-  "part-time":   "bg-cyan-100/95    text-cyan-700",
-  contract:      "bg-orange-100/95  text-orange-700",
-  pilot:         "bg-white/90       text-indigo-700",
+  urgent:           "bg-red-100/95     text-red-700",
+  "top-paying":     "bg-amber-100/95   text-amber-800",
+  "multiple-slots": "bg-indigo-100/95  text-indigo-800",
+  remote:           "bg-violet-50      text-violet-700",
+  hybrid:           "bg-sky-50         text-sky-700",
+  onsite:           "bg-slate-100      text-slate-700",
+  "full-time":      "bg-emerald-50     text-emerald-700",
+  "part-time":      "bg-cyan-100/95    text-cyan-700",
+  contract:         "bg-orange-100/95  text-orange-700",
+  pilot:            "bg-white/90       text-indigo-700",
+  commission:       "bg-emerald-50     text-emerald-700",
+  equity:           "bg-purple-50      text-purple-700",
 };
 const BADGE_DEFAULT = "bg-white/20 text-white";
 
@@ -265,13 +267,27 @@ function JobCard({
               </div>
             </div>
 
-            {/* Right: salary + period + posted */}
+            {/* Right: salary + period + posted + commission/equity badges */}
             <div className="shrink-0 sm:text-right">
-              <p className="text-base font-semibold text-white md:text-lg">{pay}</p>
+              <p className="text-lg font-semibold text-white md:text-xl">{pay}</p>
               {salaryPeriodLabel && (
                 <p className="mt-0.5 text-[11px] text-white/65">{salaryPeriodLabel}</p>
               )}
-              <p className="mt-1 text-[11px] text-white/55">Posted {timeAgo}</p>
+              <p className="mt-1 text-xs text-white/70">Posted {timeAgo}</p>
+              {((job as any).hasCommission || (job as any).hasEquity) && (
+                <div className="mt-3 flex flex-wrap gap-1.5 sm:justify-end">
+                  {(job as any).hasCommission && (
+                    <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.commission}`}>
+                      + Commission
+                    </span>
+                  )}
+                  {(job as any).hasEquity && (
+                    <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.equity}`}>
+                      + Equity
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>

@@ -103,6 +103,9 @@ export const defaultFormData = {
   benefits: "",
   // Compensation type
   compensationType: "" as "" | "monthly" | "annual" | "project",
+  // Additional compensation benefits
+  hasCommission: false,
+  hasEquity: false,
   // Currency
   currency: "PHP",
   customCurrencyCode: "",
@@ -161,6 +164,9 @@ export function jobToFormData(job: Job): JobFormData {
     benefits: (job as any).benefits || "",
     // Compensation type
     compensationType: (job as any).compensationType || "",
+    // Additional compensation benefits
+    hasCommission: (job as any).hasCommission ?? false,
+    hasEquity: (job as any).hasEquity ?? false,
     // Currency
     currency: (job as any).budgetCurrency || "PHP",
     customCurrencyCode: (job as any).customCurrencyCode || "",
@@ -364,6 +370,10 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Compensation type (always send so admins can clear the value)
     payload.compensationType = formData.compensationType || null;
+
+    // Additional compensation benefits
+    payload.hasCommission = formData.hasCommission;
+    payload.hasEquity = formData.hasEquity;
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -765,6 +775,47 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                     ? "This job will display the Urgently Hiring badge."
                     : "This job will not display the Urgently Hiring badge."}
                 </p>
+              </div>
+            </div>
+
+            {/* ── Additional Compensation ── */}
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Additional Compensation
+              </p>
+              <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+                <input
+                  id="modal-has-commission"
+                  type="checkbox"
+                  checked={formData.hasCommission}
+                  onChange={(e) => updateField("hasCommission", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input accent-[#474ead] cursor-pointer"
+                />
+                <div>
+                  <label htmlFor="modal-has-commission" className="text-sm font-medium cursor-pointer select-none">
+                    Offers Commission
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Additional performance- or sales-based compensation may be offered.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+                <input
+                  id="modal-has-equity"
+                  type="checkbox"
+                  checked={formData.hasEquity}
+                  onChange={(e) => updateField("hasEquity", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input accent-[#474ead] cursor-pointer"
+                />
+                <div>
+                  <label htmlFor="modal-has-equity" className="text-sm font-medium cursor-pointer select-none">
+                    Offers Equity
+                  </label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    This role may include stock, ownership, or equity-based compensation.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

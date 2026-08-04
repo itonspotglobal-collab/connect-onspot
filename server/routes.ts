@@ -792,6 +792,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  compensation_type migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add commission / equity flags to jobs table ──────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_commission boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_equity    boolean NOT NULL DEFAULT false`);
+    console.log("✅ Migration: jobs.has_commission / has_equity columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  commission/equity migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(

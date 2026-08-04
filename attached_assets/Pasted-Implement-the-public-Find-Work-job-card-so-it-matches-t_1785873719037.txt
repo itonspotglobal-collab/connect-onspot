@@ -1,0 +1,486 @@
+Implement the public Find Work job card so it matches the attached approved design as closely as possible.
+
+Primary file:
+- `client/src/pages/FindWorkAllJobs.tsx`
+
+Also inspect:
+- any reusable job card component
+- frontend job types/interfaces
+- admin create/edit job form
+- backend job schema/model/API if Commission or Equity are not yet supported
+
+VISUAL TARGET
+
+Use the attached design as the final visual reference.
+
+Key characteristics:
+- compact purple/blue gradient header
+- initials avatar on the left
+- job title and company beside it
+- salary on the top-right
+- posted date directly below salary
+- compact badges in the header
+- optional Commission and Equity badges on the right side
+- white description/content section underneath
+- skills/tags below description
+- Apply Now + View details buttons at the bottom
+- no separate metadata row for Contract / Location / Function / Posted
+
+DO NOT redesign this into a different layout.
+The attached design is the target.
+
+1. CARD CONTAINER
+
+Use a clean rounded card with subtle border/shadow:
+
+```tsx
+<article className="
+  overflow-hidden
+  rounded-2xl
+  border border-slate-200
+  bg-white
+  shadow-sm
+  dark:border-slate-800
+  dark:bg-slate-950
+">
+GRADIENT HEADER
+
+Restore and keep the OnSpot gradient header.
+
+Suggested:
+
+className="
+  bg-gradient-to-r
+  from-[#3538ff]
+  via-[#5b3df5]
+  to-[#7c35f3]
+  px-5 py-4
+"
+
+Prefer existing project brand gradient values if already defined.
+
+Header layout:
+
+<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+LEFT HEADER AREA
+
+Show:
+
+initials avatar
+job title
+company
+primary badges
+
+Structure:
+
+<div className="flex items-start gap-3">
+
+Avatar:
+
+<div className="
+  flex h-11 w-11 shrink-0 items-center justify-center
+  rounded-xl
+  bg-white/15
+  text-sm font-semibold
+  text-white
+  ring-1 ring-white/15
+">
+  {getRoleInitials(job.title)}
+</div>
+ROLE INITIALS
+
+Keep dynamic role initials.
+
+Examples:
+
+IT Administrator → IA
+Virtual Assistant → VA
+Data Migration Developer → DM
+Sales / Business Development Lead → SB
+Content & Growth Marketer → CG
+
+Use a helper that takes the first letters of the first two meaningful words.
+
+JOB TITLE AND COMPANY
+
+Title:
+
+className="text-base md:text-lg font-semibold text-white"
+
+Company:
+
+className="mt-0.5 text-sm text-white/75"
+BADGES
+
+Primary badges go under the company.
+
+Possible badges:
+
+Urgently Hiring
+Remote / Hybrid / Onsite
+Full Time / Part Time / Contract
+
+Use compact pill styling.
+
+Urgently Hiring:
+
+light red background
+red text
+
+Example:
+
+bg-red-50 text-red-600
+
+or slightly stronger:
+
+bg-red-100/95 text-red-700
+
+Remote:
+
+bg-violet-50 text-violet-700
+
+Full Time:
+
+bg-emerald-50 text-emerald-700
+
+Hybrid:
+
+bg-sky-50 text-sky-700
+
+Onsite:
+
+bg-slate-100 text-slate-700
+
+Shared badge class:
+
+inline-flex items-center rounded-md px-2.5 py-1 text-[10px] md:text-[11px] font-medium
+
+Urgently Hiring must continue using the manual optional boolean field.
+Do not restore automatic urgent-hiring logic.
+
+RIGHT HEADER AREA
+
+Show:
+
+salary
+posted date
+Commission badge if enabled
+Equity badge if enabled
+
+Example structure:
+
+<div className="shrink-0 sm:text-right">
+
+Salary:
+
+className="text-lg md:text-xl font-semibold text-white"
+
+Posted date:
+
+className="mt-1 text-xs text-white/70"
+COMMISSION AND EQUITY
+
+The approved design includes:
+
++ Commission
++ Equity
+
+First inspect whether these fields already exist in the project.
+
+If they already exist:
+
+reuse them
+render badges only when enabled/populated
+
+If they do not exist:
+implement them properly across the system.
+
+Add fields such as:
+
+hasCommission: boolean
+hasEquity: boolean
+
+Optional detail fields may also be added if appropriate:
+
+commissionDetails?: string
+equityDetails?: string
+
+Do not treat Commission or Equity as employment types.
+
+Important meaning:
+
+Commission = extra compensation based on sales/performance
+Equity = ownership/shares or stock-related compensation
+
+They are additional compensation benefits, not the same as Full Time or Remote.
+
+ADMIN JOB FORM
+
+If Commission and Equity do not yet exist, add them to the Add/Edit Job Posting form.
+
+Create a section:
+
+Additional Compensation
+
+Add two optional toggles or checkboxes:
+
+Offers Commission
+Offers Equity
+
+Optional helper text:
+
+Commission:
+Additional performance- or sales-based compensation may be offered.
+
+Equity:
+This role may include stock, ownership, or equity-based compensation.
+
+Default:
+
+false for new jobs
+existing value for edited jobs
+DATA FLOW FOR COMMISSION / EQUITY
+
+If new fields are needed, update all required layers:
+
+frontend job type/interface
+admin form state
+create request payload
+update request payload
+backend validation
+database schema/model
+API response
+public job listing
+public job detail page if appropriate
+
+Existing jobs must remain compatible.
+
+Fallback:
+
+hasCommission ?? false
+hasEquity ?? false
+COMMISSION / EQUITY BADGE STYLE
+
+Commission:
+
+bg-emerald-50 text-emerald-700
+
+Equity:
+
+bg-purple-50 text-purple-700
+
+Shared:
+
+inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium
+
+Display them under salary / posted date aligned to the right on desktop.
+
+Example:
+
+<div className="mt-3 flex flex-wrap gap-2 sm:justify-end">
+REMOVE OLD METADATA ROW
+
+Do not show separate boxes for:
+
+Contract
+Location
+Function
+Posted
+
+Remove the dedicated metadata grid entirely.
+
+Contract and Location are represented through badges.
+
+Posted date appears below salary.
+
+Function/category can remain available on the full job details page.
+
+Do not delete these fields from the model or API.
+
+DESCRIPTION / CARD PREVIEW SUMMARY
+
+This is important.
+
+Immediately below the gradient header, show the Card Preview Summary.
+
+Use the existing separate summary field.
+
+Do not replace it with the full role description unless fallback is required.
+
+Suggested:
+
+<div className="px-5 pt-5">
+  <p className="
+    line-clamp-2
+    text-sm
+    leading-6
+    text-slate-600
+    dark:text-slate-300
+  ">
+    {summary}
+  </p>
+</div>
+
+If no summary exists:
+
+fallback to a cleaned/truncated version of the full description
+remove HTML tags safely
+do not break older jobs
+
+No hard character limit should be reintroduced.
+
+SKILLS / TAGS
+
+Keep skill tags below the summary.
+
+Suggested:
+
+<div className="mt-3 flex flex-wrap gap-2">
+
+Tag style:
+
+rounded-full
+border border-slate-200
+bg-slate-50
+px-3 py-1
+text-xs
+text-slate-600
+
+Dark mode:
+
+dark:border-slate-700
+dark:bg-slate-900
+dark:text-slate-300
+
+Show around 3–4 tags.
+
+If more exist:
+
++2 more
+ACTION BUTTONS
+
+Keep:
+
+Apply Now
+View details
+
+Structure:
+
+<div className="mt-4 flex flex-wrap gap-3">
+
+Apply Now:
+
+OnSpot gradient or primary purple
+white text
+compact
+rounded
+
+View details:
+
+white/transparent
+soft border
+slate text
+arrow icon
+
+Do not change:
+
+routes
+handlers
+modal behavior
+application flow
+CONTENT SPACING
+
+White content area:
+
+className="px-5 py-5"
+
+Avoid excessive vertical whitespace.
+
+The card should remain compact.
+
+DESKTOP TARGET
+
+Final structure should roughly be:
+
+┌────────────────────────────────────────────────────────────┐
+│ GRADIENT                                                   │
+│                                                            │
+│ [IA] IT Administrator               ₱10,000 – ₱15,000/mo   │
+│      OnSpot                         Posted 5 months ago     │
+│      [Urgently Hiring] [Remote]     [+ Commission]         │
+│      [Full Time]                    [+ Equity]              │
+├────────────────────────────────────────────────────────────┤
+│ We are seeking a proactive Remote IT Administrator...      │
+│                                                            │
+│ [Problem Solving] [CRM] [Technical Support] [+2 more]      │
+│                                                            │
+│ [Apply Now] [View details →]                               │
+└────────────────────────────────────────────────────────────┘
+RESPONSIVE
+
+On mobile:
+
+salary block stacks below title if needed
+badges wrap cleanly
+commission/equity badges align left
+description remains full width
+buttons wrap or stack
+no horizontal scrolling
+
+Suggested:
+
+flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between
+DARK MODE
+
+Preserve dark mode.
+
+Gradient header remains unchanged.
+White content section becomes appropriate dark surface.
+
+Ensure:
+
+summary remains readable
+skills remain readable
+secondary button remains visible
+borders stay subtle
+DO NOT REMOVE EXISTING FUNCTIONALITY
+
+Preserve:
+
+search/filter/sort
+Apply flow
+View details route
+salary formatting
+posted date formatting
+summary field behavior
+urgent hiring manual control
+existing job status logic
+all backend fields
+EXPECTED RESULT
+
+The final card should match the approved reference closely in structure:
+
+gradient header
+role initials avatar
+job title/company
+Urgently Hiring / Remote / Full Time badges
+salary + posted date
+Commission / Equity badges
+description
+skill tags
+Apply Now
+View details
+
+After implementation, provide:
+
+exact files changed
+whether Commission/Equity already existed
+if new fields were added, list them
+whether a database migration is required
+confirmation that the admin form was updated
+confirmation that the old metadata row was removed
+confirmation that the Card Preview Summary remains visible
+confirmation that Urgently Hiring is now light red
+confirmation that mobile, desktop, light mode, and dark mode were tested
+
+One important correction from the earlier idea: **Commission and Equity are not the same as Full Time.** Full Time is an employment/contract type; Commission and Equity are optional compensation benefits. The prompt above tells Replit to model them that way rather than just adding decorative badges.
