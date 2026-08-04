@@ -1,0 +1,79 @@
+Please refine the visual hierarchy of the authentication actions in the main navigation bar.
+
+TARGET AREA
+The navbar currently shows:
+
+- Log In
+- Sign Up
+
+GOAL
+Make "Log In" the stronger primary action and "Sign Up" slightly less visually dominant.
+
+CURRENT ISSUE
+The "Sign Up" text/button currently competes too much with the "Log In" button.
+
+DESIGN CHANGES
+
+1. Keep "Log In" as the primary action
+- Preserve the existing bordered button style.
+- Keep its current font size and visual weight.
+- It should remain the most noticeable authentication action.
+
+2. Reduce emphasis on "Sign Up"
+- Make "Sign Up" slightly smaller than "Log In".
+- Do NOT make it tiny.
+- Reduce its font size just enough to create hierarchy.
+- Keep it readable and clearly clickable.
+
+Suggested difference:
+- Log In: current size
+- Sign Up: around 1–2px smaller or one typography step lower
+
+Example:
+- Log In: 14–16px
+- Sign Up: 13–14px
+
+Use the existing design system/Tailwind scale where possible rather than arbitrary values.
+
+3. Reduce visual weight
+For "Sign Up":
+- Use slightly lighter font weight than "Log In".
+- Keep it as a text-style action rather than a competing button.
+- Avoid adding a border or strong background.
+- Maintain enough contrast for accessibility.
+
+4. Spacing
+- Keep a comfortable gap between "Log In" and "Sign Up".
+- Do not move them too far apart.
+- Preserve alignment with the rest of the navbar.
+
+5. Hover/focus behavior
+"Sign Up" should still have a clear interactive state:
+- subtle opacity/color change
+- underline or soft brand-color transition if consistent with the existing navbar
+
+Keep keyboard focus visible.
+
+6. Responsive behavior
+Apply the same hierarchy on desktop and mobile:
+- Log In remains stronger
+- Sign Up remains secondary
+- Both remain easy to tap/click
+
+DO NOT CHANGE
+- Navbar height
+- Logo
+- Hire Talent
+- Find Work
+- Existing Log In behavior
+- Existing Sign Up behavior
+- Routes
+- Authentication logic
+
+ACCEPTANCE CRITERIA
+
+✓ "Log In" is visually stronger than "Sign Up".
+✓ "Sign Up" is slightly smaller, but still clearly readable.
+✓ "Sign Up" no longer competes with the Log In button.
+✓ Both actions remain aligned and accessible.
+✓ No authentication or routing behavior is changed.

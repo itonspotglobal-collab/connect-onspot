@@ -795,7 +795,7 @@ export function TopNavigation() {
                 </button>
                 <button
                   onClick={() => { setShowPortal(true); setModalStep("signup"); }}
-                  className="text-[13px] font-semibold text-white/65 hover:text-white transition-colors duration-200 whitespace-nowrap hover:underline"
+                  className="text-[13px] font-medium text-white/55 hover:text-white/85 transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
                   Sign Up
@@ -1153,14 +1153,10 @@ export function TopNavigation() {
               </button>
               <button
                 onClick={() => { setShowPortal(true); setModalStep("signup"); setIsMobileMenuOpen(false); }}
-                className="relative flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-bold text-base text-white overflow-hidden transition-all duration-300"
-                style={{
-                  background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                  boxShadow: '0 6px 20px rgba(58, 58, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                }}
+                className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-medium text-sm text-white/55 hover:text-white/85 transition-all duration-200"
                 data-testid="mobile-signup-button"
               >
-                <span className="relative z-10">Sign Up</span>
+                Sign Up
               </button>
             </div>
           )}
