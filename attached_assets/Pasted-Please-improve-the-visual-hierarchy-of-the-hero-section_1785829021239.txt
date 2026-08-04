@@ -1,0 +1,169 @@
+Please improve the visual hierarchy of the hero section in `FindWorkAllJobs.tsx`.
+
+CURRENT SECTION
+The hero currently contains:
+
+Eyebrow:
+"Work Without Limits"
+
+Headline:
+"Apply once. Get matched continuously"
+
+Description:
+"Submit one quick application and we'll keep matching you with relevant open roles as they become available."
+
+Search bar
+
+Browse link:
+"Browse all 4 open roles →"
+
+Popular category chips:
+- Customer Support
+- Virtual Assistant
+- Bookkeeping
+- Sales
+- Operations
+
+GOAL
+Make the hero feel more intentional, premium, and easier to scan.
+
+The user should naturally read the section in this order:
+
+1. Main headline
+2. Supporting description
+3. Search bar
+4. Browse all roles
+5. Popular categories
+6. Eyebrow should remain subtle and supportive
+
+VISUAL HIERARCHY CHANGES
+
+1. Headline — strongest element
+- Keep the headline:
+  "Apply once. Get matched continuously"
+- Make it the clear focal point.
+- Keep strong font weight.
+- Slightly optimize the max width so the line wrapping feels intentional.
+- Avoid awkward breaks.
+- Maintain strong contrast against the light gradient background.
+- Keep it centered.
+
+2. Eyebrow — lowest emphasis
+- Keep:
+  "Work Without Limits"
+- Reduce its visual dominance slightly.
+- Keep it small, subtle, and brand-colored.
+- It should support the headline, not compete with it.
+
+3. Description — secondary hierarchy
+- Keep the current description.
+- Make it clearly smaller and lighter than the headline.
+- Increase line-height for readability.
+- Constrain max width so it reads cleanly.
+- Keep centered alignment.
+
+4. Search bar — primary action
+The search bar should become the strongest interactive element.
+
+- Keep it wide and centered.
+- Slightly increase visual prominence with:
+  - clean white background
+  - subtle shadow/elevation
+  - soft border
+- Keep the bar relatively slim, not oversized.
+- Search button should have the strongest CTA styling using the OnSpot purple.
+- Maintain proper contrast.
+- Keep input and button heights aligned.
+
+5. Browse link — secondary action
+Current:
+"Browse all 4 open roles →"
+
+- Make it slightly more noticeable.
+- Place it close enough to the search bar that it feels like the alternative action.
+- Use medium font weight.
+- Keep it secondary to the Search button.
+- Add a subtle hover interaction.
+- Do not style it as strongly as the main Search CTA.
+
+6. Popular section — tertiary/supporting content
+- Keep "POPULAR" subtle.
+- Popular chips should feel like optional shortcuts.
+- Reduce their visual weight compared with Search and Browse.
+- Use:
+  - soft borders
+  - light backgrounds
+  - smaller font size
+  - moderate padding
+- Keep them easy to click without making them visually dominant.
+
+7. Improve vertical spacing
+Create clearer separation between content groups.
+
+Suggested visual rhythm:
+
+Eyebrow
+↓ small spacing
+
+Headline
+↓ medium spacing
+
+Description
+↓ larger spacing
+
+Search bar
+↓ small/medium spacing
+
+Browse all roles
+↓ larger spacing
+
+Popular label
+↓ small spacing
+
+Category chips
+
+The section should feel spacious but not disconnected.
+
+8. Preserve the background
+- Keep the existing soft white / gray / lavender gradient.
+- Keep the subtle branded purple glow.
+- Do not switch back to a dark hero.
+- Make sure the background does not overpower the content.
+
+9. Responsive behavior
+Desktop:
+- Keep centered composition.
+- Maintain strong headline presence.
+
+Tablet:
+- Reduce headline size proportionally.
+- Search bar should remain prominent.
+
+Mobile:
+- Avoid overly large title wrapping.
+- Search button/input should remain usable.
+- Category chips should wrap naturally.
+- Preserve clear hierarchy.
+
+DO NOT CHANGE
+- Existing text/copy
+- Search behavior
+- Filtering logic
+- Category chip behavior
+- Smooth scroll behavior
+- Jobs list functionality
+- Navbar
+- Footer
+
+ACCEPTANCE CRITERIA
+
+✓ Headline is the first thing users notice.
+✓ Search bar is clearly the primary action.
+✓ Browse all roles is clearly the secondary action.
+✓ Popular chips feel optional/supportive.
+✓ Eyebrow remains subtle.
+✓ Description is readable but not dominant.
+✓ Spacing feels intentional.
+✓ Hero still uses the current light branded gradient.
+✓ No functionality is broken.
+✓ Desktop, tablet, and mobile layouts remain responsive.
