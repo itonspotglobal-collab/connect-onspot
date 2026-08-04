@@ -1,0 +1,75 @@
+Please remove the closing CTA section from the `FindWorkAllJobs.tsx` page.
+
+TARGET SECTION
+
+Remove the entire section currently displayed at the bottom of the Find Work / All Jobs page containing:
+
+Heading:
+"Apply once. Get matched continuously."
+
+Description:
+"Submit one quick application and we'll keep matching you with relevant open roles as they become available."
+
+CTA Button:
+"Apply in 30 seconds →"
+
+The screenshot provided shows the exact section that should be removed.
+
+REQUIREMENTS
+
+1. Remove the entire CTA section
+- Remove the full section/container, not just its text.
+- Remove its blue/purple gradient background.
+- Remove the heading, description, and CTA button.
+- Do not leave any empty container, spacing, margin, or blank area where this section previously existed.
+
+2. Clean up related code
+- If this CTA has component-specific state, click handlers, modal triggers, constants, or imports that are ONLY used by this section, remove them as well.
+- If the "Apply in 30 seconds" button currently opens the account/profile modal, remove that trigger from this page.
+- Only remove the modal/component itself if it is no longer used anywhere else in the application.
+- Do not remove shared authentication, FindBestMatches, profile, or modal functionality that is used elsewhere.
+
+3. Page flow
+After the change, the page should flow naturally from:
+
+Hero
+↓
+Job search/results
+↓
+Job cards/listing
+↓
+Footer
+
+There should be no closing "Apply once. Get matched continuously." section between the job listings and footer.
+
+4. Preserve everything else
+Do NOT modify:
+- Find Work hero
+- Search functionality
+- Popular categories
+- Job filters
+- Sorting
+- Job cards
+- Apply Now buttons on individual jobs
+- View Details
+- Navbar
+- Footer
+- Chat widget
+- Existing job application flows
+
+5. Verify responsive layouts
+Check desktop, tablet, and mobile after removing the section.
+
+Make sure:
+- There is no excessive whitespace after the final job card.
+- Footer positioning remains correct.
+- No broken references or console errors remain.
+
+ACCEPTANCE CRITERIA
+
+✓ "Apply once. Get matched continuously." section is completely removed from `FindWorkAllJobs.tsx`.
+✓ "Apply in 30 seconds →" is no longer displayed on this page.
+✓ No empty gradient block or unnecessary whitespace remains.
+✓ Job listings transition naturally into the footer.
+✓ Unused code related exclusively to this CTA is cleaned up.
+✓ Search, filters, sorting, job applications, navbar, footer, and chat functionality remain unchanged.

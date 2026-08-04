@@ -27,13 +27,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import type { Job, Candidate } from "@shared/schema";
 import {
   buildRateDisplay,
@@ -50,7 +43,6 @@ import {
 import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 import { getJobPilotId } from "@/lib/pilotFiltering";
 import {
-  TalentLoginModal,
   loadTalentAuth,
   saveTalentAuth,
   type TalentAuthState,
@@ -59,7 +51,6 @@ import {
   buildTalentRecProfile,
   scoreJobForTalent,
 } from "@/lib/talentRecommendations";
-
 
 const POPULAR_CHIPS = [
   "Customer Support",
@@ -189,7 +180,9 @@ function JobCard({
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const tags = (job.skillTags ?? []).slice(0, 5);
-  const CategoryIcon = getCategoryIcon((job as any).jobFunction || job.category);
+  const CategoryIcon = getCategoryIcon(
+    (job as any).jobFunction || job.category,
+  );
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
   const pilotId = getJobPilotId(job);
 
@@ -311,7 +304,10 @@ function JobCard({
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
               onClick={() => {
-                if ((job as any).applicationMethod === "external_link" && job.applyLink) {
+                if (
+                  (job as any).applicationMethod === "external_link" &&
+                  job.applyLink
+                ) {
                   window.open(job.applyLink, "_blank", "noopener,noreferrer");
                 } else {
                   navigate(`/jobs/${job.id}/apply`);
@@ -438,9 +434,6 @@ export default function FindWorkAllJobs() {
     setTalentAuth(loadTalentAuth());
   }, []);
 
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-
   const { data: talentProfile, isLoading: isLoadingProfile } =
     useQuery<Candidate>({
       queryKey: ["/api/candidates", talentAuth?.candidateId],
@@ -495,7 +488,9 @@ export default function FindWorkAllJobs() {
       // If the user manually picks a chip, that single-category filter takes precedence.
       const navCatActive =
         !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
-      const normJobCat = normalizeCategory((job as any).jobFunction || job.category || "");
+      const normJobCat = normalizeCategory(
+        (job as any).jobFunction || job.category || "",
+      );
       const catPass = navCatActive
         ? navGroup.cats.some((c) => normJobCat === normalizeCategory(c))
         : category === "All Categories" ||
@@ -514,7 +509,9 @@ export default function FindWorkAllJobs() {
       const salaryPass = (() => {
         if (salary === "Any pay") return true;
         // PHP salary thresholds only apply to PHP-currency jobs
-        const jobCurrency = ((job as any).budgetCurrency || "PHP").toUpperCase();
+        const jobCurrency = (
+          (job as any).budgetCurrency || "PHP"
+        ).toUpperCase();
         if (jobCurrency !== "PHP") return true;
         // Parse a number from salaryDisplay first, fall back to legacy numeric fields
         const display: string = (job as any).salaryDisplay || "";
@@ -523,7 +520,9 @@ export default function FindWorkAllJobs() {
           const match = display.replace(/[,_]/g, "").match(/[\d]+/);
           max = match ? parseFloat(match[0]) : 0;
         } else {
-          max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
+          max = parseFloat(
+            (job as any).hourlyRateMax ?? (job as any).budget ?? "0",
+          );
         }
         if (salary === "₱30,000+") return max >= 30000;
         if (salary === "₱45,000+") return max >= 45000;
@@ -597,9 +596,6 @@ export default function FindWorkAllJobs() {
         >
           {/* Brand badge */}
           <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
-            <Badge className="rounded-full bg-[#474ead]/10 px-4 py-1.5 text-sm text-[#474ead] hover:bg-[#474ead]/10">
-              Find work on the spot. Build a global career.
-            </Badge>
             <Badge className="rounded-full bg-[#3F4698]/10 px-4 py-1.5 text-sm text-[#3F4698] hover:bg-[#3F4698]/10">
               {PILOT_CONFIG.brandPromise}
             </Badge>
@@ -607,13 +603,13 @@ export default function FindWorkAllJobs() {
 
           {/* Headline — dominant visual anchor */}
           <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-slate-900">
-            Find your next remote role.
+            Apply once. Get matched continuously
           </h1>
 
           {/* Subtitle — secondary: muted, narrow column */}
           <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
-            Work without limits — get matched with global opportunities from
-            top companies, faster and more human than a typical job board.
+            Submit one quick application and we'll keep matching you with
+            relevant open roles as they become available.
           </p>
 
           {/* Search bar — primary action, white card + gradient button */}
@@ -1079,198 +1075,9 @@ export default function FindWorkAllJobs() {
         )}
       </div>
 
-      {/* ── BOTTOM CTA ── */}
-      {!isLoading && (
-        <div
-          className="relative overflow-hidden"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 40%, rgba(110, 80, 240, 0.30) 0%, rgba(110, 80, 240, 0.13) 30%, transparent 56%), linear-gradient(135deg, #0b0838 0%, #1c1163 50%, #0e0b3a 100%)",
-          }}
-        >
-          {/* Edge ambient glows */}
-          <div className="pointer-events-none absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full bg-purple-600/18 blur-[120px]" />
-          <div className="pointer-events-none absolute -right-32 bottom-0 h-[350px] w-[350px] rounded-full bg-indigo-500/12 blur-[100px]" />
-          {/* Centered soft spotlight */}
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.18] blur-[90px]" />
 
-          <div className="relative z-10 mx-auto max-w-2xl px-6 py-20 text-center md:px-8">
-            {/* Heading */}
-            <h2 className="text-[clamp(28px,4vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] text-white">
-              Apply once. Get matched continuously
-            </h2>
 
-            {/* Description */}
-            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
-              Submit one quick application and we'll keep matching you with
-              relevant open roles as they become available.
-            </p>
 
-            {/* CTA */}
-            <div className="mt-10">
-              <button
-                onClick={() => setShowApplyModal(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#6235e8] px-9 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(98,53,232,0.45)] transition hover:bg-[#5128d4]"
-              >
-                Apply in 30 seconds
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Apply confirmation modal ── */}
-      <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
-        <DialogContent
-          className="max-w-[440px] overflow-hidden rounded-3xl border-0 p-0 shadow-[0_24px_64px_rgba(91,69,232,0.18),0_8px_24px_rgba(0,0,0,0.10)]"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% -10%, rgba(124,58,237,0.10) 0%, rgba(255,255,255,0) 60%), #ffffff",
-          }}
-        >
-          {/* Top gradient band */}
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[180px] opacity-40"
-            style={{
-              background:
-                "radial-gradient(ellipse at 50% 0%, rgba(91,69,232,0.22) 0%, rgba(124,58,237,0.08) 50%, transparent 75%)",
-            }}
-          />
-
-          <div className="relative z-10 px-8 pb-8 pt-10">
-            {/* Premium icon */}
-            <div className="mb-6 flex flex-col items-center gap-0">
-              <div className="relative flex items-center justify-center">
-                {/* Outer glow ring */}
-                <div className="absolute h-20 w-20 rounded-full bg-violet-200/40 blur-[14px]" />
-                {/* Mid ring */}
-                <div className="absolute h-16 w-16 rounded-full border border-violet-200/60 bg-violet-50/80" />
-                {/* Icon container */}
-                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_6px_24px_rgba(91,69,232,0.42)]">
-                  <svg
-                    className="h-6 w-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.75}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Header — mini hero layout */}
-            <DialogHeader className="text-center sm:text-center">
-              {/* Title — hero headline */}
-              <DialogTitle className="mx-auto max-w-[340px] text-center text-[1.65rem] font-bold leading-[1.15] tracking-[-0.025em] text-slate-900">
-                Get matched with remote opportunities
-              </DialogTitle>
-
-              {/* Subtitle — brand purple, clearly separated */}
-              <p className="mx-auto mt-4 max-w-[300px] text-[14px] font-semibold leading-snug tracking-[-0.01em] text-violet-600">
-                Create one profile. Unlock ongoing job matches.
-              </p>
-
-              {/* Description — soft, narrow, readable */}
-              <DialogDescription className="mx-auto mt-3 max-w-[260px] text-[12.5px] leading-relaxed text-slate-400">
-                We'll continuously connect you with vetted remote roles that
-                match your skills and experience.
-              </DialogDescription>
-            </DialogHeader>
-
-            {/* Benefit cards — value propositions */}
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {[
-                "One profile",
-                "Global opportunities",
-                "Continuous matching",
-              ].map((label) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2 rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50 to-indigo-50/60 px-3.5 py-2 shadow-[0_1px_3px_rgba(91,69,232,0.07)]"
-                >
-                  <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#5B45E8] to-[#8B5CF6] shadow-[0_2px_6px_rgba(91,69,232,0.30)]">
-                    <svg
-                      className="h-2 w-2 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={3.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M4.5 12.75l6 6 9-13.5"
-                      />
-                    </svg>
-                  </span>
-                  <span className="text-[12px] font-semibold text-violet-700">
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Buttons */}
-            <div className="mt-7 flex flex-col gap-3">
-              {/* Primary */}
-              <button
-                onClick={() => {
-                  setShowApplyModal(false);
-                  setShowLoginModal(true);
-                }}
-                className="w-full rounded-2xl bg-gradient-to-r from-[#5B45E8] to-[#8B5CF6] px-6 py-[13px] text-[14px] font-semibold text-white shadow-[0_6px_24px_rgba(91,69,232,0.40)] transition-all duration-150 hover:from-[#4f3ad4] hover:to-[#7c3aed] hover:shadow-[0_8px_28px_rgba(91,69,232,0.50)] active:scale-[0.985]"
-              >
-                Sign in to continue
-              </button>
-
-              {/* Secondary */}
-              <button
-                onClick={() => {
-                  setShowApplyModal(false);
-                  navigate("/find-best-matches");
-                }}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-[13px] text-[14px] font-semibold text-slate-700 shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition-all duration-150 hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-700 active:scale-[0.985]"
-              >
-                Create my profile
-              </button>
-
-              {/* Cancel */}
-              <button
-                onClick={() => setShowApplyModal(false)}
-                className="mt-1 text-[12px] font-medium text-slate-400 transition-colors hover:text-slate-600"
-              >
-                Maybe later
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Talent login modal (reused) ── */}
-      {showLoginModal && (
-        <TalentLoginModal
-          profileId={null}
-          onClose={() => setShowLoginModal(false)}
-          onSuccess={(auth) => {
-            saveTalentAuth(auth);
-            setTalentAuth(auth);
-            setShowLoginModal(false);
-            navigate("/find-work/jobs");
-          }}
-        />
-      )}
     </div>
   );
 }
