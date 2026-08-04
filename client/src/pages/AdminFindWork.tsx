@@ -295,6 +295,18 @@ function AdminJobRow({
                 <span className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</span>
               </>
             )}
+            {(job as any).compensationType ? (
+              <>
+                <span className="text-slate-300 dark:text-white/20">·</span>
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">
+                  {(job as any).compensationType === "monthly"
+                    ? "Monthly"
+                    : (job as any).compensationType === "annual"
+                    ? "Annual"
+                    : "Project-based"}
+                </span>
+              </>
+            ) : null}
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
