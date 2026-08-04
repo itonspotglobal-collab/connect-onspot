@@ -425,14 +425,40 @@ export default function FindWorkAllJobs() {
     return () => clearTimeout(timer);
   }, [search, category]);
 
-  // Activity-based recommendations
-  const [recInterests, setRecInterests] = useState<string[]>([]);
+  // Activity-based recommendations — re-read from localStorage whenever activity changes
+  const [recInterests, setRecInterests] = useState<string[]>(() => getTopUserInterests(5));
   useEffect(() => {
-    setRecInterests(getTopUserInterests(5));
+    const refresh = () => setRecInterests(getTopUserInterests(5));
+    // Re-compute on same-tab activity (dispatched by saveUserActivity)
+    window.addEventListener("userActivityUpdated", refresh);
+    // Also re-compute when the tab regains focus (cross-tab / returning user)
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("userActivityUpdated", refresh);
+      window.removeEventListener("focus", refresh);
+    };
   }, []);
-  const recommendedJobs = useMemo<Job[]>(() => {
-    if (recInterests.length === 0 || search.trim()) return [];
-    return scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
+
+  const { recommendedJobs, recsArePersonalized } = useMemo<{
+    recommendedJobs: Job[];
+    recsArePersonalized: boolean;
+  }>(() => {
+    if (search.trim()) return { recommendedJobs: [], recsArePersonalized: false };
+    if (recInterests.length > 0) {
+      const scored = scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
+      if (scored.length > 0) return { recommendedJobs: scored, recsArePersonalized: true };
+    }
+    // Fallback: top 3 open jobs by view count then recency — shown to anonymous / no-activity users
+    const fallback = [...openJobs]
+      .sort(
+        (a, b) =>
+          ((b as any).viewCount ?? 0) - ((a as any).viewCount ?? 0) ||
+          new Date((b as any).postedAt ?? b.createdAt ?? 0).getTime() -
+            new Date((a as any).postedAt ?? a.createdAt ?? 0).getTime(),
+      )
+      .slice(0, 3);
+    return { recommendedJobs: fallback, recsArePersonalized: false };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recInterests, openJobs, search]);
 
   // Talent profile-based recommendations
@@ -1041,7 +1067,9 @@ export default function FindWorkAllJobs() {
           <div className="mb-6">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#474ead]">
               <Zap className="h-4 w-4" />
-              Recommended for you — based on your recent activity
+              {recsArePersonalized
+                ? "Recommended for you — based on your recent activity"
+                : "Trending roles"}
             </div>
             <div className="space-y-3">
               {recommendedJobs.map((job) => (

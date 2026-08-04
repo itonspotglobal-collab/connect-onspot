@@ -1,0 +1,176 @@
+Please review and improve the "Recommended for you — based on your recent activity" section in `FindWorkAllJobs.tsx`.
+
+CURRENT STATE
+The recommendation section appears to already be working, but we need to make sure it is actually dynamic, personalized, and producing the expected results from real user activity.
+
+TARGET SECTION
+Label:
+"Recommended for you — based on your recent activity"
+
+GOAL
+Make sure this section is driven by real user behavior and current job data, not static or stale values.
+
+EXPECTED BEHAVIOR
+
+1. Use real user activity
+Recommendations should be based on the user's recent interactions, such as:
+- Jobs viewed
+- Jobs clicked
+- Jobs searched
+- Popular search terms used
+- Categories clicked
+- Jobs applied to
+- Job details opened
+- Recently interacted job titles/skills
+
+If the project already has existing activity tracking, reuse it.
+
+Do not create a duplicate tracking system if one already exists.
+
+2. Recommendation logic
+Use recent activity to identify relevant active jobs.
+
+Possible matching signals:
+- Similar job title
+- Similar category
+- Matching skills
+- Related keywords
+- Similar role type
+- Similar location/work setup
+- Similar industry
+
+Prioritize stronger signals first.
+
+Example:
+If the user recently viewed:
+"IT Administrator"
+
+Recommendations could include:
+- System Administrator
+- IT Support Specialist
+- Network Administrator
+- Technical Support Engineer
+
+3. Real-time / fresh behavior
+The recommendations should update when meaningful activity changes.
+
+For example:
+- User views a job
+- User searches for a new role
+- User clicks a popular job
+- User applies to a role
+
+The recommendation list should reflect that new activity on the next appropriate data refresh.
+
+If the app uses:
+- React Query
+- TanStack Query
+- SWR
+- existing state management
+- existing analytics APIs
+
+reuse the current implementation pattern.
+
+Do not add unnecessary aggressive polling.
+
+4. Only recommend valid jobs
+Recommendations must only include:
+- Active jobs
+- Published jobs
+- Open positions
+
+Exclude:
+- Closed jobs
+- Archived jobs
+- Draft jobs
+- Deleted jobs
+- Expired positions
+
+5. Avoid bad recommendations
+Do not recommend:
+- The exact job the user is currently viewing if alternatives are available
+- Jobs already closed
+- Duplicate jobs
+- Jobs that are clearly unrelated to recent activity
+
+If the user has already applied to a job, deprioritize or exclude it if appropriate.
+
+6. Ranking
+Rank recommendations by relevance.
+
+Suggested priority:
+1. Match recent job title/category
+2. Match recent skills/keywords
+3. Match repeated user activity
+4. Current job popularity/engagement
+5. Recency of job posting
+
+7. Fallback behavior
+If there is not enough recent activity:
+
+Fallback to:
+- Trending active jobs
+- Recently posted jobs
+- Most viewed jobs
+- Popular jobs
+
+Do not show an empty recommendation section unless there are genuinely no active jobs.
+
+8. Logged-out users
+If recommendations currently rely on authenticated activity:
+- Use session/local activity when available
+- Otherwise show a sensible fallback such as trending jobs
+
+Do not throw errors for anonymous users.
+
+9. Preserve recommendation label
+Keep:
+"Recommended for you — based on your recent activity"
+
+If there is no personalized data and fallback recommendations are being shown, optionally change the label to something more accurate such as:
+"Popular opportunities"
+or
+"Roles you may like"
+
+Only do this if the existing UI architecture supports it cleanly.
+
+10. Loading state
+While recommendations are being fetched:
+- Use the existing skeleton/loading treatment
+- Avoid layout shifts
+- Do not briefly show incorrect stale recommendations
+
+11. Debug and verify existing implementation
+Before rewriting the feature:
+- Inspect the current recommendation logic.
+- Confirm whether it already reads real activity data.
+- Confirm whether it refetches when activity changes.
+- Confirm that jobs are filtered to active/open roles.
+- Fix only what is necessary.
+
+Do not replace working logic unnecessarily.
+
+12. Preserve existing UI
+Do not redesign this section.
+
+Keep:
+- Current label styling
+- Job card styling
+- Sort controls
+- Filters
+- Overall layout
+
+This task is mainly about recommendation accuracy and data freshness.
+
+ACCEPTANCE CRITERIA
+
+✓ Recommendations are not hardcoded.
+✓ Results are based on real recent user activity when available.
+✓ New meaningful activity affects future recommendations.
+✓ Only active/published/open jobs are shown.
+✓ Duplicate and irrelevant jobs are avoided.
+✓ Anonymous users receive a safe fallback.
+✓ If no activity exists, useful fallback jobs are displayed.
+✓ No unnecessary polling is added.
+✓ Existing search, sorting, filters, job cards, and navigation continue working.
+✓ No console errors or broken API calls.

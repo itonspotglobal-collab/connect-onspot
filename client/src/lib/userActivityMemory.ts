@@ -128,6 +128,8 @@ export function saveUserActivity(activity: Omit<UserActivity, "createdAt"> & { c
 
     const updated = [newActivity, ...activities].slice(0, MAX_ACTIVITIES);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Notify same-tab listeners that activity data has changed
+    try { window.dispatchEvent(new CustomEvent("userActivityUpdated")); } catch {}
   } catch (err) {
     console.warn("userActivityMemory: unable to save", err);
   }
