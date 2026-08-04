@@ -13,17 +13,9 @@ import {
   Layers,
   Zap,
   Users,
-  Clock3,
   SlidersHorizontal,
   X,
   Calendar,
-  Code2,
-  HeadphonesIcon,
-  BarChart2,
-  PenLine,
-  Settings2,
-  ShoppingBag,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -146,22 +138,48 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "featured", label: "Featured" },
 ];
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  development: Code2,
-  "tech support": Code2,
-  design: PenLine,
-  marketing: BarChart2,
-  sales: ShoppingBag,
-  admin: Settings2,
-  "customer success": HeadphonesIcon,
-  operations: Settings2,
-  finance: FileText,
-};
+// ── Role initials avatar ──────────────────────────────────────────────────────
+const STOP_WORDS = new Set([
+  "a", "an", "the", "and", "or", "of", "in", "for", "to", "with", "at", "by",
+  "from", "on", "as", "is", "be", "its",
+]);
 
-function getCategoryIcon(category: string | null): React.ElementType {
-  const key = (category ?? "").toLowerCase();
-  return CATEGORY_ICONS[key] ?? BriefcaseBusiness;
+function getRoleInitials(title: string): string {
+  const words = title
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((w) => !STOP_WORDS.has(w.toLowerCase()));
+  if (words.length === 0) return "JB";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[1][0]}`.toUpperCase();
 }
+
+// ── Soft badge palette ────────────────────────────────────────────────────────
+const BADGE_STYLES: Record<string, string> = {
+  urgent:
+    "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+  "top-paying":
+    "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+  "multiple-slots":
+    "bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
+  remote:
+    "bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20",
+  hybrid:
+    "bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
+  onsite:
+    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600/30",
+  "full-time":
+    "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+  "part-time":
+    "bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20",
+  contract:
+    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600/30",
+  pilot:
+    "bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
+};
+const BADGE_DEFAULT =
+  "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-600/30";
 
 function JobCard({
   job,
@@ -177,10 +195,8 @@ function JobCard({
   const allTags = (job.skillTags ?? []) as string[];
   const visibleTags = allTags.slice(0, 4);
   const extraTags = allTags.length > 4 ? allTags.length - 4 : 0;
-  const CategoryIcon = getCategoryIcon((job as any).jobFunction || job.category);
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
   const pilotId = getJobPilotId(job);
-  const visibleBadges = badges.slice(0, 3);
   const jobFunction = ((job as any).jobFunction || job.category) as string | null | undefined;
   const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
 
@@ -193,6 +209,24 @@ function JobCard({
     pay === "Rate TBD"             ? "rate to be discussed" :
     null;
 
+  // Build soft-colored badge list (utility badges + location + contract type), cap at 3
+  const cardBadges: { key: string; label: string }[] = [];
+  for (const b of badges) {
+    cardBadges.push({ key: b.key, label: b.label });
+  }
+  const locLower = (job.location ?? "").toLowerCase();
+  if (locLower.includes("remote"))       cardBadges.push({ key: "remote",    label: "Remote" });
+  else if (locLower.includes("hybrid"))  cardBadges.push({ key: "hybrid",    label: "Hybrid" });
+  else if (locLower.includes("on-site") || locLower.includes("onsite"))
+                                         cardBadges.push({ key: "onsite",    label: "Onsite" });
+  const ctNorm = (job.contractType ?? "").toLowerCase().replace(/-/g, "");
+  if      (ctNorm === "fulltime")  cardBadges.push({ key: "full-time", label: "Full Time" });
+  else if (ctNorm === "parttime")  cardBadges.push({ key: "part-time", label: "Part Time" });
+  else if (ctNorm === "contract")  cardBadges.push({ key: "contract",  label: "Contract"  });
+  const visibleBadges = cardBadges.slice(0, 3);
+
+  const initials = getRoleInitials((job as any).professionalRoleName || job.title || "");
+
   return (
     <motion.div
       layout
@@ -200,91 +234,88 @@ function JobCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28 }}
     >
-      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all hover:shadow-[0_8px_32px_rgba(71,78,173,0.12)] dark:border-white/10 dark:bg-white/[0.03]">
+      <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-[#0d0f20]">
 
-        {/* ── Gradient header ─────────────────────────────────────────────── */}
-        <header className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {/* ── Top section ─────────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
 
-            {/* Left: icon + title + company + badges */}
-            <div className="flex items-start gap-3 min-w-0">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 mt-0.5"
-                aria-hidden="true"
-              >
-                <CategoryIcon className="h-5 w-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                {/* Title */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                  <h3 className="text-lg font-semibold leading-tight text-white">
-                    {(job as any).professionalRoleName || job.title}
-                  </h3>
-                  {pilotId && (
-                    <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#3F4698]">
-                      Pilot
-                    </span>
-                  )}
-                </div>
-                {/* Original role name (internal) */}
-                {(job as any).originalRoleName && (
-                  <p className="text-[11px] italic text-white/60 truncate leading-tight mb-1">
-                    {(job as any).originalRoleName}
-                  </p>
-                )}
-                {/* Company */}
-                <p className="text-sm text-white/75 mb-2">
-                  {job.company ?? "OnSpot"}
+          {/* Left: initials avatar + title + company + badges */}
+          <div className="flex items-start gap-3 min-w-0">
+            {/* Role initials avatar */}
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-semibold text-indigo-700 shadow-sm dark:bg-indigo-500/15 dark:text-indigo-300"
+              aria-hidden="true"
+            >
+              {initials}
+            </div>
+
+            <div className="min-w-0">
+              {/* Title */}
+              <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-white md:text-lg">
+                {(job as any).professionalRoleName || job.title}
+              </h3>
+              {/* Original role name (internal annotation) */}
+              {(job as any).originalRoleName && (
+                <p className="mt-0.5 text-[11px] italic text-slate-400 truncate leading-tight">
+                  {(job as any).originalRoleName}
                 </p>
-                {/* Badges — cap at 3 */}
-                {visibleBadges.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {visibleBadges.map((b) => (
-                      <span
-                        key={b.key}
-                        className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white"
-                      >
-                        {b.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right: compensation + period + posted */}
-            <div className="shrink-0 sm:text-right">
-              <div className="text-base font-semibold text-white md:text-lg">{pay}</div>
-              {salaryPeriodLabel && (
-                <div className="mt-0.5 text-xs text-white/70">{salaryPeriodLabel}</div>
               )}
-              <div className="mt-1.5 text-[11px] text-white/55">
-                Posted {timeAgo}
+              {/* Company */}
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                {job.company ?? "OnSpot"}
+              </p>
+              {/* Badges */}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {pilotId && (
+                  <span className={`inline-flex items-center rounded-md border px-2 py-1 text-[11px] font-medium ${BADGE_STYLES.pilot}`}>
+                    Pilot
+                  </span>
+                )}
+                {visibleBadges.map((b) => (
+                  <span
+                    key={b.key}
+                    className={`inline-flex items-center rounded-md border px-2 py-1 text-[11px] font-medium ${BADGE_STYLES[b.key] ?? BADGE_DEFAULT}`}
+                  >
+                    {b.label}
+                  </span>
+                ))}
               </div>
             </div>
-
           </div>
-        </header>
+
+          {/* Right: salary + period */}
+          <div className="shrink-0 sm:text-right">
+            <div className="text-base font-semibold text-slate-900 dark:text-white md:text-lg">
+              {pay}
+            </div>
+            {salaryPeriodLabel && (
+              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {salaryPeriodLabel}
+              </div>
+            )}
+          </div>
+
+        </div>
 
         {/* ── Metadata row ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-px bg-slate-100 border-b border-slate-100 md:grid-cols-4 dark:bg-white/[0.05] dark:border-white/[0.06]">
+        <div className="grid grid-cols-2 border-t border-slate-100 md:grid-cols-4 dark:border-slate-800">
           {([
-            { icon: Layers,            label: "CONTRACT", value: contractLabel },
-            { icon: MapPin,            label: "LOCATION", value: job.location ?? "Remote" },
-            { icon: BriefcaseBusiness, label: "FUNCTION", value: jobFunction || "—" },
-            { icon: Calendar,          label: "POSTED",   value: timeAgo },
-          ] as const).map(({ icon: Icon, label, value }) => (
+            { icon: Layers,            label: "Contract",  value: contractLabel },
+            { icon: MapPin,            label: "Location",  value: job.location ?? "Remote" },
+            { icon: BriefcaseBusiness, label: "Function",  value: jobFunction || "—" },
+            { icon: Calendar,          label: "Posted",    value: timeAgo },
+          ] as const).map(({ icon: Icon, label, value }, i) => (
             <div
               key={label}
-              className="flex flex-col gap-0.5 bg-white px-4 py-3 dark:bg-[#0b0d1f]"
+              className={`px-5 py-3 ${i > 0 ? "border-l border-slate-100 dark:border-slate-800" : ""}`}
             >
-              <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 <Icon className="h-3 w-3" aria-hidden="true" />
                 {label}
-              </div>
-              <div className="text-sm font-medium capitalize text-slate-800 dark:text-white truncate">
+              </p>
+              <p className="mt-0.5 truncate text-sm font-medium capitalize text-slate-700 dark:text-slate-200">
                 {value}
-              </div>
+              </p>
             </div>
           ))}
         </div>
@@ -296,7 +327,7 @@ function JobCard({
           {(() => {
             const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
-              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {preview}
               </p>
             ) : null;
@@ -315,13 +346,13 @@ function JobCard({
               {visibleTags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
                 >
                   {tag}
                 </span>
               ))}
               {extraTags > 0 && (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-400">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500">
                   +{extraTags} more
                 </span>
               )}
@@ -329,9 +360,10 @@ function JobCard({
           )}
 
           {/* Actions */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button
-              className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
+              size="sm"
+              className="rounded-lg bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
               onClick={() => {
                 if (
                   (job as any).applicationMethod === "external_link" &&
@@ -347,7 +379,7 @@ function JobCard({
             </Button>
             <button
               onClick={() => onNavigate(job.id)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#474ead]/30 hover:bg-[#474ead]/5 hover:text-[#474ead] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
             >
               View details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
