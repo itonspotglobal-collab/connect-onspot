@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -12,7 +12,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
 import { buildRateDisplay, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
-
 
 
 const roles = [
@@ -412,6 +411,31 @@ const CULTURAL_FIT_DEFAULTS = [
   "Values long-term partnerships over short-term engagements",
 ];
 
+/** Score DB jobs against the current job; returns top N excluding itself */
+function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
+  const currentCategory = (currentJob.category ?? "").toLowerCase().trim();
+  const currentTags = new Set((currentJob.skillTags ?? []).map((t) => t.toLowerCase()));
+  const stopWords = new Set(["for", "the", "and", "with", "role", "jobs", "this", "that"]);
+  const currentTitleWords = new Set(
+    (currentJob.title ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w)),
+  );
+
+  return allJobs
+    .filter((j) => j.id !== currentJob.id)
+    .map((j) => {
+      let score = 0;
+      if (currentCategory && (j.category ?? "").toLowerCase().trim() === currentCategory) score += 3;
+      const jTags = (j.skillTags ?? []).map((t) => t.toLowerCase());
+      score += jTags.filter((t) => currentTags.has(t)).length;
+      const jWords = (j.title ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w));
+      score += jWords.filter((w) => currentTitleWords.has(w)).length;
+      return { job: j, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ job }) => job);
+}
 function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
@@ -656,6 +680,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             </div>
           </Section>
         )}
+
+        {/* Similar roles strip */}
+        <DbSimilarJobsSection currentJob={job} navigate={navigate} />
 
         {/* Bottom CTA */}
         <div className="border-t border-slate-100 px-5 py-8 text-center dark:border-white/[0.08] md:px-8 md:py-10">
@@ -1012,6 +1039,25 @@ export default function FindWorkJob() {
           </div>
         </Section>
 
+        {/* Similar static roles strip */}
+        {(() => {
+          const similar = getSimilarStaticRoles(role.id, 3);
+          if (similar.length === 0) return null;
+          return (
+            <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
+              <div className="mb-5 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#474ead]" />
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar roles you might like</h2>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {similar.map((r) => (
+                  <StaticSimilarCard key={r.id} role={r} navigate={navigate} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── BOTTOM CTA ── */}
         <div className="border-t border-slate-100 px-5 py-8 text-center dark:border-white/[0.08] md:px-8 md:py-10">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to apply?</p>
@@ -1039,5 +1085,114 @@ export default function FindWorkJob() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/** Score static roles against the current role; returns top N excluding itself */
+function getSimilarStaticRoles(currentId: number, limit = 3): Role[] {
+  const current = roles.find((r) => r.id === currentId);
+  if (!current) return roles.filter((r) => r.id !== currentId).slice(0, limit);
+  const stopWords = new Set(["for", "the", "and", "with", "role"]);
+  const currentCategory = current.category.toLowerCase();
+  const currentTagsSet = new Set(current.tags.map((t) => t.toLowerCase()));
+  const currentTitleWords = new Set(
+    current.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w)),
+  );
+
+  return roles
+    .filter((r) => r.id !== currentId)
+    .map((r) => {
+      let score = 0;
+      if (r.category.toLowerCase() === currentCategory) score += 3;
+      score += r.tags.filter((t) => currentTagsSet.has(t.toLowerCase())).length;
+      const rWords = r.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w));
+      score += rWords.filter((w) => currentTitleWords.has(w)).length;
+      return { role: r, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ role }) => role);
+}
+
+function DbSimilarJobsSection({
+  currentJob,
+  navigate,
+}: {
+  currentJob: Job;
+  navigate: (p: string) => void;
+}) {
+  const { data: allJobsData } = useQuery<{ items: Job[]; meta: unknown }>({
+    queryKey: ["/api/jobs/search", "open-similar"],
+    queryFn: async () => {
+      const res = await fetch("/api/jobs/search?status=open&limit=50");
+      if (!res.ok) throw new Error("fetch-failed");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const similar = useMemo(() => {
+    const allJobs: Job[] = allJobsData?.items ?? [];
+    return getSimilarDbJobs(currentJob, allJobs, 3);
+  }, [currentJob, allJobsData]);
+
+  if (similar.length === 0) return null;
+
+  return (
+    <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
+      <div className="mb-5 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-[#474ead]" />
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar roles you might like</h2>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {similar.map((job) => (
+          <DbSimilarCard key={job.id} job={job} navigate={navigate} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DbSimilarCard({ job, navigate }: { job: Job; navigate: (p: string) => void }) {
+  const pay = buildRateDisplay(job);
+  const displayTitle = (job as any).professionalRoleName || job.title;
+  return (
+    <button
+      onClick={() => navigate(`/find-work/job/${job.id}`)}
+      className="group flex w-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-[#474ead]/40 hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#474ead]/50"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-[#474ead] dark:text-white dark:group-hover:text-indigo-300">
+          {displayTitle}
+        </p>
+        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#474ead] dark:text-slate-600 dark:group-hover:text-indigo-300" />
+      </div>
+      {job.category && (
+        <span className="inline-flex w-fit rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead] dark:bg-[#474ead]/20">
+          {job.category}
+        </span>
+      )}
+      <p className="text-xs text-slate-500 dark:text-slate-400">{pay}</p>
+    </button>
+  );
+}
+
+function StaticSimilarCard({ role, navigate }: { role: Role; navigate: (p: string) => void }) {
+  return (
+    <button
+      onClick={() => navigate(`/find-work/job/${role.id}`)}
+      className="group flex w-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-[#474ead]/40 hover:shadow-md dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#474ead]/50"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-[#474ead] dark:text-white dark:group-hover:text-indigo-300">
+          {role.title}
+        </p>
+        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#474ead] dark:text-slate-600 dark:group-hover:text-indigo-300" />
+      </div>
+      <span className="inline-flex w-fit rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead] dark:bg-[#474ead]/20">
+        {role.category}
+      </span>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{role.pay}</p>
+    </button>
   );
 }
