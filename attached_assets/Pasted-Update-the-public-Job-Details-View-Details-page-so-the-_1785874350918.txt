@@ -1,0 +1,296 @@
+Update the public Job Details / View Details page so the newly added compensation details are also displayed there.
+
+Primary file:
+- `client/src/pages/FindWorkJob.tsx`
+
+Also inspect:
+- shared job types/interfaces
+- any reusable detail section/card component
+- API response mapping if needed
+
+GOAL
+
+The Job Details hero section already shows:
+- Compensation
+- Location
+- Function
+- Contract
+- Benefits
+
+Now also display:
+- Commission
+- Equity
+
+These should appear in the same general style and structure as the existing Benefits section.
+
+IMPORTANT
+
+Do not remove or replace the existing Benefits block.
+
+Commission and Equity are separate additional compensation fields and should be displayed only when enabled for that job.
+
+1. ADD AN "ADDITIONAL COMPENSATION" BLOCK
+
+In the top job details hero area, add a new compact information card similar to the existing Benefits card.
+
+Suggested label:
+
+`Additional Compensation`
+
+Inside the card, show badges for the enabled options.
+
+Example:
+
+```text
+Additional Compensation
+
+[Commission] [Equity]
+
+If only Commission is enabled:
+
+Additional Compensation
+
+[Commission]
+
+If only Equity is enabled:
+
+Additional Compensation
+
+[Equity]
+
+If neither is enabled:
+
+do not render the card at all
+do not leave empty spacing
+USE EXISTING JOB FIELDS
+
+Use the actual fields already added to the project, for example:
+
+job.hasCommission
+job.hasEquity
+
+or whatever field names were implemented.
+
+Do not create duplicate fields if these already exist.
+
+CARD STYLE
+
+Match the existing Benefits card in the hero section.
+
+Suggested structure:
+
+{(job.hasCommission || job.hasEquity) && (
+  <div className="
+    rounded-xl
+    border border-white/10
+    bg-white/5
+    px-4 py-3
+  ">
+    <div className="flex items-center gap-2 text-xs text-white/50">
+      {/* icon */}
+      <span>Additional Compensation</span>
+    </div>
+
+    <div className="mt-2 flex flex-wrap gap-2">
+      {job.hasCommission && (
+        <span className="
+          inline-flex items-center
+          rounded-full
+          bg-emerald-400/15
+          px-3 py-1
+          text-xs font-medium
+          text-emerald-200
+          ring-1 ring-emerald-300/20
+        ">
+          Commission
+        </span>
+      )}
+
+      {job.hasEquity && (
+        <span className="
+          inline-flex items-center
+          rounded-full
+          bg-purple-400/15
+          px-3 py-1
+          text-xs font-medium
+          text-purple-200
+          ring-1 ring-purple-300/20
+        ">
+          Equity
+        </span>
+      )}
+    </div>
+  </div>
+)}
+
+Adjust colors if needed to match the exact existing Benefits styling.
+
+LAYOUT
+
+The hero currently has information cards such as:
+
+Compensation
+Location
+Function
+Contract
+Benefits
+
+Integrate Additional Compensation naturally into this layout.
+
+Preferred order:
+
+Compensation
+
+Location | Function | Contract
+
+Benefits
+
+Additional Compensation
+
+Or, if the responsive grid supports it well:
+
+Benefits | Additional Compensation
+
+Do not make the hero excessively tall.
+
+RESPONSIVE BEHAVIOR
+
+Desktop:
+
+Benefits and Additional Compensation can sit side-by-side if space allows
+
+Example:
+
+<div className="grid gap-3 sm:grid-cols-2">
+
+Mobile:
+
+stack them vertically
+badges should wrap naturally
+no overflow
+COMMISSION / EQUITY DETAILS
+
+If the project also contains text fields such as:
+
+commissionDetails
+equityDetails
+
+then show those details where appropriate.
+
+Example:
+
+Commission
+Performance-based commission available
+
+Equity
+Equity package available
+
+But if only boolean fields exist:
+
+display only the badges
+do not invent additional text
+ICON
+
+Use an existing icon library already in the project.
+
+A suitable icon could be:
+
+DollarSign
+BadgeDollarSign
+Coins
+CircleDollarSign
+
+Do not add a new icon library.
+
+KEEP BENEFITS UNCHANGED
+
+The existing Benefits block should continue to display items like:
+
+SSS
+PAG-IBIG
+PHIL-HEALTH
+Bonus
+
+Do not merge these into Commission/Equity.
+
+Benefits and Additional Compensation should remain conceptually separate.
+
+DO NOT SHOW EMPTY VALUES
+
+Use conditional rendering:
+
+const hasAdditionalCompensation =
+  job.hasCommission || job.hasEquity;
+
+Only render the section when this evaluates to true.
+
+FULL DATA FLOW CHECK
+
+Since these fields were recently added, verify that the individual job details API includes them.
+
+Trace:
+
+database
+backend job details endpoint
+API serializer/mapping
+frontend Job type
+FindWorkJob.tsx
+
+If the listing endpoint has Commission/Equity but the individual job-details endpoint does not, fix that mapping.
+
+PRESERVE EXISTING PAGE
+
+Do not change:
+
+Job Description
+Responsibilities
+Skills Needed
+System Requirements
+Growth Path
+Benefits
+Compensation
+Apply button
+Back to All Jobs
+Urgently Hiring
+Location
+Function
+Contract
+salary formatting
+
+This change is only to include the newly added compensation information in the View Details page.
+
+EXPECTED RESULT
+
+For a job with both fields enabled, the hero should roughly contain:
+
+IT Administrator
+OnSpot
+
+Compensation
+₱10,000 – ₱15,000/month
+
+Location        Function        Contract
+Remote          Development     Full Time
+
+Benefits
+[SSS] [PAG-IBIG] [PHIL-HEALTH] [Bonus]
+
+Additional Compensation
+[Commission] [Equity]
+
+[Apply in 30 seconds →]
+
+For a job with neither Commission nor Equity:
+
+the Additional Compensation card should not appear
+
+After implementing, provide:
+
+exact files changed
+confirmation that Commission and Equity appear in View Details
+confirmation that they are conditionally rendered
+confirmation that Benefits remain separate
+whether any API mapping was missing and had to be fixed
+confirmation that the layout works on desktop and mobile
+
+I’d keep **Benefits** and **Additional Compensation** as two separate cards. That makes it immediately clear that things like SSS/PAG-IBIG are benefits, while Commission/Equity affect how the role may compensate the applicant.

@@ -514,25 +514,57 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             </div>
           </div>
 
+          {/* Location / Function / Contract */}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              { icon: MapPin, label: "Location", value: job.location ?? "Remote" },
+              { icon: MapPin,             label: "Location", value: job.location ?? "Remote" },
               { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
-              { icon: Layers, label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
-              ...( ((job as any).benefits as string | null | undefined)?.trim()
-                ? [{ icon: Gift, label: "Benefits", value: ((job as any).benefits as string).trim(), isBenefits: true }]
-                : []
-              ),
-            ].map(({ icon: Icon, label, value, isBenefits }) => (
+              { icon: Layers,            label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
+            ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
                 <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>
-                {isBenefits
-                  ? <BenefitsDisplay benefits={value} dark />
-                  : <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
-                }
+                <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
               </div>
             ))}
           </div>
+
+          {/* Benefits + Additional Compensation — side by side on desktop, stacked on mobile */}
+          {(((job as any).benefits as string | null | undefined)?.trim() || (job as any).hasCommission || (job as any).hasEquity) && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+
+              {/* Benefits */}
+              {((job as any).benefits as string | null | undefined)?.trim() && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                    <Gift className="h-3 w-3" /> Benefits
+                  </div>
+                  <BenefitsDisplay benefits={((job as any).benefits as string).trim()} dark />
+                </div>
+              )}
+
+              {/* Additional Compensation */}
+              {((job as any).hasCommission || (job as any).hasEquity) && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                    <DollarSign className="h-3 w-3" /> Additional Compensation
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(job as any).hasCommission && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-200 ring-1 ring-emerald-300/20">
+                        Commission
+                      </span>
+                    )}
+                    {(job as any).hasEquity && (
+                      <span className="inline-flex items-center rounded-full bg-purple-400/15 px-3 py-1 text-xs font-medium text-purple-200 ring-1 ring-purple-300/20">
+                        Equity
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
 
           <div className="mt-6 flex gap-3">
             {(job as any).applicationMethod === "built_in_form" ? (
