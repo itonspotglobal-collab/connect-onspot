@@ -1,0 +1,417 @@
+Update the job-opening cards on the public Find Work page to show more useful information in a compact, modern layout.
+
+Primary file to inspect:
+- `client/src/pages/FindWorkAllJobs.tsx`
+
+Also inspect the actual component used by the Find Work listing if the cards are rendered in a separate file.
+
+VISUAL DIRECTION
+
+Use the attached compact job-card reference only as inspiration for:
+- stronger information hierarchy
+- compact badge placement
+- salary emphasis
+- cleaner use of horizontal space
+- easier scanning
+
+Do not copy the reference design exactly. Keep the existing OnSpot branding, colors, rounded cards, buttons, and overall visual identity.
+
+IMPORTANT
+
+Do not remove any existing information or functionality.
+
+The updated card must still support and display:
+- Job title
+- Company name
+- Contract type
+- Salary or rate
+- Location/work setup
+- Posted date
+- Card Preview Summary / short job description
+- Skills and tags
+- Apply Now button
+- View details button
+- Existing badges such as Urgently Hiring
+- Existing routes and click behavior
+
+GOAL
+
+Make each job card more informative while remaining compact and easy to scan.
+
+The card should have three main areas:
+
+1. Header containing:
+   - role icon
+   - job title
+   - company
+   - primary badges
+   - salary/rate
+
+2. Compact metadata row containing:
+   - contract type
+   - location/work setup
+   - category or function
+   - posted date
+
+3. Content area containing:
+   - short job summary
+   - skills/tags
+   - action buttons
+
+DESKTOP LAYOUT
+
+Use a card structure similar to:
+
+```tsx
+<article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <header>
+    {/* title, company, badges, compensation */}
+  </header>
+
+  <div>
+    {/* metadata */}
+  </div>
+
+  <div>
+    {/* summary, tags and actions */}
+  </div>
+</article>
+
+Keep the existing OnSpot blue-to-purple gradient header, but make it more structured.
+
+HEADER LAYOUT
+
+On desktop, use two sides:
+
+Left:
+
+role icon
+job title
+company name
+badges directly below or beside the company name
+
+Right:
+
+compensation
+salary period
+posted date
+
+Suggested layout:
+
+<div className="flex items-start justify-between gap-5">
+
+The job title should remain the strongest item but should not be oversized:
+
+text-lg font-semibold
+
+Company name:
+
+text-sm text-white/75
+
+SALARY / RATE
+
+Keep salary clearly visible in the top-right area.
+
+Examples:
+
+₱10,000–₱15,000/month
+₱50,000/month
+Rate TBD
+
+Use the actual existing salary formatting logic.
+
+Do not hardcode salary values.
+
+Recommended styling:
+
+text-base md:text-lg font-semibold text-white
+
+Show the salary period in a smaller style where available:
+
+text-xs text-white/70
+
+Examples:
+
+per month
+per hour
+fixed project
+rate to be discussed
+
+If the current database does not have a separate pay-period field, continue using the existing contract duration or salary-formatting logic.
+
+BADGES
+
+Display the most important badges near the job title and company name.
+
+Possible existing badges:
+
+Urgently Hiring
+Remote
+Hybrid
+Onsite
+Full Time
+Part Time
+Contract
+Top Paying
+Featured
+Multiple Slots
+
+Rules:
+
+Do not duplicate information excessively
+Display no more than three prominent badges in the header
+Remaining information can stay in the metadata row
+Urgently Hiring must continue using the saved optional boolean field
+Do not restore automatic urgent-hiring calculations
+
+Use smaller compact pills:
+
+inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
+
+Keep colors consistent with the existing badge system.
+
+METADATA ROW
+
+Keep all current metadata, but make it compact.
+
+Display:
+
+Contract
+Salary, if it is not already sufficiently represented in the header
+Location/work setup
+Function/category
+Posted date
+
+Suggested responsive grid:
+
+grid grid-cols-2 md:grid-cols-4
+
+or:
+
+grid gap-px bg-slate-200 md:grid-cols-4
+
+Each metadata item should contain:
+
+small icon
+uppercase label
+value
+
+Labels:
+
+text-[11px] font-semibold uppercase tracking-wider text-slate-400
+
+Values:
+
+text-sm font-medium text-slate-800
+
+Avoid tall metadata cells. Use approximately:
+
+px-4 py-3
+
+JOB SUMMARY
+
+Continue displaying the separate Card Preview Summary field.
+
+Do not display the full role description on the listing card.
+
+Use:
+
+cardPreviewSummary
+jobSummary
+or the actual field name already implemented in the project
+
+Fallback:
+
+If the summary is empty, use a safely shortened version of the full role description
+Do not render raw HTML tags
+Do not break older job records
+
+The summary must remain visually constrained so cards do not become too tall:
+
+line-clamp-2
+
+or a maximum of three lines if two lines feel too restrictive.
+
+Suggested styling:
+
+text-sm leading-6 text-slate-600
+
+Do not reintroduce a save-time character limit for the summary field.
+
+SKILLS AND TAGS
+
+Continue displaying the existing skills and tags.
+
+Use compact pills:
+
+rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs
+
+Display up to three or four tags on the card.
+
+If more tags exist, show a compact indicator such as:
+
++3 more
+
+Do not remove the complete list from the full job details page.
+
+OPTIONAL COMPENSATION BENEFITS
+
+The reference image includes items such as:
+
+Commission
+Equity
+
+Before implementing these, inspect whether equivalent fields already exist.
+
+If these fields already exist:
+
+display them as compact optional badges
+only show them when populated or enabled
+
+If they do not exist:
+
+do not fabricate them from other fields
+add optional boolean or text fields only if appropriate for this project:
+hasCommission
+commissionDetails
+hasEquity
+equityDetails
+
+If new fields are added, update the complete data flow:
+
+database schema
+backend validation
+create API
+update API
+API responses
+frontend types
+admin create/edit form
+public card
+
+In the admin form, place them under a section such as:
+
+Additional Compensation
+
+Possible controls:
+
+Offers commission
+Offers equity
+Optional details for each
+
+These fields must be optional and hidden from the card when empty or false.
+
+Do not add these new fields unless they can be implemented safely without disrupting existing records.
+
+ACTION AREA
+
+Keep both existing actions:
+
+Apply Now
+View details
+
+Suggested layout:
+
+<div className="flex flex-wrap items-center gap-3">
+
+Keep Apply Now as the primary gradient button.
+
+Keep View details as the secondary outlined button.
+
+Do not change:
+
+routes
+handlers
+tracking
+application modal behavior
+authentication behavior
+
+RESPONSIVE DESIGN
+
+Desktop:
+
+title and salary appear on opposite sides
+metadata uses a compact horizontal row
+summary and tags remain easy to scan
+
+Mobile:
+
+header stacks vertically
+salary aligns below the title
+badges wrap cleanly
+metadata becomes a two-column grid or stacked rows
+buttons remain easy to tap
+no horizontal overflow
+no text clipping
+
+Suggested responsive header:
+
+flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between
+
+ACCESSIBILITY
+
+Ensure:
+
+proper heading hierarchy
+buttons remain keyboard accessible
+badges are readable
+icons that are decorative use aria-hidden="true"
+text contrast is sufficient
+no important information is available through color alone
+
+DARK MODE
+
+Preserve the existing dark-mode behavior.
+
+Add matching dark: styles for:
+
+card background
+borders
+metadata backgrounds
+summary text
+skill pills
+secondary buttons
+
+DO NOT CHANGE
+
+Do not change:
+
+full Job Details page content
+Card Preview Summary behavior
+API routes unnecessarily
+existing search, sorting, or filtering
+application flow
+job posting status logic
+existing admin functionality
+existing job data
+
+EXPECTED RESULT
+
+Each job card should now clearly present:
+
+role
+company
+compensation
+important badges
+location
+function/category
+contract type
+posted date
+short job summary
+skills
+optional compensation benefits when supported
+Apply Now
+View details
+
+The design should be more informative than the current card but still compact, minimal, and consistent with OnSpot.
+
+After implementing, provide:
+
+Exact files changed
+A summary of the new card layout
+Confirmation that all previous details remain available
+Any new optional fields added
+Whether a database migration is required
+The fallback used for older jobs
+Confirmation that mobile, desktop, light mode, and dark mode were tested
+
+This version tells Replit to preserve the current description, salary, metadata, tags, and buttons while reorganizing them into a more compact card inspired by the reference.

@@ -18,7 +18,6 @@ import {
   X,
   Calendar,
   Code2,
-  Heart,
   HeadphonesIcon,
   BarChart2,
   PenLine,
@@ -43,6 +42,7 @@ import {
 } from "@/lib/userActivityMemory";
 import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 import { getJobPilotId } from "@/lib/pilotFiltering";
+import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 import {
   loadTalentAuth,
   saveTalentAuth,
@@ -174,12 +174,24 @@ function JobCard({
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
-  const tags = (job.skillTags ?? []).slice(0, 5);
-  const CategoryIcon = getCategoryIcon(
-    (job as any).jobFunction || job.category,
-  );
+  const allTags = (job.skillTags ?? []) as string[];
+  const visibleTags = allTags.slice(0, 4);
+  const extraTags = allTags.length > 4 ? allTags.length - 4 : 0;
+  const CategoryIcon = getCategoryIcon((job as any).jobFunction || job.category);
   const contractLabel = (job.contractType ?? "Full-time").replace(/-/g, " ");
   const pilotId = getJobPilotId(job);
+  const visibleBadges = badges.slice(0, 3);
+  const jobFunction = ((job as any).jobFunction || job.category) as string | null | undefined;
+  const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
+
+  // Human-readable salary period derived from compensationType
+  const compensationType = (job as any).compensationType as string | null | undefined;
+  const salaryPeriodLabel =
+    compensationType === "monthly" ? "per month" :
+    compensationType === "annual"  ? "per year"  :
+    compensationType === "project" ? "fixed project" :
+    pay === "Rate TBD"             ? "rate to be discussed" :
+    null;
 
   return (
     <motion.div
@@ -188,95 +200,101 @@ function JobCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28 }}
     >
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all hover:shadow-[0_8px_32px_rgba(71,78,173,0.12)] dark:border-white/10 dark:bg-white/[0.03]">
-        {/* ── Gradient header ─────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
-          {/* Left: icon + title + meta */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
-              <CategoryIcon className="h-5 w-5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                <h3 className="text-base font-bold leading-tight text-white truncate">
-                  {(job as any).professionalRoleName || job.title}
-                </h3>
-                {pilotId && (
-                  <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#3F4698]">
-                    Pilot
-                  </span>
-                )}
-              </div>
-              {(job as any).originalRoleName && (
-                <p className="text-[11px] italic text-white/65 truncate leading-tight mb-0.5">
-                  {(job as any).originalRoleName}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-white/70">
-                  {job.company ?? "OnSpot"}
-                </span>
-                <span className="text-white/30 text-xs">·</span>
-                {badges.length > 0 ? (
-                  badges.map((b) => (
-                    <span
-                      key={b.key}
-                      className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white"
-                    >
-                      {b.label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold text-white capitalize">
-                    {contractLabel}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all hover:shadow-[0_8px_32px_rgba(71,78,173,0.12)] dark:border-white/10 dark:bg-white/[0.03]">
 
-          {/* Right: pay + posted */}
-          <div className="shrink-0 text-right">
-            <div className="text-base font-bold text-white">{pay}</div>
-            <div className="mt-0.5 text-[11px] text-white/60">
-              Job posted {timeAgo}
+        {/* ── Gradient header ─────────────────────────────────────────────── */}
+        <header className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
+            {/* Left: icon + title + company + badges */}
+            <div className="flex items-start gap-3 min-w-0">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 mt-0.5"
+                aria-hidden="true"
+              >
+                <CategoryIcon className="h-5 w-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                {/* Title */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                  <h3 className="text-lg font-semibold leading-tight text-white">
+                    {(job as any).professionalRoleName || job.title}
+                  </h3>
+                  {pilotId && (
+                    <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#3F4698]">
+                      Pilot
+                    </span>
+                  )}
+                </div>
+                {/* Original role name (internal) */}
+                {(job as any).originalRoleName && (
+                  <p className="text-[11px] italic text-white/60 truncate leading-tight mb-1">
+                    {(job as any).originalRoleName}
+                  </p>
+                )}
+                {/* Company */}
+                <p className="text-sm text-white/75 mb-2">
+                  {job.company ?? "OnSpot"}
+                </p>
+                {/* Badges — cap at 3 */}
+                {visibleBadges.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {visibleBadges.map((b) => (
+                      <span
+                        key={b.key}
+                        className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white"
+                      >
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Right: compensation + period + posted */}
+            <div className="shrink-0 sm:text-right">
+              <div className="text-base font-semibold text-white md:text-lg">{pay}</div>
+              {salaryPeriodLabel && (
+                <div className="mt-0.5 text-xs text-white/70">{salaryPeriodLabel}</div>
+              )}
+              <div className="mt-1.5 text-[11px] text-white/55">
+                Posted {timeAgo}
+              </div>
+            </div>
+
           </div>
-        </div>
+        </header>
 
         {/* ── Metadata row ────────────────────────────────────────────────── */}
-        {(() => {
-          const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
-          const metaItems = [
-            { icon: Layers, label: "CONTRACT", value: contractLabel },
-            { icon: DollarSign, label: "SALARY", value: pay },
-            { icon: MapPin, label: "LOCATION", value: job.location ?? "Remote" },
-            { icon: Calendar, label: "POSTED", value: timeAgo },
-            ...(jobBenefits ? [{ icon: Heart, label: "BENEFITS", value: jobBenefits }] : []),
-          ];
-          const cols = metaItems.length === 5 ? "grid-cols-5" : "grid-cols-4";
-          return (
-            <div className={`grid ${cols} divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]`}>
-              {metaItems.map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex flex-col gap-0.5 px-4 py-3">
-                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    <Icon className="h-3 w-3" />
-                    {label}
-                  </div>
-                  <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">
-                    {value}
-                  </div>
-                </div>
-              ))}
+        <div className="grid grid-cols-2 gap-px bg-slate-100 border-b border-slate-100 md:grid-cols-4 dark:bg-white/[0.05] dark:border-white/[0.06]">
+          {([
+            { icon: Layers,            label: "CONTRACT", value: contractLabel },
+            { icon: MapPin,            label: "LOCATION", value: job.location ?? "Remote" },
+            { icon: BriefcaseBusiness, label: "FUNCTION", value: jobFunction || "—" },
+            { icon: Calendar,          label: "POSTED",   value: timeAgo },
+          ] as const).map(({ icon: Icon, label, value }) => (
+            <div
+              key={label}
+              className="flex flex-col gap-0.5 bg-white px-4 py-3 dark:bg-[#0b0d1f]"
+            >
+              <div className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <Icon className="h-3 w-3" aria-hidden="true" />
+                {label}
+              </div>
+              <div className="text-sm font-medium capitalize text-slate-800 dark:text-white truncate">
+                {value}
+              </div>
             </div>
-          );
-        })()}
+          ))}
+        </div>
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
+
+          {/* Job summary */}
           {(() => {
-            const preview =
-              (job as any).jobSummary?.trim() || job.description?.trim();
+            const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
               <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                 {preview}
@@ -284,10 +302,17 @@ function JobCard({
             ) : null;
           })()}
 
-          {/* Skill tags */}
-          {tags.length > 0 && (
+          {/* Benefits chips — only when populated */}
+          {jobBenefits && (
+            <div className="mt-3">
+              <BenefitsDisplay benefits={jobBenefits} />
+            </div>
+          )}
+
+          {/* Skill tags — up to 4 with overflow indicator */}
+          {visibleTags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {tags.map((tag) => (
+              {visibleTags.map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
@@ -295,11 +320,16 @@ function JobCard({
                   {tag}
                 </span>
               ))}
+              {extraTags > 0 && (
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-400">
+                  +{extraTags} more
+                </span>
+              )}
             </div>
           )}
 
           {/* Actions */}
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
               className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-6 text-white border-0"
               onClick={() => {
@@ -319,11 +349,12 @@ function JobCard({
               onClick={() => onNavigate(job.id)}
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[#474ead]/30 hover:bg-[#474ead]/5 hover:text-[#474ead] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
             >
-              View details <ArrowRight className="h-3.5 w-3.5" />
+              View details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
+
         </div>
-      </div>
+      </article>
     </motion.div>
   );
 }
