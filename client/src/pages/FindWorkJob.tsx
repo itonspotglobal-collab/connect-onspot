@@ -736,8 +736,12 @@ export default function FindWorkJob() {
         tags: dbJob.skillTags ?? undefined,
         page: "FindWorkJob",
       });
-      // Increment server-side view count (fire-and-forget; non-critical)
-      fetch(`/api/jobs/${dbJob.id}/view`, { method: "POST" }).catch(() => {});
+      // Increment server-side view count once per browser session per job
+      const sessionKey = `viewed_job_${dbJob.id}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "1");
+        fetch(`/api/jobs/${dbJob.id}/view`, { method: "POST" }).catch(() => {});
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbJob, isStaticId, rawId]);
