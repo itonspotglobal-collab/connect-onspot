@@ -99,6 +99,8 @@ export const defaultFormData = {
   applyLink: "",
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
+  // Benefits / HMO
+  benefits: "",
   // Currency
   currency: "PHP",
   customCurrencyCode: "",
@@ -153,6 +155,8 @@ export function jobToFormData(job: Job): JobFormData {
     applyLink: (job as any).applyLink || "",
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
+    // Benefits / HMO
+    benefits: (job as any).benefits || "",
     // Currency
     currency: (job as any).budgetCurrency || "PHP",
     customCurrencyCode: (job as any).customCurrencyCode || "",
@@ -350,6 +354,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Urgently Hiring flag (always send so unchecking a previously set job clears it)
     payload.urgentlyHiring = formData.urgentlyHiring;
+
+    // Benefits / HMO (always send so admins can clear the value)
+    payload.benefits = formData.benefits.trim() || null;
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -695,6 +702,23 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 </p>
               </div>
             )}
+
+            {/* ── HMO / Benefits ── */}
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="modal-benefits">
+                HMO / Benefits
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="modal-benefits"
+                value={formData.benefits}
+                onChange={(e) => updateField("benefits", e.target.value)}
+                placeholder="e.g. HMO upon regularization, 1 dependent, paid leave"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional — add HMO coverage or other notable benefits for this role.
+              </p>
+            </div>
 
             {/* ── Urgently Hiring toggle ── */}
             <div className="mt-4 flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">

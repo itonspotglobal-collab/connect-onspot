@@ -174,6 +174,7 @@ export const jobs = pgTable("jobs", {
   isClientSubmitted: boolean("is_client_submitted").notNull().default(false),
   existingJobId: varchar("existing_job_id"), // set when approvalStatus = linked_to_existing
   urgentlyHiring: boolean("urgently_hiring").notNull().default(false),
+  benefits: text("benefits"),
   proposalCount: integer("proposal_count").default(0),
   viewCount: integer("view_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

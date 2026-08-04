@@ -518,6 +518,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               { icon: MapPin, label: "Location", value: job.location ?? "Remote" },
               { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
               { icon: Layers, label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
+              ...( ((job as any).benefits as string | null | undefined)?.trim()
+                ? [{ icon: Gift, label: "HMO / Benefits", value: ((job as any).benefits as string).trim() }]
+                : []
+              ),
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
                 <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>

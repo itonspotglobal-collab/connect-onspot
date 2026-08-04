@@ -18,6 +18,7 @@ import {
   X,
   Calendar,
   Code2,
+  Heart,
   HeadphonesIcon,
   BarChart2,
   PenLine,
@@ -244,28 +245,32 @@ function JobCard({
         </div>
 
         {/* ── Metadata row ────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]">
-          {[
+        {(() => {
+          const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
+          const metaItems = [
             { icon: Layers, label: "CONTRACT", value: contractLabel },
             { icon: DollarSign, label: "SALARY", value: pay },
-            {
-              icon: MapPin,
-              label: "LOCATION",
-              value: job.location ?? "Remote",
-            },
+            { icon: MapPin, label: "LOCATION", value: job.location ?? "Remote" },
             { icon: Calendar, label: "POSTED", value: timeAgo },
-          ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="flex flex-col gap-0.5 px-4 py-3">
-              <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                <Icon className="h-3 w-3" />
-                {label}
-              </div>
-              <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">
-                {value}
-              </div>
+            ...(jobBenefits ? [{ icon: Heart, label: "HMO / BENEFITS", value: jobBenefits }] : []),
+          ];
+          const cols = metaItems.length === 5 ? "grid-cols-5" : "grid-cols-4";
+          return (
+            <div className={`grid ${cols} divide-x divide-slate-100 border-b border-slate-100 dark:divide-white/[0.06] dark:border-white/[0.06]`}>
+              {metaItems.map(({ icon: Icon, label, value }) => (
+                <div key={label} className="flex flex-col gap-0.5 px-4 py-3">
+                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <Icon className="h-3 w-3" />
+                    {label}
+                  </div>
+                  <div className="text-sm font-semibold capitalize text-slate-800 dark:text-white truncate">
+                    {value}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
@@ -426,7 +431,9 @@ export default function FindWorkAllJobs() {
   }, [search, category]);
 
   // Activity-based recommendations — re-read from localStorage whenever activity changes
-  const [recInterests, setRecInterests] = useState<string[]>(() => getTopUserInterests(5));
+  const [recInterests, setRecInterests] = useState<string[]>(() =>
+    getTopUserInterests(5),
+  );
   useEffect(() => {
     const refresh = () => setRecInterests(getTopUserInterests(5));
     // Re-compute on same-tab activity (dispatched by saveUserActivity)
@@ -443,10 +450,12 @@ export default function FindWorkAllJobs() {
     recommendedJobs: Job[];
     recsArePersonalized: boolean;
   }>(() => {
-    if (search.trim()) return { recommendedJobs: [], recsArePersonalized: false };
+    if (search.trim())
+      return { recommendedJobs: [], recsArePersonalized: false };
     if (recInterests.length > 0) {
       const scored = scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
-      if (scored.length > 0) return { recommendedJobs: scored, recsArePersonalized: true };
+      if (scored.length > 0)
+        return { recommendedJobs: scored, recsArePersonalized: true };
     }
     // Fallback: top 3 open jobs by view count then recency — shown to anonymous / no-activity users
     const fallback = [...openJobs]
@@ -458,7 +467,7 @@ export default function FindWorkAllJobs() {
       )
       .slice(0, 3);
     return { recommendedJobs: fallback, recsArePersonalized: false };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recInterests, openJobs, search]);
 
   // Talent profile-based recommendations
@@ -692,7 +701,7 @@ export default function FindWorkAllJobs() {
               onClick={scrollToJobs}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
             >
-              Browse all {isLoading ? "…" : openJobs.length} open roles
+              Browse all open roles
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -1117,10 +1126,6 @@ export default function FindWorkAllJobs() {
           </div>
         )}
       </div>
-
-
-
-
     </div>
   );
 }

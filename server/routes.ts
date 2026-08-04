@@ -776,6 +776,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  view_count migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add benefits column to jobs table ────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS benefits text`);
+    console.log("✅ Migration: jobs.benefits column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  benefits migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(

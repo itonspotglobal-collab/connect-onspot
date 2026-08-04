@@ -1,0 +1,222 @@
+Please add an optional HMO / Benefits metadata field to the Find Work job posting flow.
+
+GOAL
+Some job openings include HMO or other benefits, while others do not.
+
+We need to:
+1. Add HMO/Benefits as optional metadata for job openings.
+2. Display it on the public Find Work job cards/details only when data exists.
+3. Add the corresponding field to the Admin / Find Work job creation and editing flow, specifically `JobFormModal`.
+4. Preserve all existing job posting functionality.
+
+==================================================
+1. DATA MODEL / JOB METADATA
+==================================================
+
+Add a new optional field for each job opening.
+
+Suggested field name:
+`benefits`
+or
+`hmoBenefits`
+
+Preferred:
+Use a generic field such as:
+`benefits`
+
+Reason:
+This allows us to support HMO and other benefits later instead of limiting the field to HMO only.
+
+Type:
+- Optional string/text
+OR
+- Optional string array if the existing job metadata structure supports multiple values cleanly.
+
+Examples:
+"HMO upon regularization"
+"HMO + 1 dependent"
+"HMO, paid leave, equipment provided"
+"Health coverage after probation"
+
+Important:
+- This field must NOT be required.
+- Existing job records without this field must continue working.
+- Handle null, undefined, and empty values safely.
+- No migration should break existing postings.
+
+==================================================
+2. ADMIN / FIND WORK — JobFormModal
+==================================================
+
+Update the existing `JobFormModal` used in Admin / Find Work.
+
+Add a new optional field:
+
+Label:
+"HMO / Benefits"
+
+Optional helper text:
+"Optional — add HMO coverage or other notable benefits for this role."
+
+Placeholder:
+"e.g. HMO upon regularization, 1 dependent, paid leave"
+
+Requirements:
+- Field is optional.
+- Allow admins to create a job without entering benefits.
+- Existing job edit flow should populate the saved value.
+- Admin should be able to update or clear the benefits value.
+- Save the value using the same API/database flow used by the other job metadata fields.
+- Keep validation consistent with the existing form architecture.
+- Do not introduce a separate save process.
+
+If the form already uses:
+- React Hook Form
+- Zod
+- Yup
+- shared schemas/types
+
+update the existing schema/type instead of creating duplicate validation logic.
+
+==================================================
+3. PUBLIC JOB LISTING — FindWorkAllJobs
+==================================================
+
+Update the job metadata displayed in `FindWorkAllJobs.tsx`.
+
+If a job has HMO/Benefits information:
+- Show a metadata item labeled:
+  "HMO / BENEFITS"
+
+Value:
+Use the saved benefits value.
+
+Example:
+
+HMO / BENEFITS
+HMO + 1 dependent
+
+If a job does NOT have benefits:
+- Do not render the metadata block.
+- Do not show:
+  "N/A"
+  "-"
+  "None"
+- The layout should close the gap naturally.
+
+==================================================
+4. JOB DETAILS PAGE
+==================================================
+
+If there is a dedicated job details page/modal, also display the benefits information there.
+
+Recommended placement:
+Near the other job metadata such as:
+- Contract
+- Salary
+- Location
+- Posted
+- Work setup
+
+Then include:
+- HMO / Benefits
+
+Only render it when populated.
+
+If the job details page already has a "Benefits" or similar section, reuse that instead of creating a duplicate section.
+
+==================================================
+5. VISUAL DESIGN
+==================================================
+
+Keep HMO/Benefits consistent with the existing metadata design.
+
+Use:
+- Existing metadata typography
+- Existing icon treatment
+- Existing spacing
+- Existing borders/grid
+
+Optional icon:
+Use an existing health/medical/benefits icon from the project's current icon library if appropriate.
+
+Do not introduce a new visual style just for this field.
+
+Because the field is optional:
+- Metadata grid/layout must remain balanced when it is absent.
+- Avoid empty columns.
+
+==================================================
+6. TYPES / API / DATABASE
+==================================================
+
+Update all relevant layers consistently:
+
+- Job TypeScript interface/type
+- JobFormModal form type
+- Validation schema
+- Create-job API payload
+- Update-job API payload
+- Backend/database model
+- API response mapping
+- FindWorkAllJobs data mapping
+- Job details mapping
+
+Before adding a new database field:
+- Inspect whether a generic `benefits`, `metadata`, or similar field already exists.
+- Reuse an existing suitable field if available.
+- Do not duplicate existing data structures.
+
+==================================================
+7. BACKWARD COMPATIBILITY
+==================================================
+
+Existing jobs without HMO/Benefits must remain fully functional.
+
+Make sure:
+- No TypeScript errors occur for older records.
+- Public pages do not crash on missing benefits.
+- Admin editing works for existing postings.
+- Existing API consumers continue working.
+
+==================================================
+8. DO NOT CHANGE
+==================================================
+
+Do not modify:
+- Existing salary behavior
+- Contract metadata
+- Location
+- Posted date
+- Job search
+- Recommendations
+- Popular jobs logic
+- Sorting
+- Filters
+- Apply Now
+- View Details
+- Existing admin job management behavior unrelated to benefits
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+✓ Admin `JobFormModal` has an optional "HMO / Benefits" field.
+
+✓ Admin can create a job with or without benefits.
+
+✓ Admin can edit or remove benefits from an existing job.
+
+✓ Benefits are persisted correctly.
+
+✓ `FindWorkAllJobs.tsx` displays HMO/Benefits only when the job contains a value.
+
+✓ Jobs without benefits do not show an empty metadata item.
+
+✓ Job details also show benefits when available.
+
+✓ Existing job records remain compatible.
+
+✓ No TypeScript, API, database, or console errors are introduced.
+
+✓ Existing job search, filters, sorting, recommendations, and application flows continue working.
