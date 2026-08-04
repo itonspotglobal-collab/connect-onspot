@@ -1,0 +1,356 @@
+Please enhance the existing Salary / Compensation functionality for job postings.
+
+CONTEXT
+
+We currently have the following fields in the Admin `JobFormModal`:
+
+- Currency
+- Salary
+- Benefits (optional)
+
+On the public job details page, salary is displayed inside the existing:
+
+"Compensation"
+
+metadata card.
+
+We now need to specify HOW the compensation is paid.
+
+==================================================
+1. ADD A COMPENSATION TYPE / PAY PERIOD FIELD
+==================================================
+
+Add a new field to the Salary / Rate section of `JobFormModal`.
+
+Label:
+"Compensation Type"
+
+Options:
+
+- Monthly
+- Annual
+- Project-based
+
+A simple select/dropdown is appropriate for THIS field because these are standardized compensation periods.
+
+Suggested internal values:
+
+monthly
+annual
+project
+
+Do not create a completely separate Benefits-style free-text field for this.
+
+Position the field logically with the existing compensation fields.
+
+Recommended form order:
+
+Currency
+↓
+Salary
+↓
+Compensation Type
+↓
+Benefits (optional)
+
+==================================================
+2. DATA MODEL
+==================================================
+
+Add the compensation type to the existing job data model.
+
+Suggested field:
+
+compensationType?: "monthly" | "annual" | "project"
+
+Before adding a new field, inspect the existing schema/model to see whether there is already a field such as:
+
+- salaryType
+- payPeriod
+- compensationPeriod
+- compensationType
+- rateType
+
+If an appropriate field already exists, REUSE IT.
+
+Do not create duplicate fields.
+
+==================================================
+3. PUBLIC DISPLAY
+==================================================
+
+Do NOT create a new metadata card.
+
+Continue using the existing:
+
+"Compensation"
+
+metadata card.
+
+Combine the existing salary/rate and compensation type inside this card.
+
+Examples:
+
+Compensation
+$500/month
+
+Compensation
+₱30,000/month
+
+Compensation
+$60,000/year
+
+Compensation
+₱750,000/year
+
+Compensation
+$1,500/project
+
+The compensation type should therefore determine the suffix:
+
+Monthly → /month
+Annual → /year
+Project-based → /project
+
+==================================================
+4. IMPORTANT: KEEP SALARY FULLY CUSTOMIZABLE
+==================================================
+
+Do NOT convert the existing Salary field into a numeric-only input.
+
+The Salary field must remain free-text because admins may need values such as:
+
+500
+
+30,000 – 50,000
+
+Competitive
+
+Rate TBD
+
+Starting at 40,000
+
+Up to 80,000
+
+The compensation type should supplement the salary value, not replace it.
+
+Example stored data:
+
+currency: "USD"
+salary: "500"
+compensationType: "monthly"
+
+Public output:
+
+$500/month
+
+Another example:
+
+currency: "PHP"
+salary: "30,000 – 50,000"
+compensationType: "monthly"
+
+Public output:
+
+₱30,000 – ₱50,000/month
+
+Use the project's existing currency formatting behavior where possible.
+
+==================================================
+5. RATE TBD / CUSTOM TEXT HANDLING
+==================================================
+
+Be careful with custom salary values.
+
+If salary is:
+
+"Rate TBD"
+
+Do NOT produce:
+
+"Rate TBD/month"
+
+Instead show:
+
+"Rate TBD"
+
+Likewise, avoid awkward combinations such as:
+
+"Competitive/month"
+
+If the salary value is clearly non-numeric/custom compensation copy, preserve the admin-entered text appropriately.
+
+Do not blindly append the compensation period to every string.
+
+==================================================
+6. EXISTING JOBS / BACKWARD COMPATIBILITY
+==================================================
+
+This change must NOT break existing jobs.
+
+Older jobs may not have `compensationType`.
+
+For those jobs:
+
+- Continue displaying their existing compensation exactly as it works today.
+- Do not show undefined/null.
+- Do not require admins to immediately update existing records.
+
+The new field can be optional at the database/schema level for backward compatibility.
+
+For newly created jobs, however, encourage admins to select a Compensation Type whenever a specific salary/rate is entered.
+
+==================================================
+7. EDITING JOBS
+==================================================
+
+When editing an existing job:
+
+- Load the saved compensation type into `JobFormModal`.
+- Allow admins to change it.
+- Save changes through the existing update-job flow.
+
+Do not create a separate API/update process.
+
+==================================================
+8. ADMIN FORM UX
+==================================================
+
+Update the Salary / Rate helper copy so the relationship is clear.
+
+For example:
+
+SALARY / RATE
+
+"Enter the compensation amount applicants should see, then select how the role is paid."
+
+Currency
+[ USD — US Dollar ]
+
+Salary
+[ 500 ]
+
+Compensation Type
+[ Monthly ▼ ]
+
+Benefits (optional)
+[ ... ]
+
+Helper under Compensation Type:
+
+"Choose whether this compensation is monthly, annual, or project-based."
+
+Keep the form clean and avoid unnecessary explanatory text.
+
+==================================================
+9. FINDWORKALLJOBS / JOB CARDS
+==================================================
+
+If compensation is also displayed on `FindWorkAllJobs.tsx` job cards, use the same formatting logic there.
+
+Example:
+
+SALARY
+$500/month
+
+Do not display the compensation type as another metadata column.
+
+==================================================
+10. JOB DETAILS PAGE
+==================================================
+
+Update the existing Compensation card on the job details page.
+
+Current example:
+
+Compensation (USD)
+$500/month
+
+Keep this general structure.
+
+The only difference is that `/month`, `/year`, or `/project` should now come from the saved compensation type instead of being assumed/hardcoded.
+
+==================================================
+11. CENTRALIZE FORMATTING
+==================================================
+
+IMPORTANT:
+
+Do not duplicate compensation formatting logic across multiple components.
+
+If compensation is displayed in multiple places, create/reuse a shared formatter/helper such as:
+
+formatCompensation(job)
+
+It should handle:
+
+- Currency
+- Salary
+- Compensation type
+- Rate TBD
+- Missing values
+- Existing legacy jobs
+
+This ensures the same compensation is displayed consistently on:
+
+- FindWorkAllJobs job cards
+- Job details
+- Other Find Work components
+
+==================================================
+12. DO NOT CHANGE
+==================================================
+
+Do not modify:
+
+- Benefits functionality
+- Contract
+- Location
+- Function/category
+- Job application flow
+- Search
+- Recommendations
+- Popular jobs
+- Filters
+- Sorting
+- Existing job card design
+
+This task is specifically about improving the existing Compensation metadata.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+✓ `JobFormModal` contains a Compensation Type field.
+
+✓ Options are:
+  - Monthly
+  - Annual
+  - Project-based
+
+✓ Currency and Salary continue working.
+
+✓ Salary remains customizable/free-text.
+
+✓ Compensation Type is saved with the job.
+
+✓ Editing a job restores the saved value.
+
+✓ Public Compensation metadata combines the information.
+
+Examples:
+
+$500/month
+₱30,000/month
+$60,000/year
+₱100,000/project
+
+✓ No separate metadata card is created for the compensation type.
+
+✓ "Rate TBD" and similar custom values do not become awkward strings such as "Rate TBD/month".
+
+✓ Existing jobs without compensationType continue working.
+
+✓ Compensation formatting is consistent across job cards and job details.
+
+✓ No regressions are introduced to Benefits or other job metadata.

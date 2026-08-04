@@ -101,6 +101,8 @@ export const defaultFormData = {
   urgentlyHiring: false,
   // Benefits / HMO
   benefits: "",
+  // Compensation type
+  compensationType: "" as "" | "monthly" | "annual" | "project",
   // Currency
   currency: "PHP",
   customCurrencyCode: "",
@@ -157,6 +159,8 @@ export function jobToFormData(job: Job): JobFormData {
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
     // Benefits / HMO
     benefits: (job as any).benefits || "",
+    // Compensation type
+    compensationType: (job as any).compensationType || "",
     // Currency
     currency: (job as any).budgetCurrency || "PHP",
     customCurrencyCode: (job as any).customCurrencyCode || "",
@@ -357,6 +361,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Benefits / HMO (always send so admins can clear the value)
     payload.benefits = formData.benefits.trim() || null;
+
+    // Compensation type (always send so admins can clear the value)
+    payload.compensationType = formData.compensationType || null;
 
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
@@ -611,9 +618,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               Salary / Rate
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              Enter exactly what you want applicants to see — e.g.{" "}
-              <em>$800/month</em>, <em>₱30,000 – ₱50,000/month</em>,{" "}
-              <em>Competitive</em>, or <em>Rate TBD</em>. Leave blank to show "Rate TBD".
+              Enter the compensation amount applicants should see, then select how the role is paid.
             </p>
 
             {/* Currency selector */}
@@ -671,10 +676,31 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 type="text"
                 value={formData.salaryDisplay}
                 onChange={(e) => updateField("salaryDisplay", e.target.value)}
-                placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}800/month or Competitive`}
+                placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}800 or 30,000 – 50,000`}
               />
               <p className="text-xs text-muted-foreground">
-                This exact text appears on the public job listing. Leave blank for "Rate TBD".
+                Enter the amount (e.g. 500, 30,000 – 50,000) or custom text (e.g. Competitive, Rate TBD). Leave blank for "Rate TBD".
+              </p>
+            </div>
+
+            {/* Compensation Type */}
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="modal-compensation-type">Compensation Type</Label>
+              <Select
+                value={formData.compensationType}
+                onValueChange={(v) => updateField("compensationType", v)}
+              >
+                <SelectTrigger id="modal-compensation-type">
+                  <SelectValue placeholder="Select type…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="project">Project-based</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose whether this compensation is monthly, annual, or project-based.
               </p>
             </div>
 
