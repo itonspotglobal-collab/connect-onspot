@@ -528,13 +528,13 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             ))}
           </div>
 
-          {/* Benefits + Additional Compensation — side by side on desktop, stacked on mobile */}
+          {/* Benefits + Additional Compensation — flex row on desktop, stacked on mobile */}
           {(((job as any).benefits as string | null | undefined)?.trim() || (job as any).hasCommission || (job as any).hasEquity) && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-stretch">
 
-              {/* Benefits */}
+              {/* Benefits — takes remaining width */}
               {((job as any).benefits as string | null | undefined)?.trim() && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3">
                   <div className="flex items-center gap-1.5 text-[10px] text-white/40">
                     <Gift className="h-3 w-3" /> Benefits
                   </div>
@@ -542,20 +542,20 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                 </div>
               )}
 
-              {/* Additional Compensation */}
+              {/* Additional Compensation — compact, content-sized */}
               {((job as any).hasCommission || (job as any).hasEquity) && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
+                <div className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 lg:w-auto lg:min-w-[220px] lg:max-w-[320px]">
                   <div className="flex items-center gap-1.5 text-[10px] text-white/40">
                     <DollarSign className="h-3 w-3" /> Additional Compensation
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(job as any).hasCommission && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-200 ring-1 ring-emerald-300/20">
+                      <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-200">
                         Commission
                       </span>
                     )}
                     {(job as any).hasEquity && (
-                      <span className="inline-flex items-center rounded-full bg-purple-400/15 px-3 py-1 text-xs font-medium text-purple-200 ring-1 ring-purple-300/20">
+                      <span className="inline-flex items-center rounded-full bg-purple-400/15 px-3 py-1 text-xs font-medium text-purple-200">
                         Equity
                       </span>
                     )}

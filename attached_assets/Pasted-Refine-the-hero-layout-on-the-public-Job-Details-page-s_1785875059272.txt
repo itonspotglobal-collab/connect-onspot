@@ -1,0 +1,178 @@
+Refine the hero layout on the public Job Details page so the Additional Compensation section is more compact.
+
+Primary file:
+- `client/src/pages/FindWorkJob.tsx`
+
+CURRENT ISSUE
+
+The current hero layout renders:
+
+Benefits | Additional Compensation
+
+as two equal-width cards.
+
+Because Additional Compensation may only contain:
+- Commission
+- Equity
+
+the card becomes unnecessarily wide and looks visually empty.
+
+GOAL
+
+Make Additional Compensation size itself more naturally to its content while keeping Benefits visually dominant.
+
+1. CHANGE THE BENEFITS / ADDITIONAL COMPENSATION LAYOUT
+
+Instead of:
+
+```tsx
+grid sm:grid-cols-2
+
+use a layout where Benefits takes the remaining width and Additional Compensation is content-sized.
+
+Preferred desktop structure:
+
+<div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+  <div className="min-w-0 flex-1">
+    {/* Benefits */}
+  </div>
+
+  <div className="lg:w-auto lg:min-w-fit">
+    {/* Additional Compensation */}
+  </div>
+</div>
+BENEFITS CARD
+
+Benefits should take most of the available width because it can contain multiple items.
+
+Example:
+
+<div className="
+  flex-1
+  rounded-xl
+  border border-white/10
+  bg-white/5
+  px-4 py-3
+">
+ADDITIONAL COMPENSATION CARD
+
+Make this card compact.
+
+Use something like:
+
+<div className="
+  w-full
+  rounded-xl
+  border border-white/10
+  bg-white/5
+  px-4 py-3
+  lg:w-auto
+  lg:min-w-[220px]
+  lg:max-w-[320px]
+">
+
+Do not force it to occupy 50% of the row.
+
+The final width should be only large enough to comfortably show:
+
+Additional Compensation
+[Commission] [Equity]
+KEEP BADGES COMPACT
+
+Keep:
+
+[Commission] [Equity]
+
+on one line when space allows.
+
+Use:
+
+<div className="mt-2 flex flex-wrap gap-2">
+
+Badge examples:
+
+Commission:
+
+className="
+  inline-flex items-center
+  rounded-full
+  bg-emerald-400/15
+  px-3 py-1
+  text-xs font-medium
+  text-emerald-200
+"
+
+Equity:
+
+className="
+  inline-flex items-center
+  rounded-full
+  bg-purple-400/15
+  px-3 py-1
+  text-xs font-medium
+  text-purple-200
+"
+MATCH HEIGHT CLEANLY
+
+If Benefits and Additional Compensation are side-by-side on desktop, keep their top and bottom alignment visually consistent.
+
+They do not need identical widths.
+
+Preferred result:
+
+┌──────────────────────────────────────┐  ┌──────────────────────┐
+│ Benefits                             │  │ Additional           │
+│ [SSS] [PAG-IBIG] [PHIL-HEALTH] ... │  │ Compensation         │
+│                                      │  │ [Commission] [Equity]│
+└──────────────────────────────────────┘  └──────────────────────┘
+MOBILE
+
+On smaller screens:
+
+stack both cards vertically
+both become full width
+keep badges wrapped naturally
+
+So:
+
+mobile = full-width stacked cards
+desktop = Benefits flexible width + compact Additional Compensation card
+CONDITIONAL RENDERING
+
+Keep existing behavior:
+
+if neither Commission nor Equity is enabled, do not render Additional Compensation
+if only one exists, the card should still remain compact
+if Benefits is empty but Additional Compensation exists, allow Additional Compensation to render normally without awkward spacing
+DO NOT CHANGE
+
+Do not change:
+
+Benefits data
+Commission/Equity data
+Salary
+Location
+Function
+Contract
+Apply button
+Job Description
+Responsibilities
+hero colors
+API logic
+
+This is a layout refinement only.
+
+EXPECTED RESULT
+
+The Additional Compensation card should no longer occupy half the row.
+
+It should visually shrink to a compact width appropriate for only two badges, while Benefits uses the remaining space.
+
+After implementing, provide:
+
+exact file changed
+the new desktop layout classes
+confirmation that Additional Compensation is no longer equal-width with Benefits
+confirmation that mobile still stacks both cards correctly
+
+I’d use roughly a **220–320px max width** for Additional Compensation on desktop. That should make the row look much more balanced.
