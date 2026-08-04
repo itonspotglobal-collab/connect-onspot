@@ -3,6 +3,7 @@ import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   Users,
@@ -134,6 +135,22 @@ export function TopNavigation() {
   const navRef = useRef<HTMLElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // ── Admin: submitted-application badge count ──────────────────────────────
+  const { data: jobAppSummary } = useQuery<{ total: number; byStatus: Record<string, number> }>({
+    queryKey: ["/api/admin/job-applications/summary"],
+    queryFn: async () => {
+      const token = localStorage.getItem("onspot_jwt_token");
+      const res = await fetch("/api/admin/job-applications/summary", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!user && user.role === "admin",
+    staleTime: 30_000,
+  });
+  const submittedCount = user?.role === "admin" ? (jobAppSummary?.byStatus?.["submitted"] ?? 0) : 0;
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   const getProfileRoute = () => {
@@ -681,7 +698,12 @@ export function TopNavigation() {
                   {getDropdownItems().map(({ label, route, icon: Icon }) => (
                     <DropdownMenuItem key={route} onClick={() => navigate(route)} className="cursor-pointer gap-2">
                       <Icon className="w-4 h-4 text-muted-foreground" />
-                      {label}
+                      <span className="flex-1">{label}</span>
+                      {label === "Job Applications" && submittedCount > 0 && (
+                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
+                          {submittedCount > 99 ? "99+" : submittedCount}
+                        </span>
+                      )}
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
@@ -2449,4 +2471,3 @@ export function TopNavigation() {
     </>
   );
 }
-
