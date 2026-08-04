@@ -736,8 +736,13 @@ export default function FindWorkJob() {
         tags: dbJob.skillTags ?? undefined,
         page: "FindWorkJob",
       });
-      // Increment server-side view count once per browser session per job
-      const sessionKey = `viewed_job_${dbJob.id}`;
+      // Increment server-side view count once per browser session per job.
+      // Include the updatedAt timestamp so a materially changed job resets
+      // the guard and counts the re-visit as a genuine new view.
+      const versionTag = dbJob.updatedAt
+        ? new Date(dbJob.updatedAt).getTime()
+        : "0";
+      const sessionKey = `viewed_job_${dbJob.id}_v${versionTag}`;
       if (!sessionStorage.getItem(sessionKey)) {
         sessionStorage.setItem(sessionKey, "1");
         fetch(`/api/jobs/${dbJob.id}/view`, { method: "POST" }).catch(() => {});
