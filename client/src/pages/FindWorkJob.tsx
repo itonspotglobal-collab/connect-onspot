@@ -530,11 +530,11 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
           {/* Benefits + Additional Compensation — flex row on desktop, stacked on mobile */}
           {(((job as any).benefits as string | null | undefined)?.trim() || (job as any).hasCommission || (job as any).hasEquity) && (
-            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-stretch">
+            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
 
-              {/* Benefits — takes remaining width */}
+              {/* Benefits — content-sized, not stretched */}
               {((job as any).benefits as string | null | undefined)?.trim() && (
-                <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3">
+                <div className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 lg:w-auto lg:min-w-[360px] lg:max-w-[620px]">
                   <div className="flex items-center gap-1.5 text-[10px] text-white/40">
                     <Gift className="h-3 w-3" /> Benefits
                   </div>

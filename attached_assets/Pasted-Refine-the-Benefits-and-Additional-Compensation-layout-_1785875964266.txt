@@ -1,0 +1,144 @@
+Refine the Benefits and Additional Compensation layout on the public Job Details page.
+
+Primary file:
+- `client/src/pages/FindWorkJob.tsx`
+
+CURRENT ISSUE
+
+The current layout makes the Benefits card stretch across almost the entire row, while Additional Compensation is compact.
+
+This creates an unbalanced look.
+
+GOAL
+
+Make BOTH cards visually compact and content-sized.
+
+Benefits should still be allowed to be wider than Additional Compensation, but it should not stretch unnecessarily across the entire available row.
+
+DESIRED DESKTOP LAYOUT
+
+Something closer to:
+
+[ Benefits: SSS | PAG-IBIG | PHIL-HEALTH | Bonus ]   [ Additional Compensation: Commission | Equity ]
+
+Both cards should sit naturally next to each other and only use the width they need.
+
+1. CHANGE THE WRAPPER
+
+Instead of using a flex layout where Benefits has `flex-1`, use a wrapping content-sized layout.
+
+Preferred:
+
+```tsx
+<div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
+BENEFITS CARD
+
+Remove:
+
+flex-1
+w-full on desktop
+any class that forces it to occupy the remaining width
+
+Use:
+
+<div className="
+  w-full
+  rounded-xl
+  border border-white/10
+  bg-white/5
+  px-4 py-3
+  lg:w-auto
+  lg:min-w-[360px]
+  lg:max-w-[620px]
+">
+
+This keeps it wide enough for multiple benefit badges, but prevents it from filling the entire row.
+
+ADDITIONAL COMPENSATION CARD
+
+Keep it compact:
+
+<div className="
+  w-full
+  rounded-xl
+  border border-white/10
+  bg-white/5
+  px-4 py-3
+  lg:w-auto
+  lg:min-w-[220px]
+  lg:max-w-[320px]
+">
+BENEFIT BADGES
+
+Keep benefit badges wrapping naturally:
+
+<div className="mt-2 flex flex-wrap gap-2">
+
+For example:
+
+[SSS] [PAG-IBIG] [PHIL-HEALTH] [Bonus]
+
+Do not spread badges across the full card width.
+
+VISUAL BALANCE
+
+The target should look more like:
+
+┌──────────────────────────────────────────────┐
+│ Benefits                                     │
+│ [SSS] [PAG-IBIG] [PHIL-HEALTH] [Bonus]      │
+└──────────────────────────────────────────────┘
+
+┌──────────────────────────────┐
+│ Additional Compensation      │
+│ [Commission] [Equity]        │
+└──────────────────────────────┘
+
+But on desktop, they should sit side-by-side when enough space exists.
+
+MOBILE
+
+On mobile:
+
+both cards can remain full width
+stack vertically
+badges should wrap naturally
+
+So:
+
+mobile = full-width stacked cards
+desktop = content-sized cards side-by-side
+DO NOT CHANGE
+
+Do not change:
+
+Benefits data
+Commission / Equity data
+card colors
+badge colors
+salary
+location
+function
+contract
+Apply button
+Job Description
+Responsibilities
+API logic
+
+This is only a layout refinement.
+
+EXPECTED RESULT
+
+The Benefits card should no longer look stretched across the whole page.
+
+It should be compact, but still wide enough to comfortably show multiple benefit badges.
+
+After implementing, provide:
+
+exact file changed
+the new wrapper classes
+the new Benefits width classes
+confirmation that Benefits no longer uses flex-1
+confirmation that mobile still stacks correctly
+
+A good target is roughly **360–620px for Benefits** and **220–320px for Additional Compensation** on desktop. That should make the hero feel much more balanced.
