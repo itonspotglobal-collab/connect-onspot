@@ -703,20 +703,21 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             )}
 
-            {/* ── HMO / Benefits ── */}
+            {/* ── Benefits ── */}
             <div className="mt-4 space-y-2">
               <Label htmlFor="modal-benefits">
-                HMO / Benefits
+                Benefits
                 <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
               </Label>
-              <Input
+              <Textarea
                 id="modal-benefits"
                 value={formData.benefits}
                 onChange={(e) => updateField("benefits", e.target.value)}
-                placeholder="e.g. HMO upon regularization, 1 dependent, paid leave"
+                placeholder="e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
+                className="min-h-[72px] resize-y"
               />
               <p className="text-xs text-muted-foreground">
-                Optional — add HMO coverage or other notable benefits for this role.
+                Optional — enter the benefits available for this role. You can include HMO, government benefits, allowances, leave, bonuses, or other perks.
               </p>
             </div>
 

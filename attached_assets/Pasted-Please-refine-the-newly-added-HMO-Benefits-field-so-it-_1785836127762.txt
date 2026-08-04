@@ -1,0 +1,106 @@
+Please refine the newly added HMO / Benefits field so it is fully customizable.
+
+IMPORTANT:
+Do NOT make this a dropdown, select menu, checkbox list, or predefined benefits list.
+
+GOAL
+Filipino talents can receive many different types of benefits, including:
+- Government-mandated benefits
+- HMO
+- Dependents
+- Paid leave
+- Bonuses
+- Allowances
+- Equipment
+- Insurance
+- Other company-specific benefits
+
+Because benefit packages vary significantly by role and employer, the admin must have full control over the exact text shown.
+
+ADMIN / JobFormModal
+
+Change the HMO / Benefits field into a free-text input.
+
+Preferred:
+Use a textarea if the existing form design supports it cleanly.
+
+Label:
+"Benefits"
+
+Helper text:
+"Optional — enter the benefits available for this role. You can include HMO, government benefits, allowances, leave, bonuses, or other perks."
+
+Placeholder example:
+"e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
+
+Requirements:
+- Fully editable free-text field.
+- No predefined options.
+- No dropdown.
+- No forced benefit categories.
+- Admin controls exactly what appears publicly.
+- Optional field.
+- Allow the field to be left blank.
+- Existing job postings without benefits must continue working.
+
+PUBLIC DISPLAY
+
+Display the entered value exactly as configured by the admin.
+
+Metadata label:
+"BENEFITS"
+
+Examples of valid values:
+
+"HMO upon regularization"
+
+"HMO + 1 dependent"
+
+"SSS, PhilHealth, Pag-IBIG"
+
+"HMO, paid leave, internet allowance"
+
+"Government-mandated benefits + performance bonus"
+
+Do not automatically rewrite, categorize, or normalize the admin's text.
+
+If no benefits value exists:
+- Do not render the Benefits metadata block.
+- Do not show N/A, None, or a placeholder.
+
+MULTI-LINE SUPPORT
+
+If using a textarea:
+- Preserve readable formatting where appropriate.
+- Support comma-separated or short multi-line benefit descriptions.
+- Public rendering should remain clean and compact.
+
+DATA MODEL
+
+Keep the field generic:
+`benefits`
+
+Prefer:
+`benefits?: string`
+
+Do not create separate fields such as:
+- hmo
+- sss
+- philHealth
+- pagIbig
+- leave
+- allowance
+
+unless those already exist for another required business purpose.
+
+The goal is flexibility, not rigid categorization.
+
+ACCEPTANCE CRITERIA
+
+✓ Benefits field is a free-text input/textarea.
+✓ There is no dropdown or predefined benefit list.
+✓ Admin can enter any combination of Philippine government benefits, HMO, allowances, leave, bonuses, or other perks.
+✓ Public job metadata displays the admin-entered text.
+✓ Benefits remain optional.
+✓ Jobs without benefits render normally.
+✓ Existing create/edit job flows continue working.

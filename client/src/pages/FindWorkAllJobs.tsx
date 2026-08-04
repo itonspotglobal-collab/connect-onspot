@@ -252,7 +252,7 @@ function JobCard({
             { icon: DollarSign, label: "SALARY", value: pay },
             { icon: MapPin, label: "LOCATION", value: job.location ?? "Remote" },
             { icon: Calendar, label: "POSTED", value: timeAgo },
-            ...(jobBenefits ? [{ icon: Heart, label: "HMO / BENEFITS", value: jobBenefits }] : []),
+            ...(jobBenefits ? [{ icon: Heart, label: "BENEFITS", value: jobBenefits }] : []),
           ];
           const cols = metaItems.length === 5 ? "grid-cols-5" : "grid-cols-4";
           return (
