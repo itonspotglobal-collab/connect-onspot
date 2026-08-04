@@ -594,31 +594,31 @@ export default function FindWorkAllJobs() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative z-10 mx-auto w-full max-w-2xl px-6 text-center"
         >
-          {/* Eyebrow — subtle support, not the hero */}
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
-            <Badge className="rounded-full bg-[#3F4698]/8 px-3 py-1 text-[11px] font-medium text-[#3F4698]/75 hover:bg-[#3F4698]/12">
+          {/* Brand badge */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <Badge className="rounded-full bg-[#3F4698]/10 px-4 py-1.5 text-sm text-[#3F4698] hover:bg-[#3F4698]/10">
               {PILOT_CONFIG.brandPromise}
             </Badge>
           </div>
 
           {/* Headline — dominant visual anchor */}
-          <h1 className="mx-auto max-w-[560px] text-[clamp(34px,5vw,60px)] font-bold leading-[1.1] tracking-[-0.035em] text-slate-900">
+          <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-slate-900">
             Apply once. Get matched continuously
           </h1>
 
-          {/* Description — secondary, readable, clearly lighter than headline */}
-          <p className="mx-auto mt-4 max-w-[400px] text-[15px] leading-[1.75] text-slate-500">
+          {/* Subtitle — secondary: muted, narrow column */}
+          <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
             Submit one quick application and we'll keep matching you with
             relevant open roles as they become available.
           </p>
 
-          {/* Search bar — primary action: elevated, clean, prominent */}
+          {/* Search bar — primary action, white card + gradient button */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               scrollToJobs();
             }}
-            className="mt-10 flex overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-[0_4px_28px_rgba(98,53,232,0.16),0_1px_6px_rgba(0,0,0,0.08)]"
+            className="mt-9 flex overflow-hidden rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_4px_24px_rgba(98,53,232,0.12),0_1px_4px_rgba(0,0,0,0.06)]"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -638,30 +638,30 @@ export default function FindWorkAllJobs() {
                 </button>
               )}
             </div>
-            {/* Search CTA — strongest interactive element */}
+            {/* Gradient button — visually strongest element in the search bar */}
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-8 text-sm font-semibold text-white shadow-[0_2px_18px_rgba(98,53,232,0.40)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4] active:scale-[0.98]"
+              className="shrink-0 rounded-lg bg-gradient-to-r from-[#5B45E8] to-[#7C3AED] px-7 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(98,53,232,0.35)] transition hover:from-[#4f3ad4] hover:to-[#6d31d4]"
             >
               Search
             </button>
           </form>
 
-          {/* Browse all — secondary action: more noticeable but subordinate to Search */}
-          <div className="mt-4">
+          {/* Browse all — secondary CTA: clearly subordinate */}
+          <div className="mt-6">
             <button
               type="button"
               onClick={scrollToJobs}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#3F4698]/70 transition-colors hover:text-[#3F4698] hover:underline hover:underline-offset-2"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
             >
               Browse all {isLoading ? "…" : openJobs.length} open roles
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Popular chips — tertiary: optional shortcuts, low visual weight */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
-            <span className="mb-1.5 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400">
+          {/* Popular chips — tertiary: subtle pills */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+            <span className="mb-2 w-full text-[9px] font-bold uppercase tracking-[0.22em] text-slate-400">
               Popular
             </span>
             {POPULAR_CHIPS.map((term) => (
@@ -672,10 +672,10 @@ export default function FindWorkAllJobs() {
                   setSearch(term);
                   scrollToJobs();
                 }}
-                className={`rounded-full border px-3.5 py-1 text-[11px] font-medium transition duration-200 ${
+                className={`rounded-full border px-4 py-1 text-[11px] font-medium transition duration-200 ${
                   search.toLowerCase() === term.toLowerCase()
-                    ? "border-violet-300 bg-violet-50 text-violet-700"
-                    : "border-slate-200/80 bg-white/60 text-slate-500 hover:border-violet-200 hover:bg-violet-50/70 hover:text-violet-600"
+                    ? "border-violet-400 bg-violet-100 text-violet-800"
+                    : "border-slate-200 bg-white/70 text-slate-500 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                 }`}
               >
                 {term}
