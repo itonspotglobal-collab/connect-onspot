@@ -601,13 +601,18 @@ export default function FindWorkAllJobs() {
             </Badge>
           </div>
 
-          {/* Headline — dominant visual anchor */}
-          <h1 className="text-[clamp(38px,5.5vw,68px)] font-bold leading-[1.1] tracking-[-0.04em] text-slate-900">
-            Apply once. Get matched continuously
+          {/* Headline — two intentional lines */}
+          <h1 className="mx-auto max-w-2xl text-center">
+            <span className="block text-[clamp(44px,6.5vw,76px)] font-extrabold leading-[1.05] tracking-[-0.045em] text-slate-900">
+              Apply Once
+            </span>
+            <span className="block text-[clamp(28px,4vw,52px)] font-bold leading-[1.1] tracking-[-0.03em] text-slate-800 mt-1">
+              Get matched continuously
+            </span>
           </h1>
 
-          {/* Subtitle — secondary: muted, narrow column */}
-          <p className="mx-auto mt-5 max-w-[380px] text-[15px] leading-relaxed text-slate-500">
+          {/* Supporting description — clearly secondary */}
+          <p className="mx-auto mt-5 max-w-[400px] text-[14px] font-normal leading-[1.7] text-slate-400">
             Submit one quick application and we'll keep matching you with
             relevant open roles as they become available.
           </p>

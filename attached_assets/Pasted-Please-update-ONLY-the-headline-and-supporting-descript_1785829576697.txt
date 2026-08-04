@@ -1,0 +1,75 @@
+Please update ONLY the headline and supporting description in the hero section of `FindWorkAllJobs.tsx`.
+
+GOAL
+Improve the visual hierarchy of these two text elements only.
+
+Do not change:
+- Search bar
+- Browse link
+- Popular categories
+- Background
+- Spacing of other sections
+- Existing functionality
+
+HEADLINE STRUCTURE
+
+Change the headline layout to exactly two lines:
+
+Line 1:
+"Apply Once"
+
+Line 2:
+"Get matched continuously"
+
+Important:
+- Force this into two intentional lines.
+- Do NOT allow it to wrap into 3 lines on desktop.
+- Keep both lines centered.
+- The first line should be visually dominant.
+- The second line should still be strong, but slightly less dominant than "Apply Once".
+
+Suggested hierarchy:
+- "Apply Once" = larger / bolder
+- "Get matched continuously" = slightly smaller or lighter, but still headline-level
+
+Example visual structure:
+
+Apply Once
+Get matched continuously
+
+TITLE STYLING
+- Center align.
+- Strong dark navy text.
+- Tight but readable line-height.
+- Keep a controlled max-width.
+- Use responsive font sizing with `clamp()` if appropriate.
+- Avoid awkward word wrapping.
+- Desktop should always show exactly 2 lines.
+- Mobile can scale down, but preserve the same two-line structure whenever possible.
+
+SUPPORTING DESCRIPTION
+
+Keep the current copy:
+"Submit one quick application and we'll keep matching you with relevant open roles as they become available."
+
+Improve hierarchy by:
+- Making it noticeably smaller than the headline.
+- Using a softer gray/blue text color.
+- Reducing font weight.
+- Increasing line-height slightly.
+- Limiting max-width for readability.
+- Keeping it centered.
+
+VISUAL PRIORITY SHOULD BE:
+
+1. "Apply Once"
+2. "Get matched continuously"
+3. Supporting description
+
+ACCEPTANCE CRITERIA
+- Headline displays as exactly 2 lines on desktop.
+- First line is "Apply Once".
+- Second line is "Get matched continuously".
+- First line has slightly stronger visual emphasis.
+- Description feels clearly secondary.
+- No other hero elements are modified.
