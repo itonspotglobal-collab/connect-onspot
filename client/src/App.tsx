@@ -92,6 +92,14 @@ function FindWorkRedirect() {
   return null;
 }
 
+// TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+// Temporarily redirects talent-dashboard and talent-portal to the public homepage.
+function RedirectToHome() {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate("/"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
   return <ComingSoon />;
@@ -122,7 +130,9 @@ function PublicRouter() {
       <main>
         <Switch>
           <Route path="/" component={() => {
-            if (isAuthenticated) {
+            // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+            // Talent users see the public homepage — do not auto-route them to TalentPortal.
+            if (isAuthenticated && user?.role !== 'talent') {
               return <PostLoginPortalSelection />;
             }
             return <Home />;
@@ -133,12 +143,8 @@ function PublicRouter() {
             }
             return <Home />;
           }} />
-          <Route path="/talent-dashboard" component={() => {
-            if (isAuthenticated) {
-              return <PostLoginPortalSelection />;
-            }
-            return <Home />;
-          }} />
+          {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
+          <Route path="/talent-dashboard" component={RedirectToHome} />
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
@@ -154,13 +160,9 @@ function PublicRouter() {
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
           <Route path="/talent/signup" component={TalentSignupFromApplication} />
-          <Route path="/get-hired" component={() => {
-            // Allow both authenticated and non-authenticated access to GetHired
-            if (isAuthenticated && user?.userType === 'talent') {
-              return <TalentPortal />;
-            }
-            return <GetHired />;
-          }} />
+          {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
+          {/* Previously authenticated talent users were routed to TalentPortal here. */}
+          <Route path="/get-hired" component={GetHired} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
@@ -344,9 +346,10 @@ function AppContent() {
       <Route path="/contracts" component={ClientRouter} />
       <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
-      {/* Talent Protected Routes */}
-      <Route path="/talent-portal" component={TalentRouter} />
-      <Route path="/hired-talent-portal" component={TalentRouter} />
+      {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
+      {/* Talent Portal routes temporarily redirect to the public homepage. */}
+      <Route path="/talent-portal" component={RedirectToHome} />
+      <Route path="/hired-talent-portal" component={RedirectToHome} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={() => {

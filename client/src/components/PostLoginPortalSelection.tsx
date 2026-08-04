@@ -51,10 +51,11 @@ export function PostLoginPortalSelection() {
       setShowPortalSelection(true);
     } else if (hasCompletedSelection || hasSelectedPortal) {
       // User has already selected portal, redirect appropriately
+      // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
       const targetPath = user.role === 'client' ? '/client-dashboard' : 
-                        user.role === 'talent' ? '/talent-dashboard' :
+                        user.role === 'talent' ? '/' :
                         user.role === 'admin' ? '/admin/dashboard' : '/';
-      if (location === '/' && !isDashboardPath) {
+      if (location === '/' && !isDashboardPath && user.role !== 'talent') {
         console.log('🔀 Redirecting to saved portal selection:', targetPath);
         setLocation(targetPath);
       }
@@ -144,8 +145,8 @@ export function PostLoginPortalSelection() {
         duration: 8000, // Longer duration for security messages
       });
       
-      // Redirect to appropriate dashboard based on actual role
-      const correctPath = user.role === 'talent' ? '/talent-dashboard' : 
+      // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+      const correctPath = user.role === 'talent' ? '/' : 
                          user.role === 'admin' ? '/admin/dashboard' : '/';
       setLocation(correctPath);
       return null;
@@ -153,44 +154,33 @@ export function PostLoginPortalSelection() {
     return <Dashboard />;
   }
   
+  // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+  // /talent-dashboard and /talent-portal now redirect to "/" via App.tsx — this branch is kept as
+  // a safety net but should not be reached in normal navigation.
   if (currentPath === '/talent-dashboard' || (currentPath === '/talent-portal' && user.role === 'talent')) {
-    if (user.role !== 'talent') {
-      // Role mismatch - show destructive toast and redirect
-      console.error(`🚫 Security: Role mismatch for talent dashboard`, {
-        userId: user.id,
-        userRole: user.role,
-        attemptedAccess: 'talent-dashboard', 
-        timestamp: new Date().toISOString()
-      });
-      
-      toast({
-        title: "Access Denied",
-        description: `You don't have permission to access the talent dashboard. Your account role is '${user.role}'. Please contact support if you believe this is an error.`,
-        variant: "destructive",
-        duration: 8000, // Longer duration for security messages
-      });
-      
-      // Redirect to appropriate dashboard based on actual role
-      const correctPath = user.role === 'client' ? '/client-dashboard' : 
-                         user.role === 'admin' ? '/admin/dashboard' : '/';
-      setLocation(correctPath);
-      return null;
-    }
-    return <TalentPortal />;
+    setLocation('/');
+    return null;
   }
 
   // Default: redirect to appropriate dashboard based on role
+  // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
   const defaultPath = user.role === 'client' ? '/client-dashboard' : 
-                     user.role === 'talent' ? '/talent-dashboard' :
+                     user.role === 'talent' ? '/' :
                      user.role === 'admin' ? '/admin/dashboard' : '/';
   if (currentPath === '/' || !currentPath.startsWith('/')) {
-    setLocation(defaultPath);
+    if (user.role !== 'talent') {
+      setLocation(defaultPath);
+    }
     return null;
   }
 
   // Fallback: show appropriate dashboard for the user's role
   if (user.role === 'client') return <Dashboard />;
-  if (user.role === 'talent') return <TalentPortal />;
+  if (user.role === 'talent') {
+    // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+    setLocation('/');
+    return null;
+  }
   if (user.role === 'admin') {
     // Admin users should be handled by the routing system, redirect them
     setLocation('/admin/dashboard');

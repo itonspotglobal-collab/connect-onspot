@@ -14,14 +14,10 @@ export function DomainRouter({ children }: DomainRouterProps) {
     // Only handle talent subdomain routing
     // Main domain (onspotglobal.com) shows the primary site without auto-redirect
     if (hostname.includes('talent.onspotglobal.com')) {
-      // Skip if already on talent portal
-      if (location.startsWith('/talent-portal')) {
-        return;
-      }
-      
-      // Talent portal subdomain - redirect to talent portal
-      if (location === '/' || !location.startsWith('/talent-portal')) {
-        setLocation('/talent-portal');
+      // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
+      // Previously this redirected to /talent-portal; now routes to the public homepage.
+      if (location !== '/') {
+        setLocation('/');
       }
     }
     // No auto-redirect for main domain - it serves the primary public site

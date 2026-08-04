@@ -1,0 +1,351 @@
+TEMPORARILY DISABLE THE TALENT DASHBOARD
+
+We are not ready to launch/design the Talent Dashboard yet.
+
+For now, Talent users should remain in the normal public OnSpot website
+experience.
+
+GOAL
+
+Temporarily disable access to the Talent Dashboard without deleting its code.
+
+The existing Talent Dashboard / Talent Portal components must remain in the
+codebase for future use, but users should not be routed into them for now.
+
+==================================================
+1. ON​​SPOT LOGO BEHAVIOR
+==================================================
+
+Update the OnSpot logo navigation behavior.
+
+When ANY user clicks the OnSpot logo, including:
+
+- logged-out visitor
+- logged-in Talent
+- logged-in Client where current behavior permits
+- admin/public admin pages
+
+the logo should navigate to the original public homepage:
+
+`/`
+
+For Talent users specifically, do NOT redirect the logo to:
+
+- `/talent-dashboard`
+- `/talent-portal`
+- `/get-hired`
+- another Talent landing page
+
+The logo must consistently mean:
+
+`Home → /`
+
+Review:
+
+- `client/src/components/TopNavigation.tsx`
+- any other shared navigation/header components
+- any role-specific logo click handlers
+
+Remove logic similar to:
+
+if (user is talent) {
+  navigate("/talent-dashboard")
+}
+
+or:
+
+navigate("/talent-portal")
+
+Replace with:
+
+navigate("/")
+
+Do not duplicate handlers if the logo can simply use a link to `/`.
+
+==================================================
+2. DISABLE /talent-dashboard
+==================================================
+
+Temporarily change the route:
+
+`/talent-dashboard`
+
+so it redirects to:
+
+`/`
+
+Do not render the Talent Dashboard or PostLoginPortalSelection from this route.
+
+Preferred behavior:
+
+<Route path="/talent-dashboard">
+  {() => {
+    navigate("/");
+    return null;
+  }}
+</Route>
+
+Use the routing pattern already used by the project.
+
+Avoid causing redirect loops.
+
+==================================================
+3. DISABLE /talent-portal FOR NOW
+==================================================
+
+The Talent Dashboard/Talent Portal is not ready.
+
+If a Talent user manually enters:
+
+`/talent-portal`
+
+redirect them to:
+
+`/`
+
+Do the same for other route aliases that currently open the unfinished Talent
+Dashboard, such as:
+
+- `/talent-dashboard`
+- `/talent-portal`
+
+Review whether `/get-hired` currently redirects authenticated Talents into
+TalentPortal.
+
+If it does, change that temporary behavior so it loads the normal public
+Get Hired page or redirects to `/`, whichever matches the current public UX.
+
+Do NOT delete:
+
+- `TalentPortal.tsx`
+- Talent dashboard components
+- Talent dashboard APIs
+- future profile functionality
+
+Only change routing.
+
+Add a comment:
+
+`TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.`
+
+==================================================
+4. NAVIGATION BAR
+==================================================
+
+Search the navigation for:
+
+- Talent Dashboard
+- Talent Portal
+- Dashboard
+- My Dashboard
+
+If a Talent user currently sees a navigation option that leads to the unfinished
+Talent Dashboard, temporarily change its destination to:
+
+`/`
+
+OR remove that specific menu item temporarily.
+
+Preferred approach:
+
+If the item is labeled "Talent Dashboard", keep it hidden until the dashboard is
+ready.
+
+Do not show a navigation option that appears functional but leads to an
+unfinished page.
+
+If some existing navigation code requires keeping it visible during
+development, make it route to `/`.
+
+==================================================
+5. LOGGED-IN TALENT DEFAULT ROUTING
+==================================================
+
+Review the application's role-based routing after Talent login.
+
+Currently, there may be logic such as:
+
+Talent login
+→ Talent Portal
+
+or:
+
+Talent visits "/"
+→ PostLoginPortalSelection
+→ Talent Portal
+
+Temporarily change this.
+
+When a Talent user visits:
+
+`/`
+
+show the original public OnSpot homepage.
+
+Do NOT automatically route authenticated Talent users away from `/`.
+
+This is important.
+
+Being logged in as Talent must not prevent access to the public homepage.
+
+The public homepage should still show the appropriate logged-in navigation state
+if that already exists.
+
+==================================================
+6. DO NOT BREAK THE JOB APPLICATION FLOW
+==================================================
+
+Keep these features working:
+
+- `/find-work`
+- `/find-work/jobs`
+- job detail pages
+- built-in application form
+- `/find-best-matches`
+- Talent account creation
+- Talent login
+- application account linking
+
+New Talent account flow must remain:
+
+Application
+→ Create Talent Account
+→ Link application
+→ `/find-best-matches`
+
+Do NOT change this redirect back to Talent Dashboard.
+
+Existing Talent login after an application should continue with the currently
+approved Find Work/application behavior.
+
+==================================================
+7. FIND BEST MATCHES
+==================================================
+
+`/find-best-matches` must remain available.
+
+This is currently being used for Talent onboarding/profile completion.
+
+Do not redirect `/find-best-matches` to `/`.
+
+Only the unfinished Talent Dashboard/Talent Portal should be disabled.
+
+==================================================
+8. DIRECT URL BEHAVIOR
+==================================================
+
+Verify:
+
+`/talent-dashboard`
+→ `/`
+
+`/talent-portal`
+→ `/`
+
+OnSpot logo
+→ `/`
+
+Navigation "Talent Dashboard", if still shown
+→ `/`
+
+`/find-work/jobs`
+→ remains `/find-work/jobs`
+
+`/find-best-matches`
+→ remains `/find-best-matches`
+
+==================================================
+9. IMPORTANT HOMEPAGE BEHAVIOR
+==================================================
+
+Review the route for `/`.
+
+There may currently be code similar to:
+
+if (isAuthenticated) {
+  return <PostLoginPortalSelection />;
+}
+
+This may cause a logged-in Talent to be redirected away from the original
+homepage.
+
+Change the behavior so that for Talent users, `/` renders the normal public
+`Home` component.
+
+Do not automatically render TalentPortal or redirect based solely on the Talent
+role.
+
+If Client routing currently depends on PostLoginPortalSelection, avoid changing
+Client behavior unless necessary.
+
+Suggested conceptual behavior:
+
+if (!isAuthenticated) {
+  return <Home />;
+}
+
+if (user is Talent) {
+  return <Home />;
+}
+
+otherwise {
+  preserve current non-Talent behavior where required;
+}
+
+Use the project's actual user-role field and existing auth context.
+
+==================================================
+10. TESTS
+==================================================
+
+Test:
+
+1. Logged-out user clicks logo
+   → `/`
+
+2. Logged-in Talent clicks logo
+   → `/`
+
+3. Logged-in Talent manually opens `/talent-dashboard`
+   → `/`
+
+4. Logged-in Talent manually opens `/talent-portal`
+   → `/`
+
+5. Logged-in Talent opens `/`
+   → original public Home page
+
+6. Talent account creation after a job application
+   → `/find-best-matches`
+
+7. `/find-best-matches`
+   remains accessible.
+
+8. `/find-work/jobs`
+   remains accessible.
+
+9. Job application flow remains functional.
+
+10. Talent account login remains functional.
+
+11. Existing Client behavior is not accidentally broken.
+
+12. TypeScript check and production build pass.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+The temporary change is complete when:
+
+- Talent Dashboard is not reachable.
+- Talent Portal is not reachable.
+- Their components remain in the codebase.
+- OnSpot logo always opens `/`.
+- Logged-in Talent can view the original homepage.
+- Talent users are not automatically pushed into Talent Dashboard.
+- Find Work still works.
+- Find Best Matches still works.
+- Job applications still work.
+- New Talent onboarding still redirects to `/find-best-matches`.
+- The change can easily be reversed when the Talent Dashboard design is ready.
