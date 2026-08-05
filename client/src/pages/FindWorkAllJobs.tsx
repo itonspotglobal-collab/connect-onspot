@@ -714,7 +714,20 @@ export default function FindWorkAllJobs() {
 
       return queryPass && catPass && locPass && typePass && salaryPass;
     });
-    return sortJobs(list, sort);
+    const sorted = sortJobs(list, sort);
+    // Deduplicate by unique job ID — guards against any upstream duplicates
+    // and guarantees a single source of truth for both the count and the render.
+    const seen = new Set<string>();
+    const unique = sorted.filter((j) => {
+      if (seen.has(j.id)) return false;
+      seen.add(j.id);
+      return true;
+    });
+    // Featured-first: float isFeatured jobs to the top while preserving
+    // the relative order produced by sortJobs within each group.
+    const featuredOnes = unique.filter((j) => (j as any).isFeatured === true);
+    const regularOnes  = unique.filter((j) => (j as any).isFeatured !== true);
+    return [...featuredOnes, ...regularOnes];
   }, [
     openJobs,
     search,
@@ -1062,6 +1075,7 @@ export default function FindWorkAllJobs() {
                   {filtered.length}
                 </span>{" "}
                 role{filtered.length !== 1 ? "s" : ""} found
+                {/* filtered is deduplicated and featured-first */}
                 {search && (
                   <>
                     {" "}
@@ -1157,91 +1171,12 @@ export default function FindWorkAllJobs() {
           </div>
         )}
 
-        {/* Talent Profile-Based Recommendations */}
-        {!isLoading && !search.trim() && talentAuth && (
-          <div className="mb-6">
-            {isLoadingProfile ? (
-              <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
-                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#474ead] border-t-transparent" />
-                Loading your profile recommendations…
-              </div>
-            ) : talentRecs.jobs.length > 0 ? (
-              <>
-                <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#474ead]">
-                  <Users className="h-4 w-4" />
-                  Recommended for you — based on your talent profile
-                </div>
-                <div className="space-y-3">
-                  {talentRecs.jobs.map((job) => (
-                    <JobCard
-                      key={`profile-rec-${job.id}`}
-                      job={job}
-                      onNavigate={(id) => {
-                        saveUserActivity({
-                          activityType: "JobClick",
-                          referenceId: id,
-                          title: job.title,
-                          category: job.category ?? undefined,
-                          tags: job.skillTags ?? undefined,
-                          page: "FindWorkAllJobs-ProfileRec",
-                        });
-                        navigate(`/find-work/job/${id}`);
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="my-6 border-t border-slate-200/60 dark:border-white/[0.07]" />
-              </>
-            ) : talentProfile && !talentRecs.hasEnoughData ? (
-              <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/[0.08] dark:bg-white/[0.03]">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Complete your talent profile to get personalized job
-                  recommendations.
-                </p>
-                <a
-                  href={`/talent-profile/${talentAuth.candidateId}`}
-                  className="mt-1 inline-block text-xs text-[#474ead] hover:underline dark:text-indigo-400"
-                >
-                  Update Talent Profile
-                </a>
-              </div>
-            ) : null}
-          </div>
-        )}
-
-        {/* Recommended for You */}
-        {!isLoading && recommendedJobs.length > 0 && (
-          <div className="mb-6">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#474ead]">
-              <Zap className="h-4 w-4" />
-              {recsArePersonalized
-                ? "Recommended for you — based on your recent activity"
-                : "Trending roles"}
-            </div>
-            <div className="space-y-3">
-              {recommendedJobs.map((job) => (
-                <JobCard
-                  key={`rec-${job.id}`}
-                  job={job}
-                  onNavigate={(id) => {
-                    saveUserActivity({
-                      activityType: "JobClick",
-                      referenceId: id,
-                      title: job.title,
-                      category: job.category ?? undefined,
-                      tags: job.skillTags ?? undefined,
-                      page: "FindWorkAllJobs-Recommended",
-                    });
-                    navigate(`/find-work/job/${id}`);
-                  }}
-                />
-              ))}
-            </div>
-            <div className="my-6 border-t border-slate-200/60 dark:border-white/[0.07]" />
-          </div>
-        )}
-
-        {/* Job list */}
+        {/* ── Single canonical job list ──────────────────────────────────────
+             `filtered` is already deduplicated by ID and sorted featured-first.
+             All jobs are rendered exactly once here.  The former "Trending roles"
+             and "Talent profile" recommendation strips have been removed because
+             they rendered JobCards for the same jobs that appear in this list,
+             causing the "4 roles found / 6 cards visible" duplication.          */}
         {!isLoading && filtered.length > 0 && (
           <div className="space-y-4">
             {filtered.map((job) => (
