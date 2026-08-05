@@ -97,6 +97,8 @@ export const defaultFormData = {
   // Application link / method
   applicationMethod: "built_in_form",
   applyLink: "",
+  // Featured job flag
+  isFeatured: false,
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
   // Benefits / HMO
@@ -158,6 +160,8 @@ export function jobToFormData(job: Job): JobFormData {
     // Application link / method
     applicationMethod: (job as any).applicationMethod || "built_in_form",
     applyLink: (job as any).applyLink || "",
+    // Featured job flag
+    isFeatured: (job as any).isFeatured ?? false,
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
     // Benefits / HMO
@@ -361,6 +365,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     } else {
       payload.applyLink = null;
     }
+
+    // Featured job flag (always send so toggling is correctly persisted)
+    payload.isFeatured = formData.isFeatured;
 
     // Urgently Hiring flag (always send so unchecking a previously set job clears it)
     payload.urgentlyHiring = formData.urgentlyHiring;
@@ -755,6 +762,25 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               <p className="text-xs text-muted-foreground">
                 Optional — enter the benefits available for this role. You can include HMO, government benefits, allowances, leave, bonuses, or other perks.
               </p>
+            </div>
+
+            {/* ── Feature this job toggle ── */}
+            <div className="mt-4 flex items-start gap-3 rounded-md border border-amber-200/60 bg-amber-50/40 p-3 dark:border-amber-800/30 dark:bg-amber-950/20">
+              <input
+                id="modal-is-featured"
+                type="checkbox"
+                checked={formData.isFeatured}
+                onChange={(e) => updateField("isFeatured", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input accent-amber-500 cursor-pointer"
+              />
+              <div>
+                <label htmlFor="modal-is-featured" className="text-sm font-medium cursor-pointer select-none">
+                  Feature this job
+                </label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Featured jobs are highlighted on the public Find Work page and are prioritized near the top of job listings.
+                </p>
+              </div>
             </div>
 
             {/* ── Urgently Hiring toggle ── */}

@@ -1,0 +1,598 @@
+Implement a proper **Featured Job** system across the Find Work experience.
+
+The approved visual direction is the attached mockup:
+- featured job appears at the top
+- featured card uses a distinct light gold / cream treatment
+- featured label with a star icon
+- regular jobs keep the existing OnSpot purple gradient style
+- featured job still shows all normal job information
+- admin can explicitly mark/unmark a job as Featured
+
+IMPORTANT:
+This is not only a front-end styling change.
+Featured status must be stored as part of the job data and supported across:
+- Jobs Admin
+- create job
+- edit job
+- API
+- database/schema
+- Find Work listing
+- Featured sorting/filtering
+- View Details if appropriate
+
+--------------------------------------------------
+1. ADD / REUSE A FEATURED FIELD
+--------------------------------------------------
+
+First inspect the project to see if a field already exists, such as:
+
+```ts
+isFeatured
+featured
+featuredJob
+
+If one already exists:
+
+reuse it
+do not create a duplicate field
+
+If none exists:
+add:
+
+isFeatured: boolean
+
+Recommended default:
+
+false
+
+Existing jobs should safely default to false.
+
+UPDATE THE ADMIN JOB CREATION / EDIT FORM
+
+In the Find Work Jobs Admin Add/Edit Job Posting form, add an optional control:
+
+Label:
+
+Feature this job
+
+Preferred control:
+
+checkbox
+or
+toggle switch
+
+Helper text:
+
+Featured jobs are highlighted on the public Find Work page and are prioritized near the top of job listings.
+
+Default for new jobs:
+
+unchecked
+
+When editing:
+
+show the saved current value
+
+Suggested UI:
+
+<label className="flex items-start gap-3">
+  <input
+    type="checkbox"
+    checked={form.isFeatured}
+    onChange={(e) =>
+      setForm((prev) => ({
+        ...prev,
+        isFeatured: e.target.checked,
+      }))
+    }
+  />
+
+  <div>
+    <p className="font-medium">Feature this job</p>
+    <p className="text-sm text-slate-500">
+      Featured jobs receive highlighted placement on the public Find Work page.
+    </p>
+  </div>
+</label>
+
+Place this logically near other posting/badge controls such as:
+
+Urgently Hiring
+Multiple Slots
+status
+
+Do not put it under salary fields unless that is already where job badges are managed.
+
+DATA FLOW
+
+Make sure isFeatured is supported end-to-end:
+
+frontend Job type/interface
+admin form state
+create job payload
+update job payload
+backend request validation
+database schema/model
+API response for job list
+API response for individual job
+any serializer/mapping layer
+
+If a database migration is required, create it safely.
+
+Existing records must not break.
+
+Fallback:
+
+job.isFeatured ?? false
+PUBLIC FIND WORK LISTING BEHAVIOR
+
+Featured jobs should receive priority placement.
+
+Preferred behavior:
+
+When using normal/default sorting such as:
+
+Recently Posted
+recommended/default listing
+
+Featured jobs should appear before non-featured jobs.
+
+Within Featured jobs:
+
+preserve the selected sort behavior
+
+Within regular jobs:
+
+preserve the selected sort behavior
+
+Conceptually:
+
+featuredJobs first
+then normalJobs
+
+Do not randomly reorder jobs.
+
+Example:
+
+const sortedJobs = [...jobs].sort((a, b) => {
+  if (a.isFeatured !== b.isFeatured) {
+    return a.isFeatured ? -1 : 1;
+  }
+
+  return existingSortComparison(a, b);
+});
+
+Adapt this to the current sorting architecture instead of blindly replacing it.
+
+FEATURED FILTER / SORT BUTTON
+
+The Find Work page already includes a Featured option in the sort/filter controls.
+
+Make sure it works properly.
+
+When Featured is selected:
+
+show featured jobs first
+or preferably:
+filter to only featured jobs if that matches current filter semantics
+
+Inspect the existing behavior of options like:
+
+Urgently Hiring
+Top Remote
+Most Applied
+
+Be consistent with the current UI pattern.
+
+Do not leave the Featured control as a visual-only button.
+
+FEATURED CARD VISUAL DESIGN
+
+Use the approved mockup as the target.
+
+Featured jobs should visually stand out without looking unrelated to OnSpot.
+
+Instead of the normal purple gradient header, use a premium light warm treatment.
+
+Suggested card:
+
+<article
+  className="
+    overflow-hidden
+    rounded-2xl
+    border border-amber-300/70
+    bg-gradient-to-br
+    from-amber-50
+    via-white
+    to-orange-50/60
+    shadow-sm
+    ring-1 ring-amber-200/40
+  "
+>
+
+Do not make it bright yellow.
+
+The feeling should be:
+
+premium
+subtle
+clean
+professional
+FEATURED LABEL
+
+Add a compact label at the top-left:
+
+★ FEATURED
+
+or:
+
+Featured
+
+with a star icon.
+
+Use the existing icon library.
+
+Suggested styling:
+
+className="
+  inline-flex items-center gap-1.5
+  rounded-full
+  bg-amber-100
+  px-2.5 py-1
+  text-[11px] font-semibold
+  uppercase tracking-wide
+  text-amber-700
+"
+
+Do not use an oversized banner.
+
+FEATURED INITIALS AVATAR
+
+Keep the initials avatar.
+
+For Featured jobs, use a warm gold/orange avatar instead of the normal translucent purple one.
+
+Example:
+
+<div
+  className="
+    flex h-12 w-12 shrink-0 items-center justify-center
+    rounded-xl
+    bg-gradient-to-br from-amber-400 to-orange-500
+    text-sm font-bold text-white
+    shadow-sm
+  "
+>
+  {getRoleInitials(job.title)}
+</div>
+
+Regular jobs should keep the existing purple-header avatar styling.
+
+FEATURED JOB CONTENT
+
+Do NOT remove any existing job information.
+
+Featured cards still need:
+
+role initials
+job title
+company
+Urgently Hiring
+Remote / Hybrid / Onsite
+Full Time / Part Time / Contract
+Commission
+Equity
+salary/rate
+posted date
+Card Preview Summary / description
+skill tags
+Apply Now
+View details
+
+Featured status is an additional presentation layer only.
+
+FEATURED BADGES
+
+Keep existing soft badge colors:
+
+Urgently Hiring:
+
+light red
+
+Remote:
+
+light violet
+
+Full Time:
+
+light green
+
+Commission:
+
+light green/teal
+
+Equity:
+
+light purple
+
+Do not recolor all badges gold just because the job is Featured.
+
+This keeps information types easy to distinguish.
+
+FEATURED SALARY AREA
+
+Salary remains top-right.
+
+For Featured card:
+
+className="text-lg md:text-xl font-bold text-slate-900"
+
+Posted date:
+
+className="mt-1 text-xs text-slate-500"
+
+Do not use white salary text because Featured uses a light background.
+
+OPTIONAL FEATURED DECORATIVE ICON
+
+The approved mockup includes a subtle trophy/star motif.
+
+You may add a subtle decorative icon on the right side if it remains understated.
+
+Examples:
+
+Trophy
+Award
+Star
+
+Use low-opacity amber styling.
+
+Example:
+
+<Trophy
+  aria-hidden="true"
+  className="
+    h-16 w-16
+    text-amber-300/50
+  "
+/>
+
+This must be decorative only.
+
+Do not let it interfere with salary or buttons.
+
+Hide it on small mobile screens if necessary.
+
+FEATURED APPLY BUTTON
+
+For Featured jobs, make Apply Now use a warm accent rather than the normal purple.
+
+Suggested:
+
+className="
+  bg-gradient-to-r
+  from-amber-500
+  to-orange-500
+  text-white
+"
+
+View Details can remain the existing secondary outlined button.
+
+Regular jobs keep the current OnSpot purple Apply Now button.
+
+NORMAL JOB CARDS
+
+Do NOT redesign normal cards.
+
+Keep the current approved structure:
+
+purple gradient header
+initials
+salary on the right
+badges
+description
+skill tags
+buttons
+
+Only Featured cards get the special cream/gold visual treatment.
+
+ONLY FEATURED JOBS GET THE FEATURED DESIGN
+
+Conditional example:
+
+if (job.isFeatured) {
+  return <FeaturedJobCard job={job} />;
+}
+
+return <RegularJobCard job={job} />;
+
+You do not have to create two completely separate components if that causes duplication.
+
+Preferred architecture:
+
+shared JobCard
+conditional style variants
+
+For example:
+
+const featured = job.isFeatured;
+
+Then conditionally apply classes.
+
+Avoid duplicating the entire card JSX if possible.
+
+VIEW DETAILS PAGE
+
+On FindWorkJob.tsx, show a small Featured badge near the job status / posted date if:
+
+job.isFeatured === true
+
+Example:
+
+[Featured] [Urgently Hiring] [Posted 3 weeks ago]
+
+Use a small amber badge.
+
+Do not redesign the entire View Details page.
+
+ADMIN JOB LIST
+
+In the Jobs Admin list, make Featured jobs easy to identify.
+
+Add a small badge:
+
+Featured
+
+next to the job title/status.
+
+Optional:
+
+star icon
+amber badge
+
+Do not use the entire public featured-card design in Admin.
+
+Admin should remain compact.
+
+FEATURED STATUS MUST BE MANUAL
+
+Do NOT automatically mark jobs Featured based on:
+
+salary
+applications
+newest posting
+urgently hiring
+remote status
+number of openings
+
+Featured must only come from the explicit admin setting:
+
+isFeatured === true
+MULTIPLE FEATURED JOBS
+
+Support more than one Featured job.
+
+Do not assume there can only be one.
+
+If several jobs are Featured:
+
+they should all appear before normal jobs under default listing behavior
+order them according to the currently selected sort logic
+OPTIONAL BUSINESS RULE
+
+Do NOT enforce a maximum number of Featured jobs unless the project already has such a rule.
+
+For now, allow any number of jobs to be marked Featured.
+
+MOBILE DESIGN
+
+Featured card must remain responsive.
+
+On mobile:
+
+Featured label stays visible
+title/avatar stay aligned
+salary stacks naturally
+badges wrap
+description stays full width
+decorative trophy/icon can hide
+buttons remain easy to tap
+no horizontal overflow
+DARK MODE
+
+If the public listing supports dark mode, create an appropriate dark Featured variant.
+
+Do not render a bright cream card in dark mode.
+
+Suggested dark direction:
+
+dark:
+bg-gradient-to-br
+dark:from-amber-950/40
+dark:via-slate-950
+dark:to-orange-950/30
+dark:border-amber-700/40
+
+Ensure text remains readable.
+
+KEEP EXISTING FEATURES WORKING
+
+Do not break:
+
+Recently Posted
+Most Applied
+In Demand
+Urgently Hiring
+Top Remote
+Featured control
+filters
+recommended jobs
+search
+application flow
+View details
+Commission
+Equity
+benefits
+weeks-based posted date formatter
+
+Featured ordering must integrate with these rather than bypass them.
+
+EXPECTED PUBLIC RESULT
+
+Default Find Work list should roughly look like:
+
+Recommended for you
+
+┌ FEATURED ─────────────────────────────────────────────┐
+│ [CG] Content & Growth Marketer - SaaS      $45k–50k │
+│      Confidential                       3 days ago  │
+│      [Urgently Hiring] [Remote] [Full Time]         │
+│      [+ Commission] [+ Equity]                       │
+│                                                     │
+│ Job summary...                                      │
+│                                                     │
+│ [Apply Now] [View details]                          │
+└─────────────────────────────────────────────────────┘
+
+┌ NORMAL PURPLE JOB ──────────────────────────────────┐
+│ Sales / Business Development Lead ...               │
+└─────────────────────────────────────────────────────┘
+EXPECTED ADMIN RESULT
+
+When creating/editing a job:
+
+Posting Options
+
+☑ Urgently Hiring
+☑ Multiple Slots
+☐ Feature this job
+
+Featured jobs receive highlighted placement on the
+public Find Work page.
+
+When checked:
+
+save isFeatured = true
+
+When unchecked:
+
+save isFeatured = false
+AFTER IMPLEMENTATION
+
+Report:
+
+Exact files changed
+Whether a Featured field already existed or was added
+Exact field name used
+Whether a database migration is required
+Where the admin Featured toggle was added
+How Featured jobs are prioritized in the listing
+How the existing Featured filter/sort works now
+Confirmation normal jobs retain the purple gradient
+Confirmation Featured jobs use the cream/gold design
+Confirmation Featured badge appears on View Details
+Confirmation Featured jobs are identifiable in Admin
+Confirmation multiple Featured jobs are supported
+Confirmation mobile and dark mode were tested
+
+This gives Featured jobs both **priority placement and a distinct visual treatment**, while keeping the status fully controlled from the admin form rather than inferred automatically.

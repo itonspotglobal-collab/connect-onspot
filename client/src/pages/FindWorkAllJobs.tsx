@@ -15,6 +15,8 @@ import {
   Users,
   SlidersHorizontal,
   X,
+  Star,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -179,6 +181,7 @@ function JobCard({
   onNavigate: (id: string) => void;
 }) {
   const [, navigate] = useLocation();
+  const featured = (job as any).isFeatured === true;
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
@@ -197,20 +200,39 @@ function JobCard({
     pay === "Rate TBD"             ? "rate to be discussed" :
     null;
 
-  // Build header badge list: utility badges (urgent/top-paying/multiple-slots) first,
-  // then location badge, then contract-type badge
+  // Build header badge list: utility badges first, then location, then contract type
   const cardBadges: { key: string; label: string }[] = [];
   for (const b of badges) cardBadges.push({ key: b.key, label: b.label });
   const locLower = (job.location ?? "").toLowerCase();
-  if      (locLower.includes("remote"))                                  cardBadges.push({ key: "remote",     label: "Remote"    });
-  else if (locLower.includes("hybrid"))                                  cardBadges.push({ key: "hybrid",     label: "Hybrid"    });
-  else if (locLower.includes("on-site") || locLower.includes("onsite")) cardBadges.push({ key: "onsite",     label: "Onsite"    });
+  if      (locLower.includes("remote"))                                  cardBadges.push({ key: "remote",    label: "Remote"    });
+  else if (locLower.includes("hybrid"))                                  cardBadges.push({ key: "hybrid",    label: "Hybrid"    });
+  else if (locLower.includes("on-site") || locLower.includes("onsite")) cardBadges.push({ key: "onsite",    label: "Onsite"    });
   const ctNorm = (job.contractType ?? "").toLowerCase().replace(/-/g, "");
-  if      (ctNorm === "fulltime") cardBadges.push({ key: "full-time",  label: "Full Time" });
-  else if (ctNorm === "parttime") cardBadges.push({ key: "part-time",  label: "Part Time" });
-  else if (ctNorm === "contract") cardBadges.push({ key: "contract",   label: "Contract"  });
+  if      (ctNorm === "fulltime") cardBadges.push({ key: "full-time", label: "Full Time" });
+  else if (ctNorm === "parttime") cardBadges.push({ key: "part-time", label: "Part Time" });
+  else if (ctNorm === "contract") cardBadges.push({ key: "contract",  label: "Contract"  });
 
   const initials = getRoleInitials((job as any).professionalRoleName || job.title || "");
+  const postedLabel = timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`;
+  // Fallback badge class for featured cards (light bg) vs regular (dark gradient)
+  const badgeFallback = featured ? "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300" : BADGE_DEFAULT;
+
+  const commissionEquityBadges = (
+    ((job as any).hasCommission || (job as any).hasEquity) && (
+      <div className="mt-3 flex flex-wrap gap-1.5 sm:justify-end">
+        {(job as any).hasCommission && (
+          <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.commission}`}>
+            + Commission
+          </span>
+        )}
+        {(job as any).hasEquity && (
+          <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.equity}`}>
+            + Equity
+          </span>
+        )}
+      </div>
+    )
+  );
 
   return (
     <motion.div
@@ -219,81 +241,123 @@ function JobCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28 }}
     >
-      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/[0.03]">
+      <article className={
+        featured
+          ? "overflow-hidden rounded-2xl border border-amber-300/70 bg-gradient-to-br from-amber-50 via-white to-orange-50/60 shadow-sm ring-1 ring-amber-200/40 transition-shadow hover:shadow-md dark:border-amber-700/40 dark:from-amber-950/40 dark:via-slate-950 dark:to-orange-950/30"
+          : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/[0.03]"
+      }>
 
-        {/* ── Gradient header ──────────────────────────────────────────────── */}
-        <header className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        {featured ? (
+          /* ── Featured: warm cream header ─────────────────────────────────── */
+          <div className="relative px-5 py-4">
+            {/* Featured label row + decorative trophy */}
+            <div className="mb-3 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <Star className="h-3 w-3" aria-hidden="true" /> Featured
+              </span>
+              <Trophy className="hidden sm:block h-10 w-10 text-amber-300/50 dark:text-amber-700/30" aria-hidden="true" />
+            </div>
 
-            {/* Left: initials avatar + title + company + badges */}
-            <div className="flex items-start gap-3 min-w-0">
-              {/* Role initials avatar */}
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-sm font-semibold text-white ring-1 ring-white/20"
-                aria-hidden="true"
-              >
-                {initials}
-              </div>
-
-              <div className="min-w-0">
-                <h3 className="text-base font-semibold leading-snug text-white md:text-lg">
-                  {(job as any).professionalRoleName || job.title}
-                </h3>
-                {(job as any).originalRoleName && (
-                  <p className="mt-0.5 text-[11px] italic text-white/55 truncate leading-tight">
-                    {(job as any).originalRoleName}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              {/* Left: warm avatar + title + company + badges */}
+              <div className="flex items-start gap-3 min-w-0">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white shadow-sm"
+                  aria-hidden="true"
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-white md:text-lg">
+                    {(job as any).professionalRoleName || job.title}
+                  </h3>
+                  {(job as any).originalRoleName && (
+                    <p className="mt-0.5 text-[11px] italic text-slate-400 truncate leading-tight">
+                      {(job as any).originalRoleName}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
+                    {job.company ?? "OnSpot"}
                   </p>
-                )}
-                <p className="mt-0.5 text-xs text-white/75 md:text-sm">
-                  {job.company ?? "OnSpot"}
-                </p>
-
-                {/* Badges: urgently hiring, location, contract type */}
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {pilotId && (
-                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES.pilot}`}>
-                      Pilot
-                    </span>
-                  )}
-                  {cardBadges.map((b) => (
-                    <span
-                      key={b.key}
-                      className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES[b.key] ?? BADGE_DEFAULT}`}
-                    >
-                      {b.label}
-                    </span>
-                  ))}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pilotId && (
+                      <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] bg-indigo-50 text-indigo-700">
+                        Pilot
+                      </span>
+                    )}
+                    {cardBadges.map((b) => (
+                      <span key={b.key} className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES[b.key] ?? badgeFallback}`}>
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right: salary + period + posted + commission/equity badges */}
-            <div className="shrink-0 sm:text-right">
-              <p className="text-lg font-semibold text-white md:text-xl">{pay}</p>
-              {salaryPeriodLabel && (
-                <p className="mt-0.5 text-[11px] text-white/65">{salaryPeriodLabel}</p>
-              )}
-              <p className="mt-1 text-xs text-white/70">{timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}</p>
-              {((job as any).hasCommission || (job as any).hasEquity) && (
-                <div className="mt-3 flex flex-wrap gap-1.5 sm:justify-end">
-                  {(job as any).hasCommission && (
-                    <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.commission}`}>
-                      + Commission
-                    </span>
-                  )}
-                  {(job as any).hasEquity && (
-                    <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[11px] font-medium ${BADGE_STYLES.equity}`}>
-                      + Equity
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Right: dark salary + posted + commission/equity */}
+              <div className="shrink-0 sm:text-right">
+                <p className="text-lg font-bold text-slate-900 dark:text-white md:text-xl">{pay}</p>
+                {salaryPeriodLabel && (
+                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{salaryPeriodLabel}</p>
+                )}
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{postedLabel}</p>
+                {commissionEquityBadges}
+              </div>
             </div>
-
           </div>
-        </header>
+        ) : (
+          /* ── Regular: purple gradient header ──────────────────────────────── */
+          <header className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              {/* Left: initials avatar + title + company + badges */}
+              <div className="flex items-start gap-3 min-w-0">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-sm font-semibold text-white ring-1 ring-white/20"
+                  aria-hidden="true"
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold leading-snug text-white md:text-lg">
+                    {(job as any).professionalRoleName || job.title}
+                  </h3>
+                  {(job as any).originalRoleName && (
+                    <p className="mt-0.5 text-[11px] italic text-white/55 truncate leading-tight">
+                      {(job as any).originalRoleName}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-white/75 md:text-sm">
+                    {job.company ?? "OnSpot"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {pilotId && (
+                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES.pilot}`}>
+                        Pilot
+                      </span>
+                    )}
+                    {cardBadges.map((b) => (
+                      <span key={b.key} className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES[b.key] ?? BADGE_DEFAULT}`}>
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-        {/* ── Body ─────────────────────────────────────────────────────────── */}
+              {/* Right: salary + period + posted + commission/equity */}
+              <div className="shrink-0 sm:text-right">
+                <p className="text-lg font-semibold text-white md:text-xl">{pay}</p>
+                {salaryPeriodLabel && (
+                  <p className="mt-0.5 text-[11px] text-white/65">{salaryPeriodLabel}</p>
+                )}
+                <p className="mt-1 text-xs text-white/70">{postedLabel}</p>
+                {commissionEquityBadges}
+              </div>
+            </div>
+          </header>
+        )}
+
+        {/* ── Body (shared) ─────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
 
           {/* Card preview summary */}
@@ -317,10 +381,7 @@ function JobCard({
           {visibleTags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
-                >
+                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300">
                   {tag}
                 </span>
               ))}
@@ -336,12 +397,13 @@ function JobCard({
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               size="sm"
-              className="rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
+              className={
+                featured
+                  ? "rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-5 text-white border-0 hover:opacity-90"
+                  : "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
+              }
               onClick={() => {
-                if (
-                  (job as any).applicationMethod === "external_link" &&
-                  job.applyLink
-                ) {
+                if ((job as any).applicationMethod === "external_link" && job.applyLink) {
                   window.open(job.applyLink, "_blank", "noopener,noreferrer");
                 } else {
                   navigate(`/jobs/${job.id}/apply`);

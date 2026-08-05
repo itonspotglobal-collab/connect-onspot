@@ -268,6 +268,12 @@ function AdminJobRow({
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${approvalCfg.badge}`}>
               {approvalCfg.label}
             </span>
+            {/* Featured badge */}
+            {(job as any).isFeatured && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <Star className="h-2.5 w-2.5" /> Featured
+              </span>
+            )}
           </div>
 
           {/* Original role name */}

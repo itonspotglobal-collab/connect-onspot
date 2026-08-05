@@ -231,63 +231,57 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
     return d ? new Date(d).getTime() : 0;
   };
 
+  // "featured" mode: show only explicitly-featured jobs, sorted by recency
+  if (sortBy === "featured") {
+    return list
+      .filter((j) => j.isFeatured === true)
+      .sort((a, b) => toMs(b) - toMs(a));
+  }
+
+  // All other sorts: compute order first, then float isFeatured jobs to the top
+  // while preserving relative order within each group.
+  let sorted: any[];
   switch (sortBy) {
     case "recently-posted":
-      return list.sort((a, b) => toMs(b) - toMs(a));
+      sorted = list.sort((a, b) => toMs(b) - toMs(a));
+      break;
 
     case "most-applied":
-      return list.sort(
-        (a, b) => (b.proposalCount || 0) - (a.proposalCount || 0)
-      );
+      sorted = list.sort((a, b) => (b.proposalCount || 0) - (a.proposalCount || 0));
+      break;
 
     case "top-remote":
-      return list
+      sorted = list
         .filter((j) => {
           const l = (j.location || "").toLowerCase();
           return l.includes("remote") || l.includes("wfh") || l === "";
         })
         .sort((a, b) => toMs(b) - toMs(a));
+      break;
 
     case "in-demand": {
       const cats = ["development", "marketing", "support", "design"];
-      const kws = [
-        "developer",
-        "engineer",
-        "specialist",
-        "manager",
-        "analyst",
-        "administrator",
-        "coordinator",
-      ];
-      return list
-        .filter(
-          (j) =>
-            cats.includes(j.category) ||
-            kws.some((kw) => (j.title || "").toLowerCase().includes(kw))
-        )
+      const kws = ["developer", "engineer", "specialist", "manager", "analyst", "administrator", "coordinator"];
+      sorted = list
+        .filter((j) => cats.includes(j.category) || kws.some((kw) => (j.title || "").toLowerCase().includes(kw)))
         .sort((a, b) => (b.proposalCount || 0) - (a.proposalCount || 0));
+      break;
     }
 
     case "urgently-hiring":
-      return list
+      sorted = list
         .filter((j) => j.urgentlyHiring === true)
         .sort((a, b) => toMs(b) - toMs(a));
-
-    case "featured":
-      return list
-        .filter((j) => {
-          const budget = parseFloat(j.budget || "0");
-          const dateRef = j.postedAt || j.createdAt;
-          const daysOld = dateRef
-            ? Math.floor((Date.now() - new Date(dateRef).getTime()) / 86400000)
-            : 999;
-          return budget >= 30000 || (j.proposalCount || 0) >= 2 || daysOld <= 5;
-        })
-        .sort((a, b) => parseFloat(b.budget || "0") - parseFloat(a.budget || "0"));
+      break;
 
     default:
-      return list;
+      sorted = list;
   }
+
+  // Float explicitly-featured jobs to the top, preserving relative sort within each group
+  const featuredJobs = sorted.filter((j) => j.isFeatured === true);
+  const normalJobs   = sorted.filter((j) => j.isFeatured !== true);
+  return [...featuredJobs, ...normalJobs];
 }
 
 // ── Timestamp Formatting ──────────────────────────────────────────────────────

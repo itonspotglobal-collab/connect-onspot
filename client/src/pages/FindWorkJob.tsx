@@ -485,6 +485,11 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </button>
 
           <div className="mb-5 flex flex-wrap items-center gap-2">
+            {(job as any).isFeatured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3 py-1 text-[11px] font-bold text-amber-300 ring-1 ring-amber-300/30">
+                <Star className="h-3 w-3" aria-hidden="true" /> Featured
+              </span>
+            )}
             {badges.map((b) => (
               <span key={b.key} className={`rounded-full px-3 py-1 text-[11px] font-bold ${b.className}`}>{b.label}</span>
             ))}
