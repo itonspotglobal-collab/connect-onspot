@@ -801,6 +801,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  commission/equity migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: add is_featured flag to jobs table ────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_featured boolean NOT NULL DEFAULT false`);
+    console.log("✅ Migration: jobs.is_featured column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  is_featured migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(

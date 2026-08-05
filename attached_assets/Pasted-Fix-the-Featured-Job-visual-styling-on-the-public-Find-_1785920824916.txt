@@ -1,0 +1,451 @@
+Fix the Featured Job visual styling on the public Find Work jobs page.
+
+Primary page:
+- `client/src/pages/FindWorkAllJobs.tsx`
+
+Also inspect:
+- any reusable `JobCard` component
+- shared job types/interfaces
+- the API response used by the public listing
+
+CURRENT STATUS
+
+The Featured Job functionality is partially working:
+
+- Admin Create/Edit Job form has `Feature this job`
+- Featured job is being saved
+- Featured job moves to the top of the public listing
+- BUT the Featured job still uses the normal purple gradient card design
+
+This means the Featured flag/sorting is likely working, but the card styling is not using `isFeatured` correctly.
+
+DO NOT change the admin form unless necessary.
+DO NOT change sorting unless you discover a bug.
+Focus on making the visual Featured state actually render.
+
+--------------------------------------------------
+1. VERIFY THE PUBLIC JOB OBJECT
+--------------------------------------------------
+
+First inspect the public jobs API response and confirm the Featured property is available on each job.
+
+Check the exact property name, for example:
+
+```ts
+job.isFeatured
+
+or:
+
+job.featured
+
+Use the actual existing field.
+
+Do not create another Featured field.
+
+Temporarily inspect/log the job if needed to verify:
+
+console.log(job.title, job.isFeatured);
+
+Remove debug logs afterward.
+
+The public card must use the same property that is already causing Featured jobs to sort to the top.
+
+USE FEATURED STATUS IN THE CARD RENDER
+
+Locate the actual job card rendering code.
+
+Create one consistent boolean:
+
+const isFeatured = job.isFeatured === true;
+
+Adapt the field name if different.
+
+Then use isFeatured to control the card visual variant.
+
+Do not rely on:
+
+array position
+first job
+sort selection
+title
+salary
+Urgently Hiring
+
+Only:
+
+isFeatured === true
+
+should trigger the Featured appearance.
+
+FEATURED DESIGN
+
+For normal jobs, keep the current approved design:
+
+Purple/blue gradient header
+White body
+
+For Featured jobs, replace the purple header/card treatment with the previously approved warm premium design.
+
+Featured card target:
+
+cream / soft warm background
+subtle gold border
+amber/orange accents
+Featured badge with star icon
+warm initials avatar
+dark text
+still contains all normal job information
+
+Suggested outer card:
+
+className={cn(
+  "overflow-hidden rounded-2xl border shadow-sm transition-shadow",
+  isFeatured
+    ? "border-amber-300/70 bg-gradient-to-br from-amber-50 via-white to-orange-50/60 ring-1 ring-amber-200/40"
+    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+)}
+
+Use the project's existing class helper if available.
+
+FEATURED HEADER
+
+Normal job:
+
+Keep:
+
+bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+
+Featured job:
+
+Do NOT use the purple gradient.
+
+Use:
+
+bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70
+
+or a similar subtle warm treatment.
+
+Example:
+
+className={cn(
+  "px-5 py-4",
+  isFeatured
+    ? "bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/70"
+    : "bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600"
+)}
+FEATURED TEXT COLORS
+
+Because Featured uses a light background, do not keep white text.
+
+For Featured:
+
+Job title:
+
+text-slate-900
+
+Company:
+
+text-slate-500
+
+Salary:
+
+text-slate-900
+
+Posted date:
+
+text-slate-500
+
+Normal jobs should keep:
+
+text-white
+text-white/75
+text-white/70
+
+Use conditional classes.
+
+ADD FEATURED BADGE
+
+Add a visible Featured badge near the top-left of the Featured card.
+
+Example:
+
+{isFeatured && (
+  <div className="mb-3">
+    <span
+      className="
+        inline-flex items-center gap-1.5
+        rounded-full
+        bg-amber-100
+        px-2.5 py-1
+        text-[11px]
+        font-semibold
+        uppercase
+        tracking-wide
+        text-amber-700
+      "
+    >
+      <Star className="h-3.5 w-3.5 fill-current" />
+      Featured
+    </span>
+  </div>
+)}
+
+Use the existing icon library.
+
+Do not install another icon package.
+
+FEATURED INITIALS AVATAR
+
+Current normal avatar can remain purple/translucent.
+
+For Featured:
+
+className="
+  flex h-11 w-11 items-center justify-center
+  rounded-xl
+  bg-gradient-to-br from-amber-400 to-orange-500
+  text-sm font-bold text-white
+  shadow-sm
+"
+
+Example:
+
+<div
+  className={cn(
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold",
+    isFeatured
+      ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm"
+      : "bg-white/15 text-white ring-1 ring-white/15"
+  )}
+>
+  {getRoleInitials(job.title)}
+</div>
+KEEP NORMAL BADGE COLORS
+
+Do not make all badges amber.
+
+Keep:
+
+Urgently Hiring:
+
+light red
+
+Remote:
+
+violet
+
+Full Time:
+
+green
+
+Annual:
+
+blue
+
+Commission:
+
+green/teal
+
+Equity:
+
+purple
+
+Featured is a separate status.
+
+FEATURED APPLY BUTTON
+
+For Featured jobs, use a warm CTA:
+
+bg-gradient-to-r from-amber-500 to-orange-500
+
+For normal jobs, keep current purple Apply button.
+
+Example:
+
+className={cn(
+  "...existing button classes...",
+  isFeatured
+    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+    : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+)}
+
+Do not change the click handler.
+
+KEEP THE DESCRIPTION
+
+Featured jobs must still show the Card Preview Summary / description.
+
+Do not hide it.
+
+Featured card should still contain:
+
+description
+skills
+Apply Now
+View details
+
+Exactly like regular cards.
+
+KEEP COMPENSATION DETAILS
+
+Featured cards must still show:
+
+salary
+compensation type badge such as Annual
+posted age
+Commission
+Equity
+
+Do not remove any of these when switching to the Featured variant.
+
+EXPECTED FEATURED RESULT
+
+Featured card should roughly look like:
+
+┌─────────────────────────────────────────────────────────┐
+│ ★ FEATURED                                              │
+│                                                         │
+│ [IA] IT Administrator                    USD 55k–60k     │
+│      OnSpot                              [Annual]        │
+│      [Urgently Hiring] [Remote]          Posted 3 weeks │
+│      [Full Time]                         + Commission    │
+│                                          + Equity        │
+│                                                         │
+│ Job summary...                                          │
+│                                                         │
+│ [skills...]                                             │
+│                                                         │
+│ [Apply Now] [View details →]                            │
+└─────────────────────────────────────────────────────────┘
+
+Visual style:
+
+warm cream/gold
+amber border
+amber/orange avatar
+Featured badge
+dark text
+NORMAL JOBS MUST REMAIN UNCHANGED
+
+Regular jobs should still look exactly like they do now:
+
+purple gradient header
+white title text
+regular purple Apply button
+
+Do not accidentally change every card.
+
+DARK MODE
+
+Add Featured dark-mode styling:
+
+dark:border-amber-700/40
+dark:bg-gradient-to-br
+dark:from-amber-950/40
+dark:via-slate-950
+dark:to-orange-950/30
+
+Text:
+
+dark:text-amber-50
+
+Use appropriate dark variants so Featured still looks intentional.
+
+CHECK FOR A COMMON BUG
+
+Inspect whether the code currently does something like:
+
+const cardClass = regularGradient;
+
+before checking isFeatured, causing the regular classes to override Featured classes.
+
+Also inspect Tailwind class conflicts such as:
+
+bg-gradient-to-r ...
+bg-white ...
+
+being applied simultaneously.
+
+Make sure only one visual variant wins.
+
+If using cn() / clsx(), verify the order of classes.
+
+VERIFY FIELD MAPPING
+
+Because sorting already works, the Featured data exists somewhere.
+
+But still verify that the card is reading the same object property used by sorting.
+
+For example, avoid this mismatch:
+
+// sorting
+job.isFeatured
+
+// card styling
+job.featured
+
+Both must use the same field.
+
+DO NOT CHANGE
+
+Do not change:
+
+admin checkbox behavior
+database schema unless absolutely necessary
+featured sorting if already correct
+Featured filter unless broken
+search
+other sorting modes
+Commission/Equity
+compensation formatting
+posted-weeks formatter
+description
+application flow
+
+This is primarily a Featured visual rendering bug.
+
+TEST
+
+Test these cases:
+
+A. Featured job:
+
+isFeatured = true
+
+Expected:
+
+appears near top
+warm Featured card
+Featured badge visible
+
+B. Normal job:
+
+isFeatured = false
+
+Expected:
+
+normal purple card
+
+C. Toggle Featured OFF in Admin:
+Expected:
+
+card returns to normal purple styling
+
+D. Toggle Featured ON again:
+Expected:
+
+Featured style returns
+AFTER FIXING
+
+Report:
+
+Exact files changed
+Exact Featured field name
+Root cause of why sorting worked but styling did not
+Where the conditional Featured styling was added/fixed
+Confirmation that Featured jobs now use the cream/gold design
+Confirmation that regular jobs retain the purple design
+Confirmation that Featured toggle OFF returns the card to normal
+Confirmation that no database changes were needed unless actually required
+
+The key clue is that the job **already moves to the top**. That strongly suggests the data side is fine; the public card is probably either not checking the Featured property at all, checking the wrong property name, or having its Featured classes overridden by the normal gradient classes.
