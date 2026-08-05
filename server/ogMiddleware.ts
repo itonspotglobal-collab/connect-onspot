@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
-// ── Social bot detection ───────────────────────────────────────────────────────
-const SOCIAL_BOT_PATTERNS = [
+// ── Web crawler / bot detection ───────────────────────────────────────────────
+// Covers: social preview bots, AI/LLM crawlers, SEO audit tools, and archivers.
+// All of these receive pre-rendered HTML with correct metadata instead of the
+// blank SPA shell — they do not execute JavaScript.
+const CRAWLER_PATTERNS = [
+  // ── Social preview bots ─────────────────────────────────────────────────────
   // Facebook / Instagram / Messenger
   "facebookexternalhit",
   "facebot",
@@ -19,7 +23,6 @@ const SOCIAL_BOT_PATTERNS = [
   "msnbot",
   "bingbot",
   "bingpreview",
-  "microsoft",
   // WhatsApp
   "whatsapp",
   // Discord
@@ -33,32 +36,88 @@ const SOCIAL_BOT_PATTERNS = [
   // iMessage / Apple
   "applebot",
   "icloud",
-  // Google
-  "googlebot",
-  "google-inspectiontool",
-  "developers.google.com/+/web/snippet",
-  // Other link-preview services
+  // Reddit
+  "redditbot",
+  // Flipboard / Tumblr / Bitly
+  "flipboard",
+  "tumblr",
+  "bitlybot",
+  // Link-preview services
   "rogerbot",
-  "ia_archiver",
   "embedly",
   "outbrain",
   "quora link preview",
   "showyoubot",
-  "w3c_validator",
   "vkshare",
   "xing-contenttabreceiver",
-  "redditbot",
-  "flipboard",
-  "tumblr",
-  "bitlybot",
+
+  // ── Search engines ──────────────────────────────────────────────────────────
+  "googlebot",
+  "google-inspectiontool",
+  "google-extended",            // Google Gemini training / AI overviews
+  "developers.google.com/+/web/snippet",
+  "bingbot",
+  "duckduckbot",
+  "yandexbot",
+  "baiduspider",
+  "ia_archiver",                // Internet Archive / Wayback Machine
+  "archive.org_bot",
+
+  // ── AI / LLM crawlers ───────────────────────────────────────────────────────
+  // Anthropic / Claude
+  "claudebot",
+  "anthropic-ai",
+  "claude-web",
+  // OpenAI / ChatGPT
+  "gptbot",
+  "chatgpt-user",
+  "openai-searchbot",
+  "oai-searchbot",
+  // Perplexity AI
+  "perplexitybot",
+  // Google AI / Gemini
+  "gemini",
+  "google-cloudvertexbot",
+  // Meta AI
+  "meta-externalagent",
+  "meta-externalfetcher",
+  // You.com AI search
+  "youbot",
+  // Cohere AI
+  "cohere-ai",
+  // Bytedance / TikTok AI
+  "bytespider",
+  // Common Crawl (used by many AI training pipelines)
+  "ccbot",
+  // Diffbot (entity/knowledge extraction)
+  "diffbot",
+  // Amazon / Alexa
+  "amazonbot",
+  // Apple AI
+  "applebot-extended",
+
+  // ── SEO audit tools ─────────────────────────────────────────────────────────
   "semrushbot",
+  "ahrefsbot",
+  "mj12bot",                    // Majestic SEO
+  "dotbot",                     // Moz
+  "screaming frog",
+  "serpstatbot",
+  "seokicks",
   "preview",
+
+  // ── Generic / validation ────────────────────────────────────────────────────
+  "w3c_validator",
 ];
 
-function isSocialBot(req: Request): boolean {
+/** Returns true for any known crawler / bot User-Agent (social, AI, SEO, or archiver). */
+export function isCrawler(req: Request): boolean {
   const ua = (req.get("User-Agent") || "").toLowerCase();
-  return SOCIAL_BOT_PATTERNS.some((pattern) => ua.includes(pattern));
+  return CRAWLER_PATTERNS.some((pattern) => ua.includes(pattern));
 }
+
+/** @deprecated Use isCrawler — kept for any callers that imported the old name. */
+function isSocialBot(req: Request): boolean { return isCrawler(req); }
 
 export function escapeHtml(str: string): string {
   return str
@@ -111,6 +170,8 @@ export interface OGMeta {
   image: string;
   url: string;
   ogType: string;
+  /** Optional rich text block injected into the bot HTML <main> for AI crawlers. */
+  pageContent?: string;
 }
 
 // ── Per-route metadata resolver ───────────────────────────────────────────────
@@ -127,6 +188,20 @@ export async function resolveOGMeta(
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}/`,
       ogType: "website",
+      pageContent: `
+        <section>
+          <h2>AI-Powered Outsourcing for US Businesses</h2>
+          <p>OnSpot is the first integrator system that fuses AI-first infrastructure with Philippine operational excellence to scale businesses and empower people to work without limits.</p>
+          <h3>What We Do</h3>
+          <ul>
+            <li><strong>Hire Talent:</strong> Pre-vetted remote professionals placed within 72 hours</li>
+            <li><strong>AI Assistant (Vanessa):</strong> Intelligent business operations powered by AI</li>
+            <li><strong>Find Work:</strong> Remote jobs in customer support, development, design, and more</li>
+            <li><strong>Managed Services:</strong> End-to-end team management and performance tracking</li>
+          </ul>
+          <h3>Who We Serve</h3>
+          <p>U.S. entrepreneurs, SMBs, and enterprise teams looking to scale operations cost-effectively with top Philippine talent and AI infrastructure.</p>
+        </section>`,
     };
   }
 
@@ -178,46 +253,112 @@ export async function resolveOGMeta(
 
   // ── Find Work / Jobs ──────────────────────────────────────────────────────────
   if (pathname.startsWith("/jobs") || pathname.startsWith("/find-work")) {
-    // Individual job page
-    if (
-      /^\/jobs\/[^/]+\/?$/.test(pathname) ||
-      /^\/find-work\/job\/[^/]+\/?$/.test(pathname)
-    ) {
+    // Individual job detail page — try to pull the actual title from DB
+    const jobDetailMatch = pathname.match(/^\/jobs\/([a-f0-9-]{8,})\/?$/i);
+    if (jobDetailMatch) {
+      const jobId = jobDetailMatch[1];
+      try {
+        const job = await storage.getJob(jobId);
+        if (job) {
+          const roleTitle = (job as any).professionalRoleName || job.title || "Open Role";
+          const company = job.company || "a global employer";
+          const location = job.location || "Remote";
+          const contractType = job.contractType ? ` · ${job.contractType}` : "";
+          return {
+            title: `${roleTitle} at ${company} | OnSpot Global`,
+            description: `Apply for ${roleTitle} at ${company}. ${location}${contractType}. Browse and apply for remote outsourcing jobs on OnSpot Global — no experience required, top Philippine talent welcome.`,
+            image: DEFAULT_OG_IMAGE,
+            url: `${SITE}/jobs/${jobId}`,
+            ogType: "website",
+            pageContent: `
+              <section>
+                <h2>${escapeHtml(roleTitle)}</h2>
+                <p><strong>Company:</strong> ${escapeHtml(company)}</p>
+                <p><strong>Location:</strong> ${escapeHtml(location)}</p>
+                ${contractType ? `<p><strong>Type:</strong> ${escapeHtml(job.contractType || "")}</p>` : ""}
+                <p>Apply now on <a href="${SITE}/jobs/${jobId}">OnSpot Global</a>.</p>
+              </section>`,
+          };
+        }
+      } catch (err) {
+        console.error("[ogMiddleware] DB error fetching job:", jobId, err);
+      }
+      // Job not found → fall through to generic response
       return {
         title: "Job Opening | OnSpot Global",
-        description:
-          "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
+        description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}${pathname}`,
         ogType: "website",
       };
     }
+
+    // Old find-work/job/:id pattern
+    if (/^\/find-work\/job\/[^/]+\/?$/.test(pathname)) {
+      return {
+        title: "Job Opening | OnSpot Global",
+        description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
+        image: DEFAULT_OG_IMAGE,
+        url: `${SITE}${pathname}`,
+        ogType: "website",
+      };
+    }
+
+    // All-jobs browse page
+    if (pathname === "/find-work/all-jobs" || pathname === "/find-work/all-jobs/") {
+      return {
+        title: "Browse All Remote Jobs | OnSpot Global",
+        description: "Explore all open remote jobs on OnSpot Global — customer support, software development, design, marketing, virtual assistant roles, and more.",
+        image: DEFAULT_OG_IMAGE,
+        url: `${SITE}/find-work/all-jobs`,
+        ogType: "website",
+        pageContent: `
+          <section>
+            <h2>Open Remote Job Categories</h2>
+            <ul>
+              <li>Customer Support &amp; Virtual Assistance</li>
+              <li>Software Development &amp; Engineering</li>
+              <li>Design &amp; Creative</li>
+              <li>Marketing &amp; Lead Generation</li>
+              <li>Finance, Accounting &amp; Admin</li>
+              <li>Sales &amp; Business Development</li>
+            </ul>
+          </section>`,
+      };
+    }
+
     // Jobs listing (find-work/jobs)
     if (pathname === "/find-work/jobs" || pathname === "/find-work/jobs/") {
       return {
         title: "Remote Jobs | OnSpot Global",
-        description:
-          "Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot Global.",
+        description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot Global.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}/find-work/jobs`,
         ogType: "website",
       };
     }
+
     // Category or generic find-work
     const cat = query.category || null;
-    const catLabel =
-      cat && cat !== "all"
-        ? ` – ${cat.charAt(0).toUpperCase() + cat.slice(1)}`
-        : "";
+    const catLabel = cat && cat !== "all"
+      ? ` – ${cat.charAt(0).toUpperCase() + cat.slice(1)}`
+      : "";
     return {
       title: `Find Work${catLabel} | OnSpot Global`,
-      description:
-        "Browse remote outsourcing jobs in customer support, development, design, marketing, and more. OnSpot connects top Philippine talent with global clients.",
+      description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more. OnSpot connects top Philippine talent with global clients.",
       image: DEFAULT_OG_IMAGE,
-      url: cat
-        ? `${SITE}/find-work?category=${encodeURIComponent(cat)}`
-        : `${SITE}/find-work`,
+      url: cat ? `${SITE}/find-work?category=${encodeURIComponent(cat)}` : `${SITE}/find-work`,
       ogType: "website",
+      pageContent: `
+        <section>
+          <h2>Why Work Through OnSpot?</h2>
+          <ul>
+            <li>Remote jobs with US and global companies</li>
+            <li>Full-time, part-time, and contract opportunities</li>
+            <li>Fast application process — apply once, get matched to multiple roles</li>
+            <li>Competitive pay in USD</li>
+          </ul>
+        </section>`,
     };
   }
 
@@ -225,11 +366,28 @@ export async function resolveOGMeta(
   if (pathname === "/hire-talent" || pathname === "/hire-talent/") {
     return {
       title: "Hire Talent | OnSpot Global",
-      description:
-        "Hire pre-vetted remote professionals from the Philippines. OnSpot places top talent in customer support, development, design, and more within 72 hours.",
+      description: "Hire pre-vetted remote professionals from the Philippines. OnSpot places top talent in customer support, development, design, and more within 72 hours.",
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}/hire-talent`,
       ogType: "website",
+      pageContent: `
+        <section>
+          <h2>How Hiring Works</h2>
+          <ol>
+            <li>Tell us what you need — role, skills, hours, and budget</li>
+            <li>OnSpot AI matches your requirements to pre-vetted Filipino professionals</li>
+            <li>Review top candidates within 24 hours</li>
+            <li>Hire and onboard in as little as 72 hours</li>
+          </ol>
+          <h3>Roles We Fill</h3>
+          <ul>
+            <li>Customer support agents and virtual assistants</li>
+            <li>Software engineers and web developers</li>
+            <li>Graphic designers and content creators</li>
+            <li>Marketing specialists and SEO experts</li>
+            <li>Accountants, bookkeepers, and finance ops</li>
+          </ul>
+        </section>`,
     };
   }
 
@@ -387,12 +545,50 @@ export function buildMetaTagsHtml(meta: OGMeta): string {
   <meta name="twitter:image:alt" content="${t}" />`;
 }
 
-// ── Minimal bot-only HTML (for known social crawlers — lightweight, no scripts) ─
+// ── Rich crawler HTML ─────────────────────────────────────────────────────────
+// Served to all detected web crawlers (social bots, AI indexers, SEO tools).
+// Includes complete head metadata, structured JSON-LD, nav links, and
+// route-specific body content so AI/LLM crawlers can understand every page
+// without executing JavaScript.
 function buildBotHtml(meta: OGMeta): string {
   const t = escapeHtml(meta.title);
   const d = escapeHtml(meta.description);
   const img = escapeHtml(meta.image);
   const url = escapeHtml(meta.url);
+
+  const orgSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "OnSpot",
+    legalName: "OnSpot Global",
+    url: "https://www.onspotglobal.com",
+    logo: "https://www.onspotglobal.com/assets/onspot-logo.png",
+    description: "AI-powered outsourcing platform connecting US businesses with top Philippine talent.",
+    sameAs: [
+      "https://www.linkedin.com/company/onspotglobal",
+      "https://www.facebook.com/onspotglobal",
+    ],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "sales",
+      url: "https://www.onspotglobal.com/hire-talent",
+    },
+  });
+
+  const websiteSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "OnSpot Global",
+    url: "https://www.onspotglobal.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.onspotglobal.com/find-work/all-jobs?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  });
+
+  const pageContent = meta.pageContent ?? "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -401,6 +597,8 @@ function buildBotHtml(meta: OGMeta): string {
   <title>${t}</title>
   <meta name="description" content="${d}" />
   <link rel="canonical" href="${url}" />
+
+  <!-- Open Graph -->
   <meta property="og:type" content="${meta.ogType}" />
   <meta property="og:site_name" content="OnSpot" />
   <meta property="og:url" content="${url}" />
@@ -413,6 +611,8 @@ function buildBotHtml(meta: OGMeta): string {
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${t}" />
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@OnSpotGlobal" />
   <meta name="twitter:url" content="${url}" />
@@ -420,19 +620,52 @@ function buildBotHtml(meta: OGMeta): string {
   <meta name="twitter:description" content="${d}" />
   <meta name="twitter:image" content="${img}" />
   <meta name="twitter:image:alt" content="${t}" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">${orgSchema}</script>
+  <script type="application/ld+json">${websiteSchema}</script>
 </head>
 <body>
-  <h1>${t}</h1>
-  <p>${d}</p>
-  <p><a href="${url}">Read on OnSpot Global</a></p>
+  <!-- OnSpot Global — AI-powered outsourcing platform for US businesses. -->
+  <header>
+    <a href="https://www.onspotglobal.com"><strong>OnSpot Global</strong></a>
+    <nav>
+      <a href="https://www.onspotglobal.com/hire-talent">Hire Talent</a>
+      <a href="https://www.onspotglobal.com/find-work/all-jobs">Browse Jobs</a>
+      <a href="https://www.onspotglobal.com/pricing">Pricing</a>
+      <a href="https://www.onspotglobal.com/insights">Insights</a>
+      <a href="https://www.onspotglobal.com/why-onspot">About</a>
+      <a href="https://www.onspotglobal.com/faq">FAQ</a>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1>${t}</h1>
+      <p>${d}</p>
+      ${pageContent}
+      <p><a href="${url}">View on OnSpot Global →</a></p>
+    </article>
+  </main>
+  <footer>
+    <p><strong>OnSpot Global</strong> — Work Without Limits</p>
+    <p>AI-powered outsourcing platform connecting U.S. businesses with top Philippine talent in customer support, software development, design, marketing, and more.</p>
+    <nav>
+      <a href="https://www.onspotglobal.com/hire-talent">Hire Talent</a> ·
+      <a href="https://www.onspotglobal.com/find-work/all-jobs">Browse Jobs</a> ·
+      <a href="https://www.onspotglobal.com/pricing">Pricing</a> ·
+      <a href="https://www.onspotglobal.com/insights">Insights</a> ·
+      <a href="https://www.onspotglobal.com/why-onspot/about">About</a> ·
+      <a href="https://www.onspotglobal.com/sitemap.xml">Sitemap</a>
+    </nav>
+  </footer>
 </body>
 </html>`;
 }
 
 // ── Express middleware ─────────────────────────────────────────────────────────
-// Intercepts known social bots and serves a minimal bot HTML page instantly.
-// Regular browsers fall through to the SPA handler in serveStatic which also
-// injects metadata — this is the belt-and-suspenders layer for bots.
+// Intercepts all known web crawlers (social, AI, SEO) before the Vite/static
+// catch-all and serves structured HTML with full metadata and body content.
+// Regular browsers pass through to the SPA unchanged.
 export async function ogMiddleware(
   req: Request,
   res: Response,
@@ -441,7 +674,7 @@ export async function ogMiddleware(
   if (req.method !== "GET") return next();
   if (req.path.startsWith("/api/")) return next();
   if (/\.[a-zA-Z0-9]{1,10}$/.test(req.path)) return next();
-  if (!isSocialBot(req)) return next();
+  if (!isCrawler(req)) return next();
 
   try {
     const meta = await resolveOGMeta(

@@ -5,7 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
-import { resolveOGMeta, buildMetaTagsHtml, escapeHtml, type OGMeta } from "./ogMiddleware";
+import { resolveOGMeta, buildMetaTagsHtml, escapeHtml, isCrawler, type OGMeta } from "./ogMiddleware";
 
 const viteLogger = createLogger();
 
@@ -59,6 +59,22 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
+
+      // In dev mode, inject route-specific metadata for crawler User-Agents so
+      // that testing against the dev URL produces the same metadata a crawler
+      // would see in production.  Regular browsers are unaffected.
+      if (isCrawler(req)) {
+        try {
+          const meta = await resolveOGMeta(
+            req.path,
+            req.query as Record<string, string>,
+          );
+          template = injectMetadataIntoHtml(template, meta);
+        } catch {
+          // Non-fatal — fall through and serve the unmodified template
+        }
+      }
+
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {

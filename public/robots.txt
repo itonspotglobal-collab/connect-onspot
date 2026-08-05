@@ -1,8 +1,65 @@
-# OnSpot - Robots.txt
-# Allow global crawl for both US and PH pages
+# OnSpot Global — robots.txt
+# https://www.onspotglobal.com
 
+# ── Allow all crawlers on public content ──────────────────────────────────────
 User-agent: *
 Allow: /
+Allow: /hire-talent
+Allow: /find-work
+Allow: /find-work/all-jobs
+Allow: /find-work/jobs
+Allow: /jobs/
+Allow: /insights
+Allow: /insights/
+Allow: /pricing
+Allow: /enterprise
+Allow: /why-onspot
+Allow: /services/
+Allow: /faq
+Allow: /sitemap.xml
 
-# Sitemap location
+# Block private/authenticated routes from all crawlers
+Disallow: /admin
+Disallow: /admin/
+Disallow: /client-dashboard
+Disallow: /talent-portal
+Disallow: /talent-dashboard
+Disallow: /profile-settings
+Disallow: /api/
+Disallow: /pilot-dashboard
+
+# ── AI / LLM crawlers — explicitly welcome on public pages ───────────────────
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+# OpenAI GPT
+User-agent: GPTBot
+Allow: /
+
+# OpenAI ChatGPT browsing
+User-agent: ChatGPT-User
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# Google Gemini / AI Overviews
+User-agent: Google-Extended
+Allow: /
+
+# Meta AI
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# Common Crawl (AI training datasets)
+User-agent: CCBot
+Allow: /
+
+# Bytedance / TikTok AI
+User-agent: Bytespider
+Allow: /
+
+# ── Sitemap ───────────────────────────────────────────────────────────────────
 Sitemap: https://www.onspotglobal.com/sitemap.xml

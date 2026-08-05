@@ -9505,6 +9505,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Dynamic sitemap ───────────────────────────────────────────────────────────
+  // Registered here (inside registerRoutes) so it takes precedence over the
+  // express.static(public/) middleware that would otherwise serve the static
+  // public/sitemap.xml.  This dynamic version includes published blog posts and
+  // open job listings in addition to all static marketing routes.
+  app.get("/sitemap.xml", async (_req: Request, res: Response) => {
+    try {
+      const { generateSitemapXml } = await import("./sitemapService");
+      const xml = await generateSitemapXml();
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600"); // 1-hour cache
+      res.status(200).send(xml);
+    } catch (err) {
+      console.error("[sitemap] Generation failed, falling back to static file:", err);
+      res.status(500).send("<?xml version=\"1.0\"?><error>Sitemap temporarily unavailable</error>");
+    }
+  });
+
+  // ── Crawl preview / SEO validation endpoint ───────────────────────────────────
+  // Shows exactly what a web crawler receives for any route.
+  // Usage: GET /api/crawl-preview?path=/hire-talent
+  // Usage: GET /api/crawl-preview?path=/jobs/<uuid>
+  app.get("/api/crawl-preview", async (req: Request, res: Response) => {
+    const targetPath = (req.query.path as string) || "/";
+    if (!targetPath.startsWith("/")) {
+      return res.status(400).json({ error: "path must start with /" });
+    }
+    // Strip private routes from preview
+    const BLOCKED = ["/admin", "/client-dashboard", "/talent-portal", "/api/"];
+    if (BLOCKED.some((p) => targetPath.startsWith(p))) {
+      return res.status(403).json({ error: "Cannot preview private routes" });
+    }
+    try {
+      const { resolveOGMeta } = await import("./ogMiddleware");
+      const meta = await resolveOGMeta(targetPath, req.query as Record<string, string>);
+      return res.json({
+        path: targetPath,
+        crawlerReceives: {
+          title: meta.title,
+          description: meta.description,
+          canonical: meta.url,
+          ogType: meta.ogType,
+          ogImage: meta.image,
+          hasPageContent: !!meta.pageContent,
+          pageContentPreview: meta.pageContent
+            ? meta.pageContent.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200)
+            : null,
+        },
+        note: "In production, serveStatic injects these tags into the SPA shell for ALL visitors. Detected crawlers (social, AI, SEO) additionally receive structured HTML body content.",
+      });
+    } catch (err) {
+      console.error("[crawl-preview] Error:", err);
+      return res.status(500).json({ error: "Failed to resolve metadata" });
+    }
+  });
+
   return httpServer;
 }
 
