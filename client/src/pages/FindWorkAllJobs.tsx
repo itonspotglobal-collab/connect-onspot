@@ -273,7 +273,7 @@ function JobCard({
               {salaryPeriodLabel && (
                 <p className="mt-0.5 text-[11px] text-white/65">{salaryPeriodLabel}</p>
               )}
-              <p className="mt-1 text-xs text-white/70">Posted {timeAgo}</p>
+              <p className="mt-1 text-xs text-white/70">{timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}</p>
               {((job as any).hasCommission || (job as any).hasEquity) && (
                 <div className="mt-3 flex flex-wrap gap-1.5 sm:justify-end">
                   {(job as any).hasCommission && (

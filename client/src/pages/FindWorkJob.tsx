@@ -491,7 +491,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             {badges.length === 0 && (
               <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">Open</span>
             )}
-            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">Posted {timeAgo}</span>
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">{timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}</span>
           </div>
 
           <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl">

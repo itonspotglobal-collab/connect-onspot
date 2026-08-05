@@ -292,21 +292,40 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
 
 // ── Timestamp Formatting ──────────────────────────────────────────────────────
 
+/**
+ * Returns a human-readable relative age for a job posting date.
+ *
+ * Rules:
+ *   < 1 min       → "Just posted"
+ *   1–59 min      → "X minute(s) ago"
+ *   1–23 h        → "X hour(s) ago"
+ *   1 day         → "1 day ago"
+ *   2–6 days      → "X days ago"
+ *   7+ days       → "X week(s) ago"   ← never months
+ *
+ * Future timestamps (clock skew etc.) are treated as "Just posted".
+ * Invalid / missing dates fall back to "Recently".
+ */
 export function getTimeAgo(
   dateInput: string | Date | null | undefined
 ): string {
   if (!dateInput) return "Recently";
-  const date =
-    typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   if (isNaN(date.getTime())) return "Recently";
-  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
-  const months = Math.floor(days / 30);
-  return `${months} month${months === 1 ? "" : "s"} ago`;
+
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 0) return "Just posted"; // clock skew / future timestamp
+
+  const diffMins  = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays  = Math.floor(diffMs / 86_400_000);
+  const diffWeeks = Math.floor(diffDays / 7);
+
+  if (diffMins  < 1)  return "Just posted";
+  if (diffMins  < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays  < 7)  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+  return `${diffWeeks} week${diffWeeks === 1 ? "" : "s"} ago`;
 }
 
 // ── Formatting Helpers ────────────────────────────────────────────────────────

@@ -1,0 +1,509 @@
+Update the relative "Posted" date formatting for job postings across the ENTIRE Find Work / Jobs system.
+
+IMPORTANT:
+This is NOT a change for only `FindWorkAllJobs.tsx`.
+
+Inspect all connected pages/components that display when a job was posted and make sure they all use the same shared formatting logic.
+
+Examples may include:
+- `client/src/pages/FindWorkAllJobs.tsx`
+- `client/src/pages/FindWorkJob.tsx`
+- Find Work job cards
+- Job Details / View Details
+- Find Work Admin / Jobs Admin
+- job preview components/modals
+- reusable JobCard components
+- any other component displaying "Posted X ago"
+
+GOAL
+
+Currently older job postings display dates like:
+
+"Posted 3 months ago"
+"Posted 5 months ago"
+"3 Months Ago"
+
+We no longer want to use MONTHS for job-posting age.
+
+Months make the job posting visually feel much older.
+
+Instead, once the age passes the day range, continue expressing the posting age in WEEKS.
+
+Examples:
+
+Current:
+"Posted 3 months ago"
+
+New:
+"Posted 13 weeks ago"
+
+Current:
+"Posted 5 months ago"
+
+New:
+"Posted 22 weeks ago"
+
+Do NOT approximate months and multiply them by 4.
+
+Always calculate the weeks directly from the actual job posting date.
+
+--------------------------------------------------
+1. CREATE / UPDATE ONE SHARED DATE FORMATTER
+--------------------------------------------------
+
+First inspect the project for an existing helper such as:
+
+- formatPostedDate
+- formatRelativeDate
+- getTimeAgo
+- timeAgo
+- formatJobAge
+- dateUtils
+- formatDistanceToNow
+
+If an existing shared utility already controls these labels, update it instead of creating duplicate logic.
+
+If multiple pages currently have their own date calculations, consolidate them into ONE shared utility.
+
+For example:
+
+```ts
+export function formatJobPostedDate(
+  date: string | Date | null | undefined
+): string {
+  // shared implementation
+}
+
+Put it in the project's existing utility location.
+
+For example:
+
+client/src/lib/dateUtils.ts
+
+or the equivalent existing utilities folder.
+
+Do not create a new utilities structure if the project already has one.
+
+DESIRED RELATIVE DATE RULES
+
+Use the actual elapsed time between:
+
+job.createdAt / postedAt
+
+and:
+
+current date/time
+
+Use these display rules:
+
+Less than 1 minute:
+Just posted
+
+1–59 minutes:
+Posted 25 minutes ago
+
+1–23 hours:
+Posted 6 hours ago
+
+1 day:
+Posted 1 day ago
+
+2–6 days:
+Posted 4 days ago
+
+7 days:
+Posted 1 week ago
+
+8+ days:
+continue using weeks.
+
+Examples:
+
+8 days:
+Posted 1 week ago
+
+14 days:
+Posted 2 weeks ago
+
+21 days:
+Posted 3 weeks ago
+
+30 days:
+Posted 4 weeks ago
+
+60 days:
+Posted 8 weeks ago
+
+90 days:
+approximately
+Posted 12 weeks ago
+
+120 days:
+approximately
+Posted 17 weeks ago
+
+IMPORTANT:
+There should be NO switch from weeks to months.
+
+Even older jobs should continue displaying weeks.
+
+For example:
+
+Posted 26 weeks ago
+
+instead of:
+
+Posted 6 months ago
+
+CALCULATE WEEKS FROM THE ACTUAL DATE
+
+Do NOT do this:
+
+months * 4
+
+That is inaccurate.
+
+Calculate elapsed milliseconds/days first:
+
+const diffMs = now.getTime() - postedDate.getTime();
+
+const diffDays = Math.floor(
+  diffMs / (1000 * 60 * 60 * 24)
+);
+
+const diffWeeks = Math.floor(diffDays / 7);
+
+Then format the result.
+
+Use singular/plural correctly:
+
+1 week ago
+2 weeks ago
+
+Never:
+
+1 weeks ago
+BE CAREFUL WITH THE EXISTING PREFIX
+
+Inspect how components currently render the value.
+
+For example, if the utility returns:
+
+3 weeks ago
+
+and the component does:
+
+Posted {formatJobPostedDate(job.createdAt)}
+
+keep that pattern.
+
+Alternatively, if the utility itself returns:
+
+Posted 3 weeks ago
+
+then components should NOT add another "Posted".
+
+Avoid bugs such as:
+
+Posted Posted 3 weeks ago
+
+Choose ONE consistent approach.
+
+Preferred:
+
+Have the utility return only:
+
+Just posted
+5 minutes ago
+2 hours ago
+4 days ago
+3 weeks ago
+
+Then the component controls presentation:
+
+Posted {formatJobPostedDate(job.createdAt)}
+
+Exception:
+
+For Just posted, avoid producing:
+
+Posted Just posted
+
+Handle this cleanly if necessary.
+
+A helper such as:
+
+formatJobPostedAge()
+
+may return the age only.
+
+FIND EVERY JOB POSTED-DATE IMPLEMENTATION
+
+Search the entire codebase for:
+
+month ago
+months ago
+Month Ago
+Months Ago
+formatDistanceToNow
+createdAt
+postedAt
+posted
+Posted
+formatPostedDate
+timeAgo
+
+Identify all places where job posting age is displayed.
+
+Do not blindly change unrelated dates elsewhere in the website.
+
+This change should apply specifically to job-posting dates.
+
+PUBLIC FIND WORK CARDS
+
+Update the cards shown in Find Work.
+
+For example, the current card may show:
+
+Delivery Team Manager
+
+Rate TBD
+rate to be discussed
+Posted 3 months ago
+
+Change it to something like:
+
+Delivery Team Manager
+
+Rate TBD
+rate to be discussed
+Posted 13 weeks ago
+
+Keep the current layout, colors, typography, and spacing.
+
+Only change the relative date formatting.
+
+JOB DETAILS / VIEW DETAILS
+
+Update FindWorkJob.tsx or the equivalent Job Details page.
+
+For example:
+
+Current:
+
+[Urgently Hiring] [Posted 5 months ago]
+
+New:
+
+[Urgently Hiring] [Posted 22 weeks ago]
+
+The card/list page and View Details page MUST agree.
+
+The same job must not show:
+
+Posted 22 weeks ago
+
+on one page and:
+
+Posted 5 months ago
+
+on another.
+
+ADMIN / PREVIEW PAGES
+
+Inspect the Jobs Admin system as well.
+
+If the admin:
+
+job listing
+edit modal
+preview
+public-page preview
+job management card
+
+displays relative posting age, make it use the same shared utility.
+
+Again, do not change dates that are unrelated to job-posting age.
+
+DO NOT MODIFY DATABASE DATES
+
+This is a presentation/formatting change only.
+
+Do NOT modify:
+
+createdAt
+updatedAt
+postedAt
+database timestamps
+API timestamps
+
+Do not convert stored dates into weeks.
+
+The database/API should continue returning the real timestamp.
+
+Weeks should only be calculated when displaying the date.
+
+HANDLE INVALID / MISSING DATES SAFELY
+
+Do not allow:
+
+Posted NaN weeks ago
+Posted undefined
+Invalid Date
+
+Use the project's existing fallback behavior.
+
+If there is no valid posting date, either:
+
+hide the posted-age label, or
+use the existing fallback
+
+Do not invent a posting date.
+
+FUTURE DATES
+
+Protect against clock/timezone inconsistencies.
+
+If a timestamp is slightly in the future, do not display:
+
+Posted -1 weeks ago
+
+Treat it as:
+
+Just posted
+
+or use the project's equivalent safe fallback.
+
+KEEP EVERYTHING ELSE UNCHANGED
+
+Do NOT redesign the job cards.
+
+Do NOT change:
+
+gradient header
+initials avatar
+job title
+company
+salary
+Rate TBD
+Urgently Hiring
+Multiple Slots Open
+Remote/Hybrid/Onsite
+Full Time/Part Time/Contract
+Commission
+Equity
+Benefits
+description
+skills
+Apply Now
+View details
+filters
+sorting
+API behavior
+
+This task is specifically about standardizing the displayed job posting age.
+
+TEST CASES
+
+Test the shared formatter with at least:
+
+30 seconds
+→ Just posted
+
+5 minutes
+→ 5 minutes ago
+
+1 hour
+→ 1 hour ago
+
+6 hours
+→ 6 hours ago
+
+1 day
+→ 1 day ago
+
+5 days
+→ 5 days ago
+
+7 days
+→ 1 week ago
+
+14 days
+→ 2 weeks ago
+
+30 days
+→ 4 weeks ago
+
+60 days
+→ 8 weeks ago
+
+90 days
+→ 12 weeks ago
+
+180 days
+→ 25 weeks ago
+
+365 days
+→ 52 weeks ago
+
+The important requirement is:
+
+NEVER output:
+
+month ago
+months ago
+
+for job posting age.
+
+FINAL CODE QUALITY
+
+Avoid duplicating this logic across TSX files.
+
+Preferred architecture:
+
+Database timestamp
+↓
+API
+↓
+shared formatJobPostedAge() utility
+↓
+Find Work cards
+Job Details
+Admin
+Preview
+other job components
+
+This ensures future changes only need to happen in one place.
+
+EXPECTED RESULT
+
+Before:
+
+Posted 3 months ago
+
+After:
+
+Posted 13 weeks ago
+
+Before:
+
+Posted 5 months ago
+
+After:
+
+Posted 22 weeks ago
+
+The exact number of weeks must be calculated from the actual timestamp, not from the previously displayed month count.
+
+After implementation, report:
+
+The exact files changed.
+Where the shared formatter is located.
+Every job-related page/component updated to use it.
+Confirmation that no job page independently calculates months anymore.
+Confirmation that actual database/API timestamps were not modified.
+Confirmation that singular/plural week formatting works.
+Confirmation that invalid/future dates are safely handled.
+Confirmation that Find Work cards, View Details, Admin, and previews show consistent posting ages.
+
+The key part here is having Replit **centralize the calculation**. That way if you later decide you want `"13w ago"` instead of `"13 weeks ago"`, you'll only need to change one formatter rather than hunt through every job-related page.

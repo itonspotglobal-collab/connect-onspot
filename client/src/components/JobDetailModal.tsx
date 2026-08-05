@@ -33,6 +33,7 @@ import {
   copyToClipboard,
   shareNative,
 } from "@/lib/shareUtils";
+import { getTimeAgo } from "@/lib/jobUtils";
 
 const workCategories = [
   { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
@@ -114,17 +115,7 @@ export function JobDetailModal({
   const categoryInfo = getCategoryInfo(job.category);
   const IconComponent = categoryInfo.icon;
 
-  const now = new Date();
-  const postedDate = job.createdAt ? new Date(job.createdAt) : now;
-  const timeAgo = Math.floor((now.getTime() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-  const getTimeAgoText = (days: number) => {
-    if (days <= 0) return "Today";
-    if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
-    const weeks = Math.floor(days / 7);
-    if (weeks < 5) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
-    const months = Math.floor(days / 30);
-    return `${months} month${months === 1 ? "" : "s"} ago`;
-  };
+  const postedAgo = getTimeAgo(job.createdAt);
 
   const rateDisplay = (job as any).salaryDisplay?.trim()
     || (job.hourlyRateMin && job.hourlyRateMax
@@ -247,7 +238,7 @@ export function JobDetailModal({
             <CalendarDays className="w-4 h-4 text-orange-500 flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Posted</div>
-              <div className="text-sm font-semibold truncate">{getTimeAgoText(timeAgo)}</div>
+              <div className="text-sm font-semibold truncate">{postedAgo}</div>
             </div>
           </div>
         </div>
