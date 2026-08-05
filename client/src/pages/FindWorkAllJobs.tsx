@@ -191,13 +191,18 @@ function JobCard({
   const pilotId = getJobPilotId(job);
   const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
 
-  // Salary period label from compensationType
   const compensationType = (job as any).compensationType as string | null | undefined;
-  const salaryPeriodLabel =
-    compensationType === "monthly" ? "per month" :
-    compensationType === "annual"  ? "per year"  :
-    compensationType === "project" ? "fixed project" :
-    pay === "Rate TBD"             ? "rate to be discussed" :
+
+  // Strip the trailing suffix that buildRateDisplay appends (e.g. /year, /month, /project, /mo)
+  // so the card can render salary and compensation type independently.
+  const payClean = pay.replace(/\/(year|month|project|mo)\b/g, "").trim();
+
+  // Small badge label rendered below the salary figure (not as plain text)
+  const compensationBadgeLabel: string | null =
+    compensationType === "annual"  ? "Annual"        :
+    compensationType === "monthly" ? "Monthly"       :
+    compensationType === "project" ? "Project Based" :
+    compensationType === "hourly"  ? "Hourly"        :
     null;
 
   // Build header badge list: utility badges first, then location, then contract type
@@ -294,11 +299,13 @@ function JobCard({
                 </div>
               </div>
 
-              {/* Right: dark salary + posted + commission/equity */}
+              {/* Right: dark salary + compensation badge + posted + commission/equity */}
               <div className="shrink-0 sm:text-right">
-                <p className="text-lg font-bold text-slate-900 dark:text-white md:text-xl">{pay}</p>
-                {salaryPeriodLabel && (
-                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{salaryPeriodLabel}</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white md:text-xl">{payClean}</p>
+                {compensationBadgeLabel && (
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-white/10 dark:text-slate-400">
+                    {compensationBadgeLabel}
+                  </span>
                 )}
                 <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{postedLabel}</p>
                 {commissionEquityBadges}
@@ -344,11 +351,13 @@ function JobCard({
                 </div>
               </div>
 
-              {/* Right: salary + period + posted + commission/equity */}
+              {/* Right: salary + compensation badge + posted + commission/equity */}
               <div className="shrink-0 sm:text-right">
-                <p className="text-lg font-semibold text-white md:text-xl">{pay}</p>
-                {salaryPeriodLabel && (
-                  <p className="mt-0.5 text-[11px] text-white/65">{salaryPeriodLabel}</p>
+                <p className="text-lg font-semibold text-white md:text-xl">{payClean}</p>
+                {compensationBadgeLabel && (
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/80 ring-1 ring-white/20">
+                    {compensationBadgeLabel}
+                  </span>
                 )}
                 <p className="mt-1 text-xs text-white/70">{postedLabel}</p>
                 {commissionEquityBadges}
