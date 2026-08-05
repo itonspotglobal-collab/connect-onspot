@@ -16,7 +16,7 @@ import {
   SlidersHorizontal,
   X,
   Star,
-  Trophy,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -248,45 +248,54 @@ function JobCard({
     >
       <article className={
         featured
-          ? "overflow-hidden rounded-2xl border border-amber-300/70 bg-gradient-to-br from-amber-50 via-white to-orange-50/60 shadow-sm ring-1 ring-amber-200/40 transition-shadow hover:shadow-md dark:border-amber-700/40 dark:from-amber-950/40 dark:via-slate-950 dark:to-orange-950/30"
+          ? "overflow-hidden rounded-2xl border border-amber-400/70 bg-gradient-to-br from-[#151108] via-[#241708] to-[#4a2b05] shadow-[0_0_24px_rgba(245,158,11,0.18)] transition-shadow hover:shadow-[0_0_32px_rgba(245,158,11,0.26)]"
           : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/[0.03]"
       }>
 
         {featured ? (
-          /* ── Featured: warm cream header ─────────────────────────────────── */
-          <div className="relative px-5 py-4">
-            {/* Featured label row + decorative trophy */}
-            <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                <Star className="h-3 w-3" aria-hidden="true" /> Featured
+          /* ── Featured: dark premium header ───────────────────────────────── */
+          <div className="relative px-5 py-5 overflow-hidden">
+            {/* Decorative Sparkles cluster — right side, desktop only */}
+            <Sparkles
+              className="pointer-events-none absolute -right-3 top-1/2 hidden -translate-y-1/2 sm:block h-28 w-28 text-amber-400/20"
+              aria-hidden="true"
+            />
+            <Sparkles
+              className="pointer-events-none absolute right-14 top-2 hidden sm:block h-10 w-10 text-orange-400/15"
+              aria-hidden="true"
+            />
+
+            {/* FEATURED badge */}
+            <div className="mb-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-300 ring-1 ring-amber-400/30">
+                <Star className="h-3 w-3 fill-amber-300" aria-hidden="true" /> Featured
               </span>
-              <Trophy className="hidden sm:block h-10 w-10 text-amber-300/50 dark:text-amber-700/30" aria-hidden="true" />
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              {/* Left: warm avatar + title + company + badges */}
+              {/* Left: gold avatar + title + company + badges */}
               <div className="flex items-start gap-3 min-w-0">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white shadow-sm"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white shadow-md shadow-orange-900/40"
                   aria-hidden="true"
                 >
                   {initials}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-white md:text-lg">
+                  <h3 className="text-base font-semibold leading-snug text-white md:text-lg">
                     {(job as any).professionalRoleName || job.title}
                   </h3>
                   {(job as any).originalRoleName && (
-                    <p className="mt-0.5 text-[11px] italic text-slate-400 truncate leading-tight">
+                    <p className="mt-0.5 text-[11px] italic text-amber-200/50 truncate leading-tight">
                       {(job as any).originalRoleName}
                     </p>
                   )}
-                  <p className="mt-0.5 text-xs text-slate-500 md:text-sm">
+                  <p className="mt-0.5 text-xs text-amber-100/60 md:text-sm">
                     {job.company ?? "OnSpot"}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {pilotId && (
-                      <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] bg-indigo-50 text-indigo-700">
+                      <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] bg-amber-400/15 text-amber-300 ring-1 ring-amber-400/20">
                         Pilot
                       </span>
                     )}
@@ -299,15 +308,15 @@ function JobCard({
                 </div>
               </div>
 
-              {/* Right: dark salary + compensation badge + posted + commission/equity */}
+              {/* Right: salary + compensation badge + posted + commission/equity */}
               <div className="shrink-0 sm:text-right">
-                <p className="text-lg font-bold text-slate-900 dark:text-white md:text-xl">{payClean}</p>
+                <p className="text-lg font-bold text-white md:text-xl">{payClean}</p>
                 {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-white/10 dark:text-slate-400">
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-amber-400/15 px-2 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-amber-400/20">
                     {compensationBadgeLabel}
                   </span>
                 )}
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{postedLabel}</p>
+                <p className="mt-1 text-xs text-amber-100/50">{postedLabel}</p>
                 {commissionEquityBadges}
               </div>
             </div>
@@ -366,14 +375,14 @@ function JobCard({
           </header>
         )}
 
-        {/* ── Body (shared) ─────────────────────────────────────────────────── */}
+        {/* ── Body ──────────────────────────────────────────────────────────── */}
         <div className="px-5 py-4">
 
           {/* Card preview summary */}
           {(() => {
             const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
-              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              <p className={`line-clamp-2 text-sm leading-6 ${featured ? "text-amber-100/70" : "text-slate-600 dark:text-slate-300"}`}>
                 {preview}
               </p>
             ) : null;
@@ -390,12 +399,25 @@ function JobCard({
           {visibleTags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {visibleTags.map((tag) => (
-                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300">
+                <span
+                  key={tag}
+                  className={
+                    featured
+                      ? "rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200/80"
+                      : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
+                  }
+                >
                   {tag}
                 </span>
               ))}
               {extraTags > 0 && (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500">
+                <span
+                  className={
+                    featured
+                      ? "rounded-full border border-amber-400/15 bg-amber-400/8 px-2.5 py-1 text-xs text-amber-300/50"
+                      : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500"
+                  }
+                >
                   +{extraTags} more
                 </span>
               )}
@@ -408,7 +430,7 @@ function JobCard({
               size="sm"
               className={
                 featured
-                  ? "rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-5 text-white border-0 hover:opacity-90"
+                  ? "rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-5 text-white border-0 hover:opacity-90 shadow-md shadow-orange-900/30"
                   : "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
               }
               onClick={() => {
@@ -423,7 +445,11 @@ function JobCard({
             </Button>
             <button
               onClick={() => onNavigate(job.id)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
+              className={
+                featured
+                  ? "inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-1.5 text-sm font-medium text-amber-200/80 transition-colors hover:border-amber-400/50 hover:text-amber-200"
+                  : "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
+              }
             >
               View details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>

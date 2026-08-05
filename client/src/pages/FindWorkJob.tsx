@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, Sparkles, Clock3, Globe2,
+  ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
   Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
   Wifi, Monitor,
