@@ -585,13 +585,16 @@ export default function FindWorkAllJobs() {
   }>(() => {
     if (search.trim())
       return { recommendedJobs: [], recsArePersonalized: false };
+    // Exclude featured jobs from recommendations — they already appear prominently
+    // at the top of the main list, so including them here would show them twice.
+    const nonFeatured = openJobs.filter((j) => !(j as any).isFeatured);
     if (recInterests.length > 0) {
-      const scored = scoreJobsAgainstInterests(openJobs).slice(0, 3) as Job[];
+      const scored = scoreJobsAgainstInterests(nonFeatured).slice(0, 3) as Job[];
       if (scored.length > 0)
         return { recommendedJobs: scored, recsArePersonalized: true };
     }
-    // Fallback: top 3 open jobs by view count then recency — shown to anonymous / no-activity users
-    const fallback = [...openJobs]
+    // Fallback: top 3 non-featured open jobs by view count then recency
+    const fallback = [...nonFeatured]
       .sort(
         (a, b) =>
           ((b as any).viewCount ?? 0) - ((a as any).viewCount ?? 0) ||
@@ -631,7 +634,9 @@ export default function FindWorkAllJobs() {
     if (!recProfile.hasEnoughData) {
       return { jobs: [] as Job[], hasProfile: true, hasEnoughData: false };
     }
+    // Exclude featured jobs — they already appear at the top of the main list
     const scored = openJobs
+      .filter((j) => !(j as any).isFeatured)
       .map((job) => ({
         job,
         score: scoreJobForTalent(job, recProfile.keywords),

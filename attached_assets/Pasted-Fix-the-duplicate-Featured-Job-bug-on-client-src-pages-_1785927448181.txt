@@ -1,0 +1,78 @@
+Fix the duplicate Featured Job bug on:
+- client/src/pages/FindWorkAllJobs.tsx
+- any shared JobCard/list component involved
+
+CURRENT BUG:
+A Featured job appears correctly at the top, but the exact same job appears again later in the normal job list.
+
+LIKELY CAUSE:
+The code renders featured jobs separately, then maps the original jobs array again without excluding featured records.
+
+FIX:
+
+1. Identify the existing featured and regular-job rendering logic.
+
+2. Use the job's unique ID to guarantee each job renders only once.
+
+Preferred structure:
+
+const featuredJobs = sortedJobs.filter(job => job.isFeatured);
+const regularJobs = sortedJobs.filter(job => !job.isFeatured);
+
+return (
+  <>
+    {featuredJobs.map(job => (
+      <JobCard key={job.id} job={job} />
+    ))}
+
+    {regularJobs.map(job => (
+      <JobCard key={job.id} job={job} />
+    ))}
+  </>
+);
+
+If Featured jobs are already moved to the top by sorting, even better:
+render ONE array only:
+
+const orderedJobs = [...jobs].sort((a, b) => {
+  if (a.isFeatured !== b.isFeatured)
+    return a.isFeatured ? -1 : 1;
+
+  return existingSortLogic(a, b);
+});
+
+{orderedJobs.map(job => (
+  <JobCard key={job.id} job={job} />
+))}
+
+Do NOT render featuredJobs separately AND orderedJobs afterward.
+
+3. Do not solve this by hiding duplicates with CSS.
+
+4. Do not disable React StrictMode.
+
+5. Verify the API itself is not returning duplicate IDs. If it is, fix that source. Otherwise keep this a frontend rendering fix.
+
+6. Preserve:
+- Featured dark/gold styling
+- Sparkles decoration
+- Featured-first ordering
+- all filters/sorts
+- description
+- salary
+- Commission/Equity
+- Apply/View Details
+- normal purple cards
+
+TEST:
+- 1 featured + 3 regular jobs = exactly 4 cards
+- 2 featured + 3 regular jobs = exactly 5 cards
+- turning Featured off must not create/remove any duplicate
+- switching sort tabs must never duplicate jobs
+- Featured filter must show each featured job once
+
+After fixing, tell me:
+1. exact root cause
+2. files changed
+3. whether Featured was being rendered in two separate maps
+4. confirmation that each job ID now appears only once
