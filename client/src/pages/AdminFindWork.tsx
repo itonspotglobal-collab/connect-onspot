@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -746,6 +746,23 @@ function BulletList({ items }: { items: readonly string[] }) {
   );
 }
 
+// ─── Pagination helpers ───────────────────────────────────────────────────────
+function getPaginationPages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [];
+  const nearStart = current <= 3;
+  const nearEnd = current >= total - 2;
+  pages.push(1);
+  if (!nearStart) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (!nearEnd) pages.push("...");
+  if (total > 1) pages.push(total);
+  // Deduplicate while preserving order
+  return pages.filter((p, i, arr) => i === 0 || arr[i - 1] !== p);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminFindWork() {
   const { toast } = useToast();
@@ -758,6 +775,9 @@ export default function AdminFindWork() {
   const [rejectModalJobId, setRejectModalJobId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 25;
+  const jobListRef = useRef<HTMLDivElement>(null);
   const [linkModalJobId, setLinkModalJobId] = useState<string | null>(null);
   const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
@@ -776,17 +796,55 @@ export default function AdminFindWork() {
     setEditingJob(null);
   };
 
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    jobListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ─── Response types ────────────────────────────────────────────────────────
+  interface AdminJobStats {
+    total: number; open: number; closed: number;
+    pending: number; approved: number; declined: number; clientRequests: number;
+  }
+  interface AdminJobsResponse {
+    items: Job[];
+    meta: { page: number; pageSize: number; total: number; totalPages: number };
+    stats: AdminJobStats;
+  }
+
   // ─── Queries ──────────────────────────────────────────────────────────────
-  const { data: jobs = [], isLoading } = useQuery<Job[]>({
-    queryKey: ["/api/admin/jobs"],
+  const { data, isLoading } = useQuery<AdminJobsResponse>({
+    queryKey: ["/api/admin/jobs", { page: currentPage, pageSize: PAGE_SIZE, tab: activeTab }],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/jobs");
-      const data = await res.json();
-      // API returns { items: [...] } — extract the array
-      return Array.isArray(data) ? data : (data.items ?? []);
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+        tab: activeTab,
+      });
+      const res = await apiRequest("GET", `/api/admin/jobs?${params}`);
+      return res.json();
     },
+    placeholderData: (prev: AdminJobsResponse | undefined) => prev,
     refetchOnWindowFocus: false,
   });
+
+  // Approved jobs fetched on-demand for the "Link to existing job" modal
+  const { data: approvedJobsData } = useQuery<Job[]>({
+    queryKey: ["/api/admin/jobs", "approved-all", "link-modal"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/jobs?tab=approved&page=1&pageSize=200");
+      const d = await res.json();
+      return d.items ?? [];
+    },
+    enabled: !!linkModalJobId,
+    refetchOnWindowFocus: false,
+  });
+  const approvedJobsForLinking = (approvedJobsData ?? []) as EnrichedJob[];
 
   // ─── Mutations ──────────────────────────── p�───────────────────────────────
   const invalidate = () => {
@@ -863,21 +921,14 @@ export default function AdminFindWork() {
       toast({ title: "Link failed", description: err.message, variant: "destructive" }),
   });
 
-  // ─── Derived stats ────────────────────────────────────────────────────────
-  const enrichedJobs = jobs as unknown as EnrichedJob[];
-  const openJobs = enrichedJobs.filter((j) => j.status === "open");
-  const closedJobs = enrichedJobs.filter((j) => j.status === "closed" || j.status === "cancelled");
-  const pendingJobs = enrichedJobs.filter((j) => (j as any).approvalStatus === "pending");
-  const clientRequests = enrichedJobs.filter((j) => (j as any).isClientSubmitted === true);
-  const totalApps = enrichedJobs.reduce((sum, j) => sum + (j.proposalCount || 0), 0);
-
-  // ─── Tab filtered views ───────────────────────────────────────────────────
-  const tabJobs: EnrichedJob[] = (() => {
-    if (activeTab === "pending") return pendingJobs;
-    if (activeTab === "approved") return enrichedJobs.filter((j) => (j as any).approvalStatus === "approved");
-    if (activeTab === "declined") return enrichedJobs.filter((j) => (j as any).approvalStatus === "rejected" || (j as any).approvalStatus === "linked_to_existing");
-    return enrichedJobs;
-  })();
+  // ─── Derived data (server-paginated, server tab-filtered) ────────────────
+  // enrichedJobs = current page items; server already filtered by activeTab
+  const enrichedJobs = (data?.items ?? []) as unknown as EnrichedJob[];
+  const stats = data?.stats;
+  const totalJobs = data?.meta?.total ?? 0;
+  const totalPages = data?.meta?.totalPages ?? 1;
+  const startItem = totalJobs === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(currentPage * PAGE_SIZE, totalJobs);
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -1154,11 +1205,11 @@ export default function AdminFindWork() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              <StatPill icon={Briefcase} label="Total Jobs" value={enrichedJobs.length} accent />
-              <StatPill icon={CheckCircle2} label="Open" value={openJobs.length} />
-              <StatPill icon={XCircle} label="Closed" value={closedJobs.length} />
-              <StatPill icon={AlertCircle} label="Pending" value={pendingJobs.length} />
-              <StatPill icon={Users} label="Client Requests" value={clientRequests.length} />
+              <StatPill icon={Briefcase} label="Total Jobs" value={stats?.total ?? 0} accent />
+              <StatPill icon={CheckCircle2} label="Open" value={stats?.open ?? 0} />
+              <StatPill icon={XCircle} label="Closed" value={stats?.closed ?? 0} />
+              <StatPill icon={AlertCircle} label="Pending" value={stats?.pending ?? 0} />
+              <StatPill icon={Users} label="Client Requests" value={stats?.clientRequests ?? 0} />
             </div>
           </div>
         </div>
@@ -1172,15 +1223,15 @@ export default function AdminFindWork() {
             <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04] flex-wrap">
               {TABS.map((tab) => {
                 const count =
-                  tab.key === "pending" ? pendingJobs.length
-                  : tab.key === "approved" ? enrichedJobs.filter((j) => (j as any).approvalStatus === "approved").length
-                  : tab.key === "declined" ? enrichedJobs.filter((j) => (j as any).approvalStatus === "rejected" || (j as any).approvalStatus === "linked_to_existing").length
-                  : enrichedJobs.length;
+                  tab.key === "pending" ? (stats?.pending ?? 0)
+                  : tab.key === "approved" ? (stats?.approved ?? 0)
+                  : tab.key === "declined" ? (stats?.declined ?? 0)
+                  : (stats?.total ?? 0);
                 const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => handleTabChange(tab.key)}
                     className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-[#474ead] text-white shadow-sm"
@@ -1217,12 +1268,12 @@ export default function AdminFindWork() {
           </div>
 
           {/* ── Pending approvals banner ── */}
-          {activeTab === "pending" && pendingJobs.length > 0 && (
+          {activeTab === "pending" && (stats?.pending ?? 0) > 0 && (
             <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/30 dark:bg-amber-900/10">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <div>
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                  {pendingJobs.length} job request{pendingJobs.length !== 1 ? "s" : ""} awaiting review
+                  {stats?.pending ?? 0} job request{(stats?.pending ?? 0) !== 1 ? "s" : ""} awaiting review
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   Pending jobs are not visible to candidates on the public Find Work page until approved.
@@ -1232,13 +1283,14 @@ export default function AdminFindWork() {
           )}
 
           {/* ── Job list ── */}
+          <div ref={jobListRef} />
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-2xl" />
               ))}
             </div>
-          ) : tabJobs.length === 0 ? (
+          ) : enrichedJobs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 text-center dark:border-white/[0.08] dark:bg-[#0f172a]/60">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#474ead]/10">
                 {activeTab === "pending" ? <ListFilter className="h-8 w-8 text-[#474ead]" /> : <Briefcase className="h-8 w-8 text-[#474ead]" />}
@@ -1259,7 +1311,7 @@ export default function AdminFindWork() {
           ) : activeTab === "pending" ? (
             // ── Pending Approvals view ──
             <div className="space-y-3">
-              {tabJobs.map((job) => (
+              {enrichedJobs.map((job) => (
                 <PendingApprovalCard
                   key={job.id}
                   job={job}
@@ -1280,7 +1332,7 @@ export default function AdminFindWork() {
           ) : (
             // ── All / Approved / Declined view ──
             <div className="space-y-3">
-              {tabJobs.map((job) => (
+              {enrichedJobs.map((job) => (
                 <AdminJobRow
                   key={job.id}
                   job={job}
@@ -1300,6 +1352,55 @@ export default function AdminFindWork() {
                   isRefreshing={refreshMutation.isPending}
                 />
               ))}
+            </div>
+          )}
+
+          {/* ── Result range + pagination ── */}
+          {totalJobs > 0 && (
+            <div className="mt-6 flex flex-col gap-3 border-t pt-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Showing {startItem.toLocaleString()}–{endItem.toLocaleString()} of {totalJobs.toLocaleString()} jobs
+                </p>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-slate-400 mr-1">25 per page</span>
+                    <Button variant="outline" size="sm" disabled={currentPage === 1}
+                      onClick={() => handlePageChange(1)}>
+                      First
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}>
+                      ← Previous
+                    </Button>
+                    {getPaginationPages(currentPage, totalPages).map((p, i) =>
+                      p === "..." ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-sm text-slate-400">…</span>
+                      ) : (
+                        <Button
+                          key={p}
+                          variant={currentPage === p ? "default" : "outline"}
+                          size="sm"
+                          className={currentPage === p
+                            ? "bg-[#474ead] text-white hover:bg-[#3d439c] min-w-[2rem]"
+                            : "min-w-[2rem]"}
+                          onClick={() => handlePageChange(p as number)}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                    <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}>
+                      Next →
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(totalPages)}>
+                      Last
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1396,8 +1497,8 @@ export default function AdminFindWork() {
                 Select existing approved job
               </label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {enrichedJobs
-                  .filter((j) => (j as any).approvalStatus === "approved" && j.status === "open" && j.id !== linkModalJobId)
+                {approvedJobsForLinking
+                  .filter((j) => j.status === "open" && j.id !== linkModalJobId)
                   .map((j) => (
                     <button
                       key={j.id}
@@ -1413,7 +1514,7 @@ export default function AdminFindWork() {
                     </button>
                   ))
                 }
-                {enrichedJobs.filter((j) => (j as any).approvalStatus === "approved" && j.status === "open" && j.id !== linkModalJobId).length === 0 && (
+                {approvedJobsForLinking.filter((j) => j.status === "open" && j.id !== linkModalJobId).length === 0 && (
                   <p className="py-4 text-center text-sm text-slate-400">No approved open jobs available to link to.</p>
                 )}
               </div>

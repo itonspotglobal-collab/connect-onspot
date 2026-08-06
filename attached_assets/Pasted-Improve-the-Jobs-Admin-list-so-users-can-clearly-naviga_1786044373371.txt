@@ -1,0 +1,555 @@
+Improve the Jobs Admin list so users can clearly navigate through all posted jobs instead of older jobs appearing to disappear when more than 25 exist.
+
+## Current issue
+
+The Jobs Admin list shows a maximum of 25 jobs.
+
+When there are exactly 25 jobs and a new job is added:
+
+```text
+Before:
+25 jobs
+
+After adding "Test":
+still only 25 visible jobs
+```
+
+The new job appears at the top, but the oldest job disappears from the bottom.
+
+This is confusing because there is currently no visible pagination/navigation showing that the older job moved to another page.
+
+The correct behavior should be:
+
+```text
+26 total jobs
+
+Page 1:
+newest 25 jobs
+
+Page 2:
+oldest 1 job
+```
+
+No job should be deleted, replaced, or permanently hidden.
+
+---
+
+# Add visible pagination controls
+
+At the bottom of the Admin Jobs list, add a pagination section similar to a standard data table.
+
+Example for 26 jobs:
+
+```text
+Page 1 of 2
+
+25 per page
+
+First   ← Previous   1   2   Next →   Last
+```
+
+Example for 100 jobs:
+
+```text
+Page 1 of 4
+
+25 per page
+
+First   ← Previous   1   2   3   4   Next →   Last
+```
+
+Example when currently on Page 3:
+
+```text
+Page 3 of 4
+
+25 per page
+
+First   ← Previous   1   2   [3]   4   Next →   Last
+```
+
+The currently selected page must be visually highlighted.
+
+---
+
+# Page size
+
+Use:
+
+```ts
+const PAGE_SIZE = 25;
+```
+
+The page size should remain 25.
+
+Do NOT increase the API page size to avoid pagination.
+
+The correct behavior is:
+
+```text
+Total jobs = unlimited
+Visible jobs per page = 25
+```
+
+---
+
+# Pagination state
+
+In:
+
+```text
+client/src/pages/AdminFindWork.tsx
+```
+
+add:
+
+```ts
+const PAGE_SIZE = 25;
+const [currentPage, setCurrentPage] = useState(1);
+```
+
+The API request should use:
+
+```ts
+/api/admin/jobs?page=${currentPage}&pageSize=${PAGE_SIZE}
+```
+
+The React Query key must include the page:
+
+```ts
+queryKey: [
+  "/api/admin/jobs",
+  {
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    tab: activeTab,
+  },
+]
+```
+
+---
+
+# Use API metadata
+
+The API response should expose:
+
+```ts
+{
+  items: Job[],
+  meta: {
+    page: number,
+    pageSize: number,
+    total: number,
+    totalPages: number
+  },
+  stats: {
+    total: number,
+    open: number,
+    closed: number,
+    pending: number,
+    approved: number,
+    declined: number,
+    clientRequests: number
+  }
+}
+```
+
+Frontend:
+
+```ts
+const jobs = data?.items ?? [];
+const currentPage = data?.meta?.page ?? 1;
+const totalPages = data?.meta?.totalPages ?? 1;
+const totalJobs = data?.meta?.total ?? 0;
+```
+
+---
+
+# Add the pagination footer
+
+Below the job cards, add something visually similar to:
+
+```tsx
+<div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+  <div className="text-sm text-slate-500">
+    Page {currentPage} of {totalPages}
+  </div>
+
+  <div className="flex items-center gap-2">
+    <span className="text-sm text-slate-500">
+      25 per page
+    </span>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage(1)}
+    >
+      First
+    </Button>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === 1}
+      onClick={() => setCurrentPage((p) => p - 1)}
+    >
+      ← Previous
+    </Button>
+
+    {/* page number buttons */}
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage((p) => p + 1)}
+    >
+      Next →
+    </Button>
+
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={currentPage === totalPages}
+      onClick={() => setCurrentPage(totalPages)}
+    >
+      Last
+    </Button>
+  </div>
+</div>
+```
+
+Use the project's existing button/component styles instead of introducing a new design system.
+
+---
+
+# Page number buttons
+
+For small numbers of pages, show every page.
+
+Example:
+
+```text
+1 2 3 4
+```
+
+For a large number of pages, collapse the pagination.
+
+Example:
+
+```text
+1 2 3 ... 40
+```
+
+or:
+
+```text
+1 ... 18 19 20 ... 40
+```
+
+Do NOT render hundreds of page buttons.
+
+---
+
+# Very important behavior when adding a job
+
+Scenario:
+
+```text
+Existing jobs = 25
+```
+
+User adds:
+
+```text
+Test
+```
+
+After save:
+
+```text
+TOTAL JOBS = 26
+OPEN = 26
+All Jobs = 26
+```
+
+Page 1 should contain:
+
+```text
+Test
++ the next 24 newest jobs
+```
+
+The previous oldest role must now appear on:
+
+```text
+Page 2
+```
+
+Page 2 should contain:
+
+```text
+1 job
+```
+
+The role must NOT disappear.
+
+---
+
+# Example
+
+Before adding Test:
+
+```text
+25 total jobs
+
+Page 1 of 1
+
+[Job 1]
+[Job 2]
+...
+[Job 25]
+```
+
+After adding Test:
+
+```text
+26 total jobs
+
+Page 1 of 2
+
+[Test]
+[Job 1]
+[Job 2]
+...
+[Job 24]
+
+First   Previous   [1]   2   Next   Last
+```
+
+Click Page 2:
+
+```text
+Page 2 of 2
+
+[Job 25]
+
+First   Previous   1   [2]   Next   Last
+```
+
+This is the expected UX.
+
+---
+
+# Add result range text
+
+Also add a useful line such as:
+
+```text
+Showing 1–25 of 26 jobs
+```
+
+On Page 2:
+
+```text
+Showing 26–26 of 26 jobs
+```
+
+For 100 jobs, Page 3:
+
+```text
+Showing 51–75 of 100 jobs
+```
+
+Calculation:
+
+```ts
+const startItem =
+  totalJobs === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+
+const endItem = Math.min(
+  currentPage * PAGE_SIZE,
+  totalJobs
+);
+```
+
+Display:
+
+```tsx
+Showing {startItem.toLocaleString()}–{endItem.toLocaleString()}
+of {totalJobs.toLocaleString()} jobs
+```
+
+---
+
+# Keep pagination visible
+
+Do not hide pagination simply because the current page contains exactly 25 items.
+
+Display pagination based on:
+
+```ts
+totalPages > 1
+```
+
+NOT:
+
+```ts
+jobs.length > 25
+```
+
+Because `jobs.length` can never exceed 25 on a paginated page.
+
+This distinction is critical.
+
+Wrong:
+
+```ts
+if (jobs.length > 25)
+```
+
+Correct:
+
+```ts
+if (data.meta.totalPages > 1)
+```
+
+---
+
+# Tabs must preserve pagination behavior
+
+The following tabs also need proper paging:
+
+```text
+All Jobs
+Pending Approvals
+Approved
+Declined
+```
+
+Example:
+
+```text
+Approved = 63
+```
+
+Then:
+
+```text
+Approved Page 1 → 25
+Approved Page 2 → 25
+Approved Page 3 → 13
+```
+
+Switching tabs should reset:
+
+```ts
+setCurrentPage(1);
+```
+
+---
+
+# Scroll behavior
+
+When a user clicks another page:
+
+```text
+1 → 2
+2 → 3
+Next
+Previous
+First
+Last
+```
+
+scroll smoothly back to the top of the jobs list, not the very top of the entire page.
+
+Use a ref around the jobs section if needed.
+
+---
+
+# Loading behavior
+
+When changing pages:
+
+* keep the layout stable;
+* show loading state/skeleton if necessary;
+* preferably use React Query placeholder/previous data behavior;
+* do not briefly show "0 jobs";
+* do not reload the whole browser page.
+
+---
+
+# Acceptance tests
+
+### 25 jobs
+
+```text
+TOTAL JOBS 25
+Page 1 of 1
+Showing 1–25 of 25 jobs
+```
+
+No Page 2.
+
+### 26 jobs
+
+```text
+TOTAL JOBS 26
+Page 1 of 2
+Showing 1–25 of 26 jobs
+```
+
+Page 2:
+
+```text
+Showing 26–26 of 26 jobs
+```
+
+### 50 jobs
+
+```text
+Page 1 of 2
+Page 2 of 2
+```
+
+Both contain 25.
+
+### 51 jobs
+
+```text
+Page 1 → 25
+Page 2 → 25
+Page 3 → 1
+```
+
+### 100 jobs
+
+```text
+Page 1 of 4
+Page 2 of 4
+Page 3 of 4
+Page 4 of 4
+```
+
+All 100 unique job IDs must be accessible.
+
+---
+
+# Important
+
+The desired UX is similar to a standard paginated grid/table:
+
+```text
+Page 1 of 4      25 per page
+
+First   ← Previous   [1] 2 3 4   Next →   Last
+```
+
+The key requirement is:
+
+**Adding a new job must push older jobs to the next page, not make them appear deleted or lost.**
+
+Do not consider this complete until the 26th job is visibly accessible on Page 2.

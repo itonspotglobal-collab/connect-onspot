@@ -5019,6 +5019,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
+      // tab param drives server-side filtering so each tab has its own correct pagination
+      const tab = (req.query.tab as string) || "all";
+
       const allJobs = await storage.listAllJobs();
       // Batch-fetch all needed client profiles in one query to avoid N+1
       const clientIds = Array.from(new Set(allJobs.map((j) => j.clientId)));
@@ -5035,13 +5038,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch { /* non-fatal */ }
       }
-      const enriched = allJobs.map((job) => ({
+      const enriched = allJobs.map((job: any) => ({
         ...job,
         clientCompanyName: profileMap[job.clientId]?.company_name ?? null,
         clientContactName: profileMap[job.clientId]?.contact_person ?? null,
       }));
-      const { items, meta } = pageSlice(enriched, page, pageSize);
-      res.json({ items, meta });
+
+      // Stats are always computed from ALL jobs (not filtered by tab)
+      const stats = {
+        total: enriched.length,
+        open: enriched.filter((j: any) => j.status === "open").length,
+        closed: enriched.filter((j: any) => j.status === "closed" || j.status === "cancelled").length,
+        pending: enriched.filter((j: any) => j.approvalStatus === "pending").length,
+        approved: enriched.filter((j: any) => j.approvalStatus === "approved").length,
+        declined: enriched.filter((j: any) => j.approvalStatus === "rejected" || j.approvalStatus === "linked_to_existing").length,
+        clientRequests: enriched.filter((j: any) => j.isClientSubmitted === true).length,
+      };
+
+      // Filter by tab before paginating so totalPages/total reflect the tab's dataset
+      let filtered = enriched;
+      if (tab === "pending") {
+        filtered = enriched.filter((j: any) => j.approvalStatus === "pending");
+      } else if (tab === "approved") {
+        filtered = enriched.filter((j: any) => j.approvalStatus === "approved");
+      } else if (tab === "declined") {
+        filtered = enriched.filter((j: any) => j.approvalStatus === "rejected" || j.approvalStatus === "linked_to_existing");
+      }
+
+      const { items, meta } = pageSlice(filtered, page, pageSize);
+      res.json({ items, meta, stats });
     } catch (error) {
       console.error("Admin jobs list error:", error);
       res.status(500).json({ error: "Failed to list jobs" });
