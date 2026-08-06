@@ -1,11 +1,19 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import {
+  buildCompletionItems,
+  calcCompletionPct,
+  profileStrengthFromProfile,
+} from "@/lib/profileCompletion";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Profile completion calculation
+// ---------------------------------------------------------------------------
+// Profile completion — DEPRECATED interface kept for backward compatibility.
+// All new code should import directly from "@/lib/profileCompletion".
+// ---------------------------------------------------------------------------
 export interface ProfileCompletionData {
   firstName?: string;
   lastName?: string;
@@ -19,28 +27,18 @@ export interface ProfileCompletionData {
   portfolioItems?: Array<{ id: string }>;
 }
 
+/** @deprecated Import from "@/lib/profileCompletion" instead. */
 export function calculateProfileCompletion(data: ProfileCompletionData): number {
-  let completion = 0;
-  
-  // Basic info (30%)
-  if (data.firstName && data.lastName) completion += 10;
-  if (data.title) completion += 10;
-  if (data.profilePicture) completion += 10;
-  
-  // Professional details (30%)
-  if (data.bio && data.bio.length >= 50) completion += 12;
-  if (data.location) completion += 9;
-  if (data.hourlyRate) completion += 9;
-  
-  // Skills (15%)
-  if (data.selectedSkills && data.selectedSkills.length >= 3) completion += 15;
-  
-  // Portfolio (15%)
-  if (data.portfolioItems && data.portfolioItems.length >= 1) completion += 15;
-  
-  // Documents (10%)
-  if (data.uploadedDocuments?.some(d => d.type === "resume")) completion += 6;
-  if (data.uploadedDocuments?.some(d => d.type === "video_intro")) completion += 4;
-  
-  return Math.min(100, completion);
+  const input = profileStrengthFromProfile({
+    firstName:      data.firstName ?? null,
+    lastName:       data.lastName ?? null,
+    title:          data.title ?? null,
+    bio:            data.bio ?? null,
+    location:       data.location ?? null,
+    profilePicture: data.profilePicture ?? null,
+    hasSkills:      (data.selectedSkills?.length ?? 0) > 0,
+    hasResume:      data.uploadedDocuments?.some((d) => d.type === "resume") ?? false,
+    hasLinks:       (data.portfolioItems?.length ?? 0) > 0,
+  });
+  return calcCompletionPct(buildCompletionItems(input));
 }

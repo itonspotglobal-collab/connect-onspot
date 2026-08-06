@@ -1,0 +1,149 @@
+/**
+ * profileCompletion.ts — single source of truth for Profile Strength / Completion.
+ *
+ * Rules:
+ *  - One shared data contract (ProfileStrengthInput) maps to one calculation.
+ *  - Each caller maps its own data model (Candidate or Profile) to ProfileStrengthInput.
+ *  - If a field is `undefined`, that item is not tracked by the caller's system and is
+ *    excluded from BOTH numerator and denominator — so each system can still reach 100%.
+ *  - Calculation is purely deterministic from persisted server data; never from form state.
+ */
+
+export interface CompletionItem {
+  label: string;
+  done: boolean;
+}
+
+/**
+ * Normalised input. Use `undefined` (not `false`) for fields your data model
+ * doesn't track — those items are skipped entirely rather than counted as missing.
+ */
+export interface ProfileStrengthInput {
+  hasPhoto?: boolean;       // profile picture / photo URL
+  hasName?: boolean;        // first+last name or displayName/fullName
+  hasTitle?: boolean;       // headline / professional title
+  hasSummary?: boolean;     // bio or summary text (any non-empty string)
+  hasEmail?: boolean;       // email address
+  hasLocation?: boolean;    // location (non-empty, not just the default placeholder)
+  hasSkills?: boolean;      // ≥1 core skill listed
+  hasExperience?: boolean;  // ≥1 work history entry
+  hasEducation?: boolean;   // ≥1 education entry
+  hasPreferences?: boolean; // work-setup preference set
+  hasResume?: boolean;      // resume document present
+  hasLinks?: boolean;       // LinkedIn URL or portfolio URL/items present
+}
+
+// ─── Ordered display list ────────────────────────────────────────────────────
+
+const ITEM_DEFS: ReadonlyArray<{ key: keyof ProfileStrengthInput; label: string }> = [
+  { key: "hasPhoto",       label: "Photo" },
+  { key: "hasName",        label: "Name" },
+  { key: "hasTitle",       label: "Headline" },
+  { key: "hasSummary",     label: "Summary" },
+  { key: "hasEmail",       label: "Email" },
+  { key: "hasLocation",    label: "Location" },
+  { key: "hasSkills",      label: "Core skills" },
+  { key: "hasExperience",  label: "Experience" },
+  { key: "hasEducation",   label: "Education" },
+  { key: "hasPreferences", label: "Preferences" },
+  { key: "hasResume",      label: "Resume" },
+  { key: "hasLinks",       label: "LinkedIn / portfolio" },
+];
+
+// ─── Core functions ───────────────────────────────────────────────────────────
+
+/**
+ * Build a labelled checklist from a ProfileStrengthInput.
+ * Items whose value is `undefined` are excluded from the list.
+ */
+export function buildCompletionItems(input: ProfileStrengthInput): CompletionItem[] {
+  return ITEM_DEFS.filter(({ key }) => input[key] !== undefined).map(({ key, label }) => ({
+    label,
+    done: !!input[key],
+  }));
+}
+
+/**
+ * Convert a checklist to a 0-100 integer percentage.
+ * Returns 0 when the list is empty.
+ */
+export function calcCompletionPct(items: CompletionItem[]): number {
+  if (items.length === 0) return 0;
+  return Math.round((items.filter((i) => i.done).length / items.length) * 100);
+}
+
+// ─── Model mappers ────────────────────────────────────────────────────────────
+
+/**
+ * Map a Candidate record (from /api/candidates/:id) to ProfileStrengthInput.
+ * All 12 items are tracked — denominator is always 12.
+ */
+export function profileStrengthFromCandidate(c: {
+  profilePhotoUrl?: string | null;
+  displayName?: string | null;
+  fullName?: string | null;
+  headline?: string | null;
+  summary?: string | null;
+  email?: string | null;
+  location?: string | null;
+  coreSkills?: string[] | null;
+  workHistory?: unknown;
+  education?: unknown;
+  preferences?: unknown;
+  resumeUrl?: string | null;
+  linkedinUrl?: string | null;
+  portfolioUrl?: string | null;
+}): ProfileStrengthInput {
+  const wh = Array.isArray(c.workHistory) ? c.workHistory : [];
+  const edu = Array.isArray(c.education) ? c.education : [];
+  const prefs =
+    c.preferences != null && typeof c.preferences === "object"
+      ? (c.preferences as Record<string, unknown>)
+      : null;
+
+  return {
+    hasPhoto:       !!c.profilePhotoUrl,
+    hasName:        !!(c.displayName?.trim() || c.fullName?.trim()),
+    hasTitle:       !!c.headline,
+    hasSummary:     !!c.summary,
+    hasEmail:       !!c.email,
+    hasLocation:    !!c.location,
+    hasSkills:      (c.coreSkills?.length ?? 0) > 0,
+    hasExperience:  wh.length > 0,
+    hasEducation:   edu.length > 0,
+    hasPreferences: !!prefs?.workSetup,
+    hasResume:      !!c.resumeUrl,
+    hasLinks:       !!(c.linkedinUrl || c.portfolioUrl),
+  };
+}
+
+/**
+ * Map a Profile record (from /api/profiles/me) + related API data to ProfileStrengthInput.
+ * Email, experience, education, and preferences are not tracked in the profiles table,
+ * so those keys are left undefined (excluded from the denominator).
+ * Denominator is 8 — reaching 100% is achievable.
+ */
+export function profileStrengthFromProfile(p: {
+  firstName?: string | null;
+  lastName?: string | null;
+  title?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  profilePicture?: string | null;
+  // Resolved from separate API queries
+  hasSkills: boolean;   // user_skills table — ≥1 skill
+  hasResume: boolean;   // documents table — resume doc present
+  hasLinks: boolean;    // portfolio items table — ≥1 item, OR linkedinUrl on profile
+}): ProfileStrengthInput {
+  return {
+    hasPhoto:    !!p.profilePicture,
+    hasName:     !!(p.firstName?.trim() && p.lastName?.trim()),
+    hasTitle:    !!p.title,
+    hasSummary:  !!p.bio,
+    hasLocation: !!(p.location && p.location !== "Global"),
+    hasSkills:   p.hasSkills,
+    hasResume:   p.hasResume,
+    hasLinks:    p.hasLinks,
+    // email, experience, education, preferences — not in profiles table; excluded
+  };
+}

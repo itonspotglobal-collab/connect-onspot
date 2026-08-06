@@ -35,7 +35,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
-import { cn, calculateProfileCompletion } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI } from "@/lib/api";
@@ -75,10 +75,9 @@ export default function ProfileOnboarding({
 
   const [currentStep, setCurrentStep] = useState(defaultStep);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [latestCompletion, setLatestCompletion] = useState<number | null>(null);
-  
-  // Use latest completion if available, otherwise fall back to hook's profileCompletion
-  const displayCompletion = latestCompletion !== null ? latestCompletion : profileCompletion;
+
+  // profileCompletion from the hook is now computed entirely from persisted server data.
+  // No local "latestCompletion" override needed — the hook invalidates + refetches after save.
 
   // Form setup with stable default values
   const form = useForm<ProfileFormData>({
@@ -107,14 +106,6 @@ export default function ProfileOnboarding({
       setHasInitialized(true);
     }
   }, [profile, user, isLoading, form, getDefaultFormValues, hasInitialized]);
-
-  // Reset local completion when profile data updates to ensure fresh data is displayed
-  useEffect(() => {
-    if (profile && latestCompletion !== null) {
-      // Clear local completion after query has refreshed to use hook's profileCompletion
-      setLatestCompletion(null);
-    }
-  }, [profile, profileCompletion, latestCompletion]);
 
   // File upload handlers
   const handleResumeUpload = async () => {
@@ -211,33 +202,20 @@ export default function ProfileOnboarding({
       }
       
       // Calculate updated completion based on the form data just saved
-      const updatedCompletion = calculateProfileCompletion({
-        firstName: data.firstName || profile?.firstName || undefined,
-        lastName: data.lastName || profile?.lastName || undefined,
-        title: data.title || profile?.title || undefined,
-        bio: data.bio || profile?.bio || undefined,
-        location: data.location || profile?.location || undefined,
-        hourlyRate: data.hourlyRate || profile?.hourlyRate || undefined,
-        profilePicture: undefined, // Profile picture not in current profile type
-        selectedSkills: skills || [],
-        uploadedDocuments: documents || [],
-        portfolioItems: [],
-      });
-      
-      // Update local completion state for immediate UI feedback
-      setLatestCompletion(updatedCompletion);
-      
-      // Invalidate queries to refresh data for future renders
+      // Invalidate queries — the hook will re-fetch and recompute profileCompletion
+      // from fresh server data automatically. No manual recalculation needed.
       await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       
-      // Show success with accurate completion percentage
+      // Show success toast; profileCompletion in the hook will update on its own
       toast({
         title: "Profile Updated Successfully!",
-        description: `Your profile is now ${updatedCompletion}% complete. ${updatedCompletion >= 70 ? 'You\'re all set to start attracting great opportunities!' : 'Keep building your profile to attract more clients!'}`,
+        description: profileCompletion >= 70
+          ? "You're all set to start attracting great opportunities!"
+          : "Keep building your profile to attract more clients!",
         duration: 5000,
       });
       
-      if (mode === "embedded" && updatedCompletion >= 70) {
+      if (mode === "embedded" && profileCompletion >= 70) {
         onComplete?.();
       } else if (mode === "full") {
         setCurrentStep(2);
@@ -308,8 +286,8 @@ export default function ProfileOnboarding({
             <div className="text-right">
               <div className="text-sm text-muted-foreground mb-2">Profile Completion</div>
               <div className="flex items-center gap-3">
-                <Progress value={displayCompletion} className="w-32" />
-                <span className="text-2xl font-bold text-primary">{displayCompletion}%</span>
+                <Progress value={profileCompletion} className="w-32" />
+                <span className="text-2xl font-bold text-primary">{profileCompletion}%</span>
               </div>
             </div>
           </div>
@@ -406,12 +384,12 @@ export default function ProfileOnboarding({
             <div>
               <h2 className="text-xl font-semibold">Complete Your Profile</h2>
               <p className="text-sm text-muted-foreground">
-                {displayCompletion < 70 ? 'Complete your profile to start attracting clients' : 'Your profile looks great! Ready to find opportunities.'}
+                {profileCompletion < 70 ? 'Complete your profile to start attracting clients' : 'Your profile looks great! Ready to find opportunities.'}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Progress value={displayCompletion} className="w-24" />
-              <span className="text-sm font-medium">{displayCompletion}%</span>
+              <Progress value={profileCompletion} className="w-24" />
+              <span className="text-sm font-medium">{profileCompletion}%</span>
             </div>
           </div>
           

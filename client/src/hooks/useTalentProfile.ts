@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { authAPI } from "@/lib/api";
-import { calculateProfileCompletion } from "@/lib/utils";
+import {
+  buildCompletionItems,
+  calcCompletionPct,
+  profileStrengthFromProfile,
+} from "@/lib/profileCompletion";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Profile, PortfolioItem } from "@shared/schema";
@@ -63,6 +67,9 @@ export interface TalentProfileData {
 export function useTalentProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Local skill selection state — used for the toggle UI in ProfileOnboarding.
+  // Initialised from server data via useEffect below.
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
 
@@ -118,6 +125,22 @@ export function useTalentProfile() {
     enabled: !!user && user.role === "talent",
   });
 
+  // ---- Fetch portfolio items ----
+  const { data: portfolioData } = useQuery({
+    queryKey: ["/api/talents", user?.id, "portfolio"],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      try {
+        const res = await fetch(`/api/talents/${user.id}/portfolio`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!user?.id,
+  });
+
   // ---- Fetch available skills ----
   const { data: availableSkills = [] } = useQuery({
     queryKey: ["/api/skills"],
@@ -127,28 +150,54 @@ export function useTalentProfile() {
     },
   });
 
-  // ---- Derived states ----
-  const profileCompletion = calculateProfileCompletion({
-    firstName: profile?.firstName || undefined,
-    lastName: profile?.lastName || undefined,
-    title: profile?.title || undefined,
-    bio: profile?.bio || undefined,
-    location: profile?.location || undefined,
-    hourlyRate: profile?.hourlyRate || undefined,
-    profilePicture: profile?.profilePicture || undefined,
-    selectedSkills,
-    uploadedDocuments,
-    portfolioItems: [],
-  });
+  // ---- Derive persisted values directly from query data (for completion calc) ----
+  // These are derived from the server response WITHOUT going through useState/useEffect,
+  // so they are synchronously available on the same render that query data arrives.
+  // This eliminates the race condition where profileCompletion showed 0 for skills/docs
+  // until the useEffect had time to fire.
+  const persistedSkills = useMemo<string[]>(() => {
+    if (!Array.isArray(userSkillsData)) return [];
+    return (userSkillsData as any[]).map((us) => us.skill?.name).filter(Boolean);
+  }, [userSkillsData]);
+
+  const persistedDocuments = useMemo<Document[]>(() => {
+    if (!Array.isArray(documentsData)) return [];
+    return documentsData as Document[];
+  }, [documentsData]);
+
+  const portfolioItems = useMemo<PortfolioItem[]>(() => {
+    if (!Array.isArray(portfolioData)) return [];
+    return portfolioData as PortfolioItem[];
+  }, [portfolioData]);
+
+  // ---- Profile completion — computed ONLY from persisted server data ----
+  // Uses the shared profileCompletion module (single source of truth).
+  // Never computed from form state or local toggle state.
+  const profileCompletion = useMemo(() => {
+    const input = profileStrengthFromProfile({
+      firstName:      profile?.firstName ?? null,
+      lastName:       profile?.lastName ?? null,
+      title:          profile?.title ?? null,
+      bio:            profile?.bio ?? null,
+      location:       profile?.location ?? null,
+      profilePicture: profile?.profilePicture ?? null,
+      hasSkills:      persistedSkills.length > 0,
+      hasResume:      persistedDocuments.some((d) => d.type === "resume"),
+      hasLinks:       portfolioItems.length > 0,
+    });
+    return calcCompletionPct(buildCompletionItems(input));
+  }, [profile, persistedSkills, persistedDocuments, portfolioItems]);
 
   const isNewUser = !profile || profileCompletion < 30;
   const hasCompletedOnboarding = profileCompletion >= 70;
   const isLoading = profileLoading;
 
-  // ---- Effects ----
+  // ---- Effects: sync query data into local UI toggle state ----
+  // selectedSkills local state is used for the skill toggle UI in ProfileOnboarding.
+  // It is only used for mutations (updateSkills), never for profileCompletion.
   useEffect(() => {
-    if (userSkillsData && Array.isArray(userSkillsData)) {
-      const skillNames = userSkillsData
+    if (Array.isArray(userSkillsData)) {
+      const skillNames = (userSkillsData as any[])
         .map((us: any) => us.skill?.name)
         .filter(Boolean);
       setSelectedSkills(skillNames);
@@ -156,8 +205,8 @@ export function useTalentProfile() {
   }, [userSkillsData]);
 
   useEffect(() => {
-    if (documentsData && Array.isArray(documentsData)) {
-      setUploadedDocuments(documentsData);
+    if (Array.isArray(documentsData)) {
+      setUploadedDocuments(documentsData as Document[]);
     }
   }, [documentsData]);
 
@@ -179,11 +228,10 @@ export function useTalentProfile() {
       return response;
     },
     onSuccess: () => {
+      // Invalidating all relevant queries causes React Query to re-fetch, which
+      // then re-derives persistedSkills/persistedDocuments/portfolioItems via useMemo,
+      // which then recomputes profileCompletion — all from fresh server data.
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      toast({
-        title: "Profile Saved!",
-        description: "Your profile information has been saved successfully.",
-      });
     },
     onError: (error: any) => {
       console.error("❌ Profile Update Error:", error);

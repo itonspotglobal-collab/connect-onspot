@@ -28,6 +28,11 @@ import { isAdmin } from "@/lib/authUtils";
 import onspotLogo from "@assets/onspot-logo-white.png";
 import { apiRequest } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
+import {
+  buildCompletionItems,
+  calcCompletionPct,
+  profileStrengthFromCandidate,
+} from "@/lib/profileCompletion";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,26 +61,8 @@ type WorkEntry = { title: string; company: string; duration: string; setup?: str
 type EduEntry = { school: string; degree: string; yearStart?: string; yearEnd?: string };
 type CertEntry = { name: string; issuer?: string; date?: string; link?: string };
 
-// ─── Completion score ─────────────────────────────────────────────────────────
-
-function completionItems(c: Candidate) {
-  const prefs = c.preferences as Record<string, string> | null;
-  const edu = (c.education ?? []) as EduEntry[];
-  return [
-    { label: "Photo", done: !!c.profilePhotoUrl },
-    { label: "Name", done: !!(c.displayName || c.fullName) },
-    { label: "Headline", done: !!c.headline },
-    { label: "Summary", done: !!c.summary },
-    { label: "Email", done: !!c.email },
-    { label: "Location", done: !!c.location },
-    { label: "Core skills", done: (c.coreSkills?.length ?? 0) > 0 },
-    { label: "Experience", done: (c.workHistory as WorkEntry[] | null ?? []).length > 0 },
-    { label: "Preferences", done: !!(prefs?.workSetup) },
-    { label: "Education", done: edu.length > 0 },
-    { label: "Resume", done: !!c.resumeUrl },
-    { label: "LinkedIn / portfolio", done: !!(c.linkedinUrl || c.portfolioUrl) },
-  ];
-}
+// ─── Completion score — delegates to shared profileCompletion module ───────────
+// buildCompletionItems + calcCompletionPct are imported at the top of the file.
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 
@@ -900,8 +887,9 @@ export default function TalentProfile() {
     `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
-  const completion = completionItems(candidate);
-  const completionPct = Math.round((completion.filter((i) => i.done).length / completion.length) * 100);
+  // Use the shared profileCompletion module — single source of truth for the number.
+  const completion = buildCompletionItems(profileStrengthFromCandidate(candidate));
+  const completionPct = calcCompletionPct(completion);
 
   // Determine which section tabs are visible
   const visibleSectionIds = new Set([
