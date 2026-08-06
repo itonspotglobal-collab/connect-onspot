@@ -247,8 +247,12 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       toast({ title: "Job posting updated" });
       onSuccess();
     },
-    onError: (err: any) =>
-      toast({ title: "Failed to update job", description: err.message, variant: "destructive" }),
+    onError: (err: any) => {
+      // err.message is the API response body text thrown by apiRequest for non-2xx
+      const detail = err?.message ?? "Unknown error";
+      toast({ title: "Failed to update job", description: detail, variant: "destructive" });
+      console.error("[JobFormModal] update failed:", detail);
+    },
   });
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -283,14 +287,16 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
   const validate = (): boolean => {
     const next: Partial<Record<keyof JobFormData, string>> = {};
     if (!formData.professionalRoleName.trim()) next.professionalRoleName = "Professional role name is required";
-    if (!formData.company.trim() || formData.company.trim().toLowerCase() === "confidential")
-      next.company = "Company name is required — do not use 'Confidential'";
+    // Note: "Confidential" is a valid company name for admin-posted jobs — do not block it.
+    if (!formData.company.trim()) next.company = "Company name is required";
     if (!formData.description.trim()) next.description = "Role overview is required";
     if (!formData.jobFunction.trim()) next.jobFunction = "Function is required";
     if (!formData.contractType.trim()) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
-    if (!formData.salaryDisplay.trim())
-      next.salaryDisplay = "Salary is required — enter an amount (e.g. 40,000 – 60,000)";
+    // Salary is required for NEW jobs only; editing an existing job without salary is allowed
+    // (admin can leave the salary field blank on an existing record and fill it in later).
+    if (!isEditing && !formData.salaryDisplay.trim())
+      next.salaryDisplay = "Salary is required for new jobs — enter an amount (e.g. 40,000 – 60,000)";
     if (formData.applicationMethod === "external_link" && formData.applyLink.trim()) {
       try { new URL(normalizeUrl(formData.applyLink)); }
       catch { next.applyLink = "Please enter a valid URL (e.g. https://example.com/apply)"; }

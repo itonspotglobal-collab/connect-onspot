@@ -809,6 +809,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  is_featured migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: urgently_hiring flag ─────────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS urgently_hiring boolean NOT NULL DEFAULT false`);
+    console.log("✅ Migration: jobs.urgently_hiring column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  urgently_hiring migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: job_summary (public card preview) ────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_summary text`);
+    console.log("✅ Migration: jobs.job_summary column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  job_summary migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: role detail fields ───────────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS reporting_to text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS division text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_code text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_grade text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_level text`);
+    console.log("✅ Migration: jobs role detail columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  role detail migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: Job Success Profile (JSP) content sections ───
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS company_overview text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS role_mission text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS key_outcomes text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS key_responsibilities text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS skills_and_competencies text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS behavioral_traits text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS kpis text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS training_and_support text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS growth_path text`);
+    console.log("✅ Migration: jobs JSP content columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  JSP content migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: system requirements fields ───────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS minimum_internet_speed text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS system_requirements text`);
+    console.log("✅ Migration: jobs system requirement columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  system requirements migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: posting timestamp fields ─────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS posted_at timestamp`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS original_posted_at timestamp`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS last_refreshed_at timestamp`);
+    console.log("✅ Migration: jobs posting timestamp columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  posting timestamp migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: approval workflow columns ────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS approval_status text NOT NULL DEFAULT 'pending'`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS approved_by varchar`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS approved_at timestamp`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS rejected_by varchar`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS rejected_at timestamp`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS rejection_reason text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_client_submitted boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS existing_job_id varchar`);
+    console.log("✅ Migration: jobs approval workflow columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  approval workflow migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: application method / link ────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_method text DEFAULT 'external_link'`);
+    console.log("✅ Migration: jobs application method columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  application method migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: budget / salary extended fields ─────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS budget_currency text DEFAULT 'PHP'`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS custom_currency_code text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_display text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS hourly_rate_min decimal(8,2)`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS hourly_rate_max decimal(8,2)`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS duration text`);
+    console.log("✅ Migration: jobs budget/salary extended columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  budget/salary migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -4993,8 +5093,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
       }
-      console.error("Admin job update error:", error);
-      res.status(500).json({ error: "Failed to update job" });
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("Admin job update error:", msg);
+      res.status(500).json({ error: "Failed to update job", message: msg });
     }
   });
 
