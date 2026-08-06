@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 
@@ -444,8 +444,8 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
   // ── Field extraction ───────────────────────────────────────────────────────
 
-  // "About the Company" — JSP companyOverview is a company-context paragraph
-  const companyOverview = (job as any).companyOverview as string | null | undefined;
+  // "About the Company" — use helper so confidential jobs never reveal overview
+  const companyOverview = getPublicCompanyDescription(job as any);
 
   // "About the Role" — prefer JSP roleMission, fall back to legacy description
   const roleMission = (job as any).roleMission as string | null | undefined;
@@ -546,7 +546,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           {(job as any).originalRoleName && (
             <p className="mt-1.5 text-base italic text-slate-400">{(job as any).originalRoleName}</p>
           )}
-          <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot"}</p>
+          <p className="mt-2 text-base text-slate-400">{getPublicCompanyName(job as any)}</p>
 
           {/* Compensation pill */}
           <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">

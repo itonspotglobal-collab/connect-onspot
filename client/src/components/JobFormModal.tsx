@@ -107,6 +107,8 @@ export const defaultFormData = {
   isFeatured: false,
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
+  // Company visibility
+  isCompanyConfidential: false,
   // Benefits / HMO
   benefits: "",
   // Compensation type — locked to monthly for all new/edited jobs
@@ -170,6 +172,8 @@ export function jobToFormData(job: Job): JobFormData {
     isFeatured: (job as any).isFeatured ?? false,
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
+    // Company visibility
+    isCompanyConfidential: (job as any).isCompanyConfidential ?? false,
     // Benefits / HMO
     benefits: (job as any).benefits || "",
     // Compensation type — always "monthly" for edited jobs going forward
@@ -258,7 +262,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
-  const updateField = (field: keyof JobFormData, value: string) => {
+  const updateField = (field: keyof JobFormData, value: JobFormData[keyof JobFormData]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
@@ -388,6 +392,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     // Urgently Hiring flag (always send so unchecking a previously set job clears it)
     payload.urgentlyHiring = formData.urgentlyHiring;
 
+    // Company visibility (always send so unchecking a previously set flag clears it)
+    payload.isCompanyConfidential = formData.isCompanyConfidential;
+
     // Benefits / HMO (always send so admins can clear the value)
     payload.benefits = formData.benefits.trim() || null;
 
@@ -468,6 +475,22 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   onChange={(e) => updateField("company", e.target.value)}
                   placeholder="OnSpot"
                 />
+                {/* Confidential toggle — shown directly under the company field */}
+                <label className="flex cursor-pointer items-start gap-2 pt-0.5">
+                  <input
+                    type="checkbox"
+                    id="modal-confidential"
+                    checked={formData.isCompanyConfidential}
+                    onChange={(e) => updateField("isCompanyConfidential", e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border accent-[#474ead]"
+                  />
+                  <div>
+                    <span className="text-sm font-medium leading-none">Keep company confidential</span>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Applicants see "Confidential Company" — the real name stays hidden.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 

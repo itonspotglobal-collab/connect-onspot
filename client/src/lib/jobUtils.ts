@@ -421,3 +421,32 @@ export function buildRateDisplayWithCode(job: {
   }
   return "Salary not set";
 }
+
+// ── Company visibility helpers ──────────────────────────────────────────────
+
+/**
+ * Returns the company name a public visitor should see.
+ * Confidential jobs show "Confidential Company"; otherwise returns the real name.
+ * NOTE: public API endpoints already mask this server-side, so these helpers
+ * are provided as defence-in-depth for any client-side rendering that may
+ * receive unmasked data (e.g. admin views rendering shared components).
+ */
+export function getPublicCompanyName(job: {
+  company?: string | null;
+  isCompanyConfidential?: boolean | null;
+}): string {
+  if (job.isCompanyConfidential) return "Confidential Company";
+  return job.company || "OnSpot";
+}
+
+/**
+ * Returns the company overview a public visitor should see.
+ * Returns null for confidential jobs so the "About the Company" section is hidden.
+ */
+export function getPublicCompanyDescription(job: {
+  companyOverview?: string | null;
+  isCompanyConfidential?: boolean | null;
+}): string | null {
+  if (job.isCompanyConfidential) return null;
+  return (job as any).companyOverview?.trim() || null;
+}

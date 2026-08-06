@@ -27,6 +27,7 @@ import {
   getJobBadges,
   getTimeAgo,
   sortJobs,
+  getPublicCompanyName,
   type SortOption,
 } from "@/lib/jobUtils";
 import {
@@ -278,7 +279,7 @@ function JobCard({
                     </p>
                   )}
                   <p className="mt-0.5 text-xs text-amber-100/60 md:text-sm">
-                    {job.company ?? "OnSpot"}
+                    {getPublicCompanyName(job as any)}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {pilotId && (
@@ -330,7 +331,7 @@ function JobCard({
                     </p>
                   )}
                   <p className="mt-0.5 text-xs text-white/75 md:text-sm">
-                    {job.company ?? "OnSpot"}
+                    {getPublicCompanyName(job as any)}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {pilotId && (

@@ -276,12 +276,11 @@ function AdminJobRow({
             )}
           </div>
 
-          {/* Confidential company warning — flags records needing manual update */}
-          {job.company && job.company.toLowerCase().includes("confidential") && (
-            <p className="mb-1 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-              <AlertCircle className="h-3 w-3 shrink-0" />
-              Company shows "Confidential" — edit this job to set the real company name.
-            </p>
+          {/* Confidential company badge — shown for jobs marked as confidential */}
+          {(job as any).isCompanyConfidential && (
+            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 dark:bg-white/[0.06] dark:text-white/50">
+              <EyeOff className="h-2.5 w-2.5" /> Confidential publicly
+            </span>
           )}
 
           {/* Original role name */}

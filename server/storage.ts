@@ -2838,7 +2838,8 @@ export class DbStorage extends MemStorage {
         j.title.toLowerCase().includes(q) ||
         j.description.toLowerCase().includes(q) ||
         j.category.toLowerCase().includes(q) ||
-        (j.company && j.company.toLowerCase().includes(q))
+        // Do NOT match company name for confidential jobs — prevents leaking the real company
+        (!(j as any).isCompanyConfidential && j.company && j.company.toLowerCase().includes(q))
       );
     }
 

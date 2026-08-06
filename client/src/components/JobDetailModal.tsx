@@ -33,7 +33,7 @@ import {
   copyToClipboard,
   shareNative,
 } from "@/lib/shareUtils";
-import { getTimeAgo } from "@/lib/jobUtils";
+import { getTimeAgo, getPublicCompanyName } from "@/lib/jobUtils";
 
 const workCategories = [
   { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
@@ -181,7 +181,7 @@ export function JobDetailModal({
               <div className="min-w-0 flex-1">
                 <h2 className="text-xl font-bold text-white leading-tight">{job.title}</h2>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-blue-100 font-medium text-sm">{job.company || "OnSpot"}</span>
+                  <span className="text-blue-100 font-medium text-sm">{getPublicCompanyName(job)}</span>
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-300 flex-shrink-0" />
                   <div className="flex items-center gap-0.5">
                     <Star className="w-3 h-3 text-yellow-300 fill-current" />

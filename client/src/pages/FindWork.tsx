@@ -33,7 +33,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getPublicCompanyName } from "@/lib/jobUtils";
 import {
   saveUserActivity,
   getTopUserInterests,
@@ -773,7 +773,7 @@ function DbJobCard({
                 {job.title}
               </h3>
               <p className="mt-0.5 text-sm text-slate-500">
-                {job.company ?? "OnSpot"}
+                {getPublicCompanyName(job as any)}
               </p>
             </div>
             <span className="shrink-0 text-xs text-slate-400">{timeAgo}</span>

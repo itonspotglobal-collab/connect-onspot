@@ -22,6 +22,7 @@ import {
   getTimeAgo,
   getJobBadges,
   formatContractType,
+  getPublicCompanyName,
 } from "@/lib/jobUtils";
 
 const CATEGORY_MAP = [
@@ -130,7 +131,7 @@ export function ExpandableJobCard({
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-blue-100 font-medium text-sm">
-                    {job.company || "OnSpot"}
+                    {getPublicCompanyName(job)}
                   </span>
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-300 flex-shrink-0" />
                   <div className="flex items-center gap-0.5">

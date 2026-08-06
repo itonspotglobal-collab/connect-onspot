@@ -179,6 +179,7 @@ export const jobs = pgTable("jobs", {
   hasCommission: boolean("has_commission").notNull().default(false),
   hasEquity: boolean("has_equity").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),
+  isCompanyConfidential: boolean("is_company_confidential").notNull().default(false),
   proposalCount: integer("proposal_count").default(0),
   viewCount: integer("view_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

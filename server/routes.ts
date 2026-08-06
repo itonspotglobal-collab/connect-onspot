@@ -817,6 +817,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  urgently_hiring migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: is_company_confidential flag ──────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_company_confidential boolean NOT NULL DEFAULT false`);
+    console.log("✅ Migration: jobs.is_company_confidential column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  is_company_confidential migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: job_summary (public card preview) ────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_summary text`);
@@ -4887,7 +4895,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const all = await storage.searchJobsWithSkills(filters);
       const { items, meta } = pageSlice(all, page, pageSize);
-      res.json({ items, meta });
+      // Mask company data for confidential jobs before sending to public callers
+      const maskedItems = items.map((job: any) =>
+        job.isCompanyConfidential
+          ? { ...job, company: "Confidential Company", companyOverview: null }
+          : job
+      );
+      res.json({ items: maskedItems, meta });
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ error: "Failed to search jobs" });
@@ -4938,7 +4952,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isApproved || !isOpen) {
         return res.status(404).json({ error: "Job not found" });
       }
-      res.json(jobWithSkills);
+      // Mask company data for confidential jobs before sending to public callers
+      const jobToReturn = (jobWithSkills as any).isCompanyConfidential
+        ? { ...jobWithSkills, company: "Confidential Company", companyOverview: null }
+        : jobWithSkills;
+      res.json(jobToReturn);
     } catch (error) {
       console.error("Job fetch error:", error);
       res.status(500).json({ error: "Failed to get job" });
