@@ -1,0 +1,643 @@
+Implement a standardized Company Visibility feature across the entire Find Work / Job Posting system.
+
+GOAL
+
+When creating or editing a job posting, the client/admin should be able to choose whether:
+
+1. The actual company is publicly displayed
+OR
+2. The company remains confidential
+
+If confidential is selected, candidates should see:
+
+Confidential Company
+
+instead of the actual company name.
+
+The actual company information must still remain stored internally.
+
+IMPORTANT:
+Apply this consistently across ALL related pages and components, including:
+
+- Find Work Admin
+- Add Job Posting
+- Edit Job Posting
+- Admin job listing
+- Job preview
+- FindWork/AllJobs
+- regular job cards
+- Featured job cards
+- Job Details / View Details
+- application page
+- similar jobs
+- any search/filter component displaying company information
+- backend/API
+- shared job types/interfaces
+- database/schema if necessary
+
+--------------------------------------------------
+1. COMPANY VISIBILITY FIELD
+--------------------------------------------------
+
+First inspect whether the project already has something like:
+
+isCompanyConfidential
+hideCompanyName
+companyVisibility
+isConfidential
+
+If an equivalent field already exists, REUSE IT.
+
+Do not create duplicate fields.
+
+If nothing exists, add:
+
+isCompanyConfidential: boolean
+
+Default:
+
+false
+
+Meaning:
+
+false
+→ public company information may be displayed
+
+true
+→ company identity must be hidden publicly
+
+--------------------------------------------------
+2. COMPANY INFORMATION
+--------------------------------------------------
+
+The job should retain actual company information regardless of visibility.
+
+Use existing fields if available.
+
+Ideally:
+
+companyName
+companyDescription
+isCompanyConfidential
+
+Example:
+
+{
+  companyName: "AboitizPower",
+  companyDescription:
+    "A leading Philippine energy company focused on sustainable power solutions.",
+  isCompanyConfidential: false
+}
+
+Confidential example:
+
+{
+  companyName: "AboitizPower",
+  companyDescription:
+    "A leading Philippine energy company...",
+  isCompanyConfidential: true
+}
+
+IMPORTANT:
+
+Do NOT replace the stored companyName with the literal string:
+
+"Confidential"
+
+The actual name must remain available internally.
+
+Confidentiality is only a presentation rule.
+
+--------------------------------------------------
+3. ADMIN CREATE / EDIT FORM
+--------------------------------------------------
+
+Add a section:
+
+COMPANY INFORMATION
+
+Fields:
+
+Company Name *
+[________________________]
+
+Company Description
+[ textarea ]
+
+Company Visibility
+
+○ Publish company information
+○ Keep company confidential
+
+or use a toggle/checkbox:
+
+☐ Keep company confidential
+
+Helper text:
+
+"When enabled, candidates will see 'Confidential Company' instead of the company name and company description."
+
+Preferred default:
+
+Publish company information
+
+--------------------------------------------------
+4. COMPANY DESCRIPTION
+--------------------------------------------------
+
+Add/support a short company description.
+
+Suggested field:
+
+companyDescription?: string
+
+Use a textarea.
+
+Helper text:
+
+"Add a short introduction to the company, its industry, mission, or work environment."
+
+Do NOT impose a very small character limit.
+
+If some reasonable database limit already exists, preserve it.
+
+Company description should be OPTIONAL.
+
+--------------------------------------------------
+5. ADMIN SHOULD ALWAYS SEE REAL COMPANY
+--------------------------------------------------
+
+Confidentiality only applies to candidate/public-facing pages.
+
+Inside Find Work Admin:
+
+Always show the actual company name.
+
+For confidential postings, add a badge:
+
+[Confidential publicly]
+
+Example:
+
+Senior Account Executive
+AboitizPower
+[Confidential publicly]
+
+This allows admins to identify the client while understanding what candidates see.
+
+--------------------------------------------------
+6. PUBLIC DISPLAY HELPER
+--------------------------------------------------
+
+Create ONE shared helper rather than repeating confidentiality checks everywhere.
+
+Example:
+
+export function getPublicCompanyName(job: Job) {
+  return job.isCompanyConfidential
+    ? "Confidential Company"
+    : job.companyName;
+}
+
+For description:
+
+export function getPublicCompanyDescription(job: Job) {
+  if (job.isCompanyConfidential) return null;
+
+  return job.companyDescription?.trim() || null;
+}
+
+Use equivalent architecture appropriate to the existing project.
+
+--------------------------------------------------
+7. FIND WORK JOB CARDS
+--------------------------------------------------
+
+Update regular cards and Featured cards.
+
+PUBLIC COMPANY:
+
+If:
+
+isCompanyConfidential === false
+
+display:
+
+IT Administrator
+AboitizPower
+
+If:
+
+isCompanyConfidential === true
+
+display:
+
+IT Administrator
+Confidential Company
+
+Never expose the actual company through:
+- title attributes
+- tooltips
+- aria-label text
+- hidden DOM elements
+- data attributes
+
+--------------------------------------------------
+8. FEATURED JOBS
+--------------------------------------------------
+
+Featured cards must follow exactly the same privacy rule.
+
+Do not accidentally expose the actual client because Featured cards use separate JSX/styles.
+
+Example:
+
+★ FEATURED
+
+[IA] IT Administrator
+Confidential Company
+
+[Urgently Hiring] [Remote] [Full Time]
+
+--------------------------------------------------
+9. JOB DETAILS PAGE
+--------------------------------------------------
+
+Update:
+
+client/src/pages/FindWorkJob.tsx
+
+The redesigned Job Details page includes an:
+
+About the Company
+
+section.
+
+Behavior:
+
+A. PUBLIC COMPANY
+
+Show:
+
+About the Company
+
+AboitizPower
+
+AboitizPower is a leading...
+
+B. CONFIDENTIAL COMPANY
+
+Do NOT display:
+- real company name
+- company description
+
+Instead either render:
+
+About the Company
+
+Confidential Company
+
+"The hiring company has chosen to keep its identity confidential at this stage of the recruitment process."
+
+OR omit the About the Company section entirely.
+
+Preferred:
+Show the short confidentiality explanation so the page does not feel incomplete.
+
+Do NOT expose internal company information.
+
+--------------------------------------------------
+10. HERO COMPANY NAME
+--------------------------------------------------
+
+The Job Details hero must use the same public company helper.
+
+PUBLIC:
+
+Senior Account Executive
+AboitizPower
+
+CONFIDENTIAL:
+
+Senior Account Executive
+Confidential Company
+
+--------------------------------------------------
+11. APPLICATION PAGE
+--------------------------------------------------
+
+Also update the job application page.
+
+Candidates applying to confidential jobs should continue seeing:
+
+Confidential Company
+
+Do NOT accidentally reveal the client name during:
+- application
+- login redirect
+- account-existing modal
+- application confirmation
+
+--------------------------------------------------
+12. SIMILAR ROLES
+--------------------------------------------------
+
+If Similar Roles cards display company information, use the same privacy logic.
+
+Never bypass confidentiality in secondary card components.
+
+--------------------------------------------------
+13. API PRIVACY
+--------------------------------------------------
+
+IMPORTANT SECURITY REQUIREMENT:
+
+Do not rely only on React hiding the company name.
+
+Inspect the public API.
+
+If possible, public job endpoints should NOT expose confidential company information unnecessarily.
+
+For example, public API mapping may return:
+
+{
+  companyName: "Confidential Company",
+  companyDescription: null,
+  isCompanyConfidential: true
+}
+
+instead of returning the real companyName and merely hiding it in React.
+
+Admin-authenticated endpoints should still receive the real information.
+
+This prevents someone from opening DevTools / Network and discovering confidential clients.
+
+--------------------------------------------------
+14. PUBLIC VS ADMIN DTO
+--------------------------------------------------
+
+If the architecture supports it, separate:
+
+AdminJobResponse
+
+from:
+
+PublicJobResponse
+
+Admin:
+
+{
+  companyName: "AboitizPower",
+  companyDescription: "...",
+  isCompanyConfidential: true
+}
+
+Public:
+
+{
+  companyName: "Confidential Company",
+  companyDescription: null,
+  isCompanyConfidential: true
+}
+
+Prefer this over relying exclusively on frontend presentation.
+
+--------------------------------------------------
+15. CREATE / UPDATE DATA FLOW
+--------------------------------------------------
+
+Ensure these fields flow through:
+
+ADMIN FORM
+↓
+form state
+↓
+create/update payload
+↓
+backend validation
+↓
+database
+↓
+admin response
+↓
+public-safe response
+
+Fields:
+
+companyName
+companyDescription
+isCompanyConfidential
+
+--------------------------------------------------
+16. EXISTING JOBS
+--------------------------------------------------
+
+There are already existing postings.
+
+Do NOT automatically convert every job currently containing:
+
+"Confidential"
+
+into a fake company.
+
+Inspect legacy records.
+
+If:
+
+companyName === "Confidential"
+
+and no real company name exists,
+
+preserve it temporarily and flag it for admin review.
+
+Do not invent the actual company.
+
+If actual company data exists elsewhere, only migrate it when the relationship is explicit and safe.
+
+--------------------------------------------------
+17. VALIDATION
+--------------------------------------------------
+
+Company Name should still be required internally even when the posting is confidential.
+
+Why:
+
+Admin needs to know which client owns the role.
+
+So:
+
+companyName = required
+
+companyDescription = optional
+
+isCompanyConfidential = boolean
+
+Do NOT allow confidentiality to make companyName optional unless the existing architecture genuinely cannot supply it.
+
+--------------------------------------------------
+18. PREVIEW PUBLIC PAGE
+--------------------------------------------------
+
+The Admin "Preview public page" feature must respect the confidentiality setting.
+
+If checkbox/toggle is enabled, Preview should show:
+
+Confidential Company
+
+not the real company.
+
+This allows admins to verify exactly what candidates will see.
+
+--------------------------------------------------
+19. SEARCH / FILTER SAFETY
+--------------------------------------------------
+
+Inspect public search/filter functionality.
+
+A confidential company's real name must not be searchable publicly.
+
+Example:
+
+If AboitizPower has a confidential posting:
+
+Searching "AboitizPower" should NOT reveal that job because the backend still matched a hidden company name.
+
+Public search must use only publicly exposed company values.
+
+--------------------------------------------------
+20. CONFIDENTIAL BADGE
+--------------------------------------------------
+
+Do NOT clutter public cards with a large "CONFIDENTIAL" warning.
+
+Simply display:
+
+Confidential Company
+
+using the same company typography.
+
+Optionally use a very subtle lock icon if it fits the existing design.
+
+Do not make confidential jobs look suspicious or disabled.
+
+--------------------------------------------------
+21. KEEP EVERYTHING ELSE UNCHANGED
+--------------------------------------------------
+
+Do not change:
+
+- salary
+- monthly compensation rules
+- Featured
+- Urgently Hiring
+- Remote / Hybrid / Onsite
+- Full Time / Part Time
+- Commission
+- Equity
+- Benefits
+- posted-date rules
+- description
+- responsibilities
+- qualifications
+- system requirements
+- Apply flow
+- authentication
+- current card styling
+
+This task is specifically about company identity and company description visibility.
+
+--------------------------------------------------
+22. TEST CASES
+--------------------------------------------------
+
+TEST 1 — Public company:
+
+companyName = "AboitizPower"
+companyDescription = "Leading energy company..."
+isCompanyConfidential = false
+
+Candidate sees:
+
+AboitizPower
+
+About the Company
+Leading energy company...
+
+--------------------------------------------------
+
+TEST 2 — Confidential company:
+
+companyName = "AboitizPower"
+companyDescription = "Leading energy company..."
+isCompanyConfidential = true
+
+ADMIN sees:
+
+AboitizPower
+[Confidential publicly]
+
+PUBLIC sees:
+
+Confidential Company
+
+and must NOT receive/reveal:
+
+AboitizPower
+Leading energy company...
+
+--------------------------------------------------
+
+TEST 3 — Edit:
+
+Change:
+
+Confidential → Public
+
+Public pages immediately show:
+- actual company name
+- description
+
+Change back:
+
+Public → Confidential
+
+Public identity disappears again.
+
+--------------------------------------------------
+
+TEST 4 — Featured confidential job:
+
+Featured design still works but displays:
+
+Confidential Company
+
+--------------------------------------------------
+
+TEST 5 — Application flow:
+
+Confidential company remains confidential through:
+- Apply Now
+- login
+- application
+- confirmation
+
+--------------------------------------------------
+23. AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Report:
+
+1. Exact files changed
+2. Whether confidentiality functionality already existed
+3. Exact field names used
+4. Whether companyDescription required a new DB field
+5. Whether a database migration is required
+6. How public API responses protect confidential information
+7. How admin and public responses differ
+8. Confirmation regular cards were updated
+9. Confirmation Featured cards were updated
+10. Confirmation Job Details was updated
+11. Confirmation application pages were updated
+12. Confirmation Admin Preview respects confidentiality
+13. Confirmation actual confidential company data cannot be found in public DOM/API responses
+14. Any legacy jobs requiring manual company-name cleanup
