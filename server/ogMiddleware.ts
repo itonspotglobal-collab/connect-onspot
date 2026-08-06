@@ -242,7 +242,7 @@ export async function resolveOGMeta(
     pathname.startsWith("/blog")
   ) {
     return {
-      title: "Insights – Outsourcing Intelligence | OnSpot Global",
+      title: "Insights – Outsourcing Intelligence | OnSpot",
       description:
         "Expert articles on outsourcing strategy, BPO trends, AI-driven talent matching, and building remote teams across the Philippines and beyond.",
       image: INSIGHTS_FALLBACK_IMAGE,
@@ -265,8 +265,8 @@ export async function resolveOGMeta(
           const location = job.location || "Remote";
           const contractType = job.contractType ? ` · ${job.contractType}` : "";
           return {
-            title: `${roleTitle} at ${company} | OnSpot Global`,
-            description: `Apply for ${roleTitle} at ${company}. ${location}${contractType}. Browse and apply for remote outsourcing jobs on OnSpot Global — no experience required, top Philippine talent welcome.`,
+            title: `${roleTitle} at ${company} | OnSpot`,
+            description: `Apply for ${roleTitle} at ${company}. ${location}${contractType}. Browse and apply for remote outsourcing jobs on OnSpot — no experience required, top Philippine talent welcome.`,
             image: DEFAULT_OG_IMAGE,
             url: `${SITE}/jobs/${jobId}`,
             ogType: "website",
@@ -276,7 +276,7 @@ export async function resolveOGMeta(
                 <p><strong>Company:</strong> ${escapeHtml(company)}</p>
                 <p><strong>Location:</strong> ${escapeHtml(location)}</p>
                 ${contractType ? `<p><strong>Type:</strong> ${escapeHtml(job.contractType || "")}</p>` : ""}
-                <p>Apply now on <a href="${SITE}/jobs/${jobId}">OnSpot Global</a>.</p>
+                <p>Apply now on <a href="${SITE}/jobs/${jobId}"</a>.</p>
               </section>`,
           };
         }
@@ -285,7 +285,7 @@ export async function resolveOGMeta(
       }
       // Job not found → fall through to generic response
       return {
-        title: "Job Opening | OnSpot Global",
+        title: "Job Opening | OnSpot",
         description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}${pathname}`,
@@ -296,7 +296,7 @@ export async function resolveOGMeta(
     // Old find-work/job/:id pattern
     if (/^\/find-work\/job\/[^/]+\/?$/.test(pathname)) {
       return {
-        title: "Job Opening | OnSpot Global",
+        title: "Job Opening | OnSpot",
         description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}${pathname}`,
@@ -307,8 +307,8 @@ export async function resolveOGMeta(
     // All-jobs browse page
     if (pathname === "/find-work/all-jobs" || pathname === "/find-work/all-jobs/") {
       return {
-        title: "Browse All Remote Jobs | OnSpot Global",
-        description: "Explore all open remote jobs on OnSpot Global — customer support, software development, design, marketing, virtual assistant roles, and more.",
+        title: "Browse All Remote Jobs | OnSpot",
+        description: "Explore all open remote jobs on OnSpot — customer support, software development, design, marketing, virtual assistant roles, and more.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}/find-work/all-jobs`,
         ogType: "website",
@@ -330,8 +330,8 @@ export async function resolveOGMeta(
     // Jobs listing (find-work/jobs)
     if (pathname === "/find-work/jobs" || pathname === "/find-work/jobs/") {
       return {
-        title: "Remote Jobs | OnSpot Global",
-        description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot Global.",
+        title: "Remote Jobs | OnSpot",
+        description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot.",
         image: DEFAULT_OG_IMAGE,
         url: `${SITE}/find-work/jobs`,
         ogType: "website",
@@ -344,7 +344,7 @@ export async function resolveOGMeta(
       ? ` – ${cat.charAt(0).toUpperCase() + cat.slice(1)}`
       : "";
     return {
-      title: `Find Work${catLabel} | OnSpot Global`,
+      title: `Find Work${catLabel} | OnSpot`,
       description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more. OnSpot connects top Philippine talent with global clients.",
       image: DEFAULT_OG_IMAGE,
       url: cat ? `${SITE}/find-work?category=${encodeURIComponent(cat)}` : `${SITE}/find-work`,
@@ -365,7 +365,7 @@ export async function resolveOGMeta(
   // ── Hire Talent ───────────────────────────────────────────────────────────────
   if (pathname === "/hire-talent" || pathname === "/hire-talent/") {
     return {
-      title: "Hire Talent | OnSpot Global",
+      title: "Hire Talent | OnSpot",
       description: "Hire pre-vetted remote professionals from the Philippines. OnSpot places top talent in customer support, development, design, and more within 72 hours.",
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}/hire-talent`,
@@ -416,7 +416,7 @@ export async function resolveOGMeta(
   // ── Services ──────────────────────────────────────────────────────────────────
   if (pathname.startsWith("/services")) {
     return {
-      title: "Services | OnSpot Global",
+      title: "Services | OnSpot",
       description:
         "Explore OnSpot's outsourcing service tiers — from Managed and Resourced to Enterprise and AI-powered assistants.",
       image: DEFAULT_OG_IMAGE,
@@ -428,7 +428,7 @@ export async function resolveOGMeta(
   // ── Pricing ───────────────────────────────────────────────────────────────────
   if (pathname === "/pricing" || pathname === "/pricing/") {
     return {
-      title: "Pricing | OnSpot Global",
+      title: "Pricing | OnSpot",
       description:
         "Transparent outsourcing pricing with no hidden fees. Choose a plan that scales with your business.",
       image: DEFAULT_OG_IMAGE,
@@ -440,7 +440,7 @@ export async function resolveOGMeta(
   // ── Enterprise ────────────────────────────────────────────────────────────────
   if (pathname === "/enterprise" || pathname === "/enterprise/") {
     return {
-      title: "Enterprise Solutions | OnSpot Global",
+      title: "Enterprise Solutions | OnSpot",
       description:
         "Custom outsourcing solutions for enterprise teams. Scale operations with dedicated OnSpot talent and AI infrastructure.",
       image: DEFAULT_OG_IMAGE,
@@ -452,7 +452,7 @@ export async function resolveOGMeta(
   // ── FAQ ───────────────────────────────────────────────────────────────────────
   if (pathname === "/faq" || pathname === "/faq/") {
     return {
-      title: "FAQ | OnSpot Global",
+      title: "FAQ | OnSpot",
       description:
         "Answers to common questions about OnSpot's remote outsourcing services, hiring process, pricing, and platform.",
       image: DEFAULT_OG_IMAGE,
@@ -482,7 +482,7 @@ export async function resolveOGMeta(
     pathname.startsWith("/payment-protection")
   ) {
     return {
-      title: "Legal | OnSpot Global",
+      title: "Legal | OnSpot",
       description: "OnSpot's terms, privacy policy, refund policy, and trust & safety information.",
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}${pathname}`,
@@ -493,7 +493,7 @@ export async function resolveOGMeta(
   // ── Admin ─────────────────────────────────────────────────────────────────────
   if (pathname.startsWith("/admin")) {
     return {
-      title: "Admin | OnSpot Global",
+      title: "Admin | OnSpot",
       description: "OnSpot admin portal.",
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}/admin`,
@@ -560,7 +560,7 @@ function buildBotHtml(meta: OGMeta): string {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "OnSpot",
-    legalName: "OnSpot Global",
+    legalName: "OnSpot",
     url: "https://www.onspotglobal.com",
     logo: "https://www.onspotglobal.com/assets/onspot-logo.png",
     description: "AI-powered outsourcing platform connecting US businesses with top Philippine talent.",
@@ -578,7 +578,7 @@ function buildBotHtml(meta: OGMeta): string {
   const websiteSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "OnSpot Global",
+    name: "OnSpot",
     url: "https://www.onspotglobal.com",
     potentialAction: {
       "@type": "SearchAction",
@@ -626,9 +626,9 @@ function buildBotHtml(meta: OGMeta): string {
   <script type="application/ld+json">${websiteSchema}</script>
 </head>
 <body>
-  <!-- OnSpot Global — AI-powered outsourcing platform for US businesses. -->
+  <!-- OnSpot — AI-powered outsourcing platform for US businesses. -->
   <header>
-    <a href="https://www.onspotglobal.com"><strong>OnSpot Global</strong></a>
+    <a href="https://www.onspotglobal.com"><strong>OnSpot</strong></a>
     <nav>
       <a href="https://www.onspotglobal.com/hire-talent">Hire Talent</a>
       <a href="https://www.onspotglobal.com/find-work/all-jobs">Browse Jobs</a>
@@ -643,11 +643,11 @@ function buildBotHtml(meta: OGMeta): string {
       <h1>${t}</h1>
       <p>${d}</p>
       ${pageContent}
-      <p><a href="${url}">View on OnSpot Global →</a></p>
+      <p><a href="${url}">View on OnSpot →</a></p>
     </article>
   </main>
   <footer>
-    <p><strong>OnSpot Global</strong> — Work Without Limits</p>
+    <p><strong>OnSpot</strong> — Work Without Limits</p>
     <p>AI-powered outsourcing platform connecting U.S. businesses with top Philippine talent in customer support, software development, design, marketing, and more.</p>
     <nav>
       <a href="https://www.onspotglobal.com/hire-talent">Hire Talent</a> ·

@@ -124,12 +124,12 @@ echo "────────────────────────�
 echo ""
 
 check_page "$BASE_URL/"                               "OnSpot – Work Without Limits"
-check_page "$BASE_URL/find-work/jobs"                 "Remote Jobs | OnSpot Global"
-check_page "$BASE_URL/find-work"                      "Find Work | OnSpot Global"
-check_page "$BASE_URL/insights"                       "Insights | OnSpot Global"
-check_page "$BASE_URL/hire-talent"                    "Hire Talent | OnSpot Global"
-check_page "$BASE_URL/faq"                            "FAQ | OnSpot Global"
-check_page "$BASE_URL/pricing"                        "Pricing | OnSpot Global"
+check_page "$BASE_URL/find-work/jobs"                 "Remote Jobs | OnSpot"
+check_page "$BASE_URL/find-work"                      "Find Work | OnSpot"
+check_page "$BASE_URL/insights"                       "Insights | OnSpot"
+check_page "$BASE_URL/hire-talent"                    "Hire Talent | OnSpot"
+check_page "$BASE_URL/faq"                            "FAQ | OnSpot"
+check_page "$BASE_URL/pricing"                        "Pricing | OnSpot"
 check_page "$BASE_URL/?preview=v3"                    "OnSpot – Work Without Limits"
 
 check_image "https://onspotglobal.com/onspot-social-preview-v3.png"

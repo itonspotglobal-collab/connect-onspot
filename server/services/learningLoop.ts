@@ -266,7 +266,7 @@ async function analyzeWithAI(
   commonIssues: string[];
 }> {
   try {
-    const prompt = `You are analyzing user interactions with Vanessa, an AI assistant for OnSpot Global.
+    const prompt = `You are analyzing user interactions with Vanessa, an AI assistant for OnSpot.
 
 FEEDBACK METRICS:
 - Positive feedback: ${positiveCount}

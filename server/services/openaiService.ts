@@ -383,7 +383,7 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
     const siteIndex = await loadSiteIndex();
     
     if (siteIndex && siteIndex.pages.length > 0) {
-      instructions += `\n\n[OnSpotGlobal.com — All Indexed Pages (for URL references)]\n`;
+      instructions += `\n\n[OnSpot — All Indexed Pages (for URL references)]\n`;
       instructions += `These are the ONLY valid URLs you may share with users. Do NOT invent URLs:\n`;
       instructions += siteIndex.pages
         .slice(0, 40)

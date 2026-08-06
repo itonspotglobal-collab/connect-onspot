@@ -1,7 +1,7 @@
 ================================================================================
-ONSPOT GLOBAL — COMPLETE WEBSITE CONTENT INDEX
+ONSPOT — COMPLETE WEBSITE CONTENT INDEX
 ================================================================================
-This file captures all content visible on the OnSpot Global website, including
+This file captures all content visible on the OnSpot website, including
 people, testimonials, magazine features, team bios, client stories, services,
 and other sections rendered client-side in React that cannot be crawled via
 static HTML. Updated manually whenever website content changes.
@@ -14,29 +14,29 @@ SECTION: LEADERSHIP TEAM
 
 PERSON: Nur Laminero
 Role: CEO
-Company: OnSpot Global
+Company: OnSpot
 Description: Turns growth vision into systems, structure, and execution that scale. Nur leads OnSpot as CEO, driving operational excellence and strategic direction across the company.
 
 PERSON: Jake Wainberg
 Role: Founder & President
-Company: OnSpot Global
-Description: Built OnSpot from real entrepreneurial pain points while scaling businesses in New York. Jake is the Founder and President of OnSpot Global, bringing firsthand experience of the outsourcing gap that businesses face.
+Company: OnSpot
+Description: Built OnSpot from real entrepreneurial pain points while scaling businesses in New York. Jake is the Founder and President of OnSpot, bringing firsthand experience of the outsourcing gap that businesses face.
 
 PERSON: Alon Ben Eli
 Role: Co-Founder
-Company: OnSpot Global
-Description: Helps shape long-range strategy, positioning, and global growth. Alon is a Co-Founder of OnSpot Global and contributes to the company's global expansion and strategic positioning.
+Company: OnSpot
+Description: Helps shape long-range strategy, positioning, and global growth. Alon is a Co-Founder of OnSpot and contributes to the company's global expansion and strategic positioning.
 
 PERSON: Shane Limiac
 Role: Head of Delivery
-Company: OnSpot Global
-Description: Leads execution and ensures the client experience translates into measurable results. Shane is the Head of Delivery at OnSpot Global, responsible for ensuring every client engagement delivers on its promises.
+Company: OnSpot
+Description: Leads execution and ensures the client experience translates into measurable results. Shane is the Head of Delivery at OnSpot, responsible for ensuring every client engagement delivers on its promises.
 
 PERSON: Mark Apostol
 Role: Head of People
-Company: OnSpot Global
+Company: OnSpot
 Also known as: Macky Apostol
-Description: Builds the people systems and culture that power high-performance delivery. Mark (Macky) is the Head of People at OnSpot Global, responsible for talent development, culture, and organizational health.
+Description: Builds the people systems and culture that power high-performance delivery. Mark (Macky) is the Head of People at OnSpot, responsible for talent development, culture, and organizational health.
 
 OnSpot Leadership Stats:
 - 500+ resources deployed
@@ -56,7 +56,7 @@ Company: PineTech
 Transformation: From 12-hour workdays to automated excellence
 Result: 2x Revenue
 Quote: "The professionalism and consistency of the OnSpot team. Communication is always clear and easy, and I appreciate how they provide structured updates at the end of each day and every week. This makes it simple for me to understand the scope of work being done and stay aligned."
-Context: Elad B. is featured as a client success story on the OnSpot Global homepage. He is the CEO and Founder of PineTech and shares his experience working with OnSpot Global. He is also referenced in client reviews as Elad Badash.
+Context: Elad B. is featured as a client success story on the OnSpot homepage. He is the CEO and Founder of PineTech and shares his experience working with OnSpot. He is also referenced in client reviews as Elad Badash.
 
 TESTIMONIAL: Eric M.
 Role: Operations Director
@@ -64,7 +64,7 @@ Company: Flash Justice
 Transformation: From scattered processes to seamless orchestration
 Result: 85% Faster operations
 Quote: "I've worked with several outsourcing companies, but none delivered like On-Spot Global. Shane and Ria helped me build my team, stayed involved, and ensured success. Communication's great, savings exceeded expectations, and I finally feel like I'm working with a true partner."
-Context: Eric M. is the Operations Director at Flash Justice and is featured as a client success story on the OnSpot Global homepage. He specifically mentions Shane (Shane Limiac, Head of Delivery) and Ria as OnSpot team members who helped him.
+Context: Eric M. is the Operations Director at Flash Justice and is featured as a client success story on the OnSpot homepage. He specifically mentions Shane (Shane Limiac, Head of Delivery) and Ria as OnSpot team members who helped him.
 
 TESTIMONIAL: Fernando C.
 Full Name: Fernando Calderon
@@ -250,35 +250,35 @@ SECTION: FEATURED TALENT PROFILES — HOMEPAGE
 
 PERSON: Kyle Mendez
 Role: Recruitment Specialist
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Alexandra Lopez
 Role: Executive Assistant
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Andrea Pinzon
 Role: Virtual Assistant
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Christopher Alba
 Role: Technical Support Representative
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Rachel Castro
 Role: Social Media Manager
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Amir Singh
 Role: SEO Specialist
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Jennifer Dizon
 Role: Customer Service Representative
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 PERSON: Andrei Losanto
 Role: Full Stack Developer
-Context: Featured talent profile on the OnSpot Global homepage as an example of OnSpot talent.
+Context: Featured talent profile on the OnSpot homepage as an example of OnSpot talent.
 
 
 ================================================================================
@@ -419,12 +419,12 @@ SECTION: INVESTORS CORNER
 
 PERSON: Nur Laminero
 Role: CEO
-Company: OnSpot Global
+Company: OnSpot
 Context: Featured in the Investors Corner section.
 
 PERSON: Jake Wainberg
 Role: Founder & President
-Company: OnSpot Global
+Company: OnSpot
 Context: Featured in the Investors Corner section.
 
 

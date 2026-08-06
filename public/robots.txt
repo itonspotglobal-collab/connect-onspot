@@ -1,4 +1,4 @@
-# OnSpot Global — robots.txt
+# OnSpot — robots.txt
 # https://www.onspotglobal.com
 
 # ── Allow all crawlers on public content ──────────────────────────────────────

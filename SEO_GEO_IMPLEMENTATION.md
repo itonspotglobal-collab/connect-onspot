@@ -9,7 +9,7 @@ OnSpot now has a comprehensive dual geo-targeting SEO setup for **US (clients)**
 ## 🎯 Brand Strategy
 
 - **Visible Brand**: "OnSpot" (all user-facing content)
-- **Legal Name**: "OnSpot Global" (hidden in schema only for SEO continuity)
+- **Legal Name**: "OnSpot" (hidden in schema only for SEO continuity)
 - **Domain**: onspotglobal.com (unchanged)
 
 ---
@@ -70,7 +70,7 @@ Routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/app
 {
   "@type": "Organization",
   "name": "OnSpot",
-  "legalName": "OnSpot Global",
+  "legalName": "OnSpot",
   "url": "https://www.onspotglobal.com",
   "logo": "https://www.onspotglobal.com/assets/onspot-logo.png",
   "description": "The Superhuman Outsourcing System - AI-powered talent matching and performance management",
@@ -103,7 +103,7 @@ Routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/app
   "provider": {
     "@type": "Organization",
     "name": "OnSpot",
-    "legalName": "OnSpot Global"
+    "legalName": "OnSpot"
   },
   "serviceType": "AI-driven outsourcing and managed teams",
   "areaServed": "US",
@@ -124,7 +124,7 @@ Routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/app
 {
   "@type": "EmploymentAgency",
   "name": "OnSpot",
-  "legalName": "OnSpot Global",
+  "legalName": "OnSpot",
   "url": "https://www.onspotglobal.com/[pathname]",
   "address": {
     "@type": "PostalAddress",
@@ -144,7 +144,7 @@ Routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/app
 
 1. **No Visible Changes**: Zero layout/content/copy modifications - all changes in `<head>` only
 2. **Brand Consistency**: "OnSpot" shown to users everywhere
-3. **Legal Name**: "OnSpot Global" hidden in schema for ranking continuity
+3. **Legal Name**: "OnSpot" hidden in schema for ranking continuity
 4. **Dynamic Canonical**: Updates to match current pathname
 5. **US Pages**: 
    - ✅ `geo.region=US`

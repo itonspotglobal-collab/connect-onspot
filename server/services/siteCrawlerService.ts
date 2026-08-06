@@ -37,7 +37,7 @@ export class SiteCrawlerService {
   }
 
   /**
-   * Crawl the OnSpotGlobal.com website
+   * Crawl the onspotglobal.com website
    */
   async crawlSite() {
     if (!this.isConfigured) {
@@ -46,7 +46,7 @@ export class SiteCrawlerService {
     }
 
     try {
-      console.log('🌐 Starting OnSpotGlobal.com crawl...');
+      console.log('🌐 Starting onspotglobal.com crawl...');
       const siteIndex = await crawlWebsite();
       console.log(
         `🌐 Site crawl completed at ${siteIndex.lastUpdated} — ${siteIndex.totalPages} pages indexed`

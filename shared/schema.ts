@@ -123,7 +123,7 @@ export const jobs = pgTable("jobs", {
   originalRoleName: text("original_role_name"),
   jobFunction: text("job_function"),
   description: text("description").notNull(),
-  company: text("company").default("OnSpot Global"),
+  company: text("company").default("OnSpot"),
   location: text("location").default("Remote"),
   category: text("category").notNull(),
   contractType: text("contract_type").notNull(), // hourly, fixed
