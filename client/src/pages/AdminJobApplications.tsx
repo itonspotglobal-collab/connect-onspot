@@ -31,6 +31,22 @@ import { lazy, Suspense } from "react";
 
 const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
+// ─── Pagination helper ────────────────────────────────────────────────────────
+function getPaginationPages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [];
+  const nearStart = current <= 3;
+  const nearEnd = current >= total - 2;
+  pages.push(1);
+  if (!nearStart) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (!nearEnd) pages.push("...");
+  if (total > 1) pages.push(total);
+  return pages.filter((p, i, arr) => i === 0 || arr[i - 1] !== p);
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const VALID_STATUSES = [
@@ -524,10 +540,14 @@ export default function AdminJobApplications() {
   }, [qs]);
 
   // ── Queries ───────────────────────────────────────────────────────────────
-  const listKey = [`/api/admin/job-applications?${qs}`];
+  // Use a two-part key [prefix, qs] so prefix-based invalidation clears all
+  // paginated variants at once (not just the current exact URL).
+  const listKeyPrefix = "/api/admin/job-applications";
+  const listKey = [listKeyPrefix, qs];
   const { data: listData, isLoading, isError, refetch } = useQuery<ListResponse>({
     queryKey: listKey,
     queryFn: () => apiFetch(`/api/admin/job-applications?${qs}`),
+    placeholderData: (prev: ListResponse | undefined) => prev,
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery<Summary>({
@@ -536,20 +556,21 @@ export default function AdminJobApplications() {
     staleTime: 30_000,
   });
 
-  // Fetch distinct jobs for the filter dropdown
+  // Fetch ALL jobs for the filter dropdown using a dedicated lightweight endpoint.
+  // /api/admin/jobs is paginated (25/page), so we must NOT use it here or the
+  // dropdown would silently show only the first 25 jobs.
   const { data: jobsData } = useQuery<{ id: string; title: string }[]>({
-    queryKey: ["/api/admin/jobs-simple"],
-    queryFn: async () => {
-      const data = await apiFetch("/api/admin/jobs");
-      const items: any[] = Array.isArray(data) ? data : (data.items ?? []);
-      return items.map((j: any) => ({ id: j.id, title: j.title }));
-    },
+    queryKey: ["/api/admin/jobs/options"],
+    queryFn: () => apiFetch("/api/admin/jobs/options"),
     staleTime: 60_000,
   });
 
   // ── Pagination ────────────────────────────────────────────────────────────
-  const totalPages = listData ? Math.ceil(listData.total / LIMIT) : 1;
+  const total = listData?.total ?? 0;
+  const totalPages = total > 0 ? Math.ceil(total / LIMIT) : 1;
   const items = listData?.items ?? [];
+  const startItem = total === 0 ? 0 : (page - 1) * LIMIT + 1;
+  const endItem = Math.min(page * LIMIT, total);
 
   // ── Bulk actions ──────────────────────────────────────────────────────────
   const allPageIds = items.map(a => a.id);
@@ -572,7 +593,7 @@ export default function AdminJobApplications() {
       toast({ title: "Bulk update complete", description: `${selected.size} applications updated.` });
       setSelected(new Set());
       setBulkAction(null);
-      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
     },
     onError: (err: any) => toast({ title: "Bulk update failed", description: err.message, variant: "destructive" }),
@@ -587,7 +608,7 @@ export default function AdminJobApplications() {
       setDeleteDialog(null);
       // If the deleted row was the only item on the current page, move back
       if (items.length === 1 && page > 1) setPage(p => p - 1);
-      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
     },
     onError: (err: any) => toast({
@@ -872,17 +893,51 @@ export default function AdminJobApplications() {
             )}
           </div>
 
-          {/* Pagination */}
-          {!isLoading && listData && listData.total > LIMIT && (
-            <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-sm text-slate-500">
-              <span>{listData.total} total · Page {page} of {totalPages}</span>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+          {/* Pagination — always show range; show controls only when totalPages > 1 */}
+          {!isLoading && listData && (
+            <div className="border-t border-slate-100 px-4 py-4 space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-slate-500">
+                <span>
+                  Showing {startItem.toLocaleString()}–{endItem.toLocaleString()} of {total.toLocaleString()} applications
+                </span>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-slate-400 mr-1">20 per page</span>
+                    <Button size="sm" variant="outline" disabled={page <= 1}
+                      onClick={() => setPage(1)}>
+                      First
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={page <= 1}
+                      onClick={() => setPage(p => Math.max(1, p - 1))}>
+                      ← Previous
+                    </Button>
+                    {getPaginationPages(page, totalPages).map((p, i) =>
+                      p === "..." ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-sm text-slate-400">…</span>
+                      ) : (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={page === p ? "default" : "outline"}
+                          className={page === p
+                            ? "bg-[#474ead] text-white hover:bg-[#3d439c] min-w-[2rem]"
+                            : "min-w-[2rem]"}
+                          onClick={() => setPage(p as number)}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                    <Button size="sm" variant="outline" disabled={page >= totalPages}
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                      Next →
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={page >= totalPages}
+                      onClick={() => setPage(totalPages)}>
+                      Last
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -897,7 +952,7 @@ export default function AdminJobApplications() {
         open={!!statusDialog}
         onClose={() => setStatusDialog(null)}
         onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: listKey });
+          queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
           queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
         }}
       />

@@ -5073,6 +5073,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/jobs/options — lightweight job list for filter dropdowns.
+  // Returns ALL jobs (no pagination) so the filter is never truncated.
+  app.get("/api/admin/jobs/options", async (req: Request, res: Response) => {
+    try {
+      const search = (req.query.search as string | undefined)?.trim();
+      const params: any[] = [];
+      let sql = `SELECT id, COALESCE(professional_role_name, title) AS title FROM jobs`;
+      if (search) {
+        params.push(`%${search.toLowerCase()}%`);
+        sql += ` WHERE lower(COALESCE(professional_role_name, title)) LIKE $1 OR lower(title) LIKE $1`;
+      }
+      sql += ` ORDER BY created_at DESC LIMIT 1000`;
+      const result = await query(sql, params);
+      res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/jobs/options error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
       // Find an admin user to use as the clientId (avoids FK constraint violation)
@@ -8821,7 +8841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
            ${where}
-           ORDER BY ${orderCol} ${sortOrder}
+           ORDER BY ${orderCol} ${sortOrder}, js.id ${sortOrder}
            LIMIT $${params.length - 1} OFFSET $${params.length}`,
           params,
         ),

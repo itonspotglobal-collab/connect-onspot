@@ -1,0 +1,972 @@
+Fix and improve pagination for the Admin Job Applications page:
+
+```text
+/admin/job-applications
+```
+
+The page must support hundreds or thousands of job applications without older applications disappearing.
+
+## Current behavior
+
+The page currently shows:
+
+```text
+TOTAL       20
+SUBMITTED   20
+```
+
+and the URL contains:
+
+```text
+/admin/job-applications?limit=20
+```
+
+The current frontend uses:
+
+```ts
+const LIMIT = 20;
+```
+
+This is acceptable as a **page size only**.
+
+It must NOT mean that the system can only contain or expose 20 applications.
+
+The required behavior is:
+
+```text
+Maximum displayed per page = 20
+Total applications = no artificial limit
+```
+
+If there are:
+
+```text
+1,000 applications
+```
+
+the page should show:
+
+```text
+TOTAL 1,000
+```
+
+and provide:
+
+```text
+50 pages
+```
+
+at 20 applications per page.
+
+---
+
+# Existing implementation
+
+Inspect:
+
+```text
+client/src/pages/AdminJobApplications.tsx
+```
+
+The page already has:
+
+```ts
+const [page, setPage] = useState(...);
+const LIMIT = 20;
+```
+
+and builds:
+
+```ts
+?page=${page}&limit=${LIMIT}
+```
+
+The response type is currently approximately:
+
+```ts
+interface ListResponse {
+  items: Application[];
+  total: number;
+  page: number;
+  limit: number;
+}
+```
+
+It also calculates:
+
+```ts
+const totalPages = listData
+  ? Math.ceil(listData.total / LIMIT)
+  : 1;
+```
+
+Keep that pagination concept, but verify the backend is returning the **true filtered total before LIMIT/OFFSET**.
+
+---
+
+# 1. Verify the backend first
+
+Inspect the implementation of:
+
+```text
+GET /api/admin/job-applications
+```
+
+in:
+
+```text
+server/routes.ts
+```
+
+Do not assume `total` is correct.
+
+Test directly with more than 20 applications.
+
+For example, with 45 applications:
+
+```text
+/api/admin/job-applications?page=1&limit=20
+```
+
+must return approximately:
+
+```json
+{
+  "items": [
+    "...20 applications..."
+  ],
+  "total": 45,
+  "page": 1,
+  "limit": 20
+}
+```
+
+Page 2:
+
+```text
+/api/admin/job-applications?page=2&limit=20
+```
+
+must return:
+
+```json
+{
+  "items": [
+    "...20 applications..."
+  ],
+  "total": 45,
+  "page": 2,
+  "limit": 20
+}
+```
+
+Page 3:
+
+```text
+/api/admin/job-applications?page=3&limit=20
+```
+
+must return:
+
+```json
+{
+  "items": [
+    "...5 applications..."
+  ],
+  "total": 45,
+  "page": 3,
+  "limit": 20
+}
+```
+
+The API must NOT return:
+
+```json
+{
+  "items": [...20],
+  "total": 20
+}
+```
+
+when more than 20 matching applications exist.
+
+---
+
+# 2. Count BEFORE pagination
+
+The backend must calculate:
+
+```text
+total matching applications
+```
+
+before applying:
+
+```text
+LIMIT 20
+OFFSET ...
+```
+
+Correct sequence:
+
+```text
+all applications
+↓
+apply search/filter conditions
+↓
+COUNT matching applications
+↓
+sort
+↓
+LIMIT/OFFSET
+↓
+return current page + total
+```
+
+Incorrect:
+
+```text
+all applications
+↓
+take first 20
+↓
+count those 20
+↓
+return total = 20
+```
+
+If using SQL, the logic should be equivalent to two queries.
+
+Count query:
+
+```sql
+SELECT COUNT(*)
+FROM job_applications
+WHERE ...filters...;
+```
+
+Page query:
+
+```sql
+SELECT *
+FROM job_applications
+WHERE ...same filters...
+ORDER BY submitted_at DESC, id DESC
+LIMIT 20
+OFFSET $offset;
+```
+
+For page 3:
+
+```ts
+offset = (3 - 1) * 20;
+// 40
+```
+
+---
+
+# 3. Keep summary cards GLOBAL
+
+The summary cards shown at the top are:
+
+```text
+TOTAL
+SUBMITTED
+UNDER REVIEW
+SHORTLISTED
+INTERVIEW
+HIRED
+```
+
+These must represent the entire matching/application dataset, NOT only the current page.
+
+For example:
+
+```text
+1,000 total applications
+
+Submitted      640
+Under Review   140
+Shortlisted     90
+Interview       60
+Hired           25
+Other statuses  45
+```
+
+The cards should show those actual totals even though only 20 rows are visible.
+
+The existing page calls:
+
+```text
+/api/admin/job-applications/summary
+```
+
+Verify this summary endpoint does NOT have a hidden 20-record limit.
+
+The summary query should count all relevant rows.
+
+Do NOT calculate summary values from:
+
+```ts
+items.length
+```
+
+or the current 20 rows.
+
+---
+
+# 4. Filters must apply before pagination
+
+The page has filters for:
+
+```text
+Search
+Job
+Application Status
+Account Status
+Date From
+Date To
+```
+
+These must query the full dataset.
+
+Example:
+
+Database:
+
+```text
+1,000 applications
+```
+
+Search:
+
+```text
+Eliza
+```
+
+If 87 applications match:
+
+```text
+87 total matching results
+```
+
+Then:
+
+```text
+Page 1 → 20
+Page 2 → 20
+Page 3 → 20
+Page 4 → 20
+Page 5 → 7
+```
+
+The API response should report:
+
+```json
+{
+  "total": 87
+}
+```
+
+not:
+
+```json
+{
+  "total": 20
+}
+```
+
+Do NOT fetch 20 applications first and then search/filter those 20 on the client.
+
+---
+
+# 5. Improve visible pagination controls
+
+The existing page currently only has simple left/right arrow pagination.
+
+Replace/improve it so users can clearly see that older applications still exist.
+
+Use a layout similar to:
+
+```text
+Showing 1–20 of 1,000 applications
+
+20 per page
+
+First   ← Previous   [1] 2 3 ... 50   Next →   Last
+```
+
+On Page 25:
+
+```text
+Showing 481–500 of 1,000 applications
+
+First   ← Previous   1 ... 24 [25] 26 ... 50   Next →   Last
+```
+
+On Page 50:
+
+```text
+Showing 981–1,000 of 1,000 applications
+
+First   ← Previous   1 ... 48 49 [50]   Next →   Last
+```
+
+The active page should be clearly highlighted.
+
+---
+
+# 6. Add range display
+
+Calculate:
+
+```ts
+const total = listData?.total ?? 0;
+
+const startItem =
+  total === 0
+    ? 0
+    : (page - 1) * LIMIT + 1;
+
+const endItem =
+  Math.min(page * LIMIT, total);
+```
+
+Display:
+
+```tsx
+Showing {startItem.toLocaleString()}–{endItem.toLocaleString()}
+of {total.toLocaleString()} applications
+```
+
+Examples:
+
+```text
+Showing 1–20 of 20 applications
+```
+
+```text
+Showing 1–20 of 21 applications
+```
+
+```text
+Showing 21–21 of 21 applications
+```
+
+```text
+Showing 981–1,000 of 1,000 applications
+```
+
+---
+
+# 7. Page controls
+
+Add these controls:
+
+```text
+First
+Previous
+page numbers
+Next
+Last
+```
+
+Behavior:
+
+```ts
+First
+→ setPage(1)
+```
+
+```ts
+Previous
+→ setPage((p) => Math.max(1, p - 1))
+```
+
+```ts
+Next
+→ setPage((p) => Math.min(totalPages, p + 1))
+```
+
+```ts
+Last
+→ setPage(totalPages)
+```
+
+Disable First/Previous on Page 1.
+
+Disable Next/Last on the final page.
+
+---
+
+# 8. Large number of pages
+
+Do NOT display every page number if there are hundreds or thousands of pages.
+
+Example:
+
+```text
+1,000 applications
+20/page
+50 pages
+```
+
+Use:
+
+```text
+1 2 3 ... 50
+```
+
+Around Page 24:
+
+```text
+1 ... 23 [24] 25 ... 50
+```
+
+For 10,000 applications:
+
+```text
+500 pages
+```
+
+Do NOT render 500 buttons.
+
+Use compact pagination:
+
+```text
+1 ... 249 [250] 251 ... 500
+```
+
+---
+
+# 9. URL pagination must remain supported
+
+The page already syncs filters/page into the URL.
+
+Preserve that.
+
+Example:
+
+```text
+/admin/job-applications?page=3&limit=20
+```
+
+With filters:
+
+```text
+/admin/job-applications?page=2&limit=20&status=submitted
+```
+
+or:
+
+```text
+/admin/job-applications?page=4&limit=20&jobId=...
+```
+
+Refreshing the browser must preserve the selected page.
+
+Browser Back/Forward navigation should behave correctly where practical.
+
+---
+
+# 10. Reset page when filters change
+
+The existing implementation already resets Page 1 for several filters.
+
+Preserve and verify this behavior.
+
+When changing:
+
+```text
+Search
+Job
+Status
+Account
+Date From
+Date To
+```
+
+always:
+
+```ts
+setPage(1);
+```
+
+Otherwise a user could be on Page 30 and apply a filter that only has 2 pages.
+
+---
+
+# 11. Handle page shrinking after delete
+
+The page already attempts to move backward when deleting the only item on a page.
+
+Keep this behavior and make it robust.
+
+Example:
+
+```text
+21 applications
+
+Page 1 → 20
+Page 2 → 1
+```
+
+Delete the application on Page 2.
+
+Expected:
+
+```text
+20 applications
+Page 1 of 1
+```
+
+Automatically navigate back to Page 1.
+
+Do not leave the user on:
+
+```text
+Page 2 of 1
+```
+
+with an empty table.
+
+---
+
+# 12. Stable sorting
+
+Applications must not jump unpredictably between pages.
+
+Use deterministic ordering such as:
+
+```sql
+ORDER BY submitted_at DESC, id DESC
+```
+
+or the equivalent fields used by this project.
+
+New applications should appear on Page 1.
+
+Older applications should shift to later pages.
+
+They must NEVER disappear from the system simply because a newer application was submitted.
+
+---
+
+# 13. Example: application #21
+
+Start with:
+
+```text
+20 applications
+```
+
+Page:
+
+```text
+TOTAL 20
+Showing 1–20 of 20
+Page 1 of 1
+```
+
+Submit application #21.
+
+Expected:
+
+```text
+TOTAL 21
+```
+
+Page 1:
+
+```text
+Showing 1–20 of 21
+```
+
+Page 2:
+
+```text
+Showing 21–21 of 21
+```
+
+The previous oldest application should be accessible on Page 2.
+
+It must NOT disappear.
+
+---
+
+# 14. Example: 100 applications
+
+Expected:
+
+```text
+TOTAL 100
+```
+
+Pages:
+
+```text
+Page 1 → 20
+Page 2 → 20
+Page 3 → 20
+Page 4 → 20
+Page 5 → 20
+```
+
+Pagination:
+
+```text
+First  Previous  [1] 2 3 4 5  Next  Last
+```
+
+Confirm:
+
+```text
+100 unique application IDs
+```
+
+are retrievable across those five pages.
+
+---
+
+# 15. Example: 1,000 applications
+
+Expected:
+
+```text
+TOTAL 1,000
+```
+
+Pages:
+
+```text
+50
+```
+
+Page 1:
+
+```text
+Showing 1–20 of 1,000
+```
+
+Page 25:
+
+```text
+Showing 481–500 of 1,000
+```
+
+Page 50:
+
+```text
+Showing 981–1,000 of 1,000
+```
+
+No application should be lost.
+
+Do NOT load all 1,000 applications into the browser just to paginate them.
+
+Pagination must happen server-side.
+
+---
+
+# 16. Important issue with the Job filter dropdown
+
+Inspect this existing code path carefully.
+
+The Job Applications page retrieves the Job dropdown options from:
+
+```text
+/api/admin/jobs
+```
+
+and currently extracts:
+
+```ts
+data.items
+```
+
+If `/api/admin/jobs` itself is paginated to 25 jobs, this dropdown may only contain the first 25 jobs.
+
+That would cause the "All jobs" filter to be incomplete when there are 100+ posted jobs.
+
+Fix this deliberately.
+
+Do NOT assume:
+
+```text
+/api/admin/jobs
+```
+
+returns every job.
+
+Either:
+
+1. create/use a lightweight endpoint specifically for job-filter options that returns all required `{ id, title }` values, or
+2. implement a searchable server-backed job selector, or
+3. deliberately retrieve all job options through pagination.
+
+Preferred scalable option:
+
+```text
+GET /api/admin/jobs/options?search=...
+```
+
+returning lightweight:
+
+```json
+[
+  {
+    "id": "...",
+    "title": "Virtual Assistant"
+  }
+]
+```
+
+Do not load full job objects merely to populate the filter.
+
+---
+
+# 17. Bulk selection behavior
+
+"Select all" should continue to mean:
+
+```text
+select all rows on the CURRENT PAGE
+```
+
+unless a separate "Select all matching applications" feature is explicitly implemented.
+
+Do not accidentally make the existing checkbox select 1,000 hidden records.
+
+If 20 rows are visible:
+
+```text
+Select All → 20 selected
+```
+
+Make that behavior clear.
+
+---
+
+# 18. React Query invalidation
+
+After:
+
+```text
+Status change
+Bulk status change
+Delete
+New application arrives/refetch
+```
+
+invalidate/refetch:
+
+```text
+/api/admin/job-applications...
+```
+
+and:
+
+```text
+/api/admin/job-applications/summary
+```
+
+Make sure all paginated query variants can be invalidated.
+
+Do not invalidate only the exact current URL if doing so leaves other pages stale indefinitely.
+
+---
+
+# 19. Acceptance tests
+
+Do not mark the task complete until these pass:
+
+| Applications | Page size | Total shown | Pages |
+| -----------: | --------: | ----------: | ----: |
+|           19 |        20 |          19 |     1 |
+|           20 |        20 |          20 |     1 |
+|           21 |        20 |          21 |     2 |
+|           40 |        20 |          40 |     2 |
+|           41 |        20 |          41 |     3 |
+|          100 |        20 |         100 |     5 |
+|        1,000 |        20 |       1,000 |    50 |
+
+For 1,000 applications verify:
+
+```text
+unique IDs accessible across pagination = 1,000
+```
+
+not:
+
+```text
+20
+```
+
+---
+
+# 20. Final expected design
+
+For example:
+
+```text
+TOTAL           1,000
+SUBMITTED         620
+UNDER REVIEW      180
+SHORTLISTED        90
+INTERVIEW          60
+HIRED              25
+
+------------------------------------------------------
+
+[20 application rows]
+
+------------------------------------------------------
+
+Showing 1–20 of 1,000 applications      20 per page
+
+First   ← Previous   [1] 2 3 ... 50   Next →   Last
+```
+
+The critical rule is:
+
+```text
+20 = PAGE SIZE
+```
+
+NOT:
+
+```text
+20 = SYSTEM LIMIT
+```
+
+The number of pages must expand automatically as applications increase.
+
+Examples:
+
+```text
+100 applications → 5 pages
+1,000 applications → 50 pages
+10,000 applications → 500 pages
+```
+
+No older application may disappear merely because a newer application was submitted.
+
+---
+
+# Final report required
+
+After fixing this, report:
+
+1. Exact backend endpoint changed.
+2. Exact frontend file changed.
+3. Database/application count used for testing.
+4. API response for Page 1.
+5. API response for Page 2.
+6. Confirm `total` represents all matching records.
+7. Confirm summary cards are global counts.
+8. Confirm 21 applications creates Page 2 automatically.
+9. Confirm 100 applications produces 5 pages.
+10. Confirm 1,000 applications produces 50 pages.
+11. Confirm all unique application IDs remain accessible.
+12. Confirm the Job filter can access jobs beyond the first 25.
+13. Confirm no artificial application-count limit remains.
