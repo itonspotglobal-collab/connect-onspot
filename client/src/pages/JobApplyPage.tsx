@@ -439,8 +439,16 @@ export default function JobApplyPage() {
             <Button
               className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
               onClick={() => {
-                const token = encodeURIComponent(signInDialog.continuationToken);
-                const returnTo = encodeURIComponent(`/jobs/${jobId}`);
+                // Guard: both token and jobId must be available before navigating
+                const tok = signInDialog.continuationToken;
+                if (!tok) {
+                  toast({ variant: "destructive", title: "Session expired", description: "Please submit your application again." });
+                  setSignInDialog((s) => ({ ...s, open: false }));
+                  return;
+                }
+                const dest = jobId ? `/jobs/${jobId}` : "/find-work/jobs";
+                const token = encodeURIComponent(tok);
+                const returnTo = encodeURIComponent(dest);
                 navigate(`/portal-login?portal=talent&applicationToken=${token}&returnTo=${returnTo}`);
               }}
             >

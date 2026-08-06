@@ -143,22 +143,29 @@ export default function PortalLogin() {
   const { signInToPortal, setupTalentPassword, isLoading } = usePortalLogin();
   const { toast } = useToast();
 
-  // Carry a pending application continuation token through the login flow so we
-  // can link the saved application immediately after the user signs in.
-  const [applicationToken] = useState(
-    () => new URLSearchParams(window.location.search).get("applicationToken") || "",
-  );
+  // Safely read query params — all reads are wrapped in try/catch so a malformed
+  // URL or restricted browser environment never crashes the login page.
+  const [applicationToken] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("applicationToken") || ""; }
+    catch { return ""; }
+  });
 
   // Optional return destination after login (e.g. the job detail page the user came from)
-  const [returnTo] = useState(
-    () => new URLSearchParams(window.location.search).get("returnTo") || "",
-  );
+  const [returnTo] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("returnTo") || ""; }
+    catch { return ""; }
+  });
 
   const [selectedPortal, setSelectedPortal] = useState<PortalType | null>(() => {
-    const v = new URLSearchParams(window.location.search).get("portal");
-    return v === "client" || v === "talent" ? v : null;
+    try {
+      const v = new URLSearchParams(window.location.search).get("portal");
+      return v === "client" || v === "talent" ? v : null;
+    } catch { return null; }
   });
-  const [email, setEmail] = useState(() => new URLSearchParams(window.location.search).get("email") || "");
+  const [email, setEmail] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("email") || ""; }
+    catch { return ""; }
+  });
   const [step, setStep] = useState<PageStep>("login");
   const [signupOpen, setSignupOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -182,16 +189,29 @@ export default function PortalLogin() {
       if (user.role === "admin") { navigate("/admin/find-work"); return; }
       if (user.role === "client") { navigate("/client-profile"); return; }
     }
-    const talentAuth = loadTalentAuth();
-    if (talentAuth?.candidateId) navigate(`/talent-profile/${talentAuth.candidateId}`);
-  }, [isAuthenticated, user]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Skip auto-redirect when arriving from a job application flow — the user
+    // must explicitly log in so the application token can be linked correctly.
+    if (applicationToken) return;
+    try {
+      const talentAuth = loadTalentAuth();
+      if (talentAuth?.candidateId) navigate(`/talent-profile/${talentAuth.candidateId}`);
+    } catch {
+      // localStorage read failure — ignore and show login form
+    }
+  }, [isAuthenticated, user, applicationToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSignIn() {
     if (!email || !password || !selectedPortal) {
       toast({ variant: "destructive", title: "Missing fields", description: "Please fill in your email, password, and select a portal." });
       return;
     }
-    const result = await signInToPortal(selectedPortal, email, password);
+    let result: Awaited<ReturnType<typeof signInToPortal>>;
+    try {
+      result = await signInToPortal(selectedPortal, email, password);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Sign in error", description: err?.message || "An unexpected error occurred. Please try again." });
+      return;
+    }
     if (!result.success) {
       if (result.requiresPasswordSetup) {
         setStep("setup-password");
@@ -201,7 +221,11 @@ export default function PortalLogin() {
       toast({ variant: "destructive", title: "Sign in failed", description: result.message });
       return;
     }
-    const displayName = result.portal === "talent" ? result.auth.fullName : result.displayName;
+    // Safely access display name — use optional chaining to prevent runtime crash
+    // if the server returns an unexpected shape at runtime.
+    const displayName = result.portal === "talent"
+      ? (result.auth?.fullName || result.auth?.email || "there")
+      : (result.displayName || "there");
     toast({ title: "Signed in", description: `Welcome back, ${displayName}!` });
 
     // If the user arrived here from the "existing email" application dialog,
