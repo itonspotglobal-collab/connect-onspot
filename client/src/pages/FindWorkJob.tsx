@@ -440,7 +440,7 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
 function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
-  const timeAgo = getTimeAgo(job.createdAt);
+  const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
 
   // Determine if this is a remote role (location stores the work setup value)
   const isRemote = (job.location ?? "Remote").toLowerCase().includes("remote");

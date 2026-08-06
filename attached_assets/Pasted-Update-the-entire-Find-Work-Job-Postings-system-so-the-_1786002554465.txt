@@ -1,0 +1,209 @@
+Update the entire Find Work / Job Postings system so the following rules are standardized everywhere.
+
+IMPORTANT:
+Apply these changes across all related pages and flows, including:
+- Find Work Admin
+- Add Job Posting
+- Edit Job Posting
+- Job preview
+- FindWork/AllJobs
+- Job Details / View Details
+- any filters/sorts
+- shared job types/interfaces
+- backend/API validation
+- existing job display logic
+
+1. COMPENSATION
+All jobs must use MONTHLY compensation.
+
+Requirements:
+- remove/disable Annual, Hourly, Project Based, etc.
+- Compensation Type should be Monthly only
+- TBD / Rate TBD is NOT allowed
+- salary/rate must be required
+- do not allow blank compensation
+- existing job displays should show the saved amount as monthly
+- do not silently fabricate a rate for older jobs; flag old invalid records for admin correction if needed
+
+2. COMPANY NAME
+Do not show “Confidential” as the company.
+
+Jobs should use the actual company name.
+
+Update:
+- Admin Create/Edit form
+- Public cards
+- View Details
+- previews
+
+If a current job still contains “Confidential”, do not auto-invent a company name.
+Keep it editable and identify those records that need manual updating.
+
+3. STANDARDIZE FUNCTION
+Make Function a dropdown instead of free text.
+
+Use ONE shared list everywhere:
+
+Executive
+Operations
+Engineering
+Artificial Intelligence
+Data & Analytics
+Product
+Design (UI/UX)
+Information Technology (IT)
+Marketing
+Sales
+Customer Success
+Customer Support
+Finance & Accounting
+Human Resources
+Legal & Compliance
+Procurement
+Supply Chain
+Business Development
+Strategy
+Project & Program Management
+Research & Development (R&D)
+
+Create one shared constant, for example:
+
+export const JOB_FUNCTIONS = [
+  "Executive",
+  "Operations",
+  "Engineering",
+  "Artificial Intelligence",
+  "Data & Analytics",
+  "Product",
+  "Design (UI/UX)",
+  "Information Technology (IT)",
+  "Marketing",
+  "Sales",
+  "Customer Success",
+  "Customer Support",
+  "Finance & Accounting",
+  "Human Resources",
+  "Legal & Compliance",
+  "Procurement",
+  "Supply Chain",
+  "Business Development",
+  "Strategy",
+  "Project & Program Management",
+  "Research & Development (R&D)"
+] as const;
+
+Do not duplicate this list in multiple components.
+
+Use the same values in:
+- Admin Create/Edit
+- filters
+- API validation
+- display logic
+- any search/filter mapping
+
+4. POSTED DATE
+Change the public age wording.
+
+New rules:
+- under 1 day: keep current hours/minutes behavior
+- 1–6 days: “Posted X days ago”
+- exactly 7 days or anything older:
+  “Posted more than a week ago”
+
+Do NOT display:
+- 2 weeks ago
+- 12 weeks ago
+- 3 months ago
+- 4 months ago
+
+Anything >= 7 days should use exactly:
+“Posted more than a week ago”
+
+Use one shared formatter so every related page is consistent.
+
+5. TAGGING
+Audit all job tags and make sure tagging is standardized and complete.
+
+This includes:
+- work setup: Remote / Hybrid / Onsite
+- contract type: Full Time / Part Time / Contract
+- Urgently Hiring
+- Featured
+- Multiple Slots
+- Commission
+- Equity
+- skills/tags
+- function/category where relevant
+
+Do not infer tags incorrectly.
+
+Use saved fields only.
+
+6. ADMIN TAG CONTROLS
+Where practical, convert standardized tags to controlled choices instead of free text.
+
+Especially:
+- Function = dropdown
+- Work Setup = dropdown
+- Contract Type = dropdown
+- boolean badges = checkbox/toggle
+
+For free-form skills, keep the existing input unless there is already a controlled skill list.
+
+7. BACKWARD COMPATIBILITY
+Inspect existing jobs for values that do not match the new standardized function list.
+
+Do not delete them automatically.
+
+Instead:
+- allow Admin to edit them
+- optionally mark them as needing review
+- map obvious exact legacy equivalents only when safe
+
+Examples:
+“IT” → “Information Technology (IT)”
+“Finance” → “Finance & Accounting”
+“HR” → “Human Resources”
+
+Do not guess ambiguous mappings.
+
+8. SHARED SOURCE OF TRUTH
+Create shared constants/utilities for:
+- JOB_FUNCTIONS
+- compensation type
+- posted-date formatting
+- standardized tag options
+
+Avoid page-specific duplicate logic.
+
+9. VALIDATION
+Backend/API validation must match frontend rules.
+
+Required:
+- salary required
+- compensation type Monthly only
+- function must be one of JOB_FUNCTIONS
+- company required
+- no TBD rate
+
+10. TEST
+Test:
+- Add Job
+- Edit Job
+- Admin listing
+- FindWork/AllJobs
+- Job Details
+- filters
+- preview
+- Featured jobs
+- older job records
+
+After implementation, report:
+1. exact files changed
+2. shared constants/utilities created
+3. legacy function mappings used
+4. records that may need manual cleanup
+5. confirmation TBD is no longer allowed
+6. confirmation compensation is Monthly only
+7. confirmation >= 7 days shows “more than a week ago”
+8. confirmation all Function dropdowns use the same shared list

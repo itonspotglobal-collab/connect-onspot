@@ -139,7 +139,8 @@ export function formatJobSalary(job: {
   if (job.budget) {
     return `${formatJobCurrency(Number(job.budget), currency, customCode)}/mo`;
   }
-  return "Rate TBD";
+  // No salary saved — flag for admin review rather than silently showing "Rate TBD"
+  return "Salary not set";
 }
 
 // ── Badge Logic ───────────────────────────────────────────────────────────────
@@ -319,7 +320,8 @@ export function getTimeAgo(
   if (diffMins  < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
   if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
   if (diffDays  < 7)  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-  return `${diffWeeks} week${diffWeeks === 1 ? "" : "s"} ago`;
+  // Anything 7 days or older → single consistent label (no "2 weeks ago", "3 months ago", etc.)
+  return "more than a week ago";
 }
 
 // ── Formatting Helpers ────────────────────────────────────────────────────────

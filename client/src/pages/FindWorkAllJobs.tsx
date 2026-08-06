@@ -45,6 +45,7 @@ import {
   buildTalentRecProfile,
   scoreJobForTalent,
 } from "@/lib/talentRecommendations";
+import { JOB_FUNCTIONS, FILTER_CONTRACT_TYPES } from "@/lib/jobConstants";
 
 // POPULAR_CHIPS replaced by dynamic /api/jobs/popular query
 
@@ -81,13 +82,14 @@ const NAV_SLUG_MAP: Record<
   all: { label: "All Jobs", cats: [] },
   development: {
     label: "Development & IT",
-    cats: ["Development", "Tech support"],
+    // canonical names + legacy values for old DB records
+    cats: ["Engineering", "Information Technology (IT)", "Development", "Tech support"],
   },
-  design: { label: "Design & Creative", cats: ["Design"] },
+  design: { label: "Design & Creative", cats: ["Design (UI/UX)", "Design"] },
   marketing: { label: "Sales & Marketing", cats: ["Marketing", "Sales"] },
   support: {
     label: "Admin & Support",
-    cats: ["Admin", "Customer success", "Operations"],
+    cats: ["Customer Success", "Customer Support", "Operations", "Admin", "Customer success"],
   },
   writing: {
     label: "Writing & Translation",
@@ -96,29 +98,13 @@ const NAV_SLUG_MAP: Record<
   },
 };
 
-const CATEGORIES = [
-  "All Categories",
-  "Admin",
-  "Customer success",
-  "Marketing",
-  "Finance",
-  "Tech support",
-  "Sales",
-  "Operations",
-  "Design",
-  "Development",
-];
+// Canonical function list imported from shared constants (same list used in the admin form)
+const CATEGORIES = ["All Categories", ...JOB_FUNCTIONS];
 
 const LOCATIONS = ["All Locations", "Remote", "Hybrid", "On-site"];
 
-const CONTRACT_TYPES = [
-  "All Types",
-  "full-time",
-  "part-time",
-  "contract",
-  "hourly",
-  "fixed",
-];
+// CONTRACT_TYPES: shared constants (includes legacy values for backward compat with old DB records)
+const CONTRACT_TYPES = FILTER_CONTRACT_TYPES.map((o) => o.value);
 
 // PHP salary ranges — only applied when job currency is PHP (or unset)
 const SALARY_RANGES = [
@@ -184,7 +170,7 @@ function JobCard({
   const featured = (job as any).isFeatured === true;
   const pay = buildRateDisplay(job);
   const badges = getJobBadges(job);
-  const timeAgo = getTimeAgo(job.createdAt);
+  const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const allTags = (job.skillTags ?? []) as string[];
   const visibleTags = allTags.slice(0, 4);
   const extraTags = allTags.length > 4 ? allTags.length - 4 : 0;

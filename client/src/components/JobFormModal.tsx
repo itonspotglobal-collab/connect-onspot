@@ -32,6 +32,12 @@ import {
   getCurrencySymbol,
   type SupportedCurrency,
 } from "@/lib/jobUtils";
+import {
+  JOB_FUNCTIONS,
+  CONTRACT_TYPE_OPTIONS,
+  WORK_SETUPS,
+  COMPENSATION_TYPE,
+} from "@/lib/jobConstants";
 
 // ─── Quill ───────────────────────────────────────────────────────────────────
 const quillModules = {
@@ -103,8 +109,8 @@ export const defaultFormData = {
   urgentlyHiring: false,
   // Benefits / HMO
   benefits: "",
-  // Compensation type
-  compensationType: "" as "" | "monthly" | "annual" | "project",
+  // Compensation type — locked to monthly for all new/edited jobs
+  compensationType: COMPENSATION_TYPE as "monthly",
   // Additional compensation benefits
   hasCommission: false,
   hasEquity: false,
@@ -166,8 +172,8 @@ export function jobToFormData(job: Job): JobFormData {
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
     // Benefits / HMO
     benefits: (job as any).benefits || "",
-    // Compensation type
-    compensationType: (job as any).compensationType || "",
+    // Compensation type — always "monthly" for edited jobs going forward
+    compensationType: COMPENSATION_TYPE,
     // Additional compensation benefits
     hasCommission: (job as any).hasCommission ?? false,
     hasEquity: (job as any).hasEquity ?? false,
@@ -277,10 +283,14 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
   const validate = (): boolean => {
     const next: Partial<Record<keyof JobFormData, string>> = {};
     if (!formData.professionalRoleName.trim()) next.professionalRoleName = "Professional role name is required";
+    if (!formData.company.trim() || formData.company.trim().toLowerCase() === "confidential")
+      next.company = "Company name is required — do not use 'Confidential'";
     if (!formData.description.trim()) next.description = "Role overview is required";
     if (!formData.jobFunction.trim()) next.jobFunction = "Function is required";
     if (!formData.contractType.trim()) next.contractType = "Contract type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
+    if (!formData.salaryDisplay.trim())
+      next.salaryDisplay = "Salary is required — enter an amount (e.g. 40,000 – 60,000)";
     if (formData.applicationMethod === "external_link" && formData.applyLink.trim()) {
       try { new URL(normalizeUrl(formData.applyLink)); }
       catch { next.applyLink = "Please enter a valid URL (e.g. https://example.com/apply)"; }
@@ -492,13 +502,19 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 <Label htmlFor="modal-job-function">
                   Function <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="modal-job-function"
-                  type="text"
+                <Select
                   value={formData.jobFunction}
-                  onChange={(e) => updateField("jobFunction", e.target.value)}
-                  placeholder="e.g. Sales, Customer Success, Engineering"
-                />
+                  onValueChange={(v) => updateField("jobFunction", v)}
+                >
+                  <SelectTrigger id="modal-job-function">
+                    <SelectValue placeholder="Select a function…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JOB_FUNCTIONS.map((fn) => (
+                      <SelectItem key={fn} value={fn}>{fn}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
                   The broad functional group for organisation and filtering.
                 </p>
@@ -535,13 +551,19 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 <Label htmlFor="modal-contract-type">
                   Contract Type <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="modal-contract-type"
-                  type="text"
+                <Select
                   value={formData.contractType}
-                  onChange={(e) => updateField("contractType", e.target.value)}
-                  placeholder="e.g. Full-time, Part-time, Contract, Freelance"
-                />
+                  onValueChange={(v) => updateField("contractType", v)}
+                >
+                  <SelectTrigger id="modal-contract-type">
+                    <SelectValue placeholder="Select type…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTRACT_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {errors.contractType && (
                   <p className="text-xs text-red-500">{errors.contractType}</p>
                 )}
@@ -687,38 +709,36 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             {/* Single salary display field */}
             <div className="space-y-2">
-              <Label htmlFor="modal-salary-display">Salary</Label>
+              <Label htmlFor="modal-salary-display">
+                Salary <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="modal-salary-display"
                 type="text"
                 value={formData.salaryDisplay}
                 onChange={(e) => updateField("salaryDisplay", e.target.value)}
-                placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}800 or 30,000 – 50,000`}
+                placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}40,000 or 30,000 – 50,000`}
               />
-              <p className="text-xs text-muted-foreground">
-                Enter the amount (e.g. 500, 30,000 – 50,000) or custom text (e.g. Competitive, Rate TBD). Leave blank for "Rate TBD".
-              </p>
+              {errors.salaryDisplay ? (
+                <p className="text-xs text-red-500">{errors.salaryDisplay}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Required — enter the monthly amount (e.g. 40,000 or 30,000 – 50,000). "Rate TBD" and blank values are not allowed.
+                </p>
+              )}
             </div>
 
-            {/* Compensation Type */}
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="modal-compensation-type">Compensation Type</Label>
-              <Select
-                value={formData.compensationType}
-                onValueChange={(v) => updateField("compensationType", v)}
-              >
-                <SelectTrigger id="modal-compensation-type">
-                  <SelectValue placeholder="Select type…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="annual">Annual</SelectItem>
-                  <SelectItem value="project">Project-based</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Choose whether this compensation is monthly, annual, or project-based.
-              </p>
+            {/* Compensation Type — locked to Monthly */}
+            <div className="mt-4 rounded-md border border-border bg-muted/30 px-4 py-3 flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Compensation Type: Monthly</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  All jobs use monthly compensation. Annual, hourly, and project-based types are not supported.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                Monthly
+              </span>
             </div>
 
             {previewBadges.length > 0 && (
