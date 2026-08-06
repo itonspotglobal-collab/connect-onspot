@@ -440,13 +440,27 @@ export function getPublicCompanyName(job: {
 }
 
 /**
- * Returns the company overview a public visitor should see.
- * Returns null for confidential jobs so the "About the Company" section is hidden.
+ * Returns the company/client overview a public visitor should see.
+ * - Non-confidential: returns companyOverview (real company description)
+ * - Confidential: returns confidentialClientOverview (anonymous public-safe text), or null if not set
  */
 export function getPublicCompanyDescription(job: {
   companyOverview?: string | null;
+  confidentialClientOverview?: string | null;
   isCompanyConfidential?: boolean | null;
 }): string | null {
-  if (job.isCompanyConfidential) return null;
+  if (job.isCompanyConfidential) {
+    return (job as any).confidentialClientOverview?.trim() || null;
+  }
   return (job as any).companyOverview?.trim() || null;
+}
+
+/**
+ * Returns the section label for the company/client overview block.
+ * "About the Client" for confidential jobs, "About the Company" otherwise.
+ */
+export function getCompanyOverviewLabel(job: {
+  isCompanyConfidential?: boolean | null;
+}): string {
+  return job.isCompanyConfidential ? "About the Client" : "About the Company";
 }

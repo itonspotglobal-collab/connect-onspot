@@ -109,6 +109,7 @@ export const defaultFormData = {
   urgentlyHiring: false,
   // Company visibility
   isCompanyConfidential: false,
+  confidentialClientOverview: "",
   // Benefits / HMO
   benefits: "",
   // Compensation type — locked to monthly for all new/edited jobs
@@ -174,6 +175,7 @@ export function jobToFormData(job: Job): JobFormData {
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
     // Company visibility
     isCompanyConfidential: (job as any).isCompanyConfidential ?? false,
+    confidentialClientOverview: (job as any).confidentialClientOverview || "",
     // Benefits / HMO
     benefits: (job as any).benefits || "",
     // Compensation type — always "monthly" for edited jobs going forward
@@ -394,6 +396,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Company visibility (always send so unchecking a previously set flag clears it)
     payload.isCompanyConfidential = formData.isCompanyConfidential;
+    payload.confidentialClientOverview = formData.confidentialClientOverview.trim() || null;
 
     // Benefits / HMO (always send so admins can clear the value)
     payload.benefits = formData.benefits.trim() || null;
@@ -491,6 +494,25 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                     </p>
                   </div>
                 </label>
+
+                {/* Confidential Client Overview — only shown when confidential is enabled */}
+                {formData.isCompanyConfidential && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/10">
+                    <Label htmlFor="modal-confidential-overview" className="text-sm font-medium">
+                      Confidential Client Overview
+                    </Label>
+                    <Textarea
+                      id="modal-confidential-overview"
+                      value={formData.confidentialClientOverview}
+                      onChange={(e) => updateField("confidentialClientOverview", e.target.value)}
+                      placeholder="e.g. A fast-growing B2B SaaS company serving mid-market customers across North America. The team operates remotely and focuses on workflow automation and operational efficiency."
+                      className="mt-2 min-h-[90px] resize-y bg-white dark:bg-white/5"
+                    />
+                    <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+                      Provide a short anonymous overview — include industry, company size, market, and work environment. <strong>Do not include</strong> the company name, exact office location, unique products, or other identifying details.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

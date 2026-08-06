@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription, getCompanyOverviewLabel } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 
@@ -585,12 +585,12 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         className="mx-auto max-w-5xl"
       >
 
-        {/* 1. About the Company — JSP companyOverview */}
+        {/* 1. About the Company / About the Client — switches label based on confidentiality */}
         {companyOverview?.trim() && (
           <Section
             icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
-            label="About the Company"
+            label={getCompanyOverviewLabel(job as any)}
           >
             <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
               {companyOverview.trim()}

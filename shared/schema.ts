@@ -180,6 +180,7 @@ export const jobs = pgTable("jobs", {
   hasEquity: boolean("has_equity").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),
   isCompanyConfidential: boolean("is_company_confidential").notNull().default(false),
+  confidentialClientOverview: text("confidential_client_overview"), // public-safe description shown when isCompanyConfidential = true
   proposalCount: integer("proposal_count").default(0),
   viewCount: integer("view_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
