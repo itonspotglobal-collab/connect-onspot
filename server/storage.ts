@@ -43,7 +43,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, ne, and, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
+import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -2960,6 +2960,134 @@ export class DbStorage extends MemStorage {
       .orderBy(desc(cultureEvaluationsTable.createdAt))
       .limit(1);
     return row;
+  }
+
+  /**
+   * True SQL-level paginated job search.
+   *
+   * Architecture:
+   *   1. Build WHERE conditions (status, approval, category, filters, full-text search)
+   *   2. COUNT(*) query — no LIMIT/OFFSET → correct total across all pages
+   *   3. SELECT query — same WHERE + ORDER BY + LIMIT/OFFSET → current page items
+   *
+   * This replaces the old searchJobsWithSkills + pageSlice pattern that capped
+   * results at .limit(500) before filtering, making meta.total always ≤ 500.
+   */
+  async searchJobsPaginated(filters: {
+    category?: string;
+    categories?: string[];
+    contractType?: string;
+    experienceLevel?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    status?: string;
+    q?: string;
+    location?: string;
+    page: number;
+    pageSize: number;
+  }): Promise<{ items: (Job & { skills: string[] })[]; total: number }> {
+    const { page, pageSize } = filters;
+    const offset = (page - 1) * pageSize;
+
+    // Normalize a category string: lowercase, & → and, collapse non-alnum to space.
+    // Must match the normStr used in FindWorkAllJobs.tsx on the frontend.
+    const normStr = (s: string) =>
+      s.trim().toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+
+    // SQL expression that applies the same normalization to the stored job category.
+    const normDbCat = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.jobFunction}, ${jobsTable.category}, ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
+
+    // ── Build WHERE conditions ─────────────────────────────────────────────────
+    const conditions: ReturnType<typeof sqlOp>[] = [];
+
+    // Status (default: open)
+    conditions.push(sqlOp`${jobsTable.status} = ${filters.status ?? "open"}`);
+
+    // Approval: only approved (or legacy null-value) jobs are shown publicly
+    conditions.push(
+      sqlOp`(${jobsTable.approvalStatus} = 'approved' OR ${jobsTable.approvalStatus} IS NULL)`,
+    );
+
+    // Category filter
+    if (filters.categories && filters.categories.length > 0) {
+      // Multi-category (nav-group slug) — OR match across all supplied categories
+      const normCats = filters.categories.map(normStr);
+      // Build: normDbCat = normCats[0] OR normDbCat = normCats[1] OR …
+      const catOrs = normCats.map(c => sqlOp`${normDbCat} = ${c}`);
+      conditions.push(sqlOp`(${sqlOp.join(catOrs, sqlOp` OR `)})`);
+    } else if (filters.category) {
+      conditions.push(sqlOp`${normDbCat} = ${normStr(filters.category)}`);
+    }
+
+    // Contract type — exact match
+    if (filters.contractType) {
+      conditions.push(sqlOp`${jobsTable.contractType} = ${filters.contractType}`);
+    }
+
+    // Experience level — exact match
+    if (filters.experienceLevel) {
+      conditions.push(sqlOp`${jobsTable.experienceLevel} = ${filters.experienceLevel}`);
+    }
+
+    // Budget range (budget column is stored as text/decimal)
+    if (filters.minBudget !== undefined) {
+      conditions.push(sqlOp`${jobsTable.budget}::numeric >= ${filters.minBudget}`);
+    }
+    if (filters.maxBudget !== undefined) {
+      conditions.push(sqlOp`${jobsTable.budget}::numeric <= ${filters.maxBudget}`);
+    }
+
+    // Location — substring / ILIKE match
+    if (filters.location) {
+      conditions.push(sqlOp`${jobsTable.location} ILIKE ${"%" + filters.location + "%"}`);
+    }
+
+    // Full-text search — matches title, description, category, function, role name,
+    // location, skill tags; company only if NOT confidential.
+    if (filters.q) {
+      const qLike = "%" + filters.q.toLowerCase() + "%";
+      conditions.push(sqlOp`(
+        lower(${jobsTable.title}) LIKE ${qLike}
+        OR lower(${jobsTable.description}) LIKE ${qLike}
+        OR lower(${jobsTable.category}) LIKE ${qLike}
+        OR lower(COALESCE(${jobsTable.jobFunction}, '')) LIKE ${qLike}
+        OR lower(COALESCE(${jobsTable.professionalRoleName}, '')) LIKE ${qLike}
+        OR lower(COALESCE(${jobsTable.location}, '')) LIKE ${qLike}
+        OR (${jobsTable.isCompanyConfidential} = false
+            AND lower(COALESCE(${jobsTable.company}, '')) LIKE ${qLike})
+        OR EXISTS (
+          SELECT 1 FROM unnest(COALESCE(${jobsTable.skillTags}, ARRAY[]::text[])) AS t
+          WHERE lower(t) LIKE ${qLike}
+        )
+      )`);
+    }
+
+    // Combine all conditions with AND
+    const whereClause = sqlOp`${sqlOp.join(conditions, sqlOp` AND `)}`;
+
+    // ── Query 1: COUNT (no LIMIT/OFFSET) ──────────────────────────────────────
+    // This is the total number of matching jobs across ALL pages.
+    const [countRow] = await db
+      .select({ total: sqlOp<number>`count(*)::int` })
+      .from(jobsTable)
+      .where(whereClause);
+
+    const total: number = countRow?.total ?? 0;
+
+    // ── Query 2: Page data (LIMIT/OFFSET) ─────────────────────────────────────
+    // Deterministic sort: newest first, then by id to prevent ties shuffling pages.
+    const items = await db
+      .select()
+      .from(jobsTable)
+      .where(whereClause)
+      .orderBy(desc(jobsTable.createdAt), desc(jobsTable.id))
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      items: items.map(job => ({ ...job, skills: [] })),
+      total,
+    };
   }
 }
 

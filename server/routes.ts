@@ -4877,37 +4877,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/jobs/search", async (req, res) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
-      const filters = {
-        category: req.query.category as string,
-        // comma-separated list of categories for multi-category nav-slug filtering
+
+      // Use true SQL-level pagination: COUNT(*) for total, LIMIT/OFFSET for page data.
+      // This fixes the old architecture where .limit(500) was applied before filtering,
+      // causing meta.total to be wrong and older jobs to disappear beyond 500 records.
+      const { items: rawItems, total } = await storage.searchJobsPaginated({
+        category: req.query.category as string | undefined,
         categories: req.query.categories
           ? (req.query.categories as string).split(",").map(s => s.trim()).filter(Boolean)
           : undefined,
-        contractType: req.query.contractType as string,
-        experienceLevel: req.query.experienceLevel as string,
-        minBudget: req.query.minBudget
-          ? Number(req.query.minBudget)
-          : undefined,
-        maxBudget: req.query.maxBudget
-          ? Number(req.query.maxBudget)
-          : undefined,
-        skills: req.query.skills
-          ? (req.query.skills as string).split(",")
-          : undefined,
+        contractType: req.query.contractType as string | undefined,
+        experienceLevel: req.query.experienceLevel as string | undefined,
+        minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
+        maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
         status: (req.query.status as string) || "open",
-        q: req.query.q as string,
-        location: req.query.location as string,
-      };
+        q: req.query.q as string | undefined,
+        location: req.query.location as string | undefined,
+        page,
+        pageSize,
+      });
 
-      const all = await storage.searchJobsWithSkills(filters);
-      const { items, meta } = pageSlice(all, page, pageSize);
+      const totalPages = Math.ceil(total / pageSize);
+
       // Mask company data for confidential jobs before sending to public callers
-      const maskedItems = items.map((job: any) =>
+      const items = rawItems.map((job: any) =>
         job.isCompanyConfidential
           ? { ...job, company: "Confidential Company", companyOverview: job.confidentialClientOverview ?? null }
           : job
       );
-      res.json({ items: maskedItems, meta });
+
+      res.json({ items, meta: { page, pageSize, total, totalPages } });
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ error: "Failed to search jobs" });

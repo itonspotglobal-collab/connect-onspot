@@ -1,0 +1,851 @@
+We still have a critical bug in the Find Work / Open Roles feature.
+
+Previous pagination changes did NOT fix the underlying issue.
+
+### Current production behavior
+
+When there are more than 25 open jobs:
+
+* Only the newest 25 jobs exist in the Find Work results.
+* The displayed count stays at:
+
+```text
+25 roles found
+```
+
+* Posting a 26th job causes the oldest visible job to disappear.
+* Posting 50 or 100 jobs still results in only 25 jobs being discoverable.
+* The missing older jobs cannot be found through normal browsing.
+* Deleting some newer jobs causes older jobs to appear again.
+
+This proves that somewhere in the request flow, the application is treating the **first 25 records as the complete result set**.
+
+Do NOT make another frontend-only pagination fix.
+
+Do NOT simply change `25` to `50`, `100`, `200`, or another larger value.
+
+Find and fix the actual backend/data-layer issue.
+
+---
+
+# First: debug the actual API
+
+Inspect the implementation of:
+
+```text
+GET /api/jobs/search
+```
+
+Test it directly, independently from the React frontend.
+
+With at least 50 open jobs in the database, make these requests:
+
+```text
+/api/jobs/search?status=open&page=1&pageSize=25
+
+/api/jobs/search?status=open&page=2&pageSize=25
+
+/api/jobs/search?status=open&page=3&pageSize=25
+```
+
+For 50 open jobs, expected behavior is:
+
+```json
+Page 1:
+{
+  "items": [25 jobs],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 50,
+    "totalPages": 2
+  }
+}
+```
+
+```json
+Page 2:
+{
+  "items": [remaining 25 jobs],
+  "meta": {
+    "page": 2,
+    "pageSize": 25,
+    "total": 50,
+    "totalPages": 2
+  }
+}
+```
+
+The API MUST NOT return:
+
+```json
+{
+  "items": [25 jobs],
+  "meta": {
+    "total": 25,
+    "totalPages": 1
+  }
+}
+```
+
+when 50 or more matching jobs actually exist.
+
+---
+
+# Important: verify the database count directly
+
+Before pagination is applied, query the database directly.
+
+For open jobs, verify something equivalent to:
+
+```sql
+SELECT COUNT(*)
+FROM jobs
+WHERE status = 'open';
+```
+
+If there are 100 open jobs, this must return:
+
+```text
+100
+```
+
+Then verify the actual job query can return those same 100 records before pagination.
+
+The system must distinguish between:
+
+```text
+TOTAL MATCHING JOBS = 100
+```
+
+and:
+
+```text
+CURRENT PAGE ITEMS = 25
+```
+
+These are NOT the same value.
+
+---
+
+# Root cause to look for
+
+Search the entire backend for any hard-coded:
+
+```text
+25
+```
+
+related to jobs.
+
+Also search for:
+
+```ts
+.limit(25)
+```
+
+```sql
+LIMIT 25
+```
+
+```ts
+slice(0, 25)
+```
+
+```ts
+take: 25
+```
+
+```ts
+first: 25
+```
+
+```ts
+pageSize = 25
+```
+
+```ts
+DEFAULT_PAGE_SIZE
+```
+
+A default page size of 25 is allowed.
+
+What is NOT allowed is applying that limit **before determining the total number of matching records**.
+
+---
+
+# Existing storage behavior
+
+Inspect:
+
+```text
+server/storage.ts
+```
+
+The existing in-memory `searchJobsWithSkills()` implementation currently starts from all jobs:
+
+```ts
+let jobs = Array.from(this.jobs.values());
+```
+
+It applies filters to that full collection and sorts the results afterward.
+
+Do not introduce a 25-job cap inside `searchJobs()` or `searchJobsWithSkills()`.
+
+The search layer should return all matching records unless pagination is deliberately implemented at the database query level with a separate count query.
+
+---
+
+# Correct backend architecture
+
+The required execution order is:
+
+```text
+DATABASE
+   ↓
+all matching open jobs
+   ↓
+apply search/filter conditions
+   ↓
+COUNT total matching records
+   ↓
+apply sorting
+   ↓
+apply LIMIT 25 / OFFSET
+   ↓
+return current page + total metadata
+```
+
+It must NOT be:
+
+```text
+DATABASE
+   ↓
+take newest 25
+   ↓
+filter them
+   ↓
+count them
+   ↓
+return 25
+```
+
+That second flow is the current bug pattern.
+
+---
+
+# Implement true server-side pagination
+
+For page-based pagination:
+
+```ts
+const page = Math.max(1, Number(req.query.page) || 1);
+const pageSize = 25;
+
+const offset = (page - 1) * pageSize;
+```
+
+The backend needs TWO logical queries.
+
+## Query 1 — total count
+
+Equivalent to:
+
+```sql
+SELECT COUNT(*)
+FROM jobs
+WHERE status = 'open';
+```
+
+plus whatever search/filter conditions are active.
+
+This query must NOT contain:
+
+```sql
+LIMIT
+```
+
+or:
+
+```sql
+OFFSET
+```
+
+Example:
+
+```ts
+const total = Number(countResult.rows[0].count);
+```
+
+## Query 2 — page records
+
+Equivalent to:
+
+```sql
+SELECT *
+FROM jobs
+WHERE status = 'open'
+ORDER BY created_at DESC
+LIMIT 25
+OFFSET $offset;
+```
+
+Then:
+
+```ts
+const totalPages = Math.ceil(total / pageSize);
+```
+
+Return:
+
+```ts
+res.json({
+  items,
+  meta: {
+    page,
+    pageSize,
+    total,
+    totalPages,
+  },
+});
+```
+
+---
+
+# Very important: stable sorting
+
+Use a deterministic sort.
+
+Prefer:
+
+```sql
+ORDER BY created_at DESC, id DESC
+```
+
+Do not rely only on an unstable order.
+
+This prevents jobs from unexpectedly moving between pages when records have similar timestamps.
+
+---
+
+# Verify Page 2 actually retrieves different jobs
+
+This is critical.
+
+For 50 jobs:
+
+Page 1 IDs and Page 2 IDs must not overlap.
+
+Test:
+
+```ts
+const page1Ids = ...
+const page2Ids = ...
+```
+
+Intersection should be:
+
+```text
+0
+```
+
+Page 1:
+
+```text
+newest jobs 1–25
+```
+
+Page 2:
+
+```text
+older jobs 26–50
+```
+
+The 26th job must NOT disappear.
+
+It should simply move to Page 2.
+
+---
+
+# Fix the frontend only AFTER the API is correct
+
+Update:
+
+```text
+client/src/pages/FindWorkAllJobs.tsx
+```
+
+The React page must request the current page:
+
+```ts
+const PAGE_SIZE = 25;
+
+fetch(
+  `/api/jobs/search?status=open&page=${currentPage}&pageSize=${PAGE_SIZE}`
+);
+```
+
+Do NOT fetch only:
+
+```ts
+/api/jobs/search?status=open
+```
+
+for the paginated listing.
+
+Keep:
+
+```ts
+items
+```
+
+and:
+
+```ts
+meta
+```
+
+separately.
+
+For example:
+
+```ts
+interface PaginatedJobsResponse {
+  items: Job[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+```
+
+Then:
+
+```ts
+const jobs = data?.items ?? [];
+const totalJobs = data?.meta?.total ?? 0;
+const totalPages = data?.meta?.totalPages ?? 1;
+```
+
+---
+
+# Fix the "roles found" number
+
+The UI currently behaves like it is using:
+
+```ts
+jobs.length
+```
+
+which is always a maximum of 25.
+
+Do not use that.
+
+Use:
+
+```ts
+data.meta.total
+```
+
+The UI should render:
+
+```tsx
+{totalJobs.toLocaleString()} {totalJobs === 1 ? "role" : "roles"} found
+```
+
+Examples:
+
+```text
+25 roles found
+```
+
+```text
+26 roles found
+```
+
+```text
+100 roles found
+```
+
+```text
+1,000 roles found
+```
+
+There must be NO 25-record limit on this number.
+
+---
+
+# Pagination behavior
+
+Maximum visible job cards per page:
+
+```text
+25
+```
+
+Total jobs supported:
+
+```text
+No artificial limit
+```
+
+Examples:
+
+```text
+100 jobs
+→ 100 roles found
+→ 4 pages
+```
+
+```text
+1,000 jobs
+→ 1,000 roles found
+→ 40 pages
+```
+
+```text
+10,000 jobs
+→ 10,000 roles found
+→ 400 pages
+```
+
+Do not load all 10,000 records into the browser just to paginate them.
+
+The database/API should paginate them.
+
+---
+
+# Search and filtering must happen before pagination
+
+This is extremely important.
+
+If there are:
+
+```text
+1,000 open jobs
+```
+
+and a search for:
+
+```text
+Virtual Assistant
+```
+
+matches:
+
+```text
+183 jobs
+```
+
+the response should be:
+
+```json
+{
+  "items": [first 25 matching jobs],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 183,
+    "totalPages": 8
+  }
+}
+```
+
+Do NOT search only the 25 records already returned for the current page.
+
+Send search/filter parameters to `/api/jobs/search`.
+
+---
+
+# Check ALL job-list APIs
+
+Search the repository for all places that retrieve open jobs.
+
+Pay particular attention to:
+
+```text
+/api/jobs/search
+/api/admin/jobs
+client/src/hooks/usePostedJobs.ts
+client/src/pages/FindWorkAllJobs.tsx
+server/routes.ts
+server/storage.ts
+```
+
+Make sure one endpoint is not internally calling another endpoint/query that already caps results at 25.
+
+---
+
+# Check for hidden upstream limits
+
+Also inspect whether the jobs query comes from:
+
+* PostgreSQL
+* Drizzle ORM
+* another database manager
+* an API wrapper
+* a storage abstraction
+
+Look for accidental defaults such as:
+
+```ts
+limit ?? 25
+```
+
+or:
+
+```ts
+const pageSize = parsePagination(...).pageSize;
+```
+
+being applied before the total count is generated.
+
+The total count must come from the complete filtered dataset.
+
+---
+
+# Debug logging
+
+Temporarily add development logs around `/api/jobs/search`.
+
+Example:
+
+```ts
+console.log("[jobs/search]", {
+  page,
+  pageSize,
+  offset,
+  totalMatchingJobs: total,
+  returnedItems: items.length,
+  firstJobId: items[0]?.id,
+  lastJobId: items[items.length - 1]?.id,
+});
+```
+
+With 100 open jobs, Page 1 should log approximately:
+
+```text
+totalMatchingJobs: 100
+returnedItems: 25
+page: 1
+```
+
+Page 2:
+
+```text
+totalMatchingJobs: 100
+returnedItems: 25
+page: 2
+```
+
+Page 4:
+
+```text
+totalMatchingJobs: 100
+returnedItems: 25
+page: 4
+```
+
+This will immediately reveal whether the backend thinks only 25 records exist.
+
+Remove or reduce unnecessary logs after verification.
+
+---
+
+# Mandatory acceptance tests
+
+Do NOT mark this task complete until these tests pass.
+
+## Test 1 — 25 jobs
+
+Database:
+
+```text
+25 open jobs
+```
+
+UI:
+
+```text
+25 roles found
+```
+
+Pages:
+
+```text
+Page 1 only
+```
+
+---
+
+## Test 2 — 26 jobs
+
+Database:
+
+```text
+26 open jobs
+```
+
+UI:
+
+```text
+26 roles found
+```
+
+Pages:
+
+```text
+Page 1 → 25 jobs
+Page 2 → 1 job
+```
+
+The oldest job must still exist on Page 2.
+
+---
+
+## Test 3 — 50 jobs
+
+Database:
+
+```text
+50 open jobs
+```
+
+UI:
+
+```text
+50 roles found
+```
+
+Pages:
+
+```text
+Page 1 → 25
+Page 2 → 25
+```
+
+---
+
+## Test 4 — 100 jobs
+
+Database:
+
+```text
+100 open jobs
+```
+
+UI:
+
+```text
+100 roles found
+```
+
+Pages:
+
+```text
+Page 1 → 25
+Page 2 → 25
+Page 3 → 25
+Page 4 → 25
+```
+
+Verify that all 100 unique job IDs can be retrieved across the four pages.
+
+Expected:
+
+```text
+unique IDs = 100
+```
+
+NOT:
+
+```text
+25
+```
+
+---
+
+## Test 5 — add another job
+
+Start with:
+
+```text
+100 jobs
+```
+
+Then add job #101.
+
+Expected:
+
+```text
+101 roles found
+```
+
+Pages:
+
+```text
+Page 1 → 25
+Page 2 → 25
+Page 3 → 25
+Page 4 → 25
+Page 5 → 1
+```
+
+The previously oldest jobs must NOT disappear from the system.
+
+They should simply shift to later pages.
+
+---
+
+# Do not consider this fixed just because Page 1 shows 25
+
+The actual success condition is:
+
+```text
+Database has 100 open jobs
+↓
+API reports total = 100
+↓
+all 100 unique jobs are accessible through pagination
+↓
+UI displays "100 roles found"
+```
+
+If the database contains 100 jobs but:
+
+```text
+meta.total === 25
+```
+
+the backend is still broken.
+
+If:
+
+```text
+meta.total === 100
+```
+
+but the frontend only has Page 1 and cannot navigate to the other 75 jobs, the frontend is still broken.
+
+Both layers must be correct.
+
+---
+
+# Final report required
+
+After fixing it, report:
+
+1. Exact root cause.
+2. Exact file and line/function where the 25-record truncation happened.
+3. Whether the issue was in SQL, storage, API route, or frontend.
+4. API response for 100 jobs on Page 1.
+5. API response for Page 2.
+6. Confirm `meta.total = 100`.
+7. Confirm `meta.totalPages = 4`.
+8. Confirm 100 unique job IDs are accessible.
+9. Confirm the UI says `100 roles found`.
+10. Confirm the oldest role remains accessible instead of disappearing.
+
+Do not respond that the task is complete until those checks have actually passed.
