@@ -128,6 +128,25 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 // ── Role initials avatar ──────────────────────────────────────────────────────
+// Returns page numbers + "…" ellipsis placeholders for compact pagination.
+// Always shows first + last page; shows a ±2 window around the current page.
+function buildPageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(total);
+  for (let i = Math.max(2, current - 2); i <= Math.min(total - 1, current + 2); i++) {
+    pages.add(i);
+  }
+  const sorted = Array.from(pages).sort((a, b) => a - b);
+  const result: (number | "…")[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push("…");
+    result.push(sorted[i]);
+  }
+  return result;
+}
+
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "of", "in", "for", "to", "with", "at", "by",
   "from", "on", "as", "is", "be", "its",
@@ -512,17 +531,50 @@ export default function FindWorkAllJobs() {
     setShowFilters(!!navSlug && navSlug !== "all");
   }, [navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: openJobs = [], isLoading } = useQuery<Job[]>({
-    queryKey: ["/api/jobs/search", { status: "open" }],
+  const PAGE_SIZE = 25;
+
+  // Current page from URL ?page=N (defaults to 1)
+  const currentPage = useMemo(() => {
+    try {
+      const p = parseInt(new URLSearchParams(rawSearch).get("page") ?? "1", 10);
+      return Number.isFinite(p) && p >= 1 ? p : 1;
+    } catch { return 1; }
+  }, [rawSearch]);
+
+  interface PaginatedJobsResponse {
+    items: Job[];
+    meta: { page: number; pageSize: number; total: number; totalPages: number };
+  }
+
+  const { data: jobsData, isLoading } = useQuery<PaginatedJobsResponse>({
+    queryKey: [
+      "/api/jobs/search",
+      { status: "open", page: currentPage, pageSize: PAGE_SIZE, q: search, category, contractType, location, navSlug },
+    ],
     queryFn: async () => {
-      const res = await fetch("/api/jobs/search?status=open");
+      const params = new URLSearchParams();
+      params.set("status", "open");
+      params.set("page", String(currentPage));
+      params.set("pageSize", String(PAGE_SIZE));
+      if (search.trim()) params.set("q", search.trim());
+      if (category !== "All Categories") params.set("category", category);
+      if (contractType !== "All Types") params.set("contractType", contractType);
+      if (location !== "All Locations") params.set("location", location);
+      // navGroup: pass all matching category names so server filters across all pages
+      if (navGroup && navGroup.cats.length > 0 && category === "All Categories") {
+        params.set("categories", navGroup.cats.join(","));
+      }
+      const res = await fetch(`/api/jobs/search?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load jobs");
-      const data = await res.json();
-      // API now returns paginated { items, meta } — fall back to raw array for safety
-      return Array.isArray(data) ? data : (data.items ?? []);
+      return res.json();
     },
+    placeholderData: (prev: PaginatedJobsResponse | undefined) => prev,
     staleTime: 2 * 60 * 1000,
   });
+
+  const openJobs: Job[] = jobsData?.items ?? [];
+  const totalPages = jobsData?.meta?.totalPages ?? 1;
+  const totalJobs = jobsData?.meta?.total ?? 0;
 
   // Popular jobs — top 5 open+approved by view count, fallback to newest
   const { data: popularJobs = [], isLoading: isLoadingPopular } = useQuery<
@@ -637,96 +689,40 @@ export default function FindWorkAllJobs() {
   }, [talentAuth, talentProfile, openJobs]);
 
   const filtered = useMemo(() => {
-    let list = openJobs.filter((job) => {
-      const q = search.toLowerCase();
-      const queryPass =
-        !q ||
-        job.title.toLowerCase().includes(q) ||
-        ((job as any).professionalRoleName ?? "").toLowerCase().includes(q) ||
-        ((job as any).originalRoleName ?? "").toLowerCase().includes(q) ||
-        ((job as any).jobFunction ?? "").toLowerCase().includes(q) ||
-        (job.description ?? "").toLowerCase().includes(q) ||
-        (job.category ?? "").toLowerCase().includes(q) ||
-        (job.location ?? "").toLowerCase().includes(q) ||
-        (job.skillTags ?? []).some((t) => t.toLowerCase().includes(q));
+    // Search, category, location, and contractType are all server-side now.
+    // Only the PHP salary threshold remains client-side (currency-dependent).
+    let list = salary === "Any pay"
+      ? openJobs
+      : openJobs.filter((job) => {
+          const jobCurrency = ((job as any).budgetCurrency || "PHP").toUpperCase();
+          if (jobCurrency !== "PHP") return true;
+          const display: string = (job as any).salaryDisplay || "";
+          let max: number;
+          if (display) {
+            const match = display.replace(/[,_]/g, "").match(/[\d]+/);
+            max = match ? parseFloat(match[0]) : 0;
+          } else {
+            max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
+          }
+          if (salary === "₱30,000+") return max >= 30000;
+          if (salary === "₱45,000+") return max >= 45000;
+          if (salary === "₱60,000+") return max >= 60000;
+          if (salary === "₱85,000+") return max >= 85000;
+          if (salary === "₱100,000+") return max >= 100000;
+          return true;
+        });
 
-      // When a nav category group is active (from URL param) it can match
-      // multiple internal DB categories (e.g. "support" → Admin + Customer success).
-      // If the group is empty (cats: []) it means "All Jobs" — no filter.
-      // If the user manually picks a chip, that single-category filter takes precedence.
-      const navCatActive =
-        !!navGroup && navGroup.cats.length > 0 && category === "All Categories";
-      const normJobCat = normalizeCategory(
-        (job as any).jobFunction || job.category || "",
-      );
-      const catPass = navCatActive
-        ? navGroup.cats.some((c) => normJobCat === normalizeCategory(c))
-        : category === "All Categories" ||
-          normJobCat === normalizeCategory(category);
-
-      const locPass =
-        location === "All Locations" ||
-        (job.location ?? "remote")
-          .toLowerCase()
-          .includes(location.toLowerCase());
-
-      const typePass =
-        contractType === "All Types" ||
-        (job.contractType ?? "").toLowerCase() === contractType.toLowerCase();
-
-      const salaryPass = (() => {
-        if (salary === "Any pay") return true;
-        // PHP salary thresholds only apply to PHP-currency jobs
-        const jobCurrency = (
-          (job as any).budgetCurrency || "PHP"
-        ).toUpperCase();
-        if (jobCurrency !== "PHP") return true;
-        // Parse a number from salaryDisplay first, fall back to legacy numeric fields
-        const display: string = (job as any).salaryDisplay || "";
-        let max: number;
-        if (display) {
-          const match = display.replace(/[,_]/g, "").match(/[\d]+/);
-          max = match ? parseFloat(match[0]) : 0;
-        } else {
-          max = parseFloat(
-            (job as any).hourlyRateMax ?? (job as any).budget ?? "0",
-          );
-        }
-        if (salary === "₱30,000+") return max >= 30000;
-        if (salary === "₱45,000+") return max >= 45000;
-        if (salary === "₱60,000+") return max >= 60000;
-        if (salary === "₱85,000+") return max >= 85000;
-        if (salary === "₱100,000+") return max >= 100000;
-        return true;
-      })();
-
-      return queryPass && catPass && locPass && typePass && salaryPass;
-    });
     const sorted = sortJobs(list, sort);
-    // Deduplicate by unique job ID — guards against any upstream duplicates
-    // and guarantees a single source of truth for both the count and the render.
     const seen = new Set<string>();
     const unique = sorted.filter((j) => {
       if (seen.has(j.id)) return false;
       seen.add(j.id);
       return true;
     });
-    // Featured-first: float isFeatured jobs to the top while preserving
-    // the relative order produced by sortJobs within each group.
     const featuredOnes = unique.filter((j) => (j as any).isFeatured === true);
     const regularOnes  = unique.filter((j) => (j as any).isFeatured !== true);
     return [...featuredOnes, ...regularOnes];
-  }, [
-    openJobs,
-    search,
-    category,
-    location,
-    contractType,
-    salary,
-    sort,
-    navSlug,
-    navGroup,
-  ]);
+  }, [openJobs, salary, sort]);
 
   function applyHotSearch(term: string) {
     setSearch(term);
@@ -752,6 +748,49 @@ export default function FindWorkAllJobs() {
   const scrollToJobs = useCallback(() => {
     jobsSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  // Navigate to a page — updates URL (preserving other params) and scrolls to results
+  const goToPage = useCallback((page: number) => {
+    try {
+      const params = new URLSearchParams(rawSearch);
+      params.set("page", String(page));
+      navigate(`/find-work/jobs?${params.toString()}`);
+    } catch { /* noop */ }
+    setTimeout(() => jobsSectionRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  }, [rawSearch, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When any filter/sort/navSlug changes, reset to page 1
+  const prevFiltersRef = useRef({ search, category, location, contractType, salary, sort, navSlug });
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const changed =
+      prev.search !== search ||
+      prev.category !== category ||
+      prev.location !== location ||
+      prev.contractType !== contractType ||
+      prev.salary !== salary ||
+      prev.sort !== sort ||
+      prev.navSlug !== navSlug;
+    prevFiltersRef.current = { search, category, location, contractType, salary, sort, navSlug };
+    if (changed && currentPage !== 1) {
+      try {
+        const params = new URLSearchParams(rawSearch);
+        params.set("page", "1");
+        navigate(`/find-work/jobs?${params.toString()}`);
+      } catch { /* noop */ }
+    }
+  }, [search, category, location, contractType, salary, sort, navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-correct: if current page exceeds total pages (e.g. after deletions), jump to last valid page
+  useEffect(() => {
+    if (jobsData && currentPage > jobsData.meta.totalPages && jobsData.meta.totalPages > 0) {
+      try {
+        const params = new URLSearchParams(rawSearch);
+        params.set("page", String(jobsData.meta.totalPages));
+        navigate(`/find-work/jobs?${params.toString()}`);
+      } catch { /* noop */ }
+    }
+  }, [jobsData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">
@@ -1060,10 +1099,9 @@ export default function FindWorkAllJobs() {
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {filtered.length}
+                  {totalJobs}
                 </span>{" "}
-                role{filtered.length !== 1 ? "s" : ""} found
-                {/* filtered is deduplicated and featured-first */}
+                role{totalJobs !== 1 ? "s" : ""} found
                 {search && (
                   <>
                     {" "}
@@ -1071,6 +1109,11 @@ export default function FindWorkAllJobs() {
                     <span className="font-medium text-[#474ead]">{search}</span>
                     "
                   </>
+                )}
+                {totalPages > 1 && (
+                  <span className="ml-2 text-slate-400">
+                    · page {currentPage} of {totalPages}
+                  </span>
                 )}
               </p>
             )}
@@ -1160,11 +1203,8 @@ export default function FindWorkAllJobs() {
         )}
 
         {/* ── Single canonical job list ──────────────────────────────────────
-             `filtered` is already deduplicated by ID and sorted featured-first.
-             All jobs are rendered exactly once here.  The former "Trending roles"
-             and "Talent profile" recommendation strips have been removed because
-             they rendered JobCards for the same jobs that appear in this list,
-             causing the "4 roles found / 6 cards visible" duplication.          */}
+             `filtered` is deduplicated, salary-filtered, and sorted featured-first.
+             Search/category/location/contractType filtering is server-side.         */}
         {!isLoading && filtered.length > 0 && (
           <div className="space-y-4">
             {filtered.map((job) => (
@@ -1184,6 +1224,58 @@ export default function FindWorkAllJobs() {
                 }}
               />
             ))}
+          </div>
+        )}
+
+        {/* ── Pagination controls ─────────────────────────────────────────── */}
+        {!isLoading && totalPages > 1 && (
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-1.5">
+            {/* Previous */}
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
+              aria-label="Previous page"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Prev
+            </button>
+
+            {/* Page numbers with compact ellipsis */}
+            {buildPageNumbers(currentPage, totalPages).map((item, i) =>
+              item === "…" ? (
+                <span
+                  key={`ellipsis-${i}`}
+                  className="flex h-9 w-5 items-center justify-center text-slate-400"
+                  aria-hidden="true"
+                >
+                  …
+                </span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => goToPage(item as number)}
+                  className={`h-9 w-9 rounded-full text-sm font-medium transition ${
+                    item === currentPage
+                      ? "bg-[#474ead] text-white shadow-sm"
+                      : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
+                  }`}
+                  aria-current={item === currentPage ? "page" : undefined}
+                  aria-label={`Page ${item}`}
+                >
+                  {item}
+                </button>
+              )
+            )}
+
+            {/* Next */}
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300"
+              aria-label="Next page"
+            >
+              Next <ArrowRight className="h-3.5 w-3.5" />
+            </button>
           </div>
         )}
       </div>

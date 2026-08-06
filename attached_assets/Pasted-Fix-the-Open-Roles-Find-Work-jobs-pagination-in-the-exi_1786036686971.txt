@@ -1,0 +1,350 @@
+Fix the Open Roles / Find Work jobs pagination in the existing project.
+
+### Current issue
+
+The application can have more than 25 open job roles, but the Find Work / Open Roles page only displays the first 25.
+
+Example:
+
+* 50 roles are posted and open.
+* Only 25 appear on the page.
+* If 10 of the visible roles are deleted, some previously hidden roles become visible.
+* This indicates that the API is paginated with a default page size of 25, but the frontend is only loading page 1.
+
+The project already has pagination utilities in:
+
+`server/lib/paginate.ts`
+
+The existing pagination response contains:
+
+```ts
+{
+  items: Job[],
+  meta: {
+    page: number,
+    pageSize: number,
+    total: number,
+    totalPages: number
+  }
+}
+```
+
+The default page size is already:
+
+```ts
+DEFAULT_PAGE_SIZE = 25
+```
+
+Do NOT increase the page size to 50, 100, or 200 just to show all records.
+
+Instead, implement proper pagination.
+
+### Required behavior
+
+Display a maximum of **25 job roles per page**.
+
+Examples:
+
+* 1–25 jobs → Page 1 only
+* 26–50 jobs → Page 1 and Page 2
+* 51–75 jobs → Page 1, Page 2, Page 3
+* 76–100 jobs → 4 pages
+
+For 50 open roles:
+
+**Page 1**
+Jobs 1–25
+
+**Page 2**
+Jobs 26–50
+
+All open roles must remain accessible. Do not hide, truncate, or discard roles after the first 25.
+
+### API usage
+
+Update the frontend request to use:
+
+```text
+/api/jobs/search?status=open&page={currentPage}&pageSize=25
+```
+
+For example:
+
+```text
+/api/jobs/search?status=open&page=1&pageSize=25
+/api/jobs/search?status=open&page=2&pageSize=25
+```
+
+Use the API's existing `meta.totalPages`, `meta.total`, `meta.page`, and `meta.pageSize` values rather than calculating the total number of server pages from only the returned 25 records.
+
+### FindWorkAllJobs.tsx
+
+Update:
+
+`client/src/pages/FindWorkAllJobs.tsx`
+
+Currently the page calls approximately:
+
+```ts
+fetch("/api/jobs/search?status=open")
+```
+
+and extracts:
+
+```ts
+data.items
+```
+
+Change this so the component keeps a `currentPage` state:
+
+```ts
+const [currentPage, setCurrentPage] = useState(1);
+const PAGE_SIZE = 25;
+```
+
+Include the page in the React Query key:
+
+```ts
+queryKey: [
+  "/api/jobs/search",
+  {
+    status: "open",
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+  },
+]
+```
+
+Fetch:
+
+```ts
+/api/jobs/search?status=open&page=${currentPage}&pageSize=${PAGE_SIZE}
+```
+
+Keep the complete response instead of throwing away `meta`.
+
+Use a type similar to:
+
+```ts
+interface PaginatedJobsResponse {
+  items: Job[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+```
+
+Then obtain:
+
+```ts
+const openJobs = data?.items ?? [];
+const totalPages = data?.meta?.totalPages ?? 1;
+const totalJobs = data?.meta?.total ?? 0;
+```
+
+### Pagination UI
+
+At the bottom of the job results, add pagination controls consistent with the existing UI/design system.
+
+Example:
+
+```text
+← Previous    1  2  3  4    Next →
+```
+
+Requirements:
+
+* Disable Previous on page 1.
+* Disable Next on the last page.
+* Highlight the active page.
+* Clicking a page number loads that page.
+* Clicking Previous loads `currentPage - 1`.
+* Clicking Next loads `currentPage + 1`.
+* Scroll back to the jobs results section after changing pages.
+* Keep the existing responsive/mobile styling.
+* Do not perform a full browser refresh.
+
+For many pages, do not render dozens of buttons. Use a compact pagination such as:
+
+```text
+1 2 3 ... 10
+```
+
+or
+
+```text
+1 ... 4 5 6 ... 10
+```
+
+### Filtering and searching
+
+Be careful with the existing filters in `FindWorkAllJobs.tsx`.
+
+The page currently performs search, category, location, contract type, salary, and sorting on the jobs returned by the API.
+
+Do NOT create behavior where filtering only searches the current 25 jobs if the expected behavior is to search/filter all open jobs.
+
+Inspect the existing `/api/jobs/search` endpoint and move applicable filters to query parameters/server-side filtering before pagination where possible.
+
+Correct sequence should be:
+
+```text
+all open jobs
+      ↓
+search/filter
+      ↓
+sort
+      ↓
+calculate total
+      ↓
+paginate into groups of 25
+      ↓
+return requested page
+```
+
+NOT:
+
+```text
+all open jobs
+      ↓
+take first 25
+      ↓
+filter those 25
+```
+
+This is important so a role on page 2 can still be found by search/filtering.
+
+Whenever search or filter values change, reset:
+
+```ts
+setCurrentPage(1);
+```
+
+### URL state
+
+Prefer keeping the current page in the URL so pagination survives refresh/back-navigation.
+
+Example:
+
+```text
+/find-work/jobs?page=1
+/find-work/jobs?page=2
+```
+
+Preserve existing query parameters such as:
+
+```text
+?category=design
+```
+
+so the result can become:
+
+```text
+/find-work/jobs?category=design&page=2
+```
+
+Do not overwrite or remove the existing category parameter when the page changes.
+
+### Edge cases
+
+Handle these cases:
+
+1. Exactly 25 jobs
+
+   * only Page 1.
+
+2. 26 jobs
+
+   * Page 1 has 25.
+   * Page 2 has 1.
+
+3. 50 jobs
+
+   * exactly two pages.
+
+4. 51 jobs
+
+   * three pages.
+
+5. A job is deleted while the user is on the last page.
+
+   * If the current page becomes greater than `totalPages`, automatically move to the new last valid page.
+
+6. New roles are posted.
+
+   * They should become available according to the existing sorting order without replacing/hiding older records permanently.
+
+7. Zero jobs
+
+   * Preserve the existing empty-state UI.
+
+8. Loading a different page
+
+   * Preserve the current layout and preferably retain previous page data while fetching to prevent layout flashing.
+
+### Other job consumers
+
+Inspect:
+
+`client/src/hooks/usePostedJobs.ts`
+
+It currently requests a very large `pageSize` to obtain open jobs.
+
+Do not depend on `pageSize=200` as the fix.
+
+Determine whether this hook actually needs:
+
+* all open jobs, or
+* paginated jobs.
+
+If it needs all jobs for recommendations or another internal feature, handle that deliberately without changing the public Find Work page's 25-per-page requirement.
+
+Remember that the backend currently has a maximum page-size safeguard, so do not assume an arbitrarily large page size will return every role forever.
+
+### Important constraints
+
+* Do not change existing job data.
+* Do not delete jobs.
+* Do not alter the job posting flow unnecessarily.
+* Do not modify unrelated pages.
+* Keep all existing search/filter/sort behavior working.
+* Keep React Query caching.
+* Keep the existing design.
+* Reuse the pagination helpers already present in the backend.
+* Maximum visible jobs per results page must be 25.
+* All matching open jobs must still be accessible through pagination.
+
+### Acceptance test
+
+Create or use at least 50 open roles.
+
+Verify:
+
+```text
+Page 1 → 25 roles
+Page 2 → remaining 25 roles
+```
+
+Then create a 51st role:
+
+```text
+Page 1 → 25
+Page 2 → 25
+Page 3 → 1
+```
+
+Delete several roles from Page 1 and verify that roles from later pages are not lost; page totals should simply recalculate.
+
+Also verify search/filter behavior can find matching jobs regardless of which page they would normally appear on.
+
+After implementation, report:
+
+1. Which files were changed.
+2. The root cause of the 25-role issue.
+3. How pagination now works.
+4. Whether filtering/searching is server-side or client-side.
+5. Any compatibility changes made to `usePostedJobs.ts`.
+6. Results of the 25/26/50/51-job tests.

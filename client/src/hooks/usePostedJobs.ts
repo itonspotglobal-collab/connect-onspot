@@ -29,10 +29,12 @@ function extractJobs(
 
 export function usePostedJobs() {
   const { data, isLoading, isError, error } = useQuery<PaginatedJobsResponse>({
-    queryKey: ["/api/jobs/search", { status: "open" }],
+    // Distinct key from FindWorkAllJobs (which includes page/filters).
+    // pageSize=100 is the server's actual MAX_PAGE_SIZE — sufficient for recommendations.
+    queryKey: ["/api/jobs/search", { status: "open", pageSize: 100 }],
     queryFn: async () => {
       const res = await fetch(
-        "/api/jobs/search?status=open&page=1&pageSize=200",
+        "/api/jobs/search?status=open&page=1&pageSize=100",
       );
       if (!res.ok) throw new Error("Failed to load open jobs");
       const payload = await res.json();

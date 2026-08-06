@@ -2779,6 +2779,7 @@ export class DbStorage extends MemStorage {
 
   async searchJobsWithSkills(filters: {
     category?: string;
+    categories?: string[];  // multi-category filter (OR logic); takes precedence over category
     contractType?: string;
     experienceLevel?: string;
     minBudget?: number;
@@ -2786,6 +2787,7 @@ export class DbStorage extends MemStorage {
     skills?: string[];
     status?: string;
     q?: string;
+    location?: string;     // "Remote" | "Hybrid" | "On-site" — substring match against job.location
   }): Promise<(Job & { skills: string[] })[]> {
     let allDbJobs = await db
       .select()
@@ -2795,8 +2797,21 @@ export class DbStorage extends MemStorage {
 
     let jobs = allDbJobs;
 
-    if (filters.category) {
-      const cat = filters.category.toLowerCase();
+    // Normalise a category string the same way the frontend does (normalizeCategory util)
+    const normStr = (s: string) =>
+      s.trim().toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+
+    // Multi-category filter (OR): used when nav slug maps to several DB categories.
+    if (filters.categories && filters.categories.length > 0) {
+      const normCats = filters.categories.map(normStr);
+      jobs = jobs.filter(j => {
+        const jobCat = normStr((j as any).jobFunction || j.category || "");
+        return normCats.some(c => jobCat === c);
+      });
+    } else if (filters.category) {
+      // Single-category filter: try exact normalised match first (frontend sends real DB values),
+      // then fall back to keyword-expansion for legacy slug-style callers.
+      const cat = normStr(filters.category);
       const categoryKeywords: Record<string, string[]> = {
         development: ["development", "dev", "it", "software", "engineer", "programming", "tech", "administrator"],
         design: ["design", "creative", "ui", "ux", "graphic", "visual"],
@@ -2804,13 +2819,16 @@ export class DbStorage extends MemStorage {
         support: ["support", "admin", "assistant", "customer service", "operations"],
         writing: ["writing", "translation", "content", "copywriting", "editor"],
       };
-      const keywords = categoryKeywords[cat] || [cat];
       jobs = jobs.filter(j => {
-        if (j.category.toLowerCase() === cat) return true;
-        const title = j.title.toLowerCase();
-        return keywords.some(kw => title.includes(kw));
+        const jobCat = normStr((j as any).jobFunction || j.category || "");
+        if (jobCat === cat) return true;
+        // Keyword expansion for slug-style callers
+        const keywords = categoryKeywords[cat];
+        if (keywords) return keywords.some(kw => j.title.toLowerCase().includes(kw));
+        return false;
       });
     }
+
     if (filters.contractType) {
       jobs = jobs.filter(j => j.contractType === filters.contractType);
     }
@@ -2832,12 +2850,20 @@ export class DbStorage extends MemStorage {
     if (filters.maxBudget !== undefined) {
       jobs = jobs.filter(j => j.budget && parseFloat(j.budget) <= filters.maxBudget!);
     }
+    if (filters.location) {
+      const loc = filters.location.toLowerCase();
+      jobs = jobs.filter(j => (j.location ?? "").toLowerCase().includes(loc));
+    }
     if (filters.q) {
       const q = filters.q.toLowerCase();
       jobs = jobs.filter(j =>
         j.title.toLowerCase().includes(q) ||
         j.description.toLowerCase().includes(q) ||
         j.category.toLowerCase().includes(q) ||
+        ((j as any).jobFunction ?? "").toLowerCase().includes(q) ||
+        ((j as any).professionalRoleName ?? "").toLowerCase().includes(q) ||
+        (j.location ?? "").toLowerCase().includes(q) ||
+        ((j as any).skillTags ?? []).some((t: string) => t.toLowerCase().includes(q)) ||
         // Do NOT match company name for confidential jobs — prevents leaking the real company
         (!(j as any).isCompanyConfidential && j.company && j.company.toLowerCase().includes(q))
       );

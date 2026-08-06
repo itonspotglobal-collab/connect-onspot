@@ -4879,6 +4879,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { page, pageSize } = parsePagination(req.query);
       const filters = {
         category: req.query.category as string,
+        // comma-separated list of categories for multi-category nav-slug filtering
+        categories: req.query.categories
+          ? (req.query.categories as string).split(",").map(s => s.trim()).filter(Boolean)
+          : undefined,
         contractType: req.query.contractType as string,
         experienceLevel: req.query.experienceLevel as string,
         minBudget: req.query.minBudget
@@ -4892,6 +4896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : undefined,
         status: (req.query.status as string) || "open",
         q: req.query.q as string,
+        location: req.query.location as string,
       };
 
       const all = await storage.searchJobsWithSkills(filters);
