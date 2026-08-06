@@ -761,6 +761,7 @@ export default function AdminFindWork() {
   const [linkModalJobId, setLinkModalJobId] = useState<string | null>(null);
   const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
+  const [approveConfirmJobId, setApproveConfirmJobId] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingJob(null);
@@ -1263,7 +1264,7 @@ export default function AdminFindWork() {
                   key={job.id}
                   job={job}
                   allJobs={enrichedJobs}
-                  onApprove={() => approveMutation.mutate(job.id)}
+                  onApprove={() => setApproveConfirmJobId(job.id)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onLink={() => {
                     setLinkModalJobId(job.id);
@@ -1287,7 +1288,7 @@ export default function AdminFindWork() {
                   onToggle={() => toggleStatusMutation.mutate({ id: job.id, status: job.status === "open" ? "closed" : "open" })}
                   onDelete={() => deleteMutation.mutate(job.id)}
                   onCopy={() => copy(job.id)}
-                  onApprove={() => approveMutation.mutate(job.id)}
+                  onApprove={() => setApproveConfirmJobId(job.id)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onMoveToPending={() => pendingMutation.mutate(job.id)}
                   onRefresh={() => refreshMutation.mutate(job.id)}
@@ -1303,6 +1304,38 @@ export default function AdminFindWork() {
           )}
         </div>
       </div>
+
+      {/* ── Approve confirmation modal ── */}
+      <Dialog open={!!approveConfirmJobId} onOpenChange={(open) => { if (!open) setApproveConfirmJobId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ThumbsUp className="h-5 w-5 text-emerald-500" />
+              Approve this job?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              This role will become visible on the public Find Work page immediately.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setApproveConfirmJobId(null)}>Cancel</Button>
+              <Button
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                disabled={approveMutation.isPending}
+                onClick={() => {
+                  if (approveConfirmJobId) {
+                    approveMutation.mutate(approveConfirmJobId);
+                    setApproveConfirmJobId(null);
+                  }
+                }}
+              >
+                {approveMutation.isPending ? "Approving…" : "Approve"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Reject reason modal ── */}
       <Dialog open={!!rejectModalJobId} onOpenChange={(open) => { if (!open) setRejectModalJobId(null); }}>
@@ -1483,7 +1516,7 @@ export default function AdminFindWork() {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-white/[0.06]">
                   <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => { approveMutation.mutate(dj.id); setViewDetailJobId(null); }}>
+                    onClick={() => { setViewDetailJobId(null); setApproveConfirmJobId(dj.id); }}>
                     <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Approve
                   </Button>
                   <Button size="sm" variant="outline"

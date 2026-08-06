@@ -263,6 +263,10 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  // ─── Approval confirmation (create-only) ─────────────────────────────────────
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
+
   // ─── Helpers ─────────────────────────────────────────────────────────────────
   const updateField = (field: keyof JobFormData, value: JobFormData[keyof JobFormData]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -411,12 +415,15 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (isEditing && job) {
       updateMutation.mutate({ id: job.id, data: payload });
     } else {
-      createMutation.mutate(payload);
+      // Show "Submit for approval?" confirmation before creating
+      setPendingPayload(payload);
+      setConfirmOpen(true);
     }
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
+    <>
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
         className="max-w-3xl max-h-[90vh] overflow-y-auto p-0"
@@ -1200,7 +1207,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 ? "Saving…"
                 : isEditing
                 ? "Update Job"
-                : "Create Job"}
+                : "Submit for Approval"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
               Cancel
@@ -1219,5 +1226,45 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* ── Submit for approval confirmation ──────────────────────────────── */}
+
+    <Dialog open={confirmOpen} onOpenChange={(o) => { if (!o) setConfirmOpen(false); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[#474ead]" />
+            Submit job for approval?
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-slate-600 dark:text-slate-300 py-1">
+          This role will remain hidden from the public Find Work page until it is approved.
+        </p>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setConfirmOpen(false)}
+            disabled={createMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+            disabled={createMutation.isPending}
+            onClick={() => {
+              if (pendingPayload) {
+                createMutation.mutate(pendingPayload);
+                setConfirmOpen(false);
+              }
+            }}
+          >
+            {createMutation.isPending ? "Submitting…" : "Submit for Approval"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

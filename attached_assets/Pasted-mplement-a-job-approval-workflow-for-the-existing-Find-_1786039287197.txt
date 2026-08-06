@@ -1,0 +1,56 @@
+mplement a job approval workflow for the existing Find Work feature.
+
+Current setup:
+
+Admin job management page: /admin/find-work
+Public jobs page: /find-work/jobs
+There are currently no admin accounts or admin authentication.
+Anyone who knows the /admin/find-work URL can currently access the admin page.
+
+Required behavior:
+
+When someone creates a new job from /admin/find-work, do not publish it immediately.
+Before saving, show a confirmation modal:
+Title: Submit job for approval?
+Message: This role will remain hidden from the public Find Work page until it is approved.
+Buttons: Cancel and Submit for Approval
+After confirmation, save the job with an approval status of pending.
+Pending jobs must appear under the existing Pending Approvals tab in /admin/find-work.
+Add Approve and Decline actions for pending jobs.
+Both Approve and Decline should show a confirmation modal before changing the status.
+Since there are currently no admin accounts, anyone who has access to /admin/find-work may approve or decline a pending role. Do not implement multi-admin approval yet.
+When a job is approved:
+Set approval_status = approved
+If the job is open, make it visible on /find-work/jobs
+When a job is pending or declined, it must never appear on /find-work/jobs.
+The public jobs query/API must only return jobs that satisfy:
+approval_status === "approved"
+job status is open
+Keep the existing admin tabs and update their counts correctly:
+All Jobs
+Pending Approvals
+Approved
+Declined
+Existing approved jobs should continue working normally. If existing records do not have approval_status, create a safe migration/default so existing published jobs are treated as approved rather than disappearing from the public page.
+
+Use an enum or equivalent validation for:
+pending | approved | declined
+
+Keep job status such as open | closed separate from approval status. A job can therefore be approved but later closed, in which case it should no longer appear publicly.
+
+Do not build admin authentication as part of this task. However, structure the implementation so that later we can add fields such as approvedBy, approvedAt, and multi-admin approval without rewriting the whole feature.
+
+Please inspect the existing codebase first and reuse the current database models, API patterns, UI components, modals, styling, and state-management conventions. Avoid unnecessary refactoring.
+
+After implementation, verify these scenarios:
+
+Create job → Pending → not visible publicly
+Approve pending job → visible on /find-work/jobs
+Decline pending job → not visible publicly
+Close an approved job → not visible publicly
+Reopen an approved job → visible publicly again
+Existing published jobs remain visible after the migration
+
+Also report which files were changed and briefly explain the database/schema changes, API changes, and UI changes.
+
+One important detail I’d keep in that prompt is the separation of approval status from open/closed status. That prevents an approved role from becoming publicly visible again incorrectly when its state changes later.

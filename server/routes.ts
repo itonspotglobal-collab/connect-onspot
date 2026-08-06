@@ -5077,8 +5077,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Admin-created jobs are pre-approved
-      const body = { ...req.body, clientId, approvalStatus: "approved" };
+      // Admin-created jobs start as pending and require approval before going public
+      const body = { ...req.body, clientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       const validated = insertJobSchema.parse(body);
@@ -5180,7 +5180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Approve a job posting ─────────────────────────────────────────
-  app.post("/api/admin/jobs/:id/approve", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  // No auth guard yet — spec: anyone with /admin/find-work access may approve.
+  // Structured for future approvedBy/approvedAt multi-admin tracking (fields already in schema).
+  app.post("/api/admin/jobs/:id/approve", async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       const result = await query(
@@ -5210,7 +5212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Reject a job posting ──────────────────────────────────────────
-  app.post("/api/admin/jobs/:id/reject", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  // No auth guard yet — spec: anyone with /admin/find-work access may decline.
+  app.post("/api/admin/jobs/:id/reject", async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       const { rejectionReason } = req.body;
@@ -5239,7 +5242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Link a client job to an existing approved job ────────────────
-  app.post("/api/admin/jobs/:id/link", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  // No auth guard yet — consistent with approve/reject policy above.
+  app.post("/api/admin/jobs/:id/link", async (req: Request, res: Response) => {
     try {
       const { existingJobId } = req.body;
       if (!existingJobId) return res.status(400).json({ error: "existingJobId is required" });
@@ -5266,7 +5270,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
-  app.post("/api/admin/jobs/:id/pending", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  // No auth guard yet — consistent with approve/reject policy above.
+  app.post("/api/admin/jobs/:id/pending", async (req: Request, res: Response) => {
     try {
       const result = await query(
         `UPDATE jobs SET
