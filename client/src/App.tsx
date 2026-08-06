@@ -400,6 +400,8 @@ function AppContent() {
       {/* Standalone Login Page — must be before catch-all */}
       <Route path="/login" component={PortalLogin} />
       <Route path="/sign-in" component={PortalLogin} />
+      {/* Portal login — used by the job-apply flow when an existing email is detected */}
+      <Route path="/portal-login" component={PortalLogin} />
 
       {/* Catch all */}
       <Route component={() => <PublicRouter />} />

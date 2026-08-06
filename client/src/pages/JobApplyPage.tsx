@@ -440,7 +440,8 @@ export default function JobApplyPage() {
               className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
               onClick={() => {
                 const token = encodeURIComponent(signInDialog.continuationToken);
-                navigate(`/portal-login?portal=talent&applicationToken=${token}`);
+                const returnTo = encodeURIComponent(`/jobs/${jobId}`);
+                navigate(`/portal-login?portal=talent&applicationToken=${token}&returnTo=${returnTo}`);
               }}
             >
               <LogIn className="mr-2 h-4 w-4" />

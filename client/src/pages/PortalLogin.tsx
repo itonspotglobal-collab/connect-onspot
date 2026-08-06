@@ -149,6 +149,11 @@ export default function PortalLogin() {
     () => new URLSearchParams(window.location.search).get("applicationToken") || "",
   );
 
+  // Optional return destination after login (e.g. the job detail page the user came from)
+  const [returnTo] = useState(
+    () => new URLSearchParams(window.location.search).get("returnTo") || "",
+  );
+
   const [selectedPortal, setSelectedPortal] = useState<PortalType | null>(() => {
     const v = new URLSearchParams(window.location.search).get("portal");
     return v === "client" || v === "talent" ? v : null;
@@ -218,7 +223,8 @@ export default function PortalLogin() {
         // On email_mismatch or any other error we still navigate — the application
         // stays as pending_login and admins can see it.
       } catch (_) { /* non-fatal — just navigate */ }
-      navigate("/find-work/jobs");
+      // Return to the job page the user came from, or fall back to the jobs listing
+      navigate(returnTo || "/find-work/jobs");
       return;
     }
 
