@@ -73,7 +73,7 @@ Routes: `/find-work`, `/get-hired`, `/talent-portal`, `/jobs`, `/careers`, `/app
   "legalName": "OnSpot",
   "url": "https://www.onspotglobal.com",
   "logo": "https://www.onspotglobal.com/assets/onspot-logo.png",
-  "description": "The Superhuman Outsourcing System - AI-powered talent matching and performance management",
+  "description": "Work Without Limits - AI-powered talent matching and performance management",
   "sameAs": [
     "https://www.linkedin.com/company/onspotglobal",
     "https://www.facebook.com/onspotglobal"

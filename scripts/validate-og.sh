@@ -12,7 +12,7 @@
 BASE_URL="${1:-http://localhost:5000}"
 PASS=0
 FAIL=0
-OLD_TITLE="Superhuman Outsourcing System"
+OLD_TITLE="Work Without Limits"
 BOT_UA="facebookexternalhit/1.1"
 
 # Colour helpers (no-op if not a terminal)
