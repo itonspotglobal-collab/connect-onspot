@@ -41,10 +41,7 @@ export function Footer() {
               <div className="absolute inset-0 bg-white/20 blur-lg rounded-lg opacity-30"></div>
             </div>
             <p className="text-white/95 leading-relaxed text-sm sm:text-base font-light max-w-[330px]">
-              The growth engine of modern business. Built by entrepreneurs, for
-              entrepreneurs—our Superhuman Outsourcing System fuses AI-first
-              infrastructure with human excellence to scale businesses and
-              empower people to perform beyond limits.
+              OnSpot is a workforce system that connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Freelance marketplaces are fast and cheap, but unaccountable — a bidding war with no real oversight. Traditional outsourcing firms are reliable, but slow, rigid, and loaded with overhead that eats into both what clients pay and what talent takes home. OnSpot closes that gap. Talent gets paid more. Clients pay less. One place to hire, manage, and pay people who actually show up — no wait, no bidding wars, no bloated markup. Work Without Limits.
             </p>
             <div className="flex flex-wrap lg:flex-nowrap items-center justify-center md:justify-start gap-3">
               <Button variant="ghost" size="sm" className="text-white/90 border border-white/20 bg-white/5 hover-elevate min-h-[44px] min-w-[44px]" asChild data-testid="social-facebook">

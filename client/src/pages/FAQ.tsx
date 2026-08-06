@@ -24,8 +24,8 @@ const categories: FAQCategory[] = [
     color: "indigo",
     items: [
       {
-        q: "What is OnSpot Global?",
-        a: "OnSpot Global is an outsourcing management platform that combines BPO services and freelancing into one seamless system. We match businesses with elite, pre-vetted talent — primarily from the Philippines — and wrap it with AI tools, performance management, and full operational support. Whether you need one specialist or an entire team, OnSpot makes hiring global talent simple, fast, and accountable.",
+        q: "What is OnSpot?",
+        a: "OnSpot is a workforce system that connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. We match businesses with elite, pre-vetted talent — primarily from the Philippines — and wrap it with AI tools, performance management, and full operational support. Whether you need one specialist or an entire team, OnSpot makes hiring global talent simple, fast, and accountable.",
       },
       {
         q: "How does the outsourcing process work?",

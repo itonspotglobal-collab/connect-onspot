@@ -1,0 +1,46 @@
+Search the full repository and update the correct SEO, metadata, footer, and social fields without changing functional URLs, API endpoints, or the onspotglobal.com domain.
+
+Apply these exact values:
+
+Title tag
+Work Without Limits | OnSpot
+
+Meta description
+Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.
+
+Open Graph
+
+og:title: Work Without Limits | OnSpot
+og:description: Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Talent earns more. Clients pay less.
+
+Twitter/X Card
+
+twitter:title: Work Without Limits | OnSpot
+twitter:description: Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.
+
+Long-form footer description
+OnSpot is a workforce system that connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Freelance marketplaces are fast and cheap, but unaccountable — a bidding war with no real oversight. Traditional outsourcing firms are reliable, but slow, rigid, and loaded with overhead that eats into both what clients pay and what talent takes home. OnSpot closes that gap. Talent gets paid more. Clients pay less. One place to hire, manage, and pay people who actually show up — no wait, no bidding wars, no bloated markup. Work Without Limits.
+
+Also update any internal/configured social-profile content to:
+
+LinkedIn tagline
+Work Without Limits. The system between marketplace chaos and outsourcing overhead.
+
+LinkedIn About
+Work Without Limits.
+
+OnSpot is a workforce system that connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Freelance marketplaces are fast and cheap, but unaccountable. Traditional outsourcing firms are reliable, but slow, rigid, and loaded with overhead. OnSpot closes that gap: talent gets paid more, clients pay less. One place to hire, manage, and pay people who actually show up.
+
+Short social bio
+Work Without Limits. The system between marketplace chaos and outsourcing overhead. Talent earns more. Clients pay less.
+
+Also verify there are no remaining user-facing instances of “OnSpot Global” or “The Superhuman Outsourcing System.” Keep onspotglobal.com intact where it is the actual domain.
+
+Check <title>, meta tags, Open Graph, Twitter cards, Next.js/React metadata, JSON-LD, layout/head files, SEO configs, footer components, constants, manifests, and environment/config files.
+
+After updating, run a full repository search and report:
+
+Files changed
+Old → new values
+Any intentionally retained onspotglobal references
+Whether the build/tests pass

@@ -47,7 +47,7 @@ export default function WhyOnSpotReviews() {
     },
     {
       rating: 5,
-      text: "I’m extremely happy with the service provided by Onspot Global. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we’ve built.",
+      text: "I'm extremely happy with the service provided by OnSpot. Their team is professional, responsive, and reliable—always going above and beyond to make sure everything runs smoothly. The efficiency and consistency they deliver gives me complete confidence, and I truly value the partnership we've built.",
       author: "Fernando Calderon",
       title: "Operations Director",
       company: "LogiFlow International",

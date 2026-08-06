@@ -34,8 +34,8 @@ interface HeadSEOProps {
 }
 
 export function HeadSEO({ 
-  title = "OnSpot — Work Without Limits",
-  description = "The growth engine of modern business. Built by entrepreneurs, for entrepreneurs—we fuse AI-first infrastructure with human excellence to scale businesses and empower people to perform beyond limits.",
+  title = "Work Without Limits | OnSpot",
+  description = "Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.",
   ogImage = "https://www.onspotglobal.com/assets/og/onspot-home.jpg",
   ogType = "website",
   canonical,

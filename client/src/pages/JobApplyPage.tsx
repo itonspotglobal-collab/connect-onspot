@@ -243,7 +243,7 @@ export default function JobApplyPage() {
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
-              {job.company || "OnSpot Global"}
+              {job.company || "OnSpot"}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />

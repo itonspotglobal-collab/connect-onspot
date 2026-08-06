@@ -130,7 +130,7 @@ function CardShell({ children }: { children: React.ReactNode }) {
 
       {/* Footer */}
       <p className="relative z-10 mt-6 text-[#94A3B8] text-xs text-center">
-        &copy; {new Date().getFullYear()} OnSpot Global. All rights reserved.
+        &copy; {new Date().getFullYear()} OnSpot. All rights reserved.
       </p>
     </div>
   );

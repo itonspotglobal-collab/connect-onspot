@@ -135,7 +135,7 @@ const INSIGHTS_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop";
 
 const DEFAULT_DESCRIPTION =
-  "The first integrator system that simplifies outsourcing management. Built by entrepreneurs, for entrepreneurs.";
+  "Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.";
 
 /**
  * Normalize a stored image URL so it always points to the production domain.
@@ -183,8 +183,8 @@ export async function resolveOGMeta(
   // ── Homepage ──────────────────────────────────────────────────────────────────
   if (pathname === "/" || pathname === "") {
     return {
-      title: "OnSpot – Work Without Limits",
-      description: DEFAULT_DESCRIPTION,
+      title: "Work Without Limits | OnSpot",
+      description: "Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Talent earns more. Clients pay less.",
       image: DEFAULT_OG_IMAGE,
       url: `${SITE}/`,
       ogType: "website",
@@ -503,7 +503,7 @@ export async function resolveOGMeta(
 
   // ── Generic fallback (all other routes) ──────────────────────────────────────
   return {
-    title: "OnSpot – Work Without Limits",
+    title: "Work Without Limits | OnSpot",
     description: DEFAULT_DESCRIPTION,
     image: DEFAULT_OG_IMAGE,
     url: `${SITE}${pathname}`,
