@@ -1099,7 +1099,7 @@ export default function FindWorkAllJobs() {
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {totalJobs}
+                  {totalJobs.toLocaleString()}
                 </span>{" "}
                 role{totalJobs !== 1 ? "s" : ""} found
                 {search && (

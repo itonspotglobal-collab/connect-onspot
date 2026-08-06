@@ -1,0 +1,299 @@
+Update the jobs result count so it shows the **total number of matching roles in the database**, not the number of roles currently displayed on the page.
+
+### Current problem
+
+The Find Work page currently shows:
+
+```text
+25 roles found
+```
+
+This appears to be using something like:
+
+```ts
+openJobs.length
+```
+
+or:
+
+```ts
+filtered.length
+```
+
+Because the API returns only 25 jobs per page, this incorrectly makes the result count look capped at 25.
+
+### Required behavior
+
+The text shown above the job results must represent the **full total number of matching open jobs**, regardless of pagination.
+
+Examples:
+
+If there are:
+
+```text
+25 total jobs
+```
+
+display:
+
+```text
+25 roles found
+```
+
+If there are:
+
+```text
+50 total jobs
+```
+
+display:
+
+```text
+50 roles found
+```
+
+If there are:
+
+```text
+137 total jobs
+```
+
+display:
+
+```text
+137 roles found
+```
+
+If there are:
+
+```text
+1,250 total jobs
+```
+
+display:
+
+```text
+1,250 roles found
+```
+
+There must be **no artificial limit on the total count**.
+
+The only limit should be the number of job cards displayed on one page:
+
+```ts
+const PAGE_SIZE = 25;
+```
+
+So:
+
+```text
+1,250 roles found
+
+Page 1:  jobs 1–25
+Page 2:  jobs 26–50
+Page 3:  jobs 51–75
+...
+Page 50: jobs 1226–1250
+```
+
+### Use API pagination metadata
+
+The existing jobs API returns pagination metadata similar to:
+
+```ts
+{
+  items: Job[],
+  meta: {
+    page: number,
+    pageSize: number,
+    total: number,
+    totalPages: number
+  }
+}
+```
+
+Use:
+
+```ts
+data.meta.total
+```
+
+for the displayed result count.
+
+For example:
+
+```ts
+const jobs = data?.items ?? [];
+const totalJobs = data?.meta?.total ?? 0;
+const totalPages = data?.meta?.totalPages ?? 1;
+```
+
+Then the UI should use:
+
+```tsx
+<span>
+  {totalJobs.toLocaleString()} {totalJobs === 1 ? "role" : "roles"} found
+</span>
+```
+
+Do NOT use:
+
+```ts
+jobs.length
+```
+
+for this count.
+
+Do NOT use:
+
+```ts
+filtered.length
+```
+
+unless `filtered` represents the complete server-side filtered dataset rather than only the current page.
+
+### Important distinction
+
+These are two different values:
+
+```text
+Total matching roles = unlimited database result count
+Jobs displayed per page = maximum 25
+```
+
+For example:
+
+```text
+842 roles found
+```
+
+while the current page still renders only:
+
+```text
+25 job cards
+```
+
+### Search and filters
+
+When filters/search are applied, the count should update to the total number of jobs matching those filters.
+
+Example:
+
+There are:
+
+```text
+1,250 total open roles
+```
+
+The user searches:
+
+```text
+Virtual Assistant
+```
+
+If 186 jobs match, show:
+
+```text
+186 roles found
+```
+
+Then paginate those 186 matches:
+
+```text
+Page 1 → 25
+Page 2 → 25
+...
+Page 8 → 11
+```
+
+The server should apply:
+
+```text
+open jobs
+↓
+search/filter
+↓
+sort
+↓
+COUNT total matching results
+↓
+paginate by 25
+↓
+return items + meta
+```
+
+The `meta.total` value must therefore represent the total **after search/filtering but before pagination**.
+
+### Pagination count
+
+Calculate pages from the full total:
+
+```ts
+totalPages = Math.ceil(totalJobs / 25);
+```
+
+Prefer using the API's existing:
+
+```ts
+data.meta.totalPages
+```
+
+if available.
+
+Examples:
+
+```text
+100 roles → 4 pages
+1,000 roles → 40 pages
+10,000 roles → 400 pages
+```
+
+There should be no maximum number of jobs represented by the count.
+
+### Large number pagination UI
+
+If there are hundreds of pages, do not render every page button.
+
+For example, on Page 1 of 400:
+
+```text
+Previous   1  2  3  ...  400   Next
+```
+
+Around Page 201:
+
+```text
+Previous   1  ...  200  201  202  ...  400   Next
+```
+
+### Acceptance tests
+
+Verify these cases:
+
+```text
+24 jobs
+→ "24 roles found"
+→ 1 page
+
+25 jobs
+→ "25 roles found"
+→ 1 page
+
+26 jobs
+→ "26 roles found"
+→ 2 pages
+
+50 jobs
+→ "50 roles found"
+→ 2 pages
+
+100 jobs
+→ "100 roles found"
+→ 4 pages
+
+1,000 jobs
+→ "1,000 roles found"
+→ 40 pages
+```
+
+The total displayed above the results must never incorrectly remain at `25` simply because only 25 cards are loaded on the current page.
