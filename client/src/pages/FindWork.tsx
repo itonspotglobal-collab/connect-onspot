@@ -33,7 +33,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo } from "@/lib/jobUtils";
 import {
   saveUserActivity,
   getTopUserInterests,
@@ -453,12 +453,9 @@ function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
             <p className="mt-1.5 text-sm text-slate-400">{role.hook}</p>
           </div>
 
-          <div className="relative mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5">
-            <DollarSign className="h-4 w-4 text-[#474ead]" />
+          <div className="relative mt-4 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5">
             <div>
-              <div className="text-[10px] text-white/40">
-                Monthly salary (PHP)
-              </div>
+              <div className="text-[10px] text-white/40">Monthly salary</div>
               <div className="text-sm font-bold text-white">{role.pay}</div>
             </div>
           </div>
@@ -740,7 +737,7 @@ function DbJobCard({
   job: Job;
   onNavigate: (id: string) => void;
 }) {
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplayWithCode(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const tags = (job.skillTags ?? []).slice(0, 4);
@@ -1114,7 +1111,7 @@ export default function OnSpotFindWorkRedesign() {
                       const role = item as Role;
 
                       const title = isDbJob ? job.title : role.title;
-                      const pay = isDbJob ? buildRateDisplay(job) : role.pay;
+                      const pay = isDbJob ? buildRateDisplayWithCode(job) : role.pay;
                       const shift = isDbJob
                         ? (job.contractType?.replace(/-/g, " ") ?? "Full-time")
                         : role.shift;

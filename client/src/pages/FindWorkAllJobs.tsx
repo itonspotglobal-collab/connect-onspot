@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Job, Candidate } from "@shared/schema";
 import {
   buildRateDisplay,
+  buildRateDisplayWithCode,
   getJobBadges,
   getTimeAgo,
   sortJobs,
@@ -168,7 +169,7 @@ function JobCard({
 }) {
   const [, navigate] = useLocation();
   const featured = (job as any).isFeatured === true;
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplayWithCode(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const allTags = (job.skillTags ?? []) as string[];

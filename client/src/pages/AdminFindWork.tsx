@@ -59,7 +59,7 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { JobFormModal } from "@/components/JobFormModal";
-import { getJobBadges, getTimeAgo, buildRateDisplay } from "@/lib/jobUtils";
+import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
 
 // ─── Badge icon map ───────────────────────────────────────────────────────────
 const BADGE_ICONS: Record<string, React.ElementType> = {
@@ -237,7 +237,7 @@ function AdminJobRow({
 }) {
   const badges = getJobBadges(job as any);
   const isOpen = job.status === "open";
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplayWithCode(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
   const approvalCfg = APPROVAL_CONFIG[approvalStatus] ?? APPROVAL_CONFIG.pending;
@@ -503,7 +503,7 @@ function PendingApprovalCard({
   isApproving: boolean;
   isRejecting: boolean;
 }) {
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplayWithCode(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const duplicates = findDuplicates(job, allJobs);
   const hasDuplicates = duplicates.length > 0;
@@ -1408,7 +1408,7 @@ export default function AdminFindWork() {
       {viewDetailJobId && (() => {
         const dj = enrichedJobs.find((j) => j.id === viewDetailJobId);
         if (!dj) return null;
-        const pay = buildRateDisplay(dj);
+        const pay = buildRateDisplayWithCode(dj);
         const dups = findDuplicates(dj, enrichedJobs);
         return (
           <Dialog open={!!viewDetailJobId} onOpenChange={(open) => { if (!open) setViewDetailJobId(null); }}>

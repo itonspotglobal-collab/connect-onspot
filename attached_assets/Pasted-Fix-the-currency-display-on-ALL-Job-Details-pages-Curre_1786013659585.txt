@@ -1,0 +1,96 @@
+Fix the currency display on ALL Job Details pages.
+
+Current problem:
+The Monthly Compensation card has a hard-coded "$" icon while the actual
+currency can be USD, PHP, or another supported currency.
+
+Example of the current bad UI:
+
+$   Monthly Compensation (USD)
+    USD 3,100 – 3,300/month
+
+This is redundant, and PHP jobs incorrectly still show "$".
+
+CHANGE IT TO:
+
+Monthly Compensation
+USD 3,100 – 3,300/month
+
+or:
+
+Monthly Compensation
+PHP 50,000 – 60,000/month
+
+Requirements:
+
+1. REMOVE the large "$" icon from the compensation card completely.
+
+2. Remove the currency from the label.
+   BAD:
+   "Monthly Compensation (USD)"
+
+   GOOD:
+   "Monthly Compensation"
+
+3. Keep the currency code attached to the actual amount:
+   USD 3,100 – 3,300/month
+   PHP 50,000 – 60,000/month
+
+4. The currency must come dynamically from the job's saved currency field.
+   Never hard-code USD, PHP, "$", or "₱".
+
+5. Keep our standardized monthly compensation format:
+   [CURRENCY] [AMOUNT]/month
+
+6. For ranges:
+   USD 3,100 – 3,300/month
+
+7. For single values:
+   PHP 50,000/month
+
+8. Apply this consistently across ALL connected job UI:
+   - Job Details
+   - Find Work / All Jobs
+   - job cards
+   - Featured Job cards
+   - job preview
+   - admin public-page preview
+   - any other component displaying compensation
+
+9. Search the codebase for hard-coded:
+   "$"
+   "USD"
+   "₱"
+   "/year"
+   "/month"
+
+   Do not blindly replace them. Determine whether each occurrence is
+   related to job compensation and update the shared formatter/component.
+
+10. Prefer ONE shared compensation formatter so all pages display salary
+    consistently.
+
+Example:
+
+formatCompensation({
+  currency: "USD",
+  min: 3100,
+  max: 3300
+})
+
+=> "USD 3,100 – 3,300/month"
+
+11. Do not modify the saved compensation values in the database just to
+    fix presentation.
+
+12. Preserve the existing dark hero design and spacing. After removing
+    the currency icon, realign the text so the compensation card remains
+    compact and balanced.
+
+After implementing, report:
+- files changed
+- where the hard-coded $ originated
+- shared formatter/component used
+- confirmation that both USD and PHP were tested
+- confirmation there are no hard-coded currency icons remaining in
+  job compensation UI

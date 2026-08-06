@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 
@@ -438,7 +438,7 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
     .map(({ job }) => job);
 }
 function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplayWithCode(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
 
@@ -549,10 +549,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot"}</p>
 
           {/* Compensation pill */}
-          <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
-            <DollarSign className="h-4 w-4 text-[#474ead]" />
+          <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <div>
-              <div className="text-[10px] text-white/40">Monthly Compensation ({currencyCode})</div>
+              <div className="text-[10px] text-white/40">Monthly Compensation</div>
               <div className="text-sm font-bold text-white">{pay}</div>
             </div>
           </div>
@@ -963,10 +962,9 @@ export default function FindWorkJob() {
           <p className="mt-2 text-base text-slate-400">{role.hook}</p>
 
           {/* Salary pill */}
-          <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
-            <DollarSign className="h-4 w-4 text-[#474ead]" />
+          <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <div>
-              <div className="text-[10px] text-white/40">Monthly salary (PHP)</div>
+              <div className="text-[10px] text-white/40">Monthly salary</div>
               <div className="text-sm font-bold text-white">{role.pay}</div>
             </div>
           </div>
