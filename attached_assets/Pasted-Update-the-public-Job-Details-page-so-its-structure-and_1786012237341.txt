@@ -1,0 +1,198 @@
+Update the public Job Details page so its structure and information hierarchy follows the uploaded `job-posting-template 1.html`.
+
+Primary page:
+- client/src/pages/FindWorkJob.tsx
+
+IMPORTANT:
+Do not copy the HTML literally.
+Translate the template into the existing React + Tailwind design system and preserve:
+- OnSpot branding
+- existing routes
+- Apply flow
+- dark mode
+- responsive layout
+- existing backend data
+
+Use the template as the STRUCTURAL reference.
+
+TARGET STRUCTURE
+
+1. HERO
+Keep the dark OnSpot hero.
+
+Display:
+- status / Urgently Hiring
+- posted age
+- Job Title
+- optional sub-role / alternate title if available
+- actual company name
+- Compensation
+- Location
+- Function
+- Contract / Engagement
+- Apply button
+
+Use compact cards like the template.
+
+2. ABOUT THE COMPANY
+Add a dedicated:
+`About the Company`
+
+This should display the company description if the project already stores it.
+
+If no company-description field exists:
+- do not fabricate content
+- inspect whether this should come from company/client profile data
+- only add a new field if necessary and update admin/API/database properly
+
+3. ABOUT THE ROLE
+Use the existing full Job Description as:
+`About the Role`
+
+Do not show the Card Preview Summary here.
+
+4. KEY RESPONSIBILITIES
+Rename/render the existing Responsibilities section as:
+`Key Responsibilities`
+
+Preserve bullet formatting.
+
+5. REQUIRED QUALIFICATIONS
+Use the existing required skills/requirements data for:
+`Required Qualifications`
+
+Do not mix preferred requirements here.
+
+6. PREFERRED QUALIFICATIONS
+If the project already supports optional/preferred qualifications, render:
+`Preferred Qualifications`
+
+If it does not exist:
+- do not invent data
+- leave the section absent unless a new field is intentionally added later
+
+7. REQUIRED TOOLS & EQUIPMENT
+Use:
+- Minimum Internet Speed
+- System Requirements
+- hardware/equipment fields
+
+Group them under:
+`Required Tools & Equipment`
+
+Examples:
+- Laptop/computer requirement
+- minimum internet speed
+- headset/webcam
+- quiet workspace
+- required software
+
+Only render values that actually exist.
+
+8. WORK SCHEDULE
+If job data already contains schedule fields, create:
+`Work Schedule`
+
+Potential values:
+- Days
+- Time Zone
+- Weekly Hours
+- Flexibility
+
+If these fields do not exist in the current model, do not fabricate them.
+
+9. COMPENSATION
+Create a dedicated Compensation section in the body in addition to the compact hero compensation card.
+
+Use the current standardized rule:
+- Monthly only
+- no Rate TBD
+
+Display available values like:
+- Currency
+- Monthly Rate
+- Commission
+- Equity
+- payment frequency only if supported
+
+Do not show annual/hourly/project-based formatting.
+
+10. WHAT WE OFFER
+Use existing:
+- Benefits
+- Commission
+- Equity
+- other perks
+
+Render this section as:
+`What We Offer`
+
+Keep Benefits separate conceptually from Additional Compensation, but they can appear together inside this broader section.
+
+11. CLOSING CTA
+Follow the template’s compact closing CTA style:
+
+- Ready to apply?
+- Apply Now / Submit Application
+- View all roles
+
+Do not copy “Submit Proposal” if the current product uses “Apply Now”.
+
+12. CONTRACTOR DISCLAIMER
+The uploaded template includes an independent-contractor disclaimer.
+
+Do NOT add this automatically unless the current business/legal requirements already use it.
+
+If an equivalent disclaimer already exists, preserve it.
+Otherwise do not invent legal copy.
+
+13. SIMILAR ROLES
+If the current page already supports related/similar jobs, render a compact:
+`Similar roles you might like`
+
+Do not create fake jobs.
+
+14. TYPOGRAPHY / SPACING
+Keep the current compact redesign:
+- body text around text-base / leading-7
+- section headings around text-xl md:text-2xl
+- moderate section spacing
+- max readable width
+- responsive layout
+
+15. CONDITIONAL RENDERING
+Every section must render only when it has actual data.
+
+Do not show empty headings/cards.
+
+16. DATA MAPPING AUDIT
+Before changing UI, map the current job fields to the new sections and report:
+- which existing fields map directly
+- which sections have no source data
+- whether any new schema fields would be required
+
+Do not silently repurpose unrelated fields.
+
+17. KEEP EXISTING FEATURES
+Preserve:
+- Featured
+- Urgently Hiring
+- Monthly salary
+- Commission
+- Equity
+- Benefits
+- Remote/Hybrid/Onsite
+- Function
+- Contract
+- posted date formatter
+- Apply flow
+- login flow
+- dark mode
+
+AFTER IMPLEMENTING
+Report:
+1. exact files changed
+2. field-to-section mapping used
+3. sections omitted due to missing data
+4. whether any new DB/API fields were required
+5. confirmation that the page follows the uploaded template’s structure without copying it literally

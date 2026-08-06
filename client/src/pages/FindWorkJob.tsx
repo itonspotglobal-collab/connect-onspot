@@ -442,48 +442,86 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
 
-  // Determine if this is a remote role (location stores the work setup value)
-  const isRemote = (job.location ?? "Remote").toLowerCase().includes("remote");
+  // ── Field extraction ───────────────────────────────────────────────────────
 
-  // ── JSP field extraction with fallbacks to legacy array fields ──────────
-  // Job Description: prefer JSP companyOverview + roleMission, else legacy description
+  // "About the Company" — JSP companyOverview is a company-context paragraph
   const companyOverview = (job as any).companyOverview as string | null | undefined;
-  const roleMission     = (job as any).roleMission     as string | null | undefined;
-  const hasJspDescription = !!(companyOverview?.trim() || roleMission?.trim());
 
-  // Responsibilities: prefer JSP keyResponsibilities, else legacy responsibilities array
-  const keyResponsibilities   = (job as any).keyResponsibilities   as string | null | undefined;
+  // "About the Role" — prefer JSP roleMission, fall back to legacy description
+  const roleMission = (job as any).roleMission as string | null | undefined;
+  const aboutTheRole = roleMission?.trim() || job.description?.trim() || "";
+
+  // "Key Responsibilities" — prefer JSP keyResponsibilities, else legacy array
+  const keyResponsibilities  = (job as any).keyResponsibilities as string | null | undefined;
   const legacyResponsibilities = (job.responsibilities ?? []) as string[];
 
-  // Skills Needed: prefer JSP skillsAndCompetencies, else legacy requirements array
+  // "Required Qualifications" — prefer JSP skillsAndCompetencies, else legacy array
   const skillsAndCompetencies = (job as any).skillsAndCompetencies as string | null | undefined;
   const legacyRequirements    = (job.requirements ?? []) as string[];
 
-  // Cultural Fit (unchanged — falls back to defaults)
+  // Cultural Fit — falls back to defaults if not set
   const culturalFit = ((job.culturalFit ?? []) as string[]).length > 0
     ? (job.culturalFit as string[])
     : CULTURAL_FIT_DEFAULTS;
 
-  // Remote-only requirement fields
+  // "Required Tools & Equipment"
   const minimumInternetSpeed = (job as any).minimumInternetSpeed as string | null | undefined;
   const systemRequirements   = (job as any).systemRequirements   as string | null | undefined;
+  const hasToolsSection = !!(minimumInternetSpeed?.trim() || systemRequirements?.trim());
+
+  // Compensation
+  const currencyCode = getEffectiveCurrencyCode((job as any).budgetCurrency, (job as any).customCurrencyCode);
+
+  // "What We Offer"
+  const benefitsStr = ((job as any).benefits as string | null | undefined)?.trim() ?? "";
+  const hasCommission = !!(job as any).hasCommission;
+  const hasEquity     = !!(job as any).hasEquity;
+  const hasWhatWeOffer = !!(benefitsStr || hasCommission || hasEquity);
 
   const tags = (job.skillTags ?? []) as string[];
+
+  // ── Apply button helper ────────────────────────────────────────────────────
+  function ApplyButton({ size = "default" }: { size?: "default" | "large" }) {
+    const px = size === "large" ? "px-10 py-2.5" : "px-7";
+    const cls = `rounded-full bg-[#474ead] ${px} text-white shadow-[0_8px_32px_rgba(71,78,173,0.20)] hover:bg-[#3d439c]`;
+    if ((job as any).applicationMethod === "built_in_form") {
+      return (
+        <Button className={cls} onClick={() => navigate(`/jobs/${job.id}/apply`)}>
+          Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    }
+    if (job.applyLink) {
+      return (
+        <Button className={cls} onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
+          Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    }
+    return (
+      <Button disabled variant="outline" className="rounded-full px-7">
+        Application link unavailable
+      </Button>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] dark:bg-[#060816] dark:text-white">
 
-      {/* Hero */}
+      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
         className="relative overflow-hidden bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#474ead]/25 blur-[90px]" />
         <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
         <div className="relative mx-auto max-w-5xl px-5 pb-8 pt-6 sm:px-6 md:pb-10 md:pt-8 lg:px-8">
+
+          {/* Back link */}
           <button onClick={() => navigate("/find-work/jobs")}
             className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to All Jobs
           </button>
 
+          {/* Status badges + posted age */}
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {(job as any).isFeatured && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3 py-1 text-[11px] font-bold text-amber-300 ring-1 ring-amber-300/30">
@@ -496,35 +534,35 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             {badges.length === 0 && (
               <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">Open</span>
             )}
-            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">{timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}</span>
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
+              {timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}
+            </span>
           </div>
 
+          {/* Job title + sub-role + company */}
           <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl">
             {(job as any).professionalRoleName || job.title}
           </h1>
           {(job as any).originalRoleName && (
-            <p className="mt-2 text-base italic text-slate-400">
-              {(job as any).originalRoleName}
-            </p>
+            <p className="mt-1.5 text-base italic text-slate-400">{(job as any).originalRoleName}</p>
           )}
           <p className="mt-2 text-base text-slate-400">{job.company ?? "OnSpot"}</p>
 
+          {/* Compensation pill */}
           <div className="mt-6 inline-flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <DollarSign className="h-4 w-4 text-[#474ead]" />
             <div>
-              <div className="text-[10px] text-white/40">
-                Compensation ({getEffectiveCurrencyCode((job as any).budgetCurrency, (job as any).customCurrencyCode)})
-              </div>
+              <div className="text-[10px] text-white/40">Monthly Compensation ({currencyCode})</div>
               <div className="text-sm font-bold text-white">{pay}</div>
             </div>
           </div>
 
-          {/* Location / Function / Contract */}
+          {/* Location / Function / Contract compact cards */}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
               { icon: MapPin,             label: "Location", value: job.location ?? "Remote" },
               { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
-              { icon: Layers,            label: "Contract", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
+              { icon: Layers,            label: "Engagement", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
                 <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>
@@ -533,65 +571,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             ))}
           </div>
 
-          {/* Benefits + Additional Compensation — flex row on desktop, stacked on mobile */}
-          {(((job as any).benefits as string | null | undefined)?.trim() || (job as any).hasCommission || (job as any).hasEquity) && (
-            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-start">
-
-              {/* Benefits — content-sized, not stretched */}
-              {((job as any).benefits as string | null | undefined)?.trim() && (
-                <div className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 lg:w-auto lg:min-w-[360px] lg:max-w-[620px]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/40">
-                    <Gift className="h-3 w-3" /> Benefits
-                  </div>
-                  <BenefitsDisplay benefits={((job as any).benefits as string).trim()} dark />
-                </div>
-              )}
-
-              {/* Additional Compensation — compact, content-sized */}
-              {((job as any).hasCommission || (job as any).hasEquity) && (
-                <div className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 lg:w-auto lg:min-w-[220px] lg:max-w-[320px]">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/40">
-                    <DollarSign className="h-3 w-3" /> Additional Compensation
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(job as any).hasCommission && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-medium text-emerald-200">
-                        Commission
-                      </span>
-                    )}
-                    {(job as any).hasEquity && (
-                      <span className="inline-flex items-center rounded-full bg-purple-400/15 px-3 py-1 text-xs font-medium text-purple-200">
-                        Equity
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          )}
-
+          {/* Apply button */}
           <div className="mt-6 flex gap-3">
-            {(job as any).applicationMethod === "built_in_form" ? (
-              <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
-                onClick={() => navigate(`/jobs/${job.id}/apply`)}>
-                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : job.applyLink ? (
-              <Button className="rounded-full bg-[#474ead] px-7 text-white hover:bg-[#3d439c]"
-                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
-                Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="rounded-full px-7">
-                Application link unavailable
-              </Button>
-            )}
+            <ApplyButton />
           </div>
         </div>
       </motion.div>
 
-      {/* Body */}
+      {/* ── BODY ─────────────────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -599,77 +586,76 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         className="mx-auto max-w-5xl"
       >
 
-        {/* Job Description — JSP (companyOverview + roleMission) or legacy description */}
-        {hasJspDescription ? (
+        {/* 1. About the Company — JSP companyOverview */}
+        {companyOverview?.trim() && (
           <Section
             icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
-            label="Job Description"
+            label="About the Company"
           >
-            {companyOverview?.trim() && (
-              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
-                {companyOverview.trim()}
-              </p>
-            )}
-            {roleMission?.trim() && (
-              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}${companyOverview?.trim() ? " mt-4" : ""}`}>
-                {roleMission.trim()}
-              </p>
-            )}
+            <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
+              {companyOverview.trim()}
+            </p>
           </Section>
-        ) : job.description ? (
-          <Section
-            icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
-            iconBg="bg-indigo-50 dark:bg-indigo-900/30"
-            label="Job Description"
-          >
-            <p className={`max-w-3xl ${contentTextClass}`}>{job.description}</p>
-          </Section>
-        ) : null}
+        )}
 
-        {/* Responsibilities — JSP keyResponsibilities or legacy array */}
+        {/* 2. About the Role — roleMission (JSP) or description (legacy) */}
+        {aboutTheRole && (
+          <Section
+            icon={<BriefcaseBusiness className="h-5 w-5 text-slate-500" />}
+            iconBg="bg-slate-100 dark:bg-white/[0.06]"
+            label="About the Role"
+          >
+            {isHtml(aboutTheRole) ? (
+              <div
+                className="prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-p:text-left sm:prose-p:text-justify prose-li:text-left sm:prose-li:text-justify prose-p:leading-7 prose-li:leading-7"
+                dangerouslySetInnerHTML={{ __html: aboutTheRole }}
+              />
+            ) : (
+              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>{aboutTheRole}</p>
+            )}
+          </Section>
+        )}
+
+        {/* 3. Key Responsibilities */}
         {keyResponsibilities?.trim() ? (
           <Section
             icon={<ListChecks className="h-5 w-5 text-blue-500" />}
             iconBg="bg-blue-50 dark:bg-blue-900/30"
-            label="Responsibilities"
+            label="Key Responsibilities"
           >
-            <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
-              {keyResponsibilities.trim()}
-            </p>
+            <SectionBody items={[keyResponsibilities.trim()]} bulletColor="bg-blue-400" />
           </Section>
         ) : legacyResponsibilities.length > 0 ? (
           <Section
             icon={<ListChecks className="h-5 w-5 text-blue-500" />}
             iconBg="bg-blue-50 dark:bg-blue-900/30"
-            label="Responsibilities"
+            label="Key Responsibilities"
           >
             <SectionBody items={legacyResponsibilities} bulletColor="bg-blue-400" />
           </Section>
         ) : null}
 
-        {/* Skills Needed — JSP skillsAndCompetencies or legacy requirements array */}
+        {/* 4. Required Qualifications */}
         {skillsAndCompetencies?.trim() ? (
           <Section
             icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
-            label="Skills Needed"
+            label="Required Qualifications"
           >
-            <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
-              {skillsAndCompetencies.trim()}
-            </p>
+            <SectionBody items={[skillsAndCompetencies.trim()]} bulletColor="bg-emerald-500" />
           </Section>
         ) : legacyRequirements.length > 0 ? (
           <Section
             icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
-            label="Skills Needed"
+            label="Required Qualifications"
           >
             <SectionBody items={legacyRequirements} bulletColor="bg-emerald-500" />
           </Section>
         ) : null}
 
-        {/* Cultural Fit */}
+        {/* 5. Cultural Fit */}
         <Section
           icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
           iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
@@ -678,35 +664,104 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
         </Section>
 
-        {/* System Requirements — combined compact grid */}
-        {(minimumInternetSpeed?.trim() || systemRequirements?.trim()) && (
+        {/* 6. Required Tools & Equipment */}
+        {hasToolsSection && (
           <Section
-            icon={<Monitor className="h-4 w-4 text-sky-500" />}
+            icon={<Monitor className="h-5 w-5 text-sky-500" />}
             iconBg="bg-sky-50 dark:bg-sky-900/30"
-            label="System Requirements"
+            label="Required Tools & Equipment"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               {minimumInternetSpeed?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <Wifi className="h-3.5 w-3.5" /> Internet Speed
+                    <Wifi className="h-3.5 w-3.5" /> Minimum Internet Speed
                   </div>
-                  <p className="text-left sm:text-justify text-sm leading-6 text-slate-700 dark:text-slate-300">{minimumInternetSpeed.trim()}</p>
+                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{minimumInternetSpeed.trim()}</p>
                 </div>
               )}
               {systemRequirements?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <Monitor className="h-3.5 w-3.5" /> Equipment
+                    <Monitor className="h-3.5 w-3.5" /> System & Equipment
                   </div>
-                  <p className="text-left sm:text-justify text-sm leading-6 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{systemRequirements.trim()}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">{systemRequirements.trim()}</p>
                 </div>
               )}
             </div>
           </Section>
         )}
 
-        {/* Skills & Tags */}
+        {/* 7. Compensation (body section) — monthly only, no annual/hourly */}
+        {pay && (
+          <Section
+            icon={<DollarSign className="h-5 w-5 text-emerald-500" />}
+            iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+            label="Compensation"
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Currency</div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{currencyCode}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monthly Rate</div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{pay}</p>
+              </div>
+              {(hasCommission || hasEquity) && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional</div>
+                  <div className="flex flex-wrap gap-2">
+                    {hasCommission && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+                        Commission
+                      </span>
+                    )}
+                    {hasEquity && (
+                      <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-400/15 dark:text-purple-300">
+                        Equity
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* 8. What We Offer — benefits + commission + equity */}
+        {hasWhatWeOffer && (
+          <Section
+            icon={<Gift className="h-5 w-5 text-purple-500" />}
+            iconBg="bg-purple-50 dark:bg-purple-900/30"
+            label="What We Offer"
+          >
+            {benefitsStr && (
+              <div className="mb-4">
+                <BenefitsDisplay benefits={benefitsStr} />
+              </div>
+            )}
+            {(hasCommission || hasEquity) && (
+              <div className={benefitsStr ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]" : ""}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional Compensation</p>
+                <div className="flex flex-wrap gap-2">
+                  {hasCommission && (
+                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+                      Commission
+                    </span>
+                  )}
+                  {hasEquity && (
+                    <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1.5 text-sm font-medium text-purple-700 dark:bg-purple-400/15 dark:text-purple-300">
+                      Equity
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </Section>
+        )}
+
+        {/* 9. Skills & Tags */}
         {tags.length > 0 && (
           <Section
             icon={<Tag className="h-5 w-5 text-slate-400" />}
@@ -726,34 +781,16 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         )}
 
-        {/* Similar roles strip */}
+        {/* 10. Similar roles */}
         <DbSimilarJobsSection currentJob={job} navigate={navigate} />
 
-        {/* Bottom CTA */}
-        <div className="border-t border-slate-100 px-5 py-8 text-center dark:border-white/[0.08] md:px-8 md:py-10">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to join?</p>
-          <h2 className="mb-3 text-2xl font-semibold text-slate-900 dark:text-white">Apply before this role fills.</h2>
-          <p className="mb-5 text-sm text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
+        {/* 11. Closing CTA */}
+        <div className="border-t border-slate-100 px-5 py-10 text-center dark:border-white/[0.08] md:px-8 md:py-12">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to apply?</p>
+          <h2 className="mb-3 text-2xl font-semibold text-slate-900 dark:text-white">Submit your application today.</h2>
+          <p className="mb-6 text-sm text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            {(job as any).applicationMethod === "built_in_form" ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
-                onClick={() => navigate(`/jobs/${job.id}/apply`)}
-              >
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : job.applyLink ? (
-              <Button
-                className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.25)] hover:bg-[#3d439c]"
-                onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}
-              >
-                Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button disabled variant="outline" className="rounded-full px-10">
-                Application link unavailable
-              </Button>
-            )}
+            <ApplyButton size="large" />
             <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
               <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
             </Button>
@@ -990,20 +1027,20 @@ export default function FindWorkJob() {
           <p className={`max-w-3xl ${contentTextClass}`}>{role.overview}</p>
         </Section>
 
-        {/* About this role */}
+        {/* About the Role */}
         <Section
           icon={<BriefcaseBusiness className="h-4 w-4 text-slate-500" />}
           iconBg="bg-slate-100 dark:bg-white/[0.06]"
-          label="About this role"
+          label="About the Role"
         >
           <p className={`max-w-3xl ${contentTextClass}`}>{role.description}</p>
         </Section>
 
-        {/* Responsibilities */}
+        {/* Key Responsibilities */}
         <Section
           icon={<ListChecks className="h-5 w-5 text-blue-500" />}
           iconBg="bg-blue-50 dark:bg-blue-900/30"
-          label="Responsibilities"
+          label="Key Responsibilities"
         >
           <ul className="space-y-2">
             {role.responsibilities.map((item, i) => (
@@ -1012,11 +1049,11 @@ export default function FindWorkJob() {
           </ul>
         </Section>
 
-        {/* Qualifications */}
+        {/* Required Qualifications */}
         <Section
           icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />}
           iconBg="bg-emerald-50 dark:bg-emerald-900/30"
-          label="Qualifications"
+          label="Required Qualifications"
         >
           <ul className="space-y-2">
             {role.qualifications.map((item, i) => (
@@ -1038,14 +1075,14 @@ export default function FindWorkJob() {
           </ul>
         </Section>
 
-        {/* Preferred skills */}
+        {/* Preferred Qualifications */}
         {role.preferredSkills.length > 0 && (
           <Section
             icon={<Award className="h-5 w-5 text-amber-500" />}
             iconBg="bg-amber-50 dark:bg-amber-900/30"
-            label="Preferred skills (nice to have)"
+            label="Preferred Qualifications"
           >
-            <ul className="space-y-4">
+            <ul className="space-y-2">
               {role.preferredSkills.map((item, i) => (
                 <BulletRow key={i} text={item} color="bg-amber-400" />
               ))}
@@ -1053,11 +1090,11 @@ export default function FindWorkJob() {
           </Section>
         )}
 
-        {/* Benefits */}
+        {/* What We Offer */}
         <Section
           icon={<Gift className="h-5 w-5 text-purple-500" />}
           iconBg="bg-purple-50 dark:bg-purple-900/30"
-          label="Benefits & perks"
+          label="What We Offer"
         >
           <ul className="space-y-2">
             {role.benefits.map((item, i) => (
