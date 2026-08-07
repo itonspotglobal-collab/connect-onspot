@@ -1,0 +1,718 @@
+Update the Jobs / Roles sorting behavior so important job postings, especially **Urgently Hiring** roles, do not get pushed down or disappear from the first page simply because newer normal roles are added.
+
+## Current problem
+
+The jobs list is currently heavily based on recency.
+
+When new roles are posted:
+
+```text
+new normal roles
+↓
+older roles move downward
+↓
+older urgent roles can be pushed to another page
+```
+
+This causes roles marked:
+
+```text
+URGENTLY HIRING
+```
+
+to lose visibility even though they are still actively urgent.
+
+We want urgent roles to remain prioritized near the top until their urgent status is removed, the job is closed, or another existing business rule makes them ineligible.
+
+Do NOT delete, duplicate, or artificially refresh their posted date.
+
+Change the sorting logic instead.
+
+---
+
+# Required sorting priority
+
+For the default job listing, use this priority:
+
+```text
+1. Urgently Hiring jobs
+2. Featured jobs
+3. Regular jobs
+```
+
+Within each group, sort by newest posting date first.
+
+Conceptually:
+
+```text
+URGENT + newest
+URGENT + older
+URGENT + oldest
+
+FEATURED + newest
+FEATURED + older
+
+REGULAR + newest
+REGULAR + older
+REGULAR + oldest
+```
+
+A new regular job must NOT automatically appear above an older urgent job.
+
+Example:
+
+Existing job:
+
+```text
+Delivery Manager
+Urgently Hiring
+Posted 8 days ago
+```
+
+New job:
+
+```text
+Virtual Assistant
+Not urgent
+Posted today
+```
+
+Expected:
+
+```text
+1. Delivery Manager — URGENTLY HIRING
+2. Virtual Assistant — posted today
+```
+
+NOT:
+
+```text
+1. Virtual Assistant
+2. Delivery Manager
+```
+
+---
+
+# Important: identify the real urgency field
+
+Inspect the project and determine exactly how the current UI decides to display the:
+
+```text
+Urgently Hiring
+```
+
+badge.
+
+Do NOT create a second unrelated urgency system.
+
+Look at:
+
+```text
+client/src/lib/jobUtils.ts
+client/src/pages/FindWorkAllJobs.tsx
+client/src/pages/AdminFindWork.tsx
+shared/schema
+server/routes.ts
+```
+
+Find the actual field/business rule used by:
+
+```ts
+getJobBadges(job)
+```
+
+For example, it might use something such as:
+
+```ts
+job.isUrgent
+job.urgent
+job.urgentlyHiring
+job.priority
+job.isFeatured
+```
+
+or another existing field.
+
+Reuse the real source of truth.
+
+---
+
+# Centralize the sort behavior
+
+Inspect:
+
+```text
+client/src/lib/jobUtils.ts
+```
+
+The project already has:
+
+```ts
+sortJobs(...)
+```
+
+Prefer implementing the priority in the central sorting utility rather than duplicating sorting logic across multiple pages.
+
+Create/reuse helper logic similar to:
+
+```ts
+function isUrgentJob(job: Job): boolean {
+  // use the project's REAL urgency rule
+}
+
+function isFeaturedJob(job: Job): boolean {
+  // use the project's REAL featured rule
+}
+```
+
+Then create a priority value:
+
+```ts
+function getJobPriority(job: Job): number {
+  if (isUrgentJob(job)) return 2;
+  if (isFeaturedJob(job)) return 1;
+  return 0;
+}
+```
+
+For the default "Recently Posted" ordering, sort approximately:
+
+```ts
+jobs.sort((a, b) => {
+  const priorityDiff =
+    getJobPriority(b) - getJobPriority(a);
+
+  if (priorityDiff !== 0) {
+    return priorityDiff;
+  }
+
+  return (
+    getJobDate(b).getTime() -
+    getJobDate(a).getTime()
+  );
+});
+```
+
+Use the project's actual job date field:
+
+```text
+postedAt
+createdAt
+```
+
+according to existing logic.
+
+Also use a deterministic ID tie-breaker if needed.
+
+---
+
+# Important interaction with "Recently Posted"
+
+The existing UI has sorting options such as:
+
+```text
+Recently Posted
+Most Applied
+In Demand
+Urgently Hiring
+Top Remote
+Featured
+```
+
+Do not break them.
+
+For the DEFAULT:
+
+```text
+Recently Posted
+```
+
+change the meaning slightly to:
+
+```text
+Priority roles first,
+then recency within priority group.
+```
+
+That means:
+
+```text
+Urgent roles remain visible
+while newer non-urgent jobs do not automatically overtake them.
+```
+
+---
+
+# "Urgently Hiring" sort option
+
+When the user explicitly clicks:
+
+```text
+Urgently Hiring
+```
+
+show urgent jobs first and preferably prioritize:
+
+```text
+urgent jobs by newest first
+```
+
+Then either:
+
+1. show only urgent roles, if that is the current intended behavior; or
+2. show urgent jobs first followed by other jobs.
+
+Preserve the existing UX intent unless there is a clear bug.
+
+---
+
+# Featured jobs
+
+If a job is BOTH:
+
+```text
+Urgent
+AND
+Featured
+```
+
+it should still be in the highest-priority urgent group.
+
+Recommended precedence:
+
+```text
+Urgent + Featured
+Urgent
+Featured
+Regular
+```
+
+If desired, implement explicit scoring:
+
+```ts
+function getJobPriorityScore(job: Job) {
+  let score = 0;
+
+  if (isFeaturedJob(job)) score += 1;
+  if (isUrgentJob(job)) score += 2;
+
+  return score;
+}
+```
+
+This would produce:
+
+```text
+Urgent + Featured = 3
+Urgent            = 2
+Featured          = 1
+Regular           = 0
+```
+
+Then sort descending by score.
+
+---
+
+# Very important: apply sorting BEFORE pagination
+
+The correct backend flow must be:
+
+```text
+all matching open jobs
+↓
+filters/search
+↓
+priority sorting
+↓
+calculate total
+↓
+paginate 25 per page
+```
+
+Do NOT do:
+
+```text
+take 25 newest jobs
+↓
+then move urgent jobs within those 25
+```
+
+because an older urgent role outside those first 25 would still be lost from Page 1.
+
+Example:
+
+There are:
+
+```text
+100 open jobs
+```
+
+and one urgent job is currently the 40th newest.
+
+The system must first recognize it as urgent and move it near the top BEFORE selecting Page 1.
+
+Expected:
+
+```text
+Urgent job appears on Page 1
+```
+
+not:
+
+```text
+Urgent job remains hidden on Page 2
+because pagination happened before sorting
+```
+
+This is critical.
+
+---
+
+# Prefer server-side sorting
+
+Because the Jobs page now supports potentially:
+
+```text
+100
+1,000
+10,000+
+```
+
+roles, do NOT fetch every job into the frontend merely to prioritize urgent roles.
+
+Implement priority ordering in:
+
+```text
+GET /api/jobs/search
+```
+
+where practical.
+
+The server query should behave conceptually like:
+
+```sql
+SELECT *
+FROM jobs
+WHERE status = 'open'
+ORDER BY
+  urgent_flag DESC,
+  featured_flag DESC,
+  posted_at DESC,
+  id DESC
+LIMIT 25
+OFFSET ...;
+```
+
+Use the project's actual column names.
+
+If urgency is calculated rather than stored as a simple column, reproduce the existing business rule safely in the query/service layer or provide a consistent sortable field.
+
+---
+
+# Total count must remain unaffected
+
+Priority sorting must NOT change:
+
+```text
+total roles found
+```
+
+Example:
+
+```text
+100 open jobs
+12 urgent
+8 featured
+80 regular
+```
+
+UI must still show:
+
+```text
+100 roles found
+```
+
+Pagination remains:
+
+```text
+25 per page
+4 pages
+```
+
+Sorting only controls which records appear earlier.
+
+---
+
+# Example with 30 jobs
+
+Suppose there are:
+
+```text
+30 open roles
+```
+
+including:
+
+```text
+3 urgent
+2 featured
+25 regular
+```
+
+Expected Page 1:
+
+```text
+Urgent Job A
+Urgent Job B
+Urgent Job C
+
+Featured Job A
+Featured Job B
+
+20 newest regular jobs
+```
+
+Page 2:
+
+```text
+remaining 5 regular jobs
+```
+
+If a new REGULAR job is posted:
+
+```text
+Urgent jobs remain at top
+Featured jobs remain ahead of regular jobs
+new regular job becomes first within regular group
+```
+
+---
+
+# Example with many urgent jobs
+
+If there are:
+
+```text
+40 urgent roles
+```
+
+do NOT force all 40 onto Page 1.
+
+Pagination remains 25.
+
+Expected:
+
+```text
+Page 1:
+25 highest-priority urgent roles
+
+Page 2:
+remaining 15 urgent roles
+then featured/regular roles
+```
+
+This avoids breaking pagination.
+
+---
+
+# Do not permanently pin stale/closed roles
+
+An urgent role should remain prioritized only while it is eligible to appear.
+
+If:
+
+```text
+status = closed
+cancelled
+rejected
+not approved
+```
+
+or whatever existing public visibility rules apply, it must not stay pinned.
+
+Priority sorting must happen AFTER visibility filters such as:
+
+```text
+open
+approved
+publicly visible
+```
+
+have been applied.
+
+---
+
+# Admin page behavior
+
+Also update the Admin Jobs listing if desired so admins can clearly see priority jobs near the top.
+
+For:
+
+```text
+/admin/find-work
+```
+
+recommended default ordering:
+
+```text
+Urgent first
+Featured next
+Newest normal jobs next
+```
+
+However, do NOT let priority sorting interfere with explicit admin tabs such as:
+
+```text
+Pending Approval
+Approved
+Declined
+```
+
+Filter the selected tab first, then sort the jobs within that tab.
+
+---
+
+# Do not manipulate dates
+
+Do NOT solve this by automatically changing:
+
+```text
+postedAt
+createdAt
+```
+
+of urgent jobs.
+
+Do NOT call the existing "Refresh" functionality automatically.
+
+An urgent role posted 10 days ago should remain:
+
+```text
+Posted 10 days ago
+```
+
+while still appearing near the top because its priority is urgent.
+
+Priority and recency are separate concepts.
+
+---
+
+# Acceptance test
+
+Create these jobs in this order:
+
+```text
+Job A
+Regular
+10 days ago
+
+Job B
+URGENT
+8 days ago
+
+Job C
+Featured
+5 days ago
+
+Job D
+Regular
+today
+```
+
+Default expected order:
+
+```text
+1. Job B — URGENT
+2. Job C — FEATURED
+3. Job D — Regular, today
+4. Job A — Regular, 10 days ago
+```
+
+Now add:
+
+```text
+Job E
+Regular
+just posted
+```
+
+Expected:
+
+```text
+1. Job B — URGENT
+2. Job C — FEATURED
+3. Job E — Regular, just posted
+4. Job D — Regular
+5. Job A — Regular
+```
+
+Job B must NOT be pushed below the new regular job.
+
+---
+
+# Pagination acceptance test
+
+Create:
+
+```text
+50 jobs
+```
+
+with:
+
+```text
+5 urgent
+5 featured
+40 regular
+```
+
+Expected:
+
+```text
+50 roles found
+2 pages
+```
+
+Page 1 starts with:
+
+```text
+all 5 urgent roles
+then all 5 featured roles
+then 15 newest regular roles
+```
+
+Page 2:
+
+```text
+remaining 25 regular roles
+```
+
+Now add 20 new REGULAR roles.
+
+Expected:
+
+```text
+70 roles found
+3 pages
+```
+
+The urgent roles should still remain at the top of Page 1.
+
+They must not get "booted out" just because newer regular roles were added.
+
+---
+
+# Final report required
+
+After implementation, report:
+
+1. Exact field/rule currently used to determine "Urgently Hiring".
+2. Exact field/rule used for "Featured".
+3. Files changed.
+4. Whether sorting was implemented server-side or client-side.
+5. Confirm priority sorting occurs BEFORE pagination.
+6. Confirm urgent roles remain ahead of newer regular roles.
+7. Confirm featured roles remain ahead of regular roles.
+8. Confirm total counts/pagination remain correct.
+9. Confirm dates were NOT modified to fake recency.
+10. Confirm closed/non-public urgent jobs do not remain pinned.

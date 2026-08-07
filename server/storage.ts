@@ -3075,12 +3075,20 @@ export class DbStorage extends MemStorage {
     const total: number = countRow?.total ?? 0;
 
     // ── Query 2: Page data (LIMIT/OFFSET) ─────────────────────────────────────
-    // Deterministic sort: newest first, then by id to prevent ties shuffling pages.
+    // Priority sort: urgent (2) > featured (1) > normal (0), then newest first, then id.
+    // This must happen BEFORE LIMIT/OFFSET so urgent jobs on page 40 bubble to page 1.
+    const priorityExpr = sqlOp<number>`
+      CASE
+        WHEN ${jobsTable.urgentlyHiring} = TRUE AND ${jobsTable.isFeatured} = TRUE THEN 3
+        WHEN ${jobsTable.urgentlyHiring} = TRUE THEN 2
+        WHEN ${jobsTable.isFeatured}      = TRUE THEN 1
+        ELSE 0
+      END`;
     const items = await db
       .select()
       .from(jobsTable)
       .where(whereClause)
-      .orderBy(desc(jobsTable.createdAt), desc(jobsTable.id))
+      .orderBy(desc(priorityExpr), desc(jobsTable.createdAt), desc(jobsTable.id))
       .limit(pageSize)
       .offset(offset);
 

@@ -222,6 +222,29 @@ export function getJobBadges(job: {
   return badges;
 }
 
+// ── Priority helpers ──────────────────────────────────────────────────────────
+
+/** True if the job should show the "Urgently Hiring" badge. Single source of truth. */
+export function isUrgentJob(job: any): boolean {
+  return job.urgentlyHiring === true;
+}
+
+/** True if the job is featured. Single source of truth. */
+export function isFeaturedJob(job: any): boolean {
+  return job.isFeatured === true;
+}
+
+/**
+ * Priority score: Urgent+Featured=3, Urgent=2, Featured=1, Normal=0.
+ * Matches the CASE WHEN expression used server-side in searchJobsPaginated.
+ */
+export function getJobPriorityScore(job: any): number {
+  let score = 0;
+  if (isFeaturedJob(job)) score += 1;
+  if (isUrgentJob(job))   score += 2;
+  return score;
+}
+
 // ── Sort Engine ───────────────────────────────────────────────────────────────
 
 export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
@@ -239,11 +262,24 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
       .sort((a, b) => toMs(b) - toMs(a));
   }
 
+  // "recently-posted": priority-first (urgent > featured > normal), then recency within group.
+  // Server-side searchJobsPaginated applies the same ordering before pagination, so this
+  // client-side pass keeps per-page display consistent without re-fetching.
+  if (sortBy === "recently-posted") {
+    return list.sort((a, b) => {
+      const priorityDiff = getJobPriorityScore(b) - getJobPriorityScore(a);
+      if (priorityDiff !== 0) return priorityDiff;
+      const dateDiff = toMs(b) - toMs(a);
+      if (dateDiff !== 0) return dateDiff;
+      return (b.id ?? "").localeCompare(a.id ?? "");
+    });
+  }
+
   // All other sorts: compute order first, then float isFeatured jobs to the top
   // while preserving relative order within each group.
   let sorted: any[];
   switch (sortBy) {
-    case "recently-posted":
+    case "recently-posted": // unreachable — handled above, kept for exhaustive switch
       sorted = list.sort((a, b) => toMs(b) - toMs(a));
       break;
 

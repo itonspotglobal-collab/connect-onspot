@@ -5065,6 +5065,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filtered = enriched.filter((j: any) => j.approvalStatus === "rejected" || j.approvalStatus === "linked_to_existing");
       }
 
+      // Priority sort within each tab: urgent (2) > featured (1) > normal (0), then newest first.
+      // Must happen BEFORE pageSlice so priority jobs bubble to page 1, not stay buried on page N.
+      const getPriority = (j: any) => (j.urgentlyHiring ? 2 : 0) + (j.isFeatured ? 1 : 0);
+      filtered = [...filtered].sort((a, b) => {
+        const pd = getPriority(b) - getPriority(a);
+        if (pd !== 0) return pd;
+        const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bt - at;
+      });
+
       const { items, meta } = pageSlice(filtered, page, pageSize);
       res.json({ items, meta, stats });
     } catch (error) {
