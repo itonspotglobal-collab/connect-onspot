@@ -119,6 +119,10 @@ function LegalOpsImmersive() {
 function PublicRouter() {
   const { isAuthenticated, user } = useAuth();
   const [location] = useLocation();
+  // TEMPORARY DEV BYPASS: Admin authentication disabled for testing.
+  // Restore AdminProtectedRoute before production by setting VITE_BYPASS_ADMIN_AUTH=false
+  // or removing the env var.
+  const bypassAdminAuth = import.meta.env.VITE_BYPASS_ADMIN_AUTH === "true";
   const hideTopNav =
     location === "/why-onspot/about" ||
     location === "/insights" ||
@@ -194,15 +198,15 @@ function PublicRouter() {
           <Route path="/admin/insights" component={AdminInsights} />
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
-          {/* Admin routes — protected: requires role === "admin" and valid JWT */}
-          <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-          <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
-          <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
-          <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
-          <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
-          <Route path="/admin/email-templates/:id/edit" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
-          <Route path="/admin/image-uploader" component={() => <AdminProtectedRoute><AdminImageUploader /></AdminProtectedRoute>} />
-          <Route path="/admin/inquiries" component={() => <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
+          {/* Admin routes — protected when VITE_BYPASS_ADMIN_AUTH is not "true" */}
+          <Route path="/admin/dashboard" component={() => bypassAdminAuth ? <AdminDashboard /> : <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/find-work" component={() => bypassAdminAuth ? <AdminFindWork /> : <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
+          <Route path="/admin/job-applications" component={() => bypassAdminAuth ? <AdminJobApplications /> : <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates" component={() => bypassAdminAuth ? <AdminEmailTemplates /> : <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates/create" component={() => bypassAdminAuth ? <AdminEmailTemplateEditor /> : <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates/:id/edit" component={() => bypassAdminAuth ? <AdminEmailTemplateEditor /> : <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/image-uploader" component={() => bypassAdminAuth ? <AdminImageUploader /> : <AdminProtectedRoute><AdminImageUploader /></AdminProtectedRoute>} />
+          <Route path="/admin/inquiries" component={() => bypassAdminAuth ? <AdminInquiries /> : <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

@@ -8874,11 +8874,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Temporary admin-auth bypass ────────────────────────────────────────────
+  // Set BYPASS_ADMIN_AUTH=true in the environment to skip admin auth on all
+  // job-application endpoints. Intended for development/testing ONLY.
+  // To restore full protection, remove the env var or set it to false.
+  const BYPASS_ADMIN_AUTH = process.env.BYPASS_ADMIN_AUTH === "true";
+  const maybeAuthenticateAdmin = BYPASS_ADMIN_AUTH
+    ? (_req: Request, _res: Response, next: NextFunction) => next()
+    : authenticateAdminFlexible;
+  if (BYPASS_ADMIN_AUTH) {
+    console.warn("⚠️  BYPASS_ADMIN_AUTH=true — admin job-application endpoints are UNPROTECTED");
+  }
+
   // GET /api/admin/job-applications/summary — status counts (admin only)
   // NOTE: must be registered BEFORE the :applicationId route to avoid Express
   //       matching the literal string "summary" as a URL parameter.
-  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
-  app.get("/api/admin/job-applications/summary", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/summary", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
 
       const [byStatus, byReg, total] = await Promise.all([
@@ -8907,7 +8918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications — paginated list with search/filter/sort (admin only)
-  app.get("/api/admin/job-applications", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
 
       const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),   10));
@@ -9005,7 +9016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId — full detail with history (admin only)
-  app.get("/api/admin/job-applications/:applicationId", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
 
       const { applicationId } = req.params;
@@ -9063,7 +9074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId/resume — proxy CV from object storage (admin only)
-  app.get("/api/admin/job-applications/:applicationId/resume", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       const disposition = (req.query.download === "1") ? "attachment" : "inline";
@@ -9100,7 +9111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/admin/job-applications/:applicationId/resume — upload a CV on behalf of an application (admin only)
   // Used when an application was submitted before CV upload was required and resume_url is NULL.
-  app.post("/api/admin/job-applications/:applicationId/resume", authenticateAdminFlexible, upload.single("resume"), async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, upload.single("resume"), async (req: any, res: Response) => {
     try {
       const { applicationId } = req.params;
 
@@ -9153,9 +9164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
-  app.patch("/api/admin/job-applications/:applicationId/status", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.patch("/api/admin/job-applications/:applicationId/status", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
-      const changedBy: string = (req as any).user.id;
+      const changedBy: string | null = (req as any).user?.id ?? null;
 
       const { applicationId } = req.params;
       const { status, note } = req.body ?? {};
@@ -9196,7 +9207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/admin/job-applications/:applicationId — delete a single application submission (admin only)
-  app.delete("/api/admin/job-applications/:applicationId", authenticateAdminFlexible, async (req: Request, res: Response) => {
+  app.delete("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       if (!applicationId) return res.status(400).json({ error: "applicationId is required" });

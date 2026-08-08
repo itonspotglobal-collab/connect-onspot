@@ -1,0 +1,357 @@
+DISABLE ADMIN AUTHENTICATION FOR TESTING
+
+We currently cannot access /admin/job-applications because admin authentication was restored, but the current admin login flow is not ready for testing.
+
+For now, temporarily disable admin authentication so we can test:
+
+/admin/job-applications
+
+Application Details
+
+View Resume
+
+Download Resume
+
+View Talent Profile
+
+IMPORTANT:This is temporary development behavior only.
+
+Do NOT redesign the auth system.Do NOT delete authentication code.Do NOT remove existing middleware/helpers permanently.Make the bypass easy to revert later.
+
+Allow the Admin Job Applications page and its related APIs to work without requiring an admin login FOR NOW.
+
+This includes resume viewing/downloading.
+
+Current problem:
+
+Frontend admin route requires auth.
+
+Resume endpoint also requires auth:
+
+GET /api/admin/job-applications/:id/resume
+
+Therefore simply removing AdminProtectedRoute is not enough.
+
+The frontend page AND relevant backend admin job-application endpoints must use the same temporary bypass.
+
+In:
+
+client/src/App.tsx
+
+Allow:
+
+/admin/job-applications
+
+to render directly again.
+
+Example:
+
+
+
+Do not wrap it in AdminProtectedRoute for now.
+
+Also keep related pages accessible if needed for this feature:
+
+/admin/dashboard/admin/find-work
+
+Only change what is necessary for testing.
+
+Add a clear comment:
+
+// TEMPORARY DEV BYPASS:// Admin authentication disabled for testing.// Restore AdminProtectedRoute before production.
+
+Inspect the admin job-application routes in:
+
+server/routes.ts
+
+Temporarily remove/skip admin auth middleware ONLY for the job-application endpoints needed by this page.
+
+Likely routes include:
+
+GET /api/admin/job-applicationsGET /api/admin/job-applications/summaryGET /api/admin/job-applications/:idGET /api/admin/job-applications/:id/resumePATCH /api/admin/job-applications/:id/statusDELETE /api/admin/job-applications/:id
+
+and any job-application email endpoint used by the page.
+
+For now, make them callable without JWT.
+
+Do NOT delete the middleware implementation.
+
+Prefer a centralized temporary flag such as:
+
+const BYPASS_ADMIN_AUTH =process.env.NODE_ENV === "development";
+
+or preferably an explicit env flag:
+
+const BYPASS_ADMIN_AUTH =process.env.BYPASS_ADMIN_AUTH === "true";
+
+Then conditionally bypass auth.
+
+Example concept:
+
+const maybeRequireAdmin =BYPASS_ADMIN_AUTH? (_req, _res, next) => next(): requireAdmin;
+
+Then use:
+
+app.get("/api/admin/job-applications/:id/resume",maybeRequireAdmin,handler);
+
+This is better than manually deleting auth middleware from many routes.
+
+The Resume / CV endpoint MUST now work without login while this temporary bypass is enabled.
+
+Current failure:
+
+401 Unauthorized
+
+Expected during bypass:
+
+GET /api/admin/job-applications/:id/resume→ 200
+
+The existing resume retrieval logic must remain unchanged.
+
+It should still:
+
+Find the job submission.
+
+Resolve application-specific resume first.
+
+Fall back to linked Talent/Candidate resume if needed.
+
+Retrieve the stored file.
+
+Return the binary file.
+
+Preserve the correct filename and MIME type.
+
+Do NOT expose raw object-storage URLs.
+
+Keep using the controlled endpoint:
+
+/api/admin/job-applications/:id/resume
+
+Because auth is temporarily bypassed, the frontend resume request should not require a token.
+
+Update the resume helper so Authorization is optional:
+
+async function fetchResume(applicationId: string) {const token =localStorage.getItem("onspot_jwt_token");
+
+const response = await fetch(/api/admin/job-applications/${applicationId}/resume,{headers: {...(token? { Authorization: Bearer ${token} }: {}),},});
+
+if (!response.ok) {throw new Error(Unable to load resume (${response.status}));}
+
+return response.blob();}
+
+Do NOT throw:
+
+"Please log in to perform this action"
+
+just because no JWT exists.
+
+While the temporary auth bypass is enabled, no JWT should be required.
+
+View must still use fetch + Blob.
+
+Do not navigate directly to an internal storage URL.
+
+Example:
+
+const previewWindow =window.open("", "_blank");
+
+try {const blob =await fetchResume(detail.id);
+
+const objectUrl =URL.createObjectURL(blob);
+
+if (!previewWindow) {throw new Error("Popup blocked. Use Download instead.");}
+
+previewWindow.location.href =objectUrl;
+
+setTimeout(() => URL.revokeObjectURL(objectUrl),60000);} catch (error) {previewWindow?.close();...}
+
+For PDFs, browser preview should open.
+
+Download should also work without authentication.
+
+Use:
+
+const blob =await fetchResume(detail.id);
+
+const objectUrl =URL.createObjectURL(blob);
+
+const a =document.createElement("a");
+
+a.href = objectUrl;
+
+a.download =detail.resumeFileName || "resume";
+
+document.body.appendChild(a);
+
+a.click();a.remove();
+
+URL.revokeObjectURL(objectUrl);
+
+Even though admin auth is temporarily bypassed:
+
+DO NOT expose:
+
+S3/object storage bucket credentials
+
+Replit object storage internals
+
+filesystem paths
+
+database paths
+
+signed credentials
+
+private storage URLs
+
+The frontend should continue using:
+
+/api/admin/job-applications/:id/resume
+
+The server remains responsible for retrieving the file.
+
+Add a small development-only notice somewhere on /admin/job-applications:
+
+"Admin authentication is temporarily disabled for development."
+
+Only show it when:
+
+BYPASS_ADMIN_AUTH is enabled
+
+or when a matching frontend env variable is enabled.
+
+Keep it subtle.
+
+This helps prevent forgetting that the page is unsecured.
+
+Do not rely on manually changing:
+
+users.role
+
+from talent → admin in the database.
+
+That can fail because the app may also depend on:
+
+JWT role claims
+
+AuthContext state
+
+session state
+
+role-specific profile data
+
+cached login data
+
+The temporary bypass should make manual DB role changes unnecessary.
+
+This bypass must be explicitly temporary.
+
+Preferred configuration:
+
+BYPASS_ADMIN_AUTH=true
+
+in development.
+
+Default:
+
+false
+
+If the env variable is absent:
+
+admin authentication should remain enabled.
+
+Do NOT default the bypass to true in production.
+
+Example:
+
+const BYPASS_ADMIN_AUTH =process.env.BYPASS_ADMIN_AUTH === "true";
+
+NOT:
+
+process.env.NODE_ENV !== "production"
+
+if that could accidentally expose a staging deployment.
+
+Use an explicit flag.
+
+With:
+
+BYPASS_ADMIN_AUTH=true
+
+Open:
+
+/admin/job-applications
+
+without logging in.
+
+EXPECTED:Page loads.
+
+Open Application Details.
+
+EXPECTED:Application data loads.
+
+Click View CV.
+
+EXPECTED:
+
+GET /api/admin/job-applications/:id/resume
+
+returns:
+
+200
+
+No JWT required.
+
+PDF opens.
+
+Click Download.
+
+EXPECTED:File downloads with the correct filename.
+
+View linked Talent Profile.
+
+EXPECTED:Works without redirecting to login.
+
+Confirm there is no:
+
+401 Unauthorized
+
+for the resume endpoint.
+
+Confirm no toast:
+
+"Please log in to perform this action"
+
+Set:
+
+BYPASS_ADMIN_AUTH=false
+
+or remove the env variable.
+
+Then verify:
+
+protected admin behavior returns;
+
+unauthenticated admin APIs return 401/403;
+
+no code rewrite is required.
+
+Implement this temporary development bypass now.
+
+At completion report:
+
+env flag added
+
+frontend routes bypassed
+
+backend middleware bypassed
+
+resume endpoint status with bypass enabled
+
+View result
+
+Download result
+
+how to turn admin auth back on
+
+Do not remove the auth system permanently.

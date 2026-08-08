@@ -291,7 +291,8 @@ function DetailDialog({
     setCvOpening("view");
     try {
       const token = localStorage.getItem("onspot_jwt_token");
-      if (!token) {
+      const bypassAuth = import.meta.env.VITE_BYPASS_ADMIN_AUTH === "true";
+      if (!token && !bypassAuth) {
         previewWindow?.close();
         toast({
           title: "Admin session expired",
@@ -301,7 +302,7 @@ function DetailDialog({
         return;
       }
       const response = await fetch(`/api/admin/job-applications/${applicationId}/resume`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (response.status === 401 || response.status === 403) {
         previewWindow?.close();
@@ -857,6 +858,14 @@ export default function AdminJobApplications() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <TopNavigation />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+
+        {/* Dev-only bypass notice */}
+        {import.meta.env.VITE_BYPASS_ADMIN_AUTH === "true" && (
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700 flex items-center gap-2">
+            ⚠️ Admin authentication is temporarily disabled for development testing.
+            Set <code className="font-mono bg-amber-100 px-1 rounded">VITE_BYPASS_ADMIN_AUTH=false</code> to re-enable before production.
+          </div>
+        )}
 
         {/* Header */}
         <div className="mb-6">
