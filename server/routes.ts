@@ -9035,7 +9035,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
-           LEFT JOIN candidates c ON u.email IS NOT NULL AND LOWER(c.email) = LOWER(u.email)
+           -- Candidate lookup: prefer user-linked email, fall back to application email (covers pending_login).
+           -- LATERAL + LIMIT 1 avoids duplicate rows when multiple candidate rows share an email;
+           -- profile_completed DESC picks the most complete profile deterministically.
+           LEFT JOIN LATERAL (
+             SELECT id, resume_url, resume_file_name
+             FROM candidates
+             WHERE COALESCE(u.email, js.email) IS NOT NULL
+               AND LOWER(email) = LOWER(COALESCE(u.email, js.email))
+             ORDER BY profile_completed DESC NULLS LAST, updated_at DESC NULLS LAST
+             LIMIT 1
+           ) c ON true
            WHERE js.id = $1`,
           [applicationId],
         ),
@@ -9085,7 +9095,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName"
          FROM job_submissions js
          LEFT JOIN users u ON u.id = js.talent_id
-         LEFT JOIN candidates c ON u.email IS NOT NULL AND LOWER(c.email) = LOWER(u.email)
+         -- Same LATERAL pattern: email fallback for pending_login applications, deduplicated.
+         LEFT JOIN LATERAL (
+           SELECT resume_url, resume_file_name
+           FROM candidates
+           WHERE COALESCE(u.email, js.email) IS NOT NULL
+             AND LOWER(email) = LOWER(COALESCE(u.email, js.email))
+           ORDER BY profile_completed DESC NULLS LAST, updated_at DESC NULLS LAST
+           LIMIT 1
+         ) c ON true
          WHERE js.id = $1`,
         [applicationId],
       );

@@ -433,7 +433,7 @@ function DetailDialog({
                         <p className="text-xs text-slate-400">
                           {detail.resumeSource === "application"
                             ? "Submitted with application"
-                            : "From Talent Profile"}
+                            : "Uploaded during Find Best Matches"}
                         </p>
                       )}
                     </div>
@@ -466,8 +466,8 @@ function DetailDialog({
                       <FileText className="h-4 w-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-600">No CV attached</p>
-                      <p className="text-xs text-slate-400">This application was submitted before CV upload was required.</p>
+                      <p className="text-sm font-medium text-slate-600">No CV available for this applicant.</p>
+                      <p className="text-xs text-slate-400">No resume was submitted with this application, and no Find Best Matches CV was found.</p>
                     </div>
                     <div className="shrink-0">
                       <input

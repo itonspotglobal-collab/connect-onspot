@@ -1,0 +1,418 @@
+Enhance the existing Admin Job Applications Resume / CV functionality.
+
+GOAL:
+
+For applicants who already have an OnSpot Talent account / Candidate Profile, I want Admin Application Details to also retrieve the resume/CV they originally uploaded during the Find Best Matches setup.
+
+This applies especially when the job application itself does NOT have a resume attached.
+
+==================================================
+CURRENT DATA MODEL
+==================================================
+
+The codebase already has two possible resume sources:
+
+1. Job-specific application resume:
+
+job_submissions.resume_url
+job_submissions.resume_file_name
+
+2. Candidate / Find Best Matches resume:
+
+candidates.resume_url
+candidates.resume_file_name
+
+The candidates table is used by the Find Best Matches / Candidate Profile flow.
+
+DO NOT create another resume table or duplicate storage system.
+
+==================================================
+RESUME PRIORITY
+==================================================
+
+For Admin Application Details use this exact priority:
+
+FIRST:
+Resume uploaded with this specific job application.
+
+Use:
+
+job_submissions.resume_url
+job_submissions.resume_file_name
+
+SECOND:
+If the application has no resume, find the linked Talent/Candidate profile and use:
+
+candidates.resume_url
+candidates.resume_file_name
+
+THIRD:
+If neither exists:
+
+show:
+
+"No CV available for this applicant."
+
+==================================================
+EXISTING TALENT ACCOUNT MAPPING
+==================================================
+
+This is the important part.
+
+job_submissions currently contains:
+
+talent_id
+
+That may reference users.id.
+
+Find Best Matches candidate data lives in:
+
+candidates
+
+Inspect the current account-creation/linking flow and determine how:
+
+users
+talent account
+candidate profile
+
+are connected.
+
+Do NOT guess candidate IDs on the frontend.
+
+Resolve the candidate server-side.
+
+Preferred mapping order:
+
+1. If there is already an explicit user/candidate relationship in the database, use it.
+
+2. If the current architecture links Candidate accounts by normalized email, use:
+
+LOWER(TRIM(candidates.email))
+=
+LOWER(TRIM(users.email))
+
+or application email where appropriate.
+
+3. Prefer an explicit persistent relationship over email matching if one exists.
+
+Do not rely only on names.
+
+==================================================
+IMPORTANT EMAIL FALLBACK
+==================================================
+
+For existing Talent accounts that came through Find Best Matches, the candidate record may have the same email as:
+
+job_submissions.email
+
+Therefore, if there is no explicit candidate ID relationship yet, temporarily resolve candidate using normalized email:
+
+SELECT ...
+FROM candidates
+WHERE LOWER(TRIM(email)) = LOWER(TRIM($applicationEmail))
+LIMIT 1
+
+But inspect the existing architecture first.
+
+If multiple Candidate records can exist for one email, choose the correct/current profile deterministically, preferably:
+
+profileCompleted = true
+and/or
+most recently updated
+
+Do not silently choose an arbitrary record.
+
+==================================================
+ADMIN APPLICATION DETAIL API
+==================================================
+
+Update:
+
+GET /api/admin/job-applications/:id
+
+The response should resolve the resume before returning it.
+
+Return normalized fields:
+
+{
+  ...
+  resumeUrl,
+  resumeFileName,
+  resumeSource,
+  candidateId
+}
+
+Where:
+
+resumeSource = "application"
+when using job_submissions resume
+
+resumeSource = "talent_profile"
+when using Find Best Matches Candidate resume
+
+resumeSource = null
+when no resume exists
+
+Example:
+
+{
+  "id": "...",
+  "talentId": "...",
+  "candidateId": "...",
+  "resumeUrl": "/api/admin/job-applications/.../resume",
+  "resumeFileName": "Val_Legaspi_Resume.pdf",
+  "resumeSource": "talent_profile"
+}
+
+Do NOT send a private object-storage path directly to the browser.
+
+==================================================
+RESUME SERVING ENDPOINT
+==================================================
+
+Update the existing endpoint:
+
+GET /api/admin/job-applications/:id/resume
+
+so that it resolves resume source using the same priority:
+
+const applicationResume = submission.resumeUrl;
+
+if (applicationResume) {
+   serve application resume;
+} else {
+   resolve linked candidate;
+   if (candidate.resumeUrl) {
+      serve candidate resume;
+   }
+}
+
+The endpoint should return the actual file.
+
+Preserve:
+
+Content-Type
+
+and:
+
+Content-Disposition
+
+using the resolved filename.
+
+==================================================
+ADMIN UI
+==================================================
+
+In:
+
+client/src/pages/AdminJobApplications.tsx
+
+Keep the existing Resume / CV card.
+
+If resumeSource === "application":
+
+show:
+
+Submitted with application
+
+If resumeSource === "talent_profile":
+
+show:
+
+From Talent Profile
+
+or:
+
+Uploaded during Find Best Matches
+
+Example:
+
+Resume / CV
+
+📄 Val_Legaspi_Resume.pdf
+Uploaded during Find Best Matches
+
+[View] [Download]
+
+Both buttons should use the same existing resume endpoint.
+
+The frontend should NOT care where the file physically came from.
+
+==================================================
+IMPORTANT — VERIFY FINDBESTMATCHES ACTUALLY SAVED THE FILE
+==================================================
+
+Inspect:
+
+client/src/pages/FindBestMatches.tsx
+
+and its server endpoints.
+
+Find Best Matches currently accepts a resume File and parses it.
+
+Verify that the ORIGINAL uploaded file is actually uploaded and persisted.
+
+The Candidate DB fields must contain:
+
+candidates.resume_url
+candidates.resume_file_name
+
+for existing Candidate profiles.
+
+Do not assume these values exist just because the schema has the columns.
+
+Check actual creation/update code.
+
+==================================================
+IF FINDBESTMATCHES CURRENTLY ONLY PARSES THE FILE
+==================================================
+
+If Find Best Matches currently:
+
+- reads resumeFile
+- parses it client-side
+- extracts Candidate information
+- saves Candidate profile
+- BUT does not save the original document
+
+then fix it.
+
+When Candidate profile is created/completed:
+
+1. upload the original resume;
+2. store it using existing object-storage infrastructure;
+3. save:
+
+candidates.resume_url
+candidates.resume_file_name
+
+Do not base64 encode it into PostgreSQL.
+
+==================================================
+EXISTING CANDIDATES
+==================================================
+
+Do not break existing Candidate profiles.
+
+For records where:
+
+candidates.resume_url IS NOT NULL
+
+use the existing resume.
+
+For records where:
+
+candidates.resume_url IS NULL
+
+do not invent a file.
+
+Display:
+
+"No CV available for this applicant."
+
+Historical users may have completed Find Best Matches before resume persistence was implemented.
+
+That is acceptable.
+
+==================================================
+ACCOUNT LINKING IMPROVEMENT
+==================================================
+
+If the current application/talent system has no explicit link between:
+
+users.id
+
+and:
+
+candidates.id
+
+consider adding one if it fits the current architecture.
+
+Preferred long-term structure:
+
+candidates.user_id
+
+or equivalent.
+
+However:
+
+DO NOT add this migration unless necessary.
+
+First inspect whether an existing relationship already exists.
+
+If email is currently the established identity bridge, use that for this implementation and document it.
+
+==================================================
+TEST CASES
+==================================================
+
+Test all of these:
+
+1. Application has its own resume.
+
+EXPECTED:
+Application resume shown.
+resumeSource = "application".
+
+2. Application has no resume but linked Talent has Find Best Matches resume.
+
+EXPECTED:
+Candidate resume shown.
+resumeSource = "talent_profile".
+
+3. Existing Talent has Candidate resume but application is pending_login.
+
+If email identifies the existing Candidate:
+
+EXPECTED:
+Resume can still be resolved by normalized email.
+
+4. Both application and Candidate have resumes.
+
+EXPECTED:
+Application-specific resume wins.
+
+5. Neither has resume.
+
+EXPECTED:
+"No CV available for this applicant."
+
+6. Candidate resume is PDF.
+
+EXPECTED:
+View opens PDF.
+
+7. Candidate resume Download.
+
+EXPECTED:
+Original filename downloads.
+
+8. Existing Candidate resume remains unchanged.
+
+Do not copy or overwrite Candidate resume just to display it.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+The feature is complete when:
+
+- Existing Talent applicants can show their Find Best Matches CV in Admin Application Details.
+- Application CV remains the highest priority.
+- Candidate resume is used as fallback.
+- Resume source is clearly identified.
+- View works.
+- Download works.
+- No raw storage URLs are exposed.
+- Existing Candidate resume data is reused rather than duplicated.
+- Missing historical resumes are handled gracefully.
+
+At completion report:
+
+1. How job_submissions.talent_id maps to Candidate.
+2. Whether email fallback was needed.
+3. Whether Find Best Matches already persisted original resume files.
+4. Resume priority logic implemented.
+5. Files changed.
+6. Any migration required.
+7. Test results for application resume vs Talent Profile resume.
