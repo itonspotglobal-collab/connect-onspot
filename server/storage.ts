@@ -2971,6 +2971,7 @@ export class DbStorage extends MemStorage {
     return row;
   }
 
+  /**
    * This replaces the old searchJobsWithSkills + pageSlice pattern that capped
    * results at .limit(500) before filtering, making meta.total always ≤ 500.
    */
