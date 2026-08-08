@@ -762,7 +762,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_function TEXT`);
     // Backfill existing rows from legacy title / category columns
     await query(`UPDATE jobs SET professional_role_name = title WHERE professional_role_name IS NULL OR professional_role_name = ''`);
+    // Seed job_function from category then normalise legacy values to canonical names
     await query(`UPDATE jobs SET job_function = category WHERE job_function IS NULL OR job_function = ''`);
+    await query(`
+      UPDATE jobs
+      SET job_function = CASE LOWER(TRIM(job_function))
+        WHEN 'admin'            THEN 'Operations'
+        WHEN 'it'               THEN 'Information Technology (IT)'
+        WHEN 'finance'          THEN 'Finance & Accounting'
+        WHEN 'hr'               THEN 'Human Resources'
+        WHEN 'customer success' THEN 'Customer Success'
+        WHEN 'customer support' THEN 'Customer Support'
+        WHEN 'development'      THEN 'Engineering'
+        WHEN 'tech support'     THEN 'Information Technology (IT)'
+        WHEN 'design'           THEN 'Design (UI/UX)'
+        WHEN 'marketing'        THEN 'Marketing'
+        WHEN 'sales'            THEN 'Sales'
+        WHEN 'operations'       THEN 'Operations'
+        WHEN 'data'             THEN 'Data & Analytics'
+        WHEN 'product'          THEN 'Product'
+        WHEN 'legal'            THEN 'Legal & Compliance'
+        WHEN 'strategy'         THEN 'Strategy'
+      END
+      WHERE job_function IS NOT NULL
+        AND LOWER(TRIM(job_function)) IN (
+          'admin','it','finance','hr','customer success','customer support',
+          'development','tech support','design','marketing','sales',
+          'operations','data','product','legal','strategy'
+        )
+    `);
     console.log("✅ Migration: role taxonomy columns ready");
   } catch (migErr: any) {
     console.warn("⚠️  role taxonomy migration skipped:", migErr.message);

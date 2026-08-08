@@ -85,14 +85,13 @@ const NAV_SLUG_MAP: Record<
   all: { label: "All Jobs", cats: [] },
   development: {
     label: "Development & IT",
-    // canonical names + legacy values for old DB records
-    cats: ["Engineering", "Information Technology (IT)", "Development", "Tech support"],
+    cats: ["Engineering", "Information Technology (IT)"],
   },
-  design: { label: "Design & Creative", cats: ["Design (UI/UX)", "Design"] },
+  design: { label: "Design & Creative", cats: ["Design (UI/UX)"] },
   marketing: { label: "Sales & Marketing", cats: ["Marketing", "Sales"] },
   support: {
     label: "Admin & Support",
-    cats: ["Customer Success", "Customer Support", "Operations", "Admin", "Customer success"],
+    cats: ["Customer Success", "Customer Support", "Operations"],
   },
   writing: {
     label: "Writing & Translation",
