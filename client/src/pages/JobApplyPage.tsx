@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, FileText, Upload, X } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
 
@@ -33,6 +33,8 @@ export default function JobApplyPage() {
 
   const [isPending, setIsPending] = useState(false);
   const [emailMismatchError, setEmailMismatchError] = useState(false);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvError, setCvError] = useState<string | null>(null);
 
   // ── Dialog state ─────────────────────────────────────────────────────────────
   // sign_in_required: existing Talent email found — prompt to sign in
@@ -96,24 +98,29 @@ export default function JobApplyPage() {
     e.preventDefault();
     if (!validate()) return;
 
+    if (!cvFile) {
+      setCvError("CV / Resume is required");
+      return;
+    }
+
     setIsPending(true);
     setEmailMismatchError(false);
     try {
-      // Include the JWT token so the server can detect an authenticated talent
+      // Build multipart FormData — server expects file field "resume"
       const token = localStorage.getItem("onspot_jwt_token");
+      const formData = new FormData();
+      formData.append("firstName", form.firstName.trim());
+      formData.append("lastName", form.lastName.trim());
+      formData.append("email", form.email.trim());
+      formData.append("phone", form.phone.trim());
+      if (form.coverLetter.trim()) formData.append("coverLetter", form.coverLetter.trim());
+      formData.append("resume", cvFile);
+
+      // Do NOT set Content-Type — browser sets it automatically with the multipart boundary
       const res = await fetch(`/api/jobs/${jobId}/apply`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          coverLetter: form.coverLetter.trim() || undefined,
-        }),
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
       });
 
       if (!res.ok) {
@@ -375,6 +382,57 @@ export default function JobApplyPage() {
                   />
                   {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
                 </div>
+              </div>
+
+              {/* CV / Resume upload (required) */}
+              <div className="space-y-1.5">
+                <Label>
+                  CV / Resume <span className="text-red-500">*</span>
+                </Label>
+                {cvFile ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+                    <FileText className="h-4 w-4 shrink-0 text-[#474ead]" />
+                    <span className="flex-1 truncate text-sm text-slate-700 dark:text-slate-300">{cvFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setCvFile(null); setCvError(null); }}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center transition-colors hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-slate-700 dark:bg-slate-800/50">
+                    <Upload className="mb-1.5 h-5 w-5 text-slate-400" />
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Upload your CV</span>
+                    <span className="mt-0.5 text-xs text-slate-400">PDF, DOC, DOCX · Max 10 MB</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const allowed = [
+                          "application/pdf",
+                          "application/msword",
+                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        ];
+                        if (!allowed.includes(file.type)) {
+                          setCvError("Invalid file type. Please upload a PDF, DOC, or DOCX file.");
+                          return;
+                        }
+                        if (file.size > 10 * 1024 * 1024) {
+                          setCvError("File too large — maximum 10 MB.");
+                          return;
+                        }
+                        setCvFile(file);
+                        setCvError(null);
+                      }}
+                    />
+                  </label>
+                )}
+                {cvError && <p className="text-xs text-red-500">{cvError}</p>}
               </div>
 
               {/* Cover Letter */}

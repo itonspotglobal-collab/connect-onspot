@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
-  XCircle, UserCheck, Briefcase, Trash2, Mail,
+  XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download,
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -110,6 +110,10 @@ interface StatusHistory {
 }
 
 interface ApplicationDetail extends Application {
+  candidateId?: string;
+  resumeUrl?: string;
+  resumeFileName?: string;
+  resumeSource?: "application" | "talent_profile" | null;
   history: StatusHistory[];
 }
 
@@ -258,12 +262,62 @@ function DetailDialog({
                 <RegBadge status={detail.registrationStatus} />
               </div>
               {detail.talentId && (
-                <button
-                  onClick={() => { onClose(); navigate(`/admin/dashboard`); }}
-                  className="mt-2 text-xs text-[#474ead] hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" /> View Talent Profile
-                </button>
+                detail.candidateId ? (
+                  <button
+                    onClick={() => { onClose(); navigate(`/talent-profile/${detail.candidateId}`); }}
+                    className="mt-2 text-xs text-[#474ead] hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" /> View Talent Profile
+                  </button>
+                ) : (
+                  <span className="mt-2 text-xs text-slate-400 flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" /> Talent profile not linked yet
+                  </span>
+                )
+              )}
+            </section>
+
+            {/* Resume / CV */}
+            <section>
+              <h3 className="font-semibold text-slate-900 mb-2">Resume / CV</h3>
+              {detail.resumeUrl ? (
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#474ead]/10">
+                      <FileText className="h-4 w-4 text-[#474ead]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-800">
+                        {detail.resumeFileName ?? "Resume"}
+                      </p>
+                      {detail.resumeSource && (
+                        <p className="text-xs text-slate-400">
+                          {detail.resumeSource === "application"
+                            ? "Submitted with application"
+                            : "From Talent Profile"}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <a
+                        href={`/api/admin/job-applications/${detail.id}/resume`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-[#474ead] hover:underline"
+                      >
+                        <Eye className="h-3 w-3" /> View
+                      </a>
+                      <a
+                        href={`/api/admin/job-applications/${detail.id}/resume?download=1`}
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:underline"
+                      >
+                        <Download className="h-3 w-3" /> Download
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm italic text-slate-400">No CV attached to this application.</p>
               )}
             </section>
 

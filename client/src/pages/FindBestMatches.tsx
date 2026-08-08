@@ -2105,8 +2105,27 @@ export default function FindBestMatches() {
         const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
         if (res.ok) {
           const data = await res.json();
-          if (!candidateId) setCandidateId(data.id);
+          let resolvedCandidateId = candidateId;
+          if (!candidateId) {
+            setCandidateId(data.id);
+            resolvedCandidateId = data.id;
+          }
           savedOk = true;
+
+          // Non-blocking: upload the resume file to object storage now that we have a candidateId.
+          // Uses the standard talent user JWT — the resume endpoint accepts both candidate and user JWTs.
+          if (profile.resumeFile && resolvedCandidateId) {
+            const uploadToken = getAuthToken();
+            if (uploadToken) {
+              const resumeForm = new FormData();
+              resumeForm.append("resume", profile.resumeFile);
+              fetch(`/api/candidates/${resolvedCandidateId}/resume`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${uploadToken}` },
+                body: resumeForm,
+              }).catch(() => {}); // Non-blocking — profile JSON save already succeeded
+            }
+          }
         }
       } catch {
         // Non-blocking — proceed even if save fails

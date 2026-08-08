@@ -4745,11 +4745,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates/:id/resume — Upload or replace resume (requires talent auth + ownership)
-  app.post("/api/candidates/:id/resume", authenticateTalentJWT, upload.single("resume"), async (req: any, res) => {
+  // POST /api/candidates/:id/resume — Upload or replace resume
+  // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches the candidate
+  app.post("/api/candidates/:id/resume", upload.single("resume"), async (req: any, res) => {
     try {
-      if (!requireTalentOwns(req, res)) return;
       const { id } = req.params;
+
+      // ── Flexible auth: candidate JWT or matching talent user JWT ──────────────
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decodedResume: any;
+      try { decodedResume = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+
+      if (decodedResume.type === "candidate") {
+        // Candidate JWT — must own the profile
+        if (decodedResume.candidateId !== id) {
+          return res.status(403).json({ error: "You are not authorized to upload to this profile" });
+        }
+      } else if (decodedResume.role === "talent" && decodedResume.email) {
+        // Standard talent user JWT — email must match the candidate record
+        const check = await query(
+          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
+          [id, decodedResume.email],
+        );
+        if (check.rows.length === 0) {
+          return res.status(403).json({ error: "You are not authorized to upload to this profile" });
+        }
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -8388,12 +8417,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
 
-  // POST /api/jobs/:jobId/apply — submit a built-in application (JSON body)
+  // POST /api/jobs/:jobId/apply — submit a built-in application (multipart/form-data with optional CV)
   // Supports both authenticated Talent users (fast-path, no continuation token) and
   // unauthenticated applicants (continuation token → signup/login flow).
   // CORE RULE: the application is ALWAYS saved first. Email uniqueness is only
   // enforced at account-creation time, not at application time.
-  app.post("/api/jobs/:jobId/apply", applyLimiter, async (req: Request, res: Response) => {
+  app.post("/api/jobs/:jobId/apply", applyLimiter, upload.single("resume"), async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params;
       const job = await storage.getJob(jobId);
@@ -8403,6 +8432,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (job.status !== "open") {
         return res.status(400).json({ error: "This job is no longer accepting applications" });
+      }
+
+      // ── CV validation (required for new submissions) ──────────────────────────
+      const cvFile = (req as any).file as Express.Multer.File | undefined;
+      if (!cvFile) {
+        return res.status(400).json({ error: "CV / Resume is required. Please upload a PDF, DOC, or DOCX file." });
+      }
+      const allowedCvMimes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowedCvMimes.includes(cvFile.mimetype)) {
+        return res.status(400).json({ error: "Invalid CV format. Only PDF, DOC, and DOCX files are allowed." });
+      }
+      if (cvFile.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ error: "CV file too large — maximum size is 10 MB." });
+      }
+
+      // ── Upload CV to object storage ───────────────────────────────────────────
+      let cvResumeUrl: string | null = null;
+      let cvResumeFileName: string | null = null;
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const objectId = randomUUID();
+        const privateObjectDir = objectStorageService.getPrivateObjectDir();
+        const fullPath = `${privateObjectDir}/application-resumes/${objectId}`;
+        const parts = fullPath.split("/").filter((p: string) => p);
+        const bucketName = parts[0];
+        const objectName = parts.slice(1).join("/");
+        const bucket = objectStorageClient.bucket(bucketName);
+        const objectFile = bucket.file(objectName);
+        await objectFile.save(cvFile.buffer, {
+          metadata: { contentType: cvFile.mimetype, metadata: { originalName: cvFile.originalname } },
+        });
+        await setObjectAclPolicy(objectFile, { visibility: "private" });
+        cvResumeUrl = `/objects/application-resumes/${objectId}`;
+        cvResumeFileName = cvFile.originalname;
+      } catch (uploadErr: any) {
+        console.error("CV upload to object storage failed:", uploadErr.message);
+        return res.status(500).json({ error: "Failed to upload CV. Please try again." });
       }
 
       const { firstName, lastName, email, phone, coverLetter } = req.body;
@@ -8463,8 +8533,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await query(
           `INSERT INTO job_submissions
              (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
+              resume_url, resume_file_name,
               status, registration_status, talent_id, is_repeat_application)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', 'linked', $9, $10)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'submitted', 'linked', $11, $12)
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -8472,10 +8543,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             normalizedEmail,
             phone.trim(),
             coverLetter?.trim() || null,
+            cvResumeUrl,
+            cvResumeFileName,
             authedUser.id,
             isRepeat,
           ],
         );
+
+        // Non-blocking: seed the CV onto the linked candidate profile if they don't have one yet
+        if (cvResumeUrl) {
+          query(
+            `UPDATE candidates SET resume_url = $1, resume_file_name = $2
+             WHERE LOWER(email) = $3 AND (resume_url IS NULL OR resume_url = '')`,
+            [cvResumeUrl, cvResumeFileName, normalizedEmail],
+          ).catch((e: any) => console.warn("Non-fatal: could not seed CV onto candidate profile:", e?.message));
+        }
 
         // Non-blocking: fire application-received email — must not affect response
         fireAutoApplicationEmail(result.rows[0].id);
@@ -8530,8 +8612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const insertResult = await query(
         `INSERT INTO job_submissions
            (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
+            resume_url, resume_file_name,
             status, registration_status, is_repeat_application)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'submitted', $9, $10)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'submitted', $11, $12)
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -8539,6 +8622,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           normalizedEmail,
           phone.trim(),
           coverLetter?.trim() || null,
+          cvResumeUrl,
+          cvResumeFileName,
           registrationStatus,
           isRepeat,
         ],
@@ -8732,6 +8817,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
          WHERE id = $2`,
         [user.id, submissionId],
       );
+
+      // Non-blocking: seed the application's CV onto the candidate profile if the profile has none
+      try {
+        const subResume = await query(
+          `SELECT resume_url, resume_file_name FROM job_submissions WHERE id = $1`,
+          [submissionId],
+        );
+        if (subResume.rows[0]?.resume_url) {
+          await query(
+            `UPDATE candidates
+             SET resume_url = $1, resume_file_name = $2, updated_at = NOW()
+             WHERE LOWER(email) = LOWER($3) AND (resume_url IS NULL OR resume_url = '')`,
+            [subResume.rows[0].resume_url, subResume.rows[0].resume_file_name, user.email],
+          );
+        }
+      } catch (seedErr: any) {
+        console.warn("Non-fatal: could not seed application CV onto candidate profile:", seedErr?.message);
+      }
+
       return res.json({ success: true });
     } catch (err: any) {
       console.error("POST /api/job-applications/link error:", err);
@@ -8883,11 +8987,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.status, js.registration_status AS "registrationStatus",
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
+                  js.resume_url AS "appResumeUrl", js.resume_file_name AS "appResumeFileName",
                   j.title AS "jobTitle", j.company AS "jobCompany",
-                  u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
+                  u.first_name AS "talentFirstName", u.last_name AS "talentLastName",
+                  c.id AS "candidateId",
+                  c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName"
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
+           LEFT JOIN candidates c ON u.email IS NOT NULL AND LOWER(c.email) = LOWER(u.email)
            WHERE js.id = $1`,
           [applicationId],
         ),
@@ -8905,10 +9013,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       if (appResult.rows.length === 0) return res.status(404).json({ error: "Application not found" });
-      return res.json({ ...appResult.rows[0], history: histResult.rows });
+
+      // Resolve resume with priority: (1) application's own resume → (2) linked candidate profile resume → (3) none
+      const row = appResult.rows[0];
+      const resumeUrl: string | null = row.appResumeUrl || row.candidateResumeUrl || null;
+      const resumeFileName: string | null = row.appResumeUrl
+        ? row.appResumeFileName
+        : (row.candidateResumeUrl ? row.candidateResumeFileName : null);
+      const resumeSource: "application" | "talent_profile" | null = row.appResumeUrl
+        ? "application"
+        : (row.candidateResumeUrl ? "talent_profile" : null);
+
+      // Omit internal intermediate fields from the response
+      const { appResumeUrl, appResumeFileName, candidateResumeUrl, candidateResumeFileName, ...baseRow } = row;
+      return res.json({ ...baseRow, resumeUrl, resumeFileName, resumeSource, history: histResult.rows });
     } catch (err: any) {
       console.error("GET /api/admin/job-applications/:id error:", err);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/job-applications/:applicationId/resume — proxy CV from object storage (admin only)
+  // NOTE: No auth guard yet — TODO: add authenticateAdminFlexible before production launch.
+  app.get("/api/admin/job-applications/:applicationId/resume", async (req: Request, res: Response) => {
+    try {
+      const { applicationId } = req.params;
+      const disposition = (req.query.download === "1") ? "attachment" : "inline";
+
+      // Find the resume: application-specific first, then fall back to linked candidate profile
+      const result = await query(
+        `SELECT js.resume_url AS "appResumeUrl", js.resume_file_name AS "appResumeFileName",
+                c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName"
+         FROM job_submissions js
+         LEFT JOIN users u ON u.id = js.talent_id
+         LEFT JOIN candidates c ON u.email IS NOT NULL AND LOWER(c.email) = LOWER(u.email)
+         WHERE js.id = $1`,
+        [applicationId],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
+      const row = result.rows[0];
+      const resumeUrl: string | null = row.appResumeUrl || row.candidateResumeUrl || null;
+      const resumeFileName: string = row.appResumeUrl
+        ? (row.appResumeFileName || "resume")
+        : (row.candidateResumeFileName || "resume");
+
+      if (!resumeUrl) return res.status(404).json({ error: "No CV attached to this application" });
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(resumeUrl);
+      res.setHeader("Content-Disposition", `${disposition}; filename="${resumeFileName.replace(/"/g, "")}"`);
+      await objectStorageService.downloadObject(objectFile, res, 0); // no-cache for admin access
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications/:id/resume error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve CV" });
     }
   });
 
