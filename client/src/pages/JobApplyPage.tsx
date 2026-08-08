@@ -37,6 +37,7 @@ export default function JobApplyPage() {
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvState, setCvState] = useState<"idle" | "validating" | "ready">("idle");
   const [cvError, setCvError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // ── Dialog state ─────────────────────────────────────────────────────────────
   // sign_in_required: existing Talent email found — prompt to sign in
@@ -78,6 +79,31 @@ export default function JobApplyPage() {
     },
     enabled: !!jobId,
   });
+
+  // ── Shared CV file validation ─────────────────────────────────────────────────
+  const processFile = (file: File) => {
+    setCvState("validating");
+    setCvError(null);
+    setTimeout(() => {
+      const allowed = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowed.includes(file.type)) {
+        setCvState("idle");
+        setCvError("Please upload a PDF, DOC, or DOCX file");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setCvState("idle");
+        setCvError("Resume must be 10 MB or smaller");
+        return;
+      }
+      setCvFile(file);
+      setCvState("ready");
+    }, 300);
+  };
 
   const setField = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
@@ -446,9 +472,32 @@ export default function JobApplyPage() {
                   </div>
                 ) : (
                   /* Upload prompt */
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center transition-colors hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-slate-700 dark:bg-slate-800/50">
-                    <Upload className="mb-1.5 h-5 w-5 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Upload your CV</span>
+                  <label
+                    className={[
+                      "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-5 text-center transition-colors",
+                      isDragOver
+                        ? "border-[#474ead] bg-[#474ead]/10 dark:bg-[#474ead]/20"
+                        : "border-slate-200 bg-slate-50 hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-slate-700 dark:bg-slate-800/50",
+                    ].join(" ")}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragLeave={(e) => {
+                      // Only clear if leaving the label itself (not a child element)
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        setIsDragOver(false);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) processFile(file);
+                    }}
+                  >
+                    <Upload className={["mb-1.5 h-5 w-5 transition-colors", isDragOver ? "text-[#474ead]" : "text-slate-400"].join(" ")} />
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                      {isDragOver ? "Drop your CV here" : "Upload your CV"}
+                    </span>
                     <span className="mt-0.5 text-xs text-slate-400">PDF, DOC, DOCX · Max 10 MB</span>
                     <input
                       type="file"
@@ -459,28 +508,7 @@ export default function JobApplyPage() {
                         if (!file) return;
                         // Reset so re-selecting after an error works correctly
                         e.target.value = "";
-                        setCvState("validating");
-                        setCvError(null);
-                        // Validate in the next tick so the "validating" state renders first
-                        setTimeout(() => {
-                          const allowed = [
-                            "application/pdf",
-                            "application/msword",
-                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                          ];
-                          if (!allowed.includes(file.type)) {
-                            setCvState("idle");
-                            setCvError("Please upload a PDF, DOC, or DOCX file");
-                            return;
-                          }
-                          if (file.size > 10 * 1024 * 1024) {
-                            setCvState("idle");
-                            setCvError("Resume must be 10 MB or smaller");
-                            return;
-                          }
-                          setCvFile(file);
-                          setCvState("ready");
-                        }, 300);
+                        processFile(file);
                       }}
                     />
                   </label>
