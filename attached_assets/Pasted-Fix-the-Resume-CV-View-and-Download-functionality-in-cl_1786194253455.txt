@@ -1,0 +1,557 @@
+Fix the Resume / CV View and Download functionality in:
+
+client/src/pages/AdminJobApplications.tsx
+
+CURRENT STATE
+
+The Resume / CV is correctly displayed inside Application Details:
+
+Resume / CV
+legaspi_resume.pdf
+Submitted with application
+View
+Download
+
+However clicking View or Download fails.
+
+Browser console shows:
+
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+
+The resume endpoint appears to be something similar to:
+
+/api/admin/job-applications/:applicationId/resume
+
+ROOT CAUSE TO VERIFY
+
+The admin application APIs authenticate using the JWT stored in:
+
+localStorage.getItem("onspot_jwt_token")
+
+Normal API requests in AdminJobApplications.tsx already send:
+
+Authorization: Bearer <token>
+
+But opening a protected resume URL directly with:
+
+window.open(url)
+
+or:
+
+<a href={url}>
+
+does NOT include the Authorization header.
+
+Therefore the protected resume endpoint returns 401.
+
+Do not make the resume endpoint public just to fix this.
+
+==================================================
+REQUIRED FIX
+==================================================
+
+Implement authenticated Resume View and Download using fetch().
+
+Create a helper in AdminJobApplications.tsx such as:
+
+async function fetchResumeBlob(applicationId: string) {
+  const token = localStorage.getItem("onspot_jwt_token");
+
+  const res = await fetch(
+    `/api/admin/job-applications/${applicationId}/resume`,
+    {
+      headers: {
+        ...(token
+          ? { Authorization: `Bearer ${token}` }
+          : {}),
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const message =
+      res.status === 401
+        ? "You are not authorized to view this resume."
+        : "Unable to load resume.";
+
+    throw new Error(message);
+  }
+
+  return await res.blob();
+}
+
+Do NOT use apiFetch() if apiFetch always assumes JSON responses.
+
+The resume endpoint returns binary data, not JSON.
+
+==================================================
+VIEW CV
+==================================================
+
+When clicking:
+
+View
+
+do NOT do:
+
+window.open(resumeUrl)
+
+if resumeUrl is a protected API endpoint.
+
+Instead:
+
+1. Fetch the resume using authenticated fetch.
+2. Convert the response to a Blob.
+3. Create an object URL.
+4. Open that object URL in a new browser tab.
+
+Example:
+
+const handleViewResume = async () => {
+  try {
+    setResumeAction("view");
+
+    const token = localStorage.getItem("onspot_jwt_token");
+
+    const res = await fetch(
+      `/api/admin/job-applications/${detail.id}/resume`,
+      {
+        headers: {
+          ...(token
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401
+          ? "Unauthorized to view resume"
+          : "Unable to load resume"
+      );
+    }
+
+    const blob = await res.blob();
+
+    const objectUrl = URL.createObjectURL(blob);
+
+    const newWindow = window.open(
+      objectUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+    if (!newWindow) {
+      URL.revokeObjectURL(objectUrl);
+      throw new Error(
+        "Your browser blocked the resume preview. Please allow popups or use Download."
+      );
+    }
+
+    // Do not revoke immediately because the new tab needs it.
+    setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 60_000);
+
+  } catch (error: any) {
+    toast({
+      title: "Unable to open resume",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setResumeAction(null);
+  }
+};
+
+IMPORTANT:
+
+PDF resumes should open directly in the browser PDF viewer.
+
+DOC/DOCX files may not render natively in the browser.
+
+For DOC/DOCX:
+
+- still allow Download;
+- View may trigger the browser's normal behavior;
+- do not build a third-party Google Docs viewer containing a private signed URL.
+
+==================================================
+DOWNLOAD CV
+==================================================
+
+The Download button must also use authenticated fetch.
+
+Do not use:
+
+<a href="/api/admin/.../resume" download>
+
+because it will also lose the Authorization header.
+
+Instead:
+
+const handleDownloadResume = async () => {
+  try {
+    setResumeAction("download");
+
+    const token = localStorage.getItem("onspot_jwt_token");
+
+    const res = await fetch(
+      `/api/admin/job-applications/${detail.id}/resume`,
+      {
+        headers: {
+          ...(token
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401
+          ? "Unauthorized to download resume"
+          : "Unable to download resume"
+      );
+    }
+
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download =
+      detail.resumeFileName || "resume";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    URL.revokeObjectURL(objectUrl);
+
+  } catch (error: any) {
+    toast({
+      title: "Unable to download resume",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setResumeAction(null);
+  }
+};
+
+==================================================
+BETTER IMPLEMENTATION — AVOID DUPLICATION
+==================================================
+
+Prefer one reusable function:
+
+async function getResumeBlob(applicationId: string) {
+  const token = localStorage.getItem("onspot_jwt_token");
+
+  const response = await fetch(
+    `/api/admin/job-applications/${applicationId}/resume`,
+    {
+      method: "GET",
+      headers: {
+        ...(token
+          ? { Authorization: `Bearer ${token}` }
+          : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+
+    throw new Error(
+      body?.message ||
+      body?.error ||
+      `Failed to load resume (${response.status})`
+    );
+  }
+
+  return response.blob();
+}
+
+Then both View and Download use that helper.
+
+==================================================
+SERVER ENDPOINT
+==================================================
+
+Inspect the actual route handling:
+
+GET /api/admin/job-applications/:id/resume
+
+Confirm it accepts the same JWT authentication mechanism used by:
+
+GET /api/admin/job-applications
+GET /api/admin/job-applications/:id
+
+Do NOT remove authorization.
+
+The endpoint should:
+
+1. Authenticate the requesting admin.
+2. Find the requested application.
+3. Determine the correct resume using existing priority logic:
+
+   application resume
+   -> linked Talent/Candidate profile resume
+   -> no resume
+
+4. Retrieve the stored file.
+5. Return the correct binary content.
+
+Set headers correctly.
+
+For inline View:
+
+Content-Type:
+actual MIME type, e.g.
+
+application/pdf
+
+Content-Disposition:
+
+inline; filename="legaspi_resume.pdf"
+
+For downloads, it is acceptable to use the same binary response and let the frontend download the Blob.
+
+If the server currently always sets:
+
+Content-Disposition: attachment
+
+consider changing it to:
+
+inline
+
+because PDFs should be previewable.
+
+Do NOT expose internal object-storage paths.
+
+==================================================
+IMPORTANT OBJECT STORAGE CHECK
+==================================================
+
+The DB may contain something such as:
+
+resume_url
+
+pointing to an internal object-storage key/path.
+
+The frontend should NOT directly navigate to that internal URL.
+
+The admin resume endpoint should act as the protected file-serving layer:
+
+Browser
+→ authenticated /api/admin/job-applications/:id/resume
+→ server verifies admin
+→ server retrieves object
+→ server streams CV
+
+Do not expose storage credentials or filesystem paths.
+
+==================================================
+VIEW EXPERIENCE
+==================================================
+
+Desired behavior:
+
+Application Details
+
+Resume / CV
+┌─────────────────────────────────────────────┐
+│ 📄 legaspi_resume.pdf                       │
+│    Submitted with application              │
+│                                             │
+│                       👁 View   ↓ Download  │
+└─────────────────────────────────────────────┘
+
+Click View:
+
+- show a small loading state;
+- fetch with JWT;
+- open CV;
+- PDF opens in browser viewer.
+
+Click Download:
+
+- show a loading state;
+- fetch with JWT;
+- automatically download:
+  legaspi_resume.pdf
+
+Disable both controls while that action is running so the user cannot repeatedly fire requests.
+
+Example:
+
+const [resumeAction, setResumeAction] =
+  useState<"view" | "download" | null>(null);
+
+View button:
+
+disabled={resumeAction !== null}
+
+Show:
+
+"Opening..."
+
+while viewing.
+
+Download:
+
+"Downloading..."
+
+while downloading.
+
+==================================================
+OPTIONAL — INLINE PREVIEW IN APPLICATION DETAILS
+==================================================
+
+After the basic View/Download flow works, improve PDF viewing.
+
+For PDF only, it would be useful to allow:
+
+View CV
+
+to display an embedded preview inside a larger dialog instead of leaving the admin page.
+
+Example:
+
+Resume Preview
+
+┌─────────────────────────────────────────────┐
+│                                             │
+│             PDF iframe/object              │
+│                                             │
+└─────────────────────────────────────────────┘
+
+[Download] [Close]
+
+Implementation:
+
+- fetch authenticated Blob;
+- URL.createObjectURL(blob);
+- set it as iframe src;
+- revoke URL when preview closes.
+
+Only do this for:
+
+application/pdf
+
+For DOC/DOCX, use Download instead.
+
+Do NOT send private resume URLs to external document-viewing services.
+
+==================================================
+ALSO FIX THIS CONSOLE WARNING
+==================================================
+
+The screenshot also shows:
+
+Warning: Missing `Description` or `aria-describedby={undefined}`
+for {DialogContent}
+
+This is not causing the resume failure, but clean it up.
+
+In DetailDialog add:
+
+<DialogDescription>
+  Review the applicant's submission, resume, and application status.
+</DialogDescription>
+
+inside:
+
+<DialogHeader>
+
+If this description should only exist for screen readers, use:
+
+className="sr-only"
+
+Example:
+
+<DialogHeader>
+  <DialogTitle>Application Details</DialogTitle>
+  <DialogDescription className="sr-only">
+    Review applicant information, resume, cover letter, and application status.
+  </DialogDescription>
+</DialogHeader>
+
+==================================================
+DO NOT DO THESE
+==================================================
+
+Do not:
+
+- make resume files publicly accessible;
+- remove admin authentication;
+- put JWT tokens in query parameters;
+- append ?token=... to resume URLs;
+- expose object storage paths;
+- store JWT in the resume URL;
+- use window.open(protectedApiUrl) directly;
+- use <a href={protectedApiUrl}> directly;
+- disable the browser security error;
+- ignore the 401.
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+Test using the application visible in Admin Job Applications.
+
+1. Open Application Details.
+
+2. Resume card shows:
+   legaspi_resume.pdf
+
+3. Click View.
+
+EXPECTED:
+No 401 request.
+
+The request includes:
+
+Authorization: Bearer <admin JWT>
+
+4. For PDF:
+A new tab/browser PDF viewer opens and displays the actual resume.
+
+5. Return to Application Details.
+
+6. Click Download.
+
+EXPECTED:
+legaspi_resume.pdf automatically downloads.
+
+7. Confirm browser console contains no:
+
+401 Unauthorized
+
+from the resume endpoint.
+
+8. Confirm unauthorized/non-admin requests to the resume endpoint still return 401/403.
+
+9. Confirm legacy applications without resume still display:
+"No CV attached to this application."
+
+10. Confirm both:
+application-specific resume
+and Talent Profile fallback resume
+continue working.
+
+At completion report:
+
+- exact reason for the 401
+- frontend changes
+- backend changes, if any
+- authentication method used
+- how View works
+- how Download works
+- MIME/Content-Disposition handling
+- tests performed
+
+Do not stop after changing the button markup.
+Actually test the protected resume request from the admin page.

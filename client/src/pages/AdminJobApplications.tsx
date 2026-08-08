@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -216,31 +216,22 @@ function SummaryCards({ summary, loading }: { summary?: Summary; loading: boolea
 
 // ─── Detail Dialog ────────────────────────────────────────────────────────────
 
-// Fetch a CV blob with the admin JWT and open or trigger download
-async function fetchCvBlob(applicationId: string, download: boolean): Promise<void> {
+// Fetch a CV blob with the admin JWT — returns the blob and filename from Content-Disposition
+async function getResumeBlob(applicationId: string): Promise<{ blob: Blob; filename: string | null }> {
   const token = localStorage.getItem("onspot_jwt_token");
-  const url = `/api/admin/job-applications/${applicationId}/resume${download ? "?download=1" : ""}`;
-  const res = await fetch(url, {
+  const res = await fetch(`/api/admin/job-applications/${applicationId}/resume`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`Failed to load CV (${res.status})`);
-  const blob = await res.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  if (download) {
-    // Extract filename from Content-Disposition header if available
-    const cd = res.headers.get("content-disposition") ?? "";
-    const match = cd.match(/filename="?([^"]+)"?/);
-    a.download = match?.[1] ?? "resume";
-  } else {
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Failed to load CV (${res.status})`
+    );
   }
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+  const cd = res.headers.get("content-disposition") ?? "";
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const blob = await res.blob();
+  return { blob, filename: match?.[1] ?? null };
 }
 
 function DetailDialog({
@@ -293,11 +284,59 @@ function DetailDialog({
     }
   }
 
+  async function handleViewCv() {
+    if (!applicationId) return;
+    setCvOpening("view");
+    try {
+      const { blob } = await getResumeBlob(applicationId);
+      const blobUrl = URL.createObjectURL(blob);
+      const newTab = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!newTab) {
+        URL.revokeObjectURL(blobUrl);
+        toast({
+          title: "Popup blocked",
+          description: "Allow popups for this site to view the CV, or use the Download button instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Revoke after 60 s — long enough for the new tab to load the PDF
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (err: any) {
+      toast({ title: "Could not open CV", description: err.message, variant: "destructive" });
+    } finally {
+      setCvOpening(null);
+    }
+  }
+
+  async function handleDownloadCv() {
+    if (!applicationId || !detail) return;
+    setCvOpening("download");
+    try {
+      const { blob, filename } = await getResumeBlob(applicationId);
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename ?? detail.resumeFileName ?? "resume";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      toast({ title: "Could not download CV", description: err.message, variant: "destructive" });
+    } finally {
+      setCvOpening(null);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Application Details</DialogTitle>
+          <DialogDescription className="sr-only">
+            Review applicant information, resume, cover letter, and application status.
+          </DialogDescription>
         </DialogHeader>
         {isLoading && <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-[#474ead]" /></div>}
         {isError && <p className="text-sm text-red-500 py-4">Failed to load application details.</p>}
@@ -368,27 +407,21 @@ function DetailDialog({
                     <div className="flex shrink-0 items-center gap-3">
                       <button
                         disabled={cvOpening !== null}
-                        onClick={async () => {
-                          setCvOpening("view");
-                          try { await fetchCvBlob(detail.id, false); }
-                          catch { toast({ title: "Could not open CV", variant: "destructive" }); }
-                          finally { setCvOpening(null); }
-                        }}
+                        onClick={handleViewCv}
                         className="flex items-center gap-1 text-xs text-[#474ead] hover:underline disabled:opacity-50"
                       >
-                        {cvOpening === "view" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />} View
+                        {cvOpening === "view"
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Opening…</>
+                          : <><Eye className="h-3 w-3" /> View</>}
                       </button>
                       <button
                         disabled={cvOpening !== null}
-                        onClick={async () => {
-                          setCvOpening("download");
-                          try { await fetchCvBlob(detail.id, true); }
-                          catch { toast({ title: "Could not download CV", variant: "destructive" }); }
-                          finally { setCvOpening(null); }
-                        }}
+                        onClick={handleDownloadCv}
                         className="flex items-center gap-1 text-xs text-slate-500 hover:underline disabled:opacity-50"
                       >
-                        {cvOpening === "download" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} Download
+                        {cvOpening === "download"
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Downloading…</>
+                          : <><Download className="h-3 w-3" /> Download</>}
                       </button>
                     </div>
                   </div>
