@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
@@ -780,22 +780,74 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         )}
 
-        {/* 10. Similar roles */}
-        <DbSimilarJobsSection currentJob={job} navigate={navigate} />
+        {/* 10. Ready to Apply CTA — text only (buttons follow the disclaimer) */}
+        <div className="border-t border-slate-100 px-5 pb-0 pt-10 text-center dark:border-white/[0.08] md:px-8 md:pt-12">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">Ready to apply?</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
+            Apply for this role today.
+          </h2>
+          <p className="mt-2 text-sm text-slate-500 md:text-base">
+            Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
+          </p>
 
-        {/* 11. Closing CTA */}
-        <div className="border-t border-slate-100 px-5 py-10 text-center dark:border-white/[0.08] md:px-8 md:py-12">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to apply?</p>
-          <h2 className="mb-3 text-2xl font-semibold text-slate-900 dark:text-white">Submit your application today.</h2>
-          <p className="mb-6 text-sm text-slate-500">Takes under 30 seconds. Our team will reach out within 3 business days.</p>
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          {/* Independent Contractor Disclaimer */}
+          {/* ⚠ Legal note: the disclaimer copy below has NOT been reviewed by legal counsel.
+              Replace with approved text before production launch. */}
+          <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-left dark:border-amber-800/40 dark:bg-amber-950/20">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                  Independent Contractor Engagement
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                  This is an independent contractor engagement, not an employment arrangement. As a
+                  contractor, you are responsible for your own taxes, government contributions
+                  (SSS, PhilHealth, Pag-IBIG), and professional expenses. Mandatory employee
+                  benefits do not apply. Please review the full terms before applying.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA buttons */}
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 pb-10 sm:flex-row md:pb-12">
             <ApplyButton size="large" />
-            <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/find-work/jobs")}>
+            <Button
+              variant="outline"
+              className="rounded-full px-6"
+              onClick={() => navigate("/find-work/jobs")}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
             </Button>
           </div>
         </div>
+
+        {/* 11. Similar roles */}
+        <DbSimilarJobsSection currentJob={job} navigate={navigate} />
+
       </motion.div>
+
+      {/* Compact page footer */}
+      <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
+        <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>© 2026 OnSpot Global — One marketplace connecting the world's best talent and clients.</span>
+            <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Link href="/terms-and-conditions" className="transition-colors hover:text-white">
+                Terms
+              </Link>
+              <Link href="/privacy-policy" className="transition-colors hover:text-white">
+                Privacy
+              </Link>
+              {/* /contractor-agreement route not yet created — rendered non-clickable */}
+              <span className="cursor-default opacity-50" title="Page coming soon">
+                Contractor Agreement
+              </span>
+            </nav>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1119,6 +1171,54 @@ export default function FindWorkJob() {
           </div>
         </Section>
 
+        {/* Ready to Apply CTA — text only (buttons follow the disclaimer) */}
+        <div className="border-t border-slate-100 px-5 pb-0 pt-10 text-center dark:border-white/[0.08] md:px-8 md:pt-12">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">Ready to apply?</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
+            Apply for this role today.
+          </h2>
+          <p className="mt-2 text-sm text-slate-500 md:text-base">
+            Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
+          </p>
+
+          {/* Independent Contractor Disclaimer */}
+          {/* ⚠ Legal note: the disclaimer copy below has NOT been reviewed by legal counsel.
+              Replace with approved text before production launch. */}
+          <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-left dark:border-amber-800/40 dark:bg-amber-950/20">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                  Independent Contractor Engagement
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                  This is an independent contractor engagement, not an employment arrangement. As a
+                  contractor, you are responsible for your own taxes, government contributions
+                  (SSS, PhilHealth, Pag-IBIG), and professional expenses. Mandatory employee
+                  benefits do not apply. Please review the full terms before applying.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA buttons */}
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 pb-10 sm:flex-row md:pb-12">
+            <Button
+              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white shadow-[0_8px_32px_rgba(71,78,173,0.20)] hover:bg-[#3d439c]"
+              onClick={() => navigate("/find-work/jobs")}
+            >
+              Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full px-6"
+              onClick={() => navigate("/find-work/jobs")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
+            </Button>
+          </div>
+        </div>
+
         {/* Similar static roles strip */}
         {(() => {
           const similar = getSimilarStaticRoles(role.id, 3);
@@ -1138,32 +1238,28 @@ export default function FindWorkJob() {
           );
         })()}
 
-        {/* ── BOTTOM CTA ── */}
-        <div className="border-t border-slate-100 px-5 py-8 text-center dark:border-white/[0.08] md:px-8 md:py-10">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Ready to apply?</p>
-          <h2 className="mb-3 text-2xl font-semibold text-slate-900 dark:text-white">
-            This role fills in {role.speed.replace("Fills in ", "")}
-          </h2>
-          <p className="mb-5 text-sm text-slate-500">Don't wait — top candidates are already in the process.</p>
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Button
-              className="rounded-full bg-[#474ead] px-10 py-2.5 text-white"
-              onClick={() => navigate("/find-work/jobs")}
-            >
-              Apply in 30 seconds <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="rounded-full px-6"
-              onClick={() => navigate("/find-work/jobs")}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              View all roles
-            </Button>
-          </div>
-          <p className="mt-6 text-xs text-slate-400">OnSpot · Philippines · {role.market}</p>
-        </div>
       </motion.div>
+
+      {/* Compact page footer */}
+      <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
+        <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>© 2026 OnSpot Global — One marketplace connecting the world's best talent and clients.</span>
+            <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Link href="/terms-and-conditions" className="transition-colors hover:text-white">
+                Terms
+              </Link>
+              <Link href="/privacy-policy" className="transition-colors hover:text-white">
+                Privacy
+              </Link>
+              {/* /contractor-agreement route not yet created — rendered non-clickable */}
+              <span className="cursor-default opacity-50" title="Page coming soon">
+                Contractor Agreement
+              </span>
+            </nav>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

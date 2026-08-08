@@ -1,0 +1,448 @@
+Update the public "View Job Details" page to continue following the uploaded HTML template after the existing "What We Offer" section.
+
+Primary file:
+- client/src/pages/FindWorkJob.tsx
+
+Also inspect:
+- shared job card components
+- routing helpers
+- footer component if one already exists
+- current Apply flow
+- current Similar Jobs / related roles logic if available
+
+IMPORTANT:
+Do not copy the uploaded HTML literally.
+Translate the design into the existing React + Tailwind + OnSpot design system.
+
+The uploaded HTML should be used as the structural and visual reference for the lower part of the Job Details page.
+
+--------------------------------------------------
+1. ADD A CLOSING CTA AFTER "WHAT WE OFFER"
+--------------------------------------------------
+
+Immediately after the "What We Offer" section, add a centered CTA area.
+
+Structure should follow the template:
+
+READY TO APPLY?
+
+Submit your application today.
+
+Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
+
+Use the project's preferred wording.
+
+Since OnSpot currently uses "Apply Now" / application terminology, do NOT blindly copy "Submit Proposal" unless the current application flow is intentionally proposal-based.
+
+Preferred text:
+
+Eyebrow:
+"Ready to apply?"
+
+Heading:
+"Apply for this role today."
+
+Supporting text:
+"Takes under 30 seconds. Our team reviews and reaches out within 3 business days."
+
+Keep this compact and professional.
+
+Suggested styling direction:
+
+<div className="py-10 md:py-12 text-center">
+
+Eyebrow:
+text-xs uppercase tracking-[0.14em] font-bold text-violet-600
+
+Heading:
+text-2xl md:text-3xl font-bold tracking-tight text-slate-900
+
+Supporting text:
+mt-2 text-sm md:text-base text-slate-500
+
+--------------------------------------------------
+2. ADD CONTRACTOR DISCLAIMER
+--------------------------------------------------
+
+The template includes an "Independent contractor engagement" disclaimer.
+
+Before implementing, inspect whether the project already has approved legal/disclaimer copy.
+
+If an existing contractor disclaimer already exists:
+- reuse the approved wording
+- do not create a second competing disclaimer
+
+If the exact disclaimer from the uploaded template has already been approved for this project, render it here.
+
+Do NOT invent or modify legal meaning.
+
+Template structure:
+
+[!] INDEPENDENT CONTRACTOR ENGAGEMENT
+
+This is an independent contractor engagement, not employment...
+
+The template specifically explains that the contractor is responsible for taxes and government contributions and that mandatory employee benefits are not included. :contentReference[oaicite:2]{index=2}
+
+Design direction:
+
+- warm amber/cream background
+- subtle amber border
+- rounded-xl
+- compact width
+- left-aligned copy inside centered container
+- small warning/info icon
+- not visually alarming
+
+Suggested:
+
+<div className="
+  mx-auto mt-6 max-w-2xl
+  rounded-xl
+  border border-amber-200
+  bg-amber-50
+  px-5 py-4
+  text-left
+">
+
+Use dark-mode equivalents if supported.
+
+--------------------------------------------------
+3. CTA BUTTONS
+--------------------------------------------------
+
+Under the disclaimer, add two buttons.
+
+Primary:
+"Apply Now"
+or
+"Submit Application"
+
+Secondary:
+"View all roles"
+
+Do not use dummy href="#".
+
+Wire them into existing real application routes.
+
+PRIMARY:
+- same application behavior as existing Apply button
+- preserve auth/login flow
+- preserve selected job
+
+SECONDARY:
+- navigate back to Find Work / All Jobs
+
+Suggested layout:
+
+<div className="
+  mt-6
+  flex flex-col items-center justify-center gap-3
+  sm:flex-row
+">
+
+Primary:
+existing OnSpot gradient button
+
+Secondary:
+white/transparent outlined button
+
+Do not duplicate application logic; reuse the existing handler/function.
+
+--------------------------------------------------
+4. SIMILAR ROLES SECTION
+--------------------------------------------------
+
+Below the CTA buttons, add:
+
+"Similar roles you might like"
+
+The uploaded template uses three compact cards. :contentReference[oaicite:3]{index=3}
+
+IMPORTANT:
+Do NOT hardcode the sample jobs from the HTML.
+
+Use actual jobs from the current system.
+
+Preferred matching logic:
+- same Function first
+- then same Work Setup / Contract if useful
+- exclude the current job
+- exclude closed/unpublished jobs
+- deduplicate by job ID
+- show maximum 3 jobs
+
+If the project already has a recommendation/similar-jobs function, reuse it.
+
+Suggested card content:
+- job title
+- Function badge
+- monthly compensation
+- optionally company/public company name
+
+Keep cards intentionally compact.
+
+Example:
+
+┌────────────────────────┐
+│ Account Executive →    │
+│ [Sales]                │
+│ USD 45,000 – 48,000    │
+└────────────────────────┘
+
+Clicking a card must navigate to that job's View Details page.
+
+--------------------------------------------------
+5. SIMILAR ROLE COMPENSATION
+--------------------------------------------------
+
+Use the current shared compensation formatter.
+
+Do NOT reintroduce:
+- `/year`
+- Rate TBD
+- hard-coded `$`
+
+Use:
+
+USD 3,100 – 3,300/month
+
+or:
+
+PHP 50,000/month
+
+If the current agreed card design displays Monthly as a badge rather than suffix, follow the existing shared presentation instead.
+
+The uploaded template contains older annual examples; do NOT restore those because the current product requirements have standardized compensation differently.
+
+--------------------------------------------------
+6. SIMILAR ROLE COMPANY PRIVACY
+--------------------------------------------------
+
+Respect the new company confidentiality rules.
+
+For public companies:
+show actual public company name if the compact card includes company.
+
+For confidential companies:
+show:
+"Confidential Company"
+
+Never expose the hidden real company name.
+
+--------------------------------------------------
+7. ADD THE COMPACT FOOTER
+--------------------------------------------------
+
+At the very bottom of the Job Details page, add the small footer shown in the HTML template.
+
+The template footer contains:
+
+Left:
+© 2026 OnSpot Global — One marketplace connecting the world's best talent and clients.
+
+Right:
+Terms · Privacy · Contractor Agreement
+
+Reference: :contentReference[oaicite:4]{index=4}
+
+Before creating a new footer:
+- inspect whether the app already has a reusable Footer component
+- reuse it if possible
+- do not create duplicate site footer implementations
+
+Design direction:
+
+- dark navy/purple background matching the hero/nav
+- compact height
+- much smaller than a large marketing footer
+- muted light text
+- responsive
+- links wrap cleanly on mobile
+
+Suggested:
+
+<footer className="
+  bg-gradient-to-br
+  from-[#1A1836]
+  to-[#2A2760]
+  py-6
+  text-sm
+  text-white/60
+">
+
+Container:
+
+max-w-5xl mx-auto px-5 sm:px-6 lg:px-8
+
+Desktop:
+flex justify-between
+
+Mobile:
+stack with gap-3
+
+--------------------------------------------------
+8. FOOTER LINKS
+--------------------------------------------------
+
+Do not use dead `#` links.
+
+Inspect existing routes for:
+
+- Terms
+- Privacy
+- Contractor Agreement
+
+Use real routes if available.
+
+If a page does not exist:
+- do not route it to Coming Soon accidentally
+- either use the existing legal-page route
+- or leave it non-clickable until a valid route exists and report that
+
+Do not create fake legal pages as part of this task.
+
+--------------------------------------------------
+9. PAGE FLOW
+--------------------------------------------------
+
+The bottom half of the Job Details page should now flow as:
+
+What We Offer
+↓
+Ready to Apply CTA
+↓
+Independent Contractor Disclaimer
+↓
+Apply Now / View All Roles
+↓
+Similar Roles You Might Like
+↓
+Compact OnSpot Footer
+
+This mirrors the uploaded template structure without copying the implementation directly.
+
+--------------------------------------------------
+10. SPACING
+--------------------------------------------------
+
+Keep the compact visual direction from the current redesign.
+
+Avoid excessive whitespace.
+
+Suggested:
+
+What We Offer bottom:
+pb-8
+
+CTA:
+py-10
+
+Disclaimer:
+mt-6
+
+Buttons:
+mt-6
+
+Similar roles:
+mt-10
+
+Footer:
+mt-12
+
+Adjust based on the existing layout so the page does not feel stretched.
+
+--------------------------------------------------
+11. RESPONSIVE
+--------------------------------------------------
+
+Desktop:
+- CTA centered
+- disclaimer max-width around 640–700px
+- similar jobs = 3 columns
+
+Tablet:
+- similar jobs can become 2 columns
+
+Mobile:
+- CTA buttons stack
+- disclaimer full width
+- similar jobs = 1 column
+- footer stacks
+- no horizontal overflow
+
+--------------------------------------------------
+12. DARK MODE
+--------------------------------------------------
+
+Preserve dark mode.
+
+For disclaimer:
+use a muted amber dark variant, for example:
+
+dark:bg-amber-950/20
+dark:border-amber-800/40
+dark:text-amber-100
+
+For similar cards:
+use current dark card styles.
+
+Footer can remain dark in both themes.
+
+--------------------------------------------------
+13. DO NOT BREAK EXISTING FEATURES
+--------------------------------------------------
+
+Preserve:
+- job hero
+- About the Company / confidential client overview
+- About the Role
+- Responsibilities
+- Required Qualifications
+- Preferred Qualifications
+- Required Tools & Equipment
+- Work Schedule
+- Compensation
+- What We Offer
+- Featured status
+- Urgently Hiring
+- Commission
+- Equity
+- Benefits
+- monthly compensation formatting
+- company confidentiality
+- Apply/login flow
+- route behavior
+
+--------------------------------------------------
+14. IMPORTANT LEGAL SAFETY
+--------------------------------------------------
+
+Do not silently copy legal wording from the template unless it is already approved for production use.
+
+If the template disclaimer is currently only design/sample content:
+- implement the visual disclaimer component
+- use existing approved legal text if available
+- otherwise flag that exact legal wording still needs approval
+
+Do not guess legal policy.
+
+--------------------------------------------------
+15. AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Report:
+
+1. exact files changed
+2. whether an existing footer component was reused
+3. whether an existing contractor disclaimer was reused
+4. exact CTA wording used
+5. how Similar Roles are selected
+6. confirmation current job is excluded from Similar Roles
+7. confirmation confidential companies remain protected
+8. confirmation compensation uses the current standardized formatter
+9. confirmation Apply Now uses the existing application flow
+10. confirmation View All Roles routes correctly
+11. confirmation footer links point only to valid routes
+12. any legal copy that still requires approval
+13. confirmation desktop/mobile/dark mode were tested
