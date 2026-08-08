@@ -91,17 +91,20 @@ export default function JobApplyPage() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Enter a valid email";
     if (!form.phone.trim()) next.phone = "Phone number is required";
     setErrors(next);
-    return Object.keys(next).length === 0;
+
+    // CV validation — set/clear the separate cvError state so the error sits under the field
+    if (!cvFile) {
+      setCvError("CV / Resume is required");
+    } else {
+      setCvError(null);
+    }
+
+    return Object.keys(next).length === 0 && !!cvFile;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-
-    if (!cvFile) {
-      setCvError("CV / Resume is required");
-      return;
-    }
 
     setIsPending(true);
     setEmailMismatchError(false);
@@ -392,13 +395,20 @@ export default function JobApplyPage() {
                 {cvFile ? (
                   <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
                     <FileText className="h-4 w-4 shrink-0 text-[#474ead]" />
-                    <span className="flex-1 truncate text-sm text-slate-700 dark:text-slate-300">{cvFile.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{cvFile.name}</p>
+                      <p className="text-xs text-slate-400">
+                        {cvFile.size < 1024 * 1024
+                          ? `${Math.round(cvFile.size / 1024)} KB`
+                          : `${(cvFile.size / (1024 * 1024)).toFixed(1)} MB`}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => { setCvFile(null); setCvError(null); }}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="shrink-0 text-xs font-medium text-slate-400 hover:text-red-500 dark:hover:text-red-400 flex items-center gap-1"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" /> Remove
                     </button>
                   </div>
                 ) : (
@@ -419,11 +429,11 @@ export default function JobApplyPage() {
                           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         ];
                         if (!allowed.includes(file.type)) {
-                          setCvError("Invalid file type. Please upload a PDF, DOC, or DOCX file.");
+                          setCvError("Please upload a PDF, DOC, or DOCX file");
                           return;
                         }
                         if (file.size > 10 * 1024 * 1024) {
-                          setCvError("File too large — maximum 10 MB.");
+                          setCvError("Resume must be 10 MB or smaller");
                           return;
                         }
                         setCvFile(file);

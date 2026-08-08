@@ -1,0 +1,301 @@
+The previous implementation is incomplete.
+
+On the actual JobApplyPage UI, there is STILL NO resume/CV upload field.
+
+Current visible form order is:
+
+First Name | Last Name
+Email Address | Phone Number
+Cover Letter / Message
+Submit Application
+
+I need the CV / Resume upload field to be visibly added to this exact form.
+
+Update:
+
+client/src/pages/JobApplyPage.tsx
+
+REQUIRED UI CHANGE
+
+Insert a required resume field BETWEEN:
+
+Email Address / Phone Number
+
+and
+
+Cover Letter / Message
+
+The form should visually become:
+
+First Name *              Last Name *
+Email Address *           Phone Number *
+
+CV / Resume *
+[ Upload CV / Resume                           ]
+[ PDF, DOC, DOCX • Max 10 MB                  ]
+
+Cover Letter / Message
+[ textarea ]
+
+[ Submit Application ]
+
+==================================================
+RESUME FIELD REQUIREMENTS
+==================================================
+
+Add component state such as:
+
+const [resumeFile, setResumeFile] = useState<File | null>(null);
+const [resumeError, setResumeError] = useState<string>("");
+
+The field MUST be required.
+
+Accepted types:
+
+- .pdf
+- .doc
+- .docx
+
+Use an input similar to:
+
+<input
+  type="file"
+  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+/>
+
+But style it using the existing OnSpot / shadcn UI so it looks consistent with the rest of the form.
+
+Do not leave the browser's ugly default file input as the primary UI.
+
+Suggested appearance:
+
+CV / Resume *
+
+┌─────────────────────────────────────────────┐
+│ 📄 Upload CV / Resume                       │
+│ PDF, DOC or DOCX • Max 10 MB                │
+└─────────────────────────────────────────────┘
+
+After a file is selected:
+
+┌─────────────────────────────────────────────┐
+│ 📄 Maria_Santos_Resume.pdf          Remove  │
+│ 245 KB                                      │
+└─────────────────────────────────────────────┘
+
+The user must be able to remove/replace the selected file before submitting.
+
+==================================================
+VALIDATION
+==================================================
+
+Update the existing validate() logic.
+
+Submission MUST fail client-side when:
+
+resumeFile === null
+
+Show:
+
+"CV / Resume is required"
+
+Also validate:
+
+- supported file type
+- maximum file size: 10 MB, unless the existing project already defines a smaller resume limit
+
+Example validation messages:
+
+"CV / Resume is required"
+"Please upload a PDF, DOC, or DOCX file"
+"Resume must be 10 MB or smaller"
+
+Do not submit the form until these validations pass.
+
+==================================================
+IMPORTANT — CURRENT SUBMIT LOGIC MUST CHANGE
+==================================================
+
+JobApplyPage currently sends JSON.
+
+That will NOT upload a File.
+
+Replace the application POST body with FormData.
+
+Example pattern:
+
+const formData = new FormData();
+
+formData.append("firstName", form.firstName.trim());
+formData.append("lastName", form.lastName.trim());
+formData.append("email", form.email.trim());
+formData.append("phone", form.phone.trim());
+
+if (form.coverLetter.trim()) {
+  formData.append("coverLetter", form.coverLetter.trim());
+}
+
+formData.append("resume", resumeFile);
+
+Then:
+
+const res = await fetch(`/api/jobs/${jobId}/apply`, {
+  method: "POST",
+  headers: {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: formData,
+});
+
+IMPORTANT:
+
+DO NOT set:
+
+"Content-Type": "application/json"
+
+and DO NOT manually set:
+
+"Content-Type": "multipart/form-data"
+
+The browser must create the multipart boundary automatically.
+
+==================================================
+BACKEND
+==================================================
+
+Make sure:
+
+POST /api/jobs/:jobId/apply
+
+actually accepts multipart/form-data.
+
+The server must receive the file under the field name:
+
+resume
+
+Use the project's existing multer/object-storage/upload infrastructure if available.
+
+Do not only add the frontend field.
+
+When submitted, persist:
+
+job_submissions.resume_url
+job_submissions.resume_file_name
+
+These fields already exist in the DB.
+
+The application row must not be created without the required resume for NEW submissions.
+
+Existing historical submissions without resumes must remain valid.
+
+==================================================
+DO NOT BREAK EXISTING ACCOUNT FLOW
+==================================================
+
+After changing the request from JSON to multipart, confirm these still work:
+
+already_authenticated
+sign_in_required
+create_account
+account_conflict
+
+The server must read text fields correctly from multipart req.body.
+
+The continuation-token/account-linking behavior must remain unchanged.
+
+==================================================
+LAYOUT REQUIREMENT
+==================================================
+
+The screenshot shows the application card is intentionally compact.
+
+Keep it compact.
+
+Do NOT make the upload box huge.
+
+A field height around 60–75px is enough.
+
+Place it directly below Email / Phone and directly above Cover Letter.
+
+Use the same spacing, border radius, font sizes, and colors as the existing inputs.
+
+Suggested JSX structure:
+
+<div className="space-y-1.5">
+  <Label htmlFor="resume">
+    CV / Resume <span className="text-red-500">*</span>
+  </Label>
+
+  ...upload control...
+
+  {resumeError && (
+    <p className="text-xs text-red-500">
+      {resumeError}
+    </p>
+  )}
+</div>
+
+==================================================
+VERIFY THE ACTUAL PAGE
+==================================================
+
+Do not claim this task is complete just because backend resume support exists.
+
+After implementation, run the app and visually verify:
+
+/jobs/:jobId/apply
+
+The rendered page MUST visibly show:
+
+CV / Resume *
+
+between Phone Number and Cover Letter.
+
+Test with a built-in-form job such as the IT Administrator page shown in the screenshot.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+This task is only complete when:
+
+1. "CV / Resume *" is visibly present on JobApplyPage.
+
+2. It appears below Email/Phone.
+
+3. It appears above Cover Letter.
+
+4. The applicant cannot submit without selecting a resume.
+
+5. PDF/DOC/DOCX can be selected.
+
+6. Invalid files are rejected.
+
+7. The selected filename is visible.
+
+8. The file can be removed/replaced.
+
+9. Submit sends multipart FormData.
+
+10. The resume is actually stored.
+
+11. job_submissions.resume_url is populated.
+
+12. job_submissions.resume_file_name is populated.
+
+13. Existing accountAction flows still work.
+
+14. Admin Application Details can retrieve the submitted CV.
+
+15. Refreshing/reopening the admin application still shows the CV because it is persisted in storage/database.
+
+Please IMPLEMENT this now rather than only describing the change.
+
+At the end, report:
+
+- exact JobApplyPage.tsx changes
+- upload endpoint changes
+- storage method used
+- DB values populated
+- test performed
+- confirmation that "CV / Resume *" is visibly rendered on the application page
