@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, FileText, Upload, X, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
 
@@ -417,7 +417,16 @@ export default function JobApplyPage() {
                   /* Accepted state with file size and green confirmation */
                   <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 dark:border-emerald-700/40 dark:bg-emerald-900/20">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <FileText className="h-4 w-4 shrink-0 text-[#474ead]" />
+                    {/* File-type badge: red for PDF, blue for Word */}
+                    {cvFile.type === "application/pdf" ? (
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                        PDF
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                        {cvFile.name.toLowerCase().endsWith(".docx") ? "DOCX" : "DOC"}
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{cvFile.name}</p>
                       <p className="text-xs text-slate-400">
