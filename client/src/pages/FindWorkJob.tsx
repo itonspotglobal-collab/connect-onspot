@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
   Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
-  Wifi, Monitor,
+  Wifi, Monitor, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
