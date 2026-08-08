@@ -1,0 +1,612 @@
+You are working inside the existing OnSpot Global codebase.
+
+I need you to improve the connected Job Application / Talent Profile / Resume flow.
+
+IMPORTANT:
+Do not implement this as an isolated UI change. Inspect the existing frontend routes, API routes, DB schema, object/file storage, Candidate/Talent profile system, Find Best Matches flow, Job Apply flow, and Admin Job Applications flow first.
+
+The main relevant files include, but are not limited to:
+
+- client/src/pages/AdminJobApplications.tsx
+- client/src/pages/JobApplyPage.tsx
+- client/src/pages/FindBestMatches.tsx
+- client/src/pages/TalentProfile.tsx
+- client/src/App.tsx
+- server/routes.ts
+- shared/schema.ts
+- migrations/*
+- any storage/object-storage helpers already used for candidate resumes
+- any auth/account-linking helpers used by job applications
+
+Do not duplicate an existing upload/storage system if one already exists. Reuse the existing object storage and resume-serving conventions wherever possible.
+
+==================================================
+GOAL 1 — FIX "VIEW TALENT PROFILE"
+==================================================
+
+Current bug:
+
+On:
+
+/admin/job-applications
+
+open an application's "Application Details" modal.
+
+When the application has a linked talent, clicking:
+
+"View Talent Profile"
+
+currently executes something equivalent to:
+
+navigate("/admin/dashboard")
+
+This is wrong.
+
+It must open the actual linked Talent/Candidate profile corresponding to the application's linked talent.
+
+CURRENT CODE NOTE:
+
+AdminJobApplications.tsx already has:
+
+detail.talentId
+
+but the button currently redirects to /admin/dashboard.
+
+DO NOT just change it to a guessed URL.
+
+First determine how the Talent Profile system actually identifies profiles.
+
+The codebase currently includes:
+
+- TalentProfile.tsx
+- CandidateProfile.tsx
+- candidates table
+- users table
+- job_submissions.talent_id
+- candidate/talent account data
+
+Determine whether job_submissions.talent_id references:
+
+A. users.id
+B. candidates.id
+C. another profile identifier
+
+Then implement the correct mapping.
+
+Preferred end result:
+
+Clicking "View Talent Profile" from Admin Job Applications opens the same full Talent Profile page that administrators/users normally use for viewing that talent.
+
+If TalentProfile.tsx expects a candidate ID rather than a users.id:
+
+- resolve the correct candidate record server-side;
+- return candidateId/profile identifier in the admin application-detail API;
+- do NOT try to guess it client-side.
+
+Add or fix the route in App.tsx if required.
+
+For example, if the proper route is something such as:
+
+/talent-profile/:candidateId
+
+then register that route and navigate to it.
+
+Do not redirect to /admin/dashboard.
+
+Also handle missing/incomplete profiles safely:
+
+If a linked talent account exists but there is no Candidate/Talent profile yet, either:
+
+- create/resolve the expected profile during account linking, if that is the correct architecture;
+
+OR
+
+- disable the link and clearly show "Talent profile not available yet."
+
+Never navigate to an unrelated page.
+
+==================================================
+GOAL 2 — REQUIRED CV UPLOAD IN JobApplyPage.tsx
+==================================================
+
+Update:
+
+client/src/pages/JobApplyPage.tsx
+
+Add a REQUIRED field:
+
+CV / Resume *
+
+The application must not submit unless a valid CV has been selected.
+
+Use a clean upload UI consistent with the existing OnSpot design.
+
+Requirements:
+
+- Required field.
+- Label:
+  "CV / Resume *"
+- Accept at least:
+  PDF
+  DOC
+  DOCX
+- Prefer the same supported formats already used by Find Best Matches / Talent Profile if the codebase defines them.
+- Reject unsupported formats client-side and server-side.
+- Add a sensible maximum upload size.
+  Reuse the project's existing resume-upload size limit if one exists.
+- Display selected filename.
+- Allow replacing/removing a selected file before submission.
+- Show validation errors clearly.
+- Disable submission while uploading/submitting.
+- Do not break authenticated Talent applications.
+- Do not break logged-out applications.
+- Do not break the existing accountAction flow:
+  already_authenticated
+  sign_in_required
+  create_account
+  account_conflict
+
+IMPORTANT:
+
+JobApplyPage currently submits JSON to:
+
+POST /api/jobs/:jobId/apply
+
+Since a binary CV must now be included, update this flow correctly.
+
+Use multipart/form-data rather than trying to put the file into JSON/base64.
+
+Do NOT manually set the Content-Type header when using FormData; allow the browser to add the multipart boundary.
+
+The request should include:
+
+- firstName
+- lastName
+- email
+- phone
+- coverLetter
+- resume/CV file
+
+Preserve the Authorization bearer token when present.
+
+==================================================
+GOAL 3 — SAVE THE JOB APPLICATION CV
+==================================================
+
+The existing job_submissions database already contains:
+
+resume_url
+resume_file_name
+
+Use these columns.
+
+Do not create duplicate columns unless absolutely necessary.
+
+Update:
+
+POST /api/jobs/:jobId/apply
+
+so it can receive multipart/form-data.
+
+The backend must:
+
+1. Validate the application fields.
+2. Validate the uploaded CV.
+3. Upload/store the CV using the project's existing file/object storage approach.
+4. Save:
+   resume_url
+   resume_file_name
+   on job_submissions.
+5. Save the application exactly as the current account-resolution flow expects.
+6. Preserve all existing behavior related to:
+   - repeat applications
+   - existing Talent email
+   - pending account
+   - pending login
+   - authenticated Talent
+   - account conflict
+   - continuation tokens
+
+Do not regress the existing rule that the APPLICATION is saved before account handling.
+
+File security requirements:
+
+- Never trust the original filename as a storage path.
+- Generate a unique storage key/path.
+- Sanitize display filename.
+- Validate MIME type and extension.
+- Enforce file-size limits server-side.
+- Do not allow executable files.
+- Do not expose local filesystem paths.
+- Resume files must only be accessed through the appropriate controlled URL/API.
+
+If object storage is already used for candidate resumes, reuse it rather than creating a separate file system.
+
+==================================================
+GOAL 4 — SHOW CV IN ADMIN APPLICATION DETAILS
+==================================================
+
+Update:
+
+client/src/pages/AdminJobApplications.tsx
+
+Application Details currently shows:
+
+Applicant
+Applied for
+Status
+Cover Letter
+Status History
+
+Add a new section after Applicant or Cover Letter:
+
+Resume / CV
+
+Example UI:
+
+Resume / CV
+[File icon] Lesley_Valencerina_CV.pdf
+[View CV] [Download]
+
+Behavior:
+
+- If resume_url exists:
+  show the filename
+  show "View CV"
+  optionally show "Download"
+- View should open the CV in a new browser tab or a safe document viewer.
+- Download should download using the original/display filename when possible.
+- Never show raw object-storage internals to the admin.
+
+If the application doesn't have a resume:
+
+Show:
+
+"No CV attached to this application."
+
+This is particularly important for legacy submissions.
+
+Update the Application interface / ApplicationDetail response accordingly:
+
+resumeUrl?: string
+resumeFileName?: string
+
+and ensure the admin application detail API actually returns these fields.
+
+==================================================
+GOAL 5 — USE THE FIND BEST MATCHES CV WHEN AVAILABLE
+==================================================
+
+The Find Best Matches candidate flow already accepts a resume and the candidates schema contains:
+
+resumeUrl
+resumeFileName
+
+Inspect the actual FindBestMatches implementation and server-side candidate creation/upload flow.
+
+When someone applies for a job and already has a linked Talent/Candidate profile whose Find Best Matches resume exists, the admin Application Details must be able to access that CV too.
+
+Define a clear CV priority:
+
+1. Resume explicitly uploaded with THIS job application.
+2. If no application-specific resume exists, linked candidate/talent profile resume.
+3. Otherwise no resume.
+
+Do not overwrite a newer candidate profile CV unnecessarily.
+
+The application detail API should ideally return normalized fields such as:
+
+resumeUrl
+resumeFileName
+resumeSource
+
+where resumeSource could be:
+
+"application"
+"talent_profile"
+null
+
+This keeps the frontend simple.
+
+Display an optional small hint in Admin Application Details:
+
+"Submitted with application"
+
+or
+
+"From Talent Profile"
+
+==================================================
+GOAL 6 — CONNECT JOB APPLICATION CV TO TALENT PROFILE
+==================================================
+
+When a logged-out applicant submits a CV and later creates a Talent account through the existing continuation-token flow:
+
+Preserve the application CV.
+
+After account creation/linking:
+
+- connect the job submission to the Talent as already designed;
+- if the newly created Talent/Candidate profile has NO resume yet, use the submitted application's resume as that profile's initial resume;
+- do NOT overwrite an existing Talent resume.
+
+Similarly, when an existing Talent account is linked after Sign In:
+
+- if the profile has no resume and the application has one, it is acceptable/preferred to initialize the profile resume from the application;
+- if the Talent already has a resume, keep their current Talent Profile resume;
+- still preserve the application-specific resume on job_submissions.
+
+This ensures the documents remain historically accurate per application.
+
+==================================================
+GOAL 7 — MAKE FIND BEST MATCHES RESUME PERSISTENCE RELIABLE
+==================================================
+
+Inspect:
+
+client/src/pages/FindBestMatches.tsx
+
+The frontend clearly stores a resumeFile in state and parses it for matching.
+
+Make sure the ORIGINAL resume file is actually persisted when the Candidate record is created.
+
+The candidates table already contains:
+
+resume_url
+resume_file_name
+
+If Find Best Matches currently only parses the resume in the browser but does not upload/persist the original file, fix it.
+
+The completed Find Best Matches candidate flow must:
+
+- upload the original resume;
+- save candidates.resumeUrl;
+- save candidates.resumeFileName;
+- make it available in TalentProfile;
+- make it available to Admin Job Application Details when that candidate is linked.
+
+Reuse existing Candidate resume upload endpoints if present.
+
+Do not upload the same file multiple times unnecessarily.
+
+==================================================
+GOAL 8 — TALENT PROFILE ROUTING AND RESUME VIEW
+==================================================
+
+Inspect:
+
+TalentProfile.tsx
+
+It already understands candidate.resumeUrl.
+
+Make sure administrators viewing a Talent profile can see/download the Talent's CV.
+
+If TalentProfile currently assumes owner authentication and prevents admin viewing, adjust permissions carefully:
+
+- Talent owner: can edit their profile/resume.
+- Admin: can view profile and resume but should not receive owner-only editing privileges merely because they opened the page.
+- Public/other users: preserve existing visibility behavior.
+
+Do not weaken authorization globally.
+
+==================================================
+API RESPONSE CHANGES
+==================================================
+
+Update the Admin Job Application detail endpoint:
+
+GET /api/admin/job-applications/:id
+
+It should include enough information for the UI, for example:
+
+{
+  id,
+  jobId,
+  jobTitle,
+  ...
+  talentId,
+  candidateId,
+  resumeUrl,
+  resumeFileName,
+  resumeSource,
+  history
+}
+
+candidateId should be returned if that is the identifier required by TalentProfile.
+
+Resolve candidateId server-side from the linked talent/account.
+
+Do not expose password hashes, tokens, object-storage credentials, or unnecessary private data.
+
+==================================================
+DATABASE / MIGRATIONS
+==================================================
+
+Before adding a migration, inspect existing tables.
+
+Known existing fields:
+
+job_submissions:
+- resume_url
+- resume_file_name
+
+candidates:
+- resume_url
+- resume_file_name
+
+Therefore a DB migration may NOT be necessary for these resume fields.
+
+Only add a migration if an actually missing field/index/relationship is required.
+
+Do not recreate existing columns.
+
+If you add any migration:
+
+- make it idempotent where appropriate;
+- follow the project's migration conventions;
+- do not delete existing application/resume data.
+
+==================================================
+BACKWARD COMPATIBILITY
+==================================================
+
+Existing job submissions may have:
+
+resume_url = null
+resume_file_name = null
+
+These must continue loading normally.
+
+Do not require historical rows to have a CV.
+
+The required-CV rule applies to NEW submissions made after this change.
+
+The admin detail modal must gracefully display legacy applications without CVs.
+
+==================================================
+UI REQUIREMENTS
+==================================================
+
+JobApplyPage:
+
+Keep the existing compact layout.
+
+Suggested placement:
+
+First / Last Name
+Email / Phone
+CV / Resume *
+Cover Letter
+
+Do not make the form unnecessarily tall.
+
+Use a compact drag/drop or click-to-upload area.
+
+Example:
+
+CV / Resume *
+┌─────────────────────────────────────┐
+│ Upload CV                           │
+│ PDF, DOC, DOCX • Max X MB           │
+└─────────────────────────────────────┘
+
+After selection:
+
+[FileText icon] Lesley_Valencerina_CV.pdf       [X]
+
+Admin Application Details:
+
+Applicant
+Applied for
+Status
+Resume / CV
+Cover Letter
+Status History
+
+Resume area should visually match the existing modal.
+
+==================================================
+TESTING
+==================================================
+
+Test the full connected flow, not only the components.
+
+Add/update automated tests where the project already has test infrastructure.
+
+At minimum verify:
+
+1. Job application cannot submit without a CV.
+
+2. Invalid CV file type is rejected.
+
+3. Oversized CV is rejected.
+
+4. Valid PDF application succeeds.
+
+5. Valid DOC/DOCX application succeeds if supported.
+
+6. resume_url and resume_file_name are saved to job_submissions.
+
+7. Admin Application Details returns and displays the application CV.
+
+8. Clicking View CV opens the correct document.
+
+9. Legacy application without CV still loads.
+
+10. "View Talent Profile" no longer navigates to /admin/dashboard.
+
+11. Linked Talent opens the correct Talent Profile.
+
+12. The application detail endpoint returns the identifier needed by the Talent Profile route.
+
+13. Find Best Matches CV remains accessible from the candidate profile.
+
+14. If an application has its own CV and the linked candidate has another CV:
+    application-specific CV takes priority inside Application Details.
+
+15. If application resume is missing:
+    use linked Talent/Candidate resume as fallback.
+
+16. New-account continuation still works after multipart upload.
+
+17. Existing Talent email / sign_in_required still works.
+
+18. Authenticated Talent application still links correctly.
+
+19. Client/Admin account conflict behavior still works.
+
+20. Repeat applications still create separate application rows.
+
+21. CV files are not publicly writable or exposed through unsafe local paths.
+
+==================================================
+IMPLEMENTATION QUALITY
+==================================================
+
+Do not perform a superficial frontend-only patch.
+
+Trace the entire data flow:
+
+JobApplyPage
+→ application upload API
+→ object/file storage
+→ job_submissions
+→ account linking
+→ candidates / Talent Profile
+→ Admin application-detail API
+→ AdminJobApplications modal
+
+Reuse existing infrastructure wherever possible.
+
+Avoid:
+- duplicate upload systems
+- base64 resume blobs inside JSON
+- storing files directly in PostgreSQL
+- hardcoded production URLs
+- exposing filesystem paths
+- guessing candidate IDs from talent IDs on the frontend
+- redirecting View Talent Profile to generic dashboards
+- overwriting an existing Talent Profile CV
+
+==================================================
+DELIVERABLE
+==================================================
+
+Implement the complete solution.
+
+After implementation, provide a concise summary with:
+
+1. Root cause of the View Talent Profile redirect.
+2. Exact Talent Profile route now used.
+3. How talentId is resolved to the Talent/Candidate profile.
+4. How JobApplyPage CV upload works.
+5. Where CV files are stored.
+6. Which DB fields store the URLs/names.
+7. How Find Best Matches resumes are reused.
+8. Resume priority logic in Application Details.
+9. Files changed.
+10. Any migration created.
+11. Tests performed and results.
+12. Any important legacy-data behavior.
+
+Do not stop after planning. Inspect the existing code and implement the changes.
