@@ -9034,8 +9034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId/resume — proxy CV from object storage (admin only)
-  // NOTE: No auth guard yet — TODO: add authenticateAdminFlexible before production launch.
-  app.get("/api/admin/job-applications/:applicationId/resume", async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId/resume", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       const disposition = (req.query.download === "1") ? "attachment" : "inline";
@@ -9067,6 +9066,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error("GET /api/admin/job-applications/:id/resume error:", err);
       if (!res.headersSent) res.status(500).json({ error: "Failed to serve CV" });
+    }
+  });
+
+  // POST /api/admin/job-applications/:applicationId/resume — upload a CV on behalf of an application (admin only)
+  // Used when an application was submitted before CV upload was required and resume_url is NULL.
+  app.post("/api/admin/job-applications/:applicationId/resume", authenticateAdminFlexible, upload.single("resume"), async (req: any, res: Response) => {
+    try {
+      const { applicationId } = req.params;
+
+      // Verify application exists
+      const existing = await query(`SELECT id FROM job_submissions WHERE id = $1`, [applicationId]);
+      if (existing.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const allowedMimes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowedMimes.includes(file.mimetype)) {
+        return res.status(400).json({ error: "Only PDF or Word documents are allowed" });
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ error: "File too large — max 10 MB" });
+      }
+
+      // Upload to private object storage under the application-resumes prefix
+      const objectStorageService = new ObjectStorageService();
+      const objectId = randomUUID();
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const fullPath = `${privateObjectDir}/application-resumes/${objectId}`;
+      const parts = fullPath.split("/").filter((p: string) => p);
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const objectFile = bucket.file(objectName);
+      await objectFile.save(file.buffer, {
+        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
+      });
+      await setObjectAclPolicy(objectFile, { visibility: "private" });
+
+      const resumeUrl = `/objects/application-resumes/${objectId}`;
+      await query(
+        `UPDATE job_submissions SET resume_url = $1, resume_file_name = $2, updated_at = NOW() WHERE id = $3`,
+        [resumeUrl, file.originalname, applicationId],
+      );
+
+      return res.json({ success: true, resumeUrl, resumeFileName: file.originalname });
+    } catch (err: any) {
+      console.error("POST /api/admin/job-applications/:id/resume error:", err);
+      return res.status(500).json({ error: "Failed to upload CV" });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -216,15 +216,82 @@ function SummaryCards({ summary, loading }: { summary?: Summary; loading: boolea
 
 // ─── Detail Dialog ────────────────────────────────────────────────────────────
 
+// Fetch a CV blob with the admin JWT and open or trigger download
+async function fetchCvBlob(applicationId: string, download: boolean): Promise<void> {
+  const token = localStorage.getItem("onspot_jwt_token");
+  const url = `/api/admin/job-applications/${applicationId}/resume${download ? "?download=1" : ""}`;
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Failed to load CV (${res.status})`);
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  if (download) {
+    // Extract filename from Content-Disposition header if available
+    const cd = res.headers.get("content-disposition") ?? "";
+    const match = cd.match(/filename="?([^"]+)"?/);
+    a.download = match?.[1] ?? "resume";
+  } else {
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+  }
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+}
+
 function DetailDialog({
   applicationId, open, onClose,
 }: { applicationId: string | null; open: boolean; onClose: () => void }) {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvOpening, setCvOpening] = useState<"view" | "download" | null>(null);
+
   const { data: detail, isLoading, isError } = useQuery<ApplicationDetail>({
     queryKey: ["/api/admin/job-applications", applicationId],
     queryFn: () => apiFetch(`/api/admin/job-applications/${applicationId}`),
     enabled: !!applicationId && open,
   });
+
+  async function handleCvUpload(file: File) {
+    const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    if (!allowed.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Only PDF or Word documents (.pdf, .doc, .docx) are allowed.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Maximum file size is 10 MB.", variant: "destructive" });
+      return;
+    }
+    setCvUploading(true);
+    try {
+      const token = localStorage.getItem("onspot_jwt_token");
+      const form = new FormData();
+      form.append("resume", file);
+      const res = await fetch(`/api/admin/job-applications/${applicationId}/resume`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Upload failed (${res.status})`);
+      }
+      toast({ title: "CV uploaded", description: `${file.name} has been attached to this application.` });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCvUploading(false);
+      if (cvInputRef.current) cvInputRef.current.value = "";
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -299,25 +366,67 @@ function DetailDialog({
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <a
-                        href={`/api/admin/job-applications/${detail.id}/resume`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-[#474ead] hover:underline"
+                      <button
+                        disabled={cvOpening !== null}
+                        onClick={async () => {
+                          setCvOpening("view");
+                          try { await fetchCvBlob(detail.id, false); }
+                          catch { toast({ title: "Could not open CV", variant: "destructive" }); }
+                          finally { setCvOpening(null); }
+                        }}
+                        className="flex items-center gap-1 text-xs text-[#474ead] hover:underline disabled:opacity-50"
                       >
-                        <Eye className="h-3 w-3" /> View
-                      </a>
-                      <a
-                        href={`/api/admin/job-applications/${detail.id}/resume?download=1`}
-                        className="flex items-center gap-1 text-xs text-slate-500 hover:underline"
+                        {cvOpening === "view" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />} View
+                      </button>
+                      <button
+                        disabled={cvOpening !== null}
+                        onClick={async () => {
+                          setCvOpening("download");
+                          try { await fetchCvBlob(detail.id, true); }
+                          catch { toast({ title: "Could not download CV", variant: "destructive" }); }
+                          finally { setCvOpening(null); }
+                        }}
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:underline disabled:opacity-50"
                       >
-                        <Download className="h-3 w-3" /> Download
-                      </a>
+                        {cvOpening === "download" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} Download
+                      </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm italic text-slate-400">No CV attached to this application.</p>
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                      <FileText className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-600">No CV attached</p>
+                      <p className="text-xs text-slate-400">This application was submitted before CV upload was required.</p>
+                    </div>
+                    <div className="shrink-0">
+                      <input
+                        ref={cvInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleCvUpload(e.target.files[0])}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={cvUploading}
+                        onClick={() => cvInputRef.current?.click()}
+                        className="h-8 text-xs gap-1.5 border-[#474ead] text-[#474ead] hover:bg-[#474ead]/10"
+                      >
+                        {cvUploading ? (
+                          <><Loader2 className="h-3 w-3 animate-spin" /> Uploading…</>
+                        ) : (
+                          <><FileText className="h-3 w-3" /> Upload CV</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </section>
 
