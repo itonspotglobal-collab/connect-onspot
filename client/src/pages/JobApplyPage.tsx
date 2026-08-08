@@ -20,6 +20,7 @@ import { TopNavigation } from "@/components/TopNavigation";
 import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Lock } from "lucide-react";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function JobApplyPage() {
@@ -295,6 +296,11 @@ export default function JobApplyPage() {
             <span className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
               {getPublicCompanyName(job as any)}
+              {(job as any).isCompanyConfidential && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200 dark:bg-white/[0.08] dark:text-slate-400 dark:ring-white/10">
+                  <Lock className="h-2.5 w-2.5" aria-hidden="true" /> Confidential
+                </span>
+              )}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />

@@ -546,7 +546,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           {(job as any).originalRoleName && (
             <p className="mt-1.5 text-base italic text-slate-400">{(job as any).originalRoleName}</p>
           )}
-          <p className="mt-2 text-base text-slate-400">{getPublicCompanyName(job as any)}</p>
+          <p className="mt-2 flex items-center gap-1.5 text-base text-slate-400">
+            {getPublicCompanyName(job as any)}
+            {(job as any).isCompanyConfidential && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-white/10">
+                <Lock className="h-3 w-3" aria-hidden="true" /> Confidential
+              </span>
+            )}
+          </p>
 
           {/* Compensation pill */}
           <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">

@@ -17,6 +17,7 @@ import {
   X,
   Star,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -297,8 +298,13 @@ function JobCard({
                       {(job as any).originalRoleName}
                     </p>
                   )}
-                  <p className="mt-0.5 text-xs text-amber-100/60 md:text-sm">
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-100/60 md:text-sm">
                     {getPublicCompanyName(job as any)}
+                    {(job as any).isCompanyConfidential && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-300/80 ring-1 ring-amber-400/20">
+                        <Lock className="h-2.5 w-2.5" aria-hidden="true" /> Confidential
+                      </span>
+                    )}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {pilotId && (
@@ -349,8 +355,13 @@ function JobCard({
                       {(job as any).originalRoleName}
                     </p>
                   )}
-                  <p className="mt-0.5 text-xs text-white/75 md:text-sm">
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-white/75 md:text-sm">
                     {getPublicCompanyName(job as any)}
+                    {(job as any).isCompanyConfidential && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-medium text-white/70 ring-1 ring-white/20">
+                        <Lock className="h-2.5 w-2.5" aria-hidden="true" /> Confidential
+                      </span>
+                    )}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {pilotId && (
