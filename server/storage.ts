@@ -875,7 +875,11 @@ export class MemStorage implements IStorage {
       jobs = jobs.filter(job => 
         job.title.toLowerCase().includes(searchQuery) ||
         job.description.toLowerCase().includes(searchQuery) ||
-        job.category.toLowerCase().includes(searchQuery)
+        job.category.toLowerCase().includes(searchQuery) ||
+        // SECURITY: Do NOT match company name for confidential jobs — prevents leaking the
+        // real employer identity when a candidate searches by company name.
+        // Any future change to this search block MUST preserve this guard.
+        (!(job as any).isCompanyConfidential && job.company && job.company.toLowerCase().includes(searchQuery))
       );
     }
 
@@ -2728,6 +2732,7 @@ export class DbStorage extends MemStorage {
       .returning({ likes: posts.likes });
     return updated?.likes || 0;
   }
+
   async getJob(id: string): Promise<Job | undefined> {
     const [job] = await db
       .select()
@@ -2864,7 +2869,11 @@ export class DbStorage extends MemStorage {
         ((j as any).professionalRoleName ?? "").toLowerCase().includes(q) ||
         (j.location ?? "").toLowerCase().includes(q) ||
         ((j as any).skillTags ?? []).some((t: string) => t.toLowerCase().includes(q)) ||
-        // Do NOT match company name for confidential jobs — prevents leaking the real company
+        // SECURITY: Do NOT match company name for confidential jobs — prevents leaking the
+        // real employer identity when a candidate searches by company name.
+        // Any future change to this search block (e.g. raw SQL / full-text index) MUST
+        // preserve this guard. See server/tests/confidential-search.test.ts for the
+        // regression test that verifies this behaviour.
         (!(j as any).isCompanyConfidential && j.company && j.company.toLowerCase().includes(q))
       );
     }
@@ -2962,14 +2971,6 @@ export class DbStorage extends MemStorage {
     return row;
   }
 
-  /**
-   * True SQL-level paginated job search.
-   *
-   * Architecture:
-   *   1. Build WHERE conditions (status, approval, category, filters, full-text search)
-   *   2. COUNT(*) query — no LIMIT/OFFSET → correct total across all pages
-   *   3. SELECT query — same WHERE + ORDER BY + LIMIT/OFFSET → current page items
-   *
    * This replaces the old searchJobsWithSkills + pageSlice pattern that capped
    * results at .limit(500) before filtering, making meta.total always ≤ 500.
    */
