@@ -8472,7 +8472,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cvResumeFileName = cvFile.originalname;
       } catch (uploadErr: any) {
         console.error("CV upload to object storage failed:", uploadErr.message);
-        return res.status(500).json({ error: "Failed to upload CV. Please try again." });
+        return res.status(500).json({
+          error: "cv_upload_failed",
+          message: "CV upload failed — please try a different file or check your connection.",
+        });
       }
 
       const { firstName, lastName, email, phone, coverLetter } = req.body;

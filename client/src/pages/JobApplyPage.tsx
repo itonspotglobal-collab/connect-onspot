@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, FileText, Upload, X } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, FileText, Upload, X, CheckCircle2 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
 
@@ -32,8 +32,10 @@ export default function JobApplyPage() {
   const isNonTalentUser = !!user && !isTalent; // client or admin
 
   const [isPending, setIsPending] = useState(false);
+  const [submitStep, setSubmitStep] = useState<"uploading" | "saving" | null>(null);
   const [emailMismatchError, setEmailMismatchError] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvState, setCvState] = useState<"idle" | "validating" | "ready">("idle");
   const [cvError, setCvError] = useState<string | null>(null);
 
   // ── Dialog state ─────────────────────────────────────────────────────────────
@@ -107,7 +109,11 @@ export default function JobApplyPage() {
     if (!validate()) return;
 
     setIsPending(true);
+    setSubmitStep("uploading");
     setEmailMismatchError(false);
+    // Switch the label to "Saving application…" after a short delay so the
+    // user sees both phases (CV upload is usually the longest part).
+    const stepTimer = setTimeout(() => setSubmitStep("saving"), 2500);
     try {
       // Build multipart FormData — server expects file field "resume"
       const token = localStorage.getItem("onspot_jwt_token");
@@ -117,7 +123,7 @@ export default function JobApplyPage() {
       formData.append("email", form.email.trim());
       formData.append("phone", form.phone.trim());
       if (form.coverLetter.trim()) formData.append("coverLetter", form.coverLetter.trim());
-      formData.append("resume", cvFile);
+      formData.append("resume", cvFile!);
 
       // Do NOT set Content-Type — browser sets it automatically with the multipart boundary
       const res = await fetch(`/api/jobs/${jobId}/apply`, {
@@ -126,10 +132,16 @@ export default function JobApplyPage() {
         body: formData,
       });
 
+      clearTimeout(stepTimer);
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Submission failed" }));
         if (err.error === "email_mismatch") {
           setEmailMismatchError(true);
+          return;
+        }
+        if (err.error === "cv_upload_failed") {
+          setCvError("CV upload failed — please try a different file or check your connection.");
           return;
         }
         throw new Error(err.message || err.error || "Submission failed");
@@ -162,9 +174,11 @@ export default function JobApplyPage() {
         navigate(`/talent/signup?applicationToken=${encodeURIComponent(data.continuationToken)}`);
       }
     } catch (err: any) {
+      clearTimeout(stepTimer);
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     } finally {
       setIsPending(false);
+      setSubmitStep(null);
     }
   };
 
@@ -392,8 +406,17 @@ export default function JobApplyPage() {
                 <Label>
                   CV / Resume <span className="text-red-500">*</span>
                 </Label>
-                {cvFile ? (
+
+                {cvState === "validating" ? (
+                  /* Brief validating state */
                   <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#474ead]" />
+                    <span className="text-sm text-slate-500 dark:text-slate-400">Checking file…</span>
+                  </div>
+                ) : cvFile && cvState === "ready" ? (
+                  /* Accepted state with file size and green confirmation */
+                  <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 dark:border-emerald-700/40 dark:bg-emerald-900/20">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <FileText className="h-4 w-4 shrink-0 text-[#474ead]" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{cvFile.name}</p>
@@ -405,13 +428,15 @@ export default function JobApplyPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setCvFile(null); setCvError(null); }}
+                      onClick={() => { setCvFile(null); setCvState("idle"); setCvError(null); }}
                       className="shrink-0 text-xs font-medium text-slate-400 hover:text-red-500 dark:hover:text-red-400 flex items-center gap-1"
+                      aria-label="Remove CV"
                     >
                       <X className="h-3.5 w-3.5" /> Remove
                     </button>
                   </div>
                 ) : (
+                  /* Upload prompt */
                   <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center transition-colors hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-slate-700 dark:bg-slate-800/50">
                     <Upload className="mb-1.5 h-5 w-5 text-slate-400" />
                     <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Upload your CV</span>
@@ -423,25 +448,35 @@ export default function JobApplyPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const allowed = [
-                          "application/pdf",
-                          "application/msword",
-                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        ];
-                        if (!allowed.includes(file.type)) {
-                          setCvError("Please upload a PDF, DOC, or DOCX file");
-                          return;
-                        }
-                        if (file.size > 10 * 1024 * 1024) {
-                          setCvError("Resume must be 10 MB or smaller");
-                          return;
-                        }
-                        setCvFile(file);
+                        // Reset so re-selecting after an error works correctly
+                        e.target.value = "";
+                        setCvState("validating");
                         setCvError(null);
+                        // Validate in the next tick so the "validating" state renders first
+                        setTimeout(() => {
+                          const allowed = [
+                            "application/pdf",
+                            "application/msword",
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                          ];
+                          if (!allowed.includes(file.type)) {
+                            setCvState("idle");
+                            setCvError("Please upload a PDF, DOC, or DOCX file");
+                            return;
+                          }
+                          if (file.size > 10 * 1024 * 1024) {
+                            setCvState("idle");
+                            setCvError("Resume must be 10 MB or smaller");
+                            return;
+                          }
+                          setCvFile(file);
+                          setCvState("ready");
+                        }, 300);
                       }}
                     />
                   </label>
                 )}
+
                 {cvError && <p className="text-xs text-red-500">{cvError}</p>}
               </div>
 
@@ -468,7 +503,7 @@ export default function JobApplyPage() {
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting…
+                      {submitStep === "saving" ? "Saving application…" : "Uploading CV…"}
                     </>
                   ) : (
                     "Submit Application →"
