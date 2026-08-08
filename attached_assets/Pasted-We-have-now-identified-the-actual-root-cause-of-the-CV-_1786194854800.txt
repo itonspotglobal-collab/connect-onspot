@@ -1,0 +1,538 @@
+We have now identified the actual root cause of the CV View/Download 401.
+
+CURRENT CONSOLE:
+
+AuthContext: No JWT authentication found
+
+then:
+
+GET /api/admin/job-applications/:id/resume
+401 Unauthorized
+
+and UI toast:
+
+"Could not open CV"
+"Please log in to perform this action"
+
+The Admin Job Applications page itself is currently accessible even without a JWT.
+
+This creates an authentication mismatch:
+
+/admin/job-applications
+can render without authenticated admin session
+
+but:
+
+/api/admin/job-applications/:id/resume
+requires authenticated admin access
+
+DO NOT keep patching the View button.
+
+Fix the admin authentication architecture.
+
+==================================================
+ROOT CAUSE TO VERIFY
+==================================================
+
+Inspect:
+
+client/src/App.tsx
+client/src/contexts/AuthContext.tsx
+client/src/components/ProtectedRoute.tsx
+client/src/pages/AdminJobApplications.tsx
+server/routes.ts
+
+The codebase previously had temporary comments similar to:
+
+TODO: Restore admin authentication and authorization before production launch.
+
+Admin routes such as:
+
+/admin/dashboard
+/admin/find-work
+/admin/job-applications
+
+may currently be registered directly without AdminProtectedRoute.
+
+That means a browser without:
+
+localStorage["onspot_jwt_token"]
+
+can still access the admin page.
+
+Meanwhile the resume endpoint correctly requires authentication.
+
+Fix this mismatch.
+
+==================================================
+SOLUTION — RESTORE ADMIN ROUTE PROTECTION
+==================================================
+
+Protect the admin pages with the existing AdminProtectedRoute or equivalent auth guard.
+
+Do NOT create a new auth system if the project already has one.
+
+For example, instead of:
+
+<Route
+  path="/admin/job-applications"
+  component={AdminJobApplications}
+/>
+
+use the project's existing admin protection pattern, for example:
+
+<Route
+  path="/admin/job-applications"
+  component={() => (
+    <AdminProtectedRoute>
+      <AdminJobApplications />
+    </AdminProtectedRoute>
+  )}
+/>
+
+Apply the same pattern consistently to relevant admin routes including:
+
+/admin/dashboard
+/admin/find-work
+/admin/job-applications
+/admin/email-templates
+/admin/email-templates/create
+/admin/email-templates/:id/edit
+/admin/image-uploader
+/admin/inquiries
+/admin/insights
+/admin/vanessa-* where appropriate
+
+Do NOT protect public pages.
+
+==================================================
+ADMIN LOGIN FLOW
+==================================================
+
+When an unauthenticated user visits:
+
+/admin/job-applications
+
+they should NOT silently see the admin page.
+
+They should be redirected to the existing login/access portal.
+
+Use the existing admin login mechanism.
+
+Do not create a fake admin token.
+
+After successful login:
+
+localStorage.getItem("onspot_jwt_token")
+
+must contain a valid JWT.
+
+The token payload must identify the authenticated user and role.
+
+The user must have:
+
+role === "admin"
+
+before entering admin routes.
+
+==================================================
+IMPORTANT — VERIFY TOKEN STORAGE
+==================================================
+
+Inspect the login flow.
+
+After successful login make sure the frontend stores:
+
+localStorage.setItem(
+  "onspot_jwt_token",
+  response.token
+);
+
+Do not use multiple competing token keys.
+
+Search the project for:
+
+onspot_jwt_token
+jwt_token
+token
+authToken
+
+Make sure the admin login flow and AdminJobApplications.tsx use the same key.
+
+==================================================
+AUTHCONTEXT FIX
+==================================================
+
+AuthContext currently logs:
+
+"No JWT authentication found"
+
+while an admin page is visible.
+
+That should no longer be possible.
+
+AuthContext initialization should:
+
+1. read onspot_jwt_token;
+2. validate/load the user;
+3. expose:
+   isAuthenticated
+   user
+   role
+4. AdminProtectedRoute should wait while auth is loading;
+5. AdminProtectedRoute should only render children when:
+   isAuthenticated === true
+   AND user.role === "admin"
+
+Otherwise redirect to login/access portal.
+
+Avoid redirect loops while AuthContext is loading.
+
+==================================================
+RESUME REQUEST
+==================================================
+
+After proper admin authentication exists, keep the resume request authenticated.
+
+Frontend:
+
+const token = localStorage.getItem("onspot_jwt_token");
+
+const res = await fetch(
+  `/api/admin/job-applications/${applicationId}/resume`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+Do not remove backend authentication.
+
+Do not make resume public.
+
+Do not put JWT in query params.
+
+==================================================
+BACKEND AUTH CONSISTENCY
+==================================================
+
+Inspect:
+
+GET /api/admin/job-applications
+GET /api/admin/job-applications/:id
+GET /api/admin/job-applications/:id/resume
+
+All admin routes should use a consistent auth policy.
+
+Prefer:
+
+authenticateJWT
++
+requireAdmin
+
+or whatever middleware already exists in this codebase.
+
+If the list/detail APIs are currently public but the resume API is protected, correct that inconsistency.
+
+Admin application data contains personally identifiable information and should not remain publicly accessible.
+
+At minimum protect:
+
+GET /api/admin/job-applications
+GET /api/admin/job-applications/summary
+GET /api/admin/job-applications/:id
+GET /api/admin/job-applications/:id/resume
+PATCH /api/admin/job-applications/:id/status
+DELETE /api/admin/job-applications/:id
+email/admin actions
+
+with admin authentication.
+
+==================================================
+VERY IMPORTANT
+==================================================
+
+Do NOT solve this by making:
+
+/api/admin/job-applications/:id/resume
+
+public.
+
+The correct fix is:
+
+unauthenticated browser
+→ cannot access admin page
+
+authenticated admin
+→ receives JWT
+→ admin page loads
+→ resume fetch includes JWT
+→ server verifies admin
+→ returns resume
+
+==================================================
+VIEW CV
+==================================================
+
+Once JWT auth is fixed:
+
+View should still fetch the protected file first.
+
+Use:
+
+const previewWindow = window.open("", "_blank");
+
+try {
+  const token =
+    localStorage.getItem("onspot_jwt_token");
+
+  if (!token) {
+    previewWindow?.close();
+    throw new Error(
+      "Your admin session has expired. Please sign in again."
+    );
+  }
+
+  const response = await fetch(
+    `/api/admin/job-applications/${detail.id}/resume`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (response.status === 401 ||
+      response.status === 403) {
+
+    previewWindow?.close();
+
+    throw new Error(
+      "Your admin session has expired or you do not have permission."
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error("Unable to load resume.");
+  }
+
+  const blob = await response.blob();
+
+  const objectUrl =
+    URL.createObjectURL(blob);
+
+  if (previewWindow) {
+    previewWindow.location.href = objectUrl;
+  }
+
+  setTimeout(
+    () => URL.revokeObjectURL(objectUrl),
+    60000
+  );
+
+} catch (error) {
+  previewWindow?.close();
+  // toast
+}
+
+==================================================
+DOWNLOAD CV
+==================================================
+
+Use the exact same authenticated fetch.
+
+Then:
+
+const blob = await response.blob();
+const url = URL.createObjectURL(blob);
+
+const link =
+  document.createElement("a");
+
+link.href = url;
+
+link.download =
+  detail.resumeFileName ||
+  "resume";
+
+document.body.appendChild(link);
+
+link.click();
+link.remove();
+
+URL.revokeObjectURL(url);
+
+==================================================
+SESSION EXPIRED UX
+==================================================
+
+If resume fetch returns 401:
+
+Do not simply show:
+
+"Could not open CV"
+
+Show:
+
+"Admin session expired"
+
+"Please sign in again to continue."
+
+Then redirect to the existing admin/access login page.
+
+Do not retry infinitely.
+
+==================================================
+VERIFY WITH DEVTOOLS
+==================================================
+
+After fixing:
+
+1. Clear existing auth/storage.
+
+2. Navigate to:
+
+/admin/job-applications
+
+EXPECTED:
+
+You should be redirected to login.
+
+The admin page must NOT render.
+
+3. Sign in with an admin account.
+
+4. Inspect Application tab → Local Storage.
+
+Confirm:
+
+onspot_jwt_token
+
+exists.
+
+5. Open:
+
+/admin/job-applications
+
+6. Open Application Details.
+
+7. Click View CV.
+
+Inspect Network:
+
+GET
+/api/admin/job-applications/:id/resume
+
+EXPECTED:
+
+Status:
+200
+
+Request Headers:
+
+Authorization:
+Bearer ey...
+
+8. PDF should open.
+
+9. Click Download.
+
+EXPECTED:
+
+resume downloads successfully.
+
+10. Log out.
+
+11. Directly request the resume endpoint.
+
+EXPECTED:
+
+401 or 403.
+
+==================================================
+ALSO FIX THE DIALOG WARNING
+==================================================
+
+Still fix:
+
+Missing `Description` or
+`aria-describedby={undefined}`
+
+Import:
+
+DialogDescription
+
+and use:
+
+<DialogHeader>
+  <DialogTitle>
+    Application Details
+  </DialogTitle>
+
+  <DialogDescription className="sr-only">
+    Review applicant information, resume,
+    cover letter, and application status.
+  </DialogDescription>
+</DialogHeader>
+
+==================================================
+DO NOT SPEND TIME ON THESE UNTIL AUTH WORKS
+==================================================
+
+The following console warnings are separate:
+
+- Lindy Embed authorization
+- Stripe public key
+- Vanessa threadId
+- preload warning
+
+Do NOT mix those fixes into the resume-authentication fix yet.
+
+First make this exact flow work:
+
+Admin login
+→ JWT exists
+→ Admin Job Applications loads
+→ View Resume returns 200
+→ Download works
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+The feature is complete when:
+
+1. An unauthenticated user cannot view /admin/job-applications.
+
+2. Admin login produces onspot_jwt_token.
+
+3. AdminProtectedRoute verifies role === "admin".
+
+4. Admin application APIs require admin auth.
+
+5. Resume endpoint remains protected.
+
+6. View sends Authorization Bearer JWT.
+
+7. Resume View returns HTTP 200.
+
+8. PDF opens.
+
+9. Download returns HTTP 200.
+
+10. File downloads with correct filename.
+
+11. Logged-out requests return 401/403.
+
+12. No "Please log in" error appears while a valid admin is logged in.
+
+At completion explain:
+
+- why the page was accessible without JWT;
+- which admin routes were protected;
+- login route used;
+- token key used;
+- backend middleware used;
+- status code from resume View test;
+- status code from Download test.

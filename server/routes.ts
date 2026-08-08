@@ -8878,7 +8878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOTE: must be registered BEFORE the :applicationId route to avoid Express
   //       matching the literal string "summary" as a URL parameter.
   // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
-  app.get("/api/admin/job-applications/summary", async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/summary", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
 
       const [byStatus, byReg, total] = await Promise.all([
@@ -8907,8 +8907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications — paginated list with search/filter/sort (admin only)
-  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
-  app.get("/api/admin/job-applications", async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
 
       const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),   10));
@@ -9006,8 +9005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId — full detail with history (admin only)
-  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
-  app.get("/api/admin/job-applications/:applicationId", async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
 
       const { applicationId } = req.params;
@@ -9155,11 +9153,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
-  // TODO: Restore authenticateJWT + requireAdmin middleware before production launch.
-  app.patch("/api/admin/job-applications/:applicationId/status", async (req: Request, res: Response) => {
+  app.patch("/api/admin/job-applications/:applicationId/status", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
-      // TODO: Replace null with req.user.id once admin auth is restored.
-      const changedBy: string | null = null; // temporary — no auth in this phase
+      const changedBy: string = (req as any).user.id;
 
       const { applicationId } = req.params;
       const { status, note } = req.body ?? {};
@@ -9200,8 +9196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/admin/job-applications/:applicationId — delete a single application submission (admin only)
-  // TODO: Protect application deletion with admin authorization before production.
-  app.delete("/api/admin/job-applications/:applicationId", async (req: Request, res: Response) => {
+  app.delete("/api/admin/job-applications/:applicationId", authenticateAdminFlexible, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       if (!applicationId) return res.status(400).json({ error: "applicationId is required" });

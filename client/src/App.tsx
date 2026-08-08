@@ -194,15 +194,15 @@ function PublicRouter() {
           <Route path="/admin/insights" component={AdminInsights} />
           <Route path="/admin/insights/create" component={AdminInsightEditor} />
           <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
-          {/* TODO: Restore admin authentication and authorization before production launch. */}
-          <Route path="/admin/dashboard" component={AdminDashboard} />
-          <Route path="/admin/find-work" component={AdminFindWork} />
-          <Route path="/admin/job-applications" component={AdminJobApplications} />
-          <Route path="/admin/email-templates" component={AdminEmailTemplates} />
-          <Route path="/admin/email-templates/create" component={AdminEmailTemplateEditor} />
-          <Route path="/admin/email-templates/:id/edit" component={AdminEmailTemplateEditor} />
-          <Route path="/admin/image-uploader" component={AdminImageUploader} />
-          <Route path="/admin/inquiries" component={AdminInquiries} />
+          {/* Admin routes — protected: requires role === "admin" and valid JWT */}
+          <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
+          <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/email-templates/:id/edit" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/image-uploader" component={() => <AdminProtectedRoute><AdminImageUploader /></AdminProtectedRoute>} />
+          <Route path="/admin/inquiries" component={() => <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

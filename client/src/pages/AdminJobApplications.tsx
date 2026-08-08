@@ -286,23 +286,55 @@ function DetailDialog({
 
   async function handleViewCv() {
     if (!applicationId) return;
+    // Open a blank tab immediately (same user gesture) so browsers don't block it
+    const previewWindow = window.open("", "_blank");
     setCvOpening("view");
     try {
-      const { blob } = await getResumeBlob(applicationId);
-      const blobUrl = URL.createObjectURL(blob);
-      const newTab = window.open(blobUrl, "_blank", "noopener,noreferrer");
-      if (!newTab) {
-        URL.revokeObjectURL(blobUrl);
+      const token = localStorage.getItem("onspot_jwt_token");
+      if (!token) {
+        previewWindow?.close();
         toast({
-          title: "Popup blocked",
-          description: "Allow popups for this site to view the CV, or use the Download button instead.",
+          title: "Admin session expired",
+          description: "Please sign in again to continue.",
           variant: "destructive",
         });
         return;
       }
-      // Revoke after 60 s — long enough for the new tab to load the PDF
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      const response = await fetch(`/api/admin/job-applications/${applicationId}/resume`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401 || response.status === 403) {
+        previewWindow?.close();
+        toast({
+          title: "Admin session expired",
+          description: "Please sign in again to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!response.ok) {
+        previewWindow?.close();
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message || body?.error || "Unable to load resume.");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      if (previewWindow) {
+        previewWindow.location.href = objectUrl;
+      } else {
+        // Fallback if pop-up was blocked anyway
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      // Revoke after 60 s — enough time for the new tab to load the PDF
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
+      previewWindow?.close();
       toast({ title: "Could not open CV", description: err.message, variant: "destructive" });
     } finally {
       setCvOpening(null);

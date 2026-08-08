@@ -110,7 +110,7 @@ export function AdminProtectedRoute({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute 
       requiredRole="admin" 
-      fallbackPath="/dashboard"
+      fallbackPath="/login"
       loadingMessage="Verifying admin access..."
     >
       {children}
