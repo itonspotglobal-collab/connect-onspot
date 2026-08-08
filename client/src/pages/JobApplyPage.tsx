@@ -17,10 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2, Lock } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Lock } from "lucide-react";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function JobApplyPage() {
