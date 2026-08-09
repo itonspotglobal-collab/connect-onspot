@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
   Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
-  Wifi, Monitor, Lock,
+  Wifi, Monitor, Lock, CalendarDays, Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -465,9 +465,31 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
     : CULTURAL_FIT_DEFAULTS;
 
   // "Required Tools & Equipment"
-  const minimumInternetSpeed = (job as any).minimumInternetSpeed as string | null | undefined;
-  const systemRequirements   = (job as any).systemRequirements   as string | null | undefined;
-  const hasToolsSection = !!(minimumInternetSpeed?.trim() || systemRequirements?.trim());
+  const minimumInternetSpeed       = (job as any).minimumInternetSpeed       as string | null | undefined;
+  const systemRequirements         = (job as any).systemRequirements         as string | null | undefined;
+  const requiredToolsSoftware      = (job as any).requiredToolsSoftware      as string | null | undefined;
+  const otherEquipmentRequirements = (job as any).otherEquipmentRequirements as string | null | undefined;
+  const hasToolsSection = !!(
+    minimumInternetSpeed?.trim() || systemRequirements?.trim() ||
+    requiredToolsSoftware?.trim() || otherEquipmentRequirements?.trim()
+  );
+
+  // "Preferred Qualifications"
+  const preferredQualifications = (job as any).preferredQualifications as string | null | undefined;
+
+  // "Work Schedule"
+  const workDays            = (job as any).workDays            as string | null | undefined;
+  const timeZone            = (job as any).timeZone            as string | null | undefined;
+  const weeklyHours         = (job as any).weeklyHours         as string | null | undefined;
+  const scheduleFlexibility = (job as any).scheduleFlexibility as string | null | undefined;
+  const hasWorkSchedule     = !!(workDays?.trim() || timeZone?.trim() || weeklyHours?.trim() || scheduleFlexibility?.trim());
+
+  // "What We Offer" extra content
+  const whatWeOfferContent = (job as any).whatWeOffer as string | null | undefined;
+
+  // Compensation extras
+  const paymentFrequency  = (job as any).paymentFrequency  as string | null | undefined;
+  const compensationNotes = (job as any).compensationNotes as string | null | undefined;
 
   // Compensation
   const currencyCode = getEffectiveCurrencyCode((job as any).budgetCurrency, (job as any).customCurrencyCode);
@@ -476,7 +498,8 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
   const benefitsStr = ((job as any).benefits as string | null | undefined)?.trim() ?? "";
   const hasCommission = !!(job as any).hasCommission;
   const hasEquity     = !!(job as any).hasEquity;
-  const hasWhatWeOffer = !!(benefitsStr || hasCommission || hasEquity);
+  // Commission/Equity are now shown in the Compensation section only (no duplication in What We Offer)
+  const hasWhatWeOffer = !!(benefitsStr || whatWeOfferContent?.trim());
 
   const tags = (job.skillTags ?? []) as string[];
 
@@ -661,16 +684,29 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         ) : null}
 
-        {/* 5. Cultural Fit */}
-        <Section
-          icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
-          iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
-          label="Cultural Fit"
-        >
-          <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
-        </Section>
+        {/* 5. Preferred Qualifications — only shown when populated */}
+        {preferredQualifications?.trim() && (
+          <Section
+            icon={<Award className="h-5 w-5 text-violet-500" />}
+            iconBg="bg-violet-50 dark:bg-violet-900/30"
+            label="Preferred Qualifications"
+          >
+            <SectionBody items={[preferredQualifications.trim()]} bulletColor="bg-violet-400" />
+          </Section>
+        )}
 
-        {/* 6. Required Tools & Equipment */}
+        {/* 6. Cultural Fit — only shown when populated */}
+        {culturalFit.length > 0 && (
+          <Section
+            icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
+            iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
+            label="Cultural Fit"
+          >
+            <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
+          </Section>
+        )}
+
+        {/* 7. Required Tools & Equipment */}
         {hasToolsSection && (
           <Section
             icon={<Monitor className="h-5 w-5 text-sky-500" />}
@@ -689,16 +725,68 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               {systemRequirements?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <Monitor className="h-3.5 w-3.5" /> System & Equipment
+                    <Monitor className="h-3.5 w-3.5" /> System &amp; Equipment
                   </div>
                   <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">{systemRequirements.trim()}</p>
+                </div>
+              )}
+              {requiredToolsSoftware?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <Wrench className="h-3.5 w-3.5" /> Required Tools / Software
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">{requiredToolsSoftware.trim()}</p>
+                </div>
+              )}
+              {otherEquipmentRequirements?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <Monitor className="h-3.5 w-3.5" /> Other Equipment
+                  </div>
+                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{otherEquipmentRequirements.trim()}</p>
                 </div>
               )}
             </div>
           </Section>
         )}
 
-        {/* 7. Compensation (body section) — monthly only, no annual/hourly */}
+        {/* 8. Work Schedule — only shown when at least one field is populated */}
+        {hasWorkSchedule && (
+          <Section
+            icon={<CalendarDays className="h-5 w-5 text-indigo-500" />}
+            iconBg="bg-indigo-50 dark:bg-indigo-900/30"
+            label="Work Schedule"
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {workDays?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Days</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{workDays.trim()}</p>
+                </div>
+              )}
+              {timeZone?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Time Zone</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{timeZone.trim()}</p>
+                </div>
+              )}
+              {weeklyHours?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Weekly Hours</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{weeklyHours.trim()}</p>
+                </div>
+              )}
+              {scheduleFlexibility?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Flexibility</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{scheduleFlexibility.trim()}</p>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* 9. Compensation — monthly only; Commission/Equity shown here (not duplicated in What We Offer) */}
         {pay && (
           <Section
             icon={<DollarSign className="h-5 w-5 text-emerald-500" />}
@@ -714,9 +802,15 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                 <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monthly Rate</div>
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{pay}</p>
               </div>
+              {paymentFrequency?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Payment Frequency</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{paymentFrequency.trim()}</p>
+                </div>
+              )}
               {(hasCommission || hasEquity) && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional</div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional Compensation</div>
                   <div className="flex flex-wrap gap-2">
                     {hasCommission && (
                       <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
@@ -731,37 +825,31 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   </div>
                 </div>
               )}
+              {compensationNotes?.trim() && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2 lg:col-span-3 dark:border-white/[0.08] dark:bg-white/[0.04]">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</div>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">{compensationNotes.trim()}</p>
+                </div>
+              )}
             </div>
           </Section>
         )}
 
-        {/* 8. What We Offer — benefits + commission + equity */}
+        {/* 10. What We Offer — whatWeOffer rich text + benefits tags; Commission/Equity NOT repeated here */}
         {hasWhatWeOffer && (
           <Section
             icon={<Gift className="h-5 w-5 text-purple-500" />}
             iconBg="bg-purple-50 dark:bg-purple-900/30"
             label="What We Offer"
           >
-            {benefitsStr && (
-              <div className="mb-4">
-                <BenefitsDisplay benefits={benefitsStr} />
-              </div>
+            {whatWeOfferContent?.trim() && (
+              <div className={`prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-li:text-left prose-li:leading-7 ${benefitsStr ? "mb-6" : ""}`}
+                dangerouslySetInnerHTML={{ __html: whatWeOfferContent.trim() }}
+              />
             )}
-            {(hasCommission || hasEquity) && (
-              <div className={benefitsStr ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]" : ""}>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional Compensation</p>
-                <div className="flex flex-wrap gap-2">
-                  {hasCommission && (
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
-                      Commission
-                    </span>
-                  )}
-                  {hasEquity && (
-                    <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1.5 text-sm font-medium text-purple-700 dark:bg-purple-400/15 dark:text-purple-300">
-                      Equity
-                    </span>
-                  )}
-                </div>
+            {benefitsStr && (
+              <div className={whatWeOfferContent?.trim() ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]" : ""}>
+                <BenefitsDisplay benefits={benefitsStr} />
               </div>
             )}
           </Section>

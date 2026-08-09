@@ -100,6 +100,20 @@ export const defaultFormData = {
   // System requirements
   minimumInternetSpeed: "",
   systemRequirements: "",
+  requiredToolsSoftware: "",
+  otherEquipmentRequirements: "",
+  // Work schedule
+  workDays: "",
+  timeZone: "",
+  weeklyHours: "",
+  scheduleFlexibility: "",
+  // Preferred qualifications (rich text)
+  preferredQualifications: "",
+  // Compensation extras
+  paymentFrequency: "",
+  compensationNotes: "",
+  // What We Offer (rich text)
+  whatWeOffer: "",
   // Application link / method
   applicationMethod: "built_in_form",
   applyLink: "",
@@ -166,6 +180,20 @@ export function jobToFormData(job: Job): JobFormData {
     // System requirements
     minimumInternetSpeed: (job as any).minimumInternetSpeed || "",
     systemRequirements: (job as any).systemRequirements || "",
+    requiredToolsSoftware: (job as any).requiredToolsSoftware || "",
+    otherEquipmentRequirements: (job as any).otherEquipmentRequirements || "",
+    // Work schedule
+    workDays: (job as any).workDays || "",
+    timeZone: (job as any).timeZone || "",
+    weeklyHours: (job as any).weeklyHours || "",
+    scheduleFlexibility: (job as any).scheduleFlexibility || "",
+    // Preferred qualifications
+    preferredQualifications: (job as any).preferredQualifications || "",
+    // Compensation extras
+    paymentFrequency: (job as any).paymentFrequency || "",
+    compensationNotes: (job as any).compensationNotes || "",
+    // What We Offer
+    whatWeOffer: (job as any).whatWeOffer || "",
     // Application link / method
     applicationMethod: (job as any).applicationMethod || "built_in_form",
     applyLink: (job as any).applyLink || "",
@@ -380,9 +408,29 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     payload.trainingAndSupport = formData.trainingAndSupport.trim();
     payload.growthPath = formData.growthPath.trim();
 
-    // System requirements
+    // System requirements + tools
     if (formData.minimumInternetSpeed) payload.minimumInternetSpeed = formData.minimumInternetSpeed.trim();
     payload.systemRequirements = formData.systemRequirements.trim();
+    payload.requiredToolsSoftware = formData.requiredToolsSoftware.trim() || null;
+    payload.otherEquipmentRequirements = formData.otherEquipmentRequirements.trim() || null;
+
+    // Work schedule
+    payload.workDays = formData.workDays.trim() || null;
+    payload.timeZone = formData.timeZone.trim() || null;
+    payload.weeklyHours = formData.weeklyHours.trim() || null;
+    payload.scheduleFlexibility = formData.scheduleFlexibility.trim() || null;
+
+    // Preferred qualifications (rich text stored as single HTML string)
+    payload.preferredQualifications = !isEmptyQuill(formData.preferredQualifications)
+      ? formData.preferredQualifications
+      : null;
+
+    // Compensation extras
+    payload.paymentFrequency = formData.paymentFrequency.trim() || null;
+    payload.compensationNotes = formData.compensationNotes.trim() || null;
+
+    // What We Offer (rich text)
+    payload.whatWeOffer = !isEmptyQuill(formData.whatWeOffer) ? formData.whatWeOffer : null;
 
     // Application method + link
     payload.applicationMethod = formData.applicationMethod;
@@ -787,7 +835,35 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 6. CULTURAL FIT ─────────────────────────────────────────────── */}
+          {/* ── 6. PREFERRED QUALIFICATIONS ─────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Preferred Qualifications
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Optional qualifications that are beneficial but not strictly required.
+            </p>
+            <div className="space-y-2">
+              <div className="rounded-md border border-input bg-background">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.preferredQualifications}
+                  onChange={(v) => updateField("preferredQualifications", v)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="e.g. Experience with Salesforce — Familiarity with US market — Prior remote work experience..."
+                  style={{ minHeight: "130px" }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Shown on the public job page under "Preferred Qualifications". Leave blank to omit the section.
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 7. CULTURAL FIT ─────────────────────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="w-4 h-4 text-[#474ead]" />
@@ -818,7 +894,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 7. REQUIRED TOOLS & EQUIPMENT ───────────────────────────────── */}
+          {/* ── 8. REQUIRED TOOLS & EQUIPMENT ───────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Required Tools &amp; Equipment
@@ -837,13 +913,38 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="modal-systemReqs">System Requirements</Label>
+                <Label htmlFor="modal-systemReqs">System &amp; Equipment Requirements</Label>
                 <Textarea
                   id="modal-systemReqs"
                   value={formData.systemRequirements}
                   onChange={(e) => updateField("systemRequirements", e.target.value)}
-                  placeholder="e.g. Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
-                  className="min-h-[80px] resize-y"
+                  placeholder="e.g. Reliable laptop/desktop, headset, webcam, quiet professional workspace."
+                  className="min-h-[72px] resize-y"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-toolsSoftware">
+                  Required Tools / Software
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Textarea
+                  id="modal-toolsSoftware"
+                  value={formData.requiredToolsSoftware}
+                  onChange={(e) => updateField("requiredToolsSoftware", e.target.value)}
+                  placeholder="e.g. Salesforce, Slack, Google Workspace, Zoom, Asana"
+                  className="min-h-[60px] resize-y"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-otherEquipment">
+                  Other Equipment Requirements
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Input
+                  id="modal-otherEquipment"
+                  value={formData.otherEquipmentRequirements}
+                  onChange={(e) => updateField("otherEquipmentRequirements", e.target.value)}
+                  placeholder="e.g. Noise-cancelling headset, external monitor"
                 />
               </div>
             </div>
@@ -851,7 +952,57 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 8. COMPENSATION ─────────────────────────────────────────────── */}
+          {/* ── 9. WORK SCHEDULE ────────────────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Work Schedule
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Expected working hours and schedule for this role. Leave blank to omit the section.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-workDays">Work Days</Label>
+                <Input
+                  id="modal-workDays"
+                  value={formData.workDays}
+                  onChange={(e) => updateField("workDays", e.target.value)}
+                  placeholder="e.g. Monday – Friday"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-timeZone">Time Zone</Label>
+                <Input
+                  id="modal-timeZone"
+                  value={formData.timeZone}
+                  onChange={(e) => updateField("timeZone", e.target.value)}
+                  placeholder="e.g. US Eastern overlap"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-weeklyHours">Weekly Hours</Label>
+                <Input
+                  id="modal-weeklyHours"
+                  value={formData.weeklyHours}
+                  onChange={(e) => updateField("weeklyHours", e.target.value)}
+                  placeholder="e.g. 40 hours / week"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-scheduleFlexibility">Flexibility</Label>
+                <Input
+                  id="modal-scheduleFlexibility"
+                  value={formData.scheduleFlexibility}
+                  onChange={(e) => updateField("scheduleFlexibility", e.target.value)}
+                  placeholder="e.g. Set hours, remote"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 10. COMPENSATION ────────────────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
               Compensation
@@ -962,6 +1113,30 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             )}
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-paymentFrequency">Payment Frequency</Label>
+                <Input
+                  id="modal-paymentFrequency"
+                  value={formData.paymentFrequency}
+                  onChange={(e) => updateField("paymentFrequency", e.target.value)}
+                  placeholder="e.g. Monthly"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-compensationNotes">
+                  Compensation Notes
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Input
+                  id="modal-compensationNotes"
+                  value={formData.compensationNotes}
+                  onChange={(e) => updateField("compensationNotes", e.target.value)}
+                  placeholder="e.g. Includes performance-based incentives"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Additional Compensation
@@ -1005,32 +1180,54 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 9. WHAT WE OFFER ────────────────────────────────────────────── */}
+          {/* ── 11. WHAT WE OFFER ───────────────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
               What We Offer
             </p>
-            <div className="space-y-2">
-              <Label htmlFor="modal-benefits">
-                Benefits
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
-              </Label>
-              <Textarea
-                id="modal-benefits"
-                value={formData.benefits}
-                onChange={(e) => updateField("benefits", e.target.value)}
-                placeholder="e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
-                className="min-h-[72px] resize-y"
-              />
-              <p className="text-xs text-muted-foreground">
-                HMO, government benefits, allowances, leave, bonuses, or other perks offered with this role.
-              </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>
+                  What We Offer
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional — shown as a list on the job page)</span>
+                </Label>
+                <div className="rounded-md border border-input bg-background">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.whatWeOffer}
+                    onChange={(v) => updateField("whatWeOffer", v)}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    placeholder="e.g. Flexible, fully remote work arrangement — Long-term engagement potential — Performance-based incentives — Professional growth opportunities..."
+                    style={{ minHeight: "130px" }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Use bullet list for best results. Shown publicly under "What We Offer".
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-benefits">
+                  Benefits / Perks Tags
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Textarea
+                  id="modal-benefits"
+                  value={formData.benefits}
+                  onChange={(e) => updateField("benefits", e.target.value)}
+                  placeholder="e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
+                  className="min-h-[60px] resize-y"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Comma-separated benefit tags (HMO, allowances, leave, bonuses). Displayed as pills below the What We Offer list.
+                </p>
+              </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* ── 10. JOB SUCCESS PROFILE ─────────────────────────────────────── */}
+          {/* ── 12. JOB SUCCESS PROFILE ─────────────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="w-4 h-4 text-[#474ead]" />
@@ -1125,7 +1322,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 11. POSTING OPTIONS ─────────────────────────────────────────── */}
+          {/* ── 13. POSTING OPTIONS ─────────────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
               Posting Options
@@ -1172,7 +1369,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 12. APPLICATION METHOD / STATUS ─────────────────────────────── */}
+          {/* ── 14. APPLICATION METHOD / STATUS ─────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
               Application &amp; Publishing

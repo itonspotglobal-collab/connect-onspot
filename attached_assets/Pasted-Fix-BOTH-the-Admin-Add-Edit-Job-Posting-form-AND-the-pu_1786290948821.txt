@@ -1,0 +1,651 @@
+Fix BOTH the Admin Add/Edit Job Posting form AND the public View Job Details page so they properly match the uploaded job-posting template structure and sequence.
+
+IMPORTANT:
+Do not partially approximate the template anymore.
+
+The goal is:
+- Admin form fields should exist in the same logical order as the template
+- View Job Details should render those sections in the same order
+- Missing template sections must be supported in the form if they are not yet available
+- Existing useful fields should be mapped into the correct template sections
+- Do not remove current data unnecessarily
+
+PRIMARY FILES TO INSPECT:
+- Admin Add/Edit Job Posting component
+- shared JobForm component if one exists
+- client/src/pages/FindWorkJob.tsx
+- shared Job types/interfaces
+- create/update API payload
+- backend schema/validation
+- DB schema/model if new fields are needed
+
+==================================================
+TARGET TEMPLATE ORDER
+==================================================
+
+The final public Job Details page and Admin form should use this exact sequence:
+
+1. BASIC / HERO INFORMATION
+2. ABOUT THE COMPANY
+3. ABOUT THE ROLE
+4. KEY RESPONSIBILITIES
+5. REQUIRED QUALIFICATIONS
+6. PREFERRED QUALIFICATIONS
+7. REQUIRED TOOLS & EQUIPMENT
+8. WORK SCHEDULE
+9. COMPENSATION
+10. WHAT WE OFFER
+11. CLOSING CTA / DISCLAIMER / SIMILAR ROLES
+
+This follows the uploaded template.
+
+==================================================
+1. BASIC / HERO INFORMATION
+==================================================
+
+Keep existing fields:
+
+- Professional Role Name
+- Original / Alternative Role
+- Company
+- Company Confidential toggle
+- Work Setup
+- Function
+- Experience Level
+- Contract Type
+- Status
+- Application Method
+- Featured
+- Urgently Hiring
+- Multiple Slots if supported
+
+These belong to the hero/admin metadata area.
+
+==================================================
+2. ABOUT THE COMPANY
+==================================================
+
+Admin form must have an explicit section:
+
+ABOUT THE COMPANY
+
+Fields:
+
+- Company Name *
+- Keep company confidential
+- Company Description
+- Confidential Client Overview
+
+Behavior:
+
+PUBLIC COMPANY:
+show Company Name + Company Description
+
+CONFIDENTIAL:
+show "Confidential Company" + Confidential Client Overview
+
+Do not expose the actual confidential company name publicly.
+
+==================================================
+3. ABOUT THE ROLE
+==================================================
+
+Admin fields:
+
+- Card Preview Summary
+- Full Role Description
+
+Mapping:
+
+Card Preview Summary
+→ listing cards only
+
+Full Role Description
+→ public "About the Role"
+
+Do not show Card Preview Summary on the full detail page.
+
+==================================================
+4. KEY RESPONSIBILITIES
+==================================================
+
+Admin:
+
+Key Responsibilities editor
+
+Map existing:
+Responsibilities
+
+Public heading:
+
+Key Responsibilities
+
+Preserve bullets / rich text.
+
+==================================================
+5. REQUIRED QUALIFICATIONS
+==================================================
+
+Admin:
+
+Required Qualifications editor
+
+Map existing:
+Skills & Requirements
+
+Rename the UI label if needed, but do not unnecessarily rename the database field.
+
+Public heading:
+
+Required Qualifications
+
+==================================================
+6. PREFERRED QUALIFICATIONS
+==================================================
+
+THIS SECTION IS CURRENTLY MISSING / INCORRECT.
+
+The public page currently shows "Cultural Fit".
+
+That does NOT match the uploaded template.
+
+Fix this.
+
+Add/support:
+
+Preferred Qualifications
+
+Admin:
+Add a rich-text/list editor:
+
+Preferred Qualifications
+
+Helper text:
+"Optional qualifications that are beneficial but not strictly required."
+
+Public:
+Render:
+
+Preferred Qualifications
+
+Only show if populated.
+
+If the current "Cultural Fit" field is useful:
+- do not delete the data
+- move it to its own optional section AFTER Preferred Qualifications
+OR
+- keep it as a separate field if business still wants it
+
+But Cultural Fit must NOT replace Preferred Qualifications.
+
+==================================================
+7. REQUIRED TOOLS & EQUIPMENT
+==================================================
+
+Admin section:
+
+REQUIRED TOOLS & EQUIPMENT
+
+Support:
+
+- Minimum Internet Speed
+- System / Equipment Requirements
+- Required Tools / Software
+- Other Equipment Requirements
+
+Current page only has:
+- Minimum Internet Speed
+- System & Equipment
+
+Expand this to match the template more closely.
+
+Suggested fields:
+
+minimumInternetSpeed
+systemEquipmentRequirements
+requiredToolsSoftware
+otherEquipmentRequirements
+
+If some already exist, reuse them.
+
+Public rendering:
+
+Required Tools & Equipment
+
+Show either:
+- bullets
+or
+- compact cards
+
+But preserve template information structure.
+
+Example:
+
+Contractors should have access to:
+
+• Reliable personal computer or laptop
+• Minimum 50 Mbps internet
+• Salesforce / required software
+• Headset and webcam
+• Quiet professional workspace
+
+Do not render empty fields.
+
+==================================================
+8. WORK SCHEDULE
+==================================================
+
+THIS SECTION IS MISSING AND MUST BE ADDED.
+
+Admin section:
+
+WORK SCHEDULE
+
+Add fields:
+
+- Work Days
+- Time Zone
+- Weekly Hours
+- Flexibility
+
+Suggested field names:
+
+workDays
+timeZone
+weeklyHours
+scheduleFlexibility
+
+Admin UI example:
+
+Work Days
+[Monday - Friday]
+
+Time Zone
+[US Eastern overlap]
+
+Weekly Hours
+[40 hours / week]
+
+Flexibility
+[Set hours, remote]
+
+Public:
+
+Work Schedule
+
+Use the same compact 2-column information grid as the template.
+
+Example:
+
+Days
+Monday – Friday
+
+Time Zone
+US Eastern overlap
+
+Weekly Hours
+40 hours / week
+
+Flexibility
+Set hours, remote
+
+==================================================
+9. COMPENSATION
+==================================================
+
+The current public page only shows:
+
+Currency
+Monthly Rate
+Additional
+
+That does NOT match the template structure closely enough.
+
+Create a proper Compensation section.
+
+Since current business rules use monthly compensation, do NOT reintroduce annual/hourly rates.
+
+Admin compensation fields:
+
+- Currency
+- Monthly Rate
+- Payment Frequency
+- Incentive / Compensation Notes
+- Commission
+- Equity
+
+Suggested:
+
+currency
+monthlyRate
+paymentFrequency
+compensationNotes
+hasCommission
+hasEquity
+
+Public layout:
+
+COMPENSATION
+
+Structure:
+- Currency
+- Monthly Rate
+- Payment Frequency
+- Incentives / Additional Compensation
+
+Example:
+
+Currency
+USD
+
+Monthly Rate
+USD 3,100 – 3,300/month
+
+Payment Frequency
+Monthly
+
+Additional Compensation
+Commission, Equity
+
+Do not duplicate Commission/Equity twice on the same page.
+
+IMPORTANT:
+The current page shows Commission/Equity inside Compensation AND again under What We Offer.
+
+Fix the duplication.
+
+Commission/Equity should primarily belong in Compensation / Additional Compensation.
+
+==================================================
+10. WHAT WE OFFER
+==================================================
+
+The current page renders Benefits as pills only.
+
+The template uses a list of actual offerings.
+
+Update the Admin section to support:
+
+WHAT WE OFFER
+
+Keep existing Benefits but support proper list content.
+
+Preferred implementation:
+
+Admin:
+- What We Offer rich-text/list field
+- existing Benefits tags can remain for standardized perks
+
+Suggested field:
+
+whatWeOffer
+
+Example entries:
+
+- Flexible, fully remote work arrangement
+- Long-term engagement potential
+- Professional growth opportunities
+- Collaborative, supportive team environment
+- Performance-based incentives
+- Direct work with an established global client
+
+Public:
+Render as a 2-column bullet list on desktop like the template.
+
+If Benefits tags exist:
+- either show them below the What We Offer list
+- or use them as structured perks
+
+But do not reduce the entire What We Offer section to only SSS / PAG-IBIG / PHILHEALTH / Bonus pills.
+
+==================================================
+11. CULTURAL FIT
+==================================================
+
+Current page contains:
+
+Cultural Fit
+
+The uploaded template does not use this as a replacement for Preferred Qualifications.
+
+If the business wants to keep Cultural Fit:
+
+Place it AFTER Preferred Qualifications, for example:
+
+Required Qualifications
+Preferred Qualifications
+Cultural Fit
+Required Tools & Equipment
+
+Do not remove existing Cultural Fit data.
+
+Make it optional.
+
+==================================================
+12. FINAL PUBLIC ORDER
+==================================================
+
+The public View Job Details page should render:
+
+About the Company
+
+About the Role
+
+Key Responsibilities
+
+Required Qualifications
+
+Preferred Qualifications
+
+Cultural Fit
+(optional, only if populated)
+
+Required Tools & Equipment
+
+Work Schedule
+
+Compensation
+
+What We Offer
+
+Ready to Apply CTA
+
+Independent Contractor Disclaimer
+(if approved)
+
+Apply Now / View All Roles
+
+Similar Roles You Might Like
+
+Footer
+
+==================================================
+13. FINAL ADMIN FORM ORDER
+==================================================
+
+The Add/Edit Job Posting form should use:
+
+BASIC INFORMATION
+
+ABOUT THE COMPANY
+
+ABOUT THE ROLE
+
+KEY RESPONSIBILITIES
+
+REQUIRED QUALIFICATIONS
+
+PREFERRED QUALIFICATIONS
+
+CULTURAL FIT
+(optional)
+
+REQUIRED TOOLS & EQUIPMENT
+
+WORK SCHEDULE
+
+COMPENSATION
+
+WHAT WE OFFER
+
+POSTING OPTIONS
+
+APPLICATION / STATUS
+
+Actions
+
+==================================================
+14. ADD AND EDIT MUST USE THE SAME FORM
+==================================================
+
+Do not implement the new fields only in Add or only in Edit.
+
+Both must support all new fields.
+
+Prefer one shared JobForm component.
+
+==================================================
+15. DATA MODEL / API
+==================================================
+
+If fields are missing, implement them properly end-to-end.
+
+Potential new fields:
+
+preferredQualifications
+requiredToolsSoftware
+otherEquipmentRequirements
+workDays
+timeZone
+weeklyHours
+scheduleFlexibility
+paymentFrequency
+compensationNotes
+whatWeOffer
+
+Before creating them:
+check whether equivalent fields already exist.
+
+Do not create duplicates.
+
+Update as needed:
+
+- frontend Job type
+- form state
+- create payload
+- update payload
+- backend validation
+- DB schema
+- serializer
+- public API
+- admin API
+
+==================================================
+16. EXISTING JOBS
+==================================================
+
+Backward compatibility is important.
+
+Old jobs may not have the new fields.
+
+Rules:
+
+- do not crash
+- do not show empty headings
+- only render sections with content
+- existing jobs remain editable
+- new fields default safely to empty/null
+
+==================================================
+17. PUBLIC VIEW PAGE VISUAL STYLE
+==================================================
+
+Match the uploaded template structure, but keep the current OnSpot styling.
+
+Use:
+- compact section spacing
+- matching section icons
+- thin divider between sections
+- readable text size
+- 2-column info grids for Work Schedule / Compensation
+- 2-column list for What We Offer where appropriate
+
+Do not make text oversized.
+
+==================================================
+18. NO DUPLICATED CONTENT
+==================================================
+
+Audit the page for duplicated concepts.
+
+Examples currently to fix:
+
+Commission / Equity:
+do not show in Compensation and again as a separate duplicate under What We Offer unless deliberately labeled differently.
+
+Responsibilities:
+must not be duplicated between About the Role and Key Responsibilities.
+
+Skills:
+Required Qualifications should be clearly separate from Preferred Qualifications.
+
+==================================================
+19. PREVIEW PUBLIC PAGE
+==================================================
+
+Admin Preview must render the exact same structure as the real public View Job Details page.
+
+Do not maintain separate layouts that drift.
+
+==================================================
+20. TEST THESE CASES
+==================================================
+
+Test a fully populated job:
+
+About Company
+About Role
+Responsibilities
+Required Qualifications
+Preferred Qualifications
+Cultural Fit
+Tools
+Schedule
+Compensation
+What We Offer
+
+Everything should appear in exact order.
+
+Test an old job with missing new fields:
+- no blank sections
+- page still works
+
+Test confidential company:
+- correct overview shown
+- no real identity exposed
+
+Test Add:
+- save all new fields
+
+Test Edit:
+- load and update all new fields
+
+==================================================
+AFTER IMPLEMENTATION
+==================================================
+
+Report:
+
+1. exact files changed
+2. which new fields were added
+3. which existing fields were reused
+4. DB migration required or not
+5. final Admin form order
+6. final public View Job Details order
+7. confirmation Preferred Qualifications was added
+8. confirmation Work Schedule was added
+9. confirmation What We Offer now supports actual content, not only tags
+10. confirmation Commission/Equity duplication was fixed
+11. confirmation Cultural Fit no longer replaces Preferred Qualifications
+12. confirmation old jobs remain compatible
+13. confirmation Add/Edit/Preview/View Details all use the same data structure

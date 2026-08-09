@@ -899,6 +899,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  system requirements migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: template alignment fields ────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS preferred_qualifications text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS required_tools_software text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS other_equipment_requirements text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS work_days text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS time_zone text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS weekly_hours text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS schedule_flexibility text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS payment_frequency text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS compensation_notes text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS what_we_offer text`);
+    console.log("✅ Migration: jobs template alignment columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  template alignment migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: posting timestamp fields ─────────────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS posted_at timestamp`);

@@ -160,6 +160,20 @@ export const jobs = pgTable("jobs", {
   // System requirements
   minimumInternetSpeed: text("minimum_internet_speed"),
   systemRequirements: text("system_requirements"),
+  requiredToolsSoftware: text("required_tools_software"),
+  otherEquipmentRequirements: text("other_equipment_requirements"),
+  // Work schedule
+  workDays: text("work_days"),
+  timeZone: text("time_zone"),
+  weeklyHours: text("weekly_hours"),
+  scheduleFlexibility: text("schedule_flexibility"),
+  // Preferred qualifications
+  preferredQualifications: text("preferred_qualifications"),
+  // Compensation extras
+  paymentFrequency: text("payment_frequency"),
+  compensationNotes: text("compensation_notes"),
+  // What We Offer (rich text list)
+  whatWeOffer: text("what_we_offer"),
   // Application link / method (per-job — admin + client controlled)
   applyLink: text("apply_link"),
   applicationMethod: text("application_method").default("external_link"), // external_link | built_in_form
