@@ -8886,6 +8886,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  BYPASS_ADMIN_AUTH=true — admin job-application endpoints are UNPROTECTED");
   }
 
+  // Log Microsoft Graph email service configuration status at startup
+  {
+    const { isEmailServiceConfigured } = await import("./services/microsoftGraphEmailService.ts");
+    const senderAddr =
+      process.env.MICROSOFT_SENDER_EMAIL || process.env.APPLICATION_EMAIL_FROM || "(not set)";
+    if (isEmailServiceConfigured()) {
+      console.log(`✅ Microsoft Graph email service configured — sender: ${senderAddr}`);
+    } else {
+      const missing: string[] = [];
+      if (!process.env.MICROSOFT_TENANT_ID) missing.push("MICROSOFT_TENANT_ID");
+      if (!process.env.MICROSOFT_CLIENT_ID) missing.push("MICROSOFT_CLIENT_ID");
+      if (!process.env.MICROSOFT_CLIENT_SECRET) missing.push("MICROSOFT_CLIENT_SECRET");
+      if (!process.env.MICROSOFT_SENDER_EMAIL && !process.env.APPLICATION_EMAIL_FROM)
+        missing.push("MICROSOFT_SENDER_EMAIL");
+      console.warn(`⚠️  Microsoft Graph email NOT configured — missing: ${missing.join(", ")}`);
+    }
+  }
+
   // GET /api/admin/job-applications/summary — status counts (admin only)
   // NOTE: must be registered BEFORE the :applicationId route to avoid Express
   //       matching the literal string "summary" as a URL parameter.
@@ -9964,6 +9982,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error("POST /api/admin/job-applications/:id/email/:emailId/retry error:", err);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/email/connection-test — verify Graph auth + mailbox access without sending
+  app.get("/api/admin/email/connection-test", maybeAuthenticateAdmin, async (_req: Request, res: Response) => {
+    try {
+      const { testGraphAuth, isEmailServiceConfigured } = await import("./services/microsoftGraphEmailService.ts");
+      if (!isEmailServiceConfigured()) {
+        const missing: string[] = [];
+        if (!process.env.MICROSOFT_TENANT_ID) missing.push("MICROSOFT_TENANT_ID");
+        if (!process.env.MICROSOFT_CLIENT_ID) missing.push("MICROSOFT_CLIENT_ID");
+        if (!process.env.MICROSOFT_CLIENT_SECRET) missing.push("MICROSOFT_CLIENT_SECRET");
+        if (!process.env.MICROSOFT_SENDER_EMAIL && !process.env.APPLICATION_EMAIL_FROM)
+          missing.push("MICROSOFT_SENDER_EMAIL");
+        return res.status(503).json({
+          success: false,
+          error: `Email service not configured — missing env vars: ${missing.join(", ")}`,
+          missingVars: missing,
+        });
+      }
+      const result = await testGraphAuth();
+      if (!result.success) {
+        return res.status(502).json({
+          success: false,
+          graphStatus: result.graphStatus,
+          senderAddress: result.senderAddress,
+          error: result.error,
+        });
+      }
+      return res.json({
+        success: true,
+        senderAddress: result.senderAddress,
+        graphStatus: result.graphStatus,
+        message: "Microsoft Graph authentication and mailbox access verified.",
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/email/connection-test error:", err);
+      return res.status(500).json({ success: false, error: "Internal server error" });
     }
   });
 
