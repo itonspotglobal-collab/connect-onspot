@@ -1,0 +1,471 @@
+Update BOTH:
+- Admin Add/Edit Job Posting form
+- Public View Job Details page
+
+Primary files/components to inspect:
+- shared JobForm / Add Job / Edit Job component
+- client/src/pages/FindWorkJob.tsx
+- job types/interfaces
+- create/update API payload
+- backend schema/validation
+- DB schema/model if new fields are required
+
+GOAL
+
+Make the Admin form and View Job Details page follow the uploaded template more closely.
+
+Required sequence:
+
+1. About the Company
+2. About the Role
+3. Key Responsibilities
+4. Required Qualifications
+5. Preferred Qualifications
+6. Required Tools & Equipment
+7. Work Schedule
+8. Compensation
+9. What We Offer
+10. Ready to Apply CTA
+11. Similar Projects You Might Like
+12. Footer
+
+--------------------------------------------------
+1. ADD PREFERRED QUALIFICATIONS TO THE FORM
+--------------------------------------------------
+
+The current form does not have this field.
+
+Add a new section immediately AFTER Required Qualifications:
+
+PREFERRED QUALIFICATIONS
+
+Use the same rich-text/list editor pattern as:
+
+- Key Responsibilities
+- Required Qualifications
+
+Suggested field:
+
+preferredQualifications
+
+Helper text:
+
+"Optional qualifications that are beneficial for the role but are not strictly required."
+
+Support:
+- bold
+- bullet list
+- numbered list
+
+Do not merge this into Cultural Fit.
+
+If Cultural Fit already exists:
+- preserve it
+- keep it as a separate optional section
+- place it AFTER Preferred Qualifications if still needed
+
+--------------------------------------------------
+2. DATA FLOW FOR PREFERRED QUALIFICATIONS
+--------------------------------------------------
+
+Implement it properly across the full system:
+
+preferredQualifications
+
+Update:
+- frontend Job type/interface
+- form state
+- Add Job form
+- Edit Job form
+- create payload
+- update payload
+- backend validation
+- database schema/model if needed
+- public job API
+- admin API
+- Preview Public Page
+- View Job Details
+
+Existing jobs must remain compatible.
+
+Default:
+null / empty string
+
+Do not render an empty section publicly.
+
+--------------------------------------------------
+3. VIEW JOB DETAILS — PREFERRED QUALIFICATIONS
+--------------------------------------------------
+
+Render it immediately after:
+
+Required Qualifications
+
+and before:
+
+Required Tools & Equipment
+
+Public heading:
+
+Preferred Qualifications
+
+Use the same styling as the template:
+- matching section icon
+- section divider
+- bullet/list content
+- compact spacing
+
+Do not show "Cultural Fit" instead.
+
+--------------------------------------------------
+4. WHAT WE OFFER — FOLLOW TEMPLATE FORMAT
+--------------------------------------------------
+
+The current public implementation is too tag/pill-oriented.
+
+Update "What We Offer" to match the uploaded template style.
+
+Preferred layout:
+
+desktop:
+2-column bullet list
+
+mobile:
+1-column bullet list
+
+Example:
+
+What We Offer
+
+• Flexible, fully remote work arrangement
+• Long-term engagement potential
+• Professional growth opportunities
+• Collaborative, supportive team environment
+• Performance-based incentives
+• Direct work with an established global client
+
+Use the actual saved data.
+
+Do not hardcode these exact sample values.
+
+--------------------------------------------------
+5. ADMIN FORM — WHAT WE OFFER
+--------------------------------------------------
+
+Add or reuse a proper field:
+
+whatWeOffer
+
+Use the same rich-text/list editor style.
+
+Allow admins to enter bullet items.
+
+Helper text:
+
+"List the benefits, perks, growth opportunities, work arrangement, and other reasons a candidate may want to join this role."
+
+Existing structured Benefits such as:
+- SSS
+- PAG-IBIG
+- PHILHEALTH
+- Bonus
+
+can remain supported.
+
+But the public "What We Offer" section must not consist only of badges.
+
+Preferred approach:
+
+WHAT WE OFFER
+
+Rich-text/list:
+[editor]
+
+Benefits Tags:
+[existing tags input if still needed]
+
+This allows both descriptive perks and standardized benefits.
+
+--------------------------------------------------
+6. DO NOT DUPLICATE COMMISSION / EQUITY
+--------------------------------------------------
+
+Commission and Equity should remain part of Compensation / Additional Compensation.
+
+Do not show them again as duplicate items under What We Offer unless admins explicitly include explanatory text.
+
+Public Compensation:
+
+Currency
+Monthly Rate
+Additional Compensation:
+[Commission] [Equity]
+
+Public What We Offer:
+actual perks/list content
+
+--------------------------------------------------
+7. SIMILAR PROJECTS YOU MIGHT LIKE
+--------------------------------------------------
+
+Do NOT forget this section.
+
+Add/keep it near the bottom of the View Job Details page, after the Apply CTA/buttons and before the footer.
+
+Heading:
+
+Similar projects you might like
+
+Use ACTUAL live jobs.
+
+Do not hardcode the sample jobs from the uploaded HTML.
+
+--------------------------------------------------
+8. SIMILAR JOB MATCHING LOGIC
+--------------------------------------------------
+
+Select up to 3 jobs.
+
+Priority:
+
+1. Same Function
+2. Similar Contract Type
+3. Similar Work Setup
+4. Recent/open jobs
+
+Rules:
+- exclude current job
+- exclude closed jobs
+- exclude unpublished/pending jobs
+- deduplicate by job ID
+- never render the same job twice
+
+If fewer than 3 matching jobs exist:
+fill remaining slots with other open jobs.
+
+--------------------------------------------------
+9. SIMILAR JOB CARD DESIGN
+--------------------------------------------------
+
+Follow the compact template style.
+
+Each card should display:
+
+- Job Title
+- Function badge
+- Monthly Compensation
+- optional public company name
+- arrow / clickable card
+
+Example:
+
+Account Executive →
+[Sales]
+USD 3,100 – 3,300/month
+
+Do not use annual/year formatting.
+
+Use the current shared compensation formatter.
+
+--------------------------------------------------
+10. COMPANY CONFIDENTIALITY IN SIMILAR JOBS
+--------------------------------------------------
+
+If the job is confidential:
+
+show:
+Confidential Company
+
+Do not expose the actual company name.
+
+Use the same public company helper/API privacy rules already implemented.
+
+--------------------------------------------------
+11. SIMILAR JOB ROUTING
+--------------------------------------------------
+
+Clicking a Similar Project card must navigate to that job's actual View Job Details page.
+
+Do not use:
+href="#"
+
+Do not route to Coming Soon.
+
+Use the real job-detail route.
+
+--------------------------------------------------
+12. READY TO APPLY SECTION
+--------------------------------------------------
+
+Keep the closing CTA from the template.
+
+Preferred text:
+
+READY TO APPLY?
+
+Apply for this role today.
+
+Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
+
+Buttons:
+
+[Apply Now]
+[View all roles]
+
+Use the existing application flow.
+
+Do not create another Apply implementation.
+
+--------------------------------------------------
+13. FINAL PUBLIC PAGE ORDER
+--------------------------------------------------
+
+The public page must render:
+
+About the Company
+
+About the Role
+
+Key Responsibilities
+
+Required Qualifications
+
+Preferred Qualifications
+
+Cultural Fit
+(optional only if business still wants it and data exists)
+
+Required Tools & Equipment
+
+Work Schedule
+
+Compensation
+
+What We Offer
+
+Ready to Apply
+
+Independent Contractor Disclaimer
+(if already approved)
+
+Apply Now / View All Roles
+
+Similar projects you might like
+
+Footer
+
+--------------------------------------------------
+14. FINAL ADMIN FORM ORDER
+--------------------------------------------------
+
+The Add/Edit form must use:
+
+ABOUT THE COMPANY
+
+ABOUT THE ROLE
+
+KEY RESPONSIBILITIES
+
+REQUIRED QUALIFICATIONS
+
+PREFERRED QUALIFICATIONS
+
+CULTURAL FIT
+(optional)
+
+REQUIRED TOOLS & EQUIPMENT
+
+WORK SCHEDULE
+
+COMPENSATION
+
+WHAT WE OFFER
+
+POSTING OPTIONS
+
+APPLICATION / STATUS
+
+--------------------------------------------------
+15. ADD AND EDIT MUST MATCH
+--------------------------------------------------
+
+Make sure:
+- Add Job
+- Edit Job
+
+both have:
+- Preferred Qualifications
+- What We Offer
+- same section order
+
+Prefer one shared JobForm implementation.
+
+--------------------------------------------------
+16. PREVIEW PUBLIC PAGE
+--------------------------------------------------
+
+"Preview public page" must use the same page structure and data mapping as the actual public View Job Details page.
+
+Do not maintain a second separate layout.
+
+--------------------------------------------------
+17. BACKWARD COMPATIBILITY
+--------------------------------------------------
+
+Existing jobs may have no:
+
+preferredQualifications
+whatWeOffer
+
+That must not break the page.
+
+Only render sections when there is real content.
+
+Old jobs must still load and update normally.
+
+--------------------------------------------------
+18. TEST CASES
+--------------------------------------------------
+
+Test:
+
+A. Job with Preferred Qualifications:
+section appears correctly.
+
+B. Job without Preferred Qualifications:
+no empty heading.
+
+C. What We Offer with 6 list items:
+2 columns desktop, 1 column mobile.
+
+D. Similar Projects:
+3 unique open jobs.
+current job excluded.
+
+E. Confidential similar job:
+actual company is not exposed.
+
+F. Add Job:
+new fields save.
+
+G. Edit Job:
+new fields load and update.
+
+--------------------------------------------------
+AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Report:
+
+1. exact files changed
+2. whether preferredQualifications required a new DB field
+3. whether whatWeOffer required a new DB field
+4. confirmation Add/Edit both include Preferred Qualifications
+5. confirmation View Job Details renders Preferred Qualifications in the correct place
+6. confirmation What We Offer now uses a list/grid format
+7. confirmation Similar Projects appears before the footer
+8. exact matching logic used for Similar Projects
+9. confirmation current job is excluded
+10. confirmation no duplicate similar jobs appear
+11. confirmation confidential company privacy is preserved
+12. confirmation old jobs remain compatible

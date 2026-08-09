@@ -380,6 +380,44 @@ function isHtml(str: string) {
   return str.trimStart().startsWith("<");
 }
 
+/**
+ * Extract text/HTML of each <li> from a Quill HTML string.
+ * Returns null when no list items are found (fallback to prose rendering).
+ */
+function parseListItems(html: string): string[] | null {
+  const matches = html.match(/<li(?:[^>]*)>([\s\S]*?)<\/li>/g);
+  if (!matches || matches.length === 0) return null;
+  return matches.map((m) => m.replace(/^<li[^>]*>/, "").replace(/<\/li>$/, "").trim());
+}
+
+/**
+ * Renders a "What We Offer" Quill HTML string as a 2-column bullet grid on
+ * desktop and a 1-column list on mobile.  Falls back to prose when the HTML
+ * has no recognisable list items (paragraphs, headings, etc.).
+ */
+function WhatWeOfferGrid({ html }: { html: string }) {
+  const items = parseListItems(html);
+  if (items && items.length > 0) {
+    return (
+      <ul className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-base leading-7 text-slate-600 dark:text-slate-300">
+            <span className="mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
+            <span dangerouslySetInnerHTML={{ __html: item }} />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  // Fallback — rich prose (paragraphs, nested lists, etc.)
+  return (
+    <div
+      className="prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-li:text-left prose-li:leading-7"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
 /** Shared class for all long-form paragraph and list-item text */
 const contentTextClass =
   "text-left sm:text-justify text-base leading-7 text-slate-600 dark:text-slate-300";
@@ -404,38 +442,45 @@ function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: str
   );
 }
 
-const CULTURAL_FIT_DEFAULTS = [
-  "Thrives in a fast-paced, fully remote environment",
-  "Communicates proactively with clients and team members",
-  "Takes ownership and follows through on every deliverable",
-  "Comfortable working US business hours (night shift PH)",
-  "Values long-term partnerships over short-term engagements",
-];
-
-/** Score DB jobs against the current job; returns top N excluding itself */
+/** Score DB jobs against the current job; returns top N excluding itself.
+ *  Priority: 1. Same Function  2. Same Contract Type  3. Same Work Setup  4. Tag overlap
+ *  Falls back to filling remaining slots with any other open job (already filtered open). */
 function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
-  const currentCategory = (currentJob.category ?? "").toLowerCase().trim();
+  const currentFunction = ((currentJob as any).jobFunction ?? currentJob.category ?? "").toLowerCase().trim();
+  const currentContract = (currentJob.contractType ?? "").toLowerCase().trim();
+  const currentLocation = (currentJob.location ?? "").toLowerCase().trim();
   const currentTags = new Set((currentJob.skillTags ?? []).map((t) => t.toLowerCase()));
-  const stopWords = new Set(["for", "the", "and", "with", "role", "jobs", "this", "that"]);
-  const currentTitleWords = new Set(
-    (currentJob.title ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w)),
-  );
 
-  return allJobs
+  const scored = allJobs
     .filter((j) => j.id !== currentJob.id)
     .map((j) => {
       let score = 0;
-      if (currentCategory && (j.category ?? "").toLowerCase().trim() === currentCategory) score += 3;
+      // Priority 1 — same job function
+      const jFunction = ((j as any).jobFunction ?? j.category ?? "").toLowerCase().trim();
+      if (currentFunction && jFunction === currentFunction) score += 3;
+      // Priority 2 — same contract type
+      if (currentContract && (j.contractType ?? "").toLowerCase().trim() === currentContract) score += 2;
+      // Priority 3 — same work setup / location
+      if (currentLocation && (j.location ?? "").toLowerCase().trim() === currentLocation) score += 1;
+      // Skill tag overlap (bonus)
       const jTags = (j.skillTags ?? []).map((t) => t.toLowerCase());
       score += jTags.filter((t) => currentTags.has(t)).length;
-      const jWords = (j.title ?? "").toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w));
-      score += jWords.filter((w) => currentTitleWords.has(w)).length;
       return { job: j, score };
     })
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
+    .sort((a, b) => b.score - a.score);
+
+  // Take jobs with at least one matching signal first
+  const top = scored.filter(({ score }) => score > 0).slice(0, limit).map(({ job }) => job);
+  if (top.length >= limit) return top;
+
+  // Fill remaining slots with deduplicated open jobs (sorted by score desc)
+  const topIds = new Set(top.map((j) => j.id));
+  const extras = scored
+    .filter(({ job }) => !topIds.has(job.id))
+    .slice(0, limit - top.length)
     .map(({ job }) => job);
+
+  return [...top, ...extras];
 }
 function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
   const pay = buildRateDisplayWithCode(job);
@@ -459,10 +504,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
   const skillsAndCompetencies = (job as any).skillsAndCompetencies as string | null | undefined;
   const legacyRequirements    = (job.requirements ?? []) as string[];
 
-  // Cultural Fit — falls back to defaults if not set
-  const culturalFit = ((job.culturalFit ?? []) as string[]).length > 0
-    ? (job.culturalFit as string[])
-    : CULTURAL_FIT_DEFAULTS;
+  // Cultural Fit — only shown when the job has actual saved data (no default fallback)
+  const culturalFitData = (job.culturalFit ?? []) as string[];
+  const hasCulturalFit = culturalFitData.length > 0 && culturalFitData.some((s) => s.trim());
 
   // "Required Tools & Equipment"
   const minimumInternetSpeed       = (job as any).minimumInternetSpeed       as string | null | undefined;
@@ -695,14 +739,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         )}
 
-        {/* 6. Cultural Fit — only shown when populated */}
-        {culturalFit.length > 0 && (
+        {/* 6. Cultural Fit — only shown when the job has actual saved data */}
+        {hasCulturalFit && (
           <Section
             icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
             iconBg="bg-[#474ead]/10 dark:bg-[#474ead]/20"
             label="Cultural Fit"
           >
-            <SectionBody items={culturalFit} bulletColor="bg-[#474ead]" />
+            <SectionBody items={culturalFitData} bulletColor="bg-[#474ead]" />
           </Section>
         )}
 
@@ -835,7 +879,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           </Section>
         )}
 
-        {/* 10. What We Offer — whatWeOffer rich text + benefits tags; Commission/Equity NOT repeated here */}
+        {/* 10. What We Offer — 2-col bullet grid on desktop, 1-col on mobile; benefits tags below */}
         {hasWhatWeOffer && (
           <Section
             icon={<Gift className="h-5 w-5 text-purple-500" />}
@@ -843,9 +887,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             label="What We Offer"
           >
             {whatWeOfferContent?.trim() && (
-              <div className={`prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-li:text-left prose-li:leading-7 ${benefitsStr ? "mb-6" : ""}`}
-                dangerouslySetInnerHTML={{ __html: whatWeOfferContent.trim() }}
-              />
+              <div className={benefitsStr ? "mb-6" : ""}>
+                <WhatWeOfferGrid html={whatWeOfferContent.trim()} />
+              </div>
             )}
             {benefitsStr && (
               <div className={whatWeOfferContent?.trim() ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]" : ""}>
@@ -1207,6 +1251,21 @@ export default function FindWorkJob() {
           </ul>
         </Section>
 
+        {/* Preferred Qualifications — before Cultural Fit */}
+        {role.preferredSkills.length > 0 && (
+          <Section
+            icon={<Award className="h-5 w-5 text-violet-500" />}
+            iconBg="bg-violet-50 dark:bg-violet-900/30"
+            label="Preferred Qualifications"
+          >
+            <ul className="space-y-2">
+              {role.preferredSkills.map((item, i) => (
+                <BulletRow key={i} text={item} color="bg-violet-400" />
+              ))}
+            </ul>
+          </Section>
+        )}
+
         {/* Cultural Fit */}
         <Section
           icon={<Sparkles className="h-5 w-5 text-[#474ead]" />}
@@ -1219,21 +1278,6 @@ export default function FindWorkJob() {
             ))}
           </ul>
         </Section>
-
-        {/* Preferred Qualifications */}
-        {role.preferredSkills.length > 0 && (
-          <Section
-            icon={<Award className="h-5 w-5 text-amber-500" />}
-            iconBg="bg-amber-50 dark:bg-amber-900/30"
-            label="Preferred Qualifications"
-          >
-            <ul className="space-y-2">
-              {role.preferredSkills.map((item, i) => (
-                <BulletRow key={i} text={item} color="bg-amber-400" />
-              ))}
-            </ul>
-          </Section>
-        )}
 
         {/* What We Offer */}
         <Section
@@ -1322,7 +1366,7 @@ export default function FindWorkJob() {
             <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
               <div className="mb-5 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#474ead]" />
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar roles you might like</h2>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar projects you might like</h2>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {similar.map((r) => (
@@ -1413,7 +1457,7 @@ function DbSimilarJobsSection({
     <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
       <div className="mb-5 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-[#474ead]" />
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar roles you might like</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar projects you might like</h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {similar.map((job) => (
@@ -1427,6 +1471,8 @@ function DbSimilarJobsSection({
 function DbSimilarCard({ job, navigate }: { job: Job; navigate: (p: string) => void }) {
   const pay = buildRateDisplay(job);
   const displayTitle = (job as any).professionalRoleName || job.title;
+  const functionBadge = (job as any).jobFunction || job.category;
+  const companyName = getPublicCompanyName(job as any);
   return (
     <button
       onClick={() => navigate(`/find-work/job/${job.id}`)}
@@ -1438,12 +1484,15 @@ function DbSimilarCard({ job, navigate }: { job: Job; navigate: (p: string) => v
         </p>
         <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#474ead] dark:text-slate-600 dark:group-hover:text-indigo-300" />
       </div>
-      {job.category && (
+      {functionBadge && (
         <span className="inline-flex w-fit rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead] dark:bg-[#474ead]/20">
-          {job.category}
+          {functionBadge}
         </span>
       )}
-      <p className="text-xs text-slate-500 dark:text-slate-400">{pay}</p>
+      <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{pay}</p>
+      {companyName && (
+        <p className="text-xs text-slate-400 dark:text-slate-500">{companyName}</p>
+      )}
     </button>
   );
 }
