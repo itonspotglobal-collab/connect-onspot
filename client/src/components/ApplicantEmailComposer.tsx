@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -64,6 +64,10 @@ interface Props {
   application: ApplicationInfo | null;
   open: boolean;
   onClose: () => void;
+  /** Called when the user clicks "Send Email" (after validation). Parent opens the confirmation dialog. */
+  onRequestSend: (payload: { subject: string; bodyHtml: string; templateId: string }) => void;
+  /** True while the parent is sending — keeps the Send button disabled during the API call. */
+  isSendingEmail: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -596,17 +600,14 @@ function TestSendDialog({
 
 // ─── Main Composer ────────────────────────────────────────────────────────────
 
-export default function ApplicantEmailComposer({ application, open, onClose }: Props) {
+export default function ApplicantEmailComposer({ application, open, onClose, onRequestSend, isSendingEmail }: Props) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<Tab>("compose");
   const [templateId, setTemplateId] = useState("");
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
-  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showTestDialog, setShowTestDialog] = useState(false);
-  const [updateStage, setUpdateStage] = useState("");
 
   // Reset when dialog opens
   useEffect(() => {
@@ -615,9 +616,7 @@ export default function ApplicantEmailComposer({ application, open, onClose }: P
       setTemplateId("");
       setSubject("");
       setBodyHtml("");
-      setShowSendConfirm(false);
       setShowTestDialog(false);
-      setUpdateStage("");
     }
   }, [open]);
 
@@ -627,34 +626,6 @@ export default function ApplicantEmailComposer({ application, open, onClose }: P
     queryFn: () => apiFetch("/api/admin/email-templates"),
     enabled: open,
     staleTime: 60_000,
-  });
-
-  // Send mutation
-  const sendMutation = useMutation({
-    mutationFn: () => apiFetch(`/api/admin/job-applications/${application!.id}/email/send`, {
-      method: "POST",
-      body: JSON.stringify({
-        templateId: templateId || undefined,
-        subject,
-        bodyHtml,
-        updateStage: updateStage || undefined,
-      }),
-    }),
-    onSuccess: () => {
-      toast({ title: "Email sent", description: `Email delivered to ${application?.email}.` });
-      setShowSendConfirm(false);
-      queryClient.invalidateQueries({
-        queryKey: ["/api/admin/job-applications", application?.id, "email/history"],
-      });
-      if (updateStage) {
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
-      }
-      setActiveTab("history");
-    },
-    onError: (err: any) => {
-      setShowSendConfirm(false);
-      toast({ title: "Send failed", description: err.message, variant: "destructive" });
-    },
   });
 
   // Test send mutation
@@ -713,8 +684,8 @@ export default function ApplicantEmailComposer({ application, open, onClose }: P
               bodyHtml={bodyHtml}
               setBodyHtml={setBodyHtml}
               onPreview={() => setActiveTab("preview")}
-              onSend={() => setShowSendConfirm(true)}
-              isSending={sendMutation.isPending}
+              onSend={() => onRequestSend({ subject, bodyHtml, templateId })}
+              isSending={isSendingEmail}
               onTestSend={() => setShowTestDialog(true)}
               isTestSending={testSendMutation.isPending}
             />
@@ -734,18 +705,6 @@ export default function ApplicantEmailComposer({ application, open, onClose }: P
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Send confirmation overlay */}
-      <SendConfirmDialog
-        open={showSendConfirm}
-        recipientEmail={application.email}
-        subject={subject}
-        updateStage={updateStage}
-        setUpdateStage={setUpdateStage}
-        onConfirm={() => sendMutation.mutate()}
-        onCancel={() => setShowSendConfirm(false)}
-        isSending={sendMutation.isPending}
-      />
 
       {/* Test send overlay */}
       <TestSendDialog

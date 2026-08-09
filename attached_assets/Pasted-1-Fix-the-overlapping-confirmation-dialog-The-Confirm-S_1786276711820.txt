@@ -1,0 +1,135 @@
+1. Fix the overlapping confirmation dialog
+
+The Confirm: Send Email dialog is currently overlapping/interacting incorrectly with the existing Email Applicant modal and Rich Text/Quill editor.
+
+Do not render the confirmation dialog inside ApplicantEmailComposer's existing Radix/shadcn DialogContent.
+
+Refactor it so the confirmation dialog is a separate top-level dialog, rendered as a sibling of the Email Applicant dialog and portaled directly to document.body.
+
+Desired hierarchy:
+
+document.body
+├── page
+├── Email Applicant overlay
+├── Email Applicant dialog
+├── Confirm Send Email overlay
+└── Confirm Send Email dialog
+
+The confirmation dialog must always be above:
+
+the Email Applicant modal
+Quill toolbar/editor
+dropdowns
+page content
+floating chat widget
+
+Do not solve this by randomly increasing z-index values inside nested elements.
+
+Ensure:
+
+confirmation overlay covers the entire viewport
+confirmation dialog receives pointer events
+background Email Applicant modal cannot receive clicks while confirmation is open
+Quill toolbar cannot appear above the confirmation
+stage dropdown is clickable
+Cancel is clickable
+Send Email is clickable
+ESC only closes the top confirmation first
+Cancel returns the user to the still-open Email Applicant composer
+
+If Radix/shadcn nested dialogs are causing focus-lock or pointer-events conflicts, move sendConfirmationOpen, selected stage, and confirmation handlers to the parent component/page and render the confirmation Dialog there.
+
+2. Email sender
+
+All talent/application emails must be sent from:
+
+careers@onspotglobal.com
+
+The applicant's email is the recipient, never the sender.
+
+Backend email configuration should follow this pattern:
+
+From: OnSpot Careers <careers@onspotglobal.com>
+To: applicant email
+Reply-To: careers@onspotglobal.com
+
+Do not trust a from address supplied by the frontend. Set the sender on the server.
+
+Put the sender address in configuration/environment variables where appropriate, for example:
+
+EMAIL_FROM=OnSpot Careers <careers@onspotglobal.com>
+EMAIL_REPLY_TO=careers@onspotglobal.com
+
+Use the project's existing email provider/service. Verify that careers@onspotglobal.com or the onspotglobal.com domain is authorized/verified with that provider.
+
+3. Send Email behavior
+
+When the user clicks the first Send Email button:
+
+Validate recipient, subject, and message.
+Open the confirmation dialog.
+Display:
+recipient
+subject
+optional application-stage change
+Do NOT send anything yet.
+
+When Confirm → Send Email is clicked:
+
+disable the button immediately
+show Sending...
+prevent double submission
+call the backend email endpoint
+send from careers@onspotglobal.com
+only update the application stage after the email API confirms success
+record email history only after successful delivery/request acceptance
+show a success toast
+close confirmation and Email Applicant modal after success
+
+On failure:
+
+keep the composer open
+keep the entered subject/message
+do not update the application stage
+show the actual useful error message
+allow retry
+4. Investigate the actual sending failure
+
+Inspect the current email API/service implementation and browser Network/console logs.
+
+Verify:
+
+API endpoint is actually called
+request payload is correct
+backend receives it
+email provider credentials exist
+sender/domain is verified
+provider response/errors are handled correctly
+
+Do not mock or fake a successful send.
+
+5. Test
+
+Verify:
+
+Open applicant
+→ Email Applicant
+→ enter subject/message
+→ Send Email
+→ confirmation appears cleanly above everything
+→ select optional stage
+→ Send Email
+→ email sent from careers@onspotglobal.com
+→ success feedback
+
+Also test Cancel, ESC, failed API requests, double-clicking Send Email, mobile layout, and the Quill toolbar.
+
+After fixing it, tell me:
+
+root cause of the overlapping modal
+files changed
+email API/provider being used
+environment variables required
+whether careers@onspotglobal.com requires provider/domain verification
+
+The key change is not to keep fighting the nested modal with z-index. Make the confirmation a separate top-level dialog. That should also eliminate the Quill editor/toolbars interfering with its click handling.

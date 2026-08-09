@@ -743,6 +743,47 @@ export default function AdminJobApplications() {
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);
+
+  // ── Email send confirmation (lifted from composer to avoid Radix nested-dialog focus-lock) ────
+  // The confirmation is a separate top-level Radix Dialog rendered as a sibling of the Email
+  // Applicant modal so it gets its own portal, overlay, and focus-lock scope.
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false);
+  const [emailPendingPayload, setEmailPendingPayload] = useState<{
+    subject: string; bodyHtml: string; templateId: string;
+  } | null>(null);
+  const [emailConfirmStage, setEmailConfirmStage] = useState("");
+
+  const sendEmailMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/admin/job-applications/${emailDialog!.id}/email/send`, {
+      method: "POST",
+      body: JSON.stringify({
+        templateId: emailPendingPayload?.templateId || undefined,
+        subject: emailPendingPayload?.subject,
+        bodyHtml: emailPendingPayload?.bodyHtml,
+        updateStage: emailConfirmStage || undefined,
+      }),
+    }),
+    onSuccess: () => {
+      toast({ title: "Email sent", description: `Email delivered to ${emailDialog?.email}.` });
+      setEmailConfirmOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", emailDialog?.id, "email/history"] });
+      if (emailConfirmStage) {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
+      }
+      setEmailDialog(null);
+    },
+    onError: (err: any) => {
+      setEmailConfirmOpen(false);
+      toast({ title: "Send failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  function handleEmailSendRequest(payload: { subject: string; bodyHtml: string; templateId: string }) {
+    setEmailPendingPayload(payload);
+    setEmailConfirmStage("");
+    setEmailConfirmOpen(true);
+  }
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string | null>(null);
 
@@ -1219,8 +1260,84 @@ export default function AdminJobApplications() {
           } : null}
           open={!!emailDialog}
           onClose={() => setEmailDialog(null)}
+          onRequestSend={handleEmailSendRequest}
+          isSendingEmail={sendEmailMutation.isPending}
         />
       </Suspense>
+
+      {/* ── Email send confirmation ────────────────────────────────────────────
+          Separate top-level Radix Dialog rendered as a sibling to the Email Applicant
+          modal. Each Radix Dialog gets its own portal, overlay, and focus-lock scope,
+          so the buttons here are always reachable regardless of which dialog opened first. */}
+      <Dialog
+        open={emailConfirmOpen}
+        onOpenChange={v => { if (!v && !sendEmailMutation.isPending) setEmailConfirmOpen(false); }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm: Send Email</DialogTitle>
+            <DialogDescription>
+              Review the details below before sending. You can optionally update the applicant&apos;s stage at the same time.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm space-y-1.5">
+              <div className="flex gap-2">
+                <span className="text-slate-500 w-16 shrink-0">To</span>
+                <span className="font-medium text-slate-800">{emailDialog?.email}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-slate-500 w-16 shrink-0">Subject</span>
+                <span className="text-slate-700 truncate">{emailPendingPayload?.subject}</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Also update application stage</Label>
+              <Select
+                value={emailConfirmStage || "_none"}
+                onValueChange={v => setEmailConfirmStage(v === "_none" ? "" : v)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {([
+                    { value: "_none",        label: "— No stage change —" },
+                    { value: "under_review", label: "Under Review" },
+                    { value: "shortlisted",  label: "Shortlisted" },
+                    { value: "interview",    label: "Interview" },
+                    { value: "offered",      label: "Offered" },
+                    { value: "hired",        label: "Hired" },
+                    { value: "rejected",     label: "Rejected" },
+                    { value: "withdrawn",    label: "Withdrawn" },
+                  ] as const).map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setEmailConfirmOpen(false)}
+              disabled={sendEmailMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-[#474ead] hover:bg-[#3d439c] text-white"
+              onClick={() => sendEmailMutation.mutate()}
+              disabled={sendEmailMutation.isPending}
+            >
+              {sendEmailMutation.isPending
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+                : "Send Email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
