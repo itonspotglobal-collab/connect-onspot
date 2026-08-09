@@ -453,77 +453,31 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
         {/* Scrollable form body */}
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
 
-          {/* ── Section 1: Basic Information ──────────────────────────────── */}
+          {/* ── 1. BASIC ROLE INFORMATION ──────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
-              Basic Information
+              Basic Role Information
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-professional-role">
-                  Professional Role Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="modal-professional-role"
-                  value={formData.professionalRoleName}
-                  onChange={(e) => updateField("professionalRoleName", e.target.value)}
-                  placeholder="e.g. Senior Account Executive – Salesforce Solutions"
-                />
-                <p className="text-xs text-muted-foreground">
-                  The polished role title that applicants will see publicly.
-                </p>
-                {errors.professionalRoleName && (
-                  <p className="text-xs text-red-500">{errors.professionalRoleName}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-company">Company</Label>
-                <Input
-                  id="modal-company"
-                  value={formData.company}
-                  onChange={(e) => updateField("company", e.target.value)}
-                  placeholder="OnSpot"
-                />
-                {/* Confidential toggle — shown directly under the company field */}
-                <label className="flex cursor-pointer items-start gap-2 pt-0.5">
-                  <input
-                    type="checkbox"
-                    id="modal-confidential"
-                    checked={formData.isCompanyConfidential}
-                    onChange={(e) => updateField("isCompanyConfidential", e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-border accent-[#474ead]"
-                  />
-                  <div>
-                    <span className="text-sm font-medium leading-none">Keep company confidential</span>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Applicants see "Confidential Company" — the real name stays hidden.
-                    </p>
-                  </div>
-                </label>
-
-                {/* Confidential Client Overview — only shown when confidential is enabled */}
-                {formData.isCompanyConfidential && (
-                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/10">
-                    <Label htmlFor="modal-confidential-overview" className="text-sm font-medium">
-                      Confidential Client Overview
-                    </Label>
-                    <Textarea
-                      id="modal-confidential-overview"
-                      value={formData.confidentialClientOverview}
-                      onChange={(e) => updateField("confidentialClientOverview", e.target.value)}
-                      placeholder="e.g. A fast-growing B2B SaaS company serving mid-market customers across North America. The team operates remotely and focuses on workflow automation and operational efficiency."
-                      className="mt-2 min-h-[90px] resize-y bg-white dark:bg-white/5"
-                    />
-                    <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
-                      Provide a short anonymous overview — include industry, company size, market, and work environment. <strong>Do not include</strong> the company name, exact office location, unique products, or other identifying details.
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="modal-professional-role">
+                Professional Role Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="modal-professional-role"
+                value={formData.professionalRoleName}
+                onChange={(e) => updateField("professionalRoleName", e.target.value)}
+                placeholder="e.g. Senior Account Executive – Salesforce Solutions"
+              />
+              <p className="text-xs text-muted-foreground">
+                The polished role title that applicants will see publicly.
+              </p>
+              {errors.professionalRoleName && (
+                <p className="text-xs text-red-500">{errors.professionalRoleName}</p>
+              )}
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="space-y-2 mb-4">
               <Label htmlFor="modal-original-role">
                 Original Role / Alternative Role
               </Label>
@@ -538,7 +492,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <div className="space-y-2">
                 <Label>Work Setup</Label>
                 <Select
@@ -573,9 +527,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  The broad functional group for organisation and filtering.
-                </p>
                 {errors.jobFunction && (
                   <p className="text-xs text-red-500">{errors.jobFunction}</p>
                 )}
@@ -604,7 +555,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="modal-contract-type">
                   Contract Type <span className="text-red-500">*</span>
@@ -645,80 +596,270 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => updateField("status", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <Separator />
+
+          {/* ── 2. COMPANY / CLIENT INFORMATION ────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Company / Client Information
+            </p>
+
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="modal-company">
+                Company Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="modal-company"
+                value={formData.company}
+                onChange={(e) => updateField("company", e.target.value)}
+                placeholder="OnSpot"
+              />
+              {errors.company && (
+                <p className="text-xs text-red-500">{errors.company}</p>
+              )}
             </div>
 
-            {/* Application Method + Apply Link */}
-            <div className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label>Application Method</Label>
-                <Select
-                  value={formData.applicationMethod}
-                  onValueChange={(v) => updateField("applicationMethod", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="external_link">External Link</SelectItem>
-                    <SelectItem value="built_in_form">Built-in Form</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {formData.applicationMethod === "built_in_form"
-                    ? "Candidates will complete the application form directly on OnSpot."
-                    : "Candidates will be redirected to the external application URL."}
+            <label className="flex cursor-pointer items-start gap-2 mb-4">
+              <input
+                type="checkbox"
+                id="modal-confidential"
+                checked={formData.isCompanyConfidential}
+                onChange={(e) => updateField("isCompanyConfidential", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border accent-[#474ead]"
+              />
+              <div>
+                <span className="text-sm font-medium leading-none">Keep company confidential</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Applicants see "Confidential Company" — the real name stays hidden.
                 </p>
               </div>
+            </label>
 
-              {formData.applicationMethod === "external_link" && (
-                <div className="space-y-2">
-                  <Label htmlFor="modal-apply-link">Apply Link</Label>
-                  <Input
-                    id="modal-apply-link"
-                    value={formData.applyLink}
-                    onChange={(e) => updateField("applyLink", e.target.value)}
-                    placeholder="https://example.com/apply"
-                  />
-                  {errors.applyLink ? (
-                    <p className="text-xs text-red-500">{errors.applyLink}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Where candidates click "Apply Now". Leave blank to disable the button.
-                    </p>
-                  )}
-                </div>
+            {/* Company Description — public overview when not confidential */}
+            {!formData.isCompanyConfidential && (
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="modal-companyOverview">
+                  Company Description
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Textarea
+                  id="modal-companyOverview"
+                  value={formData.companyOverview}
+                  onChange={(e) => updateField("companyOverview", e.target.value)}
+                  placeholder="Describe the company, its mission, and what makes it a great place to work..."
+                  className="min-h-[90px] resize-y"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Shown publicly on the job details page when the company is not confidential.
+                </p>
+              </div>
+            )}
+
+            {/* Confidential Client Overview — shown only when confidential is enabled */}
+            {formData.isCompanyConfidential && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/10">
+                <Label htmlFor="modal-confidential-overview" className="text-sm font-medium">
+                  Confidential Client Overview
+                </Label>
+                <Textarea
+                  id="modal-confidential-overview"
+                  value={formData.confidentialClientOverview}
+                  onChange={(e) => updateField("confidentialClientOverview", e.target.value)}
+                  placeholder="e.g. A fast-growing B2B SaaS company serving mid-market customers across North America. The team operates remotely and focuses on workflow automation and operational efficiency."
+                  className="mt-2 min-h-[90px] resize-y bg-white dark:bg-white/5"
+                />
+                <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+                  Shown publicly instead of the real company name. Include industry, company size, market, and work environment. <strong>Do not include</strong> the company name, exact location, unique products, or other identifying details.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* ── 3. ABOUT THE ROLE ───────────────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              About the Role
+            </p>
+
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="modal-job-summary">
+                Card Preview Summary
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional — job card only)</span>
+              </Label>
+              <Textarea
+                id="modal-job-summary"
+                value={formData.jobSummary}
+                onChange={(e) => updateField("jobSummary", e.target.value)}
+                placeholder="Write a short hook that appears on the public job card — 1–2 sentences max."
+                className="min-h-[64px] resize-none"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Shown on the job card preview only — does not appear on the full job details page.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="modal-description">
+                Full Role Description <span className="text-red-500">*</span>
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(shown on the job details page)</span>
+              </Label>
+              <Textarea
+                id="modal-description"
+                value={formData.description}
+                onChange={(e) => updateField("description", e.target.value)}
+                placeholder="Brief overview of the role and what makes it great..."
+                className="min-h-[90px]"
+              />
+              {errors.description && (
+                <p className="text-xs text-red-500">{errors.description}</p>
               )}
             </div>
           </div>
 
           <Separator />
 
-          {/* ── Section 2: Salary / Rate ───────────────────────────────────── */}
+          {/* ── 4. KEY RESPONSIBILITIES ─────────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Key Responsibilities
+            </p>
+            <div className="space-y-2">
+              <div className="rounded-md border border-input bg-background">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.responsibilities}
+                  onChange={(v) => updateField("responsibilities", v)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="List responsibilities using bullets or numbered list..."
+                  style={{ minHeight: "150px" }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Use bullet or numbered lists for best readability on the public page.
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 5. REQUIRED QUALIFICATIONS ──────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Required Qualifications
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="rounded-md border border-input bg-background">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.requirements}
+                    onChange={(v) => updateField("requirements", v)}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    placeholder="List required skills, experience, and qualifications using bullets or numbered list..."
+                    style={{ minHeight: "150px" }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="modal-tags">
+                  Skill Tags
+                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
+                    (comma-separated — shown as badges on the card and job details page)
+                  </span>
+                </Label>
+                <Input
+                  id="modal-tags"
+                  value={formData.skillTags}
+                  onChange={(e) => updateField("skillTags", e.target.value)}
+                  placeholder="Customer Support, Communication, Problem Solving, CRM"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 6. CULTURAL FIT ─────────────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-[#474ead]" />
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                Cultural Fit
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Personality traits, work habits, and values that make someone a great fit for this role. Shown on the dedicated job page.
+            </p>
+            <div className="space-y-2">
+              <div className="rounded-md border border-input bg-background">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.culturalFit}
+                  onChange={(v) => updateField("culturalFit", v)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="e.g. Thrives in a fast-paced remote environment — Communicates proactively with clients..."
+                  style={{ minHeight: "130px" }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Use bullet list for best results. If left empty, default cultural values will be shown on the public page.
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 7. REQUIRED TOOLS & EQUIPMENT ───────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              Salary / Rate
+              Required Tools &amp; Equipment
             </p>
             <p className="text-xs text-muted-foreground mb-4">
-              Enter the compensation amount applicants should see, then select how the role is paid.
+              Technical setup and equipment required to perform this role.
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="modal-internetSpeed">Minimum Internet Speed</Label>
+                <Input
+                  id="modal-internetSpeed"
+                  value={formData.minimumInternetSpeed}
+                  onChange={(e) => updateField("minimumInternetSpeed", e.target.value)}
+                  placeholder="e.g. 50 Mbps minimum"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modal-systemReqs">System Requirements</Label>
+                <Textarea
+                  id="modal-systemReqs"
+                  value={formData.systemRequirements}
+                  onChange={(e) => updateField("systemRequirements", e.target.value)}
+                  placeholder="e.g. Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
+                  className="min-h-[80px] resize-y"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 8. COMPENSATION ─────────────────────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+              Compensation
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Enter the monthly compensation applicants will see.
             </p>
 
-            {/* Currency selector */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <Label htmlFor="modal-currency">Currency</Label>
@@ -742,7 +883,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 </Select>
               </div>
 
-              {/* Custom currency code — visible only when OTHER is selected */}
               {formData.currency === "OTHER" && (
                 <div className="space-y-2">
                   <Label htmlFor="modal-custom-currency">Currency Code</Label>
@@ -765,10 +905,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               )}
             </div>
 
-            {/* Single salary display field */}
-            <div className="space-y-2">
+            <div className="space-y-2 mb-4">
               <Label htmlFor="modal-salary-display">
-                Salary <span className="text-red-500">*</span>
+                Monthly Compensation <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="modal-salary-display"
@@ -781,13 +920,12 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 <p className="text-xs text-red-500">{errors.salaryDisplay}</p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Required — enter the monthly amount (e.g. 40,000 or 30,000 – 50,000). "Rate TBD" and blank values are not allowed.
+                  Enter the monthly amount (e.g. 40,000 or 30,000 – 50,000). "Rate TBD" and blank values are not allowed for new jobs.
                 </p>
               )}
             </div>
 
-            {/* Compensation Type — locked to Monthly */}
-            <div className="mt-4 rounded-md border border-border bg-muted/30 px-4 py-3 flex items-center gap-3">
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 flex items-center gap-3 mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium">Compensation Type: Monthly</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -800,7 +938,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
             </div>
 
             {previewBadges.length > 0 && (
-              <div className="mt-4 p-3 rounded-md bg-muted/40 border border-border">
+              <div className="mb-4 p-3 rounded-md bg-muted/40 border border-border">
                 <p className="text-xs font-medium text-muted-foreground mb-2">
                   Badges this job will earn:
                 </p>
@@ -824,66 +962,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             )}
 
-            {/* ── Benefits ── */}
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="modal-benefits">
-                Benefits
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
-              </Label>
-              <Textarea
-                id="modal-benefits"
-                value={formData.benefits}
-                onChange={(e) => updateField("benefits", e.target.value)}
-                placeholder="e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
-                className="min-h-[72px] resize-y"
-              />
-              <p className="text-xs text-muted-foreground">
-                Optional — enter the benefits available for this role. You can include HMO, government benefits, allowances, leave, bonuses, or other perks.
-              </p>
-            </div>
-
-            {/* ── Feature this job toggle ── */}
-            <div className="mt-4 flex items-start gap-3 rounded-md border border-amber-200/60 bg-amber-50/40 p-3 dark:border-amber-800/30 dark:bg-amber-950/20">
-              <input
-                id="modal-is-featured"
-                type="checkbox"
-                checked={formData.isFeatured}
-                onChange={(e) => updateField("isFeatured", e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-input accent-amber-500 cursor-pointer"
-              />
-              <div>
-                <label htmlFor="modal-is-featured" className="text-sm font-medium cursor-pointer select-none">
-                  Feature this job
-                </label>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Featured jobs are highlighted on the public Find Work page and are prioritized near the top of job listings.
-                </p>
-              </div>
-            </div>
-
-            {/* ── Urgently Hiring toggle ── */}
-            <div className="mt-4 flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
-              <input
-                id="modal-urgently-hiring"
-                type="checkbox"
-                checked={formData.urgentlyHiring}
-                onChange={(e) => updateField("urgentlyHiring", e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-input accent-[#474ead] cursor-pointer"
-              />
-              <div>
-                <label htmlFor="modal-urgently-hiring" className="text-sm font-medium cursor-pointer select-none">
-                  Mark as Urgently Hiring
-                </label>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {formData.urgentlyHiring
-                    ? "This job will display the Urgently Hiring badge."
-                    : "This job will not display the Urgently Hiring badge."}
-                </p>
-              </div>
-            </div>
-
-            {/* ── Additional Compensation ── */}
-            <div className="mt-4 space-y-2">
+            <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Additional Compensation
               </p>
@@ -926,208 +1005,32 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── Section 3: Role Content ────────────────────────────────────── */}
+          {/* ── 9. WHAT WE OFFER ────────────────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
-              Role Content
-            </p>
-
-            {/* ── Job Summary (card preview) ───────────────────────────── */}
-            <div className="space-y-2 mb-5">
-              <Label htmlFor="modal-job-summary">
-                Card Preview Summary
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (optional)
-                </span>
-              </Label>
-              <Textarea
-                id="modal-job-summary"
-                value={formData.jobSummary}
-                onChange={(e) => updateField("jobSummary", e.target.value)}
-                placeholder="Write a short hook that appears on the public job card — 1–2 sentences max."
-                className="min-h-[64px] resize-none"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                This short summary is shown on the public job card preview only. It will not appear in the full job details page.
-              </p>
-            </div>
-
-            {/* ── Full Description ─────────────────────────────────────── */}
-            <div className="space-y-2 mb-5">
-              <Label htmlFor="modal-description">
-                Full Role Description <span className="text-red-500">*</span>
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (shown on the full job details page)
-                </span>
-              </Label>
-              <Textarea
-                id="modal-description"
-                value={formData.description}
-                onChange={(e) => updateField("description", e.target.value)}
-                placeholder="Brief overview of the role and what makes it great..."
-                className="min-h-[90px]"
-              />
-              {errors.description && (
-                <p className="text-xs text-red-500">{errors.description}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>
-                  Responsibilities
-                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                    (dedicated page)
-                  </span>
-                </Label>
-                <div className="rounded-md border border-input bg-background">
-                  <ReactQuill
-                    theme="snow"
-                    value={formData.responsibilities}
-                    onChange={(v) => updateField("responsibilities", v)}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    placeholder="List responsibilities using bullets or numbered list..."
-                    style={{ minHeight: "130px" }}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Skills &amp; Requirements
-                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                    (dedicated page)
-                  </span>
-                </Label>
-                <div className="rounded-md border border-input bg-background">
-                  <ReactQuill
-                    theme="snow"
-                    value={formData.requirements}
-                    onChange={(v) => updateField("requirements", v)}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    placeholder="List required skills using bullets or numbered list..."
-                    style={{ minHeight: "130px" }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 mt-4">
-              <Label htmlFor="modal-tags">
-                Skill Tags
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (comma-separated — shown as badges on card and dedicated page)
-                </span>
-              </Label>
-              <Input
-                id="modal-tags"
-                value={formData.skillTags}
-                onChange={(e) => updateField("skillTags", e.target.value)}
-                placeholder="Customer Support, Communication, Problem Solving, CRM"
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* ── Section 4: Cultural Fit ────────────────────────────────────── */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-[#474ead]" />
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
-                Cultural Fit
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Describe the personality traits, work habits, and values that make someone a great fit for this role. Shown on the dedicated job page.
+              What We Offer
             </p>
             <div className="space-y-2">
-              <Label>
-                Cultural Fit Bullets
-                <span className="ml-1 text-[10px] text-muted-foreground font-normal">
-                  (dedicated page — use bullet list for best results)
-                </span>
+              <Label htmlFor="modal-benefits">
+                Benefits
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
               </Label>
-              <div className="rounded-md border border-input bg-background">
-                <ReactQuill
-                  theme="snow"
-                  value={formData.culturalFit}
-                  onChange={(v) => updateField("culturalFit", v)}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="e.g. Thrives in a fast-paced remote environment&#10;Communicates proactively with clients..."
-                  style={{ minHeight: "130px" }}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground">
-                If left empty, a set of default cultural values will be shown on the public page.
+              <Textarea
+                id="modal-benefits"
+                value={formData.benefits}
+                onChange={(e) => updateField("benefits", e.target.value)}
+                placeholder="e.g. HMO upon regularization, 1 dependent, SSS, PhilHealth, Pag-IBIG, paid leave, internet allowance"
+                className="min-h-[72px] resize-y"
+              />
+              <p className="text-xs text-muted-foreground">
+                HMO, government benefits, allowances, leave, bonuses, or other perks offered with this role.
               </p>
             </div>
           </div>
 
           <Separator />
 
-          {/* ── Section 5: Role Details ─────────────────────────────────────── */}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              Role Details
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Organisational context for this role — used internally and on the dedicated job page.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-reportingTo">Reporting To</Label>
-                <Input
-                  id="modal-reportingTo"
-                  value={formData.reportingTo}
-                  onChange={(e) => updateField("reportingTo", e.target.value)}
-                  placeholder="e.g. Team Manager"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-division">Division</Label>
-                <Input
-                  id="modal-division"
-                  value={formData.division}
-                  onChange={(e) => updateField("division", e.target.value)}
-                  placeholder="e.g. Delivery"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-jobCode">Job Code</Label>
-                <Input
-                  id="modal-jobCode"
-                  value={formData.jobCode}
-                  onChange={(e) => updateField("jobCode", e.target.value)}
-                  placeholder="e.g. CSR-LTS-DEL-001"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-jobGrade">Job Grade</Label>
-                <Input
-                  id="modal-jobGrade"
-                  value={formData.jobGrade}
-                  onChange={(e) => updateField("jobGrade", e.target.value)}
-                  placeholder="e.g. 3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-jobLevel">Job Level</Label>
-                <Input
-                  id="modal-jobLevel"
-                  value={formData.jobLevel}
-                  onChange={(e) => updateField("jobLevel", e.target.value)}
-                  placeholder="e.g. P13"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* ── Section 6: Job Success Profile ──────────────────────────────── */}
+          {/* ── 10. JOB SUCCESS PROFILE ─────────────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="w-4 h-4 text-[#474ead]" />
@@ -1136,16 +1039,15 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </p>
             </div>
             <p className="text-xs text-muted-foreground mb-5">
-              Complete the Job Success Profile sections below. These appear on the dedicated role page and are used by the AI matching system.
+              Optional — these sections appear on the dedicated role page and are used by the AI matching system.
             </p>
 
             <div className="space-y-5">
               {(
                 [
-                  { id: "modal-companyOverview", field: "companyOverview", label: "Company Overview", placeholder: "Describe the company, its mission, and what makes it a great place to work..." },
                   { id: "modal-roleMission", field: "roleMission", label: "Role Mission", placeholder: "What is the core purpose of this role? What does success look like..." },
                   { id: "modal-keyOutcomes", field: "keyOutcomes", label: "Key Outcomes", placeholder: "List the 3–5 measurable outcomes this role is responsible for delivering..." },
-                  { id: "modal-keyResponsibilities", field: "keyResponsibilities", label: "Key Responsibilities", placeholder: "Day-to-day responsibilities and accountabilities of this role..." },
+                  { id: "modal-keyResponsibilities", field: "keyResponsibilities", label: "Key Responsibilities (JSP)", placeholder: "Day-to-day responsibilities and accountabilities of this role..." },
                   { id: "modal-skillsAndCompetencies", field: "skillsAndCompetencies", label: "Skills & Competencies", placeholder: "Core skills, technical knowledge, and professional competencies required..." },
                   { id: "modal-behavioralTraits", field: "behavioralTraits", label: "Behavioral Traits", placeholder: "Personality traits and working style that set top performers apart in this role..." },
                   { id: "modal-kpis", field: "kpis", label: "Key Performance Indicators (KPIs)", placeholder: "How will performance be measured? List KPIs and targets..." },
@@ -1165,39 +1067,174 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                 </div>
               ))}
             </div>
+
+            {/* Role Details — internal organisational fields */}
+            <div className="mt-6 pt-5 border-t border-border/60">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Role Details (Internal)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="modal-reportingTo">Reporting To</Label>
+                  <Input
+                    id="modal-reportingTo"
+                    value={formData.reportingTo}
+                    onChange={(e) => updateField("reportingTo", e.target.value)}
+                    placeholder="e.g. Team Manager"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-division">Division</Label>
+                  <Input
+                    id="modal-division"
+                    value={formData.division}
+                    onChange={(e) => updateField("division", e.target.value)}
+                    placeholder="e.g. Delivery"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-jobCode">Job Code</Label>
+                  <Input
+                    id="modal-jobCode"
+                    value={formData.jobCode}
+                    onChange={(e) => updateField("jobCode", e.target.value)}
+                    placeholder="e.g. CSR-LTS-DEL-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-jobGrade">Job Grade</Label>
+                  <Input
+                    id="modal-jobGrade"
+                    value={formData.jobGrade}
+                    onChange={(e) => updateField("jobGrade", e.target.value)}
+                    placeholder="e.g. 3"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-jobLevel">Job Level</Label>
+                  <Input
+                    id="modal-jobLevel"
+                    value={formData.jobLevel}
+                    onChange={(e) => updateField("jobLevel", e.target.value)}
+                    placeholder="e.g. P13"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <Separator />
 
-          {/* ── Section 7: System Requirements ──────────────────────────────── */}
+          {/* ── 11. POSTING OPTIONS ─────────────────────────────────────────── */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              System Requirements
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Posting Options
             </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Technical setup required by the candidate to perform this role remotely.
-            </p>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-internetSpeed">Minimum Internet Speed</Label>
-                <Input
-                  id="modal-internetSpeed"
-                  value={formData.minimumInternetSpeed}
-                  onChange={(e) => updateField("minimumInternetSpeed", e.target.value)}
-                  placeholder="e.g. 50 Mbps minimum"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-systemReqs">System Requirements</Label>
-                <Textarea
-                  id="modal-systemReqs"
-                  value={formData.systemRequirements}
-                  onChange={(e) => updateField("systemRequirements", e.target.value)}
-                  placeholder="e.g. Stable internet connection, quiet workspace, headset, and laptop/desktop suitable for remote work."
-                  className="min-h-[80px] resize-y"
-                />
+
+            <div className="flex items-start gap-3 rounded-md border border-amber-200/60 bg-amber-50/40 p-3 dark:border-amber-800/30 dark:bg-amber-950/20 mb-3">
+              <input
+                id="modal-is-featured"
+                type="checkbox"
+                checked={formData.isFeatured}
+                onChange={(e) => updateField("isFeatured", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input accent-amber-500 cursor-pointer"
+              />
+              <div>
+                <label htmlFor="modal-is-featured" className="text-sm font-medium cursor-pointer select-none">
+                  Feature this job
+                </label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Featured jobs are highlighted on the public Find Work page and prioritized near the top of listings.
+                </p>
               </div>
             </div>
+
+            <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+              <input
+                id="modal-urgently-hiring"
+                type="checkbox"
+                checked={formData.urgentlyHiring}
+                onChange={(e) => updateField("urgentlyHiring", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input accent-[#474ead] cursor-pointer"
+              />
+              <div>
+                <label htmlFor="modal-urgently-hiring" className="text-sm font-medium cursor-pointer select-none">
+                  Mark as Urgently Hiring
+                </label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {formData.urgentlyHiring
+                    ? "This job will display the Urgently Hiring badge."
+                    : "This job will not display the Urgently Hiring badge."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── 12. APPLICATION METHOD / STATUS ─────────────────────────────── */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+              Application &amp; Publishing
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label>Application Method</Label>
+                <Select
+                  value={formData.applicationMethod}
+                  onValueChange={(v) => updateField("applicationMethod", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="external_link">External Link</SelectItem>
+                    <SelectItem value="built_in_form">Built-in Form</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.applicationMethod === "built_in_form"
+                    ? "Candidates apply directly on OnSpot."
+                    : "Candidates are redirected to the external URL."}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => updateField("status", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {formData.applicationMethod === "external_link" && (
+              <div className="space-y-2">
+                <Label htmlFor="modal-apply-link">Apply Link</Label>
+                <Input
+                  id="modal-apply-link"
+                  value={formData.applyLink}
+                  onChange={(e) => updateField("applyLink", e.target.value)}
+                  placeholder="https://example.com/apply"
+                />
+                {errors.applyLink ? (
+                  <p className="text-xs text-red-500">{errors.applyLink}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Where candidates click "Apply Now". Leave blank to disable the button.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Sticky footer with actions ───────────────────────────────────── */}

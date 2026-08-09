@@ -1,0 +1,425 @@
+Reorganize the Admin Add/Edit Job Posting form so its FIELD SEQUENCE matches the public "View Job Details" page structure.
+
+IMPORTANT:
+- Do NOT fully redesign the form.
+- Keep the current modal, controls, styling, validation, buttons, and existing functionality.
+- This task is mainly about SECTION ORDER and logical grouping.
+- The goal is to make the Admin form easier to understand because admins should enter information in roughly the same order candidates will see it on the public Job Details page.
+
+Primary areas to inspect:
+- Add New Job Posting modal/form
+- Edit Job Posting modal/form
+- any reusable JobForm component
+- admin preview
+- shared form schema/types
+
+--------------------------------------------------
+TARGET FORM ORDER
+--------------------------------------------------
+
+Reorder the form into the following sections:
+
+1. BASIC ROLE INFORMATION
+2. COMPANY / CLIENT INFORMATION
+3. ABOUT THE ROLE
+4. KEY RESPONSIBILITIES
+5. REQUIRED QUALIFICATIONS
+6. PREFERRED QUALIFICATIONS
+7. REQUIRED TOOLS & EQUIPMENT
+8. WORK SCHEDULE
+9. COMPENSATION
+10. WHAT WE OFFER
+11. POSTING OPTIONS
+12. APPLICATION METHOD / STATUS
+13. ACTIONS
+
+This should mirror the View Job Details page as closely as practical.
+
+--------------------------------------------------
+1. BASIC ROLE INFORMATION
+--------------------------------------------------
+
+Keep the existing fields, but place them first:
+
+- Professional Role Name *
+- Original Role / Alternative Role
+- Work Setup
+- Function *
+- Experience Level *
+- Contract Type *
+- Duration
+
+Keep the current controls and validations.
+
+Do not remove:
+- Function dropdown
+- Work Setup
+- Contract Type
+- Experience Level
+
+--------------------------------------------------
+2. COMPANY / CLIENT INFORMATION
+--------------------------------------------------
+
+Move company-related fields together directly after Basic Role Information.
+
+Include:
+
+- Company Name *
+- Keep company confidential
+- Company Description
+- Confidential Client Overview
+
+Behavior:
+
+If company is public:
+- use Company Name
+- use Company Description
+
+If company is confidential:
+- still save actual company name internally
+- public pages show "Confidential Company"
+- show Confidential Client Overview publicly instead of the real company description
+
+Do not alter the confidentiality logic already implemented unless there is a bug.
+
+--------------------------------------------------
+3. ABOUT THE ROLE
+--------------------------------------------------
+
+Move role narrative fields next.
+
+Include:
+
+- Card Preview Summary
+- Full Role Description / About the Role
+
+Important:
+Card Preview Summary remains for job cards only.
+
+Full Role Description maps to the public:
+"About the Role"
+
+Do not display Card Preview Summary on the full details page.
+
+--------------------------------------------------
+4. KEY RESPONSIBILITIES
+--------------------------------------------------
+
+Move the Responsibilities rich-text/list editor here.
+
+Label preferably:
+
+"Key Responsibilities"
+
+This maps directly to the public Job Details section.
+
+Preserve:
+- rich-text behavior
+- bullets/numbered lists
+- current saved data
+
+--------------------------------------------------
+5. REQUIRED QUALIFICATIONS
+--------------------------------------------------
+
+Group required candidate requirements here.
+
+Use existing fields such as:
+- Skills & Requirements
+- required qualifications
+- experience expectations
+- education requirements
+
+If the current form calls this "Skills & Requirements", you may keep the internal field but clarify the UI label:
+
+"Required Qualifications"
+
+Do not migrate or rename database fields unless necessary.
+
+--------------------------------------------------
+6. PREFERRED QUALIFICATIONS
+--------------------------------------------------
+
+If a Preferred Qualifications field already exists:
+move it immediately after Required Qualifications.
+
+If it does not exist:
+do NOT invent a new field just for this rearrangement.
+
+The section can simply be omitted until supported.
+
+--------------------------------------------------
+7. REQUIRED TOOLS & EQUIPMENT
+--------------------------------------------------
+
+Group the existing system requirement fields here.
+
+Include:
+- Minimum Internet Speed
+- System Requirements
+- equipment/hardware fields if already available
+- required software/tools if already supported
+
+Suggested section heading:
+
+"Required Tools & Equipment"
+
+Helper text:
+"Technical setup and equipment required to perform this role."
+
+Do not remove existing data.
+
+--------------------------------------------------
+8. WORK SCHEDULE
+--------------------------------------------------
+
+Move any existing schedule-related fields here.
+
+Potential existing fields:
+- work days
+- time zone
+- weekly hours
+- shift
+- flexibility
+- schedule
+
+If these fields are not currently supported, do not add new ones automatically.
+
+Only group what already exists.
+
+--------------------------------------------------
+9. COMPENSATION
+--------------------------------------------------
+
+Move Salary / Rate after Work Schedule.
+
+Keep the current standardized compensation rules.
+
+Include:
+- Currency
+- Monthly Compensation / Salary
+- Commission
+- Equity
+
+Important:
+- monthly compensation only
+- no Rate TBD
+- no Annual / Hourly / Project Based
+- no hard-coded "$"
+- currency must remain dynamic
+
+The public View Job Details compensation formatting should continue using the shared formatter.
+
+--------------------------------------------------
+10. WHAT WE OFFER
+--------------------------------------------------
+
+Move Benefits after Compensation.
+
+Include:
+- Benefits
+- Commission / Equity only if they are conceptually also surfaced here
+- other perks if existing
+
+Do not duplicate the same controls twice.
+
+Suggested heading:
+
+"What We Offer"
+
+This maps directly to the public section.
+
+--------------------------------------------------
+11. POSTING OPTIONS
+--------------------------------------------------
+
+Group all posting/badge controls together.
+
+Include:
+- Feature this job
+- Mark as Urgently Hiring
+- Multiple Slots if supported
+- any other publishing/badge flags
+
+These are admin controls and do NOT need to mirror a public content section exactly.
+
+Keep them near the bottom because they affect presentation rather than role content.
+
+--------------------------------------------------
+12. APPLICATION METHOD / STATUS
+--------------------------------------------------
+
+Move these toward the bottom:
+
+- Application Method
+- Status
+
+This makes them feel like publishing settings rather than job-content fields.
+
+Keep all existing behavior.
+
+--------------------------------------------------
+13. ACTIONS
+--------------------------------------------------
+
+Keep the existing footer actions:
+
+Create:
+- Submit for Approval / Create Job
+- Cancel
+
+Edit:
+- Update Job
+- Cancel
+
+Preview:
+- Preview public page
+
+Do not change existing route/action behavior.
+
+--------------------------------------------------
+FORM VISUAL SECTIONS
+--------------------------------------------------
+
+Use subtle section dividers and headings.
+
+Suggested sequence visually:
+
+BASIC ROLE INFORMATION
+--------------------------------
+
+COMPANY / CLIENT INFORMATION
+--------------------------------
+
+ABOUT THE ROLE
+--------------------------------
+
+KEY RESPONSIBILITIES
+--------------------------------
+
+REQUIRED QUALIFICATIONS
+--------------------------------
+
+PREFERRED QUALIFICATIONS
+--------------------------------
+
+REQUIRED TOOLS & EQUIPMENT
+--------------------------------
+
+WORK SCHEDULE
+--------------------------------
+
+COMPENSATION
+--------------------------------
+
+WHAT WE OFFER
+--------------------------------
+
+POSTING OPTIONS
+--------------------------------
+
+APPLICATION / PUBLISHING
+--------------------------------
+
+Do not make the modal unnecessarily taller with huge spacing.
+
+Keep section spacing compact.
+
+--------------------------------------------------
+DO NOT BREAK EXISTING DATA
+--------------------------------------------------
+
+Reordering fields must NOT change:
+
+- database column names
+- API payload property names
+- validation logic
+- existing job records
+- create/update behavior
+- admin approval flow
+- public job page data
+
+This is primarily a form organization/refactor.
+
+--------------------------------------------------
+ADD / EDIT MUST MATCH
+--------------------------------------------------
+
+Make sure BOTH:
+
+- Add New Job Posting
+- Edit Job Posting
+
+use the exact same section ordering.
+
+Prefer a shared JobForm component/config if the project already supports it.
+
+Do not maintain two separate manual field sequences that can drift later.
+
+--------------------------------------------------
+ADMIN PREVIEW
+--------------------------------------------------
+
+The "Preview public page" feature should continue working after the reorder.
+
+No content should disappear because fields moved visually.
+
+--------------------------------------------------
+MOBILE / MODAL BEHAVIOR
+--------------------------------------------------
+
+Preserve:
+- scrolling modal
+- sticky footer buttons if currently used
+- keyboard accessibility
+- field focus behavior
+- validation messages
+- mobile responsiveness
+
+Do not create nested scrolling areas unnecessarily.
+
+--------------------------------------------------
+EXPECTED ADMIN FLOW
+--------------------------------------------------
+
+The Admin should now experience the form approximately like:
+
+1. What is the role?
+2. Who is the client/company?
+3. What is the role about?
+4. What will they do?
+5. What qualifications are required?
+6. What qualifications are preferred?
+7. What tools/setup are required?
+8. What is the schedule?
+9. What is the compensation?
+10. What do we offer?
+11. How should this posting be promoted?
+12. How should candidates apply?
+13. Submit / Update
+
+This mirrors how the candidate reads the View Job Details page.
+
+--------------------------------------------------
+IMPORTANT:
+Do NOT copy sample values from the uploaded HTML.
+Use only real admin form data.
+
+The uploaded template is only a sequence/reference.
+
+--------------------------------------------------
+AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Report:
+
+1. exact files changed
+2. old form section order
+3. new form section order
+4. confirmation Add and Edit use the same order
+5. whether a shared JobForm component was reused/refactored
+6. confirmation no API/database fields were renamed
+7. confirmation create/update still work
+8. confirmation Preview Public Page still works
+9. any template sections omitted because the system currently has no matching field
