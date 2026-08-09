@@ -1,0 +1,66 @@
+Fix the email sending error on /admin/job-applications.
+
+Current behavior:
+
+Email composer and confirmation modal now work.
+Clicking Send Email reaches the backend, but returns:
+401 Unauthorized
+Authentication required
+We do not have admin accounts or admin authentication implemented yet.
+/admin/* pages are currently accessible without login.
+
+Inspect the backend email endpoint and identify what authentication middleware is causing the 401.
+
+For now, temporarily allow the applicant email endpoint to work without admin authentication, consistent with the current admin-page architecture.
+
+Do not remove authentication globally.
+
+Only remove/bypass auth for the specific admin applicant-email endpoint, for example:
+
+POST /api/admin/job-applications/:id/send-email
+
+Keep all validation and security checks for:
+
+valid application ID
+valid applicant email
+required subject/body
+allowed sender address
+server-side sender configuration
+
+Emails must always be sent from:
+
+OnSpot Careers <careers@onspotglobal.com>
+
+The frontend must not be allowed to override the sender.
+
+Also inspect whether there are two separate authentication failures:
+
+our own backend admin-auth middleware
+authentication with the actual email provider
+
+If the 401 comes from our backend middleware, bypass it temporarily for this endpoint.
+
+If the 401 comes from the email provider, do not bypass it. Fix/configure the provider credentials and report exactly which environment variables are missing.
+
+Add temporary server logging so we can distinguish:
+
+Request reached send-email endpoint
+Email provider request started
+Email provider response/error
+
+Do not log passwords, API keys, access tokens, or full credentials.
+
+After the fix, report:
+
+where the 401 was coming from
+exact middleware changed
+exact route changed
+whether email provider authentication is configured
+environment variables required
+whether careers@onspotglobal.com is ready to send
+
+The important distinction is this: your site’s admin authentication and your email provider’s authentication are two different things.
+
+If the 401 is from your own API because something like requireAdmin, requireAuth, or isAuthenticated is attached to the send-email route, Replit can temporarily remove it from only that endpoint.
+
+But if Microsoft/Outlook, Resend, SendGrid, etc. is returning the 401, then the email provider still needs valid credentials even though your site has no admin login yet.

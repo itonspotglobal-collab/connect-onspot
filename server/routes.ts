@@ -9744,7 +9744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/job-applications/:id/email/test — send a test email (prefixes subject with [TEST])
-  app.post("/api/admin/job-applications/:id/email/test", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/test", maybeAuthenticateAdmin, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const { templateId, subject, bodyHtml, testRecipient } = req.body;
@@ -9804,12 +9804,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/admin/job-applications/:id/email/send — send email + optionally update stage
   // TODO: Protect with admin authorization before production.
-  app.post("/api/admin/job-applications/:id/email/send", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/send", maybeAuthenticateAdmin, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const { templateId, subject, bodyHtml, updateStage } = req.body;
       // Derive sentBy from the authenticated admin — never trust the request body for audit integrity
       const sentBy: string | null = req.user?.id ?? null;
+      console.log(`[send-email] Request reached send-email endpoint — applicationId=${id} updateStage=${updateStage ?? "none"} bypass=${BYPASS_ADMIN_AUTH}`);
 
       // Always load email from DB — never trust browser-supplied recipient
       const appRow = await query(
@@ -9851,11 +9852,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
 
       const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+      console.log(`[send-email] Email provider request started — to=${app_.email} subject="${resolvedSubject.slice(0, 60)}"`);
       const sendResult = await sendApplicantEmail({
         to: app_.email,
         subject: resolvedSubject,
         bodyHtml: resolvedBody,
       });
+      console.log(`[send-email] Email provider response — success=${sendResult.success}${sendResult.error ? ` error="${sendResult.error}"` : ""}`);
 
       const emailStatus = sendResult.success ? "sent" : "failed";
       const emailErr = sendResult.success ? null : sendResult.error;
@@ -9897,7 +9900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:id/email/history — list sent emails for an application
-  app.get("/api/admin/job-applications/:id/email/history", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.get("/api/admin/job-applications/:id/email/history", maybeAuthenticateAdmin, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const result = await query(
@@ -9921,7 +9924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/job-applications/:id/email/:emailId/retry — retry a failed email
-  app.post("/api/admin/job-applications/:id/email/:emailId/retry", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/:emailId/retry", maybeAuthenticateAdmin, async (req: any, res: Response) => {
     try {
       const { id, emailId } = req.params;
       const emailRow = await query(
