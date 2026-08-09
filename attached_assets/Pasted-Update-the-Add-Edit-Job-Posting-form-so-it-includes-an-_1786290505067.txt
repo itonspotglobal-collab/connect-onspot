@@ -1,0 +1,353 @@
+Update the Add/Edit Job Posting form so it includes an explicit
+"ABOUT THE COMPANY" section in the correct sequence.
+
+IMPORTANT:
+Do not redesign the whole form.
+Keep the existing modal, inputs, validation, save/update behavior, and styling.
+This is mainly a field grouping + missing-section fix.
+
+Primary areas to inspect:
+- Add New Job Posting form
+- Edit Job Posting form
+- shared JobForm component if one exists
+- job create/update payloads
+- public View Job Details mapping
+- company confidentiality fields
+
+CURRENT ISSUE
+
+The View Job Details page contains:
+
+1. About the Company
+2. About the Role
+3. Key Responsibilities
+...
+
+But the Admin Add/Edit form currently jumps into:
+
+ROLE CONTENT
+- Card Preview Summary
+- Full Role Description
+- Responsibilities
+- Skills & Requirements
+
+There is no clear "About the Company" section.
+
+GOAL
+
+The Admin form should follow this sequence:
+
+1. BASIC ROLE INFORMATION
+2. ABOUT THE COMPANY
+3. ABOUT THE ROLE
+4. KEY RESPONSIBILITIES
+5. REQUIRED QUALIFICATIONS
+6. PREFERRED QUALIFICATIONS
+7. REQUIRED TOOLS & EQUIPMENT
+8. WORK SCHEDULE
+9. COMPENSATION
+10. WHAT WE OFFER
+11. POSTING OPTIONS
+12. APPLICATION / STATUS
+
+--------------------------------------------------
+1. ADD "ABOUT THE COMPANY" SECTION
+--------------------------------------------------
+
+Place this section immediately after Basic Role Information.
+
+Section heading:
+
+ABOUT THE COMPANY
+
+Include the existing company-related controls:
+
+- Company Name *
+- Keep company confidential
+- Company Description
+- Confidential Client Overview
+
+Do not duplicate fields if they already exist elsewhere.
+Move/reuse them in this section.
+
+--------------------------------------------------
+2. PUBLIC COMPANY MODE
+--------------------------------------------------
+
+If:
+
+Keep company confidential = OFF
+
+Show/edit:
+
+Company Name *
+Company Description
+
+Helper text for Company Description:
+
+"Provide a short overview of the company, including its industry,
+mission, market, or work environment."
+
+This field maps to the public:
+
+About the Company
+
+section.
+
+--------------------------------------------------
+3. CONFIDENTIAL COMPANY MODE
+--------------------------------------------------
+
+If:
+
+Keep company confidential = ON
+
+Still keep the actual Company Name stored internally.
+
+But also show:
+
+Confidential Client Overview
+
+Helper text:
+
+"Provide a public-safe overview of the client without revealing
+the company identity. Include relevant context such as industry,
+company size, market, mission, or work environment."
+
+The public View Job Details page should show:
+
+About the Company
+Confidential Company
+[Confidential Client Overview]
+
+and must not expose the real company name/description.
+
+--------------------------------------------------
+4. CONDITIONAL FORM BEHAVIOR
+--------------------------------------------------
+
+Suggested UI behavior:
+
+Company Name *
+[____________________________]
+
+☐ Keep company confidential
+
+If unchecked:
+
+Company Description
+[ textarea ]
+
+If checked:
+
+Confidential Client Overview
+[ textarea ]
+
+You may keep both fields visible if that matches current architecture,
+but clearly label which one is public.
+
+Preferred:
+conditionally emphasize the relevant field.
+
+--------------------------------------------------
+5. ABOUT THE ROLE COMES NEXT
+--------------------------------------------------
+
+Immediately after About the Company, place:
+
+ABOUT THE ROLE
+
+Fields:
+
+- Card Preview Summary
+- Full Role Description
+
+Clarify that:
+
+Card Preview Summary
+= public job listing card only
+
+Full Role Description
+= View Job Details → About the Role
+
+--------------------------------------------------
+6. RESPONSIBILITIES / QUALIFICATIONS
+--------------------------------------------------
+
+After About the Role:
+
+KEY RESPONSIBILITIES
+- existing Responsibilities editor
+
+REQUIRED QUALIFICATIONS
+- existing Skills & Requirements / required qualifications editor
+
+PREFERRED QUALIFICATIONS
+- existing field if supported
+
+Do not invent a new Preferred Qualifications field if none exists.
+
+--------------------------------------------------
+7. SHARED ADD / EDIT STRUCTURE
+--------------------------------------------------
+
+Both:
+
+- Add New Job Posting
+- Edit Job Posting
+
+must use the exact same section order.
+
+Prefer one shared JobForm structure/component.
+
+Do not let Add and Edit drift into different field sequences.
+
+--------------------------------------------------
+8. DO NOT CHANGE DATA MODEL UNLESS NEEDED
+--------------------------------------------------
+
+First inspect whether these fields already exist:
+
+companyName
+companyDescription
+isCompanyConfidential
+confidentialClientOverview
+
+If they already exist:
+reuse them.
+
+If only Company Name + confidentiality exist and the description fields
+do not yet exist:
+add only the missing fields properly across:
+
+- frontend types
+- form state
+- create payload
+- update payload
+- backend validation
+- DB schema if required
+- public job response
+- admin response
+
+Do not create duplicate company fields.
+
+--------------------------------------------------
+9. VIEW JOB DETAILS MAPPING
+--------------------------------------------------
+
+Make sure the Admin fields map directly to public sections:
+
+ADMIN:
+Company Name
+Company Description
+Confidential Client Overview
+
+PUBLIC:
+About the Company
+
+ADMIN:
+Full Role Description
+
+PUBLIC:
+About the Role
+
+ADMIN:
+Responsibilities
+
+PUBLIC:
+Key Responsibilities
+
+ADMIN:
+Skills & Requirements
+
+PUBLIC:
+Required Qualifications
+
+--------------------------------------------------
+10. PREVIEW PUBLIC PAGE
+--------------------------------------------------
+
+Update "Preview public page" behavior so admins can verify:
+
+Public company:
+- actual company name
+- company description
+
+Confidential company:
+- Confidential Company
+- confidential client overview
+- no real company identity shown
+
+--------------------------------------------------
+11. UI STYLE
+--------------------------------------------------
+
+Keep the existing modal design.
+
+Use the same visual pattern as other admin form sections:
+
+ABOUT THE COMPANY
+--------------------------------
+
+Company Name
+Keep company confidential
+
+Company Description / Confidential Client Overview
+
+--------------------------------
+
+ABOUT THE ROLE
+...
+
+Do not add excessive spacing.
+
+--------------------------------------------------
+EXPECTED FORM FLOW
+--------------------------------------------------
+
+The form should read naturally like:
+
+BASIC ROLE INFORMATION
+
+ABOUT THE COMPANY
+- Company
+- Confidential setting
+- Company description / client overview
+
+ABOUT THE ROLE
+- Card Preview Summary
+- Full Role Description
+
+KEY RESPONSIBILITIES
+
+REQUIRED QUALIFICATIONS
+
+PREFERRED QUALIFICATIONS
+
+REQUIRED TOOLS & EQUIPMENT
+
+WORK SCHEDULE
+
+COMPENSATION
+
+WHAT WE OFFER
+
+POSTING OPTIONS
+
+APPLICATION / STATUS
+
+--------------------------------------------------
+AFTER IMPLEMENTATION
+--------------------------------------------------
+
+Report:
+
+1. exact files changed
+2. whether companyDescription already existed
+3. whether confidentialClientOverview already existed
+4. exact field names used
+5. confirmation About the Company is now directly after Basic Role Information
+6. confirmation Add and Edit use the same section order
+7. confirmation Preview Public Page reflects public vs confidential company correctly
+8. confirmation no duplicate company fields were created
+9. confirmation existing job records still edit/update correctly

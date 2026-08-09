@@ -601,10 +601,10 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
           <Separator />
 
-          {/* ── 2. COMPANY / CLIENT INFORMATION ────────────────────────────── */}
+          {/* ── 2. ABOUT THE COMPANY ────────────────────────────────────────── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
-              Company / Client Information
+              About the Company
             </p>
 
             <div className="space-y-2 mb-4">
@@ -653,7 +653,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   className="min-h-[90px] resize-y"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Shown publicly on the job details page when the company is not confidential.
+                  Provide a short overview of the company, including its industry, mission, market, or work environment. Shown publicly under "About the Company" on the job details page.
                 </p>
               </div>
             )}
@@ -672,7 +672,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   className="mt-2 min-h-[90px] resize-y bg-white dark:bg-white/5"
                 />
                 <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
-                  Shown publicly instead of the real company name. Include industry, company size, market, and work environment. <strong>Do not include</strong> the company name, exact location, unique products, or other identifying details.
+                  Provide a public-safe overview of the client without revealing the company identity. Include relevant context such as industry, company size, market, mission, or work environment. <strong>Do not include</strong> the company name, exact location, unique products, or other identifying details.
                 </p>
               </div>
             )}
