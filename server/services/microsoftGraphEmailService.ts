@@ -163,37 +163,26 @@ export interface AuthTestResult {
 }
 
 /**
- * Test Graph authentication and mailbox access without sending an email.
- * Fetches an access token, then calls GET /users/{sender} to verify the
- * mailbox is reachable with the current credentials.
+ * Test Graph authentication without sending an email.
+ * Acquires a client_credentials OAuth2 token — if that succeeds, the
+ * tenant/client/secret are valid and Mail.Send can be exercised.
+ * No additional Graph API call is made (probing user or mailbox endpoints
+ * requires permissions beyond Mail.Send and would give false negatives).
  */
 export async function testGraphAuth(): Promise<AuthTestResult> {
   let senderAddress: string | undefined;
   try {
     senderAddress = resolveSenderAddress();
-    const accessToken = await getAccessToken();
 
-    // Probe: read the mailbox user record — lightweight, non-destructive
-    const probeUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderAddress)}?$select=id,displayName,mail,userPrincipalName`;
-    const probeRes = await fetch(probeUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    // Acquire token — validates MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID,
+    // and MICROSOFT_CLIENT_SECRET against the Microsoft identity platform.
+    await getAccessToken();
 
-    if (!probeRes.ok) {
-      const text = await probeRes.text();
-      return {
-        success: false,
-        graphStatus: probeRes.status,
-        senderAddress,
-        error: `Graph user probe failed (${probeRes.status}): ${text.slice(0, 400)}`,
-      };
-    }
-
-    const user = (await probeRes.json()) as { displayName?: string; mail?: string };
     console.log(
-      `[microsoftGraphEmailService] Auth test OK — mailbox: ${user.mail ?? senderAddress} (${user.displayName ?? "unknown"})`,
+      `[microsoftGraphEmailService] Auth test OK — token acquired for tenant, sender: ${senderAddress}`,
     );
-    return { success: true, senderAddress, graphStatus: probeRes.status };
+    // graphStatus 200 signals token acquisition succeeded (no separate API probe)
+    return { success: true, senderAddress, graphStatus: 200 };
   } catch (err: any) {
     console.error("[microsoftGraphEmailService] testGraphAuth error:", err.message);
     return { success: false, senderAddress, error: err.message };
