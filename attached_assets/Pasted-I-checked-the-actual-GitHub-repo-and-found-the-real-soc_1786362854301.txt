@@ -1,0 +1,374 @@
+I checked the actual GitHub repo and found the real social-preview implementation.
+
+Do NOT keep searching for heart.png as the main issue.
+
+The current social preview is controlled by these files:
+
+1. server/ogMiddleware.ts
+2. client/index.html
+3. client/src/components/HeadSEO.tsx
+
+I want ALL THREE systems to use:
+
+/public/new-onspot.png
+
+as the default OnSpot social-sharing image.
+
+Production public URL:
+
+https://onspotglobal.com/new-onspot.png
+
+==================================================
+1. UPDATE server/ogMiddleware.ts
+==================================================
+
+Find:
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/onspot-social-preview-v3.png";
+
+Change it to:
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/new-onspot.png";
+
+This is the MOST IMPORTANT change.
+
+The server middleware already uses DEFAULT_OG_IMAGE for:
+
+- homepage
+- /find-work
+- /find-work/job/:id
+- /jobs/:id
+- hire talent
+- admin
+- services
+- pricing
+- legal pages
+- generic fallback
+
+Do not rewrite that routing logic.
+
+Just update the global default image.
+
+After changing it, individual job URLs such as:
+
+/find-work/job/<JOB_ID>
+
+must continue returning:
+
+title: "Job Opening | OnSpot Global"
+
+or their existing job-specific metadata,
+
+but image must now resolve to:
+
+https://onspotglobal.com/new-onspot.png
+
+==================================================
+2. UPDATE client/index.html
+==================================================
+
+The current HTML contains:
+
+<meta
+  property="og:image"
+  content="https://onspotglobal.com/onspot-social-preview-v3.png"
+/>
+
+<meta
+  property="og:image:url"
+  content="https://onspotglobal.com/onspot-social-preview-v3.png"
+/>
+
+<meta
+  property="og:image:secure_url"
+  content="https://onspotglobal.com/onspot-social-preview-v3.png"
+/>
+
+<meta
+  name="twitter:image"
+  content="https://onspotglobal.com/onspot-social-preview-v3.png"
+/>
+
+Replace ALL FOUR with:
+
+https://onspotglobal.com/new-onspot.png
+
+Do not leave any onspot-social-preview-v3.png reference in index.html.
+
+==================================================
+3. UPDATE HeadSEO.tsx
+==================================================
+
+The current default prop is:
+
+ogImage =
+  "https://www.onspotglobal.com/assets/og/onspot-home.jpg"
+
+Change it to:
+
+ogImage =
+  "https://onspotglobal.com/new-onspot.png"
+
+This prevents React from changing og:image back to the old fallback after page load.
+
+Do not alter page components that intentionally pass their own article/blog cover image.
+
+Only change the DEFAULT HeadSEO fallback.
+
+==================================================
+4. KEEP BLOG/INSIGHTS CUSTOM IMAGES
+==================================================
+
+Do NOT force new-onspot.png onto published Insight/blog posts that intentionally use:
+
+post.coverImageUrl
+
+Those should keep their article cover images.
+
+However, normal OnSpot pages and job pages should use new-onspot.png by default.
+
+==================================================
+5. VERIFY PUBLIC FILE
+==================================================
+
+Confirm this exists:
+
+public/new-onspot.png
+
+Then verify:
+
+https://CURRENT-REPLIT-DOMAIN/new-onspot.png
+
+returns:
+
+HTTP 200
+Content-Type: image/png
+
+After production deploy, also verify:
+
+https://onspotglobal.com/new-onspot.png
+
+Do not mark this complete if the image URL returns HTML or 404.
+
+==================================================
+6. IMAGE DIMENSIONS
+==================================================
+
+The middleware currently hardcodes:
+
+og:image:width = 1200
+og:image:height = 630
+
+Check the REAL dimensions of new-onspot.png.
+
+If new-onspot.png is NOT 1200x630:
+
+either:
+
+A. update those metadata dimensions to the actual dimensions
+
+OR preferably:
+
+B. create an optimized 1200x630 version without distortion:
+
+public/onspot-social-preview-2026.png
+
+and use that exact file consistently everywhere instead.
+
+If you create the optimized version, update all references consistently.
+
+Do not claim the image is 1200x630 unless it really is.
+
+==================================================
+7. SEARCH FOR OLD DEFAULTS
+==================================================
+
+After the change, search the repository for:
+
+onspot-social-preview-v3.png
+assets/og/onspot-home.jpg
+heart.png
+
+Report every remaining reference.
+
+There should be no remaining:
+
+onspot-social-preview-v3.png
+
+references in the default homepage/job metadata.
+
+It is okay for assets/og/onspot-home.jpg to remain elsewhere if intentionally used, but HeadSEO's default must be updated.
+
+==================================================
+8. VERIFY SERVER-RENDERED SOCIAL META
+==================================================
+
+The repo already has server/ogMiddleware.ts specifically for social crawlers.
+
+Do not replace this with React-only metadata.
+
+Verify the middleware still injects:
+
+og:image
+og:image:url
+og:image:secure_url
+twitter:image
+
+using DEFAULT_OG_IMAGE.
+
+For the homepage, raw crawler HTML should show:
+
+https://onspotglobal.com/new-onspot.png
+
+For:
+
+/find-work/job/<JOB_ID>
+
+raw crawler HTML should ALSO show:
+
+https://onspotglobal.com/new-onspot.png
+
+==================================================
+9. TEST WITH SOCIAL BOT USER AGENTS
+==================================================
+
+The middleware detects social bots including:
+
+linkedinbot
+facebookexternalhit
+twitterbot
+skypeuripreview
+bingbot
+slackbot
+discordbot
+
+Use curl or equivalent to request the page using at least:
+
+LinkedInBot
+
+and:
+
+SkypeUriPreview
+
+Then inspect the returned HTML.
+
+Confirm:
+
+og:image =
+https://onspotglobal.com/new-onspot.png
+
+twitter:image =
+https://onspotglobal.com/new-onspot.png
+
+==================================================
+10. IMPORTANT DEVELOPMENT URL ISSUE
+==================================================
+
+server/ogMiddleware.ts currently defines:
+
+const SITE = "https://www.onspotglobal.com";
+
+and deliberately rewrites Replit image URLs to the production site.
+
+Because of that, when testing on *.replit.dev, the crawler may STILL fetch:
+
+https://onspotglobal.com/new-onspot.png
+
+rather than the Replit-hosted image.
+
+Therefore:
+
+If new-onspot.png has NOT yet been deployed to onspotglobal.com,
+a Replit link preview may show no image.
+
+For DEVELOPMENT only, make DEFAULT_OG_IMAGE environment-aware if needed.
+
+Preferred approach:
+
+const SITE =
+  process.env.PUBLIC_SITE_URL ||
+  "https://www.onspotglobal.com";
+
+export const DEFAULT_OG_IMAGE =
+  `${SITE}/new-onspot.png`;
+
+Then configure Replit development:
+
+PUBLIC_SITE_URL=https://CURRENT-REPLIT-DOMAIN
+
+and production:
+
+PUBLIC_SITE_URL=https://onspotglobal.com
+
+Do this only if it fits the project's existing environment setup.
+
+Do not hardcode one temporary Replit hostname into source code.
+
+==================================================
+11. DO NOT CHANGE THESE PARTS UNNECESSARILY
+==================================================
+
+Do not rewrite:
+
+- social bot detection
+- buildMetaTagsHtml
+- route matching
+- Express setup
+- job routes
+- Insights cover image logic
+
+The current architecture already has proper server-rendered social metadata.
+
+The bug is primarily inconsistent/default image URLs.
+
+==================================================
+12. FINAL EXPECTED STATE
+==================================================
+
+server/ogMiddleware.ts:
+
+DEFAULT_OG_IMAGE =
+https://onspotglobal.com/new-onspot.png
+
+client/index.html:
+
+og:image =
+https://onspotglobal.com/new-onspot.png
+
+og:image:url =
+https://onspotglobal.com/new-onspot.png
+
+og:image:secure_url =
+https://onspotglobal.com/new-onspot.png
+
+twitter:image =
+https://onspotglobal.com/new-onspot.png
+
+HeadSEO.tsx default:
+
+ogImage =
+https://onspotglobal.com/new-onspot.png
+
+==================================================
+13. FINAL REPORT
+==================================================
+
+Show me:
+
+1. exact diff for server/ogMiddleware.ts
+2. exact diff for client/index.html
+3. exact diff for HeadSEO.tsx
+4. new image HTTP status
+5. new image Content-Type
+6. actual image dimensions
+7. homepage crawler og:image
+8. job-page crawler og:image
+9. LinkedInBot test result
+10. SkypeUriPreview test result
+11. remaining onspot-social-preview-v3.png references
+12. remaining assets/og/onspot-home.jpg references
+13. whether build passed
+
+Do not say "fixed" unless the crawler HTML itself shows the new image.
