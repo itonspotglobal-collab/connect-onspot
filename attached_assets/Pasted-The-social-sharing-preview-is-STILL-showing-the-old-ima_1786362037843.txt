@@ -1,0 +1,205 @@
+The social-sharing preview is STILL showing the old image:
+
+/heart.png
+
+even though I already uploaded the new image into /public:
+
+/new-onspot.png
+
+Please fix this properly.
+
+IMPORTANT:Simply having the new image in /public is not enough. Find where the application is still referencing heart.png and replace the SOCIAL PREVIEW metadata with the new image.
+
+Search the ENTIRE repository for:
+
+heart.png/heart.pngog:imagetwitter:imagesocial-preview.jpgonspot-social-previewopenGraphmetadataSEOWork Without Limits | OnSpotJob Opening | OnSpot
+
+Find every place where heart.png is being used as:
+
+og:image
+
+twitter:image
+
+Open Graph image
+
+social preview image
+
+default SEO image
+
+job-sharing image
+
+fallback social image
+
+Do NOT replace heart.png if it is being used as a normal visible website image unless necessary.
+
+Change the DEFAULT social-sharing image to:
+
+/new-onspot_1786361633591.png
+
+For production, use the absolute URL:
+
+https://onspotglobal.com/new-onspot_1786361633591.png
+
+For the current Replit development deployment, generate the correct absolute URL from the current host if needed.
+
+Do NOT hardcode localhost.
+
+Make sure the homepage outputs:
+
+
+
+Also keep:
+
+IMPORTANT: inspect index.html.
+
+I can see this project has an index.html file.
+
+Check whether index.html currently contains something like:
+
+or:
+
+If it does, replace it.
+
+Also check for twitter:image there.
+
+Check main.tsx and any SEO components.
+
+Search React components and utilities for:
+
+document.titlemetaHelmetreact-helmetSEOOpenGraphsocialImagepreviewImagedefaultImageheart.png
+
+If metadata is being dynamically overwritten after startup, update that too.
+
+Check server/backend code.
+
+If the app has Express, Node, SSR, middleware, or special handling for social crawlers, inspect it for heart.png.
+
+The metadata returned in the INITIAL HTML response must point to the new image.
+
+Do not rely only on JavaScript changing meta tags after the page loads.
+
+Fix dynamic job URLs too.
+
+URLs such as:
+
+/find-work/job/<JOB_ID>
+
+must also use:
+
+https://onspotglobal.com/new-onspot_1786361633591.png
+
+as their og:image and twitter:image.
+
+Keep the job-specific title and description.
+
+Example:
+
+og:title = actual job title + " | OnSpot"og:description = job-specific descriptionog:url = exact job URLog:image = new OnSpot image
+
+twitter:title = actual job title + " | OnSpot"twitter:description = job-specific descriptiontwitter:image = new OnSpot image
+
+Make this the global fallback.
+
+The new image should be used for:
+
+//find-work/find-work/job/<JOB_ID>other public OnSpot URLs
+
+unless a page intentionally has its own different social image.
+
+Remove conflicting metadata.
+
+After changes, inspect the generated HTML and make sure there are NOT two different og:image tags, for example:
+
+og:image = heart.pngog:image = new-onspot...
+
+There should be only one authoritative social preview image per page.
+
+Same for twitter:image.
+
+Verify the image URL directly.
+
+Confirm this file actually loads publicly:
+
+https://onspotglobal.com/new-onspot_1786361633591.png
+
+For the Replit development URL, also test:
+
+https://CURRENT-REPLIT-DOMAIN/new-onspot_1786361633591.png
+
+It must return:
+
+HTTP 200Content-Type: image/png
+
+Verify using page source, NOT only browser DevTools.
+
+For the homepage and one job page, inspect the original server-returned HTML/page source and confirm it contains the new image.
+
+Specifically tell me what value is returned for:
+
+og:imagetwitter:image
+
+Search again after making the changes.
+
+Run a repository-wide search for:
+
+heart.png
+
+and tell me every remaining reference.
+
+Explain whether each remaining heart.png reference is:
+
+social metadata
+
+normal page content
+
+unused asset
+
+There must be ZERO remaining heart.png references in social metadata.
+
+Build/restart the project.
+
+After changing metadata:
+
+restart the Replit app/server
+
+rebuild if required
+
+clear any Replit build cache if necessary
+
+confirm the latest application is being served
+
+IMPORTANT ABOUT CACHING
+
+Do not assume that a cached Microsoft Teams preview means the code is still wrong.
+
+First verify the ACTUAL HTML.
+
+If the HTML now says:
+
+new-onspot_1786361633591.png
+
+but Teams still shows heart.png, then the remaining issue is social-preview caching.
+
+Report this clearly.
+
+FINAL REPORT:
+
+Tell me:
+
+where heart.png was referenced
+
+which files you modified
+
+homepage og:image value
+
+homepage twitter:image value
+
+job page og:image value
+
+job page twitter:image value
+
+whether the new image URL returns HTTP 200
+
+whether heart.png remains anywhere in social metadata
+
+whether the server was restarted/rebuilt
