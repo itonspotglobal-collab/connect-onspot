@@ -1348,6 +1348,8 @@ export const jobApplicationEmails = pgTable("job_application_emails", {
   bodyHtml: text("body_html").notNull(),
   sentTo: text("sent_to").notNull(),
   sentBy: varchar("sent_by").references(() => users.id),
+  senderEmail: text("sender_email"),
+  senderName: text("sender_name"),
   status: text("status").notNull().default("sent"),
   errorMessage: text("error_message"),
   isTest: boolean("is_test").notNull().default(false),

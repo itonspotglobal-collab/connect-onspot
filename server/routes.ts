@@ -973,6 +973,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  video introduction migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: email sender tracking fields ────────────────
+  try {
+    await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_email text`);
+    await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_name text`);
+    console.log("✅ Migration: email sender columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  email sender migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -9942,10 +9951,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/job-applications/:id/email/send", maybeAuthenticateAdmin, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
-      const { templateId, subject, bodyHtml, updateStage } = req.body;
+      const { templateId, subject, bodyHtml, updateStage, senderEmail: rawSenderEmail } = req.body;
       // Derive sentBy from the authenticated admin — never trust the request body for audit integrity
       const sentBy: string | null = req.user?.id ?? null;
-      console.log(`[send-email] Request reached send-email endpoint — applicationId=${id} updateStage=${updateStage ?? "none"} bypass=${BYPASS_ADMIN_AUTH}`);
+
+      // Validate senderEmail against server-side allowlist — backend is the source of truth
+      const { ALLOWED_SENDERS: SENDER_ALLOWLIST } = await import("./services/microsoftGraphEmailService.ts");
+      const resolvedSenderEmail: string =
+        rawSenderEmail && SENDER_ALLOWLIST[rawSenderEmail]
+          ? rawSenderEmail
+          : "careers@onspotglobal.com";
+      const resolvedSenderName: string = SENDER_ALLOWLIST[resolvedSenderEmail] ?? "OnSpot Careers";
+
+      console.log(`[send-email] Request reached send-email endpoint — applicationId=${id} sender=${resolvedSenderEmail} updateStage=${updateStage ?? "none"} bypass=${BYPASS_ADMIN_AUTH}`);
 
       // Always load email from DB — never trust browser-supplied recipient
       const appRow = await query(
@@ -9987,11 +10005,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
 
       const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-      console.log(`[send-email] Email provider request started — to=${app_.email} subject="${resolvedSubject.slice(0, 60)}"`);
+      console.log(`[send-email] Email provider request started — to=${app_.email} from=${resolvedSenderEmail} subject="${resolvedSubject.slice(0, 60)}"`);
       const sendResult = await sendApplicantEmail({
         to: app_.email,
         subject: resolvedSubject,
         bodyHtml: resolvedBody,
+        senderEmail: resolvedSenderEmail,
       });
       console.log(`[send-email] Email provider response — success=${sendResult.success}${sendResult.error ? ` error="${sendResult.error}"` : ""}`);
 
@@ -10001,9 +10020,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the email attempt
       await query(
         `INSERT INTO job_application_emails
-           (application_id, template_id, subject, body_html, sent_to, sent_by, status, error_message, is_test)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)`,
-        [id, resolvedTemplateId, resolvedSubject, resolvedBody, app_.email, sentBy ?? null, emailStatus, emailErr],
+           (application_id, template_id, subject, body_html, sent_to, sent_by, sender_email, sender_name, status, error_message, is_test)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)`,
+        [id, resolvedTemplateId, resolvedSubject, resolvedBody, app_.email, sentBy ?? null, resolvedSenderEmail, resolvedSenderName, emailStatus, emailErr],
       );
 
       // Optionally update application stage — failure here must not block email response
@@ -10042,6 +10061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `SELECT jae.id, jae.subject, jae.sent_to AS "sentTo",
                 jae.status, jae.error_message AS "errorMessage",
                 jae.is_test AS "isTest", jae.sent_at AS "sentAt",
+                jae.sender_email AS "senderEmail", jae.sender_name AS "senderName",
                 aet.name AS "templateName",
                 u.first_name AS "senderFirstName", u.last_name AS "senderLastName"
          FROM job_application_emails jae
@@ -10080,16 +10100,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         to: appRow.rows[0].email,
         subject: prev.subject,
         bodyHtml: prev.body_html,
+        senderEmail: prev.sender_email ?? undefined,
       });
 
       const newStatus = sendResult.success ? "sent" : "failed";
       await query(
         `INSERT INTO job_application_emails
-           (application_id, template_id, subject, body_html, sent_to, sent_by, status, error_message, is_test)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)`,
+           (application_id, template_id, subject, body_html, sent_to, sent_by, sender_email, sender_name, status, error_message, is_test)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)`,
         [id, prev.template_id, prev.subject, prev.body_html,
-         appRow.rows[0].email, prev.sent_by, newStatus,
-         sendResult.success ? null : sendResult.error],
+         appRow.rows[0].email, prev.sent_by,
+         prev.sender_email ?? null, prev.sender_name ?? null,
+         newStatus, sendResult.success ? null : sendResult.error],
       );
 
       if (!sendResult.success) {

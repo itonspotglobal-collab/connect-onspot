@@ -41,6 +41,8 @@ interface EmailHistoryRow {
   isTest: boolean;
   sentAt: string;
   templateName?: string;
+  senderEmail?: string;
+  senderName?: string;
   senderFirstName?: string;
   senderLastName?: string;
 }
@@ -65,10 +67,25 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** Called when the user clicks "Send Email" (after validation). Parent opens the confirmation dialog. */
-  onRequestSend: (payload: { subject: string; bodyHtml: string; templateId: string }) => void;
+  onRequestSend: (payload: { subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string }) => void;
   /** True while the parent is sending — keeps the Send button disabled during the API call. */
   isSendingEmail: boolean;
 }
+
+// ─── Sender options ───────────────────────────────────────────────────────────
+
+interface SenderOption {
+  email: string;
+  label: string;
+  display: string; // "Label <email>"
+}
+
+const SENDER_OPTIONS: SenderOption[] = [
+  { email: "careers@onspotglobal.com",    label: "OnSpot Careers",    display: "OnSpot Careers <careers@onspotglobal.com>" },
+  { email: "findwork@onspotglobal.com",   label: "OnSpot Find Work",  display: "OnSpot Find Work <findwork@onspotglobal.com>" },
+  { email: "hiretalent@onspotglobal.com", label: "OnSpot Hire Talent",display: "OnSpot Hire Talent <hiretalent@onspotglobal.com>" },
+];
+const DEFAULT_SENDER = SENDER_OPTIONS[0];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -143,6 +160,8 @@ function ComposeTab({
   setSubject,
   bodyHtml,
   setBodyHtml,
+  selectedSender,
+  setSelectedSender,
   onPreview,
   onSend,
   isSending,
@@ -158,6 +177,8 @@ function ComposeTab({
   setSubject: (s: string) => void;
   bodyHtml: string;
   setBodyHtml: (s: string) => void;
+  selectedSender: SenderOption;
+  setSelectedSender: (s: SenderOption) => void;
   onPreview: () => void;
   onSend: () => void;
   isSending: boolean;
@@ -191,6 +212,30 @@ function ComposeTab({
 
   return (
     <div className="space-y-4">
+      {/* From / Sender selector */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">
+          From <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={selectedSender.email}
+          onValueChange={v => {
+            const opt = SENDER_OPTIONS.find(o => o.email === v);
+            if (opt) setSelectedSender(opt);
+          }}
+          disabled={isSending}
+        >
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SENDER_OPTIONS.map(opt => (
+              <SelectItem key={opt.email} value={opt.email}>{opt.display}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Template selector */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">Template (optional)</Label>
@@ -293,11 +338,15 @@ function PreviewTab({
   templateId,
   subject,
   bodyHtml,
+  senderDisplay,
+  recipientEmail,
 }: {
   appId: string;
   templateId: string;
   subject: string;
   bodyHtml: string;
+  senderDisplay: string;
+  recipientEmail: string;
 }) {
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -345,6 +394,18 @@ function PreviewTab({
 
   return (
     <div className="space-y-3">
+      {/* Envelope header */}
+      <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm space-y-1">
+        <div className="flex gap-2">
+          <span className="text-slate-400 w-14 shrink-0">From</span>
+          <span className="text-slate-700">{senderDisplay}</span>
+        </div>
+        <div className="flex gap-2">
+          <span className="text-slate-400 w-14 shrink-0">To</span>
+          <span className="text-slate-700">{recipientEmail}</span>
+        </div>
+      </div>
+
       {preview.unresolvedKeys.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 inline mr-1.5" />
@@ -439,6 +500,9 @@ function HistoryTab({ appId }: { appId: string }) {
                 )}
               </div>
               <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                {(row.senderEmail || row.senderName) && (
+                  <span>From: {row.senderName ? `${row.senderName} <${row.senderEmail}>` : row.senderEmail}</span>
+                )}
                 <span>To: {row.sentTo}</span>
                 {row.templateName && <span>Template: {row.templateName}</span>}
                 {(row.senderFirstName || row.senderLastName) && (
@@ -608,6 +672,7 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
   const [showTestDialog, setShowTestDialog] = useState(false);
+  const [selectedSender, setSelectedSender] = useState<SenderOption>(DEFAULT_SENDER);
 
   // Reset when dialog opens
   useEffect(() => {
@@ -617,6 +682,7 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
       setSubject("");
       setBodyHtml("");
       setShowTestDialog(false);
+      setSelectedSender(DEFAULT_SENDER);
     }
   }, [open]);
 
@@ -683,8 +749,16 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
               setSubject={setSubject}
               bodyHtml={bodyHtml}
               setBodyHtml={setBodyHtml}
+              selectedSender={selectedSender}
+              setSelectedSender={setSelectedSender}
               onPreview={() => setActiveTab("preview")}
-              onSend={() => onRequestSend({ subject, bodyHtml, templateId })}
+              onSend={() => onRequestSend({
+                subject,
+                bodyHtml,
+                templateId,
+                senderEmail: selectedSender.email,
+                senderLabel: selectedSender.display,
+              })}
               isSending={isSendingEmail}
               onTestSend={() => setShowTestDialog(true)}
               isTestSending={testSendMutation.isPending}
@@ -697,6 +771,8 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
               templateId={templateId}
               subject={subject}
               bodyHtml={bodyHtml}
+              senderDisplay={selectedSender.display}
+              recipientEmail={application.email}
             />
           )}
 

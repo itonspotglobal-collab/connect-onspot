@@ -6,16 +6,29 @@
  *   MICROSOFT_TENANT_ID     — Azure AD tenant ID
  *   MICROSOFT_CLIENT_ID     — App registration client ID
  *   MICROSOFT_CLIENT_SECRET — App registration client secret (store as a Replit Secret)
- *   MICROSOFT_SENDER_EMAIL  — Sender UPN / shared mailbox address (e.g. careers@onspotglobal.com)
+ *   MICROSOFT_SENDER_EMAIL  — Default sender UPN / shared mailbox (e.g. careers@onspotglobal.com)
  *
  * Optional environment variables:
  *   APPLICATION_EMAIL_FROM       — Fallback sender address if MICROSOFT_SENDER_EMAIL is unset
- *   APPLICATION_EMAIL_FROM_NAME  — Display name for the sender (default: "OnSpot Careers")
+ *   APPLICATION_EMAIL_FROM_NAME  — Display name for the default sender (default: "OnSpot Careers")
  *   APPLICATION_EMAIL_REPLY_TO   — Reply-to address (default: same as sender)
  *
  * The app registration must have the Mail.Send *application* permission granted by a
  * tenant admin, and the sender address must be a licensed M365 mailbox or shared mailbox.
+ * One Graph app with Mail.Send can send from any of the allowed mailboxes — no separate
+ * client IDs are required.
  */
+
+/**
+ * Server-side allowlist of permitted sender mailboxes.
+ * The frontend may know these addresses, but never accepts arbitrary values —
+ * any senderEmail not in this map is rejected and replaced with the default.
+ */
+export const ALLOWED_SENDERS: Record<string, string> = {
+  "careers@onspotglobal.com":    "OnSpot Careers",
+  "findwork@onspotglobal.com":   "OnSpot Find Work",
+  "hiretalent@onspotglobal.com": "OnSpot Hire Talent",
+};
 
 interface TokenCache {
   accessToken: string;
@@ -85,11 +98,13 @@ function resolveSenderAddress(): string {
 }
 
 export interface SendEmailOptions {
-  to: string;       // recipient email address
-  toName?: string;  // recipient display name (optional)
+  to: string;          // recipient email address
+  toName?: string;     // recipient display name (optional)
   subject: string;
   bodyHtml: string;
-  replyTo?: string; // override reply-to address
+  replyTo?: string;    // override reply-to address
+  /** Sender mailbox — must be a key in ALLOWED_SENDERS; ignored/defaulted if not in the allowlist. */
+  senderEmail?: string;
 }
 
 export interface SendEmailResult {
@@ -100,9 +115,15 @@ export interface SendEmailResult {
 /** Send a single HTML email to an applicant via Microsoft Graph /sendMail. */
 export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
   try {
-    const fromAddress = resolveSenderAddress();
+    // If a senderEmail is supplied and is in the allowlist, use it; otherwise fall back to config.
+    const fromAddress =
+      opts.senderEmail && ALLOWED_SENDERS[opts.senderEmail]
+        ? opts.senderEmail
+        : resolveSenderAddress();
     const fromName =
-      process.env.APPLICATION_EMAIL_FROM_NAME ?? "OnSpot Careers";
+      ALLOWED_SENDERS[fromAddress] ??
+      process.env.APPLICATION_EMAIL_FROM_NAME ??
+      "OnSpot Careers";
     const replyTo = opts.replyTo ?? process.env.APPLICATION_EMAIL_REPLY_TO ?? fromAddress;
 
     const accessToken = await getAccessToken();

@@ -866,7 +866,7 @@ export default function AdminJobApplications() {
   // Applicant modal so it gets its own portal, overlay, and focus-lock scope.
   const [emailConfirmOpen, setEmailConfirmOpen] = useState(false);
   const [emailPendingPayload, setEmailPendingPayload] = useState<{
-    subject: string; bodyHtml: string; templateId: string;
+    subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string;
   } | null>(null);
   const [emailConfirmStage, setEmailConfirmStage] = useState("");
 
@@ -877,6 +877,7 @@ export default function AdminJobApplications() {
         templateId: emailPendingPayload?.templateId || undefined,
         subject: emailPendingPayload?.subject,
         bodyHtml: emailPendingPayload?.bodyHtml,
+        senderEmail: emailPendingPayload?.senderEmail,
         updateStage: emailConfirmStage || undefined,
       }),
     }),
@@ -895,7 +896,7 @@ export default function AdminJobApplications() {
     },
   });
 
-  function handleEmailSendRequest(payload: { subject: string; bodyHtml: string; templateId: string }) {
+  function handleEmailSendRequest(payload: { subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string }) {
     setEmailPendingPayload(payload);
     setEmailConfirmStage("");
     setEmailConfirmOpen(true);
@@ -1399,6 +1400,10 @@ export default function AdminJobApplications() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm space-y-1.5">
+              <div className="flex gap-2">
+                <span className="text-slate-500 w-16 shrink-0">From</span>
+                <span className="text-slate-700">{emailPendingPayload?.senderLabel ?? "OnSpot Careers <careers@onspotglobal.com>"}</span>
+              </div>
               <div className="flex gap-2">
                 <span className="text-slate-500 w-16 shrink-0">To</span>
                 <span className="font-medium text-slate-800">{emailDialog?.email}</span>

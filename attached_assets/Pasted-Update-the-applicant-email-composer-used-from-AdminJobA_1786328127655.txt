@@ -1,0 +1,236 @@
+Update the applicant email composer used from AdminJobApplications.tsx so the admin can choose which OnSpot mailbox will send the email.
+
+Current available sender addresses:
+
+careers@onspotglobal.com
+findwork@onspotglobal.com
+hiretalent@onspotglobal.com
+1. Add a Sender field to the Email Applicant modal
+
+In the Compose tab, add a new dropdown above the Template field:
+
+From *
+[ OnSpot Careers <careers@onspotglobal.com> ▼ ]
+
+Options:
+
+OnSpot Careers <careers@onspotglobal.com>
+OnSpot Find Work <findwork@onspotglobal.com>
+OnSpot Hire Talent <hiretalent@onspotglobal.com>
+
+Default sender:
+
+careers@onspotglobal.com
+
+Keep the existing:
+
+Template
+Subject
+Message
+Preview
+History
+Test send
+Send Email
+2. Store the selected sender in composer state
+
+Add something like:
+
+selectedSender
+
+The selected sender must persist while switching between:
+
+Compose
+Preview
+History
+
+Do not reset it when opening the confirmation modal.
+
+3. Update Preview
+
+In the Preview tab, show:
+
+From: OnSpot Careers <careers@onspotglobal.com>
+To: applicant@email.com
+Subject: ...
+
+The From value must reflect the currently selected sender.
+
+4. Update Send Confirmation
+
+In the existing Confirm: Send Email dialog, show the selected sender as well:
+
+From
+OnSpot Find Work <findwork@onspotglobal.com>
+
+To
+applicant@email.com
+
+Subject
+Interview Invitation
+
+This gives the admin one final chance to verify which mailbox is being used.
+
+5. Send selected sender to backend
+
+When calling the existing send-email endpoint, include a sender identifier, preferably:
+
+{
+  "senderEmail": "findwork@onspotglobal.com",
+  "subject": "...",
+  "body": "..."
+}
+
+However, do not allow the backend to blindly trust arbitrary sender addresses from the frontend.
+
+The backend must validate senderEmail against an allowlist containing only:
+
+careers@onspotglobal.com
+findwork@onspotglobal.com
+hiretalent@onspotglobal.com
+
+Reject any other sender value.
+
+6. Backend sender configuration
+
+Keep sender mailbox configuration server-side.
+
+Use environment/configuration values such as:
+
+APPLICATION_EMAIL_CAREERS=careers@onspotglobal.com
+APPLICATION_EMAIL_FIND_WORK=findwork@onspotglobal.com
+APPLICATION_EMAIL_HIRE_TALENT=hiretalent@onspotglobal.com
+
+If the project already has a better email configuration pattern, follow that instead.
+
+Do not expose Microsoft Graph credentials to the frontend.
+
+The frontend may know the three allowed email addresses, but:
+
+MICROSOFT_TENANT_ID
+MICROSOFT_CLIENT_ID
+MICROSOFT_CLIENT_SECRET
+
+must remain backend-only.
+
+7. Microsoft Graph behavior
+
+Use the existing Microsoft Graph integration.
+
+The selected sender should determine which mailbox endpoint is used for sending.
+
+Conceptually:
+
+POST /users/{selectedSender}/sendMail
+
+Do not create separate Graph applications for each sender unless technically required.
+
+Before changing authentication architecture, first verify whether the existing Entra application with Mail.Send Application permission can send from all three mailboxes.
+
+8. Reply-To
+
+Set Reply-To to match the selected sender by default.
+
+Example:
+
+From: OnSpot Find Work <findwork@onspotglobal.com>
+Reply-To: findwork@onspotglobal.com
+
+unless the existing backend has a specific reason to use a different Reply-To.
+
+9. Email History
+
+Update the email history record so each sent email stores which mailbox sent it:
+
+senderEmail
+senderName
+
+In the History tab, display:
+
+From: hiretalent@onspotglobal.com
+
+for each email.
+
+Existing email-history records without a sender field should continue working safely.
+
+10. UI behavior
+
+The sender dropdown should:
+
+use the project's existing Select component
+match the current modal styling
+be keyboard accessible
+clearly show both sender label and email address
+default to Careers
+remain disabled while an email is actively sending
+
+Suggested UI order:
+
+From *
+[ OnSpot Careers <careers@onspotglobal.com> ▼ ]
+
+Template (optional)
+[ — No template — ▼ ]
+
+Subject *
+[...]
+
+Message *
+[rich text editor]
+11. Important validation
+
+Never let an admin type an arbitrary From address.
+
+This must be a dropdown of approved OnSpot mailboxes only.
+
+Validate the sender both:
+
+frontend
+backend
+
+Backend validation is the source of truth.
+
+12. Test all three senders
+
+Verify:
+
+careers@onspotglobal.com
+→ sends successfully
+
+findwork@onspotglobal.com
+→ sends successfully
+
+hiretalent@onspotglobal.com
+→ sends successfully
+
+Also verify:
+
+Select sender
+→ Preview shows correct From
+→ Confirmation shows correct From
+→ Send
+→ recipient receives email from selected mailbox
+→ History records correct sender
+13. Before implementing
+
+Inspect the current implementations of:
+
+AdminJobApplications.tsx
+ApplicantEmailComposer.tsx
+email confirmation dialog
+Microsoft Graph email service
+email history schema/model
+existing application email configuration
+
+Reuse the current architecture and styling. Avoid unnecessary refactoring.
+
+After implementation, report:
+
+files changed
+new UI/state added
+API payload changes
+backend sender allowlist implementation
+configuration variables required
+whether all three Microsoft 365 mailboxes can successfully send
+whether any additional Entra/Exchange permissions are needed
+
+One important architecture point: you should ideally keep one Microsoft Graph integration and let the backend choose the sender mailbox from an allowlisted set. You generally do not want three separate client IDs/secrets just because you have three sender addresses.
