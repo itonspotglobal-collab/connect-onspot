@@ -1,0 +1,174 @@
+Update the Job Applications Dashboard application-details modal so admins can view an applicant’s submitted Video Introduction.
+
+Relevant area:
+
+AdminJobApplications.tsx
+Application Details modal
+
+Current modal already shows:
+
+Applicant
+Applied for
+Status
+Resume / CV
+Cover Letter
+
+Add a new section:
+
+Video Introduction
+1. Conditional display
+
+Only show this section if the application has a submitted video introduction.
+
+Use the existing application field, such as:
+
+videoIntroductionUrl
+
+or whatever field was added for the Video Introduction feature.
+
+If no video was submitted, do not render an empty section.
+
+2. Preferred UI
+
+Display a card similar to the existing Resume / CV card:
+
+Video Introduction
+
+[video icon] applicant-introduction.mp4
+Submitted with application
+
+[Play Video] [Open]
+
+Keep the styling consistent with the Resume / CV section.
+
+3. Play Video
+
+When the admin clicks Play Video, show the video directly inside the Application Details modal.
+
+Preferred behavior:
+
+expand/show a video player below the Video Introduction card
+use the native HTML5 <video controls> player
+do not autoplay
+preserve aspect ratio
+constrain the player width so it does not overflow the modal
+
+Example concept:
+
+<video
+  controls
+  preload="metadata"
+  className="w-full max-h-[420px] rounded-lg bg-black"
+>
+  <source src={videoUrl} />
+</video>
+
+Adapt this to the project architecture.
+
+4. Open in new tab
+
+Also provide an Open or Open in new tab action.
+
+This should open the authorized video URL in a new browser tab.
+
+Use:
+
+target="_blank"
+rel="noopener noreferrer"
+
+if using an anchor.
+
+5. Storage/security
+
+Do not assume videoIntroductionUrl is always a permanently public URL.
+
+First inspect how Resume / CV files are currently retrieved in the Application Details modal.
+
+If resumes use:
+
+signed URLs
+object-storage download endpoints
+authenticated file endpoints
+
+then use the same mechanism for video introductions.
+
+Do not expose private object-storage credentials or raw internal storage paths.
+
+6. Loading/error states
+
+Handle:
+
+video URL loading
+expired signed URL
+missing file
+unsupported/corrupt video
+
+Show a clear fallback such as:
+
+Video unavailable
+
+with an optional Retry/Open action.
+
+7. Modal responsiveness
+
+Since the Application Details modal may now contain a video player:
+
+keep the modal within viewport height
+make the content area scrollable if needed
+keep the Close action accessible
+do not allow the video to make the modal exceed the screen
+
+Use a viewport-aware max height such as:
+
+max-height: calc(100dvh - 2rem)
+
+with internal scrolling.
+
+8. Accessibility
+
+Add a clear label/title for the video.
+
+The Play Video control must be keyboard accessible.
+
+Do not autoplay audio.
+
+9. Test cases
+
+Verify:
+
+Application with video
+→ Video Introduction section appears
+→ Play Video works inside modal
+→ Open in new tab works
+
+Application without video
+→ Video Introduction section is hidden
+
+Expired/missing video
+→ graceful error state
+
+Smaller laptop screen
+→ modal remains usable and scrollable
+10. Before implementing
+
+Inspect:
+
+AdminJobApplications.tsx
+application-details modal component
+application schema/type
+videoIntroductionUrl field
+Resume / CV view/download implementation
+object storage/signed URL utilities
+
+Reuse the existing file-access pattern instead of building a second storage flow.
+
+After implementation, report:
+
+files changed
+which application field is used for the video
+how the video URL is generated/accessed
+whether playback is inline or opened externally
+how applications without video are handled
+any storage/security changes
+
+I’d use inline playback + Open in new tab rather than only a link. It gives admins the fastest review experience while still providing a fallback for larger videos or browser playback issues.

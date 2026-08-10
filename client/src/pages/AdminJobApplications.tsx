@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
-  XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download, Video,
+  XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download, Video, Play,
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -263,7 +263,26 @@ function DetailDialog({
   const cvInputRef = useRef<HTMLInputElement>(null);
   const [cvUploading, setCvUploading] = useState(false);
   const [cvOpening, setCvOpening] = useState<"view" | "download" | null>(null);
-  const [videoOpening, setVideoOpening] = useState<"view" | "download" | null>(null);
+  const [videoOpening, setVideoOpening] = useState<"open" | "download" | null>(null);
+
+  // ── Inline video player state ─────────────────────────────────────────────
+  const [videoPlayerLoading, setVideoPlayerLoading] = useState(false);
+  const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
+  const [videoPlayerUrl, setVideoPlayerUrl] = useState<string | null>(null);
+  const [videoPlayerError, setVideoPlayerError] = useState<string | null>(null);
+
+  // Revoke blob URL and reset player when the dialog closes
+  useEffect(() => {
+    if (!open) {
+      setVideoPlayerOpen(false);
+      setVideoPlayerError(null);
+      setVideoPlayerLoading(false);
+      if (videoPlayerUrl) {
+        URL.revokeObjectURL(videoPlayerUrl);
+        setVideoPlayerUrl(null);
+      }
+    }
+  }, [open]);
 
   const { data: detail, isLoading, isError } = useQuery<ApplicationDetail>({
     queryKey: ["/api/admin/job-applications", applicationId],
@@ -383,10 +402,34 @@ function DetailDialog({
     }
   }
 
-  async function handleViewVideo() {
+  /** Load video blob and show inline <video> player. */
+  async function handlePlayVideo() {
+    if (!applicationId) return;
+    setVideoPlayerLoading(true);
+    setVideoPlayerError(null);
+    // Revoke previous blob URL to avoid memory leaks
+    if (videoPlayerUrl) {
+      URL.revokeObjectURL(videoPlayerUrl);
+      setVideoPlayerUrl(null);
+    }
+    try {
+      const { blob } = await getVideoBlob(applicationId);
+      const url = URL.createObjectURL(blob);
+      setVideoPlayerUrl(url);
+      setVideoPlayerOpen(true);
+    } catch (err: any) {
+      setVideoPlayerError(err.message ?? "Could not load video.");
+      setVideoPlayerOpen(true); // show error state in the player area
+    } finally {
+      setVideoPlayerLoading(false);
+    }
+  }
+
+  /** Open video in a new browser tab (fallback / larger-screen viewing). */
+  async function handleOpenVideo() {
     if (!applicationId) return;
     const previewWindow = window.open("", "_blank");
-    setVideoOpening("view");
+    setVideoOpening("open");
     try {
       const token = localStorage.getItem("onspot_jwt_token");
       const response = await fetch(`/api/admin/job-applications/${applicationId}/video`, {
@@ -578,6 +621,7 @@ function DetailDialog({
               <section>
                 <h3 className="font-semibold text-slate-900 mb-2">Video Introduction</h3>
                 <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                  {/* File info row */}
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100">
                       <Video className="h-4 w-4 text-violet-600" />
@@ -588,20 +632,37 @@ function DetailDialog({
                       </p>
                       <p className="text-xs text-slate-400">Submitted with application</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <button
-                        disabled={videoOpening !== null}
-                        onClick={handleViewVideo}
-                        className="flex items-center gap-1 text-xs text-violet-600 hover:underline disabled:opacity-50"
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* Play Video — loads blob and shows inline player */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                        disabled={videoPlayerLoading || videoOpening !== null}
+                        onClick={handlePlayVideo}
+                        aria-label="Play video introduction inline"
                       >
-                        {videoOpening === "view"
-                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Opening…</>
-                          : <><Eye className="h-3 w-3" /> View</>}
-                      </button>
+                        {videoPlayerLoading
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Loading…</>
+                          : <><Play className="h-3 w-3" /> Play Video</>}
+                      </Button>
+                      {/* Open in new tab — fallback for large files or unsupported codec */}
                       <button
-                        disabled={videoOpening !== null}
+                        disabled={videoOpening !== null || videoPlayerLoading}
+                        onClick={handleOpenVideo}
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:underline disabled:opacity-50"
+                        aria-label="Open video in new tab"
+                      >
+                        {videoOpening === "open"
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Opening…</>
+                          : <><ExternalLink className="h-3 w-3" /> Open</>}
+                      </button>
+                      {/* Download */}
+                      <button
+                        disabled={videoOpening !== null || videoPlayerLoading}
                         onClick={handleDownloadVideo}
                         className="flex items-center gap-1 text-xs text-slate-500 hover:underline disabled:opacity-50"
+                        aria-label="Download video introduction"
                       >
                         {videoOpening === "download"
                           ? <><Loader2 className="h-3 w-3 animate-spin" /> Downloading…</>
@@ -609,6 +670,48 @@ function DetailDialog({
                       </button>
                     </div>
                   </div>
+
+                  {/* Inline video player — shown after Play Video is clicked */}
+                  {videoPlayerOpen && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      {videoPlayerError ? (
+                        <div className="flex flex-col items-center gap-2 py-6 text-sm text-slate-500 text-center">
+                          <AlertTriangle className="h-5 w-5 text-amber-400" />
+                          <p className="font-medium">Video unavailable</p>
+                          <p className="text-xs text-slate-400 max-w-xs">{videoPlayerError}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <button
+                              className="text-xs text-violet-600 hover:underline disabled:opacity-50"
+                              onClick={handlePlayVideo}
+                              disabled={videoPlayerLoading}
+                              aria-label="Retry loading video"
+                            >
+                              {videoPlayerLoading ? "Loading…" : "Retry"}
+                            </button>
+                            <button
+                              className="text-xs text-slate-500 hover:underline"
+                              onClick={handleOpenVideo}
+                              aria-label="Open video in new tab"
+                            >
+                              Open in new tab
+                            </button>
+                          </div>
+                        </div>
+                      ) : videoPlayerUrl ? (
+                        <video
+                          controls
+                          preload="metadata"
+                          className="w-full max-h-[360px] rounded-lg bg-black"
+                          title={detail.videoIntroductionFileName ?? "Video Introduction"}
+                          onError={() => setVideoPlayerError("Video could not be played in the browser. Try opening it in a new tab.")}
+                          aria-label={`Video introduction: ${detail.videoIntroductionFileName ?? "Video Introduction"}`}
+                        >
+                          <source src={videoPlayerUrl} />
+                          Your browser does not support video playback.
+                        </video>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </section>
             )}
