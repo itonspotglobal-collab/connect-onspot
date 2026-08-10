@@ -121,6 +121,8 @@ export const defaultFormData = {
   isFeatured: false,
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
+  // Require video introduction from applicants
+  requiresVideoIntro: false,
   // Company visibility
   isCompanyConfidential: false,
   confidentialClientOverview: "",
@@ -201,6 +203,8 @@ export function jobToFormData(job: Job): JobFormData {
     isFeatured: (job as any).isFeatured ?? false,
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
+    // Require video introduction from applicants
+    requiresVideoIntro: (job as any).requiresVideoIntro ?? false,
     // Company visibility
     isCompanyConfidential: (job as any).isCompanyConfidential ?? false,
     confidentialClientOverview: (job as any).confidentialClientOverview || "",
@@ -445,6 +449,9 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Urgently Hiring flag (always send so unchecking a previously set job clears it)
     payload.urgentlyHiring = formData.urgentlyHiring;
+
+    // Video intro requirement (always send so unchecking clears it)
+    payload.requiresVideoIntro = formData.requiresVideoIntro;
 
     // Company visibility (always send so unchecking a previously set flag clears it)
     payload.isCompanyConfidential = formData.isCompanyConfidential;
@@ -1346,7 +1353,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             </div>
 
-            <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+            <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3 mb-3">
               <input
                 id="modal-urgently-hiring"
                 type="checkbox"
@@ -1362,6 +1369,26 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   {formData.urgentlyHiring
                     ? "This job will display the Urgently Hiring badge."
                     : "This job will not display the Urgently Hiring badge."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-md border border-violet-200/60 bg-violet-50/40 p-3 dark:border-violet-800/30 dark:bg-violet-950/20">
+              <input
+                id="modal-requires-video-intro"
+                type="checkbox"
+                checked={formData.requiresVideoIntro}
+                onChange={(e) => updateField("requiresVideoIntro", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-input accent-violet-600 cursor-pointer"
+              />
+              <div>
+                <label htmlFor="modal-requires-video-intro" className="text-sm font-medium cursor-pointer select-none">
+                  Require Video Introduction
+                </label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {formData.requiresVideoIntro
+                    ? "Applicants must upload a short video introduction (MP4, MOV, or WebM · max 200 MB) to submit their application."
+                    : "No video introduction required — applicants submit CV and cover letter only."}
                 </p>
               </div>
             </div>

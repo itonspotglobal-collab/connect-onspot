@@ -194,6 +194,7 @@ export const jobs = pgTable("jobs", {
   hasEquity: boolean("has_equity").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),
   isCompanyConfidential: boolean("is_company_confidential").notNull().default(false),
+  requiresVideoIntro: boolean("requires_video_intro").notNull().default(false),
   confidentialClientOverview: text("confidential_client_overview"), // public-safe description shown when isCompanyConfidential = true
   proposalCount: integer("proposal_count").default(0),
   viewCount: integer("view_count").default(0),
@@ -684,6 +685,8 @@ export const jobSubmissions = pgTable("job_submissions", {
   location: text("location"),
   resumeUrl: text("resume_url"),
   resumeFileName: text("resume_file_name"),
+  videoIntroductionUrl: text("video_introduction_url"),
+  videoIntroductionFileName: text("video_introduction_file_name"),
   portfolioUrl: text("portfolio_url"),
   coverLetter: text("cover_letter"),
   expectedSalary: text("expected_salary"),

@@ -1,0 +1,221 @@
+Implement a Video Introduction requirement across the job posting, job editing, and job application flow.
+
+Current relevant files include:
+
+JobFormModal.tsx
+JobApplyPage.tsx
+
+The goal is to allow admins to decide per job whether applicants are required to submit a video introduction.
+
+1. Job Posting / Editing Form
+
+In JobFormModal.tsx, add a new setting:
+
+Require Video Introduction
+
+Use a toggle/switch.
+
+Behavior:
+
+OFF = applicants do not need to upload a video introduction.
+ON = the application form must show a Video Introduction upload section.
+The setting must work both when creating a job and editing an existing job.
+When editing, the toggle must reflect the job's currently saved value.
+
+Add an optional helper text:
+
+Require applicants to upload a short video introduction when applying for this role.
+2. Database / Job Model
+
+Do not connect JobFormModal.tsx directly to JobApplyPage.tsx.
+
+Instead, persist this requirement as part of the job record.
+
+Add a field such as:
+
+requiresVideoIntroduction: boolean
+
+or follow the existing naming convention in the project.
+
+Default:
+
+false
+
+Existing jobs must safely default to false so current application forms are not affected.
+
+Update:
+
+database schema
+job create API
+job update API
+job fetch/detail API
+TypeScript job types/interfaces
+validation schemas
+3. Job Apply Page
+
+In JobApplyPage.tsx, read the selected job's:
+
+requiresVideoIntroduction
+
+from the existing job API/data.
+
+If it is true, show a new section in the application form:
+
+Video Introduction *
+
+Include helper text such as:
+
+Please upload a short video introduction for this role.
+
+If it is false, do not render the video upload section at all.
+
+4. Video Upload
+
+Reuse the project's existing upload/storage implementation if there is one.
+
+Before implementing anything new, inspect how the project currently handles:
+
+resume/CV uploads
+file uploads
+object storage
+signed upload URLs
+attachment metadata
+
+Use the same architecture rather than introducing a separate upload system.
+
+The video field should support common formats such as:
+
+.mp4
+.mov
+.webm
+
+Add reasonable client-side and server-side validation for:
+
+file type
+maximum file size
+required upload when the job requires a video
+
+Do not rely only on frontend validation.
+
+5. Application Submission
+
+When requiresVideoIntroduction === true:
+
+prevent application submission until a valid video has been uploaded
+save the uploaded video's storage reference/URL with the application
+
+When requiresVideoIntroduction === false:
+
+video must remain optional/not displayed
+application submission should work exactly as it does today
+
+Add an application field such as:
+
+videoIntroductionUrl
+
+or use the existing file/attachment structure if the project already has one.
+
+6. Admin Job Applications
+
+Update /admin/job-applications so that, when an applicant submitted a video introduction, the admin can access it from the applicant details.
+
+Add something like:
+
+Video Introduction
+[View Video]
+
+or an embedded player if that fits the existing UI.
+
+Do not show an empty section for applications without a video.
+
+7. Validation and Security
+
+Ensure:
+
+only supported video types are accepted
+maximum upload size is enforced server-side
+uploaded filenames are sanitized or storage-generated
+video URLs/files are not trusted directly from arbitrary frontend input
+existing job applications continue working
+8. Important Architecture
+
+The intended data flow is:
+
+JobFormModal.tsx
+      ↓
+create/update job API
+      ↓
+database
+      ↓
+job details API
+      ↓
+JobApplyPage.tsx
+      ↓
+conditional Video Introduction field
+      ↓
+application submission
+      ↓
+admin/job-applications
+
+Do NOT make JobApplyPage.tsx import state or logic directly from JobFormModal.tsx.
+
+The job record/database should be the source of truth.
+
+9. Test Cases
+
+Verify all of these:
+
+Create job with Video Introduction OFF
+→ application form has no video field
+
+Create job with Video Introduction ON
+→ application form shows required video field
+
+Try submitting required-video job without video
+→ validation prevents submission
+
+Upload valid video
+→ application submits successfully
+
+Edit job from OFF → ON
+→ application form updates accordingly
+
+Edit job from ON → OFF
+→ video section disappears
+
+Existing jobs
+→ default to no video requirement
+
+Admin opens submitted application with video
+→ video can be viewed/accessed
+10. Before Coding
+
+Inspect the existing implementations of:
+
+JobFormModal.tsx
+JobApplyPage.tsx
+job database/schema
+job create/update routes
+job detail route
+application schema/routes
+resume/file upload implementation
+object storage implementation
+admin job application details
+
+Reuse current patterns and components. Avoid unnecessary refactoring.
+
+After implementation, report:
+
+files changed
+database fields added
+API changes
+how JobFormModal.tsx and JobApplyPage.tsx are connected through job data
+upload size/type restrictions
+where video files are stored
+how admins access submitted videos
+
+The key design decision is this flow:
+
+JobFormModal saves the requirement → database stores it → JobApplyPage reads it from the job → application form reacts to it.
+
+That keeps the feature maintainable and also makes future requirements like portfolio uploads, assessment links, or required documents much easier to add.

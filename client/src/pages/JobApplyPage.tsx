@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2, Lock } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck, LogIn, Upload, X, CheckCircle2, Lock, Video } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
 
@@ -38,6 +38,10 @@ export default function JobApplyPage() {
   const [cvState, setCvState] = useState<"idle" | "validating" | "ready">("idle");
   const [cvError, setCvError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoState, setVideoState] = useState<"idle" | "validating" | "ready">("idle");
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [isVideoDragOver, setIsVideoDragOver] = useState(false);
 
   // ── Dialog state ─────────────────────────────────────────────────────────────
   // sign_in_required: existing Talent email found — prompt to sign in
@@ -105,11 +109,34 @@ export default function JobApplyPage() {
     }, 300);
   };
 
+  // ── Video introduction file validation ────────────────────────────────────────
+  const processVideoFile = (file: File) => {
+    setVideoState("validating");
+    setVideoError(null);
+    setTimeout(() => {
+      const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
+      if (!allowedTypes.includes(file.type)) {
+        setVideoState("idle");
+        setVideoError("Please upload an MP4, MOV, or WebM video file");
+        return;
+      }
+      if (file.size > 200 * 1024 * 1024) {
+        setVideoState("idle");
+        setVideoError("Video must be 200 MB or smaller");
+        return;
+      }
+      setVideoFile(file);
+      setVideoState("ready");
+    }, 300);
+  };
+
   const setField = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
     if (errors[k]) setErrors((p) => ({ ...p, [k]: undefined }));
     if (k === "email") setEmailMismatchError(false);
   };
+
+  const requiresVideoIntro = !!(job as any)?.requiresVideoIntro;
 
   const validate = () => {
     const next: Partial<Record<keyof typeof form, string>> = {};
@@ -127,7 +154,14 @@ export default function JobApplyPage() {
       setCvError(null);
     }
 
-    return Object.keys(next).length === 0 && !!cvFile;
+    // Video validation — required only when the job demands it
+    if (requiresVideoIntro && !videoFile) {
+      setVideoError("A video introduction is required for this position");
+    } else {
+      setVideoError(null);
+    }
+
+    return Object.keys(next).length === 0 && !!cvFile && (!requiresVideoIntro || !!videoFile);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,7 +175,7 @@ export default function JobApplyPage() {
     // user sees both phases (CV upload is usually the longest part).
     const stepTimer = setTimeout(() => setSubmitStep("saving"), 2500);
     try {
-      // Build multipart FormData — server expects file field "resume"
+      // Build multipart FormData — server expects "resume" and optionally "video"
       const token = localStorage.getItem("onspot_jwt_token");
       const formData = new FormData();
       formData.append("firstName", form.firstName.trim());
@@ -150,6 +184,7 @@ export default function JobApplyPage() {
       formData.append("phone", form.phone.trim());
       if (form.coverLetter.trim()) formData.append("coverLetter", form.coverLetter.trim());
       formData.append("resume", cvFile!);
+      if (videoFile) formData.append("video", videoFile);
 
       // Do NOT set Content-Type — browser sets it automatically with the multipart boundary
       const res = await fetch(`/api/jobs/${jobId}/apply`, {
@@ -521,6 +556,87 @@ export default function JobApplyPage() {
 
                 {cvError && <p className="text-xs text-red-500">{cvError}</p>}
               </div>
+
+              {/* Video Introduction (conditional — only shown when job requires it) */}
+              {requiresVideoIntro && (
+                <div className="space-y-1.5">
+                  <Label>
+                    Video Introduction <span className="text-red-500">*</span>
+                  </Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    This position requires a short video introduction. Please record yourself speaking about your background and why you're a great fit.
+                  </p>
+
+                  {videoState === "validating" ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-600" />
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Checking file…</span>
+                    </div>
+                  ) : videoFile && videoState === "ready" ? (
+                    <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 dark:border-violet-700/40 dark:bg-violet-900/20">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" />
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400">
+                        {videoFile.name.toLowerCase().endsWith(".webm") ? "WEBM" : videoFile.name.toLowerCase().endsWith(".mov") ? "MOV" : "MP4"}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-300">{videoFile.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {videoFile.size < 1024 * 1024
+                            ? `${Math.round(videoFile.size / 1024)} KB`
+                            : `${(videoFile.size / (1024 * 1024)).toFixed(1)} MB`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setVideoFile(null); setVideoState("idle"); setVideoError(null); }}
+                        className="shrink-0 text-xs font-medium text-slate-400 hover:text-red-500 dark:hover:text-red-400 flex items-center gap-1"
+                        aria-label="Remove video"
+                      >
+                        <X className="h-3.5 w-3.5" /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      className={[
+                        "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-5 text-center transition-colors",
+                        isVideoDragOver
+                          ? "border-violet-500 bg-violet-50/80 dark:bg-violet-900/20"
+                          : "border-slate-200 bg-slate-50 hover:border-violet-400/60 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-800/50",
+                      ].join(" ")}
+                      onDragOver={(e) => { e.preventDefault(); setIsVideoDragOver(true); }}
+                      onDragEnter={(e) => { e.preventDefault(); setIsVideoDragOver(true); }}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsVideoDragOver(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsVideoDragOver(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) processVideoFile(file);
+                      }}
+                    >
+                      <Video className={["mb-1.5 h-5 w-5 transition-colors", isVideoDragOver ? "text-violet-600" : "text-slate-400"].join(" ")} />
+                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                        {isVideoDragOver ? "Drop your video here" : "Upload your video introduction"}
+                      </span>
+                      <span className="mt-0.5 text-xs text-slate-400">MP4, MOV, WebM · Max 200 MB</span>
+                      <input
+                        type="file"
+                        accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          e.target.value = "";
+                          processVideoFile(file);
+                        }}
+                      />
+                    </label>
+                  )}
+
+                  {videoError && <p className="text-xs text-red-500">{videoError}</p>}
+                </div>
+              )}
 
               {/* Cover Letter */}
               <div className="space-y-1.5">

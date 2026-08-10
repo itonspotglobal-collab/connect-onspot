@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
-  XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download,
+  XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download, Video,
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -114,6 +114,8 @@ interface ApplicationDetail extends Application {
   resumeUrl?: string;
   resumeFileName?: string;
   resumeSource?: "application" | "talent_profile" | null;
+  videoIntroductionUrl?: string | null;
+  videoIntroductionFileName?: string | null;
   history: StatusHistory[];
 }
 
@@ -234,6 +236,24 @@ async function getResumeBlob(applicationId: string): Promise<{ blob: Blob; filen
   return { blob, filename: match?.[1] ?? null };
 }
 
+// Fetch a video blob with the admin JWT
+async function getVideoBlob(applicationId: string): Promise<{ blob: Blob; filename: string | null }> {
+  const token = localStorage.getItem("onspot_jwt_token");
+  const res = await fetch(`/api/admin/job-applications/${applicationId}/video`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      body?.message || body?.error || `Failed to load video (${res.status})`
+    );
+  }
+  const cd = res.headers.get("content-disposition") ?? "";
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const blob = await res.blob();
+  return { blob, filename: match?.[1] ?? null };
+}
+
 function DetailDialog({
   applicationId, open, onClose,
 }: { applicationId: string | null; open: boolean; onClose: () => void }) {
@@ -243,6 +263,7 @@ function DetailDialog({
   const cvInputRef = useRef<HTMLInputElement>(null);
   const [cvUploading, setCvUploading] = useState(false);
   const [cvOpening, setCvOpening] = useState<"view" | "download" | null>(null);
+  const [videoOpening, setVideoOpening] = useState<"view" | "download" | null>(null);
 
   const { data: detail, isLoading, isError } = useQuery<ApplicationDetail>({
     queryKey: ["/api/admin/job-applications", applicationId],
@@ -359,6 +380,62 @@ function DetailDialog({
       toast({ title: "Could not download CV", description: err.message, variant: "destructive" });
     } finally {
       setCvOpening(null);
+    }
+  }
+
+  async function handleViewVideo() {
+    if (!applicationId) return;
+    const previewWindow = window.open("", "_blank");
+    setVideoOpening("view");
+    try {
+      const token = localStorage.getItem("onspot_jwt_token");
+      const response = await fetch(`/api/admin/job-applications/${applicationId}/video`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        previewWindow?.close();
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message || body?.error || "Unable to load video.");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      if (previewWindow) {
+        previewWindow.location.href = objectUrl;
+      } else {
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      previewWindow?.close();
+      toast({ title: "Could not open video", description: err.message, variant: "destructive" });
+    } finally {
+      setVideoOpening(null);
+    }
+  }
+
+  async function handleDownloadVideo() {
+    if (!applicationId || !detail) return;
+    setVideoOpening("download");
+    try {
+      const { blob, filename } = await getVideoBlob(applicationId);
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename ?? detail.videoIntroductionFileName ?? "video-intro";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: any) {
+      toast({ title: "Could not download video", description: err.message, variant: "destructive" });
+    } finally {
+      setVideoOpening(null);
     }
   }
 
@@ -495,6 +572,46 @@ function DetailDialog({
                 </div>
               )}
             </section>
+
+            {/* Video Introduction */}
+            {detail.videoIntroductionUrl && (
+              <section>
+                <h3 className="font-semibold text-slate-900 mb-2">Video Introduction</h3>
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100">
+                      <Video className="h-4 w-4 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-800">
+                        {detail.videoIntroductionFileName ?? "Video Introduction"}
+                      </p>
+                      <p className="text-xs text-slate-400">Submitted with application</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <button
+                        disabled={videoOpening !== null}
+                        onClick={handleViewVideo}
+                        className="flex items-center gap-1 text-xs text-violet-600 hover:underline disabled:opacity-50"
+                      >
+                        {videoOpening === "view"
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Opening…</>
+                          : <><Eye className="h-3 w-3" /> View</>}
+                      </button>
+                      <button
+                        disabled={videoOpening !== null}
+                        onClick={handleDownloadVideo}
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:underline disabled:opacity-50"
+                      >
+                        {videoOpening === "download"
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Downloading…</>
+                          : <><Download className="h-3 w-3" /> Download</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Cover Letter */}
             {detail.coverLetter && (

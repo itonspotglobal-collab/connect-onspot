@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-      fileSize: 50 * 1024 * 1024, // 50MB limit for videos
+      fileSize: 200 * 1024 * 1024, // 200 MB — accommodates video introduction uploads
     },
   });
 
@@ -961,6 +961,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("✅ Migration: jobs budget/salary extended columns ready");
   } catch (migErr: any) {
     console.warn("⚠️  budget/salary migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: video introduction fields ──────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_video_intro boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS video_introduction_url text`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS video_introduction_file_name text`);
+    console.log("✅ Migration: video introduction columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  video introduction migration skipped:", migErr.message);
   }
 
   // Protected Dashboard Routes with Role-Based Access Control
@@ -8467,7 +8477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // unauthenticated applicants (continuation token → signup/login flow).
   // CORE RULE: the application is ALWAYS saved first. Email uniqueness is only
   // enforced at account-creation time, not at application time.
-  app.post("/api/jobs/:jobId/apply", applyLimiter, upload.single("resume"), async (req: Request, res: Response) => {
+  app.post("/api/jobs/:jobId/apply", applyLimiter, upload.fields([{ name: "resume", maxCount: 1 }, { name: "video", maxCount: 1 }]), async (req: Request, res: Response) => {
     try {
       const { jobId } = req.params;
       const job = await storage.getJob(jobId);
@@ -8479,8 +8489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "This job is no longer accepting applications" });
       }
 
+      const files = (req as any).files as Record<string, Express.Multer.File[]> | undefined;
+
       // ── CV validation (required for new submissions) ──────────────────────────
-      const cvFile = (req as any).file as Express.Multer.File | undefined;
+      const cvFile = files?.["resume"]?.[0];
       if (!cvFile) {
         return res.status(400).json({ error: "CV / Resume is required. Please upload a PDF, DOC, or DOCX file." });
       }
@@ -8494,6 +8506,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (cvFile.size > 10 * 1024 * 1024) {
         return res.status(400).json({ error: "CV file too large — maximum size is 10 MB." });
+      }
+
+      // ── Video introduction validation (required when job.requiresVideoIntro is true) ─
+      const videoFile = files?.["video"]?.[0];
+      const requiresVideoIntro = !!(job as any).requiresVideoIntro;
+      if (requiresVideoIntro && !videoFile) {
+        return res.status(400).json({ error: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file." });
+      }
+      if (videoFile) {
+        const allowedVideoMimes = ["video/mp4", "video/quicktime", "video/webm"];
+        if (!allowedVideoMimes.includes(videoFile.mimetype)) {
+          return res.status(400).json({ error: "Invalid video format. Only MP4, MOV, and WebM files are allowed." });
+        }
+        if (videoFile.size > 200 * 1024 * 1024) {
+          return res.status(400).json({ error: "Video file too large — maximum size is 200 MB." });
+        }
       }
 
       // ── Upload CV to object storage ───────────────────────────────────────────
@@ -8521,6 +8549,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "cv_upload_failed",
           message: "CV upload failed — please try a different file or check your connection.",
         });
+      }
+
+      // ── Upload video introduction to object storage (if present) ─────────────
+      let videoIntroUrl: string | null = null;
+      let videoIntroFileName: string | null = null;
+      if (videoFile) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          const videoId = randomUUID();
+          const privateObjectDir = objectStorageService.getPrivateObjectDir();
+          const fullPath = `${privateObjectDir}/application-videos/${videoId}`;
+          const parts = fullPath.split("/").filter((p: string) => p);
+          const bucketName = parts[0];
+          const objectName = parts.slice(1).join("/");
+          const bucket = objectStorageClient.bucket(bucketName);
+          const objectVideoFile = bucket.file(objectName);
+          await objectVideoFile.save(videoFile.buffer, {
+            metadata: { contentType: videoFile.mimetype, metadata: { originalName: videoFile.originalname } },
+          });
+          await setObjectAclPolicy(objectVideoFile, { visibility: "private" });
+          videoIntroUrl = `/objects/application-videos/${videoId}`;
+          videoIntroFileName = videoFile.originalname;
+        } catch (uploadErr: any) {
+          console.error("Video upload to object storage failed:", uploadErr.message);
+          return res.status(500).json({
+            error: "video_upload_failed",
+            message: "Video upload failed — please try a different file or check your connection.",
+          });
+        }
       }
 
       const { firstName, lastName, email, phone, coverLetter } = req.body;
@@ -8582,8 +8639,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `INSERT INTO job_submissions
              (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
               resume_url, resume_file_name,
+              video_introduction_url, video_introduction_file_name,
               status, registration_status, talent_id, is_repeat_application)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'submitted', 'linked', $11, $12)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', 'linked', $13, $14)
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -8593,6 +8651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             coverLetter?.trim() || null,
             cvResumeUrl,
             cvResumeFileName,
+            videoIntroUrl,
+            videoIntroFileName,
             authedUser.id,
             isRepeat,
           ],
@@ -8661,8 +8721,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `INSERT INTO job_submissions
            (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
             resume_url, resume_file_name,
+            video_introduction_url, video_introduction_file_name,
             status, registration_status, is_repeat_application)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'submitted', $11, $12)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', $13, $14)
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -8672,6 +8733,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           coverLetter?.trim() || null,
           cvResumeUrl,
           cvResumeFileName,
+          videoIntroUrl,
+          videoIntroFileName,
           registrationStatus,
           isRepeat,
         ],
@@ -9063,6 +9126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
                   js.resume_url AS "appResumeUrl", js.resume_file_name AS "appResumeFileName",
+                  js.video_introduction_url AS "videoIntroductionUrl",
+                  js.video_introduction_file_name AS "videoIntroductionFileName",
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName",
                   c.id AS "candidateId",
@@ -9111,7 +9176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Omit internal intermediate fields from the response
       const { appResumeUrl, appResumeFileName, candidateResumeUrl, candidateResumeFileName, ...baseRow } = row;
-      return res.json({ ...baseRow, resumeUrl, resumeFileName, resumeSource, history: histResult.rows });
+      return res.json({
+        ...baseRow,
+        resumeUrl,
+        resumeFileName,
+        resumeSource,
+        videoIntroductionUrl: row.videoIntroductionUrl || null,
+        videoIntroductionFileName: row.videoIntroductionFileName || null,
+        history: histResult.rows,
+      });
     } catch (err: any) {
       console.error("GET /api/admin/job-applications/:id error:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -9159,6 +9232,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error("GET /api/admin/job-applications/:id/resume error:", err);
       if (!res.headersSent) res.status(500).json({ error: "Failed to serve CV" });
+    }
+  });
+
+  // GET /api/admin/job-applications/:applicationId/video — proxy video introduction from object storage (admin only)
+  app.get("/api/admin/job-applications/:applicationId/video", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+    try {
+      const { applicationId } = req.params;
+      const disposition = (req.query.download === "1") ? "attachment" : "inline";
+
+      const result = await query(
+        `SELECT video_introduction_url AS "videoUrl", video_introduction_file_name AS "videoFileName"
+         FROM job_submissions WHERE id = $1`,
+        [applicationId],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
+      const { videoUrl, videoFileName } = result.rows[0];
+      if (!videoUrl) return res.status(404).json({ error: "No video introduction attached to this application" });
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(videoUrl);
+      const safeFileName = (videoFileName || "video-intro").replace(/"/g, "");
+      res.setHeader("Content-Disposition", `${disposition}; filename="${safeFileName}"`);
+      await objectStorageService.downloadObject(objectFile, res, 0);
+    } catch (err: any) {
+      console.error("GET /api/admin/job-applications/:id/video error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve video" });
     }
   });
 
