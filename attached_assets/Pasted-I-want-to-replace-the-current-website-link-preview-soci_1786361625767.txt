@@ -1,0 +1,269 @@
+I want to replace the current website link-preview/social-sharing thumbnail for:
+
+https://onspotglobal.com/
+
+with a new HD OnSpot image that I will upload to this Replit project.
+
+Please inspect the existing project first and determine what framework it uses (React, Next.js, Vite, plain HTML, etc.) and where the global SEO/social metadata is currently defined.
+
+GOAL
+When someone shares https://onspotglobal.com/ or any main public page, the new HD image should be used as the website preview image wherever supported, including:
+
+- Microsoft Teams
+- Facebook
+- Messenger
+- LinkedIn
+- X / Twitter
+- Discord
+- Slack
+- other websites/apps that generate Open Graph link previews
+
+Do not change the visible design or layout of the website. This task is specifically for link-preview/social metadata and the associated public image asset.
+
+IMPLEMENTATION REQUIREMENTS
+
+1. Add the new HD image to an appropriate publicly accessible location in the project.
+
+Use a clear production-friendly filename such as:
+
+onspot-social-preview.png
+
+Prefer a path such as:
+
+/public/onspot-social-preview.png
+
+or the equivalent public/static asset location for this framework.
+
+The deployed image MUST be accessible from an absolute HTTPS URL similar to:
+
+https://onspotglobal.com/onspot-social-preview.png
+
+Do not reference a local filesystem path, imported build-only asset, blob URL, localhost URL, or relative URL that social crawlers cannot access.
+
+2. Update the global Open Graph metadata.
+
+Ensure the generated HTML contains equivalent metadata to:
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="OnSpot" />
+<meta property="og:title" content="Work Without Limits | OnSpot" />
+<meta
+  property="og:description"
+  content="Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a traditional hiring process."
+/>
+<meta property="og:url" content="https://onspotglobal.com/" />
+<meta
+  property="og:image"
+  content="https://onspotglobal.com/onspot-social-preview.png"
+/>
+<meta
+  property="og:image:secure_url"
+  content="https://onspotglobal.com/onspot-social-preview.png"
+/>
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content="OnSpot — Work Without Limits" />
+
+Also add the image width and height using the REAL dimensions of the uploaded image:
+
+<meta property="og:image:width" content="ACTUAL_WIDTH" />
+<meta property="og:image:height" content="ACTUAL_HEIGHT" />
+
+Read the image dimensions rather than guessing them.
+
+3. Add X / Twitter Card metadata.
+
+Use:
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Work Without Limits | OnSpot" />
+<meta
+  name="twitter:description"
+  content="Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a traditional hiring process."
+/>
+<meta
+  name="twitter:image"
+  content="https://onspotglobal.com/onspot-social-preview.png"
+/>
+<meta name="twitter:image:alt" content="OnSpot — Work Without Limits" />
+
+Use the current official X/Twitter account metadata too if the project already defines it. Do not invent an account handle.
+
+4. Keep standard SEO metadata correct.
+
+Ensure these also exist and are not duplicated unnecessarily:
+
+<title>Work Without Limits | OnSpot</title>
+
+<meta
+  name="description"
+  content="Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a traditional hiring process."
+/>
+
+<link rel="canonical" href="https://onspotglobal.com/" />
+
+5. Framework-specific handling.
+
+Do NOT blindly add tags into random files.
+
+First inspect the project.
+
+If this is Next.js App Router:
+- update app/layout.tsx, app/layout.js, or the appropriate Metadata configuration
+- use metadataBase if appropriate
+- configure openGraph and twitter using the Next.js Metadata API
+
+If this is Next.js Pages Router:
+- use next/head or the project's existing SEO component
+
+If this is React/Vite:
+- update index.html or the existing SEO/head management solution
+
+If this is plain HTML:
+- update the global <head>
+
+If the project already has an SEO component/library:
+- update that existing implementation rather than creating a competing duplicate system
+
+6. Check for existing preview images.
+
+Search the whole repository for:
+
+og:image
+twitter:image
+OpenGraph
+openGraph
+twitter
+social image
+thumbnail
+preview
+seo
+metadata
+
+Replace references to the OLD link-preview image with the new HD image where appropriate.
+
+Do not replace unrelated website images.
+
+7. Make metadata crawler-friendly.
+
+The social metadata must be present in the server-delivered HTML whenever the framework supports SSR/static metadata.
+
+Do not rely only on JavaScript running after page load because services such as Teams, LinkedIn, Facebook, and X may not execute client-side JavaScript when generating link previews.
+
+8. Verify the image itself.
+
+Confirm:
+
+- HTTP/HTTPS URL is publicly accessible
+- server returns HTTP 200
+- correct Content-Type is returned
+- image is not blocked by authentication
+- image is not blocked by robots rules
+- image is not protected by hotlink restrictions
+- no redirect loop exists
+- filename casing exactly matches the URL
+- image has good dimensions for social previews
+
+If the uploaded source image is unnecessarily huge, create an optimized social-preview version while preserving high visual quality.
+
+Prefer approximately a 1.91:1 social-preview aspect ratio, ideally around 1200×630, when possible.
+
+However, do NOT distort the artwork. Crop or resize intelligently if needed.
+
+9. Check robots configuration.
+
+Inspect:
+
+robots.txt
+robots metadata
+middleware
+security headers
+CDN rules
+
+Make sure legitimate social preview crawlers are not accidentally blocked.
+
+Do not weaken unrelated security settings.
+
+10. Check Content Security Policy if one exists.
+
+Make sure the website's own image URL remains valid under the current CSP configuration.
+
+Do not unnecessarily loosen the CSP.
+
+11. Avoid duplicate metadata.
+
+After implementing the changes, inspect the rendered <head> and make sure there is only one authoritative value for:
+
+og:title
+og:description
+og:image
+og:url
+twitter:card
+twitter:title
+twitter:description
+twitter:image
+canonical
+
+Remove obsolete duplicates where safe.
+
+12. Preserve route-specific metadata.
+
+If individual pages already have custom SEO titles/descriptions/images, do not overwrite their intentional metadata unnecessarily.
+
+The new image should become the GLOBAL/FALLBACK OnSpot sharing image.
+
+The homepage must definitely use the new image.
+
+13. Cache considerations.
+
+Social networks and messaging platforms often cache link previews.
+
+Do not add hacks that change the URL every page load.
+
+Use a stable production URL.
+
+If the previous image has been heavily cached and replacing the file contents at the same URL may not refresh reliably, use a NEW filename such as:
+
+onspot-social-preview-2026.png
+
+and point og:image and twitter:image to that new URL.
+
+Prefer changing the filename over adding meaningless random query parameters.
+
+14. Testing.
+
+After completing the work:
+
+- run the project
+- check for build/type/lint errors
+- inspect the final rendered homepage HTML
+- confirm the new og:image appears
+- confirm twitter:image appears
+- confirm all image URLs use https://onspotglobal.com/
+- confirm there are no localhost URLs
+- confirm there are no duplicate conflicting social metadata tags
+
+Also test the public production URL after deployment using appropriate preview/debugging tools where possible.
+
+Remember that Microsoft Teams may cache the previous card even after the website is fixed. The same can happen with LinkedIn, Facebook, X, Slack, Discord, and other platforms.
+
+15. Give me a final report.
+
+When finished, tell me:
+
+- which files you changed
+- where the new image was stored
+- the final public image URL
+- the detected image dimensions
+- which Open Graph tags were added/updated
+- which Twitter/X tags were added/updated
+- whether any old thumbnail references were removed
+- whether the build passed
+- whether the rendered HTML was verified
+- anything I still need to do after deployment
+
+IMPORTANT:
+Do not redesign the website.
+Do not alter page content unless required for metadata.
+Do not invent URLs, social handles, or project structure.
+Inspect the existing implementation first.
+Use the newly uploaded HD OnSpot artwork as the social-sharing thumbnail.

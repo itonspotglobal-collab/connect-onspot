@@ -129,7 +129,7 @@ export function escapeHtml(str: string): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SITE = "https://www.onspotglobal.com";
-export const DEFAULT_OG_IMAGE = "https://onspotglobal.com/onspot-social-preview-v3.png";
+export const DEFAULT_OG_IMAGE = "https://onspotglobal.com/onspot-social-preview-2026.png";
 /** Used as fallback for Insights pages that have no cover image */
 const INSIGHTS_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop";
@@ -531,8 +531,8 @@ export function buildMetaTagsHtml(meta: OGMeta): string {
   <meta property="og:image:url" content="${img}" />
   <meta property="og:image:secure_url" content="${img}" />
   <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:width" content="1448" />
+  <meta property="og:image:height" content="1086" />
   <meta property="og:image:alt" content="${t}" />
 
   <!-- Twitter Card -->
@@ -608,8 +608,8 @@ function buildBotHtml(meta: OGMeta): string {
   <meta property="og:image:url" content="${img}" />
   <meta property="og:image:secure_url" content="${img}" />
   <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:width" content="1448" />
+  <meta property="og:image:height" content="1086" />
   <meta property="og:image:alt" content="${t}" />
 
   <!-- Twitter Card -->
