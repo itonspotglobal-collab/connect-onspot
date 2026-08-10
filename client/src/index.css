@@ -2872,3 +2872,15 @@ body.has-floating-bottom-right {
   .hero-slide { animation: none !important; transform: none !important; }
   .hero-progress-fill { animation: none !important; width: 100% !important; }
 }
+
+/* ── Email composer: responsive editor height ── */
+.email-editor-wrapper .ql-container,
+.email-editor-wrapper .ql-editor {
+  min-height: 240px;
+}
+@media (max-height: 800px) {
+  .email-editor-wrapper .ql-container,
+  .email-editor-wrapper .ql-editor {
+    min-height: 160px;
+  }
+}

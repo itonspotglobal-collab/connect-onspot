@@ -1,0 +1,169 @@
+Improve the responsiveness of the Email Applicant modal in ApplicantEmailComposer.tsx.
+
+Current issue:
+
+On larger desktop screens, the modal size looks good.
+On smaller-height screens such as a MacBook Air, the modal becomes taller than the usable viewport.
+The user has to scroll all the way down just to reach:
+Preview
+Test send
+Send Email
+
+Do not simply shrink the entire modal globally.
+
+The desktop appearance should remain approximately the same.
+
+Desired behavior
+
+Keep the modal responsive to viewport height.
+
+Structure it as:
+
+Modal
+├── Header              ← fixed
+├── Tabs                ← fixed
+├── Scrollable content  ← From / Template / Subject / Message
+└── Footer actions      ← sticky/fixed inside modal
+
+The footer containing:
+
+Preview
+Test send
+Send Email
+
+must remain visible at the bottom of the modal while the middle form content scrolls.
+
+Modal sizing
+
+Instead of allowing the dialog to grow beyond the screen, use a viewport-aware height such as:
+
+max-height: calc(100dvh - 2rem);
+
+or the appropriate Tailwind equivalent.
+
+Prefer 100dvh over only 100vh where supported.
+
+Keep the existing desktop width:
+
+max-w-2xl
+
+unless the current project uses another width.
+
+Do not reduce desktop width/size unnecessarily.
+
+Suggested layout
+
+Refactor the dialog container into a flex column:
+
+display: flex
+flex-direction: column
+max-height: calc(100dvh - 2rem)
+overflow: hidden
+
+Then make only the content area:
+
+flex: 1
+min-height: 0
+overflow-y: auto
+
+Keep the footer outside that scrollable area.
+
+Example concept:
+
+<DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl">
+  <Header />
+  <Tabs />
+
+  <div className="min-h-0 flex-1 overflow-y-auto">
+    {/* From */}
+    {/* Template */}
+    {/* Subject */}
+    {/* Rich text editor */}
+  </div>
+
+  <div className="shrink-0 border-t bg-background pt-4">
+    {/* Preview / Test send / Send Email */}
+  </div>
+</DialogContent>
+
+Adapt this to the current component structure rather than copying blindly.
+
+Rich text editor
+
+The Message editor currently takes a lot of vertical space.
+
+Make its height responsive:
+
+retain the current comfortable height on desktop
+use a slightly smaller minimum height on shorter screens
+do not make it tiny
+
+Example strategy:
+
+desktop/tall viewport → existing editor height
+shorter viewport      → reduced editor height
+
+Use CSS media queries based on viewport height if needed, not only width.
+
+For example:
+
+@media (max-height: 800px) {
+  /* reduce editor min-height slightly */
+}
+
+or equivalent Tailwind utilities/custom classes.
+
+Important
+
+Do not:
+
+scale the entire modal with CSS transform
+globally reduce font sizes
+make the desktop modal unnecessarily smaller
+put the action footer inside the scrolling area
+create horizontal scrolling
+Test these screen sizes
+
+Verify:
+
+Large desktop
+→ modal keeps current comfortable size
+
+MacBook Air / shorter laptop viewport
+→ modal fits inside viewport
+→ Send Email remains visible
+→ only form body scrolls
+
+Mobile/small width
+→ modal stays within screen
+→ fields/buttons remain usable
+
+Also test:
+
+opening sender dropdown near bottom
+template dropdown
+rich text editor toolbar
+Preview tab
+History tab
+confirmation modal after clicking Send Email
+
+Make sure dropdowns and confirmation dialogs are not clipped by the modal's overflow-hidden. Continue using portals for popovers/dialogs if already supported.
+
+Before implementing, inspect:
+
+ApplicantEmailComposer.tsx
+DialogContent component
+RichTextEditor.tsx
+current footer/action buttons
+
+Reuse the project's existing Tailwind/shadcn patterns.
+
+After implementation, report:
+
+files changed
+modal height strategy used
+which section scrolls
+how footer buttons remain visible
+any viewport-height breakpoint added
+
+The key fix is not making the whole modal smaller. It should keep its normal desktop dimensions, while on shorter screens the center content becomes scrollable and the Send Email footer stays pinned at the bottom.

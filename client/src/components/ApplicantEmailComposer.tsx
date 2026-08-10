@@ -129,7 +129,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
     { id: "history",  label: "History",  icon: Clock },
   ];
   return (
-    <div className="flex border-b border-slate-200 mb-4">
+    <div className="flex border-b border-slate-200">
       {tabs.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -162,11 +162,7 @@ function ComposeTab({
   setBodyHtml,
   selectedSender,
   setSelectedSender,
-  onPreview,
-  onSend,
   isSending,
-  onTestSend,
-  isTestSending,
 }: {
   appId: string;
   templates: EmailTemplate[];
@@ -179,11 +175,7 @@ function ComposeTab({
   setBodyHtml: (s: string) => void;
   selectedSender: SenderOption;
   setSelectedSender: (s: SenderOption) => void;
-  onPreview: () => void;
-  onSend: () => void;
   isSending: boolean;
-  onTestSend: () => void;
-  isTestSending: boolean;
 }) {
   const published = templates.filter(t => t.isPublished);
 
@@ -275,8 +267,8 @@ function ComposeTab({
         <Label className="text-sm font-medium">
           Message <span className="text-red-500">*</span>
         </Label>
-        <div className="min-h-[240px] border border-slate-200 rounded-md overflow-hidden">
-          <Suspense fallback={<Skeleton className="h-60 w-full" />}>
+        <div className="email-editor-wrapper border border-slate-200 rounded-md overflow-hidden">
+          <Suspense fallback={<Skeleton className="h-48 w-full" />}>
             <RichTextEditor
               value={bodyHtml}
               onChange={setBodyHtml}
@@ -289,43 +281,6 @@ function ComposeTab({
           <code className="bg-slate-100 px-1 rounded">{"{{applicant_first_name}}"}</code>.
           Variables are resolved when sending.
         </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 pt-1">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          onClick={onPreview}
-          disabled={!bodyHtml.trim()}
-        >
-          <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          onClick={onTestSend}
-          disabled={!subject.trim() || !bodyHtml.trim() || isTestSending}
-        >
-          {isTestSending
-            ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending test…</>
-            : <><Send className="mr-1.5 h-3.5 w-3.5" /> Test send</>
-          }
-        </Button>
-        <div className="flex-1" />
-        <Button
-          size="sm"
-          className="bg-[#474ead] hover:bg-[#3d439c] text-white h-8 text-xs px-4"
-          onClick={onSend}
-          disabled={!subject.trim() || !bodyHtml.trim() || isSending}
-        >
-          {isSending
-            ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending…</>
-            : <><Send className="mr-1.5 h-3.5 w-3.5" /> Send Email</>
-          }
-        </Button>
       </div>
     </div>
   );
@@ -725,8 +680,16 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
   return (
     <>
       <Dialog open={open} onOpenChange={v => !v && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
+        {/*
+          Flex-column layout so the header + tabs stay fixed while only the
+          middle content area scrolls, and the action footer stays pinned at
+          the bottom regardless of viewport height.
+          max-h accounts for dialog.tsx's sm:pt-24 sm:pb-12 = ~9rem chrome.
+        */}
+        <DialogContent className="flex flex-col max-w-2xl p-0 gap-0 max-h-[calc(100dvh-10rem)] overflow-hidden">
+
+          {/* ── Fixed header ── */}
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Mail className="h-5 w-5 text-[#474ead]" />
               Email Applicant
@@ -736,48 +699,89 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
             </DialogTitle>
           </DialogHeader>
 
-          <TabBar active={activeTab} onChange={setActiveTab} />
+          {/* ── Fixed tab bar ── */}
+          <div className="shrink-0 px-6">
+            <TabBar active={activeTab} onChange={setActiveTab} />
+          </div>
 
+          {/* ── Scrollable content area ── */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+            {activeTab === "compose" && (
+              <ComposeTab
+                appId={application.id}
+                templates={templates}
+                templatesLoading={templatesLoading}
+                templateId={templateId}
+                setTemplateId={setTemplateId}
+                subject={subject}
+                setSubject={setSubject}
+                bodyHtml={bodyHtml}
+                setBodyHtml={setBodyHtml}
+                selectedSender={selectedSender}
+                setSelectedSender={setSelectedSender}
+                isSending={isSendingEmail}
+              />
+            )}
+
+            {activeTab === "preview" && (
+              <PreviewTab
+                appId={application.id}
+                templateId={templateId}
+                subject={subject}
+                bodyHtml={bodyHtml}
+                senderDisplay={selectedSender.display}
+                recipientEmail={application.email}
+              />
+            )}
+
+            {activeTab === "history" && (
+              <HistoryTab appId={application.id} />
+            )}
+          </div>
+
+          {/* ── Sticky footer — compose tab only ── */}
           {activeTab === "compose" && (
-            <ComposeTab
-              appId={application.id}
-              templates={templates}
-              templatesLoading={templatesLoading}
-              templateId={templateId}
-              setTemplateId={setTemplateId}
-              subject={subject}
-              setSubject={setSubject}
-              bodyHtml={bodyHtml}
-              setBodyHtml={setBodyHtml}
-              selectedSender={selectedSender}
-              setSelectedSender={setSelectedSender}
-              onPreview={() => setActiveTab("preview")}
-              onSend={() => onRequestSend({
-                subject,
-                bodyHtml,
-                templateId,
-                senderEmail: selectedSender.email,
-                senderLabel: selectedSender.display,
-              })}
-              isSending={isSendingEmail}
-              onTestSend={() => setShowTestDialog(true)}
-              isTestSending={testSendMutation.isPending}
-            />
-          )}
-
-          {activeTab === "preview" && (
-            <PreviewTab
-              appId={application.id}
-              templateId={templateId}
-              subject={subject}
-              bodyHtml={bodyHtml}
-              senderDisplay={selectedSender.display}
-              recipientEmail={application.email}
-            />
-          )}
-
-          {activeTab === "history" && (
-            <HistoryTab appId={application.id} />
+            <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-3 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setActiveTab("preview")}
+                disabled={!bodyHtml.trim()}
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setShowTestDialog(true)}
+                disabled={!subject.trim() || !bodyHtml.trim() || testSendMutation.isPending}
+              >
+                {testSendMutation.isPending
+                  ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending test…</>
+                  : <><Send className="mr-1.5 h-3.5 w-3.5" /> Test send</>
+                }
+              </Button>
+              <div className="flex-1" />
+              <Button
+                size="sm"
+                className="bg-[#474ead] hover:bg-[#3d439c] text-white h-8 text-xs px-4"
+                onClick={() => onRequestSend({
+                  subject,
+                  bodyHtml,
+                  templateId,
+                  senderEmail: selectedSender.email,
+                  senderLabel: selectedSender.display,
+                })}
+                disabled={!subject.trim() || !bodyHtml.trim() || isSendingEmail}
+              >
+                {isSendingEmail
+                  ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending…</>
+                  : <><Send className="mr-1.5 h-3.5 w-3.5" /> Send Email</>
+                }
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
