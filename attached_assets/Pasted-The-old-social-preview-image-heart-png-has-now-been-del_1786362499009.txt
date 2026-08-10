@@ -1,0 +1,501 @@
+The old social preview image `heart.png` has now been deleted from the project.
+
+Because of that, shared links currently show NO thumbnail.
+
+I want to use this image instead:
+
+/public/new-onspot.png
+
+Please update the project so `new-onspot.png` becomes the default social-sharing preview image across the entire OnSpot website.
+
+IMPORTANT:
+Do not just confirm that the file exists in `/public`.
+Actually update all Open Graph, Twitter/X, SEO, and dynamic route metadata to reference the new image.
+
+TARGET IMAGE
+
+Public file:
+
+/public/new-onspot.png
+
+Production URL:
+
+https://onspotglobal.com/new-onspot.png
+
+For Replit development/testing, use the current Replit hostname dynamically where necessary, for example:
+
+https://CURRENT-REPLIT-DOMAIN/new-onspot.png
+
+Do not use localhost.
+
+--------------------------------------------------
+1. SEARCH THE ENTIRE PROJECT
+--------------------------------------------------
+
+Search the whole codebase for:
+
+heart.png
+/heart.png
+new-onspot.png
+og:image
+twitter:image
+openGraph
+OpenGraph
+metadata
+SEO
+social-preview
+thumbnail
+previewImage
+socialImage
+defaultImage
+Work Without Limits | OnSpot
+Job Opening | OnSpot
+
+I want to know where the old `heart.png` image was previously referenced.
+
+Since `heart.png` no longer exists, remove all remaining metadata references to it.
+
+There must be ZERO social metadata references to:
+
+heart.png
+
+after this change.
+
+--------------------------------------------------
+2. VERIFY THE NEW IMAGE EXISTS
+--------------------------------------------------
+
+Confirm that:
+
+/public/new-onspot.png
+
+exists.
+
+Then confirm it is publicly served at:
+
+https://CURRENT-REPLIT-DOMAIN/new-onspot.png
+
+and after production deployment:
+
+https://onspotglobal.com/new-onspot.png
+
+Verify:
+
+- HTTP 200
+- Content-Type is image/png
+- image is publicly accessible
+- no authentication required
+- no redirect loop
+- correct filename casing
+
+--------------------------------------------------
+3. UPDATE HOMEPAGE OPEN GRAPH METADATA
+--------------------------------------------------
+
+The homepage must include:
+
+<meta property="og:type" content="website" />
+
+<meta property="og:site_name" content="OnSpot" />
+
+<meta
+  property="og:title"
+  content="Work Without Limits | OnSpot"
+/>
+
+<meta
+  property="og:description"
+  content="Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a freelance marketplace."
+/>
+
+<meta
+  property="og:url"
+  content="https://onspotglobal.com/"
+/>
+
+<meta
+  property="og:image"
+  content="https://onspotglobal.com/new-onspot.png"
+/>
+
+<meta
+  property="og:image:secure_url"
+  content="https://onspotglobal.com/new-onspot.png"
+/>
+
+<meta
+  property="og:image:type"
+  content="image/png"
+/>
+
+<meta
+  property="og:image:alt"
+  content="OnSpot — Work Without Limits"
+/>
+
+Read the REAL dimensions of new-onspot.png and add:
+
+<meta property="og:image:width" content="ACTUAL_WIDTH" />
+<meta property="og:image:height" content="ACTUAL_HEIGHT" />
+
+Do not guess the dimensions.
+
+--------------------------------------------------
+4. UPDATE TWITTER / X METADATA
+--------------------------------------------------
+
+Add/update:
+
+<meta
+  name="twitter:card"
+  content="summary_large_image"
+/>
+
+<meta
+  name="twitter:title"
+  content="Work Without Limits | OnSpot"
+/>
+
+<meta
+  name="twitter:description"
+  content="Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a freelance marketplace."
+/>
+
+<meta
+  name="twitter:image"
+  content="https://onspotglobal.com/new-onspot.png"
+/>
+
+<meta
+  name="twitter:image:alt"
+  content="OnSpot — Work Without Limits"
+/>
+
+Do not invent a Twitter/X handle.
+
+Preserve an existing official account value if one already exists.
+
+--------------------------------------------------
+5. CHECK INDEX.HTML FIRST
+--------------------------------------------------
+
+This project has a root:
+
+index.html
+
+Inspect it carefully.
+
+Look for old metadata such as:
+
+<meta property="og:image" content="/heart.png">
+
+or:
+
+<meta property="og:image" content="...heart.png">
+
+or:
+
+<meta name="twitter:image" content="...heart.png">
+
+Replace those references with the new image.
+
+If this Vite/React application uses index.html for global metadata, make sure `new-onspot.png` is referenced there.
+
+--------------------------------------------------
+6. CHECK MAIN.TSX / REACT SEO LOGIC
+--------------------------------------------------
+
+Inspect:
+
+main.tsx
+
+and the rest of the React app for:
+
+React Helmet
+Helmet
+document.head
+document.title
+querySelector('meta')
+SEO components
+metadata helpers
+OpenGraph helpers
+
+If JavaScript currently overwrites the social image, update it from heart.png to new-onspot.png.
+
+However:
+
+Do NOT rely only on JavaScript-generated meta tags if they are required for social crawlers.
+
+The initial HTML should contain appropriate metadata whenever possible.
+
+--------------------------------------------------
+7. UPDATE ALL PUBLIC PAGES
+--------------------------------------------------
+
+Make `new-onspot.png` the GLOBAL DEFAULT/FALLBACK social image.
+
+It should be used when sharing:
+
+https://onspotglobal.com/
+
+https://onspotglobal.com/find-work
+
+https://onspotglobal.com/find-work/job/<JOB_ID>
+
+and other public OnSpot pages.
+
+Do not change page-specific titles/descriptions unnecessarily.
+
+Only make the new image the default social thumbnail.
+
+--------------------------------------------------
+8. DYNAMIC JOB LINKS ARE REQUIRED
+--------------------------------------------------
+
+This is very important.
+
+Job links such as:
+
+https://onspotglobal.com/find-work/job/6fcfdc5b-82e6-4e74-b9e2-39dc39e7581b
+
+must use:
+
+https://onspotglobal.com/new-onspot.png
+
+as the social preview image.
+
+Preserve dynamic job-specific content.
+
+For example:
+
+og:title =
+ACTUAL JOB TITLE | OnSpot
+
+og:description =
+job-specific description or summary
+
+og:url =
+exact job URL
+
+og:image =
+https://onspotglobal.com/new-onspot.png
+
+twitter:title =
+actual job title
+
+twitter:description =
+job-specific description
+
+twitter:image =
+https://onspotglobal.com/new-onspot.png
+
+twitter:card =
+summary_large_image
+
+Do NOT replace dynamic job titles with:
+
+Work Without Limits | OnSpot
+
+The new image should be shared globally, but titles/descriptions should still be page-specific.
+
+--------------------------------------------------
+9. SOCIAL CRAWLER COMPATIBILITY
+--------------------------------------------------
+
+Microsoft Teams, LinkedIn, Facebook, X, Slack, Discord and other platforms may not execute React client-side JavaScript.
+
+Therefore make sure:
+
+og:title
+og:description
+og:url
+og:image
+twitter:title
+twitter:description
+twitter:image
+
+are visible to social crawlers in the INITIAL HTML response wherever technically possible.
+
+Inspect the application's current architecture and use its existing SSR, prerender, backend metadata injection, or equivalent functionality if available.
+
+Do not perform an unnecessary full framework rewrite.
+
+--------------------------------------------------
+10. ABSOLUTE IMAGE URL
+--------------------------------------------------
+
+Social metadata should ultimately use an absolute URL:
+
+https://onspotglobal.com/new-onspot.png
+
+Do not leave production metadata as only:
+
+/new-onspot.png
+
+if the existing framework supports absolute metadata URLs.
+
+For the Replit preview environment, ensure the generated URL points to the actual current Replit deployment host so we can test before production.
+
+Do not hardcode the old Replit deployment hostname if it changes between deployments.
+
+--------------------------------------------------
+11. REMOVE BROKEN HEART.PNG REFERENCES
+--------------------------------------------------
+
+Since heart.png has been deleted, search the project again after making the fix.
+
+There should be ZERO references like:
+
+heart.png
+
+inside:
+
+og:image
+twitter:image
+SEO configs
+metadata objects
+social preview configs
+job metadata
+
+If `heart.png` appears elsewhere, tell me exactly where and why.
+
+--------------------------------------------------
+12. CHECK FOR DUPLICATE META TAGS
+--------------------------------------------------
+
+The final page must NOT contain:
+
+og:image = heart.png
+AND
+og:image = new-onspot.png
+
+There should only be one authoritative social image.
+
+Also avoid duplicate/conflicting:
+
+og:title
+og:description
+og:url
+og:image
+twitter:title
+twitter:description
+twitter:image
+
+--------------------------------------------------
+13. TEST THE ACTUAL SERVER HTML
+--------------------------------------------------
+
+Test at minimum:
+
+Homepage:
+/
+
+Find Work:
+/find-work
+
+One real job:
+/find-work/job/<REAL_JOB_ID>
+
+For each one, inspect the ORIGINAL HTML returned by the server.
+
+Do not only inspect the live DOM after React loads.
+
+Confirm the final values for:
+
+og:title
+og:description
+og:url
+og:image
+twitter:card
+twitter:title
+twitter:description
+twitter:image
+
+The image should now be:
+
+new-onspot.png
+
+--------------------------------------------------
+14. TEST DIRECT IMAGE ACCESS
+--------------------------------------------------
+
+Open:
+
+https://CURRENT-REPLIT-DOMAIN/new-onspot.png
+
+and confirm it displays the correct new HD OnSpot image.
+
+Then verify that the HTML `og:image` uses a URL that successfully loads.
+
+--------------------------------------------------
+15. BUILD AND RESTART
+--------------------------------------------------
+
+After implementing the changes:
+
+- restart the Replit server
+- rebuild the frontend if necessary
+- run type checking if configured
+- run lint if configured
+- ensure the application starts successfully
+- verify no broken asset references remain
+
+--------------------------------------------------
+16. IMPORTANT: SOCIAL PLATFORM CACHE
+--------------------------------------------------
+
+Microsoft Teams, LinkedIn, Facebook, X and other platforms may cache old link previews.
+
+First determine whether the CODE is correct.
+
+If page source now shows:
+
+new-onspot.png
+
+but an existing shared link still shows the old image or no image, explain that the remaining issue may be cached social-preview data.
+
+For testing, try a URL that has not previously been shared or use the platform's official preview/debug tool where applicable.
+
+Do not keep changing metadata just because Teams has cached an earlier preview.
+
+--------------------------------------------------
+17. FINAL REPORT
+--------------------------------------------------
+
+When finished, tell me:
+
+1. Where heart.png was still referenced
+2. Files modified
+3. Exact location of new-onspot.png
+4. Public Replit image URL
+5. Production image URL
+6. Image dimensions
+7. Homepage og:image value
+8. Homepage twitter:image value
+9. Find Work og:image value
+10. Job page og:image value
+11. Job page twitter:image value
+12. Whether all heart.png social references are gone
+13. Whether new-onspot.png returns HTTP 200
+14. Whether metadata is visible in initial HTML
+15. Whether the app was restarted/rebuilt
+16. Whether the build passed
+17. Anything I need to do after deployment
+
+SUCCESS CRITERIA:
+
+Sharing the Replit homepage should show new-onspot.png.
+
+Sharing:
+
+https://onspotglobal.com/
+
+should show new-onspot.png after production deployment.
+
+Sharing:
+
+https://onspotglobal.com/find-work/job/<JOB_ID>
+
+should also show new-onspot.png while preserving the actual job-specific title and description.
+
+The deleted heart.png image must no longer be referenced anywhere in social-sharing metadata.

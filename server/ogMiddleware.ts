@@ -129,7 +129,7 @@ export function escapeHtml(str: string): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SITE = "https://www.onspotglobal.com";
-export const DEFAULT_OG_IMAGE = "https://onspotglobal.com/onspot-social-preview-2026.png";
+export const DEFAULT_OG_IMAGE = "https://onspotglobal.com/new-onspot.png";
 /** Used as fallback for Insights pages that have no cover image */
 const INSIGHTS_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop";
