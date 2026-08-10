@@ -1,0 +1,340 @@
+We have now identified the exact problem.
+
+DO NOT redesign or rebuild the SEO system.
+
+The existing server-side social preview system is:
+
+server/ogMiddleware.ts
+
+and it currently contains:
+
+const SITE = "https://www.onspotglobal.com";
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/onspot-social-preview-v3.png";
+
+I now have this NEW social image:
+
+public/onspot-social-preview-2026.png
+
+The current Replit social previews still show no image because the
+server-side bot middleware is NOT using that file correctly.
+
+Fix the existing implementation.
+
+==================================================
+1. UPDATE THE DEFAULT IMAGE
+==================================================
+
+In:
+
+server/ogMiddleware.ts
+
+replace:
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/onspot-social-preview-v3.png";
+
+Do NOT replace it with another hardcoded production URL during development.
+
+Instead make the social image URL use the host of the request.
+
+We need:
+
+DEVELOPMENT:
+
+https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+PRODUCTION:
+
+https://onspotglobal.com/onspot-social-preview-2026.png
+
+The social crawler must fetch the image from the SAME deployment
+that generated the preview.
+
+==================================================
+2. FIX THE SITE/ORIGIN HANDLING
+==================================================
+
+The current code hardcodes:
+
+const SITE = "https://www.onspotglobal.com";
+
+This causes Replit development previews to send crawlers to the
+production domain.
+
+That is WRONG while testing a Replit URL because the newly uploaded
+image currently exists in Replit.
+
+Refactor the metadata resolver so the server determines the public
+origin from the current request.
+
+Use forwarded headers correctly because Replit may sit behind a proxy.
+
+Conceptually:
+
+function getRequestOrigin(req: Request) {
+  const proto =
+    req.get("x-forwarded-proto") ||
+    req.protocol ||
+    "https";
+
+  const host =
+    req.get("x-forwarded-host") ||
+    req.get("host");
+
+  return `${proto}://${host}`;
+}
+
+Then use:
+
+const origin = getRequestOrigin(req);
+
+const defaultOgImage =
+  `${origin}/onspot-social-preview-2026.png`;
+
+IMPORTANT:
+Adapt this to the current architecture properly.
+
+Do not blindly paste this if resolveOGMeta currently does not receive req.
+Refactor cleanly so resolveOGMeta can receive the origin or request.
+
+==================================================
+3. JOB URLs MUST USE THIS IMAGE
+==================================================
+
+The existing code already handles:
+
+/jobs/:id
+
+and:
+
+/find-work/job/:id
+
+Do not rewrite those routes.
+
+They currently return:
+
+image: DEFAULT_OG_IMAGE
+
+Change that architecture so they ultimately produce:
+
+image:
+CURRENT_REQUEST_ORIGIN + "/onspot-social-preview-2026.png"
+
+Therefore when sharing:
+
+https://8bb...worf.replit.dev/find-work/job/ABC
+
+the raw bot HTML MUST contain:
+
+<meta
+  property="og:image"
+  content="https://8bb...worf.replit.dev/onspot-social-preview-2026.png"
+/>
+
+NOT:
+
+https://onspotglobal.com/onspot-social-preview-v3.png
+
+and NOT:
+
+https://onspotglobal.com/onspot-social-preview-2026.png
+
+while we are testing the Replit deployment.
+
+==================================================
+4. VERIFY STATIC FILE ACCESS
+==================================================
+
+Before doing anything else, test:
+
+https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+It MUST return:
+
+HTTP 200
+Content-Type: image/png
+
+It must return the actual PNG bytes.
+
+It must NOT return index.html.
+
+If it returns HTML, fix static serving before the SPA fallback route.
+
+==================================================
+5. FIX client/index.html TOO
+==================================================
+
+Change every current:
+
+https://onspotglobal.com/onspot-social-preview-v3.png
+
+reference in:
+
+client/index.html
+
+to:
+
+/onspot-social-preview-2026.png
+
+For static HTML, a root-relative URL is acceptable for the browser,
+but SERVER-RENDERED bot metadata must still use an absolute URL.
+
+Update:
+
+og:image
+og:image:url
+og:image:secure_url
+twitter:image
+
+==================================================
+6. FIX HeadSEO.tsx
+==================================================
+
+In:
+
+client/src/components/HeadSEO.tsx
+
+replace the old default:
+
+https://www.onspotglobal.com/assets/og/onspot-home.jpg
+
+with:
+
+/onspot-social-preview-2026.png
+
+Again, this client-side component is secondary.
+The server middleware is the authoritative implementation for
+Teams, LinkedIn, Facebook, etc.
+
+==================================================
+7. DO NOT USE normalizeImageUrl FOR THE DEFAULT
+==================================================
+
+The current normalizeImageUrl logic deliberately converts
+*.replit.dev URLs into the production OnSpot domain.
+
+That behavior is useful for stored production content but is WRONG
+for the DEFAULT social image during development.
+
+Do not run DEFAULT_OG_IMAGE through a function that converts:
+
+*.replit.dev
+
+into:
+
+www.onspotglobal.com
+
+The default OG image should remain on the current request origin.
+
+==================================================
+8. VERIFY WITH THE ACTUAL MICROSOFT TEAMS BOT
+==================================================
+
+Run:
+
+curl -A "SkypeUriPreview" \
+  https://CURRENT-REPLIT-DOMAIN/find-work/job/REAL_JOB_ID
+
+Then show me the returned:
+
+og:title
+og:image
+og:image:secure_url
+twitter:image
+
+EXPECTED:
+
+og:title:
+Job Opening | OnSpot Global
+
+og:image:
+https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+og:image:secure_url:
+https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+twitter:image:
+https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+Then run:
+
+curl -I \
+  https://CURRENT-REPLIT-DOMAIN/onspot-social-preview-2026.png
+
+EXPECTED:
+
+HTTP 200
+Content-Type: image/png
+
+DO NOT tell me this is fixed unless BOTH requests pass.
+
+==================================================
+9. TEST LINKEDIN TOO
+==================================================
+
+Run:
+
+curl -A "LinkedInBot" \
+  https://CURRENT-REPLIT-DOMAIN/find-work/job/REAL_JOB_ID
+
+Verify it gets the same new image.
+
+==================================================
+10. PRODUCTION BEHAVIOR
+==================================================
+
+Once deployed to:
+
+https://onspotglobal.com
+
+the exact same code should naturally generate:
+
+https://onspotglobal.com/onspot-social-preview-2026.png
+
+because that will be the request host.
+
+Do not require another code change between Replit testing and
+production deployment.
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+Do not give me a generic explanation.
+
+Show me the ACTUAL outputs:
+
+REPLIT JOB URL:
+...
+
+BOT OG IMAGE:
+...
+
+IMAGE URL:
+...
+
+IMAGE HTTP STATUS:
+...
+
+IMAGE CONTENT-TYPE:
+...
+
+SkypeUriPreview result:
+...
+
+LinkedInBot result:
+...
+
+Remaining references to:
+onspot-social-preview-v3.png
+
+Remaining references to:
+heart.png
+
+Build result:
+...
+
+Only mark the task complete when the new image URL returns 200
+AND is present in the raw social-bot HTML.

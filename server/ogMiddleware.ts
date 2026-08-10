@@ -119,6 +119,23 @@ export function isCrawler(req: Request): boolean {
 /** @deprecated Use isCrawler — kept for any callers that imported the old name. */
 function isSocialBot(req: Request): boolean { return isCrawler(req); }
 
+/**
+ * Determine the public-facing origin of the request.
+ * Replit (and most reverse proxies) set X-Forwarded-Proto / X-Forwarded-Host,
+ * so we read those first before falling back to Express's own values.
+ */
+export function getRequestOrigin(req: Request): string {
+  const proto =
+    req.get("x-forwarded-proto")?.split(",")[0].trim() ||
+    req.protocol ||
+    "https";
+  const host =
+    req.get("x-forwarded-host")?.split(",")[0].trim() ||
+    req.get("host") ||
+    "onspotglobal.com";
+  return `${proto}://${host}`;
+}
+
 export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -129,7 +146,13 @@ export function escapeHtml(str: string): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SITE = "https://www.onspotglobal.com";
-export const DEFAULT_OG_IMAGE = "https://onspotglobal.com/new-onspot.png";
+/** Filename of the default social-preview image (served from the request origin). */
+const DEFAULT_OG_IMAGE_PATH = "/onspot-social-preview-2026.png";
+/**
+ * Absolute production URL — kept for backward-compat with any external imports.
+ * Inside resolveOGMeta, use `defaultOgImage` (built from the request origin) instead.
+ */
+export const DEFAULT_OG_IMAGE = `https://onspotglobal.com${DEFAULT_OG_IMAGE_PATH}`;
 /** Used as fallback for Insights pages that have no cover image */
 const INSIGHTS_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop";
@@ -177,15 +200,23 @@ export interface OGMeta {
 // ── Per-route metadata resolver ───────────────────────────────────────────────
 export async function resolveOGMeta(
   pathname: string,
-  query: Record<string, string>
+  query: Record<string, string>,
+  /** Public origin of the request (e.g. "https://abc.replit.dev" or "https://onspotglobal.com").
+   *  When provided, the default OG image URL is built from this origin so Replit
+   *  development previews work correctly without pointing crawlers at the production domain. */
+  origin?: string
 ): Promise<OGMeta> {
+
+  // Build the default OG image URL from the request origin so social crawlers
+  // always fetch the image from the SAME host that served the page.
+  const defaultOgImage = `${origin ?? "https://onspotglobal.com"}${DEFAULT_OG_IMAGE_PATH}`;
 
   // ── Homepage ──────────────────────────────────────────────────────────────────
   if (pathname === "/" || pathname === "") {
     return {
       title: "Work Without Limits | OnSpot",
       description: "Work Without Limits. OnSpot connects companies with vetted, accountable talent — without the chaos of a freelance marketplace or the overhead of a traditional outsourcing firm. Talent earns more. Clients pay less.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/`,
       ogType: "website",
       pageContent: `
@@ -267,7 +298,7 @@ export async function resolveOGMeta(
           return {
             title: `${roleTitle} at ${company} | OnSpot`,
             description: `Apply for ${roleTitle} at ${company}. ${location}${contractType}. Browse and apply for remote outsourcing jobs on OnSpot — no experience required, top Philippine talent welcome.`,
-            image: DEFAULT_OG_IMAGE,
+            image: defaultOgImage,
             url: `${SITE}/jobs/${jobId}`,
             ogType: "website",
             pageContent: `
@@ -287,7 +318,7 @@ export async function resolveOGMeta(
       return {
         title: "Job Opening | OnSpot",
         description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
-        image: DEFAULT_OG_IMAGE,
+        image: defaultOgImage,
         url: `${SITE}${pathname}`,
         ogType: "website",
       };
@@ -298,7 +329,7 @@ export async function resolveOGMeta(
       return {
         title: "Job Opening | OnSpot",
         description: "View this role and apply now. OnSpot connects top Philippine talent with global clients — remote jobs in support, development, design, and more.",
-        image: DEFAULT_OG_IMAGE,
+        image: defaultOgImage,
         url: `${SITE}${pathname}`,
         ogType: "website",
       };
@@ -309,7 +340,7 @@ export async function resolveOGMeta(
       return {
         title: "Browse All Remote Jobs | OnSpot",
         description: "Explore all open remote jobs on OnSpot — customer support, software development, design, marketing, virtual assistant roles, and more.",
-        image: DEFAULT_OG_IMAGE,
+        image: defaultOgImage,
         url: `${SITE}/find-work/all-jobs`,
         ogType: "website",
         pageContent: `
@@ -332,7 +363,7 @@ export async function resolveOGMeta(
       return {
         title: "Remote Jobs | OnSpot",
         description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more at OnSpot.",
-        image: DEFAULT_OG_IMAGE,
+        image: defaultOgImage,
         url: `${SITE}/find-work/jobs`,
         ogType: "website",
       };
@@ -346,7 +377,7 @@ export async function resolveOGMeta(
     return {
       title: `Find Work${catLabel} | OnSpot`,
       description: "Browse remote outsourcing jobs in customer support, development, design, marketing, and more. OnSpot connects top Philippine talent with global clients.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: cat ? `${SITE}/find-work?category=${encodeURIComponent(cat)}` : `${SITE}/find-work`,
       ogType: "website",
       pageContent: `
@@ -367,7 +398,7 @@ export async function resolveOGMeta(
     return {
       title: "Hire Talent | OnSpot",
       description: "Hire pre-vetted remote professionals from the Philippines. OnSpot places top talent in customer support, development, design, and more within 72 hours.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/hire-talent`,
       ogType: "website",
       pageContent: `
@@ -398,7 +429,7 @@ export async function resolveOGMeta(
         title: "About OnSpot | Work Without Limits",
         description:
           "Learn how OnSpot is building the future of work — connecting entrepreneurs with world-class remote talent and AI-powered outsourcing.",
-        image: DEFAULT_OG_IMAGE,
+        image: defaultOgImage,
         url: `${SITE}${pathname}`,
         ogType: "website",
       };
@@ -407,7 +438,7 @@ export async function resolveOGMeta(
       title: "Why OnSpot | Outsourcing, Simplified",
       description:
         "Discover why leading companies choose OnSpot to scale with remote talent — transparent pricing, AI matching, and guaranteed performance.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}${pathname}`,
       ogType: "website",
     };
@@ -419,7 +450,7 @@ export async function resolveOGMeta(
       title: "Services | OnSpot",
       description:
         "Explore OnSpot's outsourcing service tiers — from Managed and Resourced to Enterprise and AI-powered assistants.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}${pathname}`,
       ogType: "website",
     };
@@ -431,7 +462,7 @@ export async function resolveOGMeta(
       title: "Pricing | OnSpot",
       description:
         "Transparent outsourcing pricing with no hidden fees. Choose a plan that scales with your business.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/pricing`,
       ogType: "website",
     };
@@ -443,7 +474,7 @@ export async function resolveOGMeta(
       title: "Enterprise Solutions | OnSpot",
       description:
         "Custom outsourcing solutions for enterprise teams. Scale operations with dedicated OnSpot talent and AI infrastructure.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/enterprise`,
       ogType: "website",
     };
@@ -455,7 +486,7 @@ export async function resolveOGMeta(
       title: "FAQ | OnSpot",
       description:
         "Answers to common questions about OnSpot's remote outsourcing services, hiring process, pricing, and platform.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/faq`,
       ogType: "website",
     };
@@ -467,7 +498,7 @@ export async function resolveOGMeta(
       title: "Contact OnSpot | Get in Touch",
       description:
         "Ready to scale your team? Contact OnSpot to get started with pre-vetted remote talent today.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/contact`,
       ogType: "website",
     };
@@ -484,7 +515,7 @@ export async function resolveOGMeta(
     return {
       title: "Legal | OnSpot",
       description: "OnSpot's terms, privacy policy, refund policy, and trust & safety information.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}${pathname}`,
       ogType: "website",
     };
@@ -495,7 +526,7 @@ export async function resolveOGMeta(
     return {
       title: "Admin | OnSpot",
       description: "OnSpot admin portal.",
-      image: DEFAULT_OG_IMAGE,
+      image: defaultOgImage,
       url: `${SITE}/admin`,
       ogType: "website",
     };
@@ -679,7 +710,8 @@ export async function ogMiddleware(
   try {
     const meta = await resolveOGMeta(
       req.path,
-      req.query as Record<string, string>
+      req.query as Record<string, string>,
+      getRequestOrigin(req)
     );
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=300");

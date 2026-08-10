@@ -5,7 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
-import { resolveOGMeta, buildMetaTagsHtml, escapeHtml, isCrawler, type OGMeta } from "./ogMiddleware";
+import { resolveOGMeta, buildMetaTagsHtml, escapeHtml, isCrawler, getRequestOrigin, type OGMeta } from "./ogMiddleware";
 
 const viteLogger = createLogger();
 
@@ -68,6 +68,7 @@ export async function setupVite(app: Express, server: Server) {
           const meta = await resolveOGMeta(
             req.path,
             req.query as Record<string, string>,
+            getRequestOrigin(req),
           );
           template = injectMetadataIntoHtml(template, meta);
         } catch {
@@ -140,6 +141,7 @@ export function serveStatic(app: Express) {
       const meta = await resolveOGMeta(
         req.path,
         req.query as Record<string, string>,
+        getRequestOrigin(req),
       );
 
       const html = injectMetadataIntoHtml(rawHtml, meta);
