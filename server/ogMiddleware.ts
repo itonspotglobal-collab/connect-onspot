@@ -147,10 +147,11 @@ export function escapeHtml(str: string): string {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SITE = "https://www.onspotglobal.com";
 /** Filename of the default social-preview image (served from the request origin). */
-const DEFAULT_OG_IMAGE_PATH = "/onspot-social-preview-2026.png";
+const DEFAULT_OG_IMAGE_PATH = "/onspot-social-preview-2026-v2.png";
 /**
  * Absolute production URL — kept for backward-compat with any external imports.
  * Inside resolveOGMeta, use `defaultOgImage` (built from the request origin) instead.
+ * v2 filename forces LinkedIn/Teams/Facebook to bust their cached thumbnail.
  */
 export const DEFAULT_OG_IMAGE = `https://onspotglobal.com${DEFAULT_OG_IMAGE_PATH}`;
 /** Used as fallback for Insights pages that have no cover image */
@@ -562,8 +563,8 @@ export function buildMetaTagsHtml(meta: OGMeta): string {
   <meta property="og:image:url" content="${img}" />
   <meta property="og:image:secure_url" content="${img}" />
   <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1448" />
-  <meta property="og:image:height" content="1086" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${t}" />
 
   <!-- Twitter Card -->
@@ -639,8 +640,8 @@ function buildBotHtml(meta: OGMeta): string {
   <meta property="og:image:url" content="${img}" />
   <meta property="og:image:secure_url" content="${img}" />
   <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1448" />
-  <meta property="og:image:height" content="1086" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${t}" />
 
   <!-- Twitter Card -->

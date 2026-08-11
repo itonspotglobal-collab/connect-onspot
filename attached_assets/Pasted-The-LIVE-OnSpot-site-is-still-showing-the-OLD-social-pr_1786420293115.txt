@@ -1,0 +1,254 @@
+The LIVE OnSpot site is still showing the OLD social preview image on LinkedIn even though the old heart.png file was deleted.
+
+This is now a PRODUCTION social-preview/cache issue.
+
+Do NOT reuse any previous social image filename.
+
+Create/use a completely NEW filename:
+
+public/onspot-social-preview-2026-v2.png
+
+Use the current new OnSpot “Work Without Limits” artwork as the contents of that file.
+
+The final production URL must be:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+IMPORTANT:
+Do not use:
+heart.png
+new-onspot.png
+onspot-social-preview-v3.png
+onspot-social-preview-2026.png
+
+for the final social metadata.
+
+We need a brand-new URL so LinkedIn, Teams, Facebook, and other platforms are forced to fetch a new image instead of reusing their cached thumbnail.
+
+1. VERIFY THE NEW PUBLIC IMAGE
+
+Make sure:
+
+public/onspot-social-preview-2026-v2.png
+
+exists.
+
+After deployment verify:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+returns:
+
+HTTP 200
+Content-Type: image/png
+
+The URL must return the raw image, not index.html.
+
+2. UPDATE server/ogMiddleware.ts
+
+This is the authoritative social-crawler metadata system.
+
+Find the current DEFAULT_OG_IMAGE.
+
+Change it to:
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/onspot-social-preview-2026-v2.png";
+
+All routes using DEFAULT_OG_IMAGE should automatically use the new image:
+
+/
+ /find-work
+ /find-work/job/:id
+ /jobs/:id
+ /hire-talent
+ /services
+ /pricing
+ /admin
+ generic public pages
+
+Do not rewrite the route system.
+
+3. UPDATE client/index.html
+
+Replace every social image reference with:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+Update:
+
+og:image
+og:image:url
+og:image:secure_url
+twitter:image
+
+There must be no old/default image URL remaining there.
+
+4. UPDATE HeadSEO.tsx
+
+Change the default ogImage to:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+This prevents React from changing the image back after page load.
+
+Do not overwrite intentionally custom blog/article cover images.
+
+5. SEARCH THE WHOLE PROJECT
+
+Search for:
+
+heart.png
+new-onspot.png
+onspot-social-preview-v3.png
+onspot-social-preview-2026.png
+assets/og/onspot-home.jpg
+og:image
+twitter:image
+DEFAULT_OG_IMAGE
+
+For SOCIAL METADATA, there should be no old image references left.
+
+Report every remaining reference and why it remains.
+
+6. VERIFY THE LIVE RAW HTML
+
+After deployment, fetch:
+
+https://onspotglobal.com/
+
+using a crawler-style request.
+
+The ORIGINAL SERVER HTML must contain:
+
+<meta
+  property="og:image"
+  content="https://onspotglobal.com/onspot-social-preview-2026-v2.png"
+/>
+
+<meta
+  property="og:image:secure_url"
+  content="https://onspotglobal.com/onspot-social-preview-2026-v2.png"
+/>
+
+<meta
+  name="twitter:image"
+  content="https://onspotglobal.com/onspot-social-preview-2026-v2.png"
+/>
+
+Do not inspect only the browser DOM.
+
+7. VERIFY A JOB URL
+
+Test one real URL like:
+
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+
+The server-rendered metadata must contain:
+
+og:title = job-specific title
+og:description = job-specific description
+og:url = exact job URL
+og:image =
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+twitter:image =
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+8. TEST AS LINKEDIN BOT
+
+Run something equivalent to:
+
+curl -A "LinkedInBot" https://onspotglobal.com/
+
+and:
+
+curl -A "LinkedInBot" \
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+
+Show me the returned values for:
+
+og:title
+og:image
+og:image:secure_url
+twitter:image
+
+Every image value must use:
+
+onspot-social-preview-2026-v2.png
+
+9. TEST AS MICROSOFT/TEAMS BOT
+
+Run:
+
+curl -A "SkypeUriPreview" https://onspotglobal.com/
+
+and test a real job URL too.
+
+Verify that the crawler receives the same new image URL.
+
+10. VERIFY IMAGE DIMENSIONS
+
+The Open Graph metadata currently declares 1200 x 630.
+
+Confirm that:
+
+onspot-social-preview-2026-v2.png
+
+is ACTUALLY 1200 x 630.
+
+If not, create a proper 1200 x 630 crop/resize without stretching the artwork.
+
+11. DEPLOY / REPUBLISH
+
+This must be deployed to the actual production domain.
+
+Making the change only in the Replit workspace is NOT enough.
+
+Republish/redeploy the application and verify that:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
+
+works publicly.
+
+12. DO NOT USE LINKEDIN'S CURRENT CARD AS THE FIRST VERIFICATION
+
+LinkedIn may continue showing a cached card temporarily.
+
+The source of truth is:
+
+A. production raw HTML
+B. production og:image URL
+C. LinkedInBot response
+
+Only after those three are correct should we test LinkedIn's composer again.
+
+13. FINAL REPORT
+
+Give me the actual results:
+
+Production image URL:
+HTTP status:
+Content-Type:
+dimensions:
+
+Homepage og:image:
+Homepage twitter:image:
+
+Job URL tested:
+Job og:image:
+Job twitter:image:
+
+LinkedInBot result:
+SkypeUriPreview result:
+
+Remaining heart.png references:
+Remaining onspot-social-preview-v3.png references:
+Remaining onspot-social-preview-2026.png references:
+
+Build result:
+Production deployment result:
+
+Do NOT say fixed unless the LIVE onspotglobal.com HTML itself references:
+
+https://onspotglobal.com/onspot-social-preview-2026-v2.png
