@@ -932,10 +932,11 @@ function BetterWaySection() {
       style={{ background: "#F4F3FC" }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      <div className="mx-auto max-w-[1180px]">
+      {/* Centered header — narrow, text-centered */}
+      <div className="mx-auto max-w-[600px] text-center mb-12">
         <SectionEyebrow text="The Better Way" />
         <h2
-          className="mt-4 font-bold leading-tight mb-14"
+          className="mt-4 font-bold leading-tight"
           style={{
             fontSize: "clamp(2rem, 3.5vw, 3.25rem)",
             letterSpacing: "-0.025em",
@@ -944,12 +945,14 @@ function BetterWaySection() {
         >
           Companies pay less.<br />Talent earns more.
         </h2>
+      </div>
 
-        {/* Two pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      {/* Two pricing cards — constrained centered wrapper */}
+      <div className="mx-auto mb-8" style={{ maxWidth: 960 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* LEFT — white */}
           <div
-            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            className="rounded-2xl p-9 lg:p-11 flex flex-col"
             style={{ background: "white", border: "1px solid #DDE0F2", boxShadow: "0 4px 24px rgba(75,81,184,0.06)" }}
           >
             <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-6" style={{ color: C.grayLight }}>
@@ -971,7 +974,7 @@ function BetterWaySection() {
               </span>
             </div>
             <span
-              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-6"
+              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-7"
               style={{ background: "#E8F5E9", color: "#2E7D32" }}
             >
               ▼ Less than traditional outsourcing
@@ -981,7 +984,7 @@ function BetterWaySection() {
             </p>
             <Link
               href="/hire-talent"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+              className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
               style={{ color: C.orange }}
             >
               Hire talent <ArrowRight className="h-3.5 w-3.5" />
@@ -990,7 +993,7 @@ function BetterWaySection() {
 
           {/* RIGHT — indigo gradient */}
           <div
-            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            className="rounded-2xl p-9 lg:p-11 flex flex-col"
             style={{
               background: `linear-gradient(140deg, ${C.indigo} 0%, ${C.indigoDeep} 100%)`,
               boxShadow: "0 20px 48px -12px rgba(75,81,184,0.4)",
@@ -1015,7 +1018,7 @@ function BetterWaySection() {
               </span>
             </div>
             <span
-              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-6"
+              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-7"
               style={{ background: "rgba(255,174,33,0.18)", color: C.orangeLight }}
             >
               ▲ 2× what traditional outsourcing pays
@@ -1025,26 +1028,32 @@ function BetterWaySection() {
             </p>
             <Link
               href="/find-work/jobs"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+              className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
               style={{ color: C.orange }}
             >
               Find work <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
-
-        {/* Disclaimer */}
-        <p style={{ color: C.grayLight, fontSize: "0.8rem", lineHeight: 1.65, maxWidth: 740 }} className="mb-6">
-          Illustrative example — one role, one month. Traditional outsourcing: the company pays $2,500 and the talent keeps $1,000. OnSpot: the company pays $2,400 — the talent's full $2,000 rate plus a transparent $400 OnSpot fee.
-        </p>
-
-        {/* Bottom statement — mixed emphasis */}
-        <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.2rem)", lineHeight: 1.6, maxWidth: 700 }}>
-          <span style={{ color: C.grayLight }}>We don't create savings by paying talent less.</span>{" "}
-          <span style={{ color: C.charcoal, fontWeight: 600 }}>We create savings by{" "}</span>
-          <span className="font-bold" style={{ color: C.orange }}>taking less in between.</span>
-        </p>
       </div>
+
+      {/* Disclaimer — centered, constrained */}
+      <p
+        className="mx-auto mb-8 text-center"
+        style={{ color: C.grayLight, fontSize: "0.8rem", lineHeight: 1.7, maxWidth: 700 }}
+      >
+        Illustrative example — one role, one month. Traditional outsourcing: the company pays $2,500 and the talent keeps $1,000. OnSpot: the company pays $2,400 — the talent's full $2,000 rate plus a transparent $400 OnSpot fee.
+      </p>
+
+      {/* Bottom statement — centered, narrow, mixed emphasis */}
+      <p
+        className="mx-auto text-center"
+        style={{ fontSize: "clamp(1rem, 1.5vw, 1.2rem)", lineHeight: 1.6, maxWidth: 520 }}
+      >
+        <span style={{ color: C.grayLight }}>We don't create savings by paying talent less.</span>{" "}
+        <span className="font-bold" style={{ color: C.charcoal }}>We create savings by </span>
+        <span className="font-bold" style={{ color: C.orange }}>taking less in between.</span>
+      </p>
     </section>
   );
 }

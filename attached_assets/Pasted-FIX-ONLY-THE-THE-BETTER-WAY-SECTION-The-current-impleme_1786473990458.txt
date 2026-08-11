@@ -1,0 +1,77 @@
+FIX ONLY THE “THE BETTER WAY” SECTION.
+
+The current implementation is too wide and left-aligned.
+Match the supplied REFERENCE screenshot exactly.
+
+CENTER THE ENTIRE SECTION.
+
+1. HEADER
+- Center the eyebrow “— THE BETTER WAY”.
+- Center the heading:
+  “Companies pay less.
+   Talent earns more.”
+- text-align: center.
+- Keep heading constrained to a narrow centered width.
+
+2. CARDS
+- Place both cards inside ONE centered wrapper.
+- Do NOT stretch cards across almost the entire viewport.
+- Use approximately:
+  max-width: 930–980px;
+  margin-inline: auto;
+- Two equal columns with approximately 16px gap.
+- Keep CONTENT INSIDE EACH CARD LEFT-ALIGNED.
+- Cards should be roughly 445–465px wide on desktop.
+- Cards should have matching heights.
+- Increase vertical card padding to match reference.
+
+3. CARD POSITIONING
+The cards must sit symmetrically under the centered heading:
+
+        Companies pay less.
+        Talent earns more.
+
+   ┌──────────────┐ ┌──────────────┐
+   │ Companies    │ │ Talent       │
+   │ Pay          │ │ Earns        │
+   └──────────────┘ └──────────────┘
+
+Do not align the cards with the far-left page margin.
+
+4. ILLUSTRATIVE TEXT
+Center this below BOTH cards and constrain its width:
+
+“Illustrative example — one role, one month. Traditional outsourcing: the company pays $2,500
+and the talent keeps $1,000. OnSpot: the company pays $2,400 — the talent's full $2,000 rate
+plus a transparent $400 OnSpot fee.”
+
+Use:
+max-width: approximately 700px;
+margin-inline: auto;
+text-align: center;
+
+5. FINAL STATEMENT
+Center:
+“We don't create savings by paying talent less. We
+create savings by taking less in between.”
+
+Use a narrow centered max-width so it wraps into TWO lines exactly like the reference.
+
+First portion = muted gray.
+“We create savings by” = black/bold.
+“taking less in between.” = gold/bold.
+
+6. SPACING
+Match the reference:
+- generous space between heading and cards
+- small gap between cards
+- centered caption below cards
+- larger gap before final statement
+- balanced left/right whitespace
+
+IMPORTANT:
+Do NOT center the text inside the pricing cards.
+Only center the SECTION LAYOUT, heading, caption, and final statement.
+
+Desktop target should visually match the supplied second/reference screenshot.
+Do not change any other homepage section.
