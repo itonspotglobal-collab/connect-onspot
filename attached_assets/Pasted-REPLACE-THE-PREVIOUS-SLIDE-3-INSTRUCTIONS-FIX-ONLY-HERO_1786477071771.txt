@@ -1,0 +1,291 @@
+REPLACE THE PREVIOUS SLIDE 3 INSTRUCTIONS.
+
+FIX ONLY HERO CAROUSEL SLIDE 3 — “EARN WITHOUT LIMITS”.
+
+Use the NEW attached screenshot as the ONLY visual source of truth.
+Ignore the previously supplied Slide 3 reference.
+
+DO NOT redesign this slide.
+
+==================================================
+LAYOUT
+==================================================
+
+Create a full-width dark indigo/blue hero slide.
+
+Use a centered desktop container approximately 1100–1180px wide.
+
+The slide is split into two main areas:
+
+LEFT:
+- text content
+- approximately 55–60% width
+
+RIGHT:
+- phone earnings mockup
+- approximately 40–45% width
+- aligned toward the far right
+
+Keep a large amount of empty space between the left text and the phone.
+
+Vertically center the main content inside the hero.
+
+==================================================
+LEFT CONTENT
+==================================================
+
+Eyebrow:
+“— FOR TALENTS”
+
+- small uppercase
+- white/light lavender
+- orange short line before text
+- bold / letter-spaced
+
+Heading:
+“Earn Without
+Limits.”
+
+Exact styling:
+- “Earn” = white
+- “Without” = orange/yellow
+- “Limits.” = orange/yellow
+- very large bold font
+- tight line-height
+- preserve the exact 2-line wrapping shown in the screenshot
+
+Supporting headline:
+“The best clients — the highest pay for the
+work you do.”
+
+- first portion = white
+- “the highest pay for the work you do.” = orange/yellow
+- bold
+- approximately 2 lines
+- narrower than the main heading
+
+Body:
+“Work with great companies from wherever you call home,
+at the best rate, and get paid reliably.”
+
+- light lavender/gray
+- 2 lines
+- comfortable line-height
+- keep width constrained
+
+CTA BUTTON:
+“Find work →”
+
+Style:
+- filled orange/yellow
+- dark navy text
+- medium-large rounded rectangle
+- not pill-shaped
+- subtle shadow
+- match screenshot dimensions closely
+
+==================================================
+RIGHT PHONE MOCKUP
+==================================================
+
+Recreate the phone shown in the NEW screenshot.
+
+POSITION:
+- move it farther toward the right edge
+- vertically center it
+- keep it around 240–260px wide on desktop
+- do not make it oversized
+
+PHONE FRAME:
+- dark navy outer shell
+- thick rounded frame
+- very rounded corners
+- subtle dark shadow
+- white inner screen
+- black pill-shaped speaker/notch at top center
+
+TOP BAR:
+Left:
+small orange square icon
+“OnSpot”
+
+Right:
+small circular purple avatar/icon
+
+==================================================
+PHONE CONTENT
+==================================================
+
+Title:
+“Earnings summary”
+
+Subtitle:
+“Last 6 months”
+
+SUMMARY CARD:
+Use warm pale cream background with thin orange/gold border.
+
+Label:
+“TOTAL EARNED THIS MONTH”
+
+Amount:
+“$3,455”
+
+Growth badge:
+“▲ 18% vs last month”
+
+Styling:
+- amount = dark/black
+- growth badge = green text on pale green pill
+
+SECONDARY STATS:
+
+LEFT CARD:
+AVG. RATE
+$20/hr
+
+RIGHT CARD:
+ACTIVE
+CLIENTS
+2
+
+Use pale light-gray cards with rounded corners.
+
+==================================================
+BAR CHART
+==================================================
+
+The NEW screenshot includes an actual orange bar chart.
+
+This MUST be present.
+
+Create six vertical orange/gold bars for:
+
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+Approximate relative heights from screenshot:
+Mar = short
+Apr = medium
+May = slightly shorter
+Jun = medium/high
+Jul = medium
+Aug = tallest
+
+Use:
+- orange/gold bars
+- slightly rounded top corners
+- labels underneath
+- even spacing
+
+Do NOT omit the bars.
+
+==================================================
+EARNINGS BY CLIENT
+==================================================
+
+Label:
+“EARNINGS BY CLIENT”
+
+ROW 1:
+New Tech AI
+$2,000
+
+Under it:
+horizontal indigo progress line nearly full width
+
+ROW 2:
+John Roberts LLC
+$1,455
+
+Under it:
+horizontal indigo progress line around 70–75% width
+
+Amounts right-aligned.
+
+==================================================
+COLOR / STYLE
+==================================================
+
+Hero background:
+dark blue/indigo gradient similar to:
+#404AA8 → #2B2A73
+
+Accent:
+orange/yellow approximately:
+#FFAE22 / #FFB83F
+
+White text:
+#FFFFFF
+
+Muted body:
+lavender-gray
+
+Phone:
+dark navy frame
+white screen
+
+Cards:
+off-white / very light gray
+
+==================================================
+SPACING
+==================================================
+
+Match the screenshot carefully:
+
+- eyebrow starts around the same left edge as heading
+- heading has generous top/bottom breathing room
+- supporting headline sits relatively close to heading
+- body copy sits below with moderate spacing
+- CTA sits noticeably below body
+- phone is aligned around the vertical center of the content group
+- preserve large whitespace between text and phone
+
+==================================================
+CAROUSEL CONTROLS
+==================================================
+
+Do NOT alter carousel controls, timing, transitions, or current active-state logic.
+
+If controls are already implemented from the carousel system, preserve them exactly.
+
+This task only changes Slide 3 visual content.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+- preserve two-column layout
+- phone stays on right
+- text remains left aligned
+
+Tablet:
+- shrink phone proportionally
+- maintain two columns where possible
+
+Mobile:
+- stack text above phone
+- text remains left aligned
+- phone centered below
+- preserve CTA and carousel controls
+
+==================================================
+IMPORTANT
+==================================================
+
+DO NOT:
+- use the previous Slide 3 reference
+- use the old simplified phone UI
+- omit the bar chart
+- change copy
+- change other carousel slides
+- change carousel timing or behavior
+- alter database integration
+
+Compare the finished Slide 3 directly against the NEW supplied screenshot before marking complete.
