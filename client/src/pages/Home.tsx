@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, User, Users } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
@@ -1249,138 +1249,124 @@ function FounderQuoteSection() {
 }
 
 // ── SECTION 5 — SPLIT TESTIMONIAL ────────────────────────────────────────────
+
+// Circular photo avatar — styled as a photo frame; swap src for real photo when available
+function PhotoAvatar({
+  initials, size = 44, gradient, dark = false,
+}: { initials: string; size?: number; gradient: string; dark?: boolean }) {
+  return (
+    <div
+      className="flex-shrink-0 rounded-full flex items-end justify-center overflow-hidden"
+      style={{ width: size, height: size, background: gradient }}
+    >
+      <User
+        style={{
+          width: size * 0.72,
+          height: size * 0.72,
+          color: dark ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.85)",
+          marginBottom: -2,
+        }}
+      />
+    </div>
+  );
+}
+
 function SplitTestimonialSection() {
   return (
     <section>
-      {/* TOP — dark navy, content aligned left */}
+      {/* TOP — dark navy, content intentionally LEFT-POSITIONED, large empty right */}
       <div
         style={{ background: C.navySection }}
         className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-32"
       >
-        <div className="mx-auto max-w-[1180px] grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Text content — left column */}
-          <div>
+        <div className="mx-auto max-w-[1180px]">
+          {/* Content constrained to ~45% of container width on desktop */}
+          <div style={{ maxWidth: 500 }}>
             <SectionEyebrow text="For Companies" dark />
+
             <blockquote
-              className="mt-5 font-bold text-white leading-[1.1] mb-8"
-              style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", letterSpacing: "-0.025em" }}
+              className="mt-5 font-bold text-white leading-[1.08] mb-7"
+              style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em", maxWidth: 460 }}
             >
               "The team you've been picturing,{" "}
               <span style={{ color: C.orangeLight }}>
                 without the wait or the complexity."
               </span>
             </blockquote>
+
             {/* Author */}
             <div className="flex items-center gap-3 mb-7">
-              <div
-                className="h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: `linear-gradient(135deg, #3A3AF8, #5B7CFF)` }}
-              >
-                JW
-              </div>
+              <PhotoAvatar
+                initials="JW"
+                size={44}
+                gradient="linear-gradient(145deg, #5B7CFF 0%, #3A3AF8 100%)"
+                dark
+              />
               <div>
-                <p className="font-semibold text-white text-sm">Jake Wainberg</p>
-                <p style={{ color: "rgba(255,255,255,0.42)", fontSize: "0.8rem" }}>Founder &amp; President</p>
+                <p className="font-semibold text-white" style={{ fontSize: "0.9rem" }}>Jake Wainberg</p>
+                <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.78rem" }}>Founder &amp; President</p>
               </div>
             </div>
-            <p className="mb-9 leading-relaxed" style={{ color: "rgba(255,255,255,0.52)", fontSize: "1rem", maxWidth: 480 }}>
+
+            <p className="mb-9 leading-relaxed" style={{ color: "rgba(255,255,255,0.52)", fontSize: "0.97rem", maxWidth: 420 }}>
               Vetted talent, quick starts, and simpler hiring — with a transparent fee you can see. So you can just build your team.
             </p>
+
+            {/* White filled button with indigo text + icon */}
             <Link
               href="/hire-talent"
-              className="inline-flex h-[48px] min-w-[160px] items-center justify-center rounded-[10px] border px-7 text-[15px] font-semibold text-white transition hover:bg-white/10"
-              style={{ borderColor: "rgba(255,255,255,0.3)" }}
+              className="inline-flex h-[46px] items-center justify-center gap-2 rounded-[10px] bg-white px-6 text-[14.5px] font-semibold transition hover:bg-white/95"
+              style={{ color: C.indigo, boxShadow: "0 4px 16px rgba(0,0,0,0.18)" }}
             >
+              <Users className="h-4 w-4" />
               Hire talent →
             </Link>
-          </div>
-          {/* Right column — decorative empty space */}
-          <div aria-hidden className="hidden lg:flex items-center justify-center">
-            <div className="relative">
-              <div
-                className="rounded-2xl"
-                style={{
-                  width: 320,
-                  height: 280,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                }}
-              />
-              <div
-                className="absolute -bottom-6 -right-6 rounded-2xl"
-                style={{
-                  width: 180,
-                  height: 120,
-                  background: `rgba(75,81,184,0.18)`,
-                  border: "1px solid rgba(75,81,184,0.25)",
-                }}
-              />
-            </div>
           </div>
         </div>
       </div>
 
-      {/* BOTTOM — warm cream, content toward right half */}
+      {/* BOTTOM — warm cream, content RIGHT-POSITIONED (~53% from left), large empty left */}
       <div
         style={{ background: "#FFF9EF" }}
         className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-32"
       >
-        <div className="mx-auto max-w-[1180px] grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          {/* Left column — decorative empty space */}
-          <div aria-hidden className="hidden lg:flex items-center justify-center">
-            <div className="relative">
-              <div
-                className="rounded-2xl"
-                style={{
-                  width: 320,
-                  height: 280,
-                  background: "rgba(245,166,35,0.06)",
-                  border: "1px solid rgba(245,166,35,0.15)",
-                }}
-              />
-              <div
-                className="absolute -top-6 -left-6 rounded-2xl"
-                style={{
-                  width: 160,
-                  height: 100,
-                  background: "rgba(75,81,184,0.07)",
-                  border: "1px solid rgba(75,81,184,0.12)",
-                }}
-              />
-            </div>
-          </div>
-          {/* Text content — right column */}
-          <div>
+        <div className="mx-auto max-w-[1180px] flex justify-end">
+          {/* Content block — sits on right half */}
+          <div style={{ maxWidth: 480 }} className="w-full">
             <SectionEyebrow text="For Talents" />
+
             <blockquote
-              className="mt-5 font-bold leading-[1.1] mb-8"
-              style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+              className="mt-5 font-bold leading-[1.08] mb-7"
+              style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal, maxWidth: 440 }}
             >
               "Real work, great pay,{" "}
               <span style={{ color: C.orangeDeep }}>
                 from wherever you call home."
               </span>
             </blockquote>
-            <p className="mb-8 leading-relaxed" style={{ color: C.gray, fontSize: "1rem", maxWidth: 480 }}>
+
+            <p className="mb-7 leading-relaxed" style={{ color: C.gray, fontSize: "0.97rem", maxWidth: 420 }}>
               Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
             </p>
+
             {/* Author */}
             <div className="flex items-center gap-3 mb-9">
-              <div
-                className="h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: `linear-gradient(135deg, #3A3AF8, #7F3DF4)` }}
-              >
-                MA
-              </div>
+              <PhotoAvatar
+                initials="MA"
+                size={44}
+                gradient="linear-gradient(145deg, #7F5AF0 0%, #3A3AF8 100%)"
+              />
               <div>
-                <p className="font-semibold text-sm" style={{ color: C.charcoal }}>Mark Apostol</p>
-                <p style={{ color: C.grayLight, fontSize: "0.8rem" }}>Co-founder &amp; COO</p>
+                <p className="font-semibold" style={{ color: C.charcoal, fontSize: "0.9rem" }}>Mark Apostol</p>
+                <p style={{ color: C.indigo, fontSize: "0.78rem" }}>Co-founder &amp; COO</p>
               </div>
             </div>
+
+            {/* Outlined gold/amber button */}
             <Link
               href="/find-work/jobs"
-              className="inline-flex h-[48px] min-w-[160px] items-center justify-center rounded-[10px] border px-7 text-[15px] font-semibold transition hover:bg-black/5"
-              style={{ borderColor: C.charcoal, color: C.charcoal }}
+              className="inline-flex h-[46px] items-center justify-center rounded-[10px] px-6 text-[14.5px] font-semibold transition hover:bg-amber-50"
+              style={{ border: `1.5px solid ${C.orangeDeep}`, color: C.orangeDeep }}
             >
               Find work →
             </Link>

@@ -1,0 +1,66 @@
+FIX ONLY THESE TWO TESTIMONIAL SECTIONS.
+Use the 3rd and 4th screenshots as the visual source of truth.
+
+SECTION 1 — FOR COMPANIES
+
+Match the 3rd screenshot exactly.
+
+- Full-width dark navy/indigo background.
+- Remove the decorative transparent rectangles on the right.
+- Content stays LEFT-ALIGNED inside a centered max-width container.
+- Position content around the left 7–10% of the container.
+- Heading width must be narrow enough to wrap exactly like:
+
+"The team you've been
+picturing,
+without the wait or the
+complexity."
+
+- White first lines.
+- “without the wait or the complexity.” = orange.
+- Use the real circular Jake Wainberg photo, not initials.
+- Name: Jake Wainberg
+- Role: Founder & President
+- Keep body copy narrower.
+- CTA must be a WHITE filled button with blue icon/text:
+  “Hire talent →”
+- Preserve large empty space on the right.
+- Section height and vertical spacing should closely match screenshot 3.
+
+SECTION 2 — FOR TALENTS
+
+Match screenshot 4 exactly.
+
+- Full-width warm cream background.
+- Remove all decorative rectangles from the left side.
+- Content must sit on the RIGHT HALF of the section.
+- Preserve the intentionally large empty area on the left.
+- Align the text block around 53–55% from the left edge.
+
+Heading:
+"Real work, great pay,
+from wherever you call
+home."
+
+- First line = dark/black.
+- “from wherever you call home.” = gold/brown.
+- Match reference line breaks.
+
+Body:
+“Set your rate and keep it — OnSpot's fee is added on top,
+never taken out of your pay. Just great clients and reliable
+payouts.”
+
+- Use actual circular Mark Apostol photo.
+- Name: Mark Apostol
+- Role: Co-founder & COO
+- CTA = outlined gold/brown button:
+  “Find work →”
+
+IMPORTANT:
+Do NOT center these text blocks.
+The SECTION WRAPPER is centered, but:
+- Companies content remains intentionally left-positioned.
+- Talents content remains intentionally right-positioned.
+- Preserve the asymmetric whitespace exactly like screenshots 3 and 4.
+- Do not modify any other homepage section.
