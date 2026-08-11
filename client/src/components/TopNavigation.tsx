@@ -726,8 +726,10 @@ export function TopNavigation() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+                    className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-[1.03]"
                     style={{
+                      height: 44,
+                      borderRadius: 10,
                       background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
                       boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                     }}
@@ -740,14 +742,6 @@ export function TopNavigation() {
                         animation: 'shimmer 2s infinite',
                       }}
                     />
-                    <div
-                      className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
-                      style={{
-                        background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                        animation: 'portal-breathe 3s ease-in-out infinite',
-                        zIndex: -1,
-                      }}
-                    />
                     <span className="relative z-10 flex items-center gap-2">
                       <User className="w-4 h-4" />
                       Talent Profile
@@ -755,32 +749,62 @@ export function TopNavigation() {
                     </span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel className="font-normal">
-                    <p className="text-xs font-medium truncate">{talentAuth.fullName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{talentAuth.email}</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)} className="cursor-pointer gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  className="p-2 max-w-[calc(100vw-24px)]"
+                  style={{
+                    minWidth: 214,
+                    background: '#F8F8FF',
+                    border: '1px solid rgba(75,81,184,0.12)',
+                    borderRadius: 13,
+                    boxShadow: '0 12px 30px rgba(20,25,70,0.16)',
+                    zIndex: 9999,
+                  }}
+                >
+                  {/* Header */}
+                  <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid rgba(75,81,184,0.10)', marginBottom: 6 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: '#1E2330', lineHeight: 1.3 }} className="truncate">{talentAuth.fullName}</p>
+                    <p style={{ fontSize: 12, color: '#7178A0', marginTop: 1 }} className="truncate">{talentAuth.email}</p>
+                  </div>
+
+                  {/* Navigation items */}
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)}
+                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
+                  >
+                    <User style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
                     Talent Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/find-work/jobs")} className="cursor-pointer gap-2">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
+                  <DropdownMenuItem
+                    onClick={() => navigate("/find-work/jobs")}
+                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
+                  >
+                    <Briefcase style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
                     Find Work
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer gap-2">
-                    <Settings className="w-4 h-4 text-muted-foreground" />
+                  <DropdownMenuItem
+                    onClick={() => navigate("/settings")}
+                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
+                  >
+                    <Settings style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleTalentSignOut}
-                    className="cursor-pointer gap-2 text-red-500 focus:text-red-500"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </DropdownMenuItem>
+
+                  {/* Sign Out — separated */}
+                  <div style={{ borderTop: '1px solid rgba(75,81,184,0.10)', marginTop: 6, paddingTop: 6 }}>
+                    <DropdownMenuItem
+                      onClick={handleTalentSignOut}
+                      className="cursor-pointer rounded-lg [&:hover]:bg-[#FFF1F1] [&:hover]:text-[#D84A4A] focus:bg-[#FFF1F1] focus:text-[#D84A4A]"
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#C0393A', borderRadius: 8 }}
+                    >
+                      <LogOut style={{ width: 17, height: 17, color: '#C0393A', flexShrink: 0 }} />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

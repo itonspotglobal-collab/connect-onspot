@@ -1,0 +1,182 @@
+FIX ONLY THE “TALENT PROFILE” DROPDOWN IN THE TOP NAVIGATION.
+
+Use the attached screenshot as the current-state reference.
+
+CURRENT PROBLEM:
+The dropdown looks visually detached, too transparent, too tall, and misaligned with the trigger button.
+The menu text is low-contrast and the dropdown does not feel like part of the navigation.
+
+GOAL:
+Make the dropdown compact, clean, aligned, and visually consistent with the navbar.
+
+DO NOT change:
+- navbar height
+- Hire Talent / Find Work links
+- Talent Profile trigger text
+- authentication logic
+- dropdown functionality
+- other pages
+
+==================================================
+DROPDOWN POSITION
+==================================================
+
+Anchor the menu directly below the “Talent Profile” trigger.
+
+- right-align dropdown with the trigger button
+- add only a small gap: 6–8px
+- do not let it float too far downward
+- do not let it shift left into the page content
+
+Target:
+min-width: 200–220px
+
+Use:
+sideOffset: 8
+align: "end"
+
+if using Radix DropdownMenu.
+
+==================================================
+BACKGROUND
+==================================================
+
+Current dropdown is too transparent.
+
+Use a solid or nearly-solid surface:
+
+background: rgba(255,255,255,0.98);
+
+or a subtle very-light lavender:
+#F8F8FF
+
+Add:
+- backdrop-filter: blur(12px) only if desired
+- border: 1px solid rgba(75,81,184,0.12)
+- border-radius: 12–14px
+- box-shadow: 0 12px 30px rgba(20,25,70,0.16)
+
+Do NOT use the current blue transparent overlay effect.
+
+==================================================
+MENU HEADER
+==================================================
+
+At top of dropdown show:
+
+Val Testing
+val.test1@onspotglobal.com
+
+Style:
+- name: dark, bold, 14px
+- email: muted gray, 12px
+- padding: 12px 14px
+- add subtle bottom divider
+
+Do not let header text blend into background.
+
+==================================================
+MENU ITEMS
+==================================================
+
+Items:
+
+Talent Profile
+Find Work
+Settings
+Sign Out
+
+Use consistent row height:
+44–46px
+
+Each row:
+display:flex;
+align-items:center;
+gap:10px;
+padding: 0 14px;
+border-radius: 8px;
+font-size: 14px;
+
+Text color:
+#1E2330
+
+Icons:
+indigo/blue-gray
+size around 17–18px
+
+Hover:
+background: #F1F2FF;
+color: #3F47B5;
+
+==================================================
+SIGN OUT
+==================================================
+
+Separate Sign Out visually.
+
+Add a divider above it.
+
+Sign Out:
+- text/icon in muted red
+- hover background: #FFF1F1
+- hover text: #D84A4A
+
+Do not use pale pink low-contrast text.
+
+==================================================
+TRIGGER BUTTON
+==================================================
+
+Keep the existing “Talent Profile” button but refine alignment:
+
+- icon vertically centered
+- text centered
+- chevron aligned cleanly
+- consistent horizontal padding
+- height around 44px
+- border-radius around 10px
+
+The dropdown width should visually relate to the trigger width.
+
+==================================================
+Z-INDEX
+==================================================
+
+Ensure dropdown appears above:
+- hero carousel
+- dashboard mockups
+- page content
+- chat widget if overlapping
+
+Use sufficiently high z-index.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+- dropdown aligned to trigger
+- compact width
+
+Tablet/mobile:
+- keep dropdown within viewport
+- use max-width: calc(100vw - 24px)
+- do not overflow right edge
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- leave the dropdown translucent blue
+- make it 200px tall with excessive empty space
+- let menu text appear washed out
+- misalign it with the trigger
+- change auth logic
+
+The final dropdown should feel like a polished account menu:
+solid light surface,
+compact rows,
+clear hierarchy,
+clean spacing,
+aligned directly beneath the Talent Profile button.
