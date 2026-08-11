@@ -877,7 +877,9 @@ export default function TalentPool() {
     queryFn: async () => {
       const res = await fetch("/api/candidates");
       if (!res.ok) throw new Error("Failed to fetch candidates");
-      return res.json();
+      const data = await res.json();
+      // API returns either a plain array or { items, meta } paginated shape
+      return Array.isArray(data) ? data : (data.items ?? []);
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
