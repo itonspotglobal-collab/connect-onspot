@@ -51,6 +51,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import {
   buildCompletionItems,
   calcCompletionPct,
@@ -746,9 +747,9 @@ export function TopNavigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : talentAuth ? (
-              /* ── Talent-only session (talent_profile_token, no general JWT) ── */
-              <DropdownMenu open={talentDropdownOpen} onOpenChange={setTalentDropdownOpen}>
-                <DropdownMenuTrigger asChild>
+              /* ── Talent-only session — raw Radix (bypasses shadcn class overrides) ── */
+              <RadixDropdown.Root open={talentDropdownOpen} onOpenChange={setTalentDropdownOpen}>
+                <RadixDropdown.Trigger asChild>
                   <button
                     className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-200"
                     style={{
@@ -769,162 +770,179 @@ export function TopNavigation() {
                       }}
                     />
                     <span className="relative z-10 flex items-center gap-2">
-                      {/* Initials avatar in trigger */}
                       <span style={{
                         width: 26, height: 26, borderRadius: '50%',
                         background: 'rgba(255,255,255,0.22)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', flexShrink: 0,
+                        fontSize: 11, fontWeight: 700, flexShrink: 0,
                       }}>
                         {talentAuth.fullName
-                          ? talentAuth.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                          ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
                           : <User style={{ width: 13, height: 13 }} />}
                       </span>
                       Talent Profile
-                      <ChevronDown
-                        style={{
-                          width: 14, height: 14, opacity: 0.8,
-                          transform: talentDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 200ms ease',
-                        }}
-                      />
+                      <ChevronDown style={{
+                        width: 14, height: 14, opacity: 0.8,
+                        transform: talentDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 200ms ease',
+                      }} />
                     </span>
                   </button>
-                </DropdownMenuTrigger>
+                </RadixDropdown.Trigger>
 
-                <DropdownMenuContent
-                  align="end"
-                  side="bottom"
-                  sideOffset={10}
-                  collisionPadding={16}
-                  className="p-0 overflow-hidden"
-                  style={{
-                    width: 316,
-                    maxWidth: 'min(92vw, 320px)',
-                    background: '#FFFFFF',
-                    border: '1px solid rgba(76,81,184,0.14)',
-                    borderRadius: 17,
-                    boxShadow: '0 18px 50px rgba(20,25,70,0.18), 0 2px 8px rgba(20,25,70,0.07)',
-                    zIndex: 1200,
-                  }}
-                >
-                  {/* ── Profile header ── */}
-                  <div style={{ padding: '18px 18px 14px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FFFFFF 100%)', borderBottom: '1px solid rgba(76,81,184,0.09)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                      {/* Initials avatar */}
-                      <div style={{
-                        width: 50, height: 50, borderRadius: '50%', flexShrink: 0,
-                        background: 'linear-gradient(135deg, #4B51B8 0%, #6B5CE7 100%)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 18, fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.02em',
-                        boxShadow: '0 3px 10px rgba(75,81,184,0.35)',
-                      }}>
-                        {talentAuth.fullName
-                          ? talentAuth.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
-                          : '?'}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: '#141828', lineHeight: 1.2, margin: 0 }} className="truncate">
-                          {talentAuth.fullName || 'Talent'}
-                        </p>
-                        <p style={{ fontSize: 12, color: '#6E7491', marginTop: 3, margin: '3px 0 0' }} className="truncate">
-                          {talentAuth.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Profile completion bar */}
-                    <div style={{ marginTop: 14 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 500, color: '#6E7491', letterSpacing: '0.01em' }}>Profile completion</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#4B51B8' }}>{talentCompletionPct}%</span>
-                      </div>
-                      <div style={{ height: 6, borderRadius: 99, background: '#E8E8F7', overflow: 'hidden' }}>
+                <RadixDropdown.Portal>
+                  <RadixDropdown.Content
+                    align="end"
+                    side="bottom"
+                    sideOffset={10}
+                    collisionPadding={16}
+                    style={{
+                      width: 320,
+                      maxWidth: 'min(92vw, 320px)',
+                      background: '#FFFFFF',
+                      border: '1px solid rgba(75,81,184,0.12)',
+                      borderRadius: 16,
+                      boxShadow: '0 20px 50px rgba(18,23,65,0.18), 0 4px 12px rgba(18,23,65,0.08)',
+                      zIndex: 9999,
+                      padding: 10,
+                      outline: 'none',
+                    }}
+                  >
+                    {/* ── Profile header ── */}
+                    <div style={{
+                      padding: '14px 14px 12px',
+                      background: 'linear-gradient(160deg, #F5F5FF 0%, #FAFAFF 100%)',
+                      borderRadius: 10,
+                      marginBottom: 6,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {/* Initials avatar */}
                         <div style={{
-                          height: '100%',
-                          width: `${talentCompletionPct}%`,
-                          borderRadius: 99,
-                          background: 'linear-gradient(90deg, #4B51B8 0%, #7B6EF6 100%)',
-                          transition: 'width 600ms ease',
-                        }} />
+                          width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+                          background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 17, fontWeight: 700, color: '#FFFFFF',
+                          boxShadow: '0 3px 10px rgba(75,81,184,0.3)',
+                        }}>
+                          {talentAuth.fullName
+                            ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
+                            : '?'}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {talentAuth.fullName || 'Talent'}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#777B8C', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {talentAuth.email}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Profile completion bar */}
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: '#777B8C' }}>Profile completion</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#4D5CE8' }}>{talentCompletionPct}%</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 999, background: '#E8E9F7' }}>
+                          <div style={{
+                            height: '100%',
+                            width: `${talentCompletionPct}%`,
+                            borderRadius: 999,
+                            background: 'linear-gradient(90deg, #4D5CE8 0%, #774AF4 100%)',
+                            transition: 'width 600ms ease',
+                          }} />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* ── Nav items ── */}
-                  <div style={{ padding: '8px 8px' }}>
+                    {/* ── Nav items ── */}
                     {/* Talent Profile */}
-                    <DropdownMenuItem
-                      onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)}
-                      className="cursor-pointer group/item focus:outline-none"
-                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
-                    >
-                      <User style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
-                      <span style={{ flex: 1 }}>Talent Profile</span>
-                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
-                    </DropdownMenuItem>
-
-                    {/* Finish Profile Setup — highlighted if incomplete */}
-                    {talentCompletionPct < 100 && (
-                      <DropdownMenuItem
-                        onClick={() => navigate("/find-best-matches")}
-                        className="cursor-pointer focus:outline-none"
-                        style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#6B5CE7', borderRadius: 10, background: '#F5F3FF', transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EDE9FF'; (e.currentTarget as HTMLElement).style.color = '#4B30D4'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F5F3FF'; (e.currentTarget as HTMLElement).style.color = '#6B5CE7'; }}
+                    <RadixDropdown.Item asChild>
+                      <button
+                        onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                        onFocus={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onBlur={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
                       >
-                        <CheckCircle2 style={{ width: 18, height: 18, color: '#6B5CE7', flexShrink: 0 }} />
-                        <span style={{ flex: 1 }}>Finish Profile Setup</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: '#6B5CE7', background: 'rgba(107,92,231,0.12)', padding: '2px 7px', borderRadius: 99 }}>
-                          Recommended
-                        </span>
-                      </DropdownMenuItem>
+                        <User style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Talent Profile</span>
+                        <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                      </button>
+                    </RadixDropdown.Item>
+
+                    {/* Finish Profile Setup — only when incomplete */}
+                    {talentCompletionPct < 100 && (
+                      <RadixDropdown.Item asChild>
+                        <button
+                          onClick={() => navigate("/find-best-matches")}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#5B52DC', borderRadius: 10, border: 'none', background: '#F4F2FF', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}
+                          onFocus={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }}
+                          onBlur={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}
+                        >
+                          <CheckCircle2 style={{ width: 18, height: 18, color: '#5B52DC', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Finish Profile Setup</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: '#5B52DC', background: 'rgba(91,82,220,0.1)', padding: '2px 7px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+                            Recommended
+                          </span>
+                        </button>
+                      </RadixDropdown.Item>
                     )}
 
                     {/* Find Work */}
-                    <DropdownMenuItem
-                      onClick={() => navigate("/find-work/jobs")}
-                      className="cursor-pointer focus:outline-none"
-                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
-                    >
-                      <Briefcase style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
-                      <span style={{ flex: 1 }}>Find Work</span>
-                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
-                    </DropdownMenuItem>
+                    <RadixDropdown.Item asChild>
+                      <button
+                        onClick={() => navigate("/find-work/jobs")}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                        onFocus={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onBlur={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                      >
+                        <Briefcase style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Find Work</span>
+                        <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                      </button>
+                    </RadixDropdown.Item>
 
                     {/* Settings */}
-                    <DropdownMenuItem
-                      onClick={() => navigate("/settings")}
-                      className="cursor-pointer focus:outline-none"
-                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
-                    >
-                      <Settings style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
-                      <span style={{ flex: 1 }}>Settings</span>
-                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
-                    </DropdownMenuItem>
-                  </div>
+                    <RadixDropdown.Item asChild>
+                      <button
+                        onClick={() => navigate("/settings")}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                        onFocus={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onBlur={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                      >
+                        <Settings style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Settings</span>
+                        <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                      </button>
+                    </RadixDropdown.Item>
 
-                  {/* ── Sign Out ── */}
-                  <div style={{ padding: '0 8px 8px', borderTop: '1px solid rgba(76,81,184,0.08)', marginTop: 0, paddingTop: 8 }}>
-                    <DropdownMenuItem
-                      onClick={handleTalentSignOut}
-                      className="cursor-pointer focus:outline-none"
-                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#C0393A', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FFF1F1'; (e.currentTarget as HTMLElement).style.color = '#D84A4A'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#C0393A'; }}
-                    >
-                      <LogOut style={{ width: 18, height: 18, color: 'currentColor', flexShrink: 0 }} />
-                      <span style={{ flex: 1 }}>Sign Out</span>
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {/* ── Sign Out ── */}
+                    <div style={{ height: 1, background: 'rgba(75,81,184,0.1)', margin: '6px 0' }} />
+                    <RadixDropdown.Item asChild>
+                      <button
+                        onClick={handleTalentSignOut}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#E5484D', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#FFF1F2'; e.currentTarget.style.color = '#E5484D'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#E5484D'; }}
+                        onFocus={e => { e.currentTarget.style.background = '#FFF1F2'; }}
+                        onBlur={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <LogOut style={{ width: 18, height: 18, color: '#E5484D', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Sign Out</span>
+                      </button>
+                    </RadixDropdown.Item>
+                  </RadixDropdown.Content>
+                </RadixDropdown.Portal>
+              </RadixDropdown.Root>
             ) : (
               /* ── Not authenticated — Log In + Sign Up (text link) ── */
               <div className="hidden md:flex flex-row items-center gap-3">

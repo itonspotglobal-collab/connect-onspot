@@ -1,0 +1,351 @@
+The previous changes DID NOT fix the Talent Profile dropdown.
+
+STOP modifying the existing dropdown styles.
+
+I need you to REBUILD the Talent Profile dropdown/account menu component.
+
+CURRENT BUG:
+The screenshot shows that the old dropdown is still being rendered:
+- narrow gray rectangular menu
+- email is partially clipped at the top
+- profile header is missing
+- profile completion section is missing
+- menu starts underneath/behind the navbar
+- dropdown looks attached incorrectly
+- old Radix DropdownMenuContent styling is still being used
+
+This means the previous implementation was not actually replaced.
+
+==================================================
+STEP 1 — FIND THE ACTUAL COMPONENT
+==================================================
+
+Inspect the codebase and locate the REAL component responsible for:
+
+Talent Profile ▼
+
+and its dropdown containing:
+
+Talent Profile
+Finish Profile Setup
+Find Work
+Settings
+Sign Out
+
+Based on the existing project this may be inside something like:
+
+TopNavigation.tsx
+Navbar.tsx
+Header.tsx
+Navigation.tsx
+
+Do NOT create a second unused dropdown component.
+
+Modify the component that is ACTUALLY rendered on this page.
+
+Before making changes, trace where the visible Talent Profile trigger is rendered and confirm which DropdownMenuContent belongs to it.
+
+==================================================
+STEP 2 — REMOVE THE OLD DROPDOWN UI
+==================================================
+
+Delete/replace the existing visual implementation of the account dropdown.
+
+Do NOT simply add more Tailwind classes to:
+
+<DropdownMenuContent>
+
+while leaving the existing structure unchanged.
+
+The old narrow menu should no longer exist.
+
+Keep the existing:
+- authentication state
+- user data
+- navigation handlers
+- logout handler
+- routes
+
+Only replace the presentation/component structure.
+
+==================================================
+STEP 3 — BUILD A REAL ACCOUNT CARD
+==================================================
+
+The new dropdown should look approximately like:
+
+┌─────────────────────────────────┐
+│                                 │
+│   [TV]   Testin Val             │
+│          testinval@onspot...    │
+│                                 │
+│   Profile completion       20%  │
+│   █████░░░░░░░░░░░░░░           │
+│                                 │
+├─────────────────────────────────┤
+│                                 │
+│   👤  Talent Profile         ›  │
+│                                 │
+│   ✓   Finish Profile Setup   ›  │
+│                                 │
+│   ▣   Find Work              ›  │
+│                                 │
+│   ⚙   Settings               ›  │
+│                                 │
+├─────────────────────────────────┤
+│   ↪   Sign Out                  │
+└─────────────────────────────────┘
+
+WIDTH:
+320px desktop
+
+Do NOT use the current ~200px narrow width.
+
+==================================================
+PROFILE HEADER
+==================================================
+
+Create a proper header.
+
+Avatar:
+48px × 48px
+
+If there is no profile photo:
+show initials using the user's real name.
+
+Example:
+TV
+
+Avatar background:
+linear-gradient(135deg, #4F63F5, #7C48F5)
+
+Name:
+15px
+font-weight: 700
+color: #181A24
+
+Email:
+12px
+color: #777B8C
+
+Do not clip the email.
+
+==================================================
+PROFILE COMPLETION
+==================================================
+
+Under the user information add:
+
+Profile completion                         20%
+
+Then a progress bar.
+
+Progress track:
+height: 6px
+background: #E8E9F7
+border-radius: 999px
+
+Progress:
+use actual profile completion value
+background: linear-gradient(90deg,#4D5CE8,#774AF4)
+
+Do NOT hardcode 20% if profile completion already exists in the database/application state.
+
+==================================================
+MENU DESIGN
+==================================================
+
+Use:
+
+background: #FFFFFF
+border: 1px solid rgba(75,81,184,.12)
+border-radius: 16px
+padding: 10px
+width: 320px
+
+shadow:
+
+0 20px 50px rgba(18,23,65,.18),
+0 4px 12px rgba(18,23,65,.08)
+
+Each menu item:
+
+height: 48px
+padding: 0 12px
+border-radius: 10px
+
+display: flex
+align-items: center
+gap: 12px
+
+Add a chevron › on the right.
+
+Hover:
+
+background: #F3F3FF
+color: #4D55C7
+
+Use smooth 150ms transitions.
+
+==================================================
+MAKE “FINISH PROFILE SETUP” IMPORTANT
+==================================================
+
+Since the profile is incomplete, visually highlight:
+
+Finish Profile Setup
+
+Use a very subtle lavender background:
+
+#F4F2FF
+
+and indigo icon/text.
+
+Optionally add a small:
+
+Recommended
+
+badge.
+
+Do not make it look like an error.
+
+==================================================
+SIGN OUT
+==================================================
+
+Add a divider before Sign Out.
+
+Sign Out:
+
+color: #E5484D
+
+Hover:
+
+background: #FFF1F2
+
+==================================================
+CRITICAL POSITIONING FIX
+==================================================
+
+The screenshot shows the dropdown beginning BEHIND the navbar.
+
+THIS MUST BE FIXED.
+
+The navbar should remain above the page, but the dropdown must begin BELOW the Talent Profile button/navbar.
+
+If using Radix:
+
+<DropdownMenuContent
+    align="end"
+    side="bottom"
+    sideOffset={10}
+    collisionPadding={16}
+/>
+
+Render through Radix Portal.
+
+Example structure:
+
+<DropdownMenu.Portal>
+    <DropdownMenu.Content ...>
+       ...
+    </DropdownMenu.Content>
+</DropdownMenu.Portal>
+
+Do NOT position the dropdown manually using arbitrary:
+
+top:
+left:
+margin-top:
+transform:
+
+values.
+
+==================================================
+CHECK NAVBAR OVERFLOW
+==================================================
+
+Inspect ALL parents of the dropdown trigger.
+
+Look specifically for:
+
+overflow-hidden
+overflow: hidden
+overflow-clip
+transform
+contain
+isolation
+
+The dropdown must NOT be clipped by the navigation container.
+
+Use Portal so the menu escapes the navbar stacking context.
+
+==================================================
+Z-INDEX
+==================================================
+
+Navbar:
+z-index: 100
+
+Dropdown portal/content:
+z-index: 9999
+
+The dropdown must appear ABOVE:
+
+hero slides
+dashboard mockups
+cards
+page sections
+
+==================================================
+TRIGGER RELATIONSHIP
+==================================================
+
+The account card must appear visually connected to:
+
+Talent Profile ▼
+
+Position:
+
+               [ Talent Profile ▼ ]
+                              │
+                              ↓ 10px
+                ┌────────────────────┐
+                │ ACCOUNT CARD       │
+                │                    │
+                └────────────────────┘
+
+Right edges should align.
+
+==================================================
+IMPORTANT: VERIFY THE RESULT
+==================================================
+
+Do NOT tell me this task is complete immediately after changing code.
+
+Run the application and visually inspect the result.
+
+Open the Talent Profile dropdown.
+
+Verify:
+
+1. Old gray dropdown is completely gone.
+2. Dropdown is approximately 320px wide.
+3. Profile avatar/name/email are visible.
+4. Nothing is clipped behind the navbar.
+5. Profile completion is visible.
+6. Menu starts below the navbar.
+7. Right edge aligns with Talent Profile trigger.
+8. Sign Out has its own separated section.
+9. Menu stays inside viewport.
+10. No page content shows through the dropdown.
+11. It works at desktop, tablet, and mobile widths.
+
+If the screenshot still resembles the OLD dropdown, investigate why the wrong component is being edited rather than adding more CSS.
+
+IMPORTANT:
+Do not create duplicate components.
+Do not modify unrelated sections.
+Do not alter authentication/navigation behavior.
+
+REPLACE THE EXISTING VISIBLE ACCOUNT DROPDOWN.
