@@ -1,0 +1,412 @@
+The homepage social preview is now correct, but other OnSpot URLs are STILL using the old social image.
+
+Confirmed examples:
+
+https://onspotglobal.com/
+→ NEW image works
+
+https://onspotglobal.com/find-work/jobs
+→ OLD image still appears
+
+https://onspotglobal.com/find-work/job/<JOB_ID>
+→ OLD image still appears
+
+I need the NEW social preview image to be used across ALL shareable OnSpot URLs.
+
+Current correct social image:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+IMPORTANT:
+Do not only fix the homepage.
+
+The goal is that every route using the default OnSpot social preview uses:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+==================================================
+1. UPDATE THE AUTHORITATIVE DEFAULT
+==================================================
+
+Open:
+
+server/ogMiddleware.ts
+
+Find:
+
+export const DEFAULT_OG_IMAGE = ...
+
+Set it to:
+
+export const DEFAULT_OG_IMAGE =
+  "https://onspotglobal.com/onspot-social-preview-2026-v3.png";
+
+This must be the single authoritative default social image.
+
+==================================================
+2. VERIFY EVERY ROUTE USING DEFAULT_OG_IMAGE
+==================================================
+
+The existing resolveOGMeta() function has separate route branches.
+
+Check ALL of them.
+
+These should use DEFAULT_OG_IMAGE:
+
+Homepage:
+/
+
+Find Work:
+ /find-work
+ /find-work/
+ /find-work/jobs
+ /find-work/jobs/
+
+Individual jobs:
+ /find-work/job/:id
+ /jobs/:id
+
+Hire Talent:
+ /hire-talent
+
+Why OnSpot:
+ /why-onspot/*
+ /why-onspot/about
+
+Services:
+ /services/*
+
+Pricing:
+ /pricing
+
+Enterprise:
+ /enterprise
+
+FAQ:
+ /faq
+
+Contact:
+ /contact
+ /inquiry/*
+
+Legal:
+ /terms*
+ /privacy*
+ /refund*
+ /trust*
+ /payment-protection*
+
+Admin:
+ /admin/*
+ 
+Generic fallback:
+ every other normal public page
+
+For all of those routes, image must resolve to:
+
+DEFAULT_OG_IMAGE
+
+and DEFAULT_OG_IMAGE must be:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+==================================================
+3. FIND OLD IMAGE OVERRIDES
+==================================================
+
+Search the entire repository for:
+
+rightfit-handshake.png
+heart.png
+new-onspot.png
+onspot-social-preview-v3.png
+onspot-social-preview-2026.png
+onspot-social-preview-2026-v2.png
+social-preview.jpg
+assets/og/onspot-home.jpg
+og:image
+twitter:image
+ogImage
+DEFAULT_OG_IMAGE
+image:
+
+I want to know whether /find-work or /find-work/job pages have their own explicit image override.
+
+If any job/find-work component or server route explicitly sets an older social image, replace it with:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Do not replace normal visible website images.
+
+Only update social/SEO preview references.
+
+==================================================
+4. CHECK client/index.html
+==================================================
+
+Make sure these all use v3:
+
+og:image
+og:image:url
+og:image:secure_url
+twitter:image
+
+Expected:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+There must be no older social preview URL remaining in index.html.
+
+==================================================
+5. CHECK HeadSEO.tsx
+==================================================
+
+Open:
+
+client/src/components/HeadSEO.tsx
+
+Make sure the default:
+
+ogImage
+
+is:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+If pages such as Find Work or Job Detail explicitly pass another ogImage prop, find those calls.
+
+For each normal OnSpot/job page, use the new v3 image.
+
+Do not overwrite intentionally custom Insight/blog cover images.
+
+==================================================
+6. CHECK FIND WORK COMPONENTS SPECIFICALLY
+==================================================
+
+Search for components related to:
+
+FindWork
+FindWorkJobs
+JobDetail
+JobOpening
+JobPage
+Jobs
+JobListing
+
+Look for:
+
+<HeadSEO
+ogImage=
+SEO
+Helmet
+meta
+openGraph
+
+If those pages pass a custom old image, remove that override or update it to:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+==================================================
+7. CHECK SERVER BOT RESPONSE
+==================================================
+
+This is critical.
+
+Social platforms use server-returned metadata.
+
+Test:
+
+curl -A "LinkedInBot" https://onspotglobal.com/
+
+Expected:
+
+og:image =
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Then test:
+
+curl -A "LinkedInBot" \
+https://onspotglobal.com/find-work/jobs
+
+Expected:
+
+og:image =
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Then test:
+
+curl -A "LinkedInBot" \
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+
+Expected:
+
+og:image =
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Also verify twitter:image for all three.
+
+==================================================
+8. TEST MICROSOFT TEAMS BOT
+==================================================
+
+Repeat the same tests using:
+
+SkypeUriPreview
+
+Homepage:
+
+curl -A "SkypeUriPreview" \
+https://onspotglobal.com/
+
+Find Work:
+
+curl -A "SkypeUriPreview" \
+https://onspotglobal.com/find-work/jobs
+
+Job:
+
+curl -A "SkypeUriPreview" \
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+
+All must return:
+
+og:image =
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+==================================================
+9. PRESERVE PAGE-SPECIFIC TITLES
+==================================================
+
+Do NOT make every page have the same title.
+
+Correct behavior:
+
+Homepage:
+Work Without Limits | OnSpot
+
+Find Work:
+Remote Jobs | OnSpot Global
+
+Job page:
+Job Opening | OnSpot
+or actual job title if available
+
+But IMAGE should be:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+for all of them.
+
+==================================================
+10. INSIGHTS/BLOG EXCEPTION
+==================================================
+
+Published Insight/blog posts are allowed to keep their own cover images.
+
+The existing code uses:
+
+post.coverImageUrl
+
+for published Insight articles.
+
+Keep that behavior.
+
+However:
+
+Insights listing pages with no intentional custom image can use the standard OnSpot v3 preview if appropriate.
+
+Do not force v3 over real article cover images.
+
+==================================================
+11. VERIFY NO OLD IMAGE REFERENCES
+==================================================
+
+After the fix, run a repository-wide search.
+
+There should be no old image references used for:
+
+Find Work metadata
+Job metadata
+Homepage metadata
+Admin metadata
+Generic metadata
+
+Report all remaining references to:
+
+onspot-social-preview-v3.png
+onspot-social-preview-2026.png
+onspot-social-preview-2026-v2.png
+rightfit-handshake.png
+heart.png
+social-preview.jpg
+
+and explain why each remains.
+
+==================================================
+12. IMPORTANT: SOCIAL CACHE
+==================================================
+
+LinkedIn may have cached the old image independently for:
+
+/
+
+and:
+
+/find-work/jobs
+
+and:
+
+/find-work/job/<id>
+
+Each URL can have its own cached card.
+
+Therefore fixing the homepage does NOT automatically refresh job URLs.
+
+First verify the raw LinkedInBot response for each route.
+
+If raw HTML already uses v3 but LinkedIn still shows the old photo, then the code is fixed and LinkedIn has cached that specific URL.
+
+Do not revert working code because of cache.
+
+==================================================
+13. FINAL VERIFICATION MATRIX
+==================================================
+
+Give me a result table for:
+
+/
+
+ /find-work
+
+ /find-work/jobs
+
+ /find-work/job/<REAL_JOB_ID>
+
+ /hire-talent
+
+ /admin
+
+For each, report:
+
+og:title
+og:image
+twitter:image
+
+Expected image everywhere:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+except pages that intentionally have their own article/blog cover image.
+
+==================================================
+14. DO NOT MARK COMPLETE UNTIL
+==================================================
+
+Do not say this is fixed until raw crawler HTML confirms the new image on:
+
+1. homepage
+2. find-work
+3. find-work/jobs
+4. a real individual job URL
+
+The image must be consistent across every normal shareable OnSpot route.
