@@ -1,0 +1,47 @@
+Recreate ONLY the homepage from:
+
+
+
+https://5bcc7c14-9a54-4546-8be1-097ed01d0bbb-00-399ujsco9353f.pike.replit.dev/
+
+IMPORTANT:
+
+Do not redesign or reinterpret the reference.
+
+Inspect the live rendered homepage at desktop, tablet, and mobile sizes.
+
+Reproduce its visual appearance as accurately as possible.
+
+Do NOT modify other routes/pages.
+
+Reproduce:• Header/navbar, logo positioning, navigation and CTA• Exact section order and homepage structure• Hero dimensions, alignment, spacing and responsive behavior• EVERY hero carousel slide, including slide order, imagery, headings, descriptions, buttons, overlays and transitions• Carousel autoplay timing, arrows, dots/indicators and animation behavior• Typography: font families, sizes, weights, line-height and letter-spacing• Exact colors, gradients, borders, shadows and backgrounds• Container widths, margins, padding, gaps and section heights• Buttons including hover/focus states• Cards, icons and imagery• Footer shown on homepage• Mobile/tablet breakpoints and navigation behavior
+
+Inspect the reference using browser DevTools/computed styles whenever necessary rather than guessing values.
+
+TEXT:If I own or have permission to reproduce the reference website, preserve all homepage wording exactly. Otherwise keep the existing site's wording and recreate only the design.
+
+ASSETS:Use equivalent locally hosted/project assets when direct copying is unavailable. Do not hotlink assets from the reference website.
+
+IMPLEMENTATION:
+
+First inspect my repository and identify its framework and styling system.
+
+Reuse the existing architecture/components.
+
+Build reusable components such as Header, HeroCarousel, sections, CTA and Footer.
+
+Keep changes isolated to the homepage wherever possible.
+
+Do not break existing APIs, authentication, routing, backend code, or other pages.
+
+Make the implementation responsive and pixel-close to the reference.
+
+Remove unnecessary duplicate CSS/components.
+
+Run the project and fix console/build errors.
+
+Compare the final rendered homepage against the reference at approximately 1440px, 1024px, 768px and 390px widths.
+
+Continue adjusting spacing, typography, imagery, sizing and carousel behavior until the recreation closely matches the reference.
+
+Before editing, inspect the complete reference homepage from top to bottom and inventory EVERY section and EVERY carousel slide so none are skipped.
