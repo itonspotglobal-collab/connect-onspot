@@ -81,12 +81,34 @@ function HeroSection() {
   const touchStartX         = useRef<number | null>(null);
   const sectionRef          = useRef<HTMLElement>(null);
 
-  // Jobs data for slide 5 right-side card
-  const { data: rawJobs } = useQuery({
-    queryKey: ["/api/jobs/popular"],
+  // Slide 4 — real talent data from /api/candidates (same source as Hire Talent page)
+  const { data: rawCandidates, isLoading: candidatesLoading } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],
     queryFn: async () => {
-      const r = await fetch("/api/jobs/popular");
-      if (!r.ok) return [];
+      const r = await fetch("/api/candidates");
+      if (!r.ok) { console.error("[Home slide 4] candidates fetch failed", r.status); return []; }
+      const d = await r.json();
+      return Array.isArray(d) ? d : (d.items ?? []);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const liveTalents = (rawCandidates ?? [])
+    .filter((c: any) => c.availability !== "unavailable")
+    .sort((a: any, b: any) => {
+      // Featured/active first, then by experience
+      const aAvail = a.availability === "available" ? 0 : 1;
+      const bAvail = b.availability === "available" ? 0 : 1;
+      if (aAvail !== bAvail) return aAvail - bAvail;
+      return (b.experienceYears ?? 0) - (a.experienceYears ?? 0);
+    })
+    .slice(0, 4);
+
+  // Slide 5 — real job data from full search endpoint (same source as Browse Jobs)
+  const { data: rawJobs, isLoading: jobsLoading } = useQuery<any[]>({
+    queryKey: ["/api/jobs/search", "hero"],
+    queryFn: async () => {
+      const r = await fetch("/api/jobs/search?status=open&pageSize=8");
+      if (!r.ok) { console.error("[Home slide 5] jobs fetch failed", r.status); return []; }
       const d = await r.json();
       return Array.isArray(d) ? d : (d.items ?? []);
     },
@@ -94,6 +116,7 @@ function HeroSection() {
   });
   const liveJobs = (rawJobs ?? [])
     .filter((j: any) => j.title?.toLowerCase() !== "test")
+    .sort((a: any, b: any) => Number(b.isFeatured ?? 0) - Number(a.isFeatured ?? 0))
     .slice(0, 3);
 
   const prev = useCallback(() => setSlide(s => (s - 1 + SLIDES.length) % SLIDES.length), []);
@@ -157,8 +180,8 @@ function HeroSection() {
           {active.id === "work"      && <WorkSlide      isDark={isDark} />}
           {active.id === "companies" && <CompaniesSlide isDark={isDark} />}
           {active.id === "talent"    && <TalentSlide    isDark={isDark} />}
-          {active.id === "network"   && <NetworkSlide   isDark={isDark} />}
-          {active.id === "jobs"      && <JobsSlide      isDark={isDark} liveJobs={liveJobs} />}
+          {active.id === "network"   && <NetworkSlide   isDark={isDark} liveTalents={liveTalents} isLoading={candidatesLoading} />}
+          {active.id === "jobs"      && <JobsSlide      isDark={isDark} liveJobs={liveJobs} isLoading={jobsLoading} />}
         </div>
 
         {/* Controls row — bottom-left inside container */}
@@ -553,7 +576,7 @@ function PhoneMockup() {
 // ══════════════════════════════════════════════════════════════════════════════
 // SLIDE 4 — NETWORK (light, 2-col + talent list card)
 // ══════════════════════════════════════════════════════════════════════════════
-function NetworkSlide({ isDark }: { isDark: boolean }) {
+function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liveTalents: any[]; isLoading: boolean }) {
   return (
     <TwoCol
       left={
@@ -583,19 +606,19 @@ function NetworkSlide({ isDark }: { isDark: boolean }) {
           </Link>
         </>
       }
-      right={<TalentListCard />}
+      right={<TalentListCard candidates={liveTalents} isLoading={isLoading} />}
     />
   );
 }
 
-const NETWORK_TALENTS = [
-  { i: "KC", n: "Kim C.",    r: "Customer Support Specialist", yrs: "6 yrs", sc: "4.9" },
-  { i: "RS", n: "Rafael S.", r: "Bookkeeper",                  yrs: "8 yrs", sc: "4.8" },
-  { i: "AM", n: "Aira M.",   r: "Executive Assistant",         yrs: "5 yrs", sc: "4.9" },
-  { i: "JP", n: "Jomar P.",  r: "Sales Development Rep",       yrs: "4 yrs", sc: "4.7" },
-];
+function talentInitials(name: string): string {
+  const parts = (name ?? "").trim().split(/\s+/);
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : (name ?? "??").slice(0, 2).toUpperCase();
+}
 
-function TalentListCard() {
+function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoading: boolean }) {
   return (
     <div className="relative">
       {/* Glow */}
@@ -604,20 +627,15 @@ function TalentListCard() {
         className="relative rounded-[18px] overflow-hidden"
         style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(75,81,184,0.18)", backdropFilter: "blur(14px)", boxShadow: "0 24px 56px rgba(75,81,184,0.12)" }}
       >
-        {/* Search bar */}
+        {/* Search bar (decorative — mirrors Hire Talent visual) */}
         <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EEEDFB" }}>
           <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
             <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
             <span className="text-[11px]" style={{ color: C.grayLight }}>Customer support, bookkeeping, sales...</span>
           </div>
-          {/* Filters */}
           <div className="flex flex-wrap gap-1.5 mt-2.5">
             {["Available now", "4.5★ and up", "3+ yrs experience"].map((f) => (
-              <span
-                key={f}
-                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
-                style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}
-              >
+              <span key={f} className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}>
                 {f}
               </span>
             ))}
@@ -626,28 +644,64 @@ function TalentListCard() {
 
         {/* Talent rows */}
         <div className="divide-y" style={{ divideColor: "#EEEDFB" }}>
-          {NETWORK_TALENTS.map((t) => (
-            <div key={t.i} className="flex items-center justify-between px-4 py-3 hover:bg-[#F8F7FD] transition-colors">
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                  style={{ background: C.indigo }}
-                >
-                  {t.i}
+          {isLoading ? (
+            // Skeleton rows — preserve card height while loading
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 flex-shrink-0 rounded-full bg-[#EEEDFB]" />
+                  <div className="space-y-1.5">
+                    <div className="h-2.5 w-24 rounded bg-[#EEEDFB]" />
+                    <div className="h-2 w-32 rounded bg-[#F4F3FC]" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[12px] font-semibold leading-snug" style={{ color: C.charcoal }}>{t.n}</p>
-                  <p className="text-[10px] leading-snug" style={{ color: C.gray }}>{t.r} · {t.yrs}</p>
-                </div>
+                <div className="h-4 w-14 rounded-full bg-[#EEEDFB]" />
               </div>
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="text-[10px] font-semibold" style={{ color: C.charcoal }}>★ {t.sc}</span>
-                <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(46,186,107,0.12)", color: "#1a7d42" }}>
-                  Ready now
-                </span>
-              </div>
+            ))
+          ) : candidates.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-[12px] mb-2" style={{ color: C.gray }}>No available talent right now.</p>
+              <Link href="/hire-talent" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse talent →</Link>
             </div>
-          ))}
+          ) : (
+            candidates.map((c: any) => {
+              const name = c.fullName || c.displayName || "Talent";
+              const role = c.targetPosition || c.headline || "Professional";
+              const yrs  = c.experienceYears ? `${c.experienceYears} yr${c.experienceYears !== 1 ? "s" : ""}` : null;
+              const isAvail = c.availability === "available" || c.availability === "Available";
+              return (
+                <Link
+                  key={c.id}
+                  href={`/talent-profile/${c.id}`}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    {c.profilePhotoUrl ? (
+                      <img src={c.profilePhotoUrl} alt={name} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <div className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: C.indigo }}>
+                        {talentInitials(name)}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[12px] font-semibold leading-snug" style={{ color: C.charcoal }}>{name}</p>
+                      <p className="text-[10px] leading-snug" style={{ color: C.gray }}>
+                        {role}{yrs ? ` · ${yrs}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-2">
+                    {c.rating != null && (
+                      <span className="text-[10px] font-semibold" style={{ color: C.charcoal }}>★ {Number(c.rating).toFixed(1)}</span>
+                    )}
+                    <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold whitespace-nowrap" style={{ background: isAvail ? "rgba(46,186,107,0.12)" : "rgba(75,81,184,0.1)", color: isAvail ? "#1a7d42" : C.indigo }}>
+                      {isAvail ? "Ready now" : "Open to offers"}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
+          )}
         </div>
 
         {/* Footer */}
@@ -665,7 +719,7 @@ function TalentListCard() {
 // ══════════════════════════════════════════════════════════════════════════════
 // SLIDE 5 — JOBS (dark, 2-col + roles card)
 // ══════════════════════════════════════════════════════════════════════════════
-function JobsSlide({ isDark, liveJobs }: { isDark: boolean; liveJobs: any[] }) {
+function JobsSlide({ isDark, liveJobs, isLoading }: { isDark: boolean; liveJobs: any[]; isLoading: boolean }) {
   return (
     <TwoCol
       left={
@@ -695,31 +749,21 @@ function JobsSlide({ isDark, liveJobs }: { isDark: boolean; liveJobs: any[] }) {
           </Link>
         </>
       }
-      right={<OpenRolesCard liveJobs={liveJobs} />}
+      right={<OpenRolesCard liveJobs={liveJobs} isLoading={isLoading} />}
     />
   );
 }
 
-// Static fallback jobs matching the spec
-const FALLBACK_JOBS = [
-  { title: "IT Administrator",    location: "Remote", pay: "USD 1,500 – 3,000/mo" },
-  { title: "Accounting Manager",  location: "Hybrid", pay: "USD 500/mo" },
-  { title: "Virtual Assistant",   location: "Remote", pay: "PHP 8 – 12k/mo" },
-];
+function jobPay(j: any): string | null {
+  if (j.salaryDisplay) return j.salaryDisplay;
+  if (j.hourlyRateMin)
+    return `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`;
+  if (j.budget)
+    return `${j.budgetCurrency ?? "PHP"} ${j.budget}`;
+  return null;
+}
 
-function OpenRolesCard({ liveJobs }: { liveJobs: any[] }) {
-  const jobs = liveJobs.length >= 2
-    ? liveJobs.map((j: any) => ({
-        title:    j.title,
-        location: j.location || "Remote",
-        pay:      j.budget
-          ? `${j.budgetCurrency ?? "PHP"} ${j.budget}`
-          : j.hourlyRateMin
-            ? `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`
-            : null,
-      }))
-    : FALLBACK_JOBS;
-
+function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: boolean }) {
   return (
     <div className="relative">
       <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
@@ -738,20 +782,49 @@ function OpenRolesCard({ liveJobs }: { liveJobs: any[] }) {
 
         {/* Job rows */}
         <div className="divide-y" style={{ divideColor: "#F0F0F5" }}>
-          {jobs.map((job, i) => (
-            <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors">
-              <div>
-                <p className="text-[13px] font-semibold" style={{ color: C.charcoal }}>{job.title}</p>
-                <p className="text-[10px] mt-0.5" style={{ color: C.gray }}>
-                  {job.location}
-                  {job.pay ? ` · ${job.pay}` : ""}
-                </p>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-5 py-3.5 animate-pulse">
+                <div className="space-y-1.5">
+                  <div className="h-3 w-36 rounded bg-gray-100" />
+                  <div className="h-2 w-24 rounded bg-gray-50" />
+                </div>
+                <div className="h-4 w-16 rounded-full bg-gray-100 ml-3" />
               </div>
-              <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-[9px] font-semibold ml-3" style={{ background: "rgba(46,186,107,0.12)", color: "#1a7d42" }}>
-                Hiring now
-              </span>
+            ))
+          ) : liveJobs.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <p className="text-[12px] mb-2" style={{ color: C.gray }}>No open roles right now.</p>
+              <Link href="/find-work/jobs" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse all jobs →</Link>
             </div>
-          ))}
+          ) : (
+            liveJobs.map((j: any) => {
+              const location = j.location || j.contractType || "Remote";
+              const pay = jobPay(j);
+              return (
+                <Link
+                  key={j.id}
+                  href={`/find-work/job/${j.id}`}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold truncate" style={{ color: C.charcoal }}>{j.title}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: C.gray }}>
+                      {location}{pay ? ` · ${pay}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-3">
+                    {j.isFeatured && (
+                      <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(255,174,33,0.18)", color: C.orangeDeep }}>Featured</span>
+                    )}
+                    <span className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(46,186,107,0.12)", color: "#1a7d42" }}>
+                      Hiring now
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
+          )}
         </div>
 
         {/* Footer */}

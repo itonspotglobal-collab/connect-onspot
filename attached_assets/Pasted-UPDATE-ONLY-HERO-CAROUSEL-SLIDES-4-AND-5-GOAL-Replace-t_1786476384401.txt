@@ -1,0 +1,173 @@
+UPDATE ONLY HERO CAROUSEL SLIDES 4 AND 5.
+
+GOAL:
+Replace the hardcoded mock data with REAL DATABASE DATA using the existing app architecture, APIs, routes, and database models.
+
+SLIDE 4 — THE TALENT NETWORK
+
+This slide is for COMPANIES looking for talent.
+
+The talent list shown on the right must come from the SAME REAL TALENT DATA used by the existing “Hire Talent” side/page.
+
+Do NOT duplicate or create a separate fake talent dataset.
+
+Requirements:
+- Fetch the existing available/featured talent records from the database/API.
+- Reuse the same source of truth as the Hire Talent page.
+- Display up to 4 real talent profiles in the hero slide.
+- Prefer Featured / Available Now / Active profiles if those fields exist.
+- Show real:
+  - name
+  - role/title
+  - years of experience
+  - rating, if available
+  - availability status
+  - profile image/initial fallback
+- Keep the current hero carousel visual design exactly the same.
+
+CLICK BEHAVIOR:
+Each talent row/card must be clickable.
+
+When a company clicks a talent:
+- Redirect to that talent’s EXISTING detail/profile route.
+- Use the real database ID/slug.
+- Example behavior:
+  /hire-talent/:id
+  or whatever route already exists in this project.
+
+Do NOT invent a new route if an existing talent detail route already exists.
+
+The “Meet your talent →” button should go to the main Hire Talent/browse talent page.
+
+SEARCH/FILTER VISUAL:
+If the search field and filter pills are only decorative in the hero, they may remain display-only.
+If the project already has reusable search/filter logic, connect them to the talent data without changing the visual design.
+
+
+SLIDE 5 — OPEN ROLES
+
+This slide is for TALENTS looking for work.
+
+The roles shown on the right must come from the SAME REAL JOB/ROLE DATA used by:
+- Browse Jobs
+- Featured Jobs
+- Job Listings
+or the existing equivalent page in this project.
+
+Do NOT hardcode:
+“Accounting Manager”
+“IT Administrator”
+“Customer Service Representative”
+or any other mock role.
+
+Fetch real active/open jobs from the existing database/API.
+
+PRIORITY:
+1. Featured jobs
+2. Currently hiring/open jobs
+3. Most recently published jobs
+
+Show up to 3 roles in the hero card.
+
+For each real role show available fields such as:
+- job title
+- work arrangement: Remote / Hybrid / Onsite
+- compensation/rate if available
+- hiring/open status
+- featured/live badge if applicable
+
+CLICK BEHAVIOR:
+Every role row must be clickable.
+
+When a talent clicks a role:
+- Redirect to that job’s EXISTING job detail page.
+- Use the actual ID/slug from the database.
+- The destination should be the same detail page used when a user clicks a Featured Job or Browse Jobs listing.
+
+The “See all open jobs →” and “Browse all jobs →” buttons should route to the existing jobs/browse-jobs page.
+
+
+VERY IMPORTANT — REUSE EXISTING BACKEND
+
+Before coding:
+1. Inspect the repository.
+2. Find the existing database schema/models for talents and jobs.
+3. Find existing API endpoints/query functions/hooks used by Hire Talent and Browse Jobs.
+4. Find existing talent-detail and job-detail routes.
+5. Reuse those implementations.
+
+DO NOT:
+- create duplicate talent/job tables
+- create fake records
+- create a second API solely for the carousel if existing endpoints can be reused
+- hardcode IDs
+- hardcode names
+- break the existing Hire Talent or Browse Jobs pages
+
+
+LOADING STATE
+
+While real data is loading:
+- preserve the card dimensions
+- use subtle skeleton rows
+- do not cause carousel layout shift
+
+EMPTY STATE
+
+If no real records exist:
+Slide 4:
+“No available talent right now.”
+CTA: “Browse talent →”
+
+Slide 5:
+“No open roles right now.”
+CTA: “Browse all jobs →”
+
+Do not insert fake fallback records.
+
+
+ERROR HANDLING
+
+If the request fails:
+- keep the carousel functional
+- show a small non-intrusive fallback state
+- log the actual error
+- do not crash the homepage
+
+
+DATA FRESHNESS
+
+The carousel must reflect the database automatically.
+
+If a talent/job is:
+- added
+- updated
+- featured
+- unfeatured
+- marked unavailable
+- closed/deactivated
+
+the homepage carousel should reflect that change from the same data source without manually editing carousel code.
+
+
+FINAL VERIFICATION
+
+Test these flows:
+
+COMPANY FLOW:
+Homepage → Slide 4 → click real talent → correct talent detail page
+
+Also verify:
+Homepage → “Meet your talent →” → Hire Talent page
+
+TALENT FLOW:
+Homepage → Slide 5 → click real job → correct featured/job detail page
+
+Also verify:
+Homepage → “See all open jobs →” → Browse Jobs page
+Homepage → “Browse all jobs →” → Browse Jobs page
+
+Keep the exact existing carousel design, colors, spacing, typography, transitions, slide numbering, and controls.
+
+This task is DATA + ROUTING integration only.
+Do not redesign the hero.
