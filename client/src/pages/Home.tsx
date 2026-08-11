@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
@@ -59,12 +59,11 @@ export default function Home() {
       <HeroSection />
       <ProblemSection />
       <BetterWaySection />
-      <TalentTestimonialSection />
-      <JobListingsSection />
-      <ProcessSection />
       <EquationSection />
       <FounderQuoteSection />
-      <CompanyTestimonialSection />
+      <SplitTestimonialSection />
+      <OpenJobsSection />
+      <ProcessSection />
       <FinalCtaSection />
       <Footer />
     </div>
@@ -764,75 +763,159 @@ function OpenRolesCard({ liveJobs }: { liveJobs: any[] }) {
   );
 }
 
+
 // ══════════════════════════════════════════════════════════════════════════════
-// BELOW-FOLD SECTIONS (unchanged structure, updated color tokens)
+// BELOW-FOLD SECTIONS
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Shared eyebrow for non-hero sections
+// Shared section eyebrow
 function SectionEyebrow({ text, dark = false }: { text: string; dark?: boolean }) {
   return (
-    <p className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: dark ? "rgba(255,255,255,0.75)" : C.indigo }}>
-      <span className="inline-block h-[2px] w-4 rounded" style={{ background: C.orange }} />
+    <p
+      className="inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.1em]"
+      style={{ color: dark ? "rgba(255,255,255,0.75)" : C.indigo }}
+    >
+      <span className="inline-block h-[2px] w-4 flex-shrink-0 rounded" style={{ background: C.orange }} />
       {text}
     </p>
   );
 }
 
+// ── SECTION 1 — THE PROBLEM WITH OUTSOURCING TODAY ───────────────────────────
 function ProblemSection() {
   return (
-    <section style={{ background: C.lavenderBg }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
+    <section
+      style={{ background: "#F7F7FB" }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
+    >
+      <div className="mx-auto max-w-[1180px]">
         <SectionEyebrow text="The Problem With Outsourcing Today" />
-        <h2 className="mt-4 font-bold leading-tight mb-4" style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal, maxWidth: 700 }}>
-          Outsourcing is broken. Both sides are paying for it.
+        <h2
+          className="mt-4 font-bold leading-tight"
+          style={{
+            fontSize: "clamp(2rem, 3.5vw, 3.25rem)",
+            letterSpacing: "-0.025em",
+            color: C.charcoal,
+            maxWidth: 680,
+          }}
+        >
+          Outsourcing is broken. Both<br />sides are paying for it.
         </h2>
-        <p className="mb-12" style={{ color: C.gray, fontSize: "1.05rem", maxWidth: 560 }}>
+        <p
+          className="mt-4 mb-12"
+          style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 600, lineHeight: 1.6 }}
+        >
           A middleman sits between you — inflating what companies pay and shrinking what talent takes home.
         </p>
+
+        {/* Two cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Companies */}
-          <div className="rounded-2xl p-7 flex flex-col" style={{ background: C.navySection }}>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-4" style={{ color: C.orange }}>FOR COMPANIES</p>
-            <h3 className="font-bold text-white mb-6 leading-tight" style={{ fontSize: "clamp(1.25rem, 1.8vw, 1.5rem)" }}>
-              The 3 hidden costs of <span style={{ color: C.orangeLight }}>the old way.</span>
+          {/* LEFT — dark navy */}
+          <div
+            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            style={{ background: C.navySection }}
+          >
+            <p
+              className="text-[11px] font-bold tracking-[0.12em] uppercase mb-5"
+              style={{ color: C.orange }}
+            >
+              For Companies
+            </p>
+            <h3
+              className="font-bold leading-snug mb-7"
+              style={{ fontSize: "clamp(1.3rem, 2vw, 1.65rem)", color: "white" }}
+            >
+              The 3 hidden costs of{" "}
+              <span style={{ color: C.orangeLight }}>the old way.</span>
             </h3>
-            <ul className="space-y-4 flex-1">
-              {[["Slow Hiring","Months to fill a role."],["Limited Access","Great talent stays out of reach."],["Invisible Overhead","You pay for costs you never see."]].map(([t,d])=>(
-                <li key={t} className="flex gap-3">
-                  <X className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: "rgba(255,100,100,0.8)" }} />
-                  <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.95rem" }}>
-                    <span className="text-white font-semibold">{t}</span> — {d}
+            <ul className="space-y-5 flex-1">
+              {[
+                ["Slow Hiring", "Months to fill a role."],
+                ["Limited Access", "Great talent stays out of reach."],
+                ["Invisible Overhead", "You pay for costs you never see."],
+              ].map(([title, desc]) => (
+                <li key={title} className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "rgba(255,80,80,0.15)" }}
+                  >
+                    <X className="h-3 w-3" style={{ color: "#FF6060" }} />
+                  </div>
+                  <p style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.98rem", lineHeight: 1.5 }}>
+                    <span className="text-white font-semibold">{title}</span> — {desc}
                   </p>
                 </li>
               ))}
             </ul>
-            <div className="mt-7 pt-6 border-t" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
-              <p className="text-white font-semibold mb-3" style={{ fontSize: "0.95rem" }}>OnSpot removes all three.</p>
-              <Link href="/hire-talent" className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80" style={{ color: C.orange }}>
-                Hire talent <ArrowRight className="w-3.5 h-3.5" />
+            <div
+              className="mt-8 pt-7 border-t"
+              style={{ borderColor: "rgba(255,255,255,0.1)" }}
+            >
+              <p className="text-white font-semibold mb-4" style={{ fontSize: "1rem" }}>
+                OnSpot removes all three.
+              </p>
+              <Link
+                href="/hire-talent"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+                style={{ color: C.orange }}
+              >
+                Hire talent <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>
-          {/* Talents */}
-          <div className="rounded-2xl p-7 flex flex-col" style={{ background: "white", border: "1px solid #D8DCF0" }}>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-4" style={{ color: C.orange }}>FOR TALENTS</p>
-            <h3 className="font-bold mb-6 leading-tight" style={{ fontSize: "clamp(1.25rem, 1.8vw, 1.5rem)", color: C.charcoal }}>
-              The same system <span style={{ color: C.orange }}>costs you too.</span>
+
+          {/* RIGHT — white */}
+          <div
+            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            style={{ background: "white", border: "1px solid #E0E4F0", boxShadow: "0 4px 24px rgba(75,81,184,0.06)" }}
+          >
+            <p
+              className="text-[11px] font-bold tracking-[0.12em] uppercase mb-5"
+              style={{ color: C.orange }}
+            >
+              For Talents
+            </p>
+            <h3
+              className="font-bold leading-snug mb-7"
+              style={{ fontSize: "clamp(1.3rem, 2vw, 1.65rem)", color: C.charcoal }}
+            >
+              The same system{" "}
+              <span style={{ color: C.indigo }}>costs you too.</span>
             </h3>
-            <ul className="space-y-4 flex-1">
-              {[["Unpaid waiting","months to get matched."],["Bidding wars","a race to the bottom."],["Hidden markups","cuts you never agreed to."]].map(([t,d])=>(
-                <li key={t} className="flex gap-3">
-                  <X className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: "rgba(200,60,60,0.7)" }} />
-                  <p style={{ color: C.gray, fontSize: "0.95rem" }}>
-                    <span className="font-semibold" style={{ color: C.charcoal }}>{t}</span> — {d}
+            <ul className="space-y-5 flex-1">
+              {[
+                ["Unpaid waiting", "months to get matched."],
+                ["Bidding wars", "a race to the bottom."],
+                ["Hidden markups", "cuts you never agreed to."],
+              ].map(([title, desc]) => (
+                <li key={title} className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "rgba(200,50,50,0.08)" }}
+                  >
+                    <X className="h-3 w-3" style={{ color: "#C83232" }} />
+                  </div>
+                  <p style={{ color: C.gray, fontSize: "0.98rem", lineHeight: 1.5 }}>
+                    <span className="font-semibold" style={{ color: C.charcoal }}>{title}</span> — {desc}
                   </p>
                 </li>
               ))}
             </ul>
-            <div className="mt-7 pt-6 border-t border-[#D8DCF0]">
-              <p className="font-semibold mb-3" style={{ color: C.charcoal, fontSize: "0.95rem" }}>At OnSpot, you get paid what you're worth.</p>
-              <Link href="/find-work" className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80" style={{ color: C.orange }}>
-                Find work <ArrowRight className="w-3.5 h-3.5" />
+            <div
+              className="mt-8 pt-7 border-t"
+              style={{ borderColor: "#E8EAF0" }}
+            >
+              <p className="font-semibold mb-4" style={{ color: C.charcoal, fontSize: "1rem" }}>
+                <Check className="inline h-4 w-4 mr-1.5" style={{ color: C.indigo }} />
+                At OnSpot, you get paid{" "}
+                <span style={{ color: C.orange }}>what you're worth.</span>
+              </p>
+              <Link
+                href="/find-work/jobs"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+                style={{ color: C.orange }}
+              >
+                Find work <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>
@@ -842,81 +925,463 @@ function ProblemSection() {
   );
 }
 
+// ── SECTION 2 — THE BETTER WAY ────────────────────────────────────────────────
 function BetterWaySection() {
   return (
-    <section style={{ background: C.lavenderBg }} className="px-6 sm:px-10 lg:px-16 xl:px-20 pb-20 lg:pb-28 pt-4">
-      <div className="mx-auto max-w-[1100px]">
-        <div className="h-px mb-16" style={{ background: "rgba(100,110,180,0.2)" }} />
+    <section
+      style={{ background: "#F4F3FC" }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
+    >
+      <div className="mx-auto max-w-[1180px]">
         <SectionEyebrow text="The Better Way" />
-        <h2 className="mt-4 font-bold leading-tight mb-12" style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}>
-          Companies pay less. Talent earns more.
+        <h2
+          className="mt-4 font-bold leading-tight mb-14"
+          style={{
+            fontSize: "clamp(2rem, 3.5vw, 3.25rem)",
+            letterSpacing: "-0.025em",
+            color: C.charcoal,
+          }}
+        >
+          Companies pay less.<br />Talent earns more.
         </h2>
+
+        {/* Two pricing cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="rounded-2xl p-7" style={{ background: "white", border: "1px solid #D8DCF0" }}>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-5" style={{ color: "#8A95B0" }}>COMPANIES PAY</p>
-            <div className="flex items-baseline gap-3 mb-3">
-              <span className="line-through font-medium" style={{ color: "#9BA3BB", fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)" }}>$2,500</span>
-              <span className="font-bold" style={{ color: C.charcoal, fontSize: "clamp(2rem, 3vw, 2.8rem)", letterSpacing: "-0.03em" }}>$2,400</span>
+          {/* LEFT — white */}
+          <div
+            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            style={{ background: "white", border: "1px solid #DDE0F2", boxShadow: "0 4px 24px rgba(75,81,184,0.06)" }}
+          >
+            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-6" style={{ color: C.grayLight }}>
+              Companies Pay
+            </p>
+            <div className="flex items-center gap-4 mb-4">
+              <span
+                className="line-through font-medium"
+                style={{ color: C.grayLight, fontSize: "clamp(1.2rem, 1.8vw, 1.6rem)" }}
+              >
+                $2,500
+              </span>
+              <span style={{ color: C.grayLight, fontSize: "1.2rem" }}>→</span>
+              <span
+                className="font-bold"
+                style={{ color: C.indigo, fontSize: "clamp(2.2rem, 3.5vw, 3rem)", letterSpacing: "-0.03em" }}
+              >
+                $2,400
+              </span>
             </div>
-            <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold mb-5" style={{ background: "#E8F5E9", color: "#2E7D32" }}>↓ Less than traditional outsourcing</span>
-            <p style={{ color: C.gray, fontSize: "0.9rem", lineHeight: 1.6 }}>Same work, even better quality — without the layer of overhead traditional outsourcing adds on top.</p>
-            <Link href="/hire-talent" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-80 transition" style={{ color: C.orange }}>
-              Hire talent <ArrowRight className="w-3.5 h-3.5" />
+            <span
+              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-6"
+              style={{ background: "#E8F5E9", color: "#2E7D32" }}
+            >
+              ▼ Less than traditional outsourcing
+            </span>
+            <p style={{ color: C.gray, fontSize: "0.95rem", lineHeight: 1.65 }} className="flex-1">
+              Same work, even better quality — without the layer of overhead traditional outsourcing adds on top.
+            </p>
+            <Link
+              href="/hire-talent"
+              className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+              style={{ color: C.orange }}
+            >
+              Hire talent <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="rounded-2xl p-7" style={{ background: C.navySection }}>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>TALENT EARNS</p>
-            <div className="flex items-baseline gap-3 mb-3">
-              <span className="line-through font-medium" style={{ color: "rgba(255,255,255,0.35)", fontSize: "clamp(1.1rem, 1.6vw, 1.5rem)" }}>$1,000</span>
-              <span className="font-bold text-white" style={{ fontSize: "clamp(2rem, 3vw, 2.8rem)", letterSpacing: "-0.03em" }}>$2,000</span>
+
+          {/* RIGHT — indigo gradient */}
+          <div
+            className="rounded-2xl p-8 lg:p-10 flex flex-col"
+            style={{
+              background: `linear-gradient(140deg, ${C.indigo} 0%, ${C.indigoDeep} 100%)`,
+              boxShadow: "0 20px 48px -12px rgba(75,81,184,0.4)",
+            }}
+          >
+            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Talent Earns
+            </p>
+            <div className="flex items-center gap-4 mb-4">
+              <span
+                className="line-through font-medium"
+                style={{ color: "rgba(255,255,255,0.35)", fontSize: "clamp(1.2rem, 1.8vw, 1.6rem)" }}
+              >
+                $1,000
+              </span>
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "1.2rem" }}>→</span>
+              <span
+                className="font-bold"
+                style={{ color: C.orange, fontSize: "clamp(2.2rem, 3.5vw, 3rem)", letterSpacing: "-0.03em" }}
+              >
+                $2,000
+              </span>
             </div>
-            <span className="inline-block rounded-full px-3 py-1 text-xs font-semibold mb-5" style={{ background: "rgba(255,174,33,0.2)", color: C.orangeLight }}>↑ 2× what traditional outsourcing pays</span>
-            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.9rem", lineHeight: 1.6 }}>Because OnSpot's fee sits on top of the talent's rate, not carved out of it.</p>
-            <Link href="/find-work" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-80 transition" style={{ color: C.orange }}>
-              Find work <ArrowRight className="w-3.5 h-3.5" />
+            <span
+              className="self-start rounded-full px-3 py-1 text-xs font-semibold mb-6"
+              style={{ background: "rgba(255,174,33,0.18)", color: C.orangeLight }}
+            >
+              ▲ 2× what traditional outsourcing pays
+            </span>
+            <p style={{ color: "rgba(255,255,255,0.58)", fontSize: "0.95rem", lineHeight: 1.65 }} className="flex-1">
+              Because OnSpot's fee sits on top of the talent's rate, not carved out of it.
+            </p>
+            <Link
+              href="/find-work/jobs"
+              className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold transition hover:opacity-80"
+              style={{ color: C.orange }}
+            >
+              Find work <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
-        <p style={{ color: C.grayLight, fontSize: "0.78rem", lineHeight: 1.6, maxWidth: 720 }} className="mb-5">
+
+        {/* Disclaimer */}
+        <p style={{ color: C.grayLight, fontSize: "0.8rem", lineHeight: 1.65, maxWidth: 740 }} className="mb-6">
           Illustrative example — one role, one month. Traditional outsourcing: the company pays $2,500 and the talent keeps $1,000. OnSpot: the company pays $2,400 — the talent's full $2,000 rate plus a transparent $400 OnSpot fee.
         </p>
-        <p className="font-semibold leading-snug" style={{ color: C.charcoal, fontSize: "clamp(1rem, 1.4vw, 1.15rem)", maxWidth: 680 }}>
-          We don't create savings by paying talent less. We create savings by{" "}
-          <span style={{ color: C.orange }}>taking less in between.</span>
+
+        {/* Bottom statement — mixed emphasis */}
+        <p style={{ fontSize: "clamp(1rem, 1.5vw, 1.2rem)", lineHeight: 1.6, maxWidth: 700 }}>
+          <span style={{ color: C.grayLight }}>We don't create savings by paying talent less.</span>{" "}
+          <span style={{ color: C.charcoal, fontWeight: 600 }}>We create savings by{" "}</span>
+          <span className="font-bold" style={{ color: C.orange }}>taking less in between.</span>
         </p>
       </div>
     </section>
   );
 }
 
-function TalentTestimonialSection() {
+// ── SECTION 3 — THE RIGHT WAY TO OUTSOURCE ───────────────────────────────────
+function EquationSection() {
   return (
-    <section style={{ background: C.warmBg }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
-        <SectionEyebrow text="For Talents" />
-        <blockquote className="mt-4 font-bold leading-tight mb-6" style={{ fontSize: "clamp(1.8rem, 3.5vw, 3.2rem)", letterSpacing: "-0.025em", color: C.charcoal, maxWidth: 760 }}>
-          "Real work. Real growth.{" "}
-          <span style={{ color: C.orange }}>From wherever you call home.</span>"
-        </blockquote>
-        <p className="mb-8 leading-relaxed" style={{ color: C.gray, fontSize: "1rem", maxWidth: 540 }}>
-          Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
+    <section
+      style={{ background: "#EEEDFB" }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
+    >
+      <div className="mx-auto max-w-[1180px]">
+        <SectionEyebrow text="The Right Way to Outsource" />
+        <h2
+          className="mt-4 font-bold leading-tight mb-3"
+          style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+        >
+          We changed the equation.
+        </h2>
+        <p className="mb-14" style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 600 }}>
+          Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.
         </p>
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: "linear-gradient(135deg,#3A3AF8,#7F3DF4)" }}>MA</div>
-          <div>
-            <p className="font-semibold text-sm" style={{ color: C.charcoal }}>Mark Apartol</p>
-            <p style={{ color: C.grayLight, fontSize: "0.8rem" }}>Co-founder &amp; COO</p>
+
+        {/* 3-column comparison */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch mb-12">
+          {/* LEFT — Freelance Marketplaces */}
+          <div
+            className="rounded-2xl p-7 lg:p-8 flex flex-col"
+            style={{ background: "white", border: "1px solid #D8DCEE" }}
+          >
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.grayLight }}>
+              Freelance Marketplaces
+            </p>
+            <p className="font-semibold mb-7" style={{ color: C.charcoal, fontSize: "0.95rem" }}>
+              Fast and cheap
+            </p>
+            <ul className="space-y-4 flex-1">
+              {["No accountability", "Race-to-the-bottom pay"].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(200,50,50,0.08)" }}>
+                    <X className="h-3 w-3" style={{ color: "#C83232" }} />
+                  </div>
+                  <span style={{ color: C.gray, fontSize: "0.93rem" }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* CENTER — OnSpot (raised dark card) */}
+          <div
+            className="rounded-2xl p-7 lg:p-8 flex flex-col relative"
+            style={{
+              background: `linear-gradient(150deg, ${C.navySection} 0%, #07102E 100%)`,
+              boxShadow: "0 32px 64px -20px rgba(10,18,60,0.45)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              transform: "scale(1.03)",
+            }}
+          >
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.orange }}>
+              — OnSpot
+            </p>
+            <p className="font-semibold mb-7 text-white" style={{ fontSize: "0.95rem" }}>
+              Great talent. High pay. Fair cost.
+            </p>
+            <ul className="space-y-4 flex-1">
+              {[
+                "Vetted talent, ready fast",
+                "Accountable, managed relationships",
+                "No overhead cost",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(74,222,128,0.15)" }}>
+                    <Check className="h-3 w-3" style={{ color: "#4ADE80" }} />
+                  </div>
+                  <span style={{ color: "rgba(255,255,255,0.78)", fontSize: "0.93rem" }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* RIGHT — Traditional Outsourcing */}
+          <div
+            className="rounded-2xl p-7 lg:p-8 flex flex-col"
+            style={{ background: "white", border: "1px solid #D8DCEE" }}
+          >
+            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.grayLight }}>
+              Traditional Outsourcing
+            </p>
+            <p className="font-semibold mb-7" style={{ color: C.charcoal, fontSize: "0.95rem" }}>
+              Reliable, but heavy
+            </p>
+            <ul className="space-y-4 flex-1">
+              {["Slow and rigid", "Expensive overhead"].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(200,50,50,0.08)" }}>
+                    <X className="h-3 w-3" style={{ color: "#C83232" }} />
+                  </div>
+                  <span style={{ color: C.gray, fontSize: "0.93rem" }}>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-        <Link href="/find-work" className="inline-flex items-center gap-2 rounded-xl border px-6 py-3 font-semibold transition hover:bg-black/5" style={{ borderColor: C.charcoal, color: C.charcoal, fontSize: "0.95rem" }}>
-          Find work <ArrowRight className="w-4 h-4" />
-        </Link>
+
+        <p style={{ color: C.charcoal, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 680, lineHeight: 1.6 }}>
+          Everyone else trades one thing for another. OnSpot doesn't trade —{" "}
+          <span className="font-semibold" style={{ color: C.indigo }}>we raise the whole experience.</span>
+        </p>
       </div>
     </section>
   );
 }
 
-function JobListingsSection() {
+// ── SECTION 4 — WHY ONSPOT (Founder Quote) ───────────────────────────────────
+function FounderQuoteSection() {
+  return (
+    <section
+      style={{ background: "#EEEDFB" }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 pb-20 lg:pb-28 pt-4"
+    >
+      <div className="mx-auto max-w-[1180px]">
+        <div
+          className="relative overflow-hidden rounded-2xl p-8 sm:p-12 lg:p-16"
+          style={{
+            background: `linear-gradient(150deg, #0D1B4B 0%, #050D2E 55%, #08123A 100%)`,
+            boxShadow: "0 32px 64px -20px rgba(5,13,46,0.6)",
+          }}
+        >
+          {/* Decorative oversized quotation mark */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-4 -left-2 select-none"
+            style={{
+              fontSize: "18rem",
+              lineHeight: 1,
+              fontFamily: "Georgia, serif",
+              color: "rgba(75,81,184,0.13)",
+              userSelect: "none",
+            }}
+          >
+            "
+          </div>
+
+          <div className="relative z-10">
+            <SectionEyebrow text="Why OnSpot" dark />
+
+            <blockquote
+              className="mt-6 font-bold text-white leading-snug mb-8"
+              style={{
+                fontSize: "clamp(1.35rem, 2.5vw, 2.1rem)",
+                letterSpacing: "-0.02em",
+                maxWidth: 820,
+              }}
+            >
+              "We've watched good companies get stuck choosing between{" "}
+              <span style={{ color: C.orange }}>marketplace chaos</span> and{" "}
+              <span style={{ color: C.orange }}>outsourcing overhead</span> — and good talent get squeezed by both sides of that same trade-off."
+            </blockquote>
+
+            <div className="h-px mb-8" style={{ background: "rgba(255,255,255,0.08)", maxWidth: 560 }} />
+
+            <p className="mb-10 leading-relaxed" style={{ color: "rgba(255,255,255,0.52)", fontSize: "1rem", maxWidth: 660 }}>
+              So we built OnSpot the way operators build things — not software developers guessing at the problem from the outside.
+            </p>
+
+            {/* Author */}
+            <div className="flex items-center gap-4">
+              <div
+                className="h-12 w-12 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                style={{ background: `linear-gradient(135deg, ${C.orange} 0%, #C07000 100%)` }}
+              >
+                NL
+              </div>
+              <div>
+                <p className="font-semibold text-white" style={{ fontSize: "0.95rem" }}>Nur Lamimero</p>
+                <p style={{ color: "rgba(255,255,255,0.42)", fontSize: "0.82rem" }}>Co-founder &amp; CEO</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 5 — SPLIT TESTIMONIAL ────────────────────────────────────────────
+function SplitTestimonialSection() {
+  return (
+    <section>
+      {/* TOP — dark navy, content aligned left */}
+      <div
+        style={{ background: C.navySection }}
+        className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-32"
+      >
+        <div className="mx-auto max-w-[1180px] grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Text content — left column */}
+          <div>
+            <SectionEyebrow text="For Companies" dark />
+            <blockquote
+              className="mt-5 font-bold text-white leading-[1.1] mb-8"
+              style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", letterSpacing: "-0.025em" }}
+            >
+              "The team you've been picturing,{" "}
+              <span style={{ color: C.orangeLight }}>
+                without the wait or the complexity."
+              </span>
+            </blockquote>
+            {/* Author */}
+            <div className="flex items-center gap-3 mb-7">
+              <div
+                className="h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                style={{ background: `linear-gradient(135deg, #3A3AF8, #5B7CFF)` }}
+              >
+                JW
+              </div>
+              <div>
+                <p className="font-semibold text-white text-sm">Jake Wainberg</p>
+                <p style={{ color: "rgba(255,255,255,0.42)", fontSize: "0.8rem" }}>Founder &amp; President</p>
+              </div>
+            </div>
+            <p className="mb-9 leading-relaxed" style={{ color: "rgba(255,255,255,0.52)", fontSize: "1rem", maxWidth: 480 }}>
+              Vetted talent, quick starts, and simpler hiring — with a transparent fee you can see. So you can just build your team.
+            </p>
+            <Link
+              href="/hire-talent"
+              className="inline-flex h-[48px] min-w-[160px] items-center justify-center rounded-[10px] border px-7 text-[15px] font-semibold text-white transition hover:bg-white/10"
+              style={{ borderColor: "rgba(255,255,255,0.3)" }}
+            >
+              Hire talent →
+            </Link>
+          </div>
+          {/* Right column — decorative empty space */}
+          <div aria-hidden className="hidden lg:flex items-center justify-center">
+            <div className="relative">
+              <div
+                className="rounded-2xl"
+                style={{
+                  width: 320,
+                  height: 280,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              />
+              <div
+                className="absolute -bottom-6 -right-6 rounded-2xl"
+                style={{
+                  width: 180,
+                  height: 120,
+                  background: `rgba(75,81,184,0.18)`,
+                  border: "1px solid rgba(75,81,184,0.25)",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BOTTOM — warm cream, content toward right half */}
+      <div
+        style={{ background: "#FFF9EF" }}
+        className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-32"
+      >
+        <div className="mx-auto max-w-[1180px] grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Left column — decorative empty space */}
+          <div aria-hidden className="hidden lg:flex items-center justify-center">
+            <div className="relative">
+              <div
+                className="rounded-2xl"
+                style={{
+                  width: 320,
+                  height: 280,
+                  background: "rgba(245,166,35,0.06)",
+                  border: "1px solid rgba(245,166,35,0.15)",
+                }}
+              />
+              <div
+                className="absolute -top-6 -left-6 rounded-2xl"
+                style={{
+                  width: 160,
+                  height: 100,
+                  background: "rgba(75,81,184,0.07)",
+                  border: "1px solid rgba(75,81,184,0.12)",
+                }}
+              />
+            </div>
+          </div>
+          {/* Text content — right column */}
+          <div>
+            <SectionEyebrow text="For Talents" />
+            <blockquote
+              className="mt-5 font-bold leading-[1.1] mb-8"
+              style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+            >
+              "Real work, great pay,{" "}
+              <span style={{ color: C.orangeDeep }}>
+                from wherever you call home."
+              </span>
+            </blockquote>
+            <p className="mb-8 leading-relaxed" style={{ color: C.gray, fontSize: "1rem", maxWidth: 480 }}>
+              Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
+            </p>
+            {/* Author */}
+            <div className="flex items-center gap-3 mb-9">
+              <div
+                className="h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                style={{ background: `linear-gradient(135deg, #3A3AF8, #7F3DF4)` }}
+              >
+                MA
+              </div>
+              <div>
+                <p className="font-semibold text-sm" style={{ color: C.charcoal }}>Mark Apostol</p>
+                <p style={{ color: C.grayLight, fontSize: "0.8rem" }}>Co-founder &amp; COO</p>
+              </div>
+            </div>
+            <Link
+              href="/find-work/jobs"
+              className="inline-flex h-[48px] min-w-[160px] items-center justify-center rounded-[10px] border px-7 text-[15px] font-semibold transition hover:bg-black/5"
+              style={{ borderColor: C.charcoal, color: C.charcoal }}
+            >
+              Find work →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 6 — OPEN JOBS ─────────────────────────────────────────────────────
+const STATIC_JOBS = [
+  { title: "IT Administrator",                 type: "Full-time", loc: "Remote", pay: "USD 1,500 – 3,000/month", id: null },
+  { title: "Accounting Manager",               type: "Full-time", loc: "Hybrid", pay: "USD 500/month",           id: null },
+  { title: "Virtual Assistant",                type: "Full-time", loc: "Remote", pay: "PHP 8 – 12",              id: null },
+  { title: "Customer Service Representative",  type: "Part-time", loc: "Onsite", pay: "USD 10 – 15",             id: null },
+];
+
+function OpenJobsSection() {
   const { data: rawJobs } = useQuery({
     queryKey: ["/api/jobs/popular"],
     queryFn: async () => {
@@ -927,242 +1392,307 @@ function JobListingsSection() {
     },
     staleTime: 5 * 60 * 1000,
   });
-  const jobs = (rawJobs ?? []).filter((j: any) => j.title?.toLowerCase() !== "test").slice(0, 4);
-  return (
-    <section style={{ background: C.navySection }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
-        <SectionEyebrow text="For Talents" dark />
-        <h2 className="mt-4 font-bold leading-tight mb-4" style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: "white", maxWidth: 680 }}>
-          Hundreds of high-paying jobs. <span style={{ color: C.orangeLight }}>Open right now.</span>
-        </h2>
-        <p className="mb-10" style={{ color: "rgba(255,255,255,0.55)", fontSize: "1rem", maxWidth: 540 }}>
-          Real roles with great companies — all roles that reflect what your work is actually worth. New jobs open every week.
-        </p>
-        {jobs.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-            {jobs.map((job: any) => (
-              <div key={job.id} className="rounded-2xl p-5 flex flex-col" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <span className="inline-block text-[10px] font-bold tracking-wider uppercase rounded-md px-2.5 py-1 mb-4 self-start" style={{ background: "rgba(255,174,33,0.18)", color: C.orange }}>HIRING NOW</span>
-                <p className="text-white font-semibold leading-snug mb-2 flex-1" style={{ fontSize: "0.95rem" }}>{job.title}</p>
-                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem" }} className="mb-3">
-                  {[job.contractType, job.location].filter(Boolean).join(" · ") || "Full-time · Remote"}
-                </p>
-                {(job.budget || job.hourlyRateMin) && (
-                  <p className="font-semibold mb-4" style={{ color: C.orange, fontSize: "0.9rem" }}>
-                    {job.budget ? `${job.budgetCurrency ?? "PHP"} ${job.budget}` : `${job.budgetCurrency ?? "USD"} ${job.hourlyRateMin}${job.hourlyRateMax ? ` – ${job.hourlyRateMax}` : ""}`}
-                  </p>
-                )}
-                <Link href={`/jobs/${job.id}`}>
-                  <button className="flex items-center gap-1 text-xs font-semibold transition hover:opacity-80 mt-auto" style={{ color: "rgba(255,255,255,0.6)" }}>
-                    View role <ArrowRight className="w-3 h-3" />
-                  </button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex flex-col items-start gap-4">
-          <Link href="/find-work/jobs">
-            <button className="inline-flex items-center gap-2 rounded-xl border px-6 py-3.5 font-semibold text-white transition hover:bg-white/10" style={{ borderColor: "rgba(255,255,255,0.3)", fontSize: "0.95rem" }}>
-              Browse all jobs <ArrowRight className="w-4 h-4" />
-            </button>
-          </Link>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.82rem" }}>Set your rate. Keep your rate. OnSpot's fee is never taken out of your pay.</p>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function ProcessSection() {
+  const liveJobs: typeof STATIC_JOBS = (rawJobs ?? [])
+    .filter((j: any) => j.title?.toLowerCase() !== "test")
+    .slice(0, 4)
+    .map((j: any) => ({
+      title: j.title,
+      type:  j.contractType || "Full-time",
+      loc:   j.location || "Remote",
+      pay:   j.budget
+        ? `${j.budgetCurrency ?? "PHP"} ${j.budget}`
+        : j.hourlyRateMin
+          ? `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`
+          : "",
+      id: j.id ?? null,
+    }));
+
+  const jobs = liveJobs.length >= 3 ? liveJobs : STATIC_JOBS;
+
   return (
-    <section style={{ background: `radial-gradient(55% 70% at 50% 0%, rgba(75,81,184,0.07), transparent 70%), #F7F7FB` }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
-        <SectionEyebrow text="The Plan" />
-        <h2 className="mt-4 font-bold leading-tight mb-3" style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}>From posted to placed</h2>
-        <p className="mb-14" style={{ color: C.gray, fontSize: "1rem" }}>Three steps. No bidding wars, no long contracts, no hidden markups.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {[
-            { num:"1", title:"Post or apply",  text:"Tell us what you need. Or show us what you can do.",                   ctas:[{label:"Post a role →",href:"/hire-talent"},{label:"Apply as talent →",href:"/find-work/jobs"}] },
-            { num:"2", title:"Get matched",    text:"We connect the right people, fast — no endless scrolling.",           ctas:[{label:"See how matching works →",href:"/why-onspot"}] },
-            { num:"3", title:"Start working",  text:"Show up and do the work. We handle everything else.",                 ctas:[{label:"Get started →",href:"/hire-talent"}] },
-          ].map((step, i) => (
-            <div key={i} className="relative">
-              {i < 2 && <div className="hidden md:block absolute top-8 left-full z-0 h-px" style={{ background: "linear-gradient(to right, #D0D4E8, transparent)", width: "calc(100% - 2rem)" }} />}
-              <div className="relative z-10 rounded-2xl p-6" style={{ background: "white", border: "1px solid #E0E4F0" }}>
-                <div className="flex items-start justify-between mb-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: "rgba(75,81,184,0.1)", color: C.indigo }}>
-                    <span className="text-lg font-bold">{step.num}</span>
-                  </div>
-                  <span className="font-bold text-4xl tabular-nums" style={{ color: "#E8EAF5", letterSpacing: "-0.04em" }}>{step.num}</span>
-                </div>
-                <h3 className="font-bold mb-2" style={{ fontSize: "1.05rem", color: C.charcoal }}>{step.title}</h3>
-                <p className="mb-5" style={{ color: C.gray, fontSize: "0.9rem", lineHeight: 1.6 }}>{step.text}</p>
-                <div className="flex flex-wrap gap-3">
-                  {step.ctas.map(l => (
-                    <Link key={l.label} href={l.href} className="text-xs font-semibold hover:opacity-80 transition" style={{ color: C.orange }}>{l.label}</Link>
-                  ))}
-                </div>
-              </div>
+    <section
+      style={{
+        background: `radial-gradient(ellipse at 50% 0%, rgba(75,81,184,0.35), transparent 65%), linear-gradient(180deg, ${C.indigoDeep} 0%, #06102E 100%)`,
+      }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
+    >
+      <div className="mx-auto max-w-[1180px]">
+        {/* Centered header */}
+        <div className="text-center mb-14">
+          <SectionEyebrow text="For Talents" dark />
+          <h2
+            className="mt-4 font-bold text-white leading-tight"
+            style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em" }}
+          >
+            Hundreds of high-paying jobs.<br />
+            <span style={{ color: C.orangeLight }}>Open right now.</span>
+          </h2>
+          <p className="mt-4 mx-auto" style={{ color: "rgba(255,255,255,0.52)", fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 560 }}>
+            Real roles with great companies — at rates that reflect what your work is actually worth. New jobs open every week.
+          </p>
+        </div>
+
+        {/* 4 job cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {jobs.map((job, i) => (
+            <div
+              key={i}
+              className="rounded-2xl p-6 flex flex-col"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <span
+                className="self-start rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide mb-5"
+                style={{ background: "rgba(255,174,33,0.18)", color: C.orange }}
+              >
+                Hiring Now
+              </span>
+              <p className="font-semibold text-white leading-snug mb-2 flex-1" style={{ fontSize: "0.98rem" }}>
+                {job.title}
+              </p>
+              <p className="mb-3" style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.82rem" }}>
+                {job.type} · {job.loc}
+              </p>
+              {job.pay && (
+                <p className="font-semibold mb-5" style={{ color: C.orangeLight, fontSize: "0.88rem" }}>
+                  {job.pay}
+                </p>
+              )}
+              <Link
+                href={job.id ? `/jobs/${job.id}` : "/find-work/jobs"}
+                className="inline-flex items-center gap-1 text-xs font-semibold mt-auto transition hover:opacity-80"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+              >
+                View role <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           ))}
         </div>
-        <p style={{ color: C.gray, fontSize: "0.95rem" }}>That's it.{" "}<span className="font-semibold" style={{ color: C.orange }}>Most roles are filled in days, not months.</span></p>
-      </div>
-    </section>
-  );
-}
 
-function EquationSection() {
-  return (
-    <section style={{ background: C.lavenderBg }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
-        <SectionEyebrow text="The Right Way to Outsource" />
-        <h2 className="mt-4 font-bold leading-tight mb-3" style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}>We changed the equation.</h2>
-        <p className="mb-12" style={{ color: C.gray, fontSize: "1rem", maxWidth: 560 }}>Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.</p>
-        <div className="grid grid-cols-3 rounded-2xl overflow-hidden mb-10 text-sm">
-          <div className="px-5 py-4" style={{ background: "#E0E4F4", borderRight: "1px solid #CBD0E8" }}>
-            <p className="font-bold text-[11px] tracking-[0.1em] uppercase" style={{ color: "#7A849C" }}>FREELANCE MARKETPLACES</p>
-            <p className="font-semibold mt-1" style={{ color: C.gray, fontSize: "0.85rem" }}>Fast and cheap</p>
-          </div>
-          <div className="px-5 py-4 text-center" style={{ background: C.navySection }}>
-            <p className="font-bold text-[11px] tracking-[0.1em] uppercase" style={{ color: C.orange }}>— ONSPOT</p>
-            <p className="font-semibold mt-1 text-white" style={{ fontSize: "0.85rem" }}>Great talent. High pay. Fair cost.</p>
-          </div>
-          <div className="px-5 py-4 text-right" style={{ background: "#E0E4F4" }}>
-            <p className="font-bold text-[11px] tracking-[0.1em] uppercase" style={{ color: "#7A849C" }}>TRADITIONAL OUTSOURCING</p>
-            <p className="font-semibold mt-1" style={{ color: C.gray, fontSize: "0.85rem" }}>Reliable, but heavy</p>
-          </div>
-          {/* Row 1 */}
-          <div className="px-5 py-4 flex items-center gap-2" style={{ background: "#E8ECF6", borderRight: "1px solid #CBD0E8", borderTop: "1px solid #CBD0E8" }}>
-            <X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} /><span style={{ color: C.gray }}>No accountability</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-center gap-2" style={{ background: "rgba(255,255,255,0.04)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <Check className="h-4 w-4 flex-shrink-0" style={{ color: "#4ADE80" }} /><span className="text-white" style={{ fontSize: "0.9rem" }}>Vetted talent, ready fast</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ background: "#E8ECF6", borderTop: "1px solid #CBD0E8" }}>
-            <span className="text-right" style={{ color: C.gray }}>Slow and rigid</span><X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} />
-          </div>
-          {/* Row 2 */}
-          <div className="px-5 py-4 flex items-center gap-2" style={{ background: "#E2E6F2", borderRight: "1px solid #CBD0E8", borderTop: "1px solid #CBD0E8" }}>
-            <X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} /><span style={{ color: C.gray }}>No oversight</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-center gap-2" style={{ background: "rgba(255,255,255,0.04)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <Check className="h-4 w-4 flex-shrink-0" style={{ color: "#4ADE80" }} /><span className="text-white" style={{ fontSize: "0.9rem" }}>Accountable, managed relationships</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ background: "#E2E6F2", borderTop: "1px solid #CBD0E8" }}>
-            <span className="text-right" style={{ color: C.gray }}>Expensive overhead</span><X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} />
-          </div>
-          {/* Row 3 */}
-          <div className="px-5 py-4 flex items-center gap-2" style={{ background: "#E8ECF6", borderRight: "1px solid #CBD0E8", borderTop: "1px solid #CBD0E8" }}>
-            <X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} /><span style={{ color: C.gray }}>Race-to-bottom pay</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-center gap-2" style={{ background: "rgba(255,255,255,0.04)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <Check className="h-4 w-4 flex-shrink-0" style={{ color: "#4ADE80" }} /><span className="text-white" style={{ fontSize: "0.9rem" }}>No overhead cost</span>
-          </div>
-          <div className="px-5 py-4 flex items-center justify-end gap-2" style={{ background: "#E8ECF6", borderTop: "1px solid #CBD0E8" }}>
-            <span className="text-right" style={{ color: C.gray }}>Slow to start</span><X className="h-4 w-4 flex-shrink-0" style={{ color: "#C0303A" }} />
-          </div>
-        </div>
-        <p style={{ color: C.charcoal, fontSize: "1rem", maxWidth: 680 }}>
-          Everyone else trades one thing for another. OnSpot doesn't trade —{" "}
-          <span className="font-semibold" style={{ color: C.orange }}>we raise the whole experience.</span>
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function FounderQuoteSection() {
-  return (
-    <section style={{ background: C.lavenderBg }} className="px-6 sm:px-10 lg:px-16 xl:px-20 pb-20 lg:pb-28 pt-4">
-      <div className="mx-auto max-w-[1100px]">
-        <div className="rounded-2xl p-8 sm:p-10 lg:p-14" style={{ background: "#0D1B4B" }}>
-          <SectionEyebrow text="Why OnSpot" dark />
-          <blockquote className="mt-4 font-bold text-white leading-tight mb-6" style={{ fontSize: "clamp(1.3rem, 2.2vw, 2rem)", letterSpacing: "-0.02em", maxWidth: 780 }}>
-            "We've watched good companies get stuck choosing between{" "}
-            <span style={{ color: C.orangeLight }}>marketplace chaos</span> and{" "}
-            <span style={{ color: C.orangeLight }}>outsourcing overhead</span> — and good talent get squeezed by both sides of that same trade-off."
-          </blockquote>
-          <p className="mb-8 leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.95rem", maxWidth: 680 }}>
-            So we built OnSpot the way operators build things — not software developers guessing at the problem from the outside.
+        {/* CTA */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Link
+            href="/find-work/jobs"
+            className="inline-flex h-[50px] min-w-[200px] items-center justify-center rounded-xl border px-8 text-[15px] font-semibold text-white transition hover:bg-white/10"
+            style={{ borderColor: "rgba(255,255,255,0.3)" }}
+          >
+            Browse all jobs →
+          </Link>
+          <p style={{ color: "rgba(255,255,255,0.38)", fontSize: "0.82rem" }}>
+            Set your rate. Keep your rate. OnSpot's fee is never taken out of your pay.
           </p>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: `linear-gradient(135deg, ${C.orange}, #E07B00)` }}>NL</div>
-            <div>
-              <p className="font-semibold text-white text-sm">Nur Lantmann</p>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8rem" }}>Co-founder &amp; CEO</p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function CompanyTestimonialSection() {
-  return (
-    <section style={{ background: C.navySection }} className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28">
-      <div className="mx-auto max-w-[1100px]">
-        <SectionEyebrow text="For Companies" dark />
-        <blockquote className="mt-4 font-bold leading-tight mb-6" style={{ fontSize: "clamp(1.8rem, 3.5vw, 3.2rem)", letterSpacing: "-0.025em", color: "white", maxWidth: 760 }}>
-          "The team you've been picturing,{" "}
-          <span style={{ color: C.orangeLight }}>without the wait or the complexity.</span>"
-        </blockquote>
-        <div className="flex items-center gap-3 mb-7">
-          <div className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: "linear-gradient(135deg,#3A3AF8,#5B7CFF)" }}>JS</div>
-          <div>
-            <p className="font-semibold text-sm text-white">John Steinberg</p>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8rem" }}>Founder &amp; President</p>
-          </div>
-        </div>
-        <p className="mb-9 leading-relaxed" style={{ color: "rgba(255,255,255,0.55)", fontSize: "1rem", maxWidth: 520 }}>
-          Vetted talent, quick starts, and simpler hiring — with a transparent fee you can see. So you can just build your team.
-        </p>
-        <Link href="/hire-talent" className="inline-flex items-center gap-2 rounded-xl border px-6 py-3.5 font-semibold text-white transition hover:bg-white/10" style={{ borderColor: "rgba(255,255,255,0.3)", fontSize: "0.95rem" }}>
-          Hire talent →
-        </Link>
-      </div>
-    </section>
-  );
-}
+// ── SECTION 7 — THE PLAN ──────────────────────────────────────────────────────
+const STEPS = [
+  {
+    num: "1",
+    icon: FileText,
+    title: "Post or apply",
+    body: "Tell us what you need. Or show us what you can do.",
+    links: [
+      { label: "Post a role →", href: "/hire-talent" },
+      { label: "Apply as talent →", href: "/find-work/jobs" },
+    ],
+  },
+  {
+    num: "2",
+    icon: Zap,
+    title: "Get matched",
+    body: "We connect the right people, fast — no endless scrolling.",
+    links: [{ label: "See how matching works →", href: "/why-onspot" }],
+  },
+  {
+    num: "3",
+    icon: Rocket,
+    title: "Start working",
+    body: "Show up and do the work. We handle everything else.",
+    links: [{ label: "Get started →", href: "/hire-talent" }],
+  },
+];
 
-function FinalCtaSection() {
+function ProcessSection() {
   return (
     <section
-      style={{ background: `linear-gradient(160deg, ${C.indigoDeep} 0%, #1a0d40 50%, ${C.dark3} 100%)` }}
-      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-36 text-center"
+      style={{
+        background: `radial-gradient(55% 60% at 50% 0%, rgba(75,81,184,0.06), transparent 65%), #F7F7FB`,
+      }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      <div className="mx-auto max-w-[820px]">
-        <p className="inline-flex items-center justify-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-white/85 mb-6">
-          <span aria-hidden="true" className="inline-block h-[2px] w-4 rounded" style={{ background: C.orange }} />
+      <div className="mx-auto max-w-[1180px]">
+        <SectionEyebrow text="The Plan" />
+        <h2
+          className="mt-4 font-bold leading-tight mb-3"
+          style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+        >
+          From posted to placed.
+        </h2>
+        <p className="mb-14" style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 520 }}>
+          Three steps. No bidding wars, no long contracts, no hidden markups.
+        </p>
+
+        {/* 3 step cards */}
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {STEPS.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <div key={i} className="relative">
+                {/* Arrow connector between cards */}
+                {i < 2 && (
+                  <div
+                    aria-hidden
+                    className="hidden md:flex absolute -right-4 top-10 z-10 h-8 w-8 items-center justify-center rounded-full"
+                    style={{ background: C.orange, boxShadow: "0 4px 12px rgba(255,174,33,0.4)" }}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5 text-white" />
+                  </div>
+                )}
+                <div
+                  className="rounded-2xl p-7 h-full flex flex-col"
+                  style={{ background: "white", border: "1px solid #E0E4F0", boxShadow: "0 4px 20px rgba(75,81,184,0.06)" }}
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-xl"
+                      style={{ background: "rgba(75,81,184,0.1)" }}
+                    >
+                      <Icon className="h-5 w-5" style={{ color: C.indigo }} />
+                    </div>
+                    <span
+                      className="font-bold tabular-nums"
+                      style={{ fontSize: "3.5rem", color: "#EAECF6", letterSpacing: "-0.04em", lineHeight: 1 }}
+                    >
+                      {step.num}
+                    </span>
+                  </div>
+                  <h3 className="font-bold mb-2" style={{ fontSize: "1.1rem", color: C.charcoal }}>
+                    {step.title}
+                  </h3>
+                  <p className="leading-relaxed flex-1" style={{ color: C.gray, fontSize: "0.93rem" }}>
+                    {step.body}
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-4">
+                    {step.links.map((l) => (
+                      <Link
+                        key={l.label}
+                        href={l.href}
+                        className="text-xs font-semibold transition hover:opacity-80"
+                        style={{ color: C.orange }}
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p style={{ fontSize: "clamp(1rem, 1.4vw, 1.1rem)", color: C.charcoal }}>
+          That's it.{" "}
+          <span className="font-semibold" style={{ color: C.indigo }}>
+            Most roles are filled in days, not months.
+          </span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 8 — FINAL CTA ─────────────────────────────────────────────────────
+function FinalCtaSection() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    // Navigate to sign-up with email pre-filled
+    window.location.href = `/signup?email=${encodeURIComponent(email.trim())}`;
+  };
+
+  return (
+    <section
+      style={{
+        background: `radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), transparent 60%), linear-gradient(170deg, ${C.indigoDeep} 0%, #050D2E 55%, ${C.dark3} 100%)`,
+      }}
+      className="px-6 sm:px-10 py-24 lg:py-40 text-center"
+    >
+      <div className="mx-auto max-w-[640px]">
+        {/* Eyebrow */}
+        <p className="inline-flex items-center justify-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] mb-7" style={{ color: "rgba(255,255,255,0.75)" }}>
+          <span aria-hidden className="inline-block h-[2px] w-4 rounded" style={{ background: C.orange }} />
           Work Without Limits
         </p>
+
+        {/* Heading */}
         <h2
-          className="font-bold tracking-tight text-white"
-          style={{ fontSize: "clamp(1.9rem, 4.2vw, 3.125rem)", lineHeight: 1.12, letterSpacing: "-0.02em" }}
+          className="font-bold text-white leading-[1.1] mb-5"
+          style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.25rem)", letterSpacing: "-0.025em" }}
         >
           Some of the best teams in the world already work this way.
         </h2>
-        <p className="mx-auto mt-5 max-w-[480px] text-[16px] leading-relaxed" style={{ color: "rgba(255,255,255,0.68)" }}>
+
+        {/* Body */}
+        <p className="mb-10 leading-relaxed" style={{ color: "rgba(255,255,255,0.58)", fontSize: "clamp(0.95rem, 1.5vw, 1.1rem)" }}>
           The ones who wait keep losing good people to delay and overhead. The ones who don't build without limits — and the people who work with them earn without limits.
         </p>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <Link
-            href="/hire-talent"
-            className="inline-flex h-[52px] min-w-[180px] items-center justify-center rounded-full bg-white px-9 text-[15.5px] font-semibold transition hover:-translate-y-[1px] hover:bg-white/95"
-            style={{ color: C.indigo, boxShadow: "0 16px 36px -12px rgba(10,10,60,0.45)" }}
-          >
-            Hire talent →
-          </Link>
-          <Link
-            href="/find-work/jobs"
-            className="inline-flex h-[52px] min-w-[180px] items-center justify-center rounded-full px-9 text-[15.5px] font-semibold text-white transition hover:-translate-y-[1px]"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.35)", backdropFilter: "blur(8px)" }}
-          >
+
+        {/* Email input + CTA */}
+        <form onSubmit={handleSubmit} className="mb-5">
+          <div className="flex flex-col sm:flex-row items-stretch gap-3 max-w-[480px] mx-auto">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              required
+              className="flex-1 rounded-xl px-5 py-3.5 text-[15px] outline-none transition"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "white",
+              }}
+            />
+            <button
+              type="submit"
+              className="flex-shrink-0 inline-flex h-[52px] items-center justify-center rounded-xl px-8 text-[15px] font-semibold transition hover:-translate-y-[1px]"
+              style={{
+                background: C.orange,
+                color: C.indigoDeep,
+                boxShadow: "0 8px 24px rgba(255,174,33,0.35)",
+                minWidth: 160,
+              }}
+            >
+              Get started →
+            </button>
+          </div>
+        </form>
+
+        {/* Looking for work */}
+        <p className="mb-4" style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.9rem" }}>
+          Looking for work instead?{" "}
+          <Link href="/find-work/jobs" className="font-semibold underline underline-offset-2 hover:opacity-80 transition" style={{ color: "rgba(255,255,255,0.7)" }}>
             Find work →
           </Link>
-        </div>
+        </p>
+
+        {/* Legal */}
+        <p style={{ color: "rgba(255,255,255,0.28)", fontSize: "0.78rem" }}>
+          By continuing you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-1 hover:opacity-70 transition">Terms</Link>
+          {" "}and{" "}
+          <Link href="/privacy" className="underline underline-offset-1 hover:opacity-70 transition">Privacy Policy</Link>.
+        </p>
       </div>
     </section>
   );
