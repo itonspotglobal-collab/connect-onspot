@@ -159,7 +159,7 @@ function HeroSection() {
     <section
       ref={sectionRef}
       className="relative overflow-hidden"
-      style={{ height: "calc(100svh - 74px)", minHeight: 620, background: slideBg(active.id), transition: "background 0.65s ease" }}
+      style={{ minHeight: "calc(100svh - 74px)", background: slideBg(active.id), transition: "background 0.65s ease", display: "flex", flexDirection: "column" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onMouseEnter={() => setPaused(true)}
@@ -168,7 +168,7 @@ function HeroSection() {
     >
       {/* Slide content — full height flex column */}
       <div
-        className="relative z-10 h-full w-full flex flex-col"
+        className="relative z-10 flex-1 w-full flex flex-col"
         style={{ maxWidth: 1180, marginInline: "auto", paddingInline: "clamp(24px, 5vw, 64px)" }}
       >
         {/* Main content area — flex-1 so it fills remaining space; centers its children */}
@@ -291,7 +291,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
         <span className="text-white"> Limits</span>
       </h1>
 
-      <p className="mt-5 max-w-[560px]" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.5 }}>
+      <p className="mt-5" style={{ fontSize: "clamp(16px, 1.35vw, 22px)", lineHeight: 1.4, whiteSpace: "nowrap", width: "max-content", maxWidth: "100%", marginInline: "auto" }}>
         <span className="font-semibold text-white">One system.</span>{" "}
         <span style={{ color: "rgba(199,203,242,0.8)" }}>Highest pay for talents at lower cost to companies.</span>
       </p>
@@ -618,18 +618,18 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
         <>
           <SlideEyebrow text="THE TALENT NETWORK" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight leading-[1.04]"
-            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em", color: C.charcoal }}
+            className="font-bold tracking-tight"
+            style={{ fontSize: "clamp(46px, 4.2vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.03em", color: C.charcoal, maxWidth: 500 }}
           >
             Thousands of<br />
             talents.{" "}
             <span style={{ color: C.indigo }}>Ready to<br />work.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45, color: C.charcoal }}>
+          <p className="mt-4 font-medium" style={{ fontSize: "clamp(20px, 1.6vw, 27px)", lineHeight: 1.45, color: C.charcoal, maxWidth: 500 }}>
             Vetted, experienced, and{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>ready to start in days — not months.</span>
           </p>
-          <p className="mt-3 max-w-[440px] leading-relaxed" style={{ fontSize: "0.95rem", color: C.gray }}>
+          <p className="mt-3 leading-relaxed" style={{ fontSize: "clamp(15px, 1vw, 17px)", color: C.gray, maxWidth: 500 }}>
             Every professional in the network is screened for skills, experience, and reliability before you ever see them — so the match is fast and the quality holds.
           </p>
           <Link
@@ -655,7 +655,7 @@ function talentInitials(name: string): string {
 
 function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoading: boolean }) {
   return (
-    <div className="relative" style={{ width: "clamp(320px, 37vw, 520px)", maxWidth: "100%" }}>
+    <div className="relative" style={{ width: "clamp(400px, 38vw, 520px)", maxWidth: "100%" }}>
       {/* Glow */}
       <div aria-hidden className="absolute -inset-6 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 50%, rgba(75,81,184,0.12), transparent 70%)", filter: "blur(10px)" }} />
       <div
@@ -708,24 +708,26 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
                 <Link
                   key={c.id}
                   href={`/talent-profile/${c.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer"
+                  className="px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer"
+                  style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 10, alignItems: "center" }}
                 >
-                  <div className="flex items-center gap-3">
-                    {c.profilePhotoUrl ? (
-                      <img src={c.profilePhotoUrl} alt={name} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: C.indigo }}>
-                        {talentInitials(name)}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-[12px] font-semibold leading-snug" style={{ color: C.charcoal }}>{name}</p>
-                      <p className="text-[10px] leading-snug" style={{ color: C.gray }}>
-                        {role}{yrs ? ` · ${yrs}` : ""}
-                      </p>
+                  {/* Avatar */}
+                  {c.profilePhotoUrl ? (
+                    <img src={c.profilePhotoUrl} alt={name} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: C.indigo }}>
+                      {talentInitials(name)}
                     </div>
+                  )}
+                  {/* Name / role */}
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold leading-snug truncate" style={{ color: C.charcoal }}>{name}</p>
+                    <p className="text-[10px] leading-snug truncate" style={{ color: C.gray }}>
+                      {role}{yrs ? ` · ${yrs}` : ""}
+                    </p>
                   </div>
-                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-2">
+                  {/* Rating / availability */}
+                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                     {c.rating != null && (
                       <span className="text-[10px] font-semibold" style={{ color: C.charcoal }}>★ {Number(c.rating).toFixed(1)}</span>
                     )}
@@ -761,18 +763,18 @@ function JobsSlide({ isDark, liveJobs, isLoading }: { isDark: boolean; liveJobs:
         <>
           <SlideEyebrow text="FOR TALENTS" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight text-white leading-[1.04]"
-            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
+            className="font-bold tracking-tight text-white"
+            style={{ fontSize: "clamp(46px, 4.15vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.03em", maxWidth: 510 }}
           >
             Hundreds of<br />
             high-paying jobs.<br />
             <span style={{ color: C.orangeLight }}>Open right now.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45 }}>
+          <p className="mt-4 font-medium text-white" style={{ fontSize: "clamp(20px, 1.6vw, 27px)", lineHeight: 1.45, maxWidth: 510 }}>
             Real roles, real rates —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>and new jobs opening every week.</span>
           </p>
-          <p className="mt-3 max-w-[440px] leading-relaxed" style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.62)" }}>
+          <p className="mt-3 leading-relaxed" style={{ fontSize: "clamp(15px, 1vw, 17px)", color: "rgba(255,255,255,0.62)", maxWidth: 510 }}>
             Set your rate and keep it. OnSpot's fee is added on top — never taken out of your pay.
           </p>
           <Link
@@ -800,7 +802,7 @@ function jobPay(j: any): string | null {
 
 function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: boolean }) {
   return (
-    <div className="relative" style={{ width: "clamp(320px, 36vw, 500px)", maxWidth: "100%" }}>
+    <div className="relative" style={{ width: "clamp(400px, 37vw, 500px)", maxWidth: "100%" }}>
       <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
       <div
         className="relative rounded-[18px] overflow-hidden"
@@ -840,15 +842,16 @@ function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: bo
                 <Link
                   key={j.id}
                   href={`/find-work/job/${j.id}`}
-                  className="flex items-center justify-between px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                  className="px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                  style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "center" }}
                 >
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold truncate" style={{ color: C.charcoal }}>{j.title}</p>
+                    <p className="text-[13px] font-semibold leading-snug" style={{ color: C.charcoal, overflowWrap: "anywhere" }}>{j.title}</p>
                     <p className="text-[10px] mt-0.5" style={{ color: C.gray }}>
                       {location}{pay ? ` · ${pay}` : ""}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-3">
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                     {j.isFeatured && (
                       <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(255,174,33,0.18)", color: C.orangeDeep }}>Featured</span>
                     )}
