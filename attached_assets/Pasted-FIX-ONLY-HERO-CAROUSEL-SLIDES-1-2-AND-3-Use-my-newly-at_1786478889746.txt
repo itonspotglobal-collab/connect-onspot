@@ -1,0 +1,301 @@
+FIX ONLY HERO CAROUSEL SLIDES 1, 2, AND 3.
+
+Use my newly attached screenshots as the visual source of truth.
+Do not redesign anything.
+Do not change Slides 4 or 5.
+Do not alter carousel timing, routing, or database behavior.
+
+==================================================
+SLIDE 1 — SLIGHTLY INCREASE TITLE SIZE
+==================================================
+
+Title:
+“Work Without Limits”
+
+Current title is slightly too small.
+
+Increase ONLY the main title modestly.
+
+Target:
+font-size: clamp(58px, 5.6vw, 82px);
+font-weight: 700–800;
+line-height: 0.98–1.02;
+letter-spacing: -0.03em;
+
+Keep:
+- “Work” = white
+- “Without” = orange
+- “Limits” = white
+- centered
+- one line on normal desktop/laptop widths
+- responsive on smaller screens
+
+Do NOT enlarge the subtitle.
+
+==================================================
+SLIDE 2 — DASHBOARD MUST MATCH REFERENCE IN DETAIL
+==================================================
+
+Rebuild the dashboard mockup so all tiny UI details match the attached reference.
+
+TOP BAR:
+Left:
+“OnSpot”
+
+Right:
+“Gentech LLC”
+purple circular avatar
+
+DIVIDER underneath.
+
+TITLE ROW:
+“Team dashboard”
+Right:
+“Last 6 months”
+
+TOP METRICS — 4 CARDS
+
+CARD 1:
+MONTHLY COST
+$18,400
+▼ 22% vs traditional
+
+- pale lavender card
+- slight purple border
+- green comparison text
+
+CARD 2:
+HEADCOUNT
+8
+Active members
+
+CARD 3:
+AVG. PERFORMANCE
+4.8/5
+Across roles
+
+CARD 4:
+RETENTION
+94%
+Continuity
+
+TEAM PERFORMANCE
+Label:
+“TEAM PERFORMANCE”
+
+Rows:
+
+Maria R.
+Customer Support Lead
+4.9/5
+$2,400
+
+Josh T.
+Data Analyst
+4.7/5
+$2,850
+
+Anna L.
+Virtual Assistant
+4.8/5
+$1,900
+
+David K.
+Sales Associate
+4.6/5
+$2,100
+
+Use:
+- circular initials
+- name bold
+- role muted
+- green rating pill
+- salary right aligned
+- thin separators between rows
+
+HIRING
+Label:
+“HIRING”
+
+LEFT CARD:
+3
+Open roles
+
+RIGHT CARD:
+6 days
+Avg. time-to-fill (vs 39
+industry avg)
+
+This exact wording and hierarchy must be visible.
+
+VACANT ROLES
+Label:
+“VACANT ROLES”
+
+Customer Support Rep
+5 candidates in review
+Open 2 days
+
+Sales Associate
+6 candidates in review
+Open 3 days
+
+Data Analyst
+3 candidates in review
+Open 1 day
+
+Details:
+- title dark/bold
+- candidate count indigo
+- “Open X days” muted gray and aligned right
+- use thin separators
+- compact spacing exactly like reference
+
+Laptop frame:
+- dark charcoal border
+- rounded corners
+- slightly thicker bottom/sides
+- subtle shadow
+- white interior
+- keep proportions wide and short like the reference
+
+Do not simplify this dashboard.
+
+
+==================================================
+SLIDE 3 — PHONE MUST MATCH REFERENCE IN DETAIL
+==================================================
+
+Rebuild the phone to match the attached phone mock exactly.
+
+PHONE FRAME:
+- tall narrow phone
+- dark navy shell
+- large rounded corners
+- white screen
+- centered black pill notch
+- subtle dark shadow
+
+TOP ROW:
+orange rounded-square
+“OnSpot”
+purple circular icon at right
+
+TITLE:
+“Earnings summary”
+Subtitle:
+“Last 6 months”
+
+SUMMARY CARD:
+pale cream background
+thin orange border
+rounded corners
+
+Label:
+TOTAL EARNED THIS MONTH
+
+Value:
+$3,455
+
+Green pill:
+▲ 18% vs last month
+
+STATS:
+Two equal light cards.
+
+LEFT:
+AVG. RATE
+$20/hr
+
+RIGHT:
+ACTIVE
+CLIENTS
+2
+
+GRAPH — MUST MATCH REFERENCE
+Create six orange bars with month labels:
+
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+Relative heights should visually match the screenshot:
+Mar = low
+Apr = medium
+May = low-medium
+Jun = medium-high
+Jul = medium
+Aug = highest
+
+Use:
+- equal bar widths
+- consistent spacing
+- rounded bar tops
+- orange/gold gradient or solid matching mock
+- month labels centered beneath
+
+Do not leave a blank chart area.
+
+EARNINGS BY CLIENT
+
+Label:
+EARNINGS BY CLIENT
+
+Row 1:
+New Tech AI
+$2,000
+
+Under row:
+indigo progress line nearly full width
+
+Row 2:
+John Roberts LLC
+$1,455
+
+Under row:
+indigo progress line around 70–75%
+
+Keep spacing compact and balanced.
+
+==================================================
+RESPONSIVE DETAILS
+==================================================
+
+Slide 2 dashboard:
+width: clamp(440px, 40vw, 600px);
+max-width: 100%;
+
+Slide 3 phone:
+width: clamp(205px, 17vw, 235px);
+max-width: 100%;
+
+At smaller laptop heights:
+- scale mockups down slightly
+- reduce gaps
+- preserve all tiny details
+- do not remove labels/rows
+
+At mobile:
+- stack mockup below content
+- preserve readability
+- no clipping
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- simplify dashboard rows
+- remove candidate counts
+- remove “Avg. time-to-fill (vs 39 industry avg)”
+- remove Vacant Roles
+- remove chart bars
+- change amounts
+- change names
+- change months
+- modify slides 4 and 5
+
+Compare Slide 2 and Slide 3 side-by-side with the newly attached reference screenshots before marking complete.

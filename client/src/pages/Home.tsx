@@ -284,7 +284,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
     <div className="mx-auto flex w-full flex-col items-center text-center" style={{ maxWidth: 950 }}>
       <h1
         className="font-bold tracking-tight"
-        style={{ fontSize: "clamp(2.8rem, 6.5vw, 76px)", lineHeight: 1.04, letterSpacing: "-0.035em" }}
+        style={{ fontSize: "clamp(58px, 5.6vw, 82px)", lineHeight: 0.99, letterSpacing: "-0.03em" }}
       >
         <span className="text-white">Work </span>
         <span style={{ color: C.orangeLight }}>Without</span>
@@ -354,8 +354,19 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
 }
 
 function LaptopMockup() {
+  const TEAM = [
+    { i: "MR", n: "Maria R.",  r: "Customer Support Lead", perf: "4.9", sal: "$2,400" },
+    { i: "JT", n: "Josh T.",   r: "Data Analyst",          perf: "4.7", sal: "$2,850" },
+    { i: "AL", n: "Anna L.",   r: "Virtual Assistant",     perf: "4.8", sal: "$1,900" },
+    { i: "DK", n: "David K.",  r: "Sales Associate",       perf: "4.6", sal: "$2,100" },
+  ];
+  const VACANT = [
+    { r: "Customer Support Rep", c: "5 candidates in review", d: "Open 2 days" },
+    { r: "Sales Associate",      c: "6 candidates in review", d: "Open 3 days" },
+    { r: "Data Analyst",         c: "3 candidates in review", d: "Open 1 day"  },
+  ];
   return (
-    <div className="relative w-full" style={{ maxWidth: "clamp(380px, 39vw, 560px)" }}>
+    <div className="relative w-full" style={{ maxWidth: "clamp(440px, 40vw, 600px)" }}>
       {/* Purple glow */}
       <div
         aria-hidden
@@ -364,8 +375,8 @@ function LaptopMockup() {
       />
       {/* Laptop shell */}
       <div
-        className="relative rounded-[14px] p-[9px]"
-        style={{ background: "linear-gradient(170deg, #2a2a2f 0%, #18181c 100%)", border: "1px solid rgba(255,255,255,0.14)", boxShadow: "0 32px 64px -24px rgba(10,12,50,0.55)" }}
+        className="relative rounded-[14px] p-[10px]"
+        style={{ background: "linear-gradient(170deg, #2a2a2f 0%, #18181c 100%)", border: "1.5px solid rgba(255,255,255,0.12)", boxShadow: "0 32px 64px -24px rgba(10,12,50,0.6)" }}
       >
         {/* Camera dot */}
         <div className="flex justify-center mb-1.5">
@@ -373,18 +384,19 @@ function LaptopMockup() {
         </div>
         {/* Screen */}
         <div className="overflow-hidden rounded-[8px] bg-white">
+
           {/* Top bar */}
-          <div className="flex items-center justify-between border-b px-4 py-2.5" style={{ borderColor: "#EDEDF2" }}>
+          <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: "#EDEDF2" }}>
             <span className="text-[12px] font-bold" style={{ color: C.charcoal }}>OnSpot</span>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px]" style={{ color: C.grayLight }}>Gentech LLC</span>
-              <div className="h-5 w-5 rounded-full" style={{ background: C.indigoLight }} />
+              <div className="h-5 w-5 rounded-full flex-shrink-0" style={{ background: C.indigoLight }} />
             </div>
           </div>
 
-          <div className="px-4 pb-4 pt-3">
-            {/* Header */}
-            <div className="flex items-baseline justify-between mb-3">
+          <div className="px-4 pb-3.5 pt-2.5">
+            {/* Dashboard header */}
+            <div className="flex items-baseline justify-between mb-2.5">
               <p className="text-[13px] font-bold" style={{ color: C.charcoal }}>Team dashboard</p>
               <p className="text-[9px]" style={{ color: C.grayLight }}>Last 6 months</p>
             </div>
@@ -392,53 +404,70 @@ function LaptopMockup() {
             {/* 4 stat cards */}
             <div className="grid grid-cols-4 gap-1.5 mb-3">
               {[
-                { label: "MONTHLY COST", value: "$18,400", sub: "▼ 22% vs traditional", subColor: "#2E7D32" },
-                { label: "HEADCOUNT",    value: "8",        sub: "Active members",        subColor: C.gray },
-                { label: "AVG. PERF.",   value: "4.8/5",    sub: "Across roles",           subColor: C.gray },
-                { label: "RETENTION",    value: "94%",      sub: "Continuity",             subColor: C.gray },
+                { label: "MONTHLY COST",     value: "$18,400", sub: "▼ 22% vs traditional", subColor: "#2E7D32" },
+                { label: "HEADCOUNT",        value: "8",       sub: "Active members",        subColor: C.gray },
+                { label: "AVG. PERFORMANCE", value: "4.8/5",   sub: "Across roles",          subColor: C.gray },
+                { label: "RETENTION",        value: "94%",     sub: "Continuity",            subColor: C.gray },
               ].map((s) => (
                 <div key={s.label} className="rounded-[7px] px-2 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
-                  <p className="text-[6.5px] font-bold uppercase tracking-wide" style={{ color: C.indigo }}>{s.label}</p>
-                  <p className="text-[13px] font-bold leading-tight mt-0.5" style={{ color: C.charcoal }}>{s.value}</p>
-                  <p className="text-[7px] mt-0.5" style={{ color: s.subColor }}>{s.sub}</p>
+                  <p className="font-bold uppercase tracking-wide leading-tight" style={{ fontSize: "6px", color: C.indigo }}>{s.label}</p>
+                  <p className="font-bold leading-tight mt-0.5" style={{ fontSize: "13px", color: C.charcoal }}>{s.value}</p>
+                  <p className="mt-0.5" style={{ fontSize: "6.5px", color: s.subColor }}>{s.sub}</p>
                 </div>
               ))}
             </div>
 
-            {/* Team rows */}
-            <p className="text-[8px] font-bold uppercase tracking-wide mb-1.5" style={{ color: C.grayLight }}>Team Performance</p>
-            <div className="space-y-1 mb-3">
-              {[
-                { i: "AM", n: "Aira M.",   r: "Executive Assistant",  perf: "4.9", status: "Active" },
-                { i: "RS", n: "Rafael S.", r: "Bookkeeper",           perf: "4.8", status: "Active" },
-                { i: "KC", n: "Kim C.",    r: "Customer Support",     perf: "4.9", status: "Active" },
-              ].map((m) => (
-                <div key={m.i} className="flex items-center justify-between rounded-[6px] px-2 py-1" style={{ background: "#F7F7FB" }}>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-4 w-4 rounded-full flex items-center justify-center text-[7px] font-bold text-white" style={{ background: C.indigo }}>{m.i}</div>
+            {/* Team Performance */}
+            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Team Performance</p>
+            <div className="mb-2.5" style={{ border: "1px solid #EEEDFB", borderRadius: 7, overflow: "hidden" }}>
+              {TEAM.map((m, idx) => (
+                <div
+                  key={m.i}
+                  className="flex items-center justify-between px-2.5 py-1.5"
+                  style={{ borderTop: idx > 0 ? "1px solid #EEEDFB" : "none" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-[18px] w-[18px] flex-shrink-0 rounded-full flex items-center justify-center font-bold text-white" style={{ fontSize: "6.5px", background: C.indigo }}>{m.i}</div>
                     <div>
-                      <p className="text-[9px] font-semibold leading-none" style={{ color: C.charcoal }}>{m.n}</p>
-                      <p className="text-[7.5px]" style={{ color: C.grayLight }}>{m.r}</p>
+                      <p className="font-semibold leading-none" style={{ fontSize: "9px", color: C.charcoal }}>{m.n}</p>
+                      <p className="leading-none mt-[2px]" style={{ fontSize: "7.5px", color: C.grayLight }}>{m.r}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[8px] font-semibold" style={{ color: C.indigo }}>★ {m.perf}</span>
-                    <span className="rounded-full px-1.5 py-0.5 text-[7px] font-semibold" style={{ background: "rgba(75,81,184,0.12)", color: C.indigo }}>{m.status}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="rounded-full px-1.5 py-[2px] font-semibold" style={{ fontSize: "7px", background: "rgba(34,197,94,0.12)", color: "#15803d" }}>★ {m.perf}</span>
+                    <span className="font-semibold" style={{ fontSize: "9px", color: C.charcoal }}>{m.sal}</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Hiring / vacant rows */}
-            <p className="text-[8px] font-bold uppercase tracking-wide mb-1" style={{ color: C.grayLight }}>Open Roles</p>
-            <div className="grid grid-cols-2 gap-1">
-              {[
-                { r: "Sales Dev Rep", s: "Interviewing" },
-                { r: "Data Analyst",  s: "Vacant" },
-              ].map((v) => (
-                <div key={v.r} className="rounded-[6px] px-2 py-1.5" style={{ background: "#F7F7FB", border: "1px dashed #D0D0DE" }}>
-                  <p className="text-[9px] font-semibold" style={{ color: C.charcoal }}>{v.r}</p>
-                  <p className="text-[7.5px] mt-0.5" style={{ color: v.s === "Vacant" ? "#C62828" : C.indigo }}>{v.s}</p>
+            {/* Hiring */}
+            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Hiring</p>
+            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+              <div className="rounded-[7px] px-2.5 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
+                <p className="font-bold leading-none" style={{ fontSize: "16px", color: C.charcoal }}>3</p>
+                <p className="font-semibold mt-0.5" style={{ fontSize: "8px", color: C.indigo }}>Open roles</p>
+              </div>
+              <div className="rounded-[7px] px-2.5 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
+                <p className="font-bold leading-none" style={{ fontSize: "16px", color: C.charcoal }}>6 <span style={{ fontSize: "9px", fontWeight: 600 }}>days</span></p>
+                <p className="leading-tight mt-0.5" style={{ fontSize: "7px", color: C.grayLight }}>Avg. time-to-fill <span style={{ color: C.indigo }}>(vs 39 industry avg)</span></p>
+              </div>
+            </div>
+
+            {/* Vacant Roles */}
+            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Vacant Roles</p>
+            <div style={{ border: "1px solid #EEEDFB", borderRadius: 7, overflow: "hidden" }}>
+              {VACANT.map((v, idx) => (
+                <div
+                  key={v.r}
+                  className="flex items-center justify-between px-2.5 py-1.5"
+                  style={{ borderTop: idx > 0 ? "1px solid #EEEDFB" : "none" }}
+                >
+                  <div>
+                    <p className="font-semibold leading-none" style={{ fontSize: "9px", color: C.charcoal }}>{v.r}</p>
+                    <p className="leading-none mt-[2px]" style={{ fontSize: "7.5px", color: C.indigo }}>{v.c}</p>
+                  </div>
+                  <p className="flex-shrink-0 ml-2" style={{ fontSize: "7.5px", color: C.grayLight }}>{v.d}</p>
                 </div>
               ))}
             </div>
@@ -491,17 +520,17 @@ function TalentSlide({ isDark }: { isDark: boolean }) {
 
 // Bar chart heights for Mar–Aug
 const BAR_DATA = [
-  { month: "Mar", h: 40 },
-  { month: "Apr", h: 55 },
-  { month: "May", h: 48 },
-  { month: "Jun", h: 70 },
-  { month: "Jul", h: 62 },
-  { month: "Aug", h: 88 },
+  { month: "Mar", h: 35 },
+  { month: "Apr", h: 52 },
+  { month: "May", h: 38 },
+  { month: "Jun", h: 65 },
+  { month: "Jul", h: 58 },
+  { month: "Aug", h: 90 },
 ];
 
 function PhoneMockup() {
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(200px, 16.5vw, 238px)", maxWidth: "100%" }}>
+    <div className="relative ml-auto" style={{ width: "clamp(205px, 17vw, 235px)", maxWidth: "100%" }}>
       {/* Ambient glow */}
       <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 50% 48%, rgba(255,174,33,0.14), transparent 70%)", filter: "blur(14px)" }} />
 
