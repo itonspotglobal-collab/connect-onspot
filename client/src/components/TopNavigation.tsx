@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
+  ChevronRight,
   Users,
   Zap,
   Building,
@@ -50,6 +51,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import {
+  buildCompletionItems,
+  calcCompletionPct,
+  profileStrengthFromCandidate,
+} from "@/lib/profileCompletion";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import { VanessaChat } from "@/components/VanessaChat";
 import {
@@ -110,6 +116,7 @@ export function TopNavigation() {
   const [signupLoading, setSignupLoading] = useState(false);
   const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
+  const [talentDropdownOpen, setTalentDropdownOpen] = useState(false);
   // Talent sign-in — password setup flow (for existing candidates without a password)
   const [signinNeedsSetup, setSigninNeedsSetup] = useState(false);
   const [setupPassword, setSetupPassword] = useState("");
@@ -151,6 +158,23 @@ export function TopNavigation() {
     staleTime: 30_000,
   });
   const submittedCount = user?.role === "admin" ? (jobAppSummary?.byStatus?.["submitted"] ?? 0) : 0;
+
+  // ── Talent profile completion (for the account panel) ─────────────────────
+  const { data: talentCandidateData } = useQuery({
+    queryKey: ["/api/candidates", talentAuth?.candidateId],
+    queryFn: async () => {
+      const res = await fetch(`/api/candidates/${talentAuth!.candidateId}`, {
+        headers: { Authorization: `Bearer ${talentAuth!.token}` },
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!talentAuth,
+    staleTime: 2 * 60_000,
+  });
+  const talentCompletionPct = talentCandidateData
+    ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate(talentCandidateData)))
+    : 0;
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   const getProfileRoute = () => {
@@ -723,86 +747,180 @@ export function TopNavigation() {
               </DropdownMenu>
             ) : talentAuth ? (
               /* ── Talent-only session (talent_profile_token, no general JWT) ── */
-              <DropdownMenu>
+              <DropdownMenu open={talentDropdownOpen} onOpenChange={setTalentDropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-[1.03]"
+                    className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-200"
                     style={{
                       height: 44,
-                      borderRadius: 10,
+                      borderRadius: 11,
                       background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                      boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                      boxShadow: talentDropdownOpen
+                        ? '0 6px 22px rgba(58,58,248,0.55), inset 0 1px 0 rgba(255,255,255,0.22)'
+                        : '0 3px 12px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
                     }}
                     data-testid="talent-account-dropdown-trigger"
                   >
                     <div
                       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)',
                         animation: 'shimmer 2s infinite',
                       }}
                     />
                     <span className="relative z-10 flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                      {/* Initials avatar in trigger */}
+                      <span style={{
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.22)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', flexShrink: 0,
+                      }}>
+                        {talentAuth.fullName
+                          ? talentAuth.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                          : <User style={{ width: 13, height: 13 }} />}
+                      </span>
                       Talent Profile
-                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                      <ChevronDown
+                        style={{
+                          width: 14, height: 14, opacity: 0.8,
+                          transform: talentDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 200ms ease',
+                        }}
+                      />
                     </span>
                   </button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent
                   align="end"
-                  sideOffset={8}
-                  className="p-2 max-w-[calc(100vw-24px)]"
+                  side="bottom"
+                  sideOffset={10}
+                  collisionPadding={16}
+                  className="p-0 overflow-hidden"
                   style={{
-                    minWidth: 214,
-                    background: '#F8F8FF',
-                    border: '1px solid rgba(75,81,184,0.12)',
-                    borderRadius: 13,
-                    boxShadow: '0 12px 30px rgba(20,25,70,0.16)',
-                    zIndex: 9999,
+                    width: 316,
+                    maxWidth: 'min(92vw, 320px)',
+                    background: '#FFFFFF',
+                    border: '1px solid rgba(76,81,184,0.14)',
+                    borderRadius: 17,
+                    boxShadow: '0 18px 50px rgba(20,25,70,0.18), 0 2px 8px rgba(20,25,70,0.07)',
+                    zIndex: 1200,
                   }}
                 >
-                  {/* Header */}
-                  <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid rgba(75,81,184,0.10)', marginBottom: 6 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#1E2330', lineHeight: 1.3 }} className="truncate">{talentAuth.fullName}</p>
-                    <p style={{ fontSize: 12, color: '#7178A0', marginTop: 1 }} className="truncate">{talentAuth.email}</p>
+                  {/* ── Profile header ── */}
+                  <div style={{ padding: '18px 18px 14px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FFFFFF 100%)', borderBottom: '1px solid rgba(76,81,184,0.09)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                      {/* Initials avatar */}
+                      <div style={{
+                        width: 50, height: 50, borderRadius: '50%', flexShrink: 0,
+                        background: 'linear-gradient(135deg, #4B51B8 0%, #6B5CE7 100%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 18, fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.02em',
+                        boxShadow: '0 3px 10px rgba(75,81,184,0.35)',
+                      }}>
+                        {talentAuth.fullName
+                          ? talentAuth.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                          : '?'}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: '#141828', lineHeight: 1.2, margin: 0 }} className="truncate">
+                          {talentAuth.fullName || 'Talent'}
+                        </p>
+                        <p style={{ fontSize: 12, color: '#6E7491', marginTop: 3, margin: '3px 0 0' }} className="truncate">
+                          {talentAuth.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Profile completion bar */}
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 500, color: '#6E7491', letterSpacing: '0.01em' }}>Profile completion</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#4B51B8' }}>{talentCompletionPct}%</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 99, background: '#E8E8F7', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${talentCompletionPct}%`,
+                          borderRadius: 99,
+                          background: 'linear-gradient(90deg, #4B51B8 0%, #7B6EF6 100%)',
+                          transition: 'width 600ms ease',
+                        }} />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Navigation items */}
-                  <DropdownMenuItem
-                    onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)}
-                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
-                  >
-                    <User style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
-                    Talent Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigate("/find-work/jobs")}
-                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
-                  >
-                    <Briefcase style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
-                    Find Work
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigate("/settings")}
-                    className="cursor-pointer rounded-lg [&:hover]:bg-[#F1F2FF] [&:hover]:text-[#3F47B5] focus:bg-[#F1F2FF] focus:text-[#3F47B5]"
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#1E2330', borderRadius: 8 }}
-                  >
-                    <Settings style={{ width: 17, height: 17, color: '#4B51B8', flexShrink: 0 }} />
-                    Settings
-                  </DropdownMenuItem>
+                  {/* ── Nav items ── */}
+                  <div style={{ padding: '8px 8px' }}>
+                    {/* Talent Profile */}
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/talent-profile/${talentAuth.candidateId}`)}
+                      className="cursor-pointer group/item focus:outline-none"
+                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
+                    >
+                      <User style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
+                      <span style={{ flex: 1 }}>Talent Profile</span>
+                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
+                    </DropdownMenuItem>
 
-                  {/* Sign Out — separated */}
-                  <div style={{ borderTop: '1px solid rgba(75,81,184,0.10)', marginTop: 6, paddingTop: 6 }}>
+                    {/* Finish Profile Setup — highlighted if incomplete */}
+                    {talentCompletionPct < 100 && (
+                      <DropdownMenuItem
+                        onClick={() => navigate("/find-best-matches")}
+                        className="cursor-pointer focus:outline-none"
+                        style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#6B5CE7', borderRadius: 10, background: '#F5F3FF', transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EDE9FF'; (e.currentTarget as HTMLElement).style.color = '#4B30D4'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#F5F3FF'; (e.currentTarget as HTMLElement).style.color = '#6B5CE7'; }}
+                      >
+                        <CheckCircle2 style={{ width: 18, height: 18, color: '#6B5CE7', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Finish Profile Setup</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: '#6B5CE7', background: 'rgba(107,92,231,0.12)', padding: '2px 7px', borderRadius: 99 }}>
+                          Recommended
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* Find Work */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/find-work/jobs")}
+                      className="cursor-pointer focus:outline-none"
+                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
+                    >
+                      <Briefcase style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
+                      <span style={{ flex: 1 }}>Find Work</span>
+                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
+                    </DropdownMenuItem>
+
+                    {/* Settings */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/settings")}
+                      className="cursor-pointer focus:outline-none"
+                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease', marginTop: 2 }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0F1FF'; (e.currentTarget as HTMLElement).style.color = '#3F47B5'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#1E2330'; }}
+                    >
+                      <Settings style={{ width: 18, height: 18, color: '#4B51B8', flexShrink: 0 }} />
+                      <span style={{ flex: 1 }}>Settings</span>
+                      <ChevronRight style={{ width: 14, height: 14, color: '#9CA3C8', flexShrink: 0 }} />
+                    </DropdownMenuItem>
+                  </div>
+
+                  {/* ── Sign Out ── */}
+                  <div style={{ padding: '0 8px 8px', borderTop: '1px solid rgba(76,81,184,0.08)', marginTop: 0, paddingTop: 8 }}>
                     <DropdownMenuItem
                       onClick={handleTalentSignOut}
-                      className="cursor-pointer rounded-lg [&:hover]:bg-[#FFF1F1] [&:hover]:text-[#D84A4A] focus:bg-[#FFF1F1] focus:text-[#D84A4A]"
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, fontSize: 14, color: '#C0393A', borderRadius: 8 }}
+                      className="cursor-pointer focus:outline-none"
+                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 12px', height: 48, fontSize: 14, fontWeight: 500, color: '#C0393A', borderRadius: 10, transition: 'background 150ms ease, color 150ms ease' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FFF1F1'; (e.currentTarget as HTMLElement).style.color = '#D84A4A'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#C0393A'; }}
                     >
-                      <LogOut style={{ width: 17, height: 17, color: '#C0393A', flexShrink: 0 }} />
-                      Sign Out
+                      <LogOut style={{ width: 18, height: 18, color: 'currentColor', flexShrink: 0 }} />
+                      <span style={{ flex: 1 }}>Sign Out</span>
                     </DropdownMenuItem>
                   </div>
                 </DropdownMenuContent>

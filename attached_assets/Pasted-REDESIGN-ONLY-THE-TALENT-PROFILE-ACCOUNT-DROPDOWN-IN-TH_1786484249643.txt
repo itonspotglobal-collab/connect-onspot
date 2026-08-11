@@ -1,0 +1,242 @@
+REDESIGN ONLY THE “TALENT PROFILE” ACCOUNT DROPDOWN IN THE TOP NAVIGATION.
+
+The current dropdown still looks cramped, overlaps the page content, and feels visually weak.
+
+I want this account menu to feel IMPORTANT, polished, and intentionally designed.
+
+DO NOT change authentication logic.
+DO NOT change the navbar links.
+DO NOT change other page sections.
+
+==================================================
+NEW DESIGN DIRECTION
+==================================================
+
+Replace the current basic dropdown with a premium ACCOUNT PANEL.
+
+It should feel like a compact profile card, not a generic dropdown list.
+
+DESKTOP TARGET:
+
+- width: approximately 300–330px
+- aligned to the RIGHT edge of the “Talent Profile” trigger
+- positioned 10–12px below the trigger
+- solid white / very light lavender background
+- border-radius: 16–18px
+- soft but visible shadow
+- thin indigo-tinted border
+- high z-index
+- no transparency that lets page content show through
+
+Example visual hierarchy:
+
+┌──────────────────────────────┐
+│  [avatar]  Testin Val        │
+│            testinval@...     │
+│                              │
+│  Profile completion     20%  │
+│  ━━━━━━━━░░░░░░░░░░░         │
+├──────────────────────────────┤
+│  👤  Talent Profile       →  │
+│  ✓   Finish Profile Setup →  │
+│  💼  Find Work            →  │
+│  ⚙   Settings             →  │
+├──────────────────────────────┤
+│  ↪   Sign Out                │
+└──────────────────────────────┘
+
+==================================================
+PROFILE HEADER
+==================================================
+
+Top area should be visually prominent.
+
+Use:
+- circular avatar around 46–52px
+- name in dark bold text
+- email beneath in smaller muted gray
+- generous padding around 16px
+
+If no image exists:
+- use initials inside an indigo circle
+- do NOT use a generic outlined user icon
+
+==================================================
+PROFILE COMPLETION
+==================================================
+
+Make profile completion a dedicated mini-section.
+
+Show:
+
+“Profile completion”
+“20%”
+
+Then a horizontal progress bar.
+
+Style:
+- label dark/muted
+- percentage indigo and bold
+- track: pale lavender
+- filled portion: indigo/blue gradient
+- rounded ends
+
+This should make the menu feel more useful and account-focused.
+
+==================================================
+MENU ITEMS
+==================================================
+
+Use larger, clearer menu rows.
+
+Items:
+- Talent Profile
+- Finish Profile Setup
+- Find Work
+- Settings
+
+Each row:
+- height around 48–50px
+- horizontal padding 14–16px
+- icon on left
+- label centered vertically
+- optional chevron arrow on right
+- border-radius around 10px
+
+Default:
+- dark text
+- muted indigo icon
+
+Hover:
+- pale indigo background
+- stronger indigo text
+- slight translateX(2px) optional
+- smooth 150–200ms transition
+
+IMPORTANT:
+“Finish Profile Setup” should visually stand out slightly more if profile is incomplete.
+
+You may use:
+- pale orange/cream background
+- small “Recommended” badge
+OR
+- stronger indigo highlight
+
+Do NOT overdo it.
+
+==================================================
+SIGN OUT
+==================================================
+
+Separate Sign Out with a divider.
+
+Use:
+- red icon
+- red text
+- hover background pale red
+- same row height as other items
+
+==================================================
+TRIGGER BUTTON
+==================================================
+
+Make the “Talent Profile” trigger itself feel premium and connected to the panel.
+
+Recommended:
+- indigo → violet gradient
+- height around 44–46px
+- radius 10–12px
+- small avatar/user icon on left
+- “Talent Profile”
+- chevron right side
+- subtle shadow
+
+When dropdown is OPEN:
+- slightly stronger shadow
+- subtle lighter border
+- chevron rotates 180°
+
+==================================================
+POSITIONING / NO OVERLAP
+==================================================
+
+The dropdown must NEVER visually collide with the hero/page content.
+
+Use proper anchored popover positioning.
+
+If using Radix DropdownMenu:
+- align="end"
+- side="bottom"
+- sideOffset={10}
+- collisionPadding={16}
+
+Use:
+z-index: 1000+
+
+Ensure:
+- dropdown renders in portal
+- not clipped by navbar overflow
+- not hidden behind hero
+- stays inside viewport
+- does not shift the page layout
+
+IMPORTANT:
+Check whether any parent navbar/header has:
+overflow: hidden;
+overflow: clip;
+
+If yes, fix it or render dropdown in a portal.
+
+==================================================
+BACKGROUND / SHADOW
+==================================================
+
+Suggested surface:
+#FFFFFF
+
+Border:
+1px solid rgba(76, 81, 184, 0.14)
+
+Shadow:
+0 18px 50px rgba(20, 25, 70, 0.18)
+
+Optional subtle inner highlight.
+
+Do NOT use gray translucent background like the current version.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+300–330px wide
+
+Tablet:
+280–310px
+
+Mobile:
+width: min(92vw, 320px)
+
+Keep the panel inside the screen.
+
+If navbar becomes mobile:
+open the account panel beneath the profile trigger without clipping.
+
+==================================================
+FINAL QUALITY CHECK
+==================================================
+
+The result should feel like an important account/profile control, not a basic dropdown.
+
+It should have:
+- strong profile header
+- visible progress/completion
+- clear navigation
+- polished spacing
+- strong hover states
+- no transparency issues
+- no overlap/clipping
+- no washed-out text
+- no awkward placement
+
+Do not mark complete until the menu opens cleanly over the page at multiple viewport sizes.
