@@ -1,0 +1,68 @@
+FIX ONLY THE PROFILE AVATARS/PHOTOS ON THE HOMEPAGE.
+
+The current implementation incorrectly uses generic user icons and initials.
+
+Replace them with the REAL profile photos shown in my reference screenshots.
+
+1. JAKE WAINBERG
+- Remove blue generic user icon.
+- Use Jake Wainberg's actual portrait from the supplied reference.
+- Circular crop.
+- object-fit: cover.
+- Thin light/white border.
+- Name: Jake Wainberg
+- Role: Founder & President
+
+2. MARK APOSTOL
+- Remove purple generic user icon.
+- Use Mark Apostol's actual portrait from the supplied reference.
+- Circular crop.
+- object-fit: cover.
+- Thin white/light border with subtle shadow.
+- Name: Mark Apostol
+- Role: Co-founder & COO
+
+3. NUR LAMIMERO
+- Remove orange “NL” initials avatar.
+- Use Nur Lamimero's actual portrait from the supplied reference.
+- Circular crop.
+- object-fit: cover.
+- Thin light border.
+- Name: Nur Lamimero
+- Role: Co-founder & CEO
+
+IMPORTANT:
+Search the existing project/public/assets folders FIRST for these profile photos.
+
+Search filenames and existing assets for:
+- Jake Wainberg
+- Mark Apostol
+- Nur Lamimero
+- Jake
+- Mark
+- Nur
+- founder
+- cofounder
+- testimonial
+- avatar
+- team
+
+If the images already exist, REUSE THEM. Do not create AI-generated substitutes.
+
+REFERENCE APPEARANCE:
+Jake = illustrated/portrait image shown in my reference.
+Mark = man wearing glasses shown in my reference.
+Nur = headshot shown in the blue quote card reference.
+
+Apply the photos EVERYWHERE these people appear on the homepage, not just one occurrence.
+
+Avatar sizing:
+- approximately 42–52px depending on section
+- perfect circle using aspect-ratio: 1 / 1
+- object-fit: cover
+- object-position: center
+- flex-shrink: 0
+
+Do NOT alter the surrounding section layouts, text, colors, or spacing except where necessary to correctly accommodate the photos.
+
+After implementation, search the homepage code and verify there are NO remaining generic avatar icons or initials for Jake, Mark, or Nur.

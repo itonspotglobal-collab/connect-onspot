@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, User, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
+import jakePhoto from "@assets/Jake_1780574815787.png";
+import nurPhoto from "@assets/Nur_1780574815788.png";
+import markPhoto from "@assets/Macky_1780574815788.png";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
 const C = {
@@ -1229,12 +1232,12 @@ function FounderQuoteSection() {
 
             {/* Author */}
             <div className="flex items-center gap-4">
-              <div
-                className="h-12 w-12 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: `linear-gradient(135deg, ${C.orange} 0%, #C07000 100%)` }}
-              >
-                NL
-              </div>
+              <img
+                src={nurPhoto}
+                alt="Nur Lamimero"
+                className="flex-shrink-0 rounded-full object-cover"
+                style={{ width: 48, height: 48, objectPosition: "center top", border: "2px solid rgba(255,255,255,0.25)" }}
+              />
               <div>
                 <p className="font-semibold text-white" style={{ fontSize: "0.95rem" }}>Nur Lamimero</p>
                 <p style={{ color: "rgba(255,255,255,0.42)", fontSize: "0.82rem" }}>Co-founder &amp; CEO</p>
@@ -1249,26 +1252,6 @@ function FounderQuoteSection() {
 
 // ── SECTION 5 — SPLIT TESTIMONIAL ────────────────────────────────────────────
 
-// Circular photo avatar — styled as a photo frame; swap src for real photo when available
-function PhotoAvatar({
-  initials, size = 44, gradient, dark = false,
-}: { initials: string; size?: number; gradient: string; dark?: boolean }) {
-  return (
-    <div
-      className="flex-shrink-0 rounded-full flex items-end justify-center overflow-hidden"
-      style={{ width: size, height: size, background: gradient }}
-    >
-      <User
-        style={{
-          width: size * 0.72,
-          height: size * 0.72,
-          color: dark ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.85)",
-          marginBottom: -2,
-        }}
-      />
-    </div>
-  );
-}
 
 function SplitTestimonialSection() {
   return (
@@ -1295,11 +1278,11 @@ function SplitTestimonialSection() {
 
             {/* Author */}
             <div className="flex items-center gap-3 mb-7">
-              <PhotoAvatar
-                initials="JW"
-                size={44}
-                gradient="linear-gradient(145deg, #5B7CFF 0%, #3A3AF8 100%)"
-                dark
+              <img
+                src={jakePhoto}
+                alt="Jake Wainberg"
+                className="flex-shrink-0 rounded-full object-cover"
+                style={{ width: 44, height: 44, objectPosition: "center top", border: "2px solid rgba(255,255,255,0.25)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
               />
               <div>
                 <p className="font-semibold text-white" style={{ fontSize: "0.9rem" }}>Jake Wainberg</p>
@@ -1350,10 +1333,11 @@ function SplitTestimonialSection() {
 
             {/* Author */}
             <div className="flex items-center gap-3 mb-9">
-              <PhotoAvatar
-                initials="MA"
-                size={44}
-                gradient="linear-gradient(145deg, #7F5AF0 0%, #3A3AF8 100%)"
+              <img
+                src={markPhoto}
+                alt="Mark Apostol"
+                className="flex-shrink-0 rounded-full object-cover"
+                style={{ width: 44, height: 44, objectPosition: "center top", border: "2px solid rgba(0,0,0,0.1)", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
               />
               <div>
                 <p className="font-semibold" style={{ color: C.charcoal, fontSize: "0.9rem" }}>Mark Apostol</p>
