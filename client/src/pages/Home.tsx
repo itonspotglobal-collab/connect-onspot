@@ -1531,7 +1531,8 @@ function ProcessSection() {
       }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      <div className="mx-auto max-w-[1180px]">
+      {/* ── Centered header ── */}
+      <div className="mx-auto max-w-[680px] text-center mb-14">
         <SectionEyebrow text="The Plan" />
         <h2
           className="mt-4 font-bold leading-tight mb-3"
@@ -1539,24 +1540,26 @@ function ProcessSection() {
         >
           From posted to placed.
         </h2>
-        <p className="mb-14" style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 520 }}>
+        <p style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 460, marginInline: "auto" }}>
           Three steps. No bidding wars, no long contracts, no hidden markups.
         </p>
+      </div>
 
-        {/* 3 step cards */}
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      {/* ── 3 step cards — centered grid ── */}
+      <div className="mx-auto" style={{ maxWidth: 1100 }}>
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
               <div key={i} className="relative">
-                {/* Arrow connector between cards */}
+                {/* Orange circular arrow connector between cards */}
                 {i < 2 && (
                   <div
                     aria-hidden
-                    className="hidden md:flex absolute -right-4 top-10 z-10 h-8 w-8 items-center justify-center rounded-full"
+                    className="hidden md:flex absolute -right-[14px] top-10 z-10 h-7 w-7 items-center justify-center rounded-full"
                     style={{ background: C.orange, boxShadow: "0 4px 12px rgba(255,174,33,0.4)" }}
                   >
-                    <ArrowRight className="h-3.5 w-3.5 text-white" />
+                    <ArrowRight className="h-3 w-3 text-white" />
                   </div>
                 )}
                 <div
@@ -1601,7 +1604,8 @@ function ProcessSection() {
           })}
         </div>
 
-        <p style={{ fontSize: "clamp(1rem, 1.4vw, 1.1rem)", color: C.charcoal }}>
+        {/* ── Bottom statement — centered below card group ── */}
+        <p className="text-center" style={{ fontSize: "clamp(1rem, 1.4vw, 1.1rem)", color: C.charcoal, marginInline: "auto" }}>
           That's it.{" "}
           <span className="font-semibold" style={{ color: C.indigo }}>
             Most roles are filled in days, not months.
