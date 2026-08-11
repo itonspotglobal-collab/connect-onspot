@@ -1,0 +1,458 @@
+REFERENCE WEBSITE:
+https://on-spot-separate-staging.replit.app/
+
+TASK:
+Recreate ONLY the HOMEPAGE of the reference website.
+
+THIS IS A VISUAL REPLICATION TASK — NOT A REDESIGN.
+
+Before changing code, open the reference in Replit's browser/browser-preview and
+inspect the COMPLETE rendered homepage from top to bottom.
+
+============================================================
+1. NON-NEGOTIABLE REQUIREMENT
+============================================================
+
+The finished homepage should visually match the reference as closely as possible.
+
+DO NOT:
+- redesign it
+- simplify it
+- create your own interpretation
+- replace the layout with a generic landing-page template
+- skip sections
+- skip carousel slides
+- rewrite visible copy
+- alter existing non-homepage routes unnecessarily
+
+ONLY work on the homepage.
+
+============================================================
+2. HERO CAROUSEL — INSPECT EVERY SLIDE
+============================================================
+
+The hero carousel is especially important.
+
+DO NOT implement only the slide initially visible.
+
+Manually inspect the carousel by:
+- clicking Next
+- clicking Previous
+- clicking every pagination dot/indicator
+- waiting for autoplay
+- recording every unique slide before coding
+
+For EVERY slide reproduce:
+
+- exact slide order
+- background image/photo/video if present
+- image positioning
+- crop / object-position
+- overlays
+- overlay opacity
+- gradients
+- heading
+- highlighted/accent words
+- paragraph text
+- buttons
+- button labels
+- CTA locations
+- typography
+- text alignment
+- content width
+- vertical/horizontal positioning
+- carousel arrows
+- pagination indicators
+- active/inactive indicator appearance
+- transition effect
+- transition duration
+- autoplay behavior
+- looping behavior
+- mobile behavior
+
+Do not stop inspecting until you have identified ALL slides.
+
+============================================================
+3. HEADER / NAVIGATION
+============================================================
+
+Recreate the exact homepage header.
+
+The reference includes OnSpot navigation such as:
+
+- OnSpot logo
+- Hire Talent
+- Browse Jobs
+- Pricing
+- Insights
+- About
+- FAQ
+
+Inspect the actual rendered page for any additional CTA/button.
+
+Match exactly:
+
+- header height
+- logo dimensions
+- logo placement
+- nav spacing
+- font
+- weight
+- colors
+- hover states
+- button styling
+- border radius
+- sticky/fixed behavior
+- transparent/solid header behavior
+- mobile menu behavior
+- hamburger icon
+- mobile navigation spacing
+
+Do not guess these values if the browser can inspect them.
+
+============================================================
+4. COPY / TEXT
+============================================================
+
+Keep ALL visible homepage text exactly as displayed on the reference.
+
+Known reference messaging includes:
+
+"Work Without Limits"
+
+"OnSpot connects companies with vetted, accountable talent — without the chaos
+of a freelance marketplace or the overhead of a traditional outsourcing firm."
+
+"Talent earns more. Clients pay less."
+
+"AI-Powered Outsourcing for US Businesses"
+
+"OnSpot is the first integrator system that fuses AI-first infrastructure with
+Philippine operational excellence to scale businesses and empower people to
+work without limits."
+
+There may be additional rendered homepage copy not exposed through crawler
+metadata.
+
+Use the LIVE RENDERED PAGE as the source of truth and capture every visible:
+
+- heading
+- subheading
+- eyebrow
+- paragraph
+- CTA
+- button label
+- card title
+- card description
+- statistic
+- badge
+- testimonial
+- navigation label
+- footer label
+
+DO NOT invent replacement marketing copy.
+
+============================================================
+5. COMPLETE PAGE STRUCTURE
+============================================================
+
+Scroll from the top of the reference page all the way to the footer.
+
+Create an inventory of EVERY homepage section BEFORE coding.
+
+For each section document internally:
+
+Section name:
+- background
+- max-width
+- height/min-height
+- column structure
+- text alignment
+- heading
+- body copy
+- images
+- cards
+- icons
+- buttons
+- spacing
+- padding
+- border
+- radius
+- shadows
+- responsive behavior
+
+Then reproduce sections in EXACTLY the same order.
+
+Do not assume the crawler-generated headings are the complete visual homepage.
+
+============================================================
+6. TYPOGRAPHY
+============================================================
+
+Inspect the computed styles from the reference.
+
+Match:
+
+- font family
+- fallback fonts
+- font size
+- font weight
+- line-height
+- letter-spacing
+- text-transform
+- heading sizes
+- paragraph sizes
+- button typography
+- navigation typography
+- mobile typography
+
+Check whether custom webfonts are loaded.
+
+If the same font can legally be loaded through Google Fonts or another public
+source, use it.
+
+Otherwise use the nearest compatible existing project font.
+
+============================================================
+7. COLORS
+============================================================
+
+Use browser computed styles to determine actual colors.
+
+Create reusable tokens/CSS variables for:
+
+- primary brand color
+- accent colors
+- heading color
+- paragraph color
+- muted text
+- backgrounds
+- borders
+- buttons
+- hover colors
+- gradients
+- overlays
+
+Do NOT eyeball colors if CSS/computed styles can provide the actual values.
+
+============================================================
+8. SPACING AND DIMENSIONS
+============================================================
+
+Accurately reproduce:
+
+- content max-width
+- section padding
+- navbar padding
+- card padding
+- gaps
+- margins
+- image dimensions
+- hero height
+- button height
+- border radius
+- grid column widths
+
+The goal is pixel-level similarity rather than merely having similar content.
+
+============================================================
+9. IMAGES AND GRAPHICS
+============================================================
+
+Inspect every homepage image.
+
+For each image identify:
+
+- source
+- dimensions
+- aspect ratio
+- crop
+- object-fit
+- object-position
+- rounded corners
+- shadows
+- overlays
+
+Reuse existing project assets when available.
+
+If reference assets are publicly accessible and permitted for this project,
+download them into the project's assets/public directory rather than hotlinking
+them.
+
+Preserve optimization and responsive loading.
+
+============================================================
+10. BUTTONS AND INTERACTIONS
+============================================================
+
+Match all buttons exactly:
+
+- height
+- width behavior
+- padding
+- text size
+- text weight
+- background
+- foreground color
+- radius
+- border
+- icon placement
+- hover state
+- focus state
+- active state
+- transition
+
+Also reproduce homepage interactions such as:
+
+- carousel
+- accordion
+- hover effects
+- animated counters
+- scroll animations
+- tabs
+- mobile navigation
+
+ONLY if they actually exist on the reference.
+
+Do not add animations that aren't present.
+
+============================================================
+11. RESPONSIVE DESIGN
+============================================================
+
+Compare the reference at approximately:
+
+Desktop:
+1440 × 900
+
+Laptop:
+1280 × 800
+
+Tablet:
+768 × 1024
+
+Mobile:
+390 × 844
+
+Small mobile:
+375 × 667
+
+At every breakpoint compare:
+
+- navbar
+- hero
+- carousel text
+- heading wrapping
+- image cropping
+- grid stacking
+- spacing
+- card widths
+- button widths
+- footer layout
+
+The mobile version must replicate the reference's mobile design rather than
+simply stacking desktop elements.
+
+============================================================
+12. EXISTING GITHUB PROJECT
+============================================================
+
+FIRST inspect my repository.
+
+Determine:
+
+- framework
+- routing library
+- homepage route
+- CSS framework
+- component organization
+- assets directory
+- package manager
+
+Then implement the page using the CURRENT stack.
+
+DO NOT unnecessarily:
+- replace frameworks
+- rewrite routing
+- modify authentication
+- modify backend code
+- change API contracts
+- delete existing pages
+- upgrade unrelated dependencies
+
+Reuse existing components where appropriate.
+
+============================================================
+13. COMPONENT STRUCTURE
+============================================================
+
+Create clean reusable components where appropriate, for example:
+
+HomePage
+Header
+HeroCarousel
+HeroSlide
+HomeSection
+CTASection
+Footer
+
+However, follow the existing project's architecture instead of forcing this
+exact structure.
+
+Keep homepage-specific code isolated.
+
+============================================================
+14. VISUAL VERIFICATION
+============================================================
+
+After implementation:
+
+1. Run the app.
+2. Open both the reference and implementation.
+3. Compare them at 1440px.
+4. Correct the hero.
+5. Verify EVERY carousel slide.
+6. Correct typography.
+7. Correct spacing.
+8. Correct colors.
+9. Correct images.
+10. Correct section heights.
+11. Compare tablet.
+12. Compare mobile.
+13. Fix overflow/layout problems.
+14. Check console for errors.
+15. Run build/typecheck/lint if configured.
+
+Do not declare completion immediately after getting the page to compile.
+
+VISUALLY INSPECT THE RESULT FIRST.
+
+============================================================
+15. FINAL ACCEPTANCE CRITERIA
+============================================================
+
+The task is complete only when:
+
+- ONLY the homepage was intentionally recreated
+- every homepage section is present
+- every hero carousel slide is present
+- carousel order matches
+- visible wording matches
+- layout closely matches
+- typography closely matches
+- colors closely match
+- images closely match
+- spacing closely matches
+- navbar matches
+- footer matches
+- desktop matches
+- tablet matches
+- mobile matches
+- existing application functionality is preserved
+- no build/runtime errors remain
+
+REFERENCE:
+https://on-spot-separate-staging.replit.app/
+
+Use the REFERENCE PAGE itself as your primary visual specification.
+Do not substitute a generic OnSpot-inspired design.
