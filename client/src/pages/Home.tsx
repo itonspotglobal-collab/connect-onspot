@@ -1543,52 +1543,66 @@ function SplitTestimonialSection() {
         </div>
       </div>
 
-      {/* BOTTOM — warm cream, content RIGHT-POSITIONED (~53% from left), large empty left */}
+      {/* BOTTOM — warm cream, content RIGHT-POSITIONED, large empty left */}
       <div
-        style={{ background: "#FFF9EF" }}
+        style={{ background: "#FFF3DD" }}
         className="px-6 sm:px-10 lg:px-16 xl:px-20 py-24 lg:py-32"
       >
-        <div className="mx-auto max-w-[1180px] flex justify-end">
-          {/* Content block — sits on right half */}
-          <div style={{ maxWidth: 480 }} className="w-full">
-            <SectionEyebrow text="For Talents" />
+        <div className="mx-auto max-w-[1200px]">
+          {/* Desktop: 2-col grid — col 1 empty, col 2 content. Mobile: single col */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {/* Empty left col on desktop */}
+            <div className="hidden md:block" aria-hidden />
 
-            <blockquote
-              className="mt-5 font-bold leading-[1.08] mb-7"
-              style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal, maxWidth: 440 }}
-            >
-              "Real work, great pay,{" "}
-              <span style={{ color: C.orangeDeep }}>
-                from wherever you call home."
-              </span>
-            </blockquote>
-
-            <p className="mb-7 leading-relaxed" style={{ color: C.gray, fontSize: "0.97rem", maxWidth: 420 }}>
-              Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
-            </p>
-
-            {/* Author */}
-            <div className="flex items-center gap-3 mb-9">
-              <img
-                src={markPhoto}
-                alt="Mark Apostol"
-                className="flex-shrink-0 rounded-full object-cover"
-                style={{ width: 44, height: 44, objectPosition: "center top", border: "2px solid rgba(0,0,0,0.1)", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
-              />
-              <div>
-                <p className="font-semibold" style={{ color: C.charcoal, fontSize: "0.9rem" }}>Mark Apostol</p>
-                <p style={{ color: C.indigo, fontSize: "0.78rem" }}>Co-founder &amp; COO</p>
+            {/* Content block — right column */}
+            <div style={{ maxWidth: 490 }} className="w-full">
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-2 mb-5">
+                <span style={{ width: 18, height: 2, background: C.orangeDeep, display: "inline-block", flexShrink: 0 }} />
+                <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.orangeDeep }}>
+                  For Talents
+                </span>
               </div>
-            </div>
 
-            {/* Outlined gold/amber button */}
-            <Link
-              href="/find-work/jobs"
-              className="inline-flex h-[46px] items-center justify-center rounded-[10px] px-6 text-[14.5px] font-semibold transition hover:bg-amber-50"
-              style={{ border: `1.5px solid ${C.orangeDeep}`, color: C.orangeDeep }}
-            >
-              Find work →
-            </Link>
+              {/* Heading */}
+              <blockquote
+                className="font-bold leading-[1.08] mb-7"
+                style={{ fontSize: "clamp(2.1rem, 4.2vw, 3.5rem)", letterSpacing: "-0.025em", maxWidth: 460 }}
+              >
+                <span style={{ color: "#17171C" }}>"Real work, great pay,{" "}</span>
+                <span style={{ color: "#A86E00" }}>from wherever you call home."</span>
+              </blockquote>
+
+              {/* Body */}
+              <p className="mb-7 leading-relaxed" style={{ color: C.gray, fontSize: "clamp(0.93rem, 1.3vw, 1.05rem)", lineHeight: 1.58, maxWidth: 460 }}>
+                Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
+              </p>
+
+              {/* Author */}
+              <div className="flex items-center gap-3 mb-8">
+                <img
+                  src={markPhoto}
+                  alt="Mark Apostol"
+                  className="flex-shrink-0 rounded-full object-cover"
+                  style={{ width: 52, height: 52, objectPosition: "center top", border: "2px solid rgba(160,104,0,0.18)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
+                />
+                <div>
+                  <p className="font-bold" style={{ color: "#17171C", fontSize: "0.97rem" }}>Mark Apostol</p>
+                  <p className="font-semibold" style={{ color: "#A86E00", fontSize: "0.82rem" }}>Co-founder &amp; COO</p>
+                </div>
+              </div>
+
+              {/* Outlined CTA */}
+              <Link
+                href="/find-work/jobs"
+                className="inline-flex h-[46px] items-center justify-center rounded-[11px] px-6 text-[14.5px] font-semibold transition"
+                style={{ border: "1.5px solid #A86E00", color: "#A86E00", background: "transparent" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(168,110,0,0.07)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                Find work →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

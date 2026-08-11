@@ -1,0 +1,245 @@
+FIX ONLY THE “FOR TALENTS / REAL WORK, GREAT PAY” SECTION.
+
+Use the newly attached screenshot as the exact visual source of truth.
+
+Do NOT redesign it.
+Do NOT change the wording.
+Do NOT modify other homepage sections.
+
+GOAL:
+Recreate the same asymmetrical composition, warm cream background, right-side content placement, typography, spacing, profile row, CTA styling, and responsive behavior shown in the reference.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a full-width warm cream / soft beige background.
+
+Approximate:
+#FFF3DD
+or a very similar pale warm cream.
+
+Do NOT use white or lavender here.
+
+Keep the section visually calm and spacious.
+
+==================================================
+OVERALL COMPOSITION
+==================================================
+
+This section intentionally has a LARGE empty area on the LEFT.
+
+Do NOT center the text block across the full page.
+
+Use a centered outer container, but position the actual content block on the RIGHT HALF.
+
+Desktop target:
+- outer max-width around 1180–1240px
+- content block begins around 52–55% of container width
+- content width around 430–500px
+- preserve large empty negative space on left
+
+Suggested:
+display: grid;
+grid-template-columns: 1fr 1fr;
+align-items: center;
+
+Place the content only in column 2.
+
+==================================================
+EYEBROW
+==================================================
+
+Text:
+“— FOR TALENTS”
+
+Style:
+- uppercase
+- small font
+- medium/bold
+- warm brown/gold text
+- short orange line before it
+- letter spacing around 0.08em
+- left aligned
+
+==================================================
+HEADING
+==================================================
+
+Exact copy:
+
+“"Real work, great pay,
+from wherever you call
+home."”
+
+Keep the line wrapping close to the reference.
+
+Color treatment:
+- “"Real work, great pay,” = near-black
+- “from wherever you call home."” = warm golden brown
+
+Approximate colors:
+dark: #17171C
+gold/brown: #A86E00 to #B67600
+
+Typography:
+- bold
+- large
+- approximately 48–58px desktop
+- tight line-height around 1.08
+- letter-spacing slightly negative
+- left aligned
+- use clamp() for responsiveness
+
+==================================================
+BODY COPY
+==================================================
+
+Exact text:
+
+“Set your rate and keep it — OnSpot's fee is added on top,
+never taken out of your pay. Just great clients and reliable
+payouts.”
+
+Style:
+- medium gray/dark gray
+- approximately 16–18px
+- line-height around 1.55
+- max-width around 460px
+- left aligned
+
+==================================================
+AUTHOR ROW
+==================================================
+
+Use the REAL Mark Apostol photo from project assets.
+
+Do NOT use initials.
+Do NOT use a generic avatar icon.
+
+Layout:
+- circular photo on left
+- name and role stacked on right
+- align-items: center
+- compact spacing
+
+Avatar:
+- approximately 48–54px
+- aspect-ratio: 1 / 1
+- border-radius: 50%
+- object-fit: cover
+- thin white/light border
+- subtle shadow
+
+Text:
+
+Mark Apostol
+Co-founder & COO
+
+Name:
+- dark/black
+- bold
+- around 16–18px
+
+Role:
+- warm gold/brown
+- around 13–15px
+- medium/bold
+
+==================================================
+CTA BUTTON
+==================================================
+
+Text:
+“Find work →”
+
+Style:
+- transparent / same cream background
+- thin warm brown/gold border
+- warm brown/gold text
+- rounded corners around 10–12px
+- medium button height
+- approximately 140–155px wide
+- NOT filled
+- NOT pill-shaped
+
+Hover:
+- subtle warm tinted background
+- preserve border color
+
+==================================================
+VERTICAL SPACING
+==================================================
+
+Match the screenshot carefully:
+
+Eyebrow
+→ heading
+→ paragraph
+→ author row
+→ CTA
+
+Approximate gaps:
+- eyebrow to heading: 20–26px
+- heading to paragraph: 28–34px
+- paragraph to author: 24–30px
+- author to CTA: 28–34px
+
+Do not compress this section.
+
+==================================================
+SECTION HEIGHT
+==================================================
+
+Desktop:
+- keep generous top and bottom padding
+- approximately 90–120px vertical padding
+- section should feel tall and spacious
+
+Do not vertically center content if it makes the section too compact.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+- preserve left empty space
+- content stays right-aligned within the section structure
+
+Tablet:
+- reduce left empty space somewhat
+- use approximately 40/60 or 45/55 split if needed
+
+At <= 850px:
+- switch to single-column
+- content becomes centered within the page container
+- BUT keep text LEFT-ALIGNED
+- remove the huge empty left column
+
+Mobile:
+- padding-inline 20–24px
+- heading clamp around 34–42px
+- body around 15–16px
+- CTA full-content width only if needed, otherwise keep natural size
+- no horizontal overflow
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- center the text block on desktop
+- add decorative cards/boxes on the empty left side
+- add background graphics not present in the screenshot
+- replace Mark’s photo with initials
+- change wording
+- change CTA to filled orange
+- change the warm cream background
+- modify any other section
+
+The final desktop version should visually match the supplied screenshot:
+large empty cream space on the left,
+a right-positioned text block,
+black + gold headline,
+real Mark Apostol avatar,
+and outlined “Find work →” button.
