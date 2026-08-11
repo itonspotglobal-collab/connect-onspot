@@ -1553,15 +1553,33 @@ function SplitTestimonialSection() {
           <div style={{ maxWidth: 480 }} className="w-full">
             <SectionEyebrow text="For Talents" />
 
-            <blockquote
-              className="mt-5 font-bold leading-[1.08] mb-7"
-              style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal, maxWidth: 440 }}
-            >
-              "Real work, great pay,{" "}
-              <span style={{ color: C.orangeDeep }}>
-                from wherever you call home."
+            <h2 className="mt-5 mb-8" style={{ maxWidth: 520 }}>
+              <span
+                className="block font-bold"
+                style={{
+                  fontSize: "clamp(38px, 4vw, 58px)",
+                  fontWeight: 800,
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.035em",
+                  color: C.charcoal,
+                }}
+              >
+                Real work, great pay,
               </span>
-            </blockquote>
+              <span
+                className="block font-bold"
+                style={{
+                  fontSize: "clamp(34px, 3.6vw, 52px)",
+                  fontWeight: 725,
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.025em",
+                  color: C.orangeDeep,
+                  marginTop: 2,
+                }}
+              >
+                from wherever you call home.
+              </span>
+            </h2>
 
             <p className="mb-7 leading-relaxed" style={{ color: C.gray, fontSize: "0.97rem", maxWidth: 420 }}>
               Set your rate and keep it — OnSpot's fee is added on top, never taken out of your pay. Just great clients and reliable payouts.
