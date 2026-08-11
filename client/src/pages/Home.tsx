@@ -498,74 +498,85 @@ const BAR_DATA = [
 
 function PhoneMockup() {
   return (
-    <div className="relative mx-auto" style={{ width: 220 }}>
-      {/* Glow */}
-      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 45%, rgba(255,174,33,0.2), transparent 70%)", filter: "blur(8px)" }} />
-      {/* Phone shell */}
+    <div className="relative ml-auto" style={{ width: 262 }}>
+      {/* Ambient glow */}
+      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 52% 48%, rgba(255,174,33,0.18), transparent 70%)", filter: "blur(10px)" }} />
+
+      {/* Phone shell — dark navy/black frame */}
       <div
-        className="relative rounded-[36px] p-[7px]"
-        style={{ background: "linear-gradient(165deg, #23264a 0%, #14162e 100%)", border: "1px solid rgba(255,255,255,0.13)", boxShadow: "0 40px 80px -24px rgba(5,8,30,0.7)" }}
+        className="relative rounded-[40px] p-[8px]"
+        style={{
+          background: "linear-gradient(170deg, #1a1d3a 0%, #0d0f22 100%)",
+          border: "1.5px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 44px 88px -20px rgba(5,8,30,0.75), inset 0 1px 0 rgba(255,255,255,0.07)",
+        }}
       >
-        {/* Notch */}
-        <div className="flex justify-center mb-1">
-          <div className="h-[4px] w-[60px] rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+        {/* Speaker / notch pill */}
+        <div className="flex justify-center pt-1 pb-2">
+          <div className="h-[5px] w-[52px] rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
         </div>
-        {/* Screen */}
-        <div className="overflow-hidden rounded-[30px] bg-white">
+
+        {/* White screen */}
+        <div className="overflow-hidden rounded-[33px] bg-white">
           {/* App header */}
-          <div className="px-4 pt-3 pb-2 border-b" style={{ borderColor: "#F0F0F5" }}>
-            <p className="text-[11px] font-bold" style={{ color: C.charcoal }}>OnSpot</p>
-            <p className="text-[9px]" style={{ color: C.grayLight }}>Earnings summary · Last 6 months</p>
+          <div className="px-5 pt-4 pb-2.5 border-b" style={{ borderColor: "#EDEDF5" }}>
+            <p className="text-[12px] font-bold leading-none" style={{ color: C.charcoal }}>OnSpot</p>
+            <p className="text-[9.5px] mt-0.5" style={{ color: C.grayLight }}>Earnings summary · Last 6 months</p>
           </div>
 
-          <div className="px-4 pb-4 pt-3">
-            {/* Main stat */}
-            <div className="rounded-[10px] p-3 mb-3" style={{ background: C.indigo }}>
-              <p className="text-[8px] font-semibold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.6)" }}>Total earned this month</p>
-              <p className="text-[22px] font-bold text-white leading-none mt-1">$3,455</p>
-              <p className="text-[8px] font-semibold mt-1" style={{ color: C.orangeLight }}>▲ 18% vs last month</p>
+          <div className="px-5 pb-5 pt-4 space-y-3">
+            {/* Main earnings card */}
+            <div className="rounded-[12px] px-4 py-3" style={{ background: C.indigo }}>
+              <p className="text-[8.5px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
+                TOTAL EARNED THIS MONTH
+              </p>
+              <p className="text-[26px] font-bold text-white leading-none mt-1.5">$3,455</p>
+              <p className="text-[8.5px] font-semibold mt-1.5" style={{ color: C.orangeLight }}>▲ 18% vs last month</p>
             </div>
 
-            {/* Mini stats */}
-            <div className="grid grid-cols-2 gap-1.5 mb-3">
+            {/* Secondary stat cards */}
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "AVG. RATE", value: "$20/hr" },
-                { label: "ACTIVE CLIENTS", value: "2" },
+                { label: "AVG. RATE",       value: "$20/hr" },
+                { label: "ACTIVE CLIENTS",  value: "2"      },
               ].map((s) => (
-                <div key={s.label} className="rounded-[8px] px-2.5 py-2" style={{ background: "#F7F7FB" }}>
-                  <p className="text-[7px] font-bold uppercase tracking-wide" style={{ color: C.grayLight }}>{s.label}</p>
-                  <p className="text-[14px] font-bold mt-0.5" style={{ color: C.charcoal }}>{s.value}</p>
+                <div key={s.label} className="rounded-[10px] px-3 py-2.5" style={{ background: "#F7F7FB", border: "1px solid #EDEDF5" }}>
+                  <p className="text-[7.5px] font-bold uppercase tracking-wider leading-none" style={{ color: C.grayLight }}>{s.label}</p>
+                  <p className="text-[15px] font-bold mt-1 leading-none" style={{ color: C.charcoal }}>{s.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Bar chart */}
-            <div className="flex items-end gap-1.5 mb-1" style={{ height: 48 }}>
-              {BAR_DATA.map((b) => (
-                <div key={b.month} className="flex flex-1 flex-col items-center gap-0.5">
-                  <div
-                    className="w-full rounded-t-[3px]"
-                    style={{
-                      height: `${b.h}%`,
-                      background: b.month === "Aug" ? C.indigo : "rgba(75,81,184,0.22)",
-                    }}
-                  />
-                  <span className="text-[6.5px]" style={{ color: C.grayLight }}>{b.month}</span>
-                </div>
-              ))}
+            <div>
+              <div className="flex items-end gap-1.5" style={{ height: 52 }}>
+                {BAR_DATA.map((b) => (
+                  <div key={b.month} className="flex flex-1 flex-col items-center gap-0.5">
+                    <div
+                      className="w-full rounded-t-[3px]"
+                      style={{ height: `${b.h}%`, background: b.month === "Aug" ? C.indigo : "rgba(75,81,184,0.2)" }}
+                    />
+                    <span className="text-[7px] leading-none mt-0.5" style={{ color: C.grayLight }}>{b.month}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Earnings by client */}
-            <p className="text-[8px] font-bold uppercase tracking-wide mb-1.5" style={{ color: C.grayLight }}>Earnings by client</p>
-            {[
-              { n: "New Tech AI",      amt: "$2,000" },
-              { n: "John Roberts LLC", amt: "$1,455" },
-            ].map((c) => (
-              <div key={c.n} className="flex items-center justify-between py-1 border-b last:border-0" style={{ borderColor: "#F0F0F5" }}>
-                <p className="text-[9px] font-medium" style={{ color: C.charcoal }}>{c.n}</p>
-                <p className="text-[9px] font-semibold" style={{ color: C.indigo }}>{c.amt}</p>
-              </div>
-            ))}
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-wider mb-2" style={{ color: C.grayLight }}>
+                Earnings by client
+              </p>
+              {[
+                { n: "New Tech AI",      amt: "$2,000" },
+                { n: "John Roberts LLC", amt: "$1,455" },
+              ].map((c) => (
+                <div key={c.n} className="flex items-center justify-between py-1.5 border-b last:border-0" style={{ borderColor: "#EDEDF5" }}>
+                  <p className="text-[10px] font-medium" style={{ color: C.charcoal }}>{c.n}</p>
+                  <p className="text-[10px] font-semibold" style={{ color: C.indigo }}>{c.amt}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

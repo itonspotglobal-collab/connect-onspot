@@ -1,0 +1,167 @@
+FIX ONLY HERO CAROUSEL SLIDE 3 — “EARN WITHOUT LIMITS”.
+
+Use the 2nd attached image as the visual source of truth.
+Do NOT redesign the slide.
+
+GOAL:
+Make Slide 3 match the mock design exactly in spacing, sizing, alignment, proportions, typography, and controls.
+
+BACKGROUND:
+- Full-width dark indigo/blue gradient.
+- Match the existing carousel background used in the reference.
+- Keep the slide height consistent with the other hero slides.
+
+LEFT CONTENT:
+Place the content inside the same centered max-width carousel container.
+
+Eyebrow:
+“— FOR TALENTS”
+
+Heading:
+“Earn Without
+Limits.”
+
+- “Earn” = white
+- “Without Limits.” = orange/yellow
+- Match the line break exactly.
+- Use the same large bold hero font as the mock.
+- Do not make the heading too wide.
+
+Supporting headline:
+“The best clients — the highest pay for the work
+you do.”
+
+- First part = white
+- “the highest pay for the work you do.” = orange
+- Match the exact 2-line wrapping from the mock.
+
+Body:
+“Work with great companies from wherever you call home, at
+the best rate, and get paid reliably.”
+
+- muted lavender/light gray
+- narrower text width
+- match line-height from the reference
+
+CTA:
+“Find work →”
+
+- filled orange/yellow button
+- dark/navy text
+- rounded corners
+- match reference width, height, and padding
+- keep it below body with generous spacing
+
+
+RIGHT PHONE MOCKUP:
+Rebuild the earnings phone mockup to match the 2nd image.
+
+POSITION:
+- Move the phone slightly farther right compared with the current version.
+- Vertically align it with the main content block.
+- Keep it smaller and more compact like the reference.
+- Do NOT make it oversized.
+
+PHONE FRAME:
+- dark navy/black outer shell
+- rounded smartphone corners
+- subtle shadow
+- white inner screen
+- small speaker/notch detail at top
+
+SCREEN CONTENT:
+
+Header:
+OnSpot
+
+Subtext:
+“Earnings summary · Last 6 months”
+
+MAIN SUMMARY CARD:
+Label:
+“TOTAL EARNED THIS MONTH”
+
+Amount:
+“$3,455”
+
+Small indicator:
+“▲ 18% vs last month”
+
+The summary card should be indigo with white amount text and orange growth indicator.
+
+SECONDARY STATS:
+Left:
+AVG. RATE
+$20/hr
+
+Right:
+ACTIVE CLIENTS
+2
+
+MONTH LABELS:
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+EARNINGS BY CLIENT:
+New Tech AI        $2,000
+John Roberts LLC   $1,455
+
+Keep these rows compact and aligned like the mock.
+
+
+IMPORTANT DIFFERENCES FROM CURRENT VERSION:
+- Use the 2nd screenshot proportions.
+- Reduce phone mockup size slightly.
+- Increase left-side whitespace and vertical breathing room.
+- Keep heading and text block a little more inward from the left.
+- Keep the phone farther right.
+- Preserve large open space between content and phone.
+- Match the mock’s lower carousel-control position.
+
+
+CAROUSEL CONTROLS:
+Keep Slide 3 controls at the bottom-left exactly like the reference:
+
+Previous circular arrow
+Pause/play circular button
+Next circular arrow
+
+Counter:
+“03 / 05”
+
+Then five short horizontal progress indicators.
+
+- active third indicator = orange
+- inactive indicators = muted lavender/transparent
+- controls must align with the same left edge as the hero content
+- do not center controls
+
+
+RESPONSIVE:
+Desktop:
+- two-column layout
+- left text ~50%
+- right phone ~50%
+- maintain large space between them
+
+Tablet:
+- reduce heading and phone proportionally
+- preserve two columns if space permits
+
+Mobile:
+- stack text above phone
+- keep text left-aligned
+- keep phone centered beneath content
+- controls remain visible and usable
+
+
+VERY IMPORTANT:
+Do not change Slide 1, 2, 4, or 5.
+Do not change carousel timing, transitions, or database behavior.
+This task is VISUAL CORRECTION ONLY for Slide 3.
+
+Compare the finished implementation side-by-side with the 2nd attached mock before marking complete.
