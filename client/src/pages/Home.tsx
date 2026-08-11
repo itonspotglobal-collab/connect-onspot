@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, User, Users } from "lucide-react";
-import { Footer } from "@/components/Footer";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
 const C = {
@@ -65,7 +64,7 @@ export default function Home() {
       <OpenJobsSection />
       <ProcessSection />
       <FinalCtaSection />
-      <Footer />
+
     </div>
   );
 }
