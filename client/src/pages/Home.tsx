@@ -788,27 +788,29 @@ function ProblemSection() {
       style={{ background: "#F7F7FB" }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      <div className="mx-auto max-w-[1180px]">
+      {/* Centered header */}
+      <div className="mx-auto max-w-[680px] text-center mb-16">
         <SectionEyebrow text="The Problem With Outsourcing Today" />
         <h2
-          className="mt-4 font-bold leading-tight"
+          className="mt-5 font-bold leading-tight"
           style={{
             fontSize: "clamp(2rem, 3.5vw, 3.25rem)",
             letterSpacing: "-0.025em",
             color: C.charcoal,
-            maxWidth: 680,
           }}
         >
           Outsourcing is broken. Both<br />sides are paying for it.
         </h2>
         <p
-          className="mt-4 mb-12"
-          style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 600, lineHeight: 1.6 }}
+          className="mt-5 mx-auto"
+          style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 580, lineHeight: 1.6 }}
         >
           A middleman sits between you — inflating what companies pay and shrinking what talent takes home.
         </p>
+      </div>
 
-        {/* Two cards */}
+      {/* Two cards — centered, constrained */}
+      <div className="mx-auto max-w-[1080px]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* LEFT — dark navy */}
           <div

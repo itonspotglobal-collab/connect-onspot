@@ -1,0 +1,68 @@
+FIX ONLY “THE PROBLEM WITH OUTSOURCING TODAY” SECTION.
+
+The current section is too wide and positioned too far left.
+Center it horizontally like the reference design.
+
+HEADER:
+- Center eyebrow:
+  “— THE PROBLEM WITH OUTSOURCING TODAY”
+- Center heading:
+  “Outsourcing is broken. Both
+   sides are paying for it.”
+- Center supporting paragraph.
+- Use text-align:center.
+- Constrain heading to approximately 650–700px.
+- Constrain paragraph to approximately 600px.
+- margin-inline:auto.
+
+CARDS:
+- Put BOTH cards inside one centered wrapper.
+- max-width: approximately 1050–1100px.
+- margin-inline:auto.
+- display:grid.
+- grid-template-columns: repeat(2, 1fr).
+- gap: approximately 24–28px.
+- Do NOT stretch cards across the full viewport.
+
+IMPORTANT:
+Keep ALL CONTENT INSIDE THE CARDS LEFT-ALIGNED.
+
+The desired hierarchy is:
+
+          — THE PROBLEM WITH OUTSOURCING TODAY
+
+             Outsourcing is broken. Both
+              sides are paying for it.
+
+         A middleman sits between you — inflating...
+              shrinking what talent takes home.
+
+       ┌────────────────┐  ┌────────────────┐
+       │ FOR COMPANIES  │  │ FOR TALENTS    │
+       │                │  │                │
+       │ card content   │  │ card content   │
+       │ left aligned   │  │ left aligned   │
+       └────────────────┘  └────────────────┘
+
+SPACING:
+- Increase whitespace above the eyebrow.
+- Keep approximately 18–24px between eyebrow and heading.
+- Approximately 20px between heading and paragraph.
+- Approximately 55–70px between paragraph and cards.
+- Both cards must have identical height.
+- Maintain balanced left/right page whitespace.
+
+Do NOT change:
+- wording
+- card colors
+- typography styling
+- highlighted orange/indigo words
+- borders
+- CTAs
+- list content
+
+Only correct WIDTH, CENTER ALIGNMENT, and SPACING.
+
+On mobile, stack the cards vertically while keeping the section header centered and card contents left-aligned.
+
+Do not modify any other homepage section.
