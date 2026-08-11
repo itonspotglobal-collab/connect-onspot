@@ -1,0 +1,250 @@
+Rebuild my HOMEPAGE HERO as the exact 5-slide carousel shown in my screenshots.
+
+Do NOT redesign it. Match layout, copy, colors, spacing, typography, controls, responsive behavior, and mockup cards.
+
+CAROUSEL:
+• Full viewport-width hero, approx. 800px tall on desktop.
+• 5 slides.
+• Auto-advance every 6 seconds.
+• Smooth horizontal/fade transition around 500–700ms.
+• Pause/play circular button.
+• Previous/next circular arrow buttons.
+• Counter: 01 / 05 through 05 / 05.
+• Five horizontal progress indicators. Active indicator = orange.
+• Controls positioned bottom-left inside the same max-width container.
+• Infinite looping.
+• Allow keyboard arrows and swipe/touch.
+• Preserve carousel state cleanly without layout jumping.
+
+COLORS:
+Dark slides: blue/indigo gradient approximately #4652B5 → #272668.
+Light slides: warm off-white approximately #FAF8F5 with very subtle pale violet glow.
+Primary indigo: approximately #4B51B8.
+Accent orange/yellow: approximately #FFAE21 / #FFC052.
+Dark text: approximately #17171C.
+Muted copy: gray/lavender depending on background.
+
+TYPOGRAPHY:
+Use a modern geometric sans-serif similar to Inter.
+Desktop hero headings should be very large/bold, around 64–72px with tight line-height.
+Preserve highlighted words exactly using orange or indigo as shown.
+
+SLIDE 1 — DARK
+Centered content.
+
+Heading:
+“Work Without Limits”
+“Without” = orange.
+Everything else = white.
+
+Subheading:
+“One system. Highest pay for talents at lower cost to companies.”
+“One system.” = white/bold.
+Remaining text = muted lavender.
+
+Buttons:
+“Hire talent →” white pill with indigo text.
+“Find work →” transparent/indigo button with thin light border and white text.
+
+No mockup on this slide.
+
+SLIDE 2 — LIGHT
+Eyebrow:
+“— FOR COMPANIES”
+
+Heading:
+“Hire Without
+Limits.”
+“Hire” = dark.
+“Without Limits.” = indigo.
+
+Supporting headline:
+“The best talents — without the outsourcing
+overhead.”
+Highlighted phrase = gold/brown.
+
+Body:
+“Build the team you need without long hiring cycles, limited
+local talent pools, or traditional outsourcing complexity.”
+
+CTA:
+“Hire talent →”
+
+RIGHT SIDE:
+Recreate the laptop/dashboard visual from the screenshot.
+Black rounded laptop frame.
+Inside:
+OnSpot
+Gentech LLC
+Team dashboard
+Last 6 months
+
+Stats:
+MONTHLY COST
+$18,400
+▼ 22% vs traditional
+
+HEADCOUNT
+8
+Active members
+
+AVG. PERFORMANCE
+4.8/5
+Across roles
+
+RETENTION
+94%
+Continuity
+
+Include team-performance rows, hiring cards, and vacant roles matching the screenshot.
+
+SLIDE 3 — DARK
+Eyebrow:
+“— FOR TALENTS”
+
+Heading:
+“Earn Without
+Limits.”
+“Without Limits.” = orange.
+
+Supporting headline:
+“The best clients — the highest pay for the
+work you do.”
+Highlighted portion = orange.
+
+Body:
+“Work with great companies from wherever you call home,
+at the best rate, and get paid reliably.”
+
+CTA:
+“Find work →”
+Orange button.
+
+RIGHT:
+Recreate smartphone earnings dashboard:
+OnSpot
+Earnings summary
+Last 6 months
+
+TOTAL EARNED THIS MONTH
+$3,455
+▲ 18% vs last month
+
+AVG. RATE
+$20/hr
+
+ACTIVE CLIENTS
+2
+
+Include Mar–Aug chart and:
+EARNINGS BY CLIENT
+New Tech AI — $2,000
+John Roberts LLC — $1,455
+
+SLIDE 4 — LIGHT
+Eyebrow:
+“— THE TALENT NETWORK”
+
+Heading:
+“Thousands of
+talents. Ready to
+work.”
+“Ready to work.” = indigo.
+
+Supporting headline:
+“Vetted, experienced, and ready to start in
+days — not months.”
+Highlighted phrase = gold/brown.
+
+Body:
+“Every professional in the network is screened for skills,
+experience, and reliability before you ever see them — so the
+match is fast and the quality holds.”
+
+CTA:
+“Meet your talent →”
+
+RIGHT:
+Talent network card with search field:
+“Customer support, bookkeeping, sales...”
+
+Filters:
+Available now
+4.5★ and up
+3+ yrs experience
+
+Profiles:
+Kim C. — Customer Support Specialist · 6 yrs — ★ 4.9 — Ready now
+Rafael S. — Bookkeeper · 8 yrs — ★ 4.8 — Ready now
+Aira M. — Executive Assistant · 5 yrs — ★ 4.9 — Ready now
+Jomar P. — Sales Development Rep · 4 yrs — ★ 4.7 — Ready now
+
+Footer:
+“✓ Every profile is pre-vetted for skills, experience, and reliability.”
+
+SLIDE 5 — DARK
+Eyebrow:
+“— FOR TALENTS”
+
+Heading:
+“Hundreds of
+high-paying jobs.
+Open right now.”
+“Open right now.” = orange.
+
+Supporting headline:
+“Real roles, real rates — and new jobs
+opening every week.”
+Highlighted phrase = orange.
+
+Body:
+“Set your rate and keep it. OnSpot's fee is added on top —
+never taken out of your pay.”
+
+CTA:
+“Browse all jobs →”
+
+RIGHT:
+Open roles card.
+
+Header:
+Open roles
+Updated this week
+
+Jobs:
+IT Administrator
+Remote
+USD 1,500 - 3,000/month
+Hiring now
+
+Accounting Manager
+Hybrid
+USD 500/month
+Hiring now
+
+Virtual Assistant
+Remote
+PHP 8 - 12
+Hiring now
+
+Footer:
+“See all open jobs →”
+
+LAYOUT:
+Use a centered max-width around 1180–1200px.
+Slides 2–5 use approximately 50/50 text + mockup columns.
+Vertically center main content while leaving carousel controls near bottom.
+Match the generous whitespace in the screenshots.
+Dark-slide controls use translucent white borders.
+Light-slide controls use indigo borders.
+
+RESPONSIVE:
+At tablet/mobile, stack mockup below text.
+Scale heading fluidly with clamp().
+Keep controls accessible and visible.
+Prevent text/card overflow.
+Mockups should resize proportionally.
+
+IMPORTANT:
+Build the dashboard, phone, talent-list and jobs-list graphics with HTML/CSS components rather than replacing them with generic stock images.
+Compare all 5 finished slides against the supplied screenshots before declaring completion.
