@@ -147,7 +147,7 @@ export function escapeHtml(str: string): string {
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SITE = "https://www.onspotglobal.com";
 /** Filename of the default social-preview image (served from the request origin). */
-const DEFAULT_OG_IMAGE_PATH = "/onspot-social-preview-2026-v2.png";
+const DEFAULT_OG_IMAGE_PATH = "/onspot-social-preview-2026-v3.png";
 /**
  * Absolute production URL — kept for backward-compat with any external imports.
  * Inside resolveOGMeta, use `defaultOgImage` (built from the request origin) instead.

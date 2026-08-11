@@ -1,0 +1,120 @@
+The social preview image is now working, but Microsoft Teams is cropping it badly.
+
+Current file:
+
+public/onspot-social-preview-2026-v2.png
+
+The image itself needs to be recomposed for social-card cropping.
+
+Please create a NEW version:
+
+public/onspot-social-preview-2026-v3.png
+
+Canvas size:
+
+1200 x 630
+
+IMPORTANT:
+Do not simply resize the existing image.
+
+Recompose/crop it specifically for social sharing.
+
+GOAL
+
+The image must still look good when platforms display it as:
+
+- a wide Open Graph preview
+- a small Microsoft Teams thumbnail
+- LinkedIn link preview
+- Facebook preview
+- X/Twitter card
+
+SAFE AREA
+
+Keep ALL critical content inside the central safe area.
+
+Avoid putting important text or logos very close to:
+
+- left edge
+- right edge
+- top edge
+- bottom edge
+
+Use approximately 10–12% padding around the canvas.
+
+The OnSpot logo must remain fully visible even if a platform crops the image.
+
+The words:
+
+Work
+Without
+Limits
+
+must not be cut off.
+
+Prefer moving the text block slightly inward from the left.
+
+Keep the human hand and robot hand visible on the right, but do not let them push the text too far toward the edge.
+
+The composition should remain balanced.
+
+DESIGN PRIORITY
+
+1. OnSpot logo fully visible
+2. “Work Without Limits” fully readable
+3. Robot/human interaction visible
+4. Bottom tagline visible if space allows
+
+If necessary, make the tagline slightly smaller or move it inward.
+
+Do not reduce the main headline too much.
+
+SOCIAL CROPPING TEST
+
+Create the image so it still works when cropped approximately to:
+
+- 1.91:1
+- 16:9
+- small thumbnail around 220x120
+- square-ish center crop
+
+Do not place essential elements in the outer 10–15% of the image.
+
+After creating the new image, update ALL social metadata to:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Update:
+
+server/ogMiddleware.ts
+client/index.html
+client/src/components/HeadSEO.tsx
+
+including:
+
+og:image
+og:image:url
+og:image:secure_url
+twitter:image
+DEFAULT_OG_IMAGE
+
+Then verify the new image is:
+
+1200 x 630
+image/png
+HTTP 200
+
+Also verify raw social-bot HTML uses:
+
+https://onspotglobal.com/onspot-social-preview-2026-v3.png
+
+Do not reuse the v2 URL because Teams may cache it.
+
+FINAL CHECK
+
+Generate a small preview simulation around 300px wide and confirm:
+
+- OnSpot logo is not clipped
+- “Work Without Limits” is readable
+- main visual still looks balanced
+- no important content touches the crop edges
