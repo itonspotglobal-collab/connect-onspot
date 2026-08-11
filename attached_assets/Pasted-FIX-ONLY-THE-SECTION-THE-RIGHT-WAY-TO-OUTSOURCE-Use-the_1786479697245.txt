@@ -1,0 +1,283 @@
+FIX ONLY THE SECTION:
+“THE RIGHT WAY TO OUTSOURCE”
+
+Use the newly attached screenshot as the exact visual source of truth.
+
+Do NOT redesign it.
+Do NOT change the wording.
+Do NOT modify other homepage sections.
+
+GOAL:
+Recreate the same format, spacing, alignment, card composition, colors, typography, and responsive behavior shown in the reference.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a very light lavender / cool off-white background.
+
+Approximate:
+background: #F2F1FF;
+or a very subtle pale lavender gradient.
+
+The section should feel soft and clean, not pure white.
+
+Use generous vertical padding.
+
+==================================================
+HEADER — CENTERED
+==================================================
+
+Center the entire header group.
+
+Eyebrow:
+“— THE RIGHT WAY TO OUTSOURCE”
+
+Style:
+- uppercase
+- small font
+- medium/bold weight
+- indigo text
+- short orange line before text
+- letter-spacing around 0.08em
+
+Heading:
+“We changed the equation.”
+
+Style:
+- centered
+- dark near-black
+- bold
+- approximately 48–56px on desktop
+- tight line-height
+- responsive with clamp()
+
+Subheading:
+“Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.”
+
+Style:
+- centered
+- muted gray
+- narrower width
+- approximately 16–18px
+- margin-inline: auto
+
+==================================================
+COMPARISON LAYOUT
+==================================================
+
+Create one centered comparison wrapper:
+max-width: approximately 980–1050px;
+margin-inline: auto;
+
+The structure must visually look like ONE long white card behind THREE columns, with the CENTER OnSpot card overlapping and raised above it.
+
+The left and right columns should appear to be part of the same white horizontal container.
+
+Do NOT create three unrelated floating cards.
+
+==================================================
+BACKGROUND COMPARISON CARD
+==================================================
+
+Create a wide white rounded rectangle spanning left and right sections.
+
+Style:
+- white / very light surface
+- border-radius approximately 18–22px
+- thin pale lavender border
+- subtle shadow
+- height around 170–190px on desktop
+- display:grid
+- grid-template-columns: 1fr 1fr 1fr
+
+The center grid area exists behind the raised card but should not display duplicate content.
+
+==================================================
+LEFT COLUMN — FREELANCE MARKETPLACES
+==================================================
+
+Keep content LEFT-ALIGNED.
+
+Eyebrow:
+“FREELANCE MARKETPLACES”
+
+- muted uppercase gray
+- small font
+- letter spacing
+
+Title:
+“Fast and cheap”
+
+- dark
+- bold
+
+Rows:
+“× No accountability”
+“× Race-to-the-bottom pay”
+
+Use:
+- small red × icon
+- muted gray row text
+- vertical spacing around 14–18px
+
+==================================================
+CENTER CARD — ONSPOT
+==================================================
+
+This is the dominant element.
+
+Place it ABOVE and overlapping the white comparison card.
+
+Desktop:
+width: approximately 340–370px;
+min-height: approximately 220–235px;
+
+Use:
+- indigo/blue vertical gradient
+- rounded corners approximately 20–24px
+- strong but soft shadow
+- translate upward around 25–35px compared with the side card
+
+Approximate gradient:
+#4D57C7 → #37358D
+
+Eyebrow:
+“— ONSPOT”
+
+- orange line
+- orange/yellow text
+- uppercase
+- small bold font
+
+Heading:
+“Great talent. High pay. Fair cost.”
+
+- white
+- bold
+- approximately 18–21px
+
+Rows:
+“✓ Vetted talent, ready fast”
+“✓ Accountable, managed relationships”
+“✓ No overhead cost”
+
+Use:
+- orange/yellow check icons
+- light lavender/white text
+- clean alignment
+- consistent 16–20px vertical spacing
+
+==================================================
+RIGHT COLUMN — TRADITIONAL OUTSOURCING
+==================================================
+
+Keep content LEFT-ALIGNED.
+
+Eyebrow:
+“TRADITIONAL OUTSOURCING”
+
+- uppercase
+- muted gray
+
+Title:
+“Reliable, but heavy”
+
+- dark
+- bold
+
+Rows:
+“× Slow and rigid”
+“× Expensive overhead”
+
+Use:
+- red × icons
+- muted gray text
+
+==================================================
+BOTTOM STATEMENT
+==================================================
+
+Center this text below the comparison group:
+
+“Everyone else trades one thing for another. OnSpot
+doesn't trade — we raise the whole experience.”
+
+Style:
+- centered
+- dark text
+- approximately 20–22px
+- medium/bold
+- max-width around 720px
+- margin-inline: auto
+
+Color:
+“we raise the whole experience.” = indigo
+
+Keep the wrap approximately 2 lines like the reference.
+
+==================================================
+SPACING
+==================================================
+
+Match the reference proportions:
+
+- generous space between section top and eyebrow
+- around 18–22px eyebrow → heading
+- around 18–24px heading → subtitle
+- around 50–65px subtitle → comparison block
+- center card overlaps side card vertically
+- around 55–70px comparison block → bottom statement
+
+Keep the section visually balanced and centered.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+- preserve the wide 3-column comparison composition
+- center card overlaps the background comparison card
+
+Tablet:
+- reduce widths and font sizes
+- keep 3 columns if enough space
+
+At <= 850px:
+switch to stacked cards:
+1. Freelance Marketplaces
+2. OnSpot
+3. Traditional Outsourcing
+
+When stacked:
+- remove overlap/negative translate
+- each card full width
+- center card remains dark indigo
+- maintain left-aligned content inside cards
+- keep section header and bottom statement centered
+
+Mobile:
+- padding-inline about 20–24px
+- heading clamp around 34–44px
+- cards full width
+- no overflow
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- make all 3 cards identical
+- center text inside individual cards
+- remove the raised/overlapping center OnSpot card
+- make the section pure white
+- change wording
+- change colors to generic blue
+- change any other homepage section
+
+The final desktop version should visually match the supplied screenshot:
+a pale lavender section,
+centered header,
+one long white comparison card,
+a raised indigo OnSpot card in the middle,
+and a centered bottom statement.

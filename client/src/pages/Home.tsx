@@ -1208,116 +1208,179 @@ function BetterWaySection() {
 
 // ── SECTION 3 — THE RIGHT WAY TO OUTSOURCE ───────────────────────────────────
 function EquationSection() {
+  const xRows = (items: string[]) =>
+    items.map((item) => (
+      <li key={item} className="flex items-start gap-2.5">
+        <div className="mt-0.5 flex-shrink-0 flex items-center justify-center rounded-full"
+          style={{ width: 18, height: 18, background: "rgba(200,50,50,0.09)" }}>
+          <X className="h-2.5 w-2.5" style={{ color: "#C83232" }} />
+        </div>
+        <span style={{ color: C.gray, fontSize: "0.875rem" }}>{item}</span>
+      </li>
+    ));
+
+  const sideColStyle: React.CSSProperties = {
+    padding: "0 40px",
+    position: "relative",
+    zIndex: 1,
+  };
+
   return (
     <section
-      style={{ background: "#EEEDFB" }}
+      style={{ background: "#F2F1FF" }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      {/* Centered header */}
-      <div className="mx-auto max-w-[640px] text-center mb-14">
-        <SectionEyebrow text="The Right Way to Outsource" />
+      {/* ── Header ── */}
+      <div className="mx-auto text-center mb-14 lg:mb-16" style={{ maxWidth: 620 }}>
+        <div className="inline-flex items-center gap-2 mb-5">
+          <span style={{ width: 22, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
+          <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.indigo }}>
+            The Right Way to Outsource
+          </span>
+        </div>
         <h2
-          className="mt-4 font-bold leading-tight mb-4"
-          style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+          className="font-bold leading-tight mb-4"
+          style={{ fontSize: "clamp(2.1rem, 4vw, 3.2rem)", letterSpacing: "-0.025em", color: C.charcoal }}
         >
           We changed the equation.
         </h2>
-        <p style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", lineHeight: 1.6 }}>
+        <p className="mx-auto" style={{ color: C.gray, fontSize: "clamp(0.95rem, 1.4vw, 1.08rem)", lineHeight: 1.65, maxWidth: 500 }}>
           Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.
         </p>
       </div>
 
-      {/* 3-column comparison — centered, constrained */}
-      <div className="mx-auto max-w-[1020px]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 items-stretch mb-14">
-          {/* LEFT — Freelance Marketplaces */}
-          <div
-            className="rounded-2xl p-7 lg:p-8 flex flex-col"
-            style={{ background: "white", border: "1px solid #D8DCEE" }}
-          >
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.grayLight }}>
-              Freelance Marketplaces
-            </p>
-            <p className="font-semibold mb-7" style={{ color: C.charcoal, fontSize: "0.95rem" }}>
-              Fast and cheap
-            </p>
-            <ul className="space-y-4 flex-1">
-              {["No accountability", "Race-to-the-bottom pay"].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(200,50,50,0.08)" }}>
-                    <X className="h-3 w-3" style={{ color: "#C83232" }} />
-                  </div>
-                  <span style={{ color: C.gray, fontSize: "0.93rem" }}>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* ── Comparison block ── */}
+      <div className="mx-auto" style={{ maxWidth: 1020, marginBottom: 64 }}>
 
-          {/* CENTER — OnSpot (raised dark card) */}
+        {/* Desktop (md+): white shelf + raised center card */}
+        <div className="hidden md:block" style={{ position: "relative" }}>
+          {/* White background shelf — vertically centered behind side content */}
           <div
-            className="rounded-2xl p-7 lg:p-8 flex flex-col relative"
+            aria-hidden
             style={{
-              background: `linear-gradient(150deg, ${C.navySection} 0%, #07102E 100%)`,
-              boxShadow: "0 32px 64px -20px rgba(10,18,60,0.45)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              transform: "translateY(-6px) scale(1.03)",
+              position: "absolute",
+              left: 0, right: 0,
+              top: "50%", transform: "translateY(-50%)",
+              height: 192,
+              borderRadius: 20,
+              background: "white",
+              border: "1px solid #D8DCEE",
+              boxShadow: "0 4px 28px rgba(75,81,184,0.08)",
             }}
-          >
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.orange }}>
-              — OnSpot
-            </p>
-            <p className="font-semibold mb-7 text-white" style={{ fontSize: "0.95rem" }}>
-              Great talent. High pay. Fair cost.
-            </p>
-            <ul className="space-y-4 flex-1">
-              {[
-                "Vetted talent, ready fast",
-                "Accountable, managed relationships",
-                "No overhead cost",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(74,222,128,0.15)" }}>
-                    <Check className="h-3 w-3" style={{ color: "#4ADE80" }} />
-                  </div>
-                  <span style={{ color: "rgba(255,255,255,0.78)", fontSize: "0.93rem" }}>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          />
 
-          {/* RIGHT — Traditional Outsourcing */}
-          <div
-            className="rounded-2xl p-7 lg:p-8 flex flex-col"
-            style={{ background: "white", border: "1px solid #D8DCEE" }}
-          >
-            <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.grayLight }}>
-              Traditional Outsourcing
-            </p>
-            <p className="font-semibold mb-7" style={{ color: C.charcoal, fontSize: "0.95rem" }}>
-              Reliable, but heavy
-            </p>
-            <ul className="space-y-4 flex-1">
-              {["Slow and rigid", "Expensive overhead"].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "rgba(200,50,50,0.08)" }}>
-                    <X className="h-3 w-3" style={{ color: "#C83232" }} />
-                  </div>
-                  <span style={{ color: C.gray, fontSize: "0.93rem" }}>{item}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Three-column grid on top of shelf */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 352px 1fr", alignItems: "center", position: "relative" }}>
+
+            {/* LEFT — Freelance Marketplaces */}
+            <div style={sideColStyle}>
+              <p className="font-bold uppercase tracking-[0.1em] mb-2" style={{ fontSize: "0.625rem", color: C.grayLight }}>
+                Freelance Marketplaces
+              </p>
+              <p className="font-bold mb-5" style={{ color: C.charcoal, fontSize: "0.97rem" }}>
+                Fast and cheap
+              </p>
+              <ul className="space-y-3.5">
+                {xRows(["No accountability", "Race-to-the-bottom pay"])}
+              </ul>
+            </div>
+
+            {/* CENTER — OnSpot raised card */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 10,
+                borderRadius: 22,
+                padding: "32px 36px",
+                background: "linear-gradient(150deg, #4D57C7 0%, #37358D 100%)",
+                boxShadow: "0 28px 64px -16px rgba(10,18,80,0.45), 0 8px 24px rgba(55,53,141,0.28)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                minHeight: 234,
+                transform: "translateY(-28px)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div className="inline-flex items-center gap-2 mb-3">
+                <span style={{ width: 18, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
+                <span className="font-bold uppercase tracking-[0.1em]" style={{ fontSize: "0.625rem", color: C.orange }}>
+                  OnSpot
+                </span>
+              </div>
+              <p className="font-bold text-white mb-5" style={{ fontSize: "1.1rem", lineHeight: 1.35 }}>
+                Great talent. High pay. Fair cost.
+              </p>
+              <ul className="space-y-4 flex-1">
+                {["Vetted talent, ready fast", "Accountable, managed relationships", "No overhead cost"].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <div className="mt-0.5 flex-shrink-0 flex items-center justify-center rounded-full"
+                      style={{ width: 18, height: 18, background: "rgba(255,174,33,0.2)" }}>
+                      <Check className="h-2.5 w-2.5" style={{ color: C.orange }} />
+                    </div>
+                    <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem" }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* RIGHT — Traditional Outsourcing */}
+            <div style={sideColStyle}>
+              <p className="font-bold uppercase tracking-[0.1em] mb-2" style={{ fontSize: "0.625rem", color: C.grayLight }}>
+                Traditional Outsourcing
+              </p>
+              <p className="font-bold mb-5" style={{ color: C.charcoal, fontSize: "0.97rem" }}>
+                Reliable, but heavy
+              </p>
+              <ul className="space-y-3.5">
+                {xRows(["Slow and rigid", "Expensive overhead"])}
+              </ul>
+            </div>
+
           </div>
         </div>
 
-        {/* Bottom statement — centered, constrained */}
-        <p
-          className="mx-auto text-center"
-          style={{ color: C.charcoal, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 650, lineHeight: 1.65 }}
-        >
-          Everyone else trades one thing for another. OnSpot doesn't trade —{" "}
-          <span className="font-semibold" style={{ color: C.indigo }}>we raise the whole experience.</span>
-        </p>
+        {/* Mobile/tablet stacked layout (< md) */}
+        <div className="flex flex-col gap-4 md:hidden">
+          <div className="rounded-2xl p-7" style={{ background: "white", border: "1px solid #D8DCEE" }}>
+            <p className="font-bold uppercase tracking-[0.1em] mb-2" style={{ fontSize: "0.625rem", color: C.grayLight }}>Freelance Marketplaces</p>
+            <p className="font-bold mb-5" style={{ color: C.charcoal, fontSize: "0.97rem" }}>Fast and cheap</p>
+            <ul className="space-y-3.5">{xRows(["No accountability", "Race-to-the-bottom pay"])}</ul>
+          </div>
+
+          <div className="rounded-2xl p-7" style={{ background: "linear-gradient(150deg, #4D57C7 0%, #37358D 100%)", boxShadow: "0 16px 40px rgba(55,53,141,0.3)" }}>
+            <div className="inline-flex items-center gap-2 mb-3">
+              <span style={{ width: 18, height: 2, background: C.orange, display: "inline-block" }} />
+              <span className="font-bold uppercase tracking-[0.1em]" style={{ fontSize: "0.625rem", color: C.orange }}>OnSpot</span>
+            </div>
+            <p className="font-bold text-white mb-5" style={{ fontSize: "1.1rem", lineHeight: 1.35 }}>Great talent. High pay. Fair cost.</p>
+            <ul className="space-y-4">
+              {["Vetted talent, ready fast", "Accountable, managed relationships", "No overhead cost"].map((item) => (
+                <li key={item} className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex-shrink-0 flex items-center justify-center rounded-full" style={{ width: 18, height: 18, background: "rgba(255,174,33,0.2)" }}>
+                    <Check className="h-2.5 w-2.5" style={{ color: C.orange }} />
+                  </div>
+                  <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.875rem" }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl p-7" style={{ background: "white", border: "1px solid #D8DCEE" }}>
+            <p className="font-bold uppercase tracking-[0.1em] mb-2" style={{ fontSize: "0.625rem", color: C.grayLight }}>Traditional Outsourcing</p>
+            <p className="font-bold mb-5" style={{ color: C.charcoal, fontSize: "0.97rem" }}>Reliable, but heavy</p>
+            <ul className="space-y-3.5">{xRows(["Slow and rigid", "Expensive overhead"])}</ul>
+          </div>
+        </div>
       </div>
+
+      {/* ── Bottom statement ── */}
+      <p
+        className="mx-auto text-center font-semibold"
+        style={{ color: C.charcoal, fontSize: "clamp(1.05rem, 1.6vw, 1.28rem)", maxWidth: 680, lineHeight: 1.55 }}
+      >
+        Everyone else trades one thing for another. OnSpot doesn't trade —{" "}
+        <span style={{ color: C.indigo }}>we raise the whole experience.</span>
+      </p>
     </section>
   );
 }
