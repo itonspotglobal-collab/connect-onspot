@@ -651,18 +651,21 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
         <>
           <SlideEyebrow text="THE TALENT NETWORK" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight"
-            style={{ fontSize: "clamp(46px, 4.2vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.03em", color: C.charcoal, maxWidth: 500 }}
+            className="font-bold"
+            style={{ letterSpacing: "-0.035em", lineHeight: 1.02, maxWidth: 620 }}
           >
-            Thousands of<br />
-            talents.{" "}
-            <span style={{ color: C.indigo }}>Ready to<br />work.</span>
+            <span className="block" style={{ fontSize: "clamp(48px, 4.5vw, 72px)", color: "#17171D" }}>
+              Thousands of talents.
+            </span>
+            <span className="block" style={{ fontSize: "clamp(44px, 4.1vw, 66px)", color: "#4D55C7" }}>
+              Ready to work.
+            </span>
           </h1>
-          <p className="mt-4 font-medium" style={{ fontSize: "clamp(20px, 1.6vw, 27px)", lineHeight: 1.45, color: C.charcoal, maxWidth: 500 }}>
+          <p className="mt-5 font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.3, color: C.charcoal, maxWidth: 520 }}>
             Vetted, experienced, and{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>ready to start in days — not months.</span>
           </p>
-          <p className="mt-3 leading-relaxed" style={{ fontSize: "clamp(15px, 1vw, 17px)", color: C.gray, maxWidth: 500 }}>
+          <p className="mt-3" style={{ fontSize: "clamp(15px, 1.1vw, 17px)", color: C.gray, maxWidth: 500, lineHeight: 1.55 }}>
             Every professional in the network is screened for skills, experience, and reliability before you ever see them — so the match is fast and the quality holds.
           </p>
           <Link
