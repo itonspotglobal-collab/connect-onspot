@@ -1,0 +1,198 @@
+FIX ONLY THE GRAPH AREA INSIDE HERO CAROUSEL SLIDE 3.
+
+CURRENT PROBLEM:
+The phone mock currently shows month labels:
+Mar Apr May Jun Jul Aug
+
+but NO visible graph bars.
+
+This is incorrect.
+
+DO NOT change:
+- phone outer frame
+- earnings card
+- stats cards
+- earnings-by-client rows
+- left-side hero content
+- carousel behavior
+- any other slide
+
+ONLY fix the missing bar chart and spacing around it.
+
+==================================================
+REQUIRED GRAPH
+==================================================
+
+Add SIX clearly visible vertical orange bars directly ABOVE the month labels.
+
+Months:
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+Approximate relative heights:
+
+Mar = 32%
+Apr = 50%
+May = 38%
+Jun = 62%
+Jul = 55%
+Aug = 88%
+
+The graph must visually resemble:
+
+            █
+        █   █
+    █   █ █ █
+  █ █ █ █ █ █
+  ────────────
+ Mar Apr May Jun Jul Aug
+
+==================================================
+GRAPH CONTAINER
+==================================================
+
+Create a dedicated chart container.
+
+Suggested structure:
+
+.chart {
+  height: 78px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+Each month group:
+
+.chart-column {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+Each bar:
+
+.chart-bar {
+  width: 100%;
+  max-width: 22px;
+  min-width: 14px;
+  background: #FFAE22;
+  border-radius: 4px 4px 0 0;
+}
+
+IMPORTANT:
+Do NOT use percentage height unless every bar has a parent with an explicit height.
+
+For reliability, either:
+A) give .chart a fixed/responsive explicit height and use percentages
+OR
+B) use pixel/rem heights for each bar.
+
+Example:
+Mar: 18px
+Apr: 30px
+May: 22px
+Jun: 38px
+Jul: 34px
+Aug: 50px
+
+This is important because the current bars may be rendering at height: 0 due to missing parent height.
+
+==================================================
+MONTH LABELS
+==================================================
+
+Place month labels directly under each bar:
+
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+- small muted gray text
+- center aligned
+- one label per bar
+- keep them close to bars
+
+Do NOT render all month labels separately from the bar columns.
+
+==================================================
+COLOR
+==================================================
+
+Bars:
+orange/gold matching the mock:
+approximately #FFAE22 or #FFB13B
+
+Optional:
+subtle vertical gradient:
+#FFC15A → #FFAA1A
+
+Do NOT make bars purple, transparent, or extremely pale.
+
+==================================================
+SPACING FIX
+==================================================
+
+The current phone has too much empty vertical whitespace between:
+
+stats cards
+and
+month labels
+
+Replace that empty area with the graph.
+
+Target order:
+
+[ AVG RATE ] [ ACTIVE CLIENTS ]
+
+      █
+  █   █  █
+█ █ █ █ █ █
+Mar Apr May Jun Jul Aug
+
+EARNINGS BY CLIENT
+
+There should only be around 18–24px between the stat cards and chart.
+
+Keep approximately 12–18px between month labels and “EARNINGS BY CLIENT”.
+
+==================================================
+PHONE HEIGHT
+==================================================
+
+Do NOT increase phone height to fit the graph.
+
+Instead redistribute the existing internal whitespace.
+
+The graph must fit within the existing phone screen by reducing the blank area.
+
+==================================================
+VISUAL VALIDATION
+==================================================
+
+After implementation:
+
+1. Open Slide 3.
+2. Confirm all 6 orange bars are visible.
+3. Confirm Aug is tallest.
+4. Confirm Mar is shortest.
+5. Confirm month labels are aligned directly beneath bars.
+6. Confirm “EARNINGS BY CLIENT” remains visible below.
+7. Confirm both client progress bars remain visible.
+8. Compare directly against the supplied mock.
+
+DO NOT mark complete if month labels are visible but bars are missing.
+
+This task is complete ONLY when the six orange bars are visibly rendered inside the phone.

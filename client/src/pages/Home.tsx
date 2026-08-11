@@ -597,15 +597,19 @@ function PhoneMockup() {
               ))}
             </div>
 
-            {/* Bar chart — all orange bars */}
-            <div className="flex items-end gap-[3px]" style={{ height: 54 }}>
-              {BAR_DATA.map((b) => (
-                <div key={b.month} className="flex flex-1 flex-col items-center" style={{ gap: 2 }}>
-                  <div
-                    className="w-full rounded-t-[2px]"
-                    style={{ height: `${b.h}%`, background: C.orange }}
-                  />
-                  <span className="leading-none" style={{ fontSize: 6, color: C.grayLight }}>{b.month}</span>
+            {/* Bar chart — pixel heights so bars always render */}
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 62, gap: 4, padding: "0 2px" }}>
+              {[
+                { month: "Mar", h: 18 },
+                { month: "Apr", h: 30 },
+                { month: "May", h: 22 },
+                { month: "Jun", h: 40 },
+                { month: "Jul", h: 34 },
+                { month: "Aug", h: 54 },
+              ].map((b) => (
+                <div key={b.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 2 }}>
+                  <div style={{ width: "100%", maxWidth: 22, minWidth: 10, height: b.h, background: "#FFAE22", borderRadius: "3px 3px 0 0", flexShrink: 0 }} />
+                  <span style={{ fontSize: 6, color: C.grayLight, lineHeight: 1, flexShrink: 0 }}>{b.month}</span>
                 </div>
               ))}
             </div>
