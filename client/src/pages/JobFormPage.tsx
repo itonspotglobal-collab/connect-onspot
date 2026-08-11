@@ -35,6 +35,42 @@ const quillFormats = ["bold", "list", "bullet"];
 // ─── Step names ───────────────────────────────────────────────────────────────
 const STEPS = ["Basics", "Description", "Requirements", "Review"] as const;
 
+// ─── Duration options ─────────────────────────────────────────────────────────
+const DURATION_OPTIONS = [
+  { value: "less-than-1-month",   label: "Less than 1 month" },
+  { value: "1-month",             label: "1 month" },
+  { value: "2-months",            label: "2 months" },
+  { value: "3-months",            label: "3 months" },
+  { value: "4-months",            label: "4 months" },
+  { value: "5-months",            label: "5 months" },
+  { value: "6-months",            label: "6 months" },
+  { value: "7-months",            label: "7 months" },
+  { value: "8-months",            label: "8 months" },
+  { value: "9-months",            label: "9 months" },
+  { value: "10-months",           label: "10 months" },
+  { value: "11-months",           label: "11 months" },
+  { value: "12-months",           label: "12 months" },
+  { value: "more-than-12-months", label: "More than 12 months" },
+  { value: "open-ended",          label: "No fixed end date" },
+] as const;
+
+// Legacy values stored in the DB before this update — map them to the closest
+// new label so edit mode never shows a blank duration pill.
+const LEGACY_DURATION_LABELS: Record<string, string> = {
+  "1-3-months":  "1–3 months",
+  "3-6-months":  "3–6 months",
+  "6-12-months": "6–12 months",
+  "ongoing":     "No fixed end date",
+};
+
+/** Returns the human-readable label for any duration value (new or legacy). */
+function resolveDurationLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const known = DURATION_OPTIONS.find(o => o.value === value);
+  if (known) return known.label;
+  return LEGACY_DURATION_LABELS[value] ?? value;
+}
+
 // ─── Small shared helpers ─────────────────────────────────────────────────────
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
@@ -194,7 +230,7 @@ function BasicsStep({
       </div>
 
       {/* Engagement type + Duration */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${formData.contractType !== "full-time" ? "sm:grid-cols-2" : ""}`}>
         <div>
           <Label htmlFor="jfp-contract">
             Engagement type <span className="text-red-500">*</span>
@@ -211,24 +247,30 @@ function BasicsStep({
           </Select>
           <FieldError msg={errors.contractType} />
         </div>
-        <div>
-          <Label htmlFor="jfp-duration">
-            Duration{" "}
-            <span className="text-xs text-muted-foreground font-normal ml-1">— optional</span>
-          </Label>
-          <Select value={formData.duration || ""} onValueChange={v => updateField("duration", v)}>
-            <SelectTrigger id="jfp-duration" className="mt-1.5">
-              <SelectValue placeholder="Optional" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="less-than-1-month">Less than 1 month</SelectItem>
-              <SelectItem value="1-3-months">1–3 months</SelectItem>
-              <SelectItem value="3-6-months">3–6 months</SelectItem>
-              <SelectItem value="6-12-months">6–12 months</SelectItem>
-              <SelectItem value="ongoing">Ongoing</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {formData.contractType !== "full-time" && (
+          <div>
+            <Label htmlFor="jfp-duration">
+              Duration{" "}
+              <span className="text-xs text-muted-foreground font-normal ml-1">— optional</span>
+            </Label>
+            <Select value={formData.duration || ""} onValueChange={v => updateField("duration", v)}>
+              <SelectTrigger id="jfp-duration" className="mt-1.5">
+                <SelectValue placeholder="Optional" />
+              </SelectTrigger>
+              <SelectContent>
+                {DURATION_OPTIONS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+                {/* Render legacy value as a selectable item if the job has one */}
+                {formData.duration && !DURATION_OPTIONS.find(o => o.value === formData.duration) && (
+                  <SelectItem value={formData.duration}>
+                    {LEGACY_DURATION_LABELS[formData.duration] ?? formData.duration}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <FieldDivider />
@@ -831,6 +873,9 @@ function ReviewStep({
             {formData.contractType && (
               <span className="text-xs font-semibold bg-[#474ead]/10 text-[#474ead] px-3 py-1.5 rounded-full">
                 {contractLabel}
+                {formData.contractType !== "full-time" && formData.duration
+                  ? ` · ${resolveDurationLabel(formData.duration)}`
+                  : ""}
               </span>
             )}
             {formData.salaryDisplay && (
@@ -858,6 +903,9 @@ function ReviewStep({
                 formData.location,
                 expLabel[formData.experienceLevel] ?? formData.experienceLevel,
                 contractLabel,
+                formData.contractType !== "full-time"
+                  ? resolveDurationLabel(formData.duration)
+                  : null,
               ]
                 .filter(Boolean)
                 .join(" · ") || "Not yet filled in",
@@ -1043,7 +1091,14 @@ export default function JobFormPage() {
   }, [existingJob]);
 
   const updateField = (field: keyof JobFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      // Switching to Full Time: duration is irrelevant — clear it immediately.
+      if (field === "contractType" && value === "full-time") {
+        next.duration = "";
+      }
+      return next;
+    });
     setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 

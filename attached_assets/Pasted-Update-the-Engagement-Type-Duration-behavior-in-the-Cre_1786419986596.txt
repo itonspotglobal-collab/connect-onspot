@@ -1,0 +1,337 @@
+Update the Engagement Type / Duration behavior in the Create/Edit Job page.
+
+
+
+1. Full Time behavior
+
+
+
+If:
+
+
+
+Engagement type = Full Time
+
+
+
+then:
+
+
+
+hide the Duration field completely
+
+do not require duration
+
+clear any previously selected duration value if the user switches from another engagement type to Full Time
+
+make sure edit mode also respects this behavior
+
+
+
+Example:
+
+
+
+Full Time
+
+→ no Duration field shown
+
+2. Other engagement types
+
+
+
+For engagement types where duration is relevant, keep the Duration dropdown visible.
+
+
+
+Example:
+
+
+
+Part Time
+
+Contract
+
+Project-Based
+
+Temporary
+
+
+
+Use the existing engagement-type values from the project. Do not invent new database values unless necessary.
+
+
+
+3. Replace broad duration ranges
+
+
+
+The current options are too broad:
+
+
+
+Less than 1 month
+
+1–3 months
+
+3–6 months
+
+6–12 months
+
+Ongoing
+
+
+
+Replace them with more specific options:
+
+
+
+Less than 1 month
+
+1 month
+
+2 months
+
+3 months
+
+4 months
+
+5 months
+
+6 months
+
+7 months
+
+8 months
+
+9 months
+
+10 months
+
+11 months
+
+12 months
+
+More than 12 months
+
+No fixed end date
+
+
+
+Replace the wording:
+
+
+
+Ongoing
+
+
+
+with:
+
+
+
+Open-ended
+
+
+
+because this is clearer to clients.
+
+
+
+4. Keep data compatibility
+
+
+
+Inspect how duration is currently stored.
+
+
+
+If the database already stores strings, preserve the existing field and only update the allowed UI values.
+
+
+
+If existing records contain old values such as:
+
+
+
+1–3 months
+
+3–6 months
+
+6–12 months
+
+Ongoing
+
+
+
+do not break edit mode.
+
+
+
+Handle legacy values safely.
+
+
+
+For example, existing jobs with Ongoing may display as:
+
+
+
+No fixed end date
+
+
+
+while preserving compatibility with old records.
+
+
+
+Do not perform a destructive migration unless required.
+
+
+
+5. Create/Edit behavior
+
+
+
+Example:
+
+
+
+Engagement type: Part Time
+
+Duration: 3 months
+
+
+
+If the user changes:
+
+
+
+Part Time → Full Time
+
+
+
+immediately:
+
+
+
+hide Duration
+
+clear 3 months
+
+
+
+If they change back:
+
+
+
+Full Time → Part Time
+
+
+
+show Duration again with no value selected.
+
+
+
+6. Review step/public display
+
+
+
+On the Review step and public job page:
+
+
+
+do not show duration for Full Time jobs
+
+show duration for applicable engagement types
+
+
+
+Example:
+
+
+
+Part Time · 3 months
+
+
+
+or:
+
+
+
+Project-Based · No fixed end date
+
+7. Validation
+
+
+
+Duration should remain optional unless the current business rules already make it required.
+
+
+
+Do not create new validation rules without preserving existing behavior.
+
+
+
+8. Test
+
+
+
+Verify:
+
+
+
+Full Time
+
+→ Duration hidden
+
+
+
+Part Time
+
+→ Duration visible
+
+
+
+Select 4 months
+
+→ value saves correctly
+
+
+
+Switch Part Time → Full Time
+
+→ duration clears
+
+
+
+Edit existing Full Time job
+
+→ duration hidden
+
+
+
+Edit old job with "Ongoing"
+
+→ safely displays "No fixed end date"
+
+
+
+Review/public page
+
+→ duration only appears when applicable
+
+
+
+After implementation, report:
+
+
+
+files changed
+
+engagement types that show Duration
+
+final Duration options
+
+how legacy values like Ongoing are handled
+
+whether any schema/database migration was required
