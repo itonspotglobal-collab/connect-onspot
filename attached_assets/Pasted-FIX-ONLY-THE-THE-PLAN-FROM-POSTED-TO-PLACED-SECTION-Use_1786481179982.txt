@@ -1,0 +1,297 @@
+FIX ONLY THE “THE PLAN / FROM POSTED TO PLACED” SECTION.
+
+Use the newly attached screenshot as the exact visual source of truth.
+
+Do NOT redesign it.
+Do NOT change the wording.
+Do NOT modify other homepage sections.
+
+GOAL:
+Match the same light background, centered header, 3-step card layout, indigo icons, orange connector buttons, spacing, typography, borders, and bottom statement shown in the reference.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a very light warm off-white / soft gray background.
+
+Approximate:
+#FCFCFB
+with a very subtle pale lavender radial glow near the top center.
+
+Keep the section bright and spacious.
+
+==================================================
+HEADER — CENTERED
+==================================================
+
+Eyebrow:
+“— THE PLAN”
+
+Style:
+- centered
+- uppercase
+- indigo text
+- small bold font
+- short orange line before text
+- letter-spacing around 0.08em
+
+Heading:
+“From posted to placed”
+
+Style:
+- centered
+- near-black
+- bold
+- approximately 46–54px desktop
+- tight line-height
+- use clamp()
+
+Subheading:
+“Three steps. No bidding wars, no long contracts, no
+hidden markups.”
+
+Style:
+- centered
+- muted gray
+- approximately 16–18px
+- max-width around 500px
+- margin-inline:auto
+- line-height around 1.5
+
+==================================================
+3-STEP CARD GRID
+==================================================
+
+Create ONE centered grid:
+
+max-width: approximately 1160px;
+margin-inline:auto;
+
+display:grid;
+grid-template-columns: repeat(3, minmax(0,1fr));
+gap: approximately 26–30px;
+
+Cards should be equal height.
+
+Each card:
+- white background
+- thin pale lavender/gray border
+- rounded corners around 18–20px
+- soft shadow
+- padding around 30–32px
+- min-height around 250px
+- position: relative
+- content LEFT-ALIGNED
+
+==================================================
+CARD TOP AREA
+==================================================
+
+Each card has:
+
+LEFT:
+indigo rounded-square icon tile
+
+RIGHT:
+large faded step number
+
+ICON TILE:
+- about 48–52px
+- indigo/blue gradient
+- rounded around 12–14px
+- white line icon
+- soft shadow
+
+STEP NUMBER:
+1 / 2 / 3
+- very large
+- pale lavender/gray
+- low contrast
+- top-right aligned
+- bold
+- approximately 48–56px
+
+==================================================
+STEP 1
+==================================================
+
+Icon:
+document/file
+
+Title:
+“Post or apply”
+
+Body:
+“Tell us what you need. Or show us what you
+can do.”
+
+Links:
+“Post a role →”
+“Apply as talent →”
+
+Links:
+- indigo
+- medium/bold
+- inline with small gap
+- do not underline
+
+==================================================
+STEP 2
+==================================================
+
+Icon:
+lightning bolt
+
+Title:
+“Get matched”
+
+Body:
+“We connect the right people, fast — no
+endless scrolling.”
+
+Link:
+“See how matching works →”
+
+==================================================
+STEP 3
+==================================================
+
+Icon:
+rocket
+
+Title:
+“Start working”
+
+Body:
+“Show up and do the work. We handle
+everything else.”
+
+Link:
+“Get started →”
+
+==================================================
+TYPOGRAPHY INSIDE CARDS
+==================================================
+
+Title:
+- near-black
+- bold
+- around 18–20px
+
+Body:
+- muted gray
+- around 15–17px
+- line-height around 1.5
+
+Links:
+- indigo
+- around 14–15px
+- medium/bold
+
+==================================================
+ORANGE CONNECTOR BUTTONS
+==================================================
+
+Place circular orange arrow buttons BETWEEN the cards.
+
+One between Step 1 and Step 2.
+One between Step 2 and Step 3.
+
+Style:
+- orange/yellow filled circle
+- approximately 36–40px
+- dark arrow icon
+- centered vertically relative to card height
+- slight shadow
+- positioned over the gap between cards
+
+Do NOT place connectors inside cards.
+
+They should visually suggest progression:
+
+[ STEP 1 ]  →  [ STEP 2 ]  →  [ STEP 3 ]
+
+==================================================
+BOTTOM STATEMENT
+==================================================
+
+Center below the cards:
+
+“That’s it. Most roles are filled in days, not months.”
+
+Style:
+- centered
+- around 16–18px
+
+“That’s it.”:
+- near-black
+- medium/bold
+
+“Most roles are filled in days, not months.”:
+- indigo
+- bold
+
+==================================================
+SPACING
+==================================================
+
+Match the screenshot:
+
+- generous top padding
+- eyebrow → heading: 18–22px
+- heading → subheading: 18–24px
+- subheading → cards: 54–65px
+- cards → bottom statement: 45–55px
+- generous bottom padding
+
+Keep everything horizontally centered.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+3 cards in one row.
+
+Tablet:
+At <= 1000px:
+- either keep 3 compact columns if they still fit,
+  OR move to 1-column/2-column layout cleanly.
+
+At <= 850px:
+stack cards vertically.
+
+When stacked:
+- hide or rotate connector arrows to point downward
+- do not let arrows overlap cards
+- keep card contents left-aligned
+- keep header centered
+
+Mobile:
+- padding-inline 20–24px
+- heading around 34–42px
+- cards full width
+- reduce card padding slightly
+- no horizontal overflow
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- center text inside cards
+- remove the big faded step numbers
+- remove connector arrows
+- use dark cards
+- make icon boxes orange
+- change section wording
+- modify other homepage sections
+
+The final desktop version should match the supplied screenshot:
+light centered section,
+three equal white cards,
+indigo icon tiles,
+large faded step numbers,
+orange circular connectors,
+and a centered bottom statement.

@@ -1780,63 +1780,91 @@ function ProcessSection() {
   return (
     <section
       style={{
-        background: `radial-gradient(55% 60% at 50% 0%, rgba(75,81,184,0.06), transparent 65%), #F7F7FB`,
+        background: "radial-gradient(55% 40% at 50% 0%, rgba(75,81,184,0.07), transparent 55%), #FCFCFB",
       }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
       {/* ── Centered header ── */}
-      <div className="mx-auto max-w-[680px] text-center mb-14">
-        <SectionEyebrow text="The Plan" />
+      <div className="mx-auto max-w-[680px] text-center mb-16">
+        {/* Eyebrow */}
+        <div className="inline-flex items-center gap-2 mb-5">
+          <span style={{ width: 20, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
+          <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.indigo }}>
+            The Plan
+          </span>
+        </div>
         <h2
-          className="mt-4 font-bold leading-tight mb-3"
-          style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
+          className="font-bold leading-tight mb-4"
+          style={{ fontSize: "clamp(2.1rem, 4vw, 3.4rem)", letterSpacing: "-0.028em", color: C.charcoal }}
         >
-          From posted to placed.
+          From posted to placed
         </h2>
-        <p style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 460, marginInline: "auto" }}>
+        <p style={{ color: C.gray, fontSize: "clamp(0.95rem, 1.4vw, 1.08rem)", maxWidth: 500, marginInline: "auto", lineHeight: 1.55 }}>
           Three steps. No bidding wars, no long contracts, no hidden markups.
         </p>
       </div>
 
       {/* ── 3 step cards — centered grid ── */}
-      <div className="mx-auto" style={{ maxWidth: 1100 }}>
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+      <div className="mx-auto" style={{ maxWidth: 1160 }}>
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-7 mb-14">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
             return (
               <div key={i} className="relative">
-                {/* Orange circular arrow connector between cards */}
+                {/* Orange circular arrow connector — between cards on desktop */}
                 {i < 2 && (
                   <div
                     aria-hidden
-                    className="hidden md:flex absolute -right-[14px] top-10 z-10 h-7 w-7 items-center justify-center rounded-full"
-                    style={{ background: C.orange, boxShadow: "0 4px 12px rgba(255,174,33,0.4)" }}
+                    className="hidden md:flex absolute z-10 items-center justify-center rounded-full"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      right: -19,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: C.orange,
+                      boxShadow: "0 4px 14px rgba(255,174,33,0.45)",
+                    }}
                   >
-                    <ArrowRight className="h-3 w-3 text-white" />
+                    <ArrowRight className="h-4 w-4" style={{ color: C.indigoDeep }} />
                   </div>
                 )}
                 <div
-                  className="rounded-2xl p-7 h-full flex flex-col"
-                  style={{ background: "white", border: "1px solid #E0E4F0", boxShadow: "0 4px 20px rgba(75,81,184,0.06)" }}
+                  className="rounded-[20px] h-full flex flex-col"
+                  style={{
+                    padding: "30px 30px 28px",
+                    background: "white",
+                    border: "1px solid #E2E6F0",
+                    boxShadow: "0 4px 22px rgba(75,81,184,0.07)",
+                    minHeight: 260,
+                  }}
                 >
+                  {/* Icon + step number */}
                   <div className="flex items-start justify-between mb-6">
                     <div
-                      className="flex h-11 w-11 items-center justify-center rounded-xl"
-                      style={{ background: "rgba(75,81,184,0.1)" }}
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 13,
+                        background: "linear-gradient(145deg, #5560CC 0%, #3B45A8 100%)",
+                        boxShadow: "0 6px 18px rgba(75,81,184,0.3)",
+                      }}
                     >
-                      <Icon className="h-5 w-5" style={{ color: C.indigo }} />
+                      <Icon className="h-[22px] w-[22px] text-white" />
                     </div>
                     <span
                       className="font-bold tabular-nums"
-                      style={{ fontSize: "3.5rem", color: "#EAECF6", letterSpacing: "-0.04em", lineHeight: 1 }}
+                      style={{ fontSize: "3.6rem", color: "#E8EAF5", letterSpacing: "-0.04em", lineHeight: 1 }}
                     >
                       {step.num}
                     </span>
                   </div>
-                  <h3 className="font-bold mb-2" style={{ fontSize: "1.1rem", color: C.charcoal }}>
+
+                  <h3 className="font-bold mb-2.5" style={{ fontSize: "1.12rem", color: C.charcoal }}>
                     {step.title}
                   </h3>
-                  <p className="leading-relaxed flex-1" style={{ color: C.gray, fontSize: "0.93rem" }}>
+                  <p className="leading-relaxed flex-1" style={{ color: C.gray, fontSize: "0.95rem", lineHeight: 1.55 }}>
                     {step.body}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-4">
@@ -1844,8 +1872,8 @@ function ProcessSection() {
                       <Link
                         key={l.label}
                         href={l.href}
-                        className="text-xs font-semibold transition hover:opacity-80"
-                        style={{ color: C.orange }}
+                        className="font-semibold transition hover:opacity-75"
+                        style={{ fontSize: "0.875rem", color: C.indigo }}
                       >
                         {l.label}
                       </Link>
@@ -1857,10 +1885,10 @@ function ProcessSection() {
           })}
         </div>
 
-        {/* ── Bottom statement — centered below card group ── */}
-        <p className="text-center" style={{ fontSize: "clamp(1rem, 1.4vw, 1.1rem)", color: C.charcoal, marginInline: "auto" }}>
+        {/* ── Bottom statement ── */}
+        <p className="text-center font-bold" style={{ fontSize: "clamp(1rem, 1.4vw, 1.08rem)", color: C.charcoal }}>
           That's it.{" "}
-          <span className="font-semibold" style={{ color: C.indigo }}>
+          <span className="font-bold" style={{ color: C.indigo }}>
             Most roles are filled in days, not months.
           </span>
         </p>
