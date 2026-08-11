@@ -257,15 +257,28 @@ export default function TalentPortal() {
             {/* Primary CTA Section */}
             <div className="space-y-6 mb-12">
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  className="text-lg group"
-                  onClick={handleGetStarted}
-                  data-testid="button-get-started"
-                >
-                  <span>Start Earning Today</span>
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                {user && !hasCompletedOnboarding ? (
+                  <Button
+                    size="lg"
+                    className="text-lg group bg-primary hover:bg-primary/90"
+                    onClick={() => setLocation("/get-hired")}
+                    data-testid="button-finish-setup"
+                  >
+                    <Zap className="mr-2 h-5 w-5" />
+                    <span>Finish Setting Up</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="text-lg group"
+                    onClick={handleGetStarted}
+                    data-testid="button-get-started"
+                  >
+                    <span>Start Earning Today</span>
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                )}
 
                 <Button
                   variant="outline"

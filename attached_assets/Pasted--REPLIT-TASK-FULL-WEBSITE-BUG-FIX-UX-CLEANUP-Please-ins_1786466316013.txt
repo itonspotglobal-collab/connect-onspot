@@ -1,0 +1,519 @@
+# REPLIT TASK — FULL WEBSITE BUG FIX & UX CLEANUP
+
+Please inspect the entire existing OnSpot codebase before making changes. Do not assume the bug is isolated to the visible page where it appears.
+
+The affected areas most likely include:
+
+* Login / Sign Up
+* Talent onboarding
+* Talent Profile
+* Profile Settings
+* Find Best Matches
+* Find Work / job listings
+* Resume upload / resume parser
+* Admin Dashboard
+* Admin Job Applications
+* Job Details / View Details
+* Shared profile forms/components
+* Shared navigation, filtering, validation, and routing utilities
+
+Relevant existing files may include, but are not limited to:
+
+* `client/src/pages/TalentProfile.tsx`
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/components/ResumeParser.tsx`
+* `client/src/lib/resumeParser.ts`
+* `client/src/hooks/useTalentProfile.ts`
+* `client/src/lib/profileCompletion.ts`
+* `client/src/pages/FindWork.tsx`
+* `client/src/pages/FindWorkAllJobs.tsx`
+* `client/src/components/ExpandableJobCard.tsx`
+* `client/src/pages/AdminDashboard.tsx`
+* `client/src/pages/JobApplyPage.tsx`
+* authentication / signup components
+* Admin Job Applications components/pages
+* server-side resume parsing/API code
+* shared schemas and validation
+
+Do NOT rewrite working features or redesign unrelated parts of the website.
+
+## OBJECTIVE
+
+Fix all 8 issues below completely, including the underlying state, navigation, API, parsing, validation, and UI behavior where applicable.
+
+---
+
+# 1. PASSWORD MUST BE MASKED BY DEFAULT
+
+On the talent/user sign-up flow:
+
+* Password input must use `type="password"` by default.
+* The actual password must never appear as plain text automatically.
+* Add/use the eye icon to toggle between:
+
+  * hidden: `type="password"`
+  * visible: `type="text"`
+* Default state must always be hidden.
+* The icon must accurately represent the current state.
+* Make sure re-renders, validation errors, autofill, or changing signup steps do not accidentally make the password visible.
+
+Check all signup/password creation components instead of fixing only one visible field.
+
+Acceptance test:
+
+1. Open sign-up.
+2. Enter a password.
+3. Characters appear masked.
+4. Click eye icon.
+5. Password becomes visible.
+6. Click again.
+7. Password becomes masked again.
+
+---
+
+# 2. FIX TALENT PROFILE NAVIGATION TABS
+
+Fix the Talent Profile tabs so users can reliably switch between sections such as:
+
+* Overview
+* About
+* Skills
+* Experience
+* Education
+* and any other currently supported profile sections
+
+Inspect `TalentProfile.tsx` and all child/profile components.
+
+Fix:
+
+* tab click handlers
+* active tab state
+* conditional rendering
+* anchor IDs
+* scroll navigation, if used
+* URL/hash/query synchronization, if used
+* mobile and desktop tab behavior
+
+Clicking a tab must always display or navigate to the correct section.
+
+Do not leave tabs visually clickable while functionally inactive.
+
+If the page uses scrolling sections, clicking a tab should scroll to the correct section with the section heading visible and not hidden behind a fixed header.
+
+If the page uses conditional panels, render the correct selected panel.
+
+Preserve the current design.
+
+---
+
+# 3. MAKE “FINISH SETTING UP” THE PRIMARY TALENT ACTION
+
+On the Talent main/home/dashboard page, the existing:
+
+`Finish Setting Up`
+
+action should clearly appear as the FIRST and PRIMARY action for a talent with an incomplete profile.
+
+Improve its visual hierarchy without redesigning the page.
+
+Requirements:
+
+* Position it prominently near the top of the relevant talent landing/dashboard content.
+* Use the application's existing primary CTA style.
+* It should visually stand out more than secondary actions.
+* Do not create multiple competing primary buttons.
+* Clicking it must take the talent directly into the correct profile completion/setup flow.
+* If the profile is already complete, preserve the application's intended completed-profile behavior and don't incorrectly show an urgent setup CTA.
+
+Use the existing profile-completion logic where possible instead of duplicating completion calculations.
+
+---
+
+# 4. RESUME UPLOAD — ADD “CONTINUE MANUALLY” AND BACK
+
+Locate the resume upload/profile setup flow, including `ResumeParser.tsx` and any onboarding page that embeds it.
+
+Add two navigation actions:
+
+### Back
+
+Provide a visible `Back` button.
+
+The user should not need to use the browser Back arrow.
+
+Back should navigate to the previous logical onboarding/profile step without losing unrelated application state.
+
+### Continue Manually
+
+Add a clear:
+
+`Continue Manually`
+
+option.
+
+When clicked:
+
+* Do not require the talent to upload a resume.
+* Skip resume parsing.
+* Continue into the manual profile-entry form.
+* Allow the talent to manually enter:
+
+  * personal information
+  * address
+  * skills
+  * work experience
+  * education
+  * and other supported profile information.
+
+The manual path and resume-upload path must eventually lead into the same valid profile completion flow.
+
+Do not duplicate the entire profile form just to support this option.
+
+---
+
+# 5. FIX RESUME ADDRESS PARSING
+
+Resume parsing currently misses the Address field even when an address exists in the uploaded CV.
+
+Inspect BOTH frontend and backend parsing logic.
+
+Relevant code may include:
+
+* `client/src/components/ResumeParser.tsx`
+* `client/src/lib/resumeParser.ts`
+* server resume parsing services/routes
+* OpenAI extraction logic
+* profile mapping logic
+* shared schema
+* talent profile update payloads
+
+Determine where the address is being lost:
+
+1. resume text extraction
+2. AI/parser extraction
+3. JSON/schema validation
+4. API response
+5. frontend mapping
+6. profile state
+7. save/update request
+
+Fix the root cause.
+
+The parser should recognize common address patterns such as:
+
+* `Cebu City, Cebu`
+* `Makati City, Metro Manila`
+* `123 Main Street, Quezon City`
+* `Cebu, Philippines`
+* `City, Province, Country`
+
+Do not invent an address if none exists.
+
+If an address is present with reasonable confidence, automatically populate the profile Address field.
+
+Preserve the original meaningful address text rather than aggressively forcing it into a US-specific format.
+
+Make sure the populated field can still be edited manually.
+
+Test with at least:
+
+* a resume containing a full street address
+* a resume containing city/province only
+* a resume containing city/country
+* a resume without an address
+
+A resume without an address must leave the field blank instead of hallucinating one.
+
+---
+
+# 6. FIX ALL BROKEN FILTER / SORT OPTIONS
+
+The sort/filter options are currently not working.
+
+Scan every relevant list page instead of fixing only one dropdown.
+
+Especially inspect:
+
+* Find Best Matches
+* Find Work
+* Find Work All Jobs
+* Admin Job Applications
+* talent/job search results
+* any shared filtering hooks/components
+
+Determine whether each filter is supposed to operate:
+
+* client-side
+* server-side
+* through URL query parameters
+* through API query parameters
+
+Fix the implementation consistently.
+
+Verify every currently displayed sort option has real behavior.
+
+Typical sort functionality may include things such as:
+
+* newest
+* oldest
+* relevance
+* alphabetical
+* highest match
+* status
+* date applied
+
+BUT DO NOT add new sort options unless they already exist in the UI/product requirements.
+
+For each existing option:
+
+1. Selecting it must update state.
+2. Data must actually be sorted/filtered.
+3. The selected option must remain visibly selected.
+4. Combining filters should work where supported.
+5. Clearing/resetting filters should restore the expected result set.
+6. Avoid mutating React/query-cache source arrays in place. Clone before sorting when needed.
+7. Sorting should not unexpectedly reset pagination unless that is necessary for valid results.
+8. If sorting changes the result order, return to the appropriate first page where needed.
+
+Also check for common bugs such as:
+
+* dropdown value not matching enum/string used by sorting code
+* `sort()` mutating cached results
+* filtering stale data
+* `useMemo` missing dependencies
+* query keys missing filter/sort values
+* API receiving wrong parameter names
+* comparator returning incorrect values
+* numeric values being sorted as strings
+* date strings being sorted lexicographically instead of as dates
+
+---
+
+# 7. “VIEW DETAILS” MUST ALWAYS OPEN AT THE TOP
+
+Wherever a user clicks:
+
+`View Details`
+
+the newly displayed page/document/details view must start at the top.
+
+The current behavior sometimes opens in the middle because the SPA/browser is retaining the previous scroll position.
+
+Inspect all View Details entry points, especially:
+
+* Find Work
+* Find Work All Jobs
+* expandable job cards
+* job details
+* Admin Job Applications
+* resume/CV view
+* talent/job detail screens
+* modal/document viewers if applicable
+
+For route navigation to a new details page:
+
+* ensure the destination starts at `scrollY = 0`
+* preferably solve this centrally through router-level scroll restoration if appropriate
+* avoid adding arbitrary `setTimeout` calls everywhere
+
+For modal/document viewers:
+
+* reset the actual scrollable container to the top on open
+* reset PDF/document viewer page/scroll position where applicable
+
+Acceptance test:
+
+1. Scroll far down a listing page.
+2. Click View Details.
+3. Details immediately begin at the top.
+4. Return and test another item.
+5. Repeat several times.
+6. It must consistently open at the top.
+
+---
+
+# 8. PHONE NUMBER FIELD — GENERIC PLACEHOLDER + FLEXIBLE FORMATS
+
+Find every relevant talent/user phone-number field.
+
+Replace overly specific placeholders such as a required example format with:
+
+`Enter your phone number`
+
+Do not imply that only one country's phone format is accepted.
+
+Update validation so common legitimate formats are supported, including examples like:
+
+* `09171234567`
+* `9171234567`
+* `+639171234567`
+* `+63 917 123 4567`
+* `(032) 123 4567`
+* `032-123-4567`
+* `+1 415 555 2671`
+
+Do NOT validate using one rigid Philippine-only formatting regex unless the business explicitly requires that.
+
+Recommended behavior:
+
+* allow digits
+* allow a leading `+`
+* allow common separators such as spaces, hyphens and parentheses
+* trim surrounding whitespace
+* reject letters and obviously invalid characters
+* apply a reasonable digit-count sanity check after removing formatting characters
+
+Do not destructively alter a user's displayed number while they are typing.
+
+If normalization is required for backend storage, normalize separately from the displayed input value and maintain backward compatibility with existing saved phone numbers.
+
+Check:
+
+* frontend input
+* form schema
+* shared schema
+* API validation
+* database validation/constraints
+* profile update endpoints
+
+---
+
+# CROSS-PAGE REGRESSION SCAN
+
+After implementing the eight fixes, scan the rest of the application for components that reuse the affected logic.
+
+Search specifically for:
+
+* password fields
+* password visibility state
+* profile tab components
+* `Finish Setting Up`
+* resume upload
+* resume parser
+* address mapping
+* `sort`
+* `filter`
+* `View Details`
+* navigation to detail pages
+* `scrollTo`
+* phone validation
+* phone placeholders
+* talent profile update payloads
+
+If the same bug exists in another page because it shares or duplicated the same implementation, fix that occurrence too.
+
+Do not change unrelated functionality.
+
+---
+
+# IMPORTANT IMPLEMENTATION RULES
+
+1. Inspect existing code before editing.
+2. Find root causes instead of adding UI-only workarounds.
+3. Reuse existing components/hooks/utilities when possible.
+4. Do not create duplicate versions of existing pages.
+5. Do not remove existing features.
+6. Preserve existing styling and responsive behavior.
+7. Keep TypeScript types strict.
+8. Avoid `any` unless absolutely unavoidable.
+9. Do not suppress TypeScript errors just to make the build pass.
+10. Do not introduce hardcoded dummy data.
+11. Do not break API compatibility.
+12. Preserve existing authentication and authorization.
+13. Preserve talent/client/admin role separation.
+14. Preserve existing responsive/mobile layouts.
+15. Use existing design system components.
+16. Do not make unrelated database schema changes.
+17. If a schema change truly is required, make it backwards-compatible and explain why.
+
+---
+
+# TESTING REQUIREMENTS
+
+After the changes, run the existing project checks and fix any regressions introduced by this task.
+
+At minimum run whichever commands exist in this repository for:
+
+* TypeScript type checking
+* linting
+* unit/integration tests
+* production build
+
+Do not claim success if the build fails.
+
+Manually verify the following flows:
+
+### Sign-up
+
+* password hidden by default
+* eye toggle works
+
+### Talent profile
+
+* Overview works
+* About works
+* Skills works
+* Experience works
+* Education works
+* all other existing tabs work
+
+### Talent onboarding
+
+* Finish Setting Up is clearly the primary CTA
+* resume upload works
+* Back works
+* Continue Manually works
+
+### Resume parsing
+
+* name still populates
+* email still populates
+* phone still populates
+* skills still populate
+* experience still populates
+* education still populates
+* ADDRESS NOW POPULATES when found in the CV
+
+### Filters
+
+Test every currently visible filter/sort control on:
+
+* Find Best Matches
+* Find Work
+* Admin Job Applications
+* any other page using the same components
+
+### View Details
+
+Test from a scrolled-down page and confirm every details view opens at the top.
+
+### Phone
+
+Test:
+
+* local mobile
+* international
+* spaces
+* hyphens
+* parentheses
+* leading +
+* invalid alphabetic input
+
+---
+
+# FINAL RESPONSE REQUIRED
+
+When finished, provide a structured summary containing:
+
+1. **Root cause found for each of the 8 issues**
+2. **Files changed**
+3. **What was changed in each file**
+4. **Any shared components/hooks/utilities that were fixed**
+5. **Tests/checks run**
+6. **Results of each test**
+7. **Any remaining edge cases**
+8. **Confirmation that no unrelated page functionality was intentionally changed**
+
+Do not simply say “fixed.”
+
+I need enough detail to review the implementation and verify each issue individually.

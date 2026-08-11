@@ -160,7 +160,7 @@ export function TalentLoginModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { setShowPw(false); setMode("login"); setEmail(""); setPassword(""); setConfirmPassword(""); onClose(); } }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">

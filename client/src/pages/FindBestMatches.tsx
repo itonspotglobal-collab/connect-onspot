@@ -2227,6 +2227,9 @@ export default function FindBestMatches() {
     if (flowStep > 0) {
       setFlowStep((s) => s - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      // On the first step, navigate back to the Talent Portal
+      navigate("/talent-portal");
     }
   }
   function handleRetake() {
@@ -2423,34 +2426,16 @@ export default function FindBestMatches() {
             <span>or continue without one</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
-              What happens next
-            </p>
-            <div className="space-y-3">
-              {[
-                {
-                  icon: Sparkles,
-                  text: "We auto-extract your details from the resume",
-                },
-                {
-                  icon: FileText,
-                  text: "Review and confirm your target position, skills, and preferences",
-                },
-                {
-                  icon: Heart,
-                  text: "Complete a short culture evaluation aligned to our values",
-                },
-              ].map(({ icon: Icon, text }, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#474ead]/10 text-[#474ead]">
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                  <span className="text-sm text-slate-600">{text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setFlowStep(1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-700 hover:border-[#474ead]/40 hover:bg-[#474ead]/5 hover:text-[#474ead] transition-all text-center"
+          >
+            Continue Manually — I'll fill in my profile myself
+          </button>
         </div>
       </div>
     );
@@ -2605,7 +2590,7 @@ export default function FindBestMatches() {
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   type="tel"
-                  placeholder="+63 912 345 6789"
+                  placeholder="Enter your phone number"
                   value={profile.phone}
                   onChange={(e) => setField("phone", e.target.value)}
                   className={`rounded-xl pl-9 ${flowStep === 1 && profile.phone && !isValidPhone(profile.phone) ? "border-red-300 focus-visible:ring-red-400" : ""}`}
@@ -3668,7 +3653,6 @@ export default function FindBestMatches() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  disabled={flowStep === 0}
                   className="rounded-full px-6"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back

@@ -86,6 +86,13 @@ import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PortalLogin from "@/pages/PortalLogin";
 
+// Scroll to the top of the page whenever the route changes
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 // Redirect /find-work → /find-work/jobs (URL changes in browser)
 function FindWorkRedirect() {
   const [, navigate] = useLocation();
@@ -131,6 +138,7 @@ function PublicRouter() {
 
   return (
     <div className="min-h-screen bg-background">
+      <ScrollToTop />
       {!hideTopNav && <TopNavigation />}
       <main>
         <Switch>

@@ -74,6 +74,7 @@ export function SignUpDialog({
       company: "",
     });
     setAgreeToTerms(false);
+    setShowPassword(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

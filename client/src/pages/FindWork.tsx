@@ -984,9 +984,18 @@ export default function OnSpotFindWorkRedesign() {
         if (earning === "₱85,000+") return max >= 85000;
         return true;
       })();
-      return queryPass && kindPass && earningPass;
+      // Map shift-style schedule to contractType for live DB jobs
+      const schedulePass = (() => {
+        if (schedule === "All schedules") return true;
+        const ct = ((job as any).contractType ?? "").toLowerCase();
+        if (schedule === "Day shift") return ct.includes("full") || ct.includes("part");
+        if (schedule === "Night shift") return ct.includes("full") || ct.includes("contract");
+        if (schedule === "Flexible") return ct.includes("freelance") || ct.includes("part") || ct.includes("flexible");
+        return true;
+      })();
+      return queryPass && kindPass && earningPass && schedulePass;
     });
-  }, [dbJobs, query, kind, earning]);
+  }, [dbJobs, query, kind, earning, schedule]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.12),transparent_32%),linear-gradient(to_bottom,#f8fafc,white)] text-slate-900 dark:bg-[#060816] dark:text-white">

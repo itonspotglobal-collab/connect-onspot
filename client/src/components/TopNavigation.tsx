@@ -102,10 +102,10 @@ export function TopNavigation() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupRole, setSignupRole] = useState<"client" | "talent" | null>(null);
-  const [showAuthPassword, setShowAuthPassword] = useState(true);
-  const [showSignupPassword, setShowSignupPassword] = useState(true);
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
-  const [showSignupConfirm, setShowSignupConfirm] = useState(true);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0);
@@ -1175,7 +1175,7 @@ export function TopNavigation() {
             // DEV ONLY: reset auth form state
             setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
             setSignupFirstName(""); setSignupLastName(""); setSignupEmail(""); setSignupPassword(""); setSignupRole(null);
-            setShowAuthPassword(false);
+            setShowAuthPassword(false); setShowSignupPassword(false); setShowSignupConfirm(false); setShowForgotPwd(false); setShowForgotConfirm(false);
             // Reset password setup state
             setSigninNeedsSetup(false); setSetupPassword(""); setSetupConfirmPassword(""); setShowSetupPw(false); setShowSetupConfirm(false);
           }
@@ -2058,8 +2058,8 @@ export function TopNavigation() {
                                 setSignupConfirmPassword("");
                                 setSignupRole(null);
                                 // Reset visibility states back to defaults
-                                setShowSignupPassword(true);
-                                setShowSignupConfirm(true);
+                                setShowSignupPassword(false);
+                                setShowSignupConfirm(false);
                                 // Pre-seed the signin email so if the user logs out and returns,
                                 // their email is already filled in
                                 setSigninEmail(capturedEmail);

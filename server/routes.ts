@@ -10307,6 +10307,28 @@ function parseResumeText(resumeText: string): any {
       continue;
     }
 
+    // Extract location/address — look for city/province/country patterns
+    // e.g. "Cebu City, Cebu", "Makati, Metro Manila", "123 Main St, Quezon City"
+    if (!parsedData.personalInfo.location && !emailMatch && line.length < 100) {
+      const isAddress =
+        // Street address: starts with number
+        /^\d+\s+[A-Za-z]/.test(line) ||
+        // City, Province/Region pattern
+        /^[A-Z][a-zA-Z\s]+,\s*[A-Z][a-zA-Z\s]+(,\s*Philippines?)?\.?$/.test(line) ||
+        // Known PH cities/regions
+        /\b(Cebu|Manila|Makati|Quezon City|Taguig|Pasig|Pasay|Davao|Cagayan de Oro|Iloilo|Baguio|Bacolod|Zamboanga|Metro Manila)\b/i.test(line);
+      if (
+        isAddress &&
+        !line.includes("@") &&
+        !line.includes("http") &&
+        !line.includes("|") &&
+        line.split(/\s+/).length <= 10
+      ) {
+        parsedData.personalInfo.location = line.trim();
+        continue;
+      }
+    }
+
     // Detect sections
     if (
       upperLine.includes("EXPERIENCE") ||

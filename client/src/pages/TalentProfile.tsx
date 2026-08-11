@@ -481,7 +481,10 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   function scrollTo(id: string) {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Offset for sticky top-nav (64px) + sticky tab bar (~52px) + small margin
+      const HEADER_OFFSET = 124;
+      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       setActive(id);
     }
     // Scroll tab button into view

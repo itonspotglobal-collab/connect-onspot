@@ -455,7 +455,7 @@ export default function JobApplyPage() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setField("phone", e.target.value)}
-                    placeholder="+63 912 345 6789"
+                    placeholder="Enter your phone number"
                     autoComplete="tel"
                   />
                   {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
