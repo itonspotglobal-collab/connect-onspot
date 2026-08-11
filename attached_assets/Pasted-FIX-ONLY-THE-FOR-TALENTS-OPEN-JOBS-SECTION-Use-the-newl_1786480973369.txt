@@ -1,0 +1,272 @@
+FIX ONLY THE “FOR TALENTS / OPEN JOBS” SECTION.
+
+Use the newly attached screenshot as the exact visual source of truth.
+
+Do NOT redesign it.
+Do NOT change the wording.
+Do NOT modify other homepage sections.
+
+GOAL:
+Match the same full-width dark gradient background, centered header, 4-card job grid, orange CTA, muted supporting text, spacing, colors, and responsive behavior shown in the reference.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+Use a full-width dark navy-to-indigo gradient.
+
+Approximate:
+linear-gradient(
+  135deg,
+  #18255F 0%,
+  #222A6F 50%,
+  #171A3E 100%
+)
+
+The background should be darker than the hero carousel but stay within the same brand palette.
+
+==================================================
+HEADER — CENTERED
+==================================================
+
+Eyebrow:
+“— FOR TALENTS”
+
+Style:
+- uppercase
+- small
+- orange/yellow
+- bold
+- letter-spacing around 0.08em
+- centered
+
+Heading:
+“Hundreds of high-paying jobs.
+Open right now.”
+
+Style:
+- centered
+- first line = white
+- “Open right now.” = orange/yellow
+- bold
+- desktop around 44–54px
+- tight line-height
+- use clamp()
+
+Subheading:
+“Real roles with great companies — at rates that reflect what your
+work is actually worth. New jobs open every week.”
+
+Style:
+- centered
+- muted lavender/gray
+- around 16–18px
+- max-width around 620px
+- margin-inline:auto
+
+==================================================
+JOB GRID
+==================================================
+
+Create a centered 4-column grid on desktop.
+
+Wrapper:
+max-width: approximately 980–1040px;
+margin-inline:auto;
+
+Grid:
+display:grid;
+grid-template-columns: repeat(4, minmax(0,1fr));
+gap: approximately 16–18px;
+
+Each card:
+- dark indigo surface
+- slightly lighter than section background
+- thin translucent border
+- rounded corners around 16–18px
+- padding around 22–24px
+- min-height around 210–230px
+- left-aligned content
+
+Approx card background:
+rgba(255,255,255,0.055)
+
+Border:
+rgba(255,255,255,0.16)
+
+==================================================
+CARD CONTENT
+==================================================
+
+Top badge:
+“HIRING NOW”
+
+Style:
+- small pill
+- muted gold/orange text
+- dark translucent warm background
+- uppercase
+- bold
+
+JOB 1:
+IT Administrator
+Full-time · Remote
+USD 1,500 - 3,000/month
+View role →
+
+JOB 2:
+Accounting Manager
+Full-time · Hybrid
+USD 500/month
+View role →
+
+JOB 3:
+Virtual Assistant
+Full-time · Remote
+PHP 8 - 12
+View role →
+
+JOB 4:
+Customer Service
+Representative
+Part-time · Onsite
+USD 10 - 15
+View role →
+
+Typography:
+Job title:
+- white
+- bold
+- approximately 17–20px
+
+Meta:
+- muted lavender/gray
+- around 13–14px
+
+Compensation:
+- orange/yellow
+- bold
+- around 15–17px
+
+Link:
+- light lavender/white
+- around 13–14px
+- “View role →”
+
+==================================================
+DATABASE BEHAVIOR
+==================================================
+
+IMPORTANT:
+If this section is already database-driven, preserve that integration.
+
+Use the SAME real jobs source used by:
+- Browse Jobs
+- Featured Jobs
+- Hero Slide 5
+
+Display up to 4 current jobs.
+
+Prefer:
+1. Featured
+2. Hiring now
+3. Most recent active jobs
+
+Do NOT hardcode fake jobs if real data exists.
+
+Each card must remain clickable and route to the existing job detail page.
+
+The design must remain exactly like the reference even when the job content comes from the database.
+
+==================================================
+CTA
+==================================================
+
+Centered button:
+“Browse all jobs →”
+
+Style:
+- orange/yellow filled button
+- dark navy text
+- rounded pill / soft capsule
+- approximately 180–200px wide
+- medium-bold text
+- subtle orange glow/shadow
+
+Place beneath the cards with generous spacing.
+
+==================================================
+BOTTOM CAPTION
+==================================================
+
+Centered:
+“Set your rate. Keep your rate. OnSpot's fee is never taken out of your pay.”
+
+Style:
+- small
+- muted lavender/gray
+- centered
+- around 12–14px
+
+==================================================
+SPACING
+==================================================
+
+Match the screenshot closely:
+
+- large top padding
+- eyebrow → heading: 18–22px
+- heading → subheading: 24–28px
+- subheading → cards: 48–58px
+- cards → CTA: 42–50px
+- CTA → bottom caption: 20–24px
+- generous bottom padding
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+4 columns
+
+Tablet:
+2 columns
+
+Mobile:
+1 column
+
+Suggested:
+@media (max-width: 1000px) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+  grid-template-columns: 1fr;
+}
+
+On mobile:
+- keep cards full width
+- reduce heading size
+- keep all card content left aligned
+- CTA centered
+- no horizontal overflow
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- use white cards
+- center card text
+- change orange highlight colors
+- remove the “HIRING NOW” badges
+- make cards too tall
+- modify other sections
+- break database-driven job routing
+
+The final desktop result should closely match the attached screenshot:
+dark navy gradient background,
+centered white/orange heading,
+4 equal dark job cards,
+orange CTA,
+and muted bottom caption.

@@ -1654,59 +1654,71 @@ function OpenJobsSection() {
   return (
     <section
       style={{
-        background: `radial-gradient(ellipse at 50% 0%, rgba(75,81,184,0.35), transparent 65%), linear-gradient(180deg, ${C.indigoDeep} 0%, #06102E 100%)`,
+        background: "linear-gradient(135deg, #18255F 0%, #222A6F 50%, #171A3E 100%)",
       }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
       <div className="mx-auto max-w-[1180px]">
         {/* Centered header */}
         <div className="text-center mb-14">
-          <SectionEyebrow text="For Talents" dark />
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 mb-5">
+            <span style={{ width: 20, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
+            <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.orange }}>
+              For Talents
+            </span>
+          </div>
           <h2
-            className="mt-4 font-bold text-white leading-tight"
-            style={{ fontSize: "clamp(2rem, 3.8vw, 3.25rem)", letterSpacing: "-0.025em" }}
+            className="font-bold text-white leading-tight"
+            style={{ fontSize: "clamp(2.2rem, 4vw, 3.4rem)", letterSpacing: "-0.028em", lineHeight: 1.1 }}
           >
             Hundreds of high-paying jobs.<br />
             <span style={{ color: C.orangeLight }}>Open right now.</span>
           </h2>
-          <p className="mt-4 mx-auto" style={{ color: "rgba(255,255,255,0.52)", fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 560 }}>
+          <p className="mt-5 mx-auto" style={{ color: "rgba(200,205,255,0.72)", fontSize: "clamp(0.95rem, 1.4vw, 1.08rem)", lineHeight: 1.6, maxWidth: 580 }}>
             Real roles with great companies — at rates that reflect what your work is actually worth. New jobs open every week.
           </p>
         </div>
 
         {/* 4 job cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {jobs.map((job, i) => (
             <div
               key={i}
-              className="rounded-2xl p-6 flex flex-col"
+              className="rounded-[18px] flex flex-col"
               style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(4px)",
+                background: "rgba(255,255,255,0.055)",
+                border: "1px solid rgba(255,255,255,0.16)",
+                padding: "22px 22px 20px",
+                minHeight: 220,
               }}
             >
+              {/* HIRING NOW badge */}
               <span
-                className="self-start rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide mb-5"
-                style={{ background: "rgba(255,174,33,0.18)", color: C.orange }}
+                className="self-start rounded-full px-2.5 py-[3px] font-bold uppercase tracking-wide mb-4"
+                style={{ fontSize: "9.5px", background: "rgba(255,174,33,0.15)", color: "#FFBF4A" }}
               >
                 Hiring Now
               </span>
-              <p className="font-semibold text-white leading-snug mb-2 flex-1" style={{ fontSize: "0.98rem" }}>
+              {/* Title */}
+              <p className="font-bold text-white leading-snug mb-2 flex-1" style={{ fontSize: "clamp(1rem, 1.5vw, 1.15rem)" }}>
                 {job.title}
               </p>
-              <p className="mb-3" style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.82rem" }}>
+              {/* Meta */}
+              <p className="mb-2.5" style={{ color: "rgba(200,205,255,0.55)", fontSize: "0.81rem" }}>
                 {job.type} · {job.loc}
               </p>
+              {/* Pay */}
               {job.pay && (
-                <p className="font-semibold mb-5" style={{ color: C.orangeLight, fontSize: "0.88rem" }}>
+                <p className="font-bold mb-4" style={{ color: C.orangeLight, fontSize: "0.92rem" }}>
                   {job.pay}
                 </p>
               )}
+              {/* Link */}
               <Link
                 href={job.id ? `/jobs/${job.id}` : "/find-work/jobs"}
-                className="inline-flex items-center gap-1 text-xs font-semibold mt-auto transition hover:opacity-80"
-                style={{ color: "rgba(255,255,255,0.55)" }}
+                className="inline-flex items-center gap-1 font-semibold mt-auto transition hover:opacity-80"
+                style={{ fontSize: "0.8rem", color: "rgba(220,224,255,0.75)" }}
               >
                 View role <ArrowRight className="h-3 w-3" />
               </Link>
@@ -1715,15 +1727,19 @@ function OpenJobsSection() {
         </div>
 
         {/* CTA */}
-        <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col items-center gap-5 text-center">
           <Link
             href="/find-work/jobs"
-            className="inline-flex h-[50px] min-w-[200px] items-center justify-center rounded-xl border px-8 text-[15px] font-semibold text-white transition hover:bg-white/10"
-            style={{ borderColor: "rgba(255,255,255,0.3)" }}
+            className="inline-flex h-[50px] min-w-[190px] items-center justify-center rounded-full px-8 text-[15px] font-semibold transition hover:-translate-y-[1px]"
+            style={{
+              background: C.orange,
+              color: C.indigoDeep,
+              boxShadow: "0 8px 28px rgba(255,174,33,0.38)",
+            }}
           >
             Browse all jobs →
           </Link>
-          <p style={{ color: "rgba(255,255,255,0.38)", fontSize: "0.82rem" }}>
+          <p style={{ color: "rgba(200,205,255,0.5)", fontSize: "0.8rem" }}>
             Set your rate. Keep your rate. OnSpot's fee is never taken out of your pay.
           </p>
         </div>
