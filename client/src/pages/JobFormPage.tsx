@@ -279,67 +279,36 @@ function BasicsStep({
       {/* Company name */}
       <div>
         <Label htmlFor="jfp-company">
-          Company name <span className="text-red-500">*</span>
+          Company Name or Industry <span className="text-red-500">*</span>
         </Label>
         <Input
           id="jfp-company"
           value={formData.company}
           onChange={e => updateField("company", e.target.value)}
-          placeholder="OnSpot"
+          placeholder="e.g. OnSpot, Information Technology, Healthcare, BPO, Construction"
           className="mt-1.5"
         />
+        <p className="text-xs text-muted-foreground mt-1.5">
+          Enter the company name or, if preferred, the industry this role belongs to.
+        </p>
         <FieldError msg={errors.company} />
       </div>
 
-      {/* Confidential toggle */}
-      <label className="flex cursor-pointer items-start gap-3 p-3.5 rounded-xl border-[1.5px] border-border hover:border-[#474ead]/50 transition-colors">
-        <input
-          type="checkbox"
-          checked={formData.isCompanyConfidential}
-          onChange={e => updateField("isCompanyConfidential", e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded accent-[#474ead] flex-none"
-        />
-        <span>
-          <span className="block text-sm font-semibold">Keep company confidential</span>
-          <span className="text-xs text-muted-foreground">
-            Applicants see "Confidential Company" — the real name stays hidden.
-          </span>
-        </span>
-      </label>
-
       {/* Company description — expandable */}
       <Collapsible label="Add a company description" badge="optional">
-        {formData.isCompanyConfidential ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-900/10 p-3">
-            <Label htmlFor="jfp-conf-overview" className="text-sm font-medium">
-              Confidential client overview
-            </Label>
-            <Textarea
-              id="jfp-conf-overview"
-              value={formData.confidentialClientOverview}
-              onChange={e => updateField("confidentialClientOverview", e.target.value)}
-              placeholder="Public-safe overview without revealing the company identity — include industry, size, market, mission, or work environment."
-              className="mt-2 min-h-[80px] resize-y"
-            />
-            <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
-              Do not include the company name, exact location, or other identifying details.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <Label htmlFor="jfp-company-overview">Company description</Label>
-            <Textarea
-              id="jfp-company-overview"
-              value={formData.companyOverview}
-              onChange={e => updateField("companyOverview", e.target.value)}
-              placeholder="Short overview — industry, mission, and what makes it a great place to work…"
-              className="mt-1.5 min-h-[80px] resize-y"
-            />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Shown publicly under "About the Company" on the job details page.
-            </p>
-          </div>
-        )}
+        <div>
+          <Label htmlFor="jfp-company-overview">Company description</Label>
+          <Textarea
+            id="jfp-company-overview"
+            value={formData.companyOverview}
+            onChange={e => updateField("companyOverview", e.target.value)}
+            placeholder="Short overview — industry, mission, and what makes it a great place to work…"
+            className="mt-1.5 min-h-[80px] resize-y"
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Shown publicly under "About the Company" on the job details page.
+          </p>
+        </div>
       </Collapsible>
     </div>
   );
@@ -853,7 +822,7 @@ function ReviewStep({
         <div className="h-2 bg-gradient-to-r from-[#474ead] to-[#6ee7b7]" />
         <div className="p-5">
           <p className="text-sm text-muted-foreground font-semibold">
-            {formData.isCompanyConfidential ? "Confidential Company" : (formData.company || "Company")} ·{" "}
+            {formData.company || "Company"} ·{" "}
             {formData.location}
           </p>
           <h3 className="text-xl font-bold mt-1">
@@ -1238,8 +1207,7 @@ export default function JobFormPage() {
       isFeatured: formData.isFeatured,
       urgentlyHiring: formData.urgentlyHiring,
       requiresVideoIntro: formData.requiresVideoIntro,
-      isCompanyConfidential: formData.isCompanyConfidential,
-      confidentialClientOverview: formData.confidentialClientOverview.trim() || null,
+
       compensationType: formData.compensationType || null,
       hasCommission: formData.hasCommission,
       hasEquity: formData.hasEquity,

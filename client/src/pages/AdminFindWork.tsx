@@ -277,13 +277,6 @@ function AdminJobRow({
             )}
           </div>
 
-          {/* Confidential company badge — shown for jobs marked as confidential */}
-          {(job as any).isCompanyConfidential && (
-            <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 dark:bg-white/[0.06] dark:text-white/50">
-              <EyeOff className="h-2.5 w-2.5" /> Confidential publicly
-            </span>
-          )}
-
           {/* Original role name */}
           {(job as any).originalRoleName && (
             <p className="mb-1 text-xs italic text-slate-500 dark:text-slate-400 truncate">

@@ -5,12 +5,12 @@ import {
   ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
   BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
   Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
-  Wifi, Monitor, Lock, CalendarDays, Wrench,
+  Wifi, Monitor, CalendarDays, Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription, getCompanyOverviewLabel } from "@/lib/jobUtils";
+import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 
@@ -615,11 +615,6 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           )}
           <p className="mt-2 flex items-center gap-1.5 text-base text-slate-400">
             {getPublicCompanyName(job as any)}
-            {(job as any).isCompanyConfidential && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.08] px-2 py-0.5 text-xs font-medium text-slate-300 ring-1 ring-white/10">
-                <Lock className="h-3 w-3" aria-hidden="true" /> Confidential
-              </span>
-            )}
           </p>
 
           {/* Compensation pill */}
@@ -659,12 +654,12 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         className="mx-auto max-w-5xl"
       >
 
-        {/* 1. About the Company / About the Client — switches label based on confidentiality */}
+        {/* 1. About the Company */}
         {companyOverview?.trim() && (
           <Section
             icon={<Globe2 className="h-5 w-5 text-indigo-500" />}
             iconBg="bg-indigo-50 dark:bg-indigo-900/30"
-            label={getCompanyOverviewLabel(job as any)}
+            label="About the Company"
           >
             <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>
               {companyOverview.trim()}

@@ -1,0 +1,79 @@
+Remove "Keep Company Confidential" and Rename Company Field
+
+Please make the following UI/UX changes to the new Create/Edit Job Posting page.
+
+1. Remove the "Keep company confidential" option
+
+Completely remove the following section from both the Create Job and Edit Job pages:
+
+The "Keep company confidential" checkbox
+
+The helper text:
+
+Applicants see "Confidential Company" — the real name stays hidden.
+
+Any related UI spacing or divider.
+
+This feature is no longer part of the job posting workflow.
+
+2. Remove related functionality
+
+Search the codebase for the company confidentiality feature and remove any unused logic associated with it, including:
+
+Form state
+Validation
+API payload fields
+Default values
+Preview logic
+Public job page logic
+Database mapping (only if it is no longer referenced elsewhere)
+
+If removing the database column would affect existing jobs, simply stop using the field instead of performing a destructive migration.
+
+3. Rename the Company field
+
+Change the label:
+
+Company Name
+
+to:
+
+Company Name or Industry
+
+Update the placeholder from:
+
+OnSpot
+
+to something more descriptive, for example:
+
+e.g. OnSpot, Information Technology, Healthcare, BPO, Construction
+4. Update helper text
+
+Add a short helper text below the field:
+
+Enter the company name or, if preferred, the industry this role belongs to.
+
+This makes it clear that employers may enter either their company name or simply the industry.
+
+5. Preserve existing functionality
+
+Do not change how the field is stored in the database or API.
+
+Only update:
+
+Label
+Placeholder
+Helper text
+
+The backend field and existing integrations should continue working exactly as they do now.
+
+6. Verify
+
+After implementation, confirm that:
+
+✅ "Keep company confidential" is completely removed.
+✅ No empty spacing remains where it used to be.
+✅ The field now reads "Company Name or Industry".
+✅ Existing jobs still load correctly.
+✅ Creating and editing jobs continues to work without changes to the backend.
+✅ No unused code related to company confidentiality remains.

@@ -123,9 +123,7 @@ export const defaultFormData = {
   urgentlyHiring: false,
   // Require video introduction from applicants
   requiresVideoIntro: false,
-  // Company visibility
-  isCompanyConfidential: false,
-  confidentialClientOverview: "",
+
   // Benefits / HMO
   benefits: "",
   // Compensation type — locked to monthly for all new/edited jobs
@@ -205,9 +203,7 @@ export function jobToFormData(job: Job): JobFormData {
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
     // Require video introduction from applicants
     requiresVideoIntro: (job as any).requiresVideoIntro ?? false,
-    // Company visibility
-    isCompanyConfidential: (job as any).isCompanyConfidential ?? false,
-    confidentialClientOverview: (job as any).confidentialClientOverview || "",
+
     // Benefits / HMO
     benefits: (job as any).benefits || "",
     // Compensation type — always "monthly" for edited jobs going forward
@@ -453,9 +449,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     // Video intro requirement (always send so unchecking clears it)
     payload.requiresVideoIntro = formData.requiresVideoIntro;
 
-    // Company visibility (always send so unchecking a previously set flag clears it)
-    payload.isCompanyConfidential = formData.isCompanyConfidential;
-    payload.confidentialClientOverview = formData.confidentialClientOverview.trim() || null;
 
     // Benefits / HMO (always send so admins can clear the value)
     payload.benefits = formData.benefits.trim() || null;
@@ -664,73 +657,38 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             <div className="space-y-2 mb-4">
               <Label htmlFor="modal-company">
-                Company Name <span className="text-red-500">*</span>
+                Company Name or Industry <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="modal-company"
                 value={formData.company}
                 onChange={(e) => updateField("company", e.target.value)}
-                placeholder="OnSpot"
+                placeholder="e.g. OnSpot, Information Technology, Healthcare, BPO, Construction"
               />
+              <p className="text-xs text-muted-foreground">
+                Enter the company name or, if preferred, the industry this role belongs to.
+              </p>
               {errors.company && (
                 <p className="text-xs text-red-500">{errors.company}</p>
               )}
             </div>
 
-            <label className="flex cursor-pointer items-start gap-2 mb-4">
-              <input
-                type="checkbox"
-                id="modal-confidential"
-                checked={formData.isCompanyConfidential}
-                onChange={(e) => updateField("isCompanyConfidential", e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-border accent-[#474ead]"
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="modal-companyOverview">
+                Company Description
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                id="modal-companyOverview"
+                value={formData.companyOverview}
+                onChange={(e) => updateField("companyOverview", e.target.value)}
+                placeholder="Describe the company, its mission, and what makes it a great place to work..."
+                className="min-h-[90px] resize-y"
               />
-              <div>
-                <span className="text-sm font-medium leading-none">Keep company confidential</span>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Applicants see "Confidential Company" — the real name stays hidden.
-                </p>
-              </div>
-            </label>
-
-            {/* Company Description — public overview when not confidential */}
-            {!formData.isCompanyConfidential && (
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="modal-companyOverview">
-                  Company Description
-                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <Textarea
-                  id="modal-companyOverview"
-                  value={formData.companyOverview}
-                  onChange={(e) => updateField("companyOverview", e.target.value)}
-                  placeholder="Describe the company, its mission, and what makes it a great place to work..."
-                  className="min-h-[90px] resize-y"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Provide a short overview of the company, including its industry, mission, market, or work environment. Shown publicly under "About the Company" on the job details page.
-                </p>
-              </div>
-            )}
-
-            {/* Confidential Client Overview — shown only when confidential is enabled */}
-            {formData.isCompanyConfidential && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/10">
-                <Label htmlFor="modal-confidential-overview" className="text-sm font-medium">
-                  Confidential Client Overview
-                </Label>
-                <Textarea
-                  id="modal-confidential-overview"
-                  value={formData.confidentialClientOverview}
-                  onChange={(e) => updateField("confidentialClientOverview", e.target.value)}
-                  placeholder="e.g. A fast-growing B2B SaaS company serving mid-market customers across North America. The team operates remotely and focuses on workflow automation and operational efficiency."
-                  className="mt-2 min-h-[90px] resize-y bg-white dark:bg-white/5"
-                />
-                <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
-                  Provide a public-safe overview of the client without revealing the company identity. Include relevant context such as industry, company size, market, mission, or work environment. <strong>Do not include</strong> the company name, exact location, unique products, or other identifying details.
-                </p>
-              </div>
-            )}
+              <p className="text-xs text-muted-foreground">
+                Provide a short overview of the company, including its industry, mission, market, or work environment. Shown publicly under "About the Company" on the job details page.
+              </p>
+            </div>
           </div>
 
           <Separator />

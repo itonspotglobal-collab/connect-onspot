@@ -462,41 +462,25 @@ export function buildRateDisplayWithCode(job: {
 
 /**
  * Returns the company name a public visitor should see.
- * Confidential jobs show "Confidential Company"; otherwise returns the real name.
- * NOTE: public API endpoints already mask this server-side, so these helpers
- * are provided as defence-in-depth for any client-side rendering that may
- * receive unmasked data (e.g. admin views rendering shared components).
  */
 export function getPublicCompanyName(job: {
   company?: string | null;
-  isCompanyConfidential?: boolean | null;
 }): string {
-  if (job.isCompanyConfidential) return "Confidential Company";
   return job.company || "OnSpot";
 }
 
 /**
- * Returns the company/client overview a public visitor should see.
- * - Non-confidential: returns companyOverview (real company description)
- * - Confidential: returns confidentialClientOverview (anonymous public-safe text), or null if not set
+ * Returns the company overview a public visitor should see.
  */
 export function getPublicCompanyDescription(job: {
   companyOverview?: string | null;
-  confidentialClientOverview?: string | null;
-  isCompanyConfidential?: boolean | null;
 }): string | null {
-  if (job.isCompanyConfidential) {
-    return (job as any).confidentialClientOverview?.trim() || null;
-  }
   return (job as any).companyOverview?.trim() || null;
 }
 
 /**
- * Returns the section label for the company/client overview block.
- * "About the Client" for confidential jobs, "About the Company" otherwise.
+ * Returns the section label for the company overview block.
  */
-export function getCompanyOverviewLabel(job: {
-  isCompanyConfidential?: boolean | null;
-}): string {
-  return job.isCompanyConfidential ? "About the Client" : "About the Company";
+export function getCompanyOverviewLabel(): string {
+  return "About the Company";
 }
