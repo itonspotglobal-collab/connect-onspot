@@ -501,105 +501,101 @@ const BAR_DATA = [
 
 function PhoneMockup() {
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(210px, 18vw, 265px)", maxWidth: "100%" }}>
+    <div className="relative ml-auto" style={{ width: "clamp(200px, 16.5vw, 238px)", maxWidth: "100%" }}>
       {/* Ambient glow */}
-      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 50% 48%, rgba(255,174,33,0.15), transparent 70%)", filter: "blur(12px)" }} />
+      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 50% 48%, rgba(255,174,33,0.14), transparent 70%)", filter: "blur(14px)" }} />
 
-      {/* Phone shell — dark navy frame */}
+      {/* Phone shell — dark navy, tall aspect, large corners */}
       <div
-        className="relative rounded-[42px] p-[9px]"
+        className="relative rounded-[36px] p-[8px]"
         style={{
           background: "linear-gradient(170deg, #111328 0%, #080a1a 100%)",
           border: "1.5px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 48px 96px -20px rgba(4,6,24,0.8), inset 0 1px 0 rgba(255,255,255,0.06)",
+          boxShadow: "0 40px 80px -16px rgba(4,6,24,0.85), inset 0 1px 0 rgba(255,255,255,0.06)",
         }}
       >
         {/* Dynamic Island — black pill notch */}
-        <div className="flex justify-center pt-2 pb-2">
-          <div className="h-[8px] w-[56px] rounded-full" style={{ background: "#000" }} />
+        <div className="flex justify-center pt-[7px] pb-[5px]">
+          <div className="h-[7px] w-[52px] rounded-full" style={{ background: "#000" }} />
         </div>
 
         {/* White screen */}
-        <div className="overflow-hidden rounded-[34px] bg-white">
+        <div className="overflow-hidden rounded-[28px] bg-white">
 
           {/* App top bar */}
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1.5">
             <div className="flex items-center gap-1.5">
-              {/* Orange square app icon */}
-              <div className="h-[14px] w-[14px] rounded-[3px] flex-shrink-0" style={{ background: C.orange }} />
-              <span className="text-[11px] font-bold leading-none" style={{ color: C.charcoal }}>OnSpot</span>
+              <div className="h-[13px] w-[13px] rounded-[3px] flex-shrink-0" style={{ background: C.orange }} />
+              <span className="font-bold leading-none" style={{ fontSize: 10.5, color: C.charcoal }}>OnSpot</span>
             </div>
-            {/* Purple avatar circle */}
-            <div className="h-[18px] w-[18px] rounded-full flex-shrink-0" style={{ background: "#6C63FF" }} />
+            <div className="h-[17px] w-[17px] rounded-full flex-shrink-0" style={{ background: "#6C63FF" }} />
           </div>
 
           {/* Earnings title + subtitle */}
-          <div className="px-4 pb-2">
-            <p className="text-[12px] font-bold leading-none" style={{ color: C.charcoal }}>Earnings summary</p>
-            <p className="text-[9px] mt-0.5" style={{ color: C.grayLight }}>Last 6 months</p>
+          <div className="px-3.5 pb-1.5">
+            <p className="font-bold leading-tight" style={{ fontSize: 14, color: C.charcoal }}>Earnings summary</p>
+            <p className="mt-[2px]" style={{ fontSize: 9, color: C.grayLight }}>Last 6 months</p>
           </div>
 
-          <div className="px-4 pb-4 space-y-2.5">
+          <div className="px-3.5 pb-3 space-y-1.5">
             {/* Main earnings card — cream bg, orange border */}
             <div
-              className="rounded-[10px] px-3.5 py-2.5"
-              style={{ background: "#FFFAF3", border: "1px solid rgba(255,174,33,0.4)" }}
+              className="rounded-[9px] px-3 py-2"
+              style={{ background: "#FFFAF3", border: "1px solid rgba(255,174,33,0.45)" }}
             >
-              <p className="text-[7.5px] font-semibold uppercase tracking-wider" style={{ color: C.grayLight }}>
+              <p className="uppercase tracking-wider" style={{ fontSize: 7, fontWeight: 600, color: C.grayLight }}>
                 TOTAL EARNED THIS MONTH
               </p>
-              <p className="text-[24px] font-bold leading-none mt-1" style={{ color: C.charcoal }}>$3,455</p>
-              {/* Green growth badge */}
+              <p className="font-bold leading-none mt-[3px]" style={{ fontSize: 26, color: C.charcoal }}>$3,455</p>
               <span
-                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 mt-1.5 text-[7.5px] font-semibold"
-                style={{ background: "rgba(34,197,94,0.12)", color: "#15803d" }}
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 mt-[5px]"
+                style={{ fontSize: 7, fontWeight: 600, paddingTop: 2, paddingBottom: 2, background: "rgba(34,197,94,0.12)", color: "#15803d" }}
               >
                 ▲ 18% vs last month
               </span>
             </div>
 
             {/* Secondary stat cards */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {[
-                { label: "AVG. RATE",       value: "$20/hr" },
-                { label: "ACTIVE\nCLIENTS",  value: "2"      },
+                { label: "AVG. RATE",      value: "$20/hr" },
+                { label: "ACTIVE\nCLIENTS", value: "2"     },
               ].map((s) => (
-                <div key={s.label} className="rounded-[8px] px-2.5 py-2" style={{ background: "#F4F4F8" }}>
-                  <p className="text-[7px] font-bold uppercase tracking-wide leading-tight whitespace-pre-line" style={{ color: C.grayLight }}>{s.label}</p>
-                  <p className="text-[14px] font-bold mt-0.5 leading-none" style={{ color: C.charcoal }}>{s.value}</p>
+                <div key={s.label} className="rounded-[7px] px-2 py-1.5" style={{ background: "#F4F4F8" }}>
+                  <p className="uppercase tracking-wide leading-tight whitespace-pre-line" style={{ fontSize: 6.5, fontWeight: 700, color: C.grayLight }}>{s.label}</p>
+                  <p className="font-bold leading-none mt-[3px]" style={{ fontSize: 14, color: C.charcoal }}>{s.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Bar chart — all orange bars */}
-            <div className="flex items-end gap-1" style={{ height: 46 }}>
+            <div className="flex items-end gap-[3px]" style={{ height: 54 }}>
               {BAR_DATA.map((b) => (
-                <div key={b.month} className="flex flex-1 flex-col items-center gap-0.5">
+                <div key={b.month} className="flex flex-1 flex-col items-center" style={{ gap: 2 }}>
                   <div
                     className="w-full rounded-t-[2px]"
                     style={{ height: `${b.h}%`, background: C.orange }}
                   />
-                  <span className="text-[6.5px] leading-none" style={{ color: C.grayLight }}>{b.month}</span>
+                  <span className="leading-none" style={{ fontSize: 6, color: C.grayLight }}>{b.month}</span>
                 </div>
               ))}
             </div>
 
             {/* Earnings by client — with progress bars */}
             <div>
-              <p className="text-[7.5px] font-bold uppercase tracking-wider mb-2" style={{ color: C.grayLight }}>
+              <p className="uppercase tracking-wider mb-1.5" style={{ fontSize: 7, fontWeight: 700, color: C.grayLight }}>
                 EARNINGS BY CLIENT
               </p>
               {[
                 { n: "New Tech AI",      amt: "$2,000", pct: 92 },
                 { n: "John Roberts LLC", amt: "$1,455", pct: 67 },
               ].map((c) => (
-                <div key={c.n} className="mb-2 last:mb-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9px] font-medium" style={{ color: C.charcoal }}>{c.n}</p>
-                    <p className="text-[9px] font-semibold" style={{ color: C.indigo }}>{c.amt}</p>
+                <div key={c.n} className="mb-1.5 last:mb-0">
+                  <div className="flex items-center justify-between mb-[3px]">
+                    <p className="font-medium" style={{ fontSize: 9.5, color: C.charcoal }}>{c.n}</p>
+                    <p className="font-semibold" style={{ fontSize: 9.5, color: C.charcoal }}>{c.amt}</p>
                   </div>
-                  {/* Indigo progress bar */}
-                  <div className="h-[3px] w-full rounded-full" style={{ background: "#EEEDFB" }}>
+                  <div className="h-[2.5px] w-full rounded-full" style={{ background: "#EEEDFB" }}>
                     <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: C.indigo }} />
                   </div>
                 </div>
