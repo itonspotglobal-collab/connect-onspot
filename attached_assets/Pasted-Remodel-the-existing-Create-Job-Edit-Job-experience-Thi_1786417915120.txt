@@ -1,0 +1,604 @@
+Remodel the existing Create Job / Edit Job experience.
+
+This is primarily a UI/UX redesign. Do NOT rewrite or remove existing job functionality.
+
+The current implementation uses a popup/modal such as:
+
+JobFormModal.tsx
+
+Replace the modal experience with a dedicated, full-page job form inspired by the attached post-job.html mockup.
+
+Main objective
+
+Make posting and editing jobs much simpler for non-technical users.
+
+Think:
+
+LinkedIn-style simplicity
++
+OnSpot branding
++
+existing OnSpot job functionality
+
+The form currently contains many fields at once and feels overwhelming.
+
+Break it into a guided step-by-step experience.
+
+1. New routes
+
+Instead of opening JobFormModal.tsx, navigate to dedicated pages.
+
+Use routes similar to:
+
+/admin/find-work/jobs/new
+
+for creating a job, and:
+
+/admin/find-work/jobs/:jobId/edit
+
+for editing.
+
+Keep:
+
+/admin/find-work
+
+as the Job Management dashboard.
+
+Clicking:
+
++ Add New Job
+
+should navigate to the new Create Job page.
+
+Clicking:
+
+Edit
+
+on an existing job should navigate to the Edit Job page.
+
+Do not open JobFormModal.tsx anymore once the new page implementation is complete.
+
+2. Do NOT change business logic
+
+This redesign must preserve all current functionality.
+
+Reuse the existing:
+
+job schema
+create/update APIs
+validation
+approval workflow
+pending/approved/declined logic
+open/closed status
+public /find-work/jobs behavior
+video introduction requirement
+salary/rate fields
+company confidentiality
+role descriptions
+requirements
+schedule
+equipment requirements
+benefits
+success profile
+existing rich text editors
+
+Do not create duplicate database fields simply because the UI has changed.
+
+This task is mostly a change in presentation and navigation.
+
+3. Four-step workflow
+
+Use this exact high-level structure:
+
+1. Basics
+2. Description
+3. Requirements
+4. Review
+
+Display a clear progress indicator at the top.
+
+Example:
+
+━━━━━━━   ───────   ───────   ───────
+① Basics   ② Description   ③ Requirements   ④ Review
+
+Completed steps should visually use the OnSpot purple accent.
+
+Users should be able to click completed steps to go back.
+
+Do not let users skip forward if required fields from an earlier step are invalid.
+
+4. Step 1 — Basics
+
+Heading:
+
+Post a job
+
+Let's find your match.
+
+For editing:
+
+Edit job
+
+Make this opportunity even better.
+
+Include the most important fields first:
+
+Job title *
+
+Work setup *
+Remote / Hybrid / On-site
+
+Function *
+
+Experience level *
+
+Engagement / Contract type *
+
+Duration
+
+Then:
+
+About the company
+
+Include:
+
+Company name
+Keep company confidential
+
+Move less commonly used fields under expandable sections such as:
+
++ Add a company description
+                   Optional
+
+Use progressive disclosure so optional fields do not overwhelm the user.
+
+5. Step 2 — Description
+
+Heading:
+
+Describe the role
+
+Helper copy:
+
+Write it the way you'd explain it to a great candidate.
+
+Include:
+
+Role overview *
+
+Key responsibilities *
+
+Skill tags
+
+Keep the project's existing rich text editor for fields that already use rich text.
+
+Put:
+
+What we offer
+Benefits / perks
+
+inside an optional expandable section:
+
++ Add "What we offer" & benefits
+                                Optional
+6. Step 3 — Requirements
+
+Heading:
+
+Requirements
+
+Primary field:
+
+Required qualifications *
+
+Then show:
+
+Compensation
+
+Preserve all current compensation/rate logic.
+
+Group advanced fields into collapsible sections:
+
++ System & equipment requirements
+                                 Optional
+
++ Work schedule
+                                 Optional
+
++ Job success profile
+                                 Boosts matching
+
+Preserve the existing fields inside those groups.
+
+Video Introduction requirement
+
+Also include the existing:
+
+Require Video Introduction
+
+setting in Step 3.
+
+Display it as a clear card/toggle:
+
+Video introduction
+
+[toggle] Require applicants to submit a video introduction
+
+Applicants will see a required video upload field when
+applying for this role.
+
+Continue using the existing persisted job field such as:
+
+requiresVideoIntroduction
+
+Do not change the existing application behavior.
+
+7. Step 4 — Review & Post
+
+Heading:
+
+Review & post
+
+Show a simplified preview of what applicants will see.
+
+Include:
+
+Company
+Job title
+Work setup
+Function
+Experience
+Contract type
+Compensation if available
+Role overview
+
+Then provide review cards:
+
+BASICS
+Remote · Senior · Full-time
+                                 Edit
+
+DESCRIPTION
+Overview + responsibilities added
+                                 Edit
+
+REQUIREMENTS
+Qualifications + compensation added
+                                 Edit
+
+Clicking Edit should take the user directly back to the relevant step.
+
+Do not submit automatically when entering the Review step.
+
+8. Create vs Edit behavior
+
+The same page/component architecture should support both modes.
+
+Suggested structure:
+
+JobFormPage
+├── JobFormHeader
+├── JobFormStepper
+├── JobBasicsStep
+├── JobDescriptionStep
+├── JobRequirementsStep
+├── JobReviewStep
+└── JobFormFooter
+
+Create mode:
+
+blank/default form
+→ final action: Submit for Approval
+
+Edit mode:
+
+fetch existing job
+→ populate all steps
+→ final action: Update Job
+
+Keep the current approval rules.
+
+If editing an approved job currently affects approval status, preserve whatever existing business rule is already implemented.
+
+Do not invent a new approval behavior as part of this redesign.
+
+9. Persistent bottom navigation
+
+Add a sticky/fixed footer navigation like the mockup.
+
+Example:
+
+Step 2 of 4
+
+                Back      Continue
+
+On the final step:
+
+Create:
+
+Back       Submit for Approval
+
+Edit:
+
+Back       Update Job
+
+Keep the navigation visible while the user scrolls.
+
+Ensure the page has enough bottom padding so the footer does not cover form fields.
+
+10. Save & Exit
+
+Add:
+
+Save & exit
+
+in the top-right area.
+
+If the project currently supports drafts, use the existing draft functionality.
+
+If drafts are NOT currently supported, do not invent a new backend draft system without confirmation.
+
+Instead either:
+
+preserve form state during navigation if the app already supports it, or
+provide Cancel / Exit with an unsaved-changes confirmation.
+
+Do not silently lose user-entered data.
+
+11. OnSpot visual design
+
+Do not copy LinkedIn branding.
+
+Copy only the simplicity/usability concept.
+
+Use the existing OnSpot visual identity from the homepage.
+
+Reference the homepage's:
+
+purple/indigo brand colors
+typography hierarchy
+rounded cards/buttons
+clean white surfaces
+subtle borders
+soft purple highlights
+existing OnSpot logo/header
+
+The attached post-job.html should be treated as the UX/layout reference.
+
+Its palette is based around values similar to:
+
+Deep text:       #171326
+Muted text:      #5a5470
+Page background: #f7f5fb
+Purple:          #5b3df5
+Deep purple:     #3c22c9
+Purple tint:     #f0ecff
+
+However, before hardcoding colors, inspect the actual application's existing Tailwind/theme variables and homepage styles.
+
+Prefer existing OnSpot design tokens/classes so the new page feels native to the rest of the website.
+
+12. Typography
+
+Follow the existing homepage typography wherever possible.
+
+Keep:
+
+large friendly page heading
+strong but simple section headings
+readable labels
+muted helper descriptions
+obvious required indicators
+
+Avoid excessive uppercase headings and overly technical wording.
+
+Rewrite labels/helper text for clarity where necessary, but do not change the underlying meaning of fields.
+
+13. Make fields easier for non-technical users
+
+Improve wording where the current labels are too technical.
+
+For example:
+
+Professional Role Name
+
+can become:
+
+Job title
+
+with helper text:
+
+Use the title candidates are most likely to search for.
+
+Keep the underlying database field unchanged.
+
+Likewise simplify other UI labels without renaming database/API properties unnecessarily.
+
+14. Use chips where appropriate
+
+For simple choices such as:
+
+Remote
+Hybrid
+On-site
+
+consider selectable chips/buttons instead of dropdowns.
+
+For complicated or long option lists, keep Select/dropdown components.
+
+Use the project's existing components.
+
+15. Responsive design
+
+The page must work well on:
+
+large desktop
+MacBook/laptop
+tablet
+mobile
+
+Main content should have a comfortable max-width around:
+
+720–800px
+
+Desktop should not become excessively wide.
+
+On mobile:
+
+stack multi-column fields
+keep progress understandable
+keep Back/Continue accessible
+avoid horizontal scrolling
+16. Validation
+
+Validate each step before Continue.
+
+When validation fails:
+
+stay on the same step
+highlight invalid fields
+scroll/focus to the first invalid field
+show simple human-readable messages
+
+Do not wait until Step 4 to reveal all errors.
+
+Preserve backend validation as the final source of truth.
+
+17. Form state
+
+Moving:
+
+Basics
+→ Description
+→ Requirements
+→ Back
+
+must NOT clear previously entered data.
+
+Keep one shared form state across all four steps.
+
+Avoid creating separate independent forms that lose state.
+
+18. Existing data compatibility
+
+Existing job records must load correctly in the new Edit Job page.
+
+There should be no migration purely because of this UI redesign.
+
+Verify all existing fields from JobFormModal.tsx are represented somewhere in the new flow.
+
+Do not accidentally remove a field because it is not visible in the first step.
+
+Optional/advanced fields can be collapsed, but their functionality must remain.
+
+19. Return navigation
+
+After:
+
+successful create
+successful update
+cancel/exit
+
+return the user to:
+
+/admin/find-work
+
+Preserve success/error toast behavior already used by the app.
+
+20. Important: inspect before coding
+
+Before implementing, inspect:
+
+JobFormModal.tsx
+admin Find Work dashboard
+routing configuration
+job types/interfaces
+create job API
+update job API
+validation schemas
+approval workflow
+Video Introduction setting
+rich text editor components
+homepage styling/theme
+Tailwind/theme variables
+
+Also use the attached:
+
+post-job.html
+
+as the primary visual/UX reference.
+
+Do not copy the mockup's fake submission JavaScript. Implement the design using the application's real React/API architecture.
+
+21. Remove modal only after new page works
+
+Do not immediately delete JobFormModal.tsx.
+
+First:
+
+Build the new page.
+Connect Create.
+Connect Edit.
+Verify existing functionality.
+Test create/update.
+Then remove or deprecate the old modal if it has no remaining callers.
+
+Avoid breaking other pages that may still import it.
+
+22. Acceptance tests
+
+Test:
+
+Add New Job
+→ dedicated page opens
+→ no modal
+
+Complete Basics
+→ Continue
+→ values retained
+
+Go Back
+→ values still present
+
+Complete all steps
+→ Review displays correct values
+
+Submit
+→ existing approval workflow runs
+
+Edit existing job
+→ dedicated Edit page opens
+→ all existing values are populated
+
+Change values
+→ Update Job
+→ existing record updates correctly
+
+Job requiring Video Introduction
+→ toggle persists correctly
+→ application page still displays video requirement
+
+Existing jobs
+→ no data loss
+
+Public job pages
+→ unchanged
+
+Laptop/mobile
+→ page remains usable
+23. Final report
+
+After implementation, tell me:
+
+Routes created
+Components created/changed
+What happened to JobFormModal.tsx
+How existing API/business logic was preserved
+Which original fields were moved into optional sections
+How create and edit modes share the form
+How validation works per step
+How the OnSpot homepage branding was reused
+Any existing fields that could not be cleanly mapped to the new design
+
+Do not remove functionality just to make the form look simpler. The goal is to simplify what the user sees, not simplify the underlying job data.
