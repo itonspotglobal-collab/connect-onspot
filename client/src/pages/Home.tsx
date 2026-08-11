@@ -1389,66 +1389,95 @@ function EquationSection() {
 function FounderQuoteSection() {
   return (
     <section
-      style={{ background: "#EEEDFB" }}
-      className="px-6 sm:px-10 lg:px-16 xl:px-20 pb-20 lg:pb-28 pt-4"
+      style={{ background: "#F2F1FF" }}
+      className="px-6 sm:px-10 lg:px-16 xl:px-20 py-16 lg:py-24"
     >
-      <div className="mx-auto max-w-[1180px]">
+      <div
+        className="relative overflow-hidden mx-auto"
+        style={{
+          maxWidth: 900,
+          width: "calc(100% - 0px)",
+          borderRadius: 28,
+          padding: "clamp(28px, 5vw, 56px) clamp(24px, 5vw, 56px) clamp(24px, 4.5vw, 50px)",
+          background: "linear-gradient(180deg, #4A55BB 0%, #37358D 55%, #2E246F 100%)",
+          boxShadow: "0 28px 64px -20px rgba(30,24,90,0.45), 0 8px 24px rgba(55,53,141,0.2)",
+        }}
+      >
+        {/* Decorative oversized quotation mark */}
         <div
-          className="relative overflow-hidden rounded-2xl p-8 sm:p-12 lg:p-16"
+          aria-hidden
+          className="pointer-events-none absolute select-none"
           style={{
-            background: `linear-gradient(150deg, #0D1B4B 0%, #050D2E 55%, #08123A 100%)`,
-            boxShadow: "0 32px 64px -20px rgba(5,13,46,0.6)",
+            top: -8,
+            left: -4,
+            fontSize: "clamp(10rem, 16vw, 18rem)",
+            lineHeight: 1,
+            fontFamily: "Georgia, serif",
+            color: "rgba(180,185,255,0.14)",
+            userSelect: "none",
           }}
         >
-          {/* Decorative oversized quotation mark */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-4 -left-2 select-none"
-            style={{
-              fontSize: "18rem",
-              lineHeight: 1,
-              fontFamily: "Georgia, serif",
-              color: "rgba(75,81,184,0.13)",
-              userSelect: "none",
-            }}
-          >
-            "
+          "
+        </div>
+
+        <div className="relative z-10">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 mb-7">
+            <span style={{ width: 20, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
+            <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.orange }}>
+              Why OnSpot
+            </span>
           </div>
 
-          <div className="relative z-10">
-            <SectionEyebrow text="Why OnSpot" dark />
+          {/* Main quote */}
+          <blockquote
+            className="font-bold text-white leading-tight mb-7"
+            style={{
+              fontSize: "clamp(1.65rem, 3vw, 2.55rem)",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+              maxWidth: 760,
+            }}
+          >
+            We've watched good companies get stuck choosing between{" "}
+            <span style={{ color: "#FFBF4A" }}>marketplace chaos</span> and{" "}
+            <span style={{ color: "#FFBF4A" }}>outsourcing overhead</span> — and good talent get squeezed by both sides of that same trade-off.
+          </blockquote>
 
-            <blockquote
-              className="mt-6 font-bold text-white leading-snug mb-8"
+          {/* Body paragraph */}
+          <p
+            className="leading-relaxed"
+            style={{ color: "rgba(210,213,255,0.78)", fontSize: "clamp(0.95rem, 1.4vw, 1.08rem)", lineHeight: 1.58, maxWidth: 640, marginBottom: "clamp(28px, 4vw, 38px)" }}
+          >
+            So we built OnSpot the way operators build things — not software developers guessing at the problem from the outside.
+          </p>
+
+          {/* Divider */}
+          <div
+            style={{
+              height: 1,
+              background: "rgba(255,255,255,0.12)",
+              marginBottom: "clamp(22px, 3vw, 28px)",
+            }}
+          />
+
+          {/* Author row */}
+          <div className="flex items-center gap-4">
+            <img
+              src={nurPhoto}
+              alt="Nur Lamimero"
+              className="flex-shrink-0 rounded-full object-cover"
               style={{
-                fontSize: "clamp(1.35rem, 2.5vw, 2.1rem)",
-                letterSpacing: "-0.02em",
-                maxWidth: 820,
+                width: 54,
+                height: 54,
+                objectPosition: "center top",
+                border: "2px solid rgba(255,255,255,0.22)",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
               }}
-            >
-              "We've watched good companies get stuck choosing between{" "}
-              <span style={{ color: C.orange }}>marketplace chaos</span> and{" "}
-              <span style={{ color: C.orange }}>outsourcing overhead</span> — and good talent get squeezed by both sides of that same trade-off."
-            </blockquote>
-
-            <div className="h-px mb-8" style={{ background: "rgba(255,255,255,0.08)", maxWidth: 560 }} />
-
-            <p className="mb-10 leading-relaxed" style={{ color: "rgba(255,255,255,0.52)", fontSize: "1rem", maxWidth: 660 }}>
-              So we built OnSpot the way operators build things — not software developers guessing at the problem from the outside.
-            </p>
-
-            {/* Author */}
-            <div className="flex items-center gap-4">
-              <img
-                src={nurPhoto}
-                alt="Nur Lamimero"
-                className="flex-shrink-0 rounded-full object-cover"
-                style={{ width: 48, height: 48, objectPosition: "center top", border: "2px solid rgba(255,255,255,0.25)" }}
-              />
-              <div>
-                <p className="font-semibold text-white" style={{ fontSize: "0.95rem" }}>Nur Lamimero</p>
-                <p style={{ color: "rgba(255,255,255,0.42)", fontSize: "0.82rem" }}>Co-founder &amp; CEO</p>
-              </div>
+            />
+            <div>
+              <p className="font-bold text-white" style={{ fontSize: "1rem" }}>Nur Lamimero</p>
+              <p className="font-semibold" style={{ color: C.orange, fontSize: "0.85rem" }}>Co-founder &amp; CEO</p>
             </div>
           </div>
         </div>

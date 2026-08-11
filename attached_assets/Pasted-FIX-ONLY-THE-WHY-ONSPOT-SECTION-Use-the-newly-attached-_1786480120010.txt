@@ -1,0 +1,238 @@
+FIX ONLY THE “WHY ONSPOT” SECTION.
+
+Use the newly attached screenshot as the exact visual source of truth.
+
+Do NOT redesign it.
+Do NOT change the wording.
+Do NOT modify other homepage sections.
+
+GOAL:
+Match the same card proportions, gradient, spacing, typography, highlighted words, divider, avatar, and overall composition shown in the reference.
+
+==================================================
+SECTION BACKGROUND
+==================================================
+
+The page background around the card should remain a very pale lavender / cool off-white.
+
+Approximate:
+#F2F1FF
+
+Keep generous whitespace around the card.
+
+==================================================
+MAIN CARD
+==================================================
+
+Create one large centered rounded rectangle.
+
+Desktop:
+- max-width: approximately 880–930px
+- width: calc(100% - 48px)
+- margin-inline: auto
+- border-radius: approximately 26–30px
+- padding: approximately 56px 56px 50px
+
+Background:
+deep indigo/blue vertical gradient.
+
+Approximate:
+linear-gradient(
+  180deg,
+  #4A55BB 0%,
+  #37358D 55%,
+  #2E246F 100%
+)
+
+Add:
+- soft shadow
+- no harsh border
+- strong contrast against pale background
+
+==================================================
+DECORATIVE QUOTE MARK
+==================================================
+
+Add a large subtle quotation-mark graphic near the top-left of the card.
+
+It should:
+- sit partially behind the content
+- use a lighter translucent indigo
+- be oversized
+- low opacity
+- NOT distract from text
+
+Approximate opacity:
+0.12–0.18
+
+==================================================
+EYEBROW
+==================================================
+
+Text:
+“— WHY ONSPOT”
+
+Style:
+- uppercase
+- orange/yellow
+- bold
+- small font
+- letter-spacing around 0.08em
+- left aligned
+
+Keep the short orange horizontal line before the text.
+
+==================================================
+MAIN QUOTE
+==================================================
+
+Exact copy:
+
+“We've watched good companies get stuck
+choosing between marketplace chaos and
+outsourcing overhead — and good talent get
+squeezed by both sides of that same trade-off.”
+
+Style:
+- white
+- large bold heading
+- left aligned
+- approximately 34–42px on desktop
+- line-height around 1.15
+- max-width around 760px
+- responsive with clamp()
+
+Highlight ONLY:
+“marketplace chaos”
+“outsourcing overhead”
+
+Color:
+orange/yellow approximately #FFBF4A
+
+Do NOT highlight other words.
+
+==================================================
+BODY COPY
+==================================================
+
+Exact text:
+
+“So we built OnSpot the way operators build things — not software
+developers guessing at the problem from the outside.”
+
+Style:
+- light lavender/gray
+- approximately 16–18px
+- line-height around 1.55
+- max-width approximately 640px
+- left aligned
+
+==================================================
+DIVIDER
+==================================================
+
+Add a thin horizontal divider below the paragraph.
+
+Style:
+- full content width
+- subtle translucent white/indigo
+- opacity low
+- margin-top around 34–40px
+- margin-bottom around 26–30px
+
+==================================================
+AUTHOR ROW
+==================================================
+
+Use the REAL Nur Lamimero profile photo from project assets.
+
+Do NOT use initials or a generic avatar.
+
+Layout:
+- circular photo left
+- name/role text right
+- vertically centered
+
+Avatar:
+- approximately 52–58px
+- aspect-ratio: 1 / 1
+- border-radius: 50%
+- object-fit: cover
+- thin light border
+- subtle shadow
+
+Text:
+
+Nur Lamimero
+Co-founder & CEO
+
+Name:
+- white
+- bold
+- around 16–18px
+
+Role:
+- orange/yellow
+- around 13–15px
+- medium/bold
+
+==================================================
+SPACING
+==================================================
+
+Match the reference carefully:
+
+Card top padding
+→ decorative quote mark
+→ eyebrow
+→ large quote
+→ body paragraph
+→ divider
+→ author row
+
+Approximate:
+- eyebrow to quote: 28–34px
+- quote to paragraph: 26–32px
+- paragraph to divider: 32–38px
+- divider to author: 24–28px
+
+Do not compress this section.
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop:
+- preserve wide centered card
+- keep heading line breaks similar to reference
+
+Tablet:
+- reduce padding to around 40px
+- heading clamp around 30–36px
+
+Mobile:
+- width: calc(100% - 32px)
+- padding: 28–24px
+- heading around 26–32px
+- author row remains horizontal if possible
+- no overflow
+- decorative quote mark scales down
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT:
+- center the text
+- use a flat solid blue instead of gradient
+- remove the decorative quote mark
+- remove highlighted orange phrases
+- use initials for Nur
+- change any wording
+- modify other sections
+
+The final section should visually match the supplied screenshot:
+a large centered indigo gradient quote card with orange highlights,
+subtle oversized quotation-mark decoration,
+divider,
+and Nur Lamimero’s real circular profile photo at the bottom.
