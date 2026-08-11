@@ -5197,6 +5197,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+    try {
+      const job = await storage.getJob(req.params.id);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      res.json(job);
+    } catch (err: any) {
+      console.error("GET /api/admin/jobs/:id error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
       // Find an admin user to use as the clientId (avoids FK constraint violation)

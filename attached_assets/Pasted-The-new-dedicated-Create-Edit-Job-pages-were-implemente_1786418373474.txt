@@ -1,0 +1,106 @@
+The new dedicated Create/Edit Job pages were implemented, but the existing Add New Job button on /admin/find-work is still opening the old JobFormModal.tsx popup.
+
+Fix the wiring so the dashboard actually uses the new page-based flow.
+
+Required changes
+Find every Add New Job / Add Job button on /admin/find-work.
+Remove the old behavior that does something like:
+setJobFormOpen(true)
+setSelectedJob(...)
+setEditingJob(...)
+
+or otherwise opens JobFormModal.tsx.
+
+Replace it with navigation to:
+/admin/find-work/jobs/new
+
+using the project’s existing router, for example:
+
+navigate("/admin/find-work/jobs/new")
+
+or the equivalent routing method already used in the app.
+
+Update every Edit button/action on the Jobs Admin page so it navigates to:
+/admin/find-work/jobs/:jobId/edit
+
+instead of opening the old edit modal.
+
+Search the codebase for all usages of:
+JobFormModal
+Add New Job
+Add Job
+setJobFormOpen
+jobFormOpen
+editingJob
+selectedJob
+
+and identify any remaining dashboard actions that still invoke the modal.
+
+Once all create/edit entry points use the new routes, remove JobFormModal.tsx from the dashboard render tree.
+
+Do not delete the file until you confirm it has no remaining callers.
+
+Routing verification
+
+Confirm these routes are actually registered:
+
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+
+If they are not registered yet, add them to the existing router.
+
+Make sure refreshing either route directly still renders the correct page.
+
+Expected behavior
+/admin/find-work
+    ↓
+Add New Job
+    ↓
+/admin/find-work/jobs/new
+    ↓
+full-page multi-step Create Job form
+
+and:
+
+/admin/find-work
+    ↓
+Edit
+    ↓
+/admin/find-work/jobs/{jobId}/edit
+    ↓
+full-page multi-step Edit Job form
+
+The old popup must no longer appear from these actions.
+
+Important
+
+Do not rebuild the new form again.
+
+The form/page redesign already exists. This task is specifically to connect the existing dashboard buttons to the new routes and retire the old modal trigger.
+
+Test
+
+Verify:
+
+Click Add New Job
+→ URL changes to /admin/find-work/jobs/new
+→ no modal appears
+
+Click Edit on existing job
+→ URL changes to /admin/find-work/jobs/{id}/edit
+→ existing job data loads
+→ no modal appears
+
+Browser Back
+→ returns to /admin/find-work
+
+Refresh new/edit route
+→ page still works
+
+After fixing, report:
+
+which Add/Edit handlers were changed
+which routes are registered
+whether JobFormModal.tsx is still used anywhere
+whether it was removed from the dashboard component
+files changed

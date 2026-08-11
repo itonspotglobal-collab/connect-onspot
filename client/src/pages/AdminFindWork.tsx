@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ import {
   ListFilter,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
-import { JobFormModal } from "@/components/JobFormModal";
+// JobFormModal replaced by dedicated /admin/find-work/jobs/new and /admin/find-work/jobs/:jobId/edit pages
 import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
 
 // ─── Badge icon map ───────────────────────────────────────────────────────────
@@ -767,9 +768,8 @@ function getPaginationPages(current: number, total: number): (number | "...")[] 
 export default function AdminFindWork() {
   const { toast } = useToast();
   const { copiedId, copy } = useCopyLink();
+  const [, navigate] = useLocation();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [rejectModalJobId, setRejectModalJobId] = useState<string | null>(null);
@@ -783,18 +783,8 @@ export default function AdminFindWork() {
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
   const [approveConfirmJobId, setApproveConfirmJobId] = useState<string | null>(null);
 
-  const openCreate = () => {
-    setEditingJob(null);
-    setModalOpen(true);
-  };
-  const openEdit = (job: Job) => {
-    setEditingJob(job);
-    setModalOpen(true);
-  };
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditingJob(null);
-  };
+  const openCreate = () => navigate("/admin/find-work/jobs/new");
+  const openEdit = (job: Job) => navigate(`/admin/find-work/jobs/${job.id}/edit`);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -933,13 +923,6 @@ export default function AdminFindWork() {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <JobFormModal
-        open={modalOpen}
-        onClose={closeModal}
-        job={editingJob}
-        onSuccess={closeModal}
-      />
-
       <BulkUploadModal
         open={bulkOpen}
         onClose={() => setBulkOpen(false)}

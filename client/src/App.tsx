@@ -62,6 +62,7 @@ import AdminInsights from "@/pages/AdminInsights";
 import AdminInsightEditor from "@/pages/AdminInsightEditor";
 import AdminImageUploader from "@/pages/AdminImageUploader";
 import AdminFindWork from "@/pages/AdminFindWork";
+import JobFormPage from "@/pages/JobFormPage";
 import AdminJobApplications from "@/pages/AdminJobApplications";
 import AdminEmailTemplates from "@/pages/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "@/pages/AdminEmailTemplateEditor";
@@ -201,6 +202,8 @@ function PublicRouter() {
           {/* Admin routes — protected when VITE_BYPASS_ADMIN_AUTH is not "true" */}
           <Route path="/admin/dashboard" component={() => bypassAdminAuth ? <AdminDashboard /> : <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/find-work" component={() => bypassAdminAuth ? <AdminFindWork /> : <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
+          <Route path="/admin/find-work/jobs/new" component={() => bypassAdminAuth ? <JobFormPage /> : <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
+          <Route path="/admin/find-work/jobs/:jobId/edit" component={() => bypassAdminAuth ? <JobFormPage /> : <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/job-applications" component={() => bypassAdminAuth ? <AdminJobApplications /> : <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates" component={() => bypassAdminAuth ? <AdminEmailTemplates /> : <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => bypassAdminAuth ? <AdminEmailTemplateEditor /> : <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
