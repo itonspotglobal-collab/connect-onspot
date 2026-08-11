@@ -1067,20 +1067,23 @@ function EquationSection() {
       style={{ background: "#EEEDFB" }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
-      <div className="mx-auto max-w-[1180px]">
+      {/* Centered header */}
+      <div className="mx-auto max-w-[640px] text-center mb-14">
         <SectionEyebrow text="The Right Way to Outsource" />
         <h2
-          className="mt-4 font-bold leading-tight mb-3"
+          className="mt-4 font-bold leading-tight mb-4"
           style={{ fontSize: "clamp(2rem, 3.5vw, 3.25rem)", letterSpacing: "-0.025em", color: C.charcoal }}
         >
           We changed the equation.
         </h2>
-        <p className="mb-14" style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", maxWidth: 600 }}>
+        <p style={{ color: C.gray, fontSize: "clamp(1rem, 1.5vw, 1.1rem)", lineHeight: 1.6 }}>
           Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.
         </p>
+      </div>
 
-        {/* 3-column comparison */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch mb-12">
+      {/* 3-column comparison — centered, constrained */}
+      <div className="mx-auto max-w-[1020px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 items-stretch mb-14">
           {/* LEFT — Freelance Marketplaces */}
           <div
             className="rounded-2xl p-7 lg:p-8 flex flex-col"
@@ -1111,7 +1114,7 @@ function EquationSection() {
               background: `linear-gradient(150deg, ${C.navySection} 0%, #07102E 100%)`,
               boxShadow: "0 32px 64px -20px rgba(10,18,60,0.45)",
               border: "1px solid rgba(255,255,255,0.07)",
-              transform: "scale(1.03)",
+              transform: "translateY(-6px) scale(1.03)",
             }}
           >
             <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: C.orange }}>
@@ -1160,7 +1163,11 @@ function EquationSection() {
           </div>
         </div>
 
-        <p style={{ color: C.charcoal, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 680, lineHeight: 1.6 }}>
+        {/* Bottom statement — centered, constrained */}
+        <p
+          className="mx-auto text-center"
+          style={{ color: C.charcoal, fontSize: "clamp(1rem, 1.5vw, 1.15rem)", maxWidth: 650, lineHeight: 1.65 }}
+        >
           Everyone else trades one thing for another. OnSpot doesn't trade —{" "}
           <span className="font-semibold" style={{ color: C.indigo }}>we raise the whole experience.</span>
         </p>

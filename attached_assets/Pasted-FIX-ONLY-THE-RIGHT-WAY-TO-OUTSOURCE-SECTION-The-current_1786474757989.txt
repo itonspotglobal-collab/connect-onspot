@@ -1,0 +1,59 @@
+FIX ONLY “THE RIGHT WAY TO OUTSOURCE” SECTION.
+
+The current implementation is left-aligned. Match the reference by CENTERING the entire section composition.
+
+HEADER:
+- Center eyebrow: “— THE RIGHT WAY TO OUTSOURCE”
+- Center heading: “We changed the equation.”
+- Center subheading:
+  “Everyone else makes you pick two: speed, accountability, or cost. OnSpot doesn't.”
+- text-align:center
+- margin-inline:auto
+
+COMPARISON CARDS:
+- Place all 3 cards inside ONE centered wrapper.
+- max-width: approximately 1000–1050px
+- margin-inline:auto
+- Keep card contents LEFT-ALIGNED.
+
+Desktop arrangement:
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ FREELANCE   │ │   ONSPOT    │ │ TRADITIONAL │
+│ MARKETPLACE │ │             │ │ OUTSOURCING │
+└─────────────┘ └─────────────┘ └─────────────┘
+
+IMPORTANT:
+- Center OnSpot card should remain visually dominant.
+- Raise the OnSpot card slightly above the two side cards.
+- Make center card dark indigo.
+- Preserve its stronger shadow.
+- Side cards remain white/light.
+- Keep equal visual spacing between cards.
+
+BOTTOM STATEMENT:
+Center this text BELOW the complete 3-card group:
+
+“Everyone else trades one thing for another. OnSpot
+doesn't trade — we raise the whole experience.”
+
+- text-align:center
+- max-width: approximately 650px
+- margin-inline:auto
+- “we raise the whole experience.” = indigo
+- Make it wrap naturally into approximately 2 lines.
+
+SPACING:
+- Generous gap between header and cards.
+- Approximately 50–65px between cards and bottom statement.
+- Equal whitespace on left and right.
+- Do not allow the layout to hug the left side.
+
+CENTER THE SECTION, but DO NOT center text inside individual cards.
+
+On mobile:
+- Stack all 3 cards vertically.
+- Keep section heading centered.
+- Keep individual card content left-aligned.
+- Put OnSpot card first or preserve logical comparison order according to the existing responsive design.
+
+Do not change wording, colors, icons, or any other homepage section.
