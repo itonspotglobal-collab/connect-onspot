@@ -2864,6 +2864,11 @@ body.has-floating-bottom-right {
   from { width: 0%; }
   to   { width: 100%; }
 }
+@keyframes homeHeroIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes heroSlideContentIn {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
