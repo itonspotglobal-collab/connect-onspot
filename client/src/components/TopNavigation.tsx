@@ -160,7 +160,7 @@ export function TopNavigation() {
   });
   const submittedCount = user?.role === "admin" ? (jobAppSummary?.byStatus?.["submitted"] ?? 0) : 0;
 
-  // ── Talent profile completion (for the account panel) ─────────────────────
+  // ── Talent profile completion — talent-only token path ────────────────────
   const { data: talentCandidateData } = useQuery({
     queryKey: ["/api/candidates", talentAuth?.candidateId],
     queryFn: async () => {
@@ -176,6 +176,34 @@ export function TopNavigation() {
   const talentCompletionPct = talentCandidateData
     ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate(talentCandidateData)))
     : 0;
+
+  // ── Talent profile completion — general JWT talent path ───────────────────
+  const { data: generalTalentCandidateData } = useQuery({
+    queryKey: ["/api/candidates/me", user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("onspot_jwt_token");
+      const res = await fetch("/api/candidates/me", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!user && user.role === "talent",
+    staleTime: 2 * 60_000,
+  });
+  const generalTalentCompletionPct = generalTalentCandidateData
+    ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate({
+        fullName: generalTalentCandidateData.fullName,
+        email: generalTalentCandidateData.email,
+        headline: generalTalentCandidateData.targetPosition,
+        summary: generalTalentCandidateData.summary,
+        location: generalTalentCandidateData.location,
+        coreSkills: generalTalentCandidateData.coreSkills,
+        workHistory: generalTalentCandidateData.workHistory,
+        preferences: generalTalentCandidateData.preferences,
+      })))
+    : 0;
+  const [generalTalentDropdownOpen, setGeneralTalentDropdownOpen] = useState(false);
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   const getProfileRoute = () => {
@@ -682,70 +710,161 @@ export function TopNavigation() {
 
             {/* Access Portal / Account Dropdown */}
             {isAuthenticated && user ? (
-              /* ── General JWT session (client / admin / talent via general login) ── */
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                      boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                    }}
-                    data-testid="account-dropdown-trigger"
-                  >
-                    <div
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              user.role === "talent" ? (
+                /* ── General JWT talent session — premium account panel ── */
+                <RadixDropdown.Root open={generalTalentDropdownOpen} onOpenChange={setGeneralTalentDropdownOpen}>
+                  <RadixDropdown.Trigger asChild>
+                    <button
+                      className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-200"
                       style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)',
-                        animation: 'shimmer 2s infinite',
+                        height: 44,
+                        borderRadius: 11,
+                        background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                        boxShadow: generalTalentDropdownOpen
+                          ? '0 6px 22px rgba(58,58,248,0.55), inset 0 1px 0 rgba(255,255,255,0.22)'
+                          : '0 3px 12px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
                       }}
-                    />
-                    <div
-                      className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500"
-                      style={{
-                        background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)',
-                        animation: 'portal-breathe 3s ease-in-out infinite',
-                        zIndex: -1,
-                      }}
-                    />
-                    <span className="relative z-10 flex items-center gap-2">
-                      {getProfileIcon()}
-                      {getProfileLabel()}
-                      <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-                    </span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel className="font-normal">
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {getDropdownItems().map(({ label, route, icon: Icon }) => (
-                    <DropdownMenuItem key={route} onClick={() => navigate(route)} className="cursor-pointer gap-2">
-                      <Icon className="w-4 h-4 text-muted-foreground" />
-                      <span className="flex-1">{label}</span>
-                      {label === "Job Applications" && submittedCount > 0 && (
-                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
-                          {submittedCount > 99 ? "99+" : submittedCount}
+                      data-testid="account-dropdown-trigger"
+                    >
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)', animation: 'shimmer 2s infinite' }}
+                      />
+                      <span className="relative z-10 flex items-center gap-2">
+                        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                          {(user.firstName || user.email || '')
+                            ? [(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()
+                            : <User style={{ width: 13, height: 13 }} />}
                         </span>
+                        Talent Profile
+                        <ChevronDown style={{ width: 14, height: 14, opacity: 0.8, transform: generalTalentDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }} />
+                      </span>
+                    </button>
+                  </RadixDropdown.Trigger>
+
+                  <RadixDropdown.Portal>
+                    <RadixDropdown.Content
+                      align="end"
+                      side="bottom"
+                      sideOffset={10}
+                      collisionPadding={16}
+                      style={{ width: 320, maxWidth: 'min(92vw, 320px)', background: '#FFFFFF', border: '1px solid rgba(75,81,184,0.12)', borderRadius: 16, boxShadow: '0 20px 50px rgba(18,23,65,0.20), 0 4px 12px rgba(18,23,65,0.08)', zIndex: 9999, padding: 10, outline: 'none' }}
+                    >
+                      {/* Profile header */}
+                      <div style={{ padding: '14px 14px 12px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FAFAFF 100%)', borderRadius: 10, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: '#FFFFFF', boxShadow: '0 3px 10px rgba(75,81,184,0.3)' }}>
+                            {[(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.email}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#777B8C', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Completion bar */}
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                            <span style={{ fontSize: 11.5, fontWeight: 500, color: '#777B8C' }}>Profile completion</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#4D5CE8' }}>{generalTalentCompletionPct}%</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 999, background: '#ECECF8' }}>
+                            <div style={{ height: '100%', width: `${generalTalentCompletionPct}%`, borderRadius: 999, background: 'linear-gradient(90deg, #4D5CE8 0%, #774AF4 100%)', transition: 'width 600ms ease' }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Nav items */}
+                      <RadixDropdown.Item asChild>
+                        <button onClick={() => navigate("/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                          <User style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Talent Profile</span>
+                          <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                        </button>
+                      </RadixDropdown.Item>
+                      {generalTalentCompletionPct < 100 && (
+                        <RadixDropdown.Item asChild>
+                          <button onClick={() => navigate("/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#5B52DC', borderRadius: 10, border: 'none', background: '#F4F2FF', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}>
+                            <CheckCircle2 style={{ width: 18, height: 18, color: '#5B52DC', flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>Finish Profile Setup</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, color: '#5B52DC', background: 'rgba(91,82,220,0.1)', padding: '2px 7px', borderRadius: 99, whiteSpace: 'nowrap' }}>Recommended</span>
+                          </button>
+                        </RadixDropdown.Item>
                       )}
+                      <RadixDropdown.Item asChild>
+                        <button onClick={() => navigate("/find-work/jobs")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                          <Briefcase style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Find Work</span>
+                          <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                        </button>
+                      </RadixDropdown.Item>
+                      <RadixDropdown.Item asChild>
+                        <button onClick={() => navigate("/settings")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                          <Settings style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Settings</span>
+                          <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                        </button>
+                      </RadixDropdown.Item>
+
+                      {/* Sign Out */}
+                      <div style={{ height: 1, background: 'rgba(75,81,184,0.1)', margin: '6px 0' }} />
+                      <RadixDropdown.Item asChild>
+                        <button onClick={handleSignOut} disabled={isLoggingOut} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#E5484D', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#FFF1F2'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                          {isLoggingOut ? <Loader2 style={{ width: 18, height: 18, color: '#E5484D', flexShrink: 0 }} className="animate-spin" /> : <LogOut style={{ width: 18, height: 18, color: '#E5484D', flexShrink: 0 }} />}
+                          <span style={{ flex: 1 }}>{isLoggingOut ? 'Signing out…' : 'Sign Out'}</span>
+                        </button>
+                      </RadixDropdown.Item>
+                    </RadixDropdown.Content>
+                  </RadixDropdown.Portal>
+                </RadixDropdown.Root>
+              ) : (
+                /* ── General JWT client / admin session — existing compact dropdown ── */
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+                      style={{
+                        background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
+                        boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                      }}
+                      data-testid="account-dropdown-trigger"
+                    >
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)', animation: 'shimmer 2s infinite' }} />
+                      <div className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)', animation: 'portal-breathe 3s ease-in-out infinite', zIndex: -1 }} />
+                      <span className="relative z-10 flex items-center gap-2">
+                        {getProfileIcon()}
+                        {getProfileLabel()}
+                        <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuLabel className="font-normal">
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {getDropdownItems().map(({ label, route, icon: Icon }) => (
+                      <DropdownMenuItem key={route} onClick={() => navigate(route)} className="cursor-pointer gap-2">
+                        <Icon className="w-4 h-4 text-muted-foreground" />
+                        <span className="flex-1">{label}</span>
+                        {label === "Job Applications" && submittedCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
+                            {submittedCount > 99 ? "99+" : submittedCount}
+                          </span>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} disabled={isLoggingOut} className="cursor-pointer gap-2 text-red-500 focus:text-red-500">
+                      {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+                      {isLoggingOut ? "Signing out…" : "Sign Out"}
                     </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    disabled={isLoggingOut}
-                    className="cursor-pointer gap-2 text-red-500 focus:text-red-500"
-                  >
-                    {isLoggingOut ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <LogOut className="w-4 h-4" />
-                    )}
-                    {isLoggingOut ? "Signing out…" : "Sign Out"}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
             ) : talentAuth ? (
               /* ── Talent-only session — raw Radix (bypasses shadcn class overrides) ── */
               <RadixDropdown.Root open={talentDropdownOpen} onOpenChange={setTalentDropdownOpen}>

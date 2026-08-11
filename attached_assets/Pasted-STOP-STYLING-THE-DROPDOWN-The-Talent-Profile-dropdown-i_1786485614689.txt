@@ -1,0 +1,351 @@
+STOP STYLING THE DROPDOWN.
+
+The Talent Profile dropdown is STILL rendering the exact old UI after multiple redesign attempts.
+
+This is now a CODE-TRACE / COMPONENT-REPLACEMENT task.
+
+DO NOT make another CSS-only change.
+
+==================================================
+1. TRACE THE ACTUAL RENDERED DROPDOWN
+==================================================
+
+Find the exact component that is producing the CURRENT visible menu containing:
+
+Talent Profile
+Finish Profile Setup
+Find Work
+Settings
+Sign Out
+
+Search the ENTIRE repository for these exact strings:
+
+"Finish Profile Setup"
+"Talent Profile"
+"Sign Out"
+
+Also search for:
+
+DropdownMenuContent
+DropdownMenu.Content
+DropdownMenuItem
+DropdownMenuTrigger
+DropdownMenuPortal
+TopNavigation
+Navbar
+Header
+ProfileMenu
+UserMenu
+AccountMenu
+
+There may be MULTIPLE account dropdown implementations.
+
+Identify which one is actually rendered in the current Talent Profile navbar.
+
+DO NOT assume the previously edited component is the correct one.
+
+==================================================
+2. PROVE WHICH COMPONENT IS ACTIVE
+==================================================
+
+Before redesigning it, temporarily add a visible test marker to the suspected component:
+
+ACTIVE PROFILE MENU
+
+Use a bright temporary debug label.
+
+Run the application and open the dropdown.
+
+IF “ACTIVE PROFILE MENU” DOES NOT APPEAR:
+you are editing the WRONG component.
+
+Continue tracing until you find the component that visibly renders the marker.
+
+ONLY after confirming the correct component should you continue.
+
+Remove the debug marker afterward.
+
+==================================================
+3. CHECK FOR DUPLICATE MENUS
+==================================================
+
+Search for duplicate implementations of the account/profile menu.
+
+There may be:
+- desktop navbar menu
+- authenticated navbar menu
+- talent-specific menu
+- employer-specific menu
+- mobile menu
+- legacy dropdown
+- shared TopNavigation dropdown
+
+List internally which components contain these menu labels.
+
+Make sure the component being edited corresponds to the currently logged-in TALENT navbar.
+
+Do not create another dropdown component.
+
+==================================================
+4. REMOVE THE OLD DROPDOWN MARKUP
+==================================================
+
+Once the ACTIVE component is confirmed:
+
+DELETE the old dropdown presentation.
+
+Do not merely modify its Tailwind classes.
+
+Remove the current narrow menu structure responsible for this UI:
+
+--------------------------------
+email partially clipped
+Talent Profile
+Finish Profile Setup
+Find Work
+Settings
+-------------------------------
+Sign Out
+--------------------------------
+
+Keep ONLY:
+- user data
+- auth state
+- routes
+- click handlers
+- logout functionality
+
+Replace the visual markup completely.
+
+==================================================
+5. NEW ACCOUNT PANEL
+==================================================
+
+Build the actual visible menu as:
+
+┌────────────────────────────────┐
+│                                │
+│ [AVATAR]  Testin Val           │
+│           testinval@...        │
+│                                │
+│ Profile completion        20%  │
+│ █████░░░░░░░░░░░░░░            │
+│                                │
+├────────────────────────────────┤
+│ 👤  Talent Profile          ›  │
+│ ✓   Finish Profile Setup    ›  │
+│ 💼  Find Work               ›  │
+│ ⚙   Settings                ›  │
+├────────────────────────────────┤
+│ ↪   Sign Out                   │
+└────────────────────────────────┘
+
+WIDTH:
+320px desktop
+
+BACKGROUND:
+#FFFFFF
+
+BORDER:
+1px solid rgba(75,81,184,0.14)
+
+BORDER RADIUS:
+16px
+
+SHADOW:
+0 20px 50px rgba(18,23,65,.20)
+
+PADDING:
+10px
+
+This should look NOTHING like the current narrow gray dropdown.
+
+==================================================
+6. FIX THE CLIPPING / NAVBAR OVERLAP
+==================================================
+
+The current screenshot shows the dropdown beginning behind the navbar.
+
+Inspect the parent hierarchy.
+
+Look for:
+overflow-hidden
+overflow-clip
+transform
+contain
+isolation
+
+The dropdown MUST render through a portal.
+
+If using Radix:
+
+<DropdownMenu.Portal>
+  <DropdownMenu.Content
+    align="end"
+    side="bottom"
+    sideOffset={12}
+    collisionPadding={16}
+    className="..."
+  >
+    ...
+  </DropdownMenu.Content>
+</DropdownMenu.Portal>
+
+Do NOT manually position using top/left.
+
+The menu must begin BELOW the navbar.
+
+==================================================
+7. PROFILE HEADER
+==================================================
+
+Avatar:
+48px circular.
+
+Use real profile image if available.
+
+Otherwise use initials.
+
+Name:
+Testin Val
+
+Email:
+testinval@onspotglobal.com
+
+Do not crop or hide any part of the email.
+
+==================================================
+8. PROFILE COMPLETION
+==================================================
+
+Show:
+
+Profile completion                20%
+
+Use the REAL completion percentage if already available.
+
+Progress track:
+height: 6px
+background: #ECECF8
+
+Progress:
+indigo → violet gradient.
+
+==================================================
+9. MENU ITEMS
+==================================================
+
+Each item:
+height: 48px
+border-radius: 10px
+padding-inline: 12px
+
+Use:
+icon
+label
+right chevron
+
+Hover:
+background: #F2F2FF
+color: #4D55C7
+
+“Finish Profile Setup” should receive a subtle highlighted state when the profile is incomplete.
+
+==================================================
+10. SIGN OUT
+==================================================
+
+Separate with a divider.
+
+Use red text/icon.
+
+Hover:
+background: #FFF1F2
+
+==================================================
+11. DELETE CONFLICTING STYLES
+==================================================
+
+Inspect CSS/Tailwind classes affecting the active menu.
+
+Remove conflicting legacy styles such as:
+
+w-52
+min-w-[8rem]
+bg-popover
+opacity
+transparent backgrounds
+old fixed widths
+old menu padding
+old positioning classes
+
+Do not leave the old menu width/styles active underneath the new component.
+
+==================================================
+12. CHECK CACHING / HOT RELOAD
+==================================================
+
+After changing the ACTIVE component:
+
+- stop the dev server
+- restart it
+- hard refresh the browser
+- verify the new source is compiled
+- check browser DevTools DOM
+
+The DOM should contain the NEW profile header and progress bar.
+
+If DevTools still shows the old markup, investigate why the wrong bundle/component is being loaded.
+
+==================================================
+13. DEVTOOLS VERIFICATION
+==================================================
+
+Open the dropdown and inspect its DOM.
+
+The new dropdown MUST contain identifiable elements for:
+
+Profile completion
+avatar
+name
+email
+menu chevrons
+
+If DevTools still shows only:
+
+Talent Profile
+Finish Profile Setup
+Find Work
+Settings
+Sign Out
+
+then the redesign has NOT been applied.
+
+Do not mark the task complete.
+
+==================================================
+14. ACCEPTANCE TEST
+==================================================
+
+The task is complete only when:
+
+- old dropdown markup is gone
+- account panel is ~320px wide
+- full profile header is visible
+- email is not clipped
+- profile completion is visible
+- dropdown begins BELOW the navbar
+- menu renders through a portal
+- account panel is solid white
+- Sign Out is separated
+- DevTools confirms NEW markup is rendered
+- no duplicate legacy menu is visible
+- desktop and mobile both work
+
+IMPORTANT:
+
+DO NOT tell me “fixed” because the code compiled.
+
+VERIFY THE VISUAL RESULT IN THE BROWSER.
+
+If the visual result still looks like the OLD screenshot, continue tracing the component until the real rendered menu is replaced.
