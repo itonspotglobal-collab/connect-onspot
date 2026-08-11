@@ -159,22 +159,22 @@ function HeroSection() {
     <section
       ref={sectionRef}
       className="relative overflow-hidden"
-      style={{ minHeight: 800, background: slideBg(active.id), transition: "background 0.65s ease" }}
+      style={{ height: "calc(100svh - 74px)", minHeight: 620, background: slideBg(active.id), transition: "background 0.65s ease" }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-label="Hero carousel"
     >
-      {/* Slide content */}
+      {/* Slide content — full height flex column */}
       <div
-        className="relative z-10 mx-auto flex flex-col px-6 sm:px-8 lg:px-10"
-        style={{ maxWidth: 1200, minHeight: 800 }}
+        className="relative z-10 h-full w-full flex flex-col"
+        style={{ maxWidth: 1180, marginInline: "auto", paddingInline: "clamp(24px, 5vw, 64px)" }}
       >
-        {/* Main content area — vertically centered with space for controls */}
+        {/* Main content area — flex-1 so it fills remaining space; centers its children */}
         <div
           key={`slide-${slide}`}
-          className="flex flex-1 flex-col justify-center py-14 pb-24"
+          className="flex flex-1 min-h-0 items-center"
           style={{ animation: "homeHeroIn 0.55s ease forwards", opacity: 0 }}
         >
           {active.id === "work"      && <WorkSlide      isDark={isDark} />}
@@ -184,8 +184,8 @@ function HeroSection() {
           {active.id === "jobs"      && <JobsSlide      isDark={isDark} liveJobs={liveJobs} isLoading={jobsLoading} />}
         </div>
 
-        {/* Controls row — bottom-left inside container */}
-        <div className="absolute bottom-7 left-6 sm:left-8 lg:left-10 right-0 flex items-center gap-3">
+        {/* Controls row — natural bottom of flex column, always visible */}
+        <div className="flex items-center gap-3 flex-shrink-0" style={{ paddingBottom: "clamp(20px, 4vh, 44px)" }}>
           {/* Prev */}
           <CtrlBtn onClick={prev} label="Previous slide" border={ctrlBorder} bg={ctrlBg} color={ctrlColor}>
             <ChevronLeft className="h-4 w-4" />
@@ -254,8 +254,8 @@ function CtrlBtn({ onClick, label, border, bg, color, children }: {
 function SlideEyebrow({ text, isDark }: { text: string; isDark: boolean }) {
   return (
     <p
-      className="mb-4 text-[13px] font-semibold uppercase tracking-[0.1em]"
-      style={{ color: isDark ? "rgba(255,255,255,0.75)" : C.indigo }}
+      className="mb-4 font-semibold uppercase tracking-[0.1em]"
+      style={{ fontSize: "clamp(12px, 0.9vw, 14px)", color: isDark ? "rgba(255,255,255,0.75)" : C.indigo }}
     >
       <span className="inline-block mr-2 h-[2px] w-4 rounded align-middle" style={{ background: C.orange }} />
       {text.replace(/^— /, "")}
@@ -266,9 +266,12 @@ function SlideEyebrow({ text, isDark }: { text: string; isDark: boolean }) {
 // ── Two-column slide wrapper ──────────────────────────────────────────────────
 function TwoCol({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14 w-full">
-      <div>{left}</div>
-      <div className="lg:justify-self-end w-full lg:max-w-[520px]">{right}</div>
+    <div
+      className="grid grid-cols-1 lg:grid-cols-2 items-center w-full"
+      style={{ gap: "clamp(24px, 6vw, 88px)" }}
+    >
+      <div className="min-w-0">{left}</div>
+      <div className="min-w-0 lg:flex lg:justify-end">{right}</div>
     </div>
   );
 }
@@ -278,22 +281,22 @@ function TwoCol({ left, right }: { left: React.ReactNode; right: React.ReactNode
 // ══════════════════════════════════════════════════════════════════════════════
 function WorkSlide({ isDark }: { isDark: boolean }) {
   return (
-    <div className="mx-auto flex w-full flex-col items-center text-center" style={{ maxWidth: 860 }}>
+    <div className="mx-auto flex w-full flex-col items-center text-center" style={{ maxWidth: 950 }}>
       <h1
         className="font-bold tracking-tight"
-        style={{ fontSize: "clamp(3rem, 7vw, 72px)", lineHeight: 1.04, letterSpacing: "-0.035em" }}
+        style={{ fontSize: "clamp(2.8rem, 6.5vw, 76px)", lineHeight: 1.04, letterSpacing: "-0.035em" }}
       >
         <span className="text-white">Work </span>
         <span style={{ color: C.orangeLight }}>Without</span>
         <span className="text-white"> Limits</span>
       </h1>
 
-      <p className="mt-7 max-w-[560px]" style={{ fontSize: "clamp(1.05rem, 2vw, 1.25rem)", lineHeight: 1.55 }}>
+      <p className="mt-5 max-w-[560px]" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.5 }}>
         <span className="font-semibold text-white">One system.</span>{" "}
         <span style={{ color: "rgba(199,203,242,0.8)" }}>Highest pay for talents at lower cost to companies.</span>
       </p>
 
-      <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
         <Link
           href="/hire-talent"
           className="inline-flex h-[52px] min-w-[180px] items-center justify-center rounded-full bg-white px-8 text-[15.5px] font-semibold transition hover:-translate-y-[1px] hover:bg-white/95"
@@ -324,12 +327,12 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
           <SlideEyebrow text="FOR COMPANIES" isDark={isDark} />
           <h1
             className="font-bold tracking-tight leading-[1.04]"
-            style={{ fontSize: "clamp(2.6rem, 5.5vw, 64px)", letterSpacing: "-0.03em" }}
+            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
           >
             <span style={{ color: C.charcoal }}>Hire </span>
             <span style={{ color: C.indigo }}>Without<br />Limits.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(1.05rem, 1.8vw, 1.25rem)", lineHeight: 1.45, color: C.charcoal }}>
+          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45, color: C.charcoal }}>
             The best talents —{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>without the outsourcing overhead.</span>
           </p>
@@ -352,7 +355,7 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
 
 function LaptopMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-[460px]">
+    <div className="relative w-full" style={{ maxWidth: "clamp(380px, 39vw, 560px)" }}>
       {/* Purple glow */}
       <div
         aria-hidden
@@ -460,12 +463,12 @@ function TalentSlide({ isDark }: { isDark: boolean }) {
           <SlideEyebrow text="FOR TALENTS" isDark={isDark} />
           <h1
             className="font-bold tracking-tight text-white leading-[1.04]"
-            style={{ fontSize: "clamp(2.6rem, 5.5vw, 64px)", letterSpacing: "-0.03em" }}
+            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
           >
             Earn{" "}
             <span style={{ color: C.orangeLight }}>Without<br />Limits.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(1.05rem, 1.8vw, 1.25rem)", lineHeight: 1.45 }}>
+          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45 }}>
             The best clients —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>the highest pay for the work you do.</span>
           </p>
@@ -498,7 +501,7 @@ const BAR_DATA = [
 
 function PhoneMockup() {
   return (
-    <div className="relative ml-auto" style={{ width: 252 }}>
+    <div className="relative ml-auto" style={{ width: "clamp(210px, 18vw, 265px)", maxWidth: "100%" }}>
       {/* Ambient glow */}
       <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 50% 48%, rgba(255,174,33,0.15), transparent 70%)", filter: "blur(12px)" }} />
 
@@ -620,13 +623,13 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
           <SlideEyebrow text="THE TALENT NETWORK" isDark={isDark} />
           <h1
             className="font-bold tracking-tight leading-[1.04]"
-            style={{ fontSize: "clamp(2.6rem, 5.5vw, 64px)", letterSpacing: "-0.03em", color: C.charcoal }}
+            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em", color: C.charcoal }}
           >
             Thousands of<br />
             talents.{" "}
             <span style={{ color: C.indigo }}>Ready to<br />work.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(1.05rem, 1.8vw, 1.25rem)", lineHeight: 1.45, color: C.charcoal }}>
+          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45, color: C.charcoal }}>
             Vetted, experienced, and{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>ready to start in days — not months.</span>
           </p>
@@ -656,7 +659,7 @@ function talentInitials(name: string): string {
 
 function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoading: boolean }) {
   return (
-    <div className="relative">
+    <div className="relative" style={{ width: "clamp(320px, 37vw, 520px)", maxWidth: "100%" }}>
       {/* Glow */}
       <div aria-hidden className="absolute -inset-6 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 50%, rgba(75,81,184,0.12), transparent 70%)", filter: "blur(10px)" }} />
       <div
@@ -763,13 +766,13 @@ function JobsSlide({ isDark, liveJobs, isLoading }: { isDark: boolean; liveJobs:
           <SlideEyebrow text="FOR TALENTS" isDark={isDark} />
           <h1
             className="font-bold tracking-tight text-white leading-[1.04]"
-            style={{ fontSize: "clamp(2.6rem, 5.5vw, 64px)", letterSpacing: "-0.03em" }}
+            style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
           >
             Hundreds of<br />
             high-paying jobs.<br />
             <span style={{ color: C.orangeLight }}>Open right now.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(1.05rem, 1.8vw, 1.25rem)", lineHeight: 1.45 }}>
+          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45 }}>
             Real roles, real rates —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>and new jobs opening every week.</span>
           </p>
@@ -801,7 +804,7 @@ function jobPay(j: any): string | null {
 
 function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: boolean }) {
   return (
-    <div className="relative">
+    <div className="relative" style={{ width: "clamp(320px, 36vw, 500px)", maxWidth: "100%" }}>
       <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
       <div
         className="relative rounded-[18px] overflow-hidden"

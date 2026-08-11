@@ -1,0 +1,398 @@
+FIX THE ENTIRE HOMEPAGE HERO CAROUSEL RESPONSIVENESS AND VIEWPORT FIT.
+
+PROBLEM:
+The current live carousel does not fit the screen like the mockups.
+On some screen sizes:
+- content appears too small or too large
+- hero height feels wrong
+- text and mockups do not stay proportionally aligned
+- controls sit too low/high
+- too much empty space appears
+- the slide does not feel “screen-fitted”
+- laptop/phone/cards do not scale consistently
+
+GOAL:
+Every hero slide must automatically adapt to the current viewport size while preserving the visual proportions shown in the mockups.
+
+DO NOT hardcode the hero to one desktop resolution.
+
+==================================================
+1. HERO HEIGHT
+==================================================
+
+Make the hero account for the navbar height.
+
+Use a responsive viewport-based height such as:
+
+height: calc(100svh - var(--header-height));
+
+Also support:
+min-height: 620px;
+
+Use svh/dvh rather than only 100vh where appropriate so mobile browser chrome does not break sizing.
+
+The entire hero slide should fit within the visible screen without unnecessary vertical scrolling on normal desktop/laptop resolutions.
+
+DO NOT use a fixed 800px height across every device.
+
+==================================================
+2. MAIN SLIDE CONTAINER
+==================================================
+
+Use ONE consistent responsive container across all 5 slides.
+
+Recommended:
+
+width: min(100% - 48px, 1180px);
+margin-inline: auto;
+
+Use responsive horizontal padding:
+padding-inline: clamp(24px, 5vw, 72px);
+
+The content should never touch screen edges.
+
+For very wide screens:
+- keep content centered
+- do not stretch endlessly
+- max content width approximately 1180–1240px
+
+==================================================
+3. VERTICAL POSITIONING
+==================================================
+
+Each slide should use a three-zone structure:
+
+TOP:
+navbar/header handled separately
+
+MIDDLE:
+main hero content vertically centered
+
+BOTTOM:
+carousel controls anchored consistently near bottom
+
+Suggested structure:
+
+.hero-slide {
+  height: calc(100svh - headerHeight);
+  min-height: 620px;
+  position: relative;
+  display: flex;
+}
+
+.hero-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.carousel-controls {
+  position: absolute;
+  bottom: clamp(24px, 4vh, 48px);
+}
+
+Do NOT center the controls vertically.
+
+==================================================
+4. TYPOGRAPHY MUST SCALE FLUIDLY
+==================================================
+
+Use clamp() for all hero typography.
+
+Example ranges:
+
+Main title:
+font-size: clamp(46px, 5.2vw, 76px);
+
+Supporting headline:
+font-size: clamp(22px, 2vw, 30px);
+
+Body:
+font-size: clamp(15px, 1.15vw, 18px);
+
+Eyebrow:
+font-size: clamp(12px, 0.9vw, 14px);
+
+Do not use a single fixed desktop font size.
+
+Preserve line breaks from the mockups where intentional.
+
+Avoid text becoming:
+- too huge on wide monitors
+- too tiny on laptops
+- overflowing on tablets
+
+==================================================
+5. SLIDE 1 — CENTERED HERO
+==================================================
+
+Slide 1 should always remain visually centered.
+
+Content:
+“Work Without Limits”
+
+Use a centered inner wrapper:
+max-width: 950px;
+margin-inline: auto;
+text-align: center;
+
+The heading, subheading, and buttons should stay near the visual center of the viewport.
+
+At smaller laptop heights, reduce:
+- heading size
+- vertical gaps
+- button spacing
+
+Do NOT push the title too far upward or downward.
+
+==================================================
+6. SLIDES 2–5 — RESPONSIVE TWO-COLUMN GRID
+==================================================
+
+For slides 2, 3, 4, and 5 use:
+
+display: grid;
+grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+align-items: center;
+
+Use a responsive gap:
+gap: clamp(40px, 7vw, 110px);
+
+Text should occupy the left column.
+Mockup/card should occupy the right column.
+
+Do not use fixed pixel left/right positions.
+
+==================================================
+7. MOCKUP SIZE MUST SCALE WITH VIEWPORT
+==================================================
+
+DO NOT use one fixed width for laptop, phone, talent card, or open-role card.
+
+Use clamp().
+
+Examples:
+
+SLIDE 2 LAPTOP:
+width: clamp(420px, 39vw, 590px);
+
+SLIDE 3 PHONE:
+width: clamp(210px, 18vw, 270px);
+
+SLIDE 4 TALENT CARD:
+width: clamp(390px, 37vw, 520px);
+
+SLIDE 5 OPEN ROLES CARD:
+width: clamp(390px, 36vw, 500px);
+
+Always:
+max-width: 100%;
+
+This should make mockups shrink on smaller screens and grow modestly on larger screens.
+
+==================================================
+8. DESKTOP / LAPTOP BREAKPOINTS
+==================================================
+
+Test specifically at:
+
+1920 × 1080
+1600 × 900
+1440 × 900
+1366 × 768
+1280 × 720
+
+At ALL these sizes:
+- navbar remains visible
+- hero does not overflow vertically
+- main content fits comfortably
+- carousel controls remain visible
+- no text overlaps mockups
+- mockups do not become oversized
+- layout stays visually balanced
+
+For shorter laptop heights such as 1366×768:
+reduce vertical spacing using viewport-aware values:
+
+gap: clamp(16px, 2.5vh, 32px);
+
+Do NOT let content get pushed below the fold.
+
+==================================================
+9. TABLET
+==================================================
+
+At approximately <= 1024px:
+
+- reduce max container width naturally
+- reduce heading sizes
+- reduce mockup sizes
+- keep two columns if there is enough width
+- increase text/mockup balance
+
+At approximately <= 900px:
+switch slides 2–5 to stacked layout if needed:
+
+grid-template-columns: 1fr;
+
+Text first.
+Mockup second.
+
+Keep everything centered within the container, but keep text left-aligned except Slide 1.
+
+==================================================
+10. MOBILE
+==================================================
+
+At <= 640px:
+
+Hero height should NOT force an awkward 100vh layout if content needs more room.
+
+Use:
+height: auto;
+min-height: calc(100svh - headerHeight);
+
+Stack:
+- text
+- CTA
+- visual mockup
+- carousel controls
+
+Use responsive padding:
+padding-top: 40px;
+padding-bottom: 100px;
+
+Heading:
+font-size: clamp(38px, 11vw, 52px);
+
+Body:
+font-size: 15–16px;
+
+Phone/card mockups:
+width: min(90vw, 360px);
+
+Controls:
+bottom: 24px;
+left/right aligned with mobile container.
+
+Prevent horizontal overflow.
+
+==================================================
+11. CAROUSEL CONTROLS
+==================================================
+
+The controls must align to the SAME content container on every slide.
+
+Do not position them relative to the browser edge.
+
+Use the same left edge as the slide content.
+
+For Slide 1:
+controls may appear slightly left of center according to reference, but must remain inside the same centered max-width wrapper.
+
+Keep:
+- previous
+- play/pause
+- next
+- “01 / 05”
+- 5 progress indicators
+
+Scale controls slightly on mobile.
+
+Do NOT let the controls overlap the content.
+
+==================================================
+12. NAVBAR + HERO COORDINATION
+==================================================
+
+The navbar must NOT be counted as part of the hero content area.
+
+Define a reliable header height token, e.g.:
+
+--header-height: 74px;
+
+or dynamically use the actual header height if existing architecture already supports this.
+
+The hero should begin immediately below the navbar.
+
+Avoid:
+height: 100vh
+when the navbar sits above it, because this creates an oversized total page height.
+
+Use:
+calc(100svh - headerHeight)
+
+==================================================
+13. NO FIXED ABSOLUTE POSITIONS FOR MAIN CONTENT
+==================================================
+
+Remove any problematic styles like:
+
+left: 380px;
+top: 210px;
+width: 600px;
+
+for the main text or mockups.
+
+Use:
+- flex
+- grid
+- max-width
+- clamp()
+- responsive gap
+- margin-inline:auto
+
+Absolute positioning should only be used for small decorative elements or carousel controls if necessary.
+
+==================================================
+14. KEEP ALL EXISTING CONTENT AND DATA
+==================================================
+
+DO NOT change:
+- slide copy
+- database integration
+- realtime talent data
+- realtime job data
+- slide order
+- buttons
+- routing
+- carousel timing
+- colors
+- mockup content
+- navbar
+- chat widget
+
+This task is ONLY:
+responsive sizing
+viewport fitting
+spacing
+proportional scaling
+layout stability
+
+==================================================
+15. FINAL VISUAL ACCEPTANCE
+==================================================
+
+Compare the live carousel against the supplied mockups.
+
+The live result should feel like the mock at ALL supported resolutions:
+- content centered within the viewport
+- no oversized blank areas
+- no cramped content
+- no clipped controls
+- no oversized mockups
+- no tiny text
+- no horizontal overflow
+- no unnecessary vertical scrolling on normal desktop/laptop screens
+
+Test ALL 5 slides individually at:
+1920×1080
+1600×900
+1440×900
+1366×768
+1280×720
+1024×768
+768×1024
+390×844
+
+Do not mark complete until every slide scales cleanly at all these sizes.

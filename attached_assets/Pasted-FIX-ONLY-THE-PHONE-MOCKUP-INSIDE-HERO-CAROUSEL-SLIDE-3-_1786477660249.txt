@@ -1,0 +1,191 @@
+FIX ONLY THE PHONE MOCKUP INSIDE HERO CAROUSEL SLIDE 3.
+
+The current phone UI is too sparse and does not match the supplied mock.
+
+Use the SECOND SCREENSHOT as the visual source of truth.
+Do not redesign it.
+Do not change the left-side hero text.
+Do not change other carousel slides.
+
+GOAL:
+Recreate the phone mockup with the same density, proportions, spacing, card styling, chart, typography, and overall polish shown in the second screenshot.
+
+PHONE SIZE / PROPORTIONS
+- Make the phone slightly narrower and taller.
+- Target desktop width around 210–230px.
+- Maintain a realistic tall smartphone aspect ratio.
+- Outer shell = very dark navy.
+- Rounded corners = large, approximately 30–34px.
+- Inner screen inset = about 8–10px.
+- White screen background.
+- Add the black horizontal pill/notch centered at the top.
+- Add a subtle dark shadow around the phone.
+
+TOP ROW
+Inside the screen:
+- small orange rounded-square icon
+- “OnSpot” text beside it
+- purple circular avatar/status dot aligned right
+
+Then:
+“Earnings summary”
+“Last 6 months”
+
+Make:
+- title bold
+- subtitle smaller and muted
+- spacing compact
+
+SUMMARY CARD
+Use a warm cream card with thin orange border.
+
+Contents:
+TOTAL EARNED THIS MONTH
+$3,455
+▲ 18% vs last month
+
+Match the mock:
+- amount large and bold
+- label small uppercase gray
+- growth indicator inside pale-green rounded pill
+- summary card should NOT be blue
+- padding should be tight but balanced
+
+SECONDARY STAT CARDS
+Two equal cards side-by-side.
+
+Left:
+AVG. RATE
+$20/hr
+
+Right:
+ACTIVE
+CLIENTS
+2
+
+Style:
+- very light gray/lavender backgrounds
+- rounded corners
+- small uppercase labels
+- bold values
+- compact vertical spacing
+
+BAR CHART
+THIS IS REQUIRED.
+
+Add six orange bars for:
+Mar
+Apr
+May
+Jun
+Jul
+Aug
+
+Use approximate heights matching the screenshot:
+Mar   = 35%
+Apr   = 50%
+May   = 38%
+Jun   = 62%
+Jul   = 56%
+Aug   = 88%
+
+Details:
+- orange/gold bars
+- slightly rounded top corners
+- equal bar widths
+- equal horizontal spacing
+- month labels centered underneath
+- chart should sit directly below the stat cards
+- keep chart compact, not oversized
+
+EARNINGS BY CLIENT
+Add label:
+“EARNINGS BY CLIENT”
+
+ROW 1:
+New Tech AI                         $2,000
+progress line underneath, nearly full width
+
+ROW 2:
+John Roberts LLC                    $1,455
+progress line underneath, around 72% width
+
+Progress lines:
+- indigo/purple
+- thin
+- rounded ends
+- light gray track beneath if needed
+
+TYPOGRAPHY
+Use compact UI typography similar to Inter.
+
+Approximate scale:
+- “Earnings summary”: 14–16px bold
+- amount: 26–30px bold
+- stat values: 16–18px bold
+- labels: 8–10px
+- client names: 10–11px
+- amounts: 10–11px
+
+IMPORTANT:
+The current implementation has too much empty vertical space.
+The reference is more information-dense.
+
+Reduce unnecessary gaps between:
+- header
+- summary card
+- stat cards
+- chart
+- earnings list
+
+But do NOT make elements touch.
+
+VISUAL ORDER MUST BE:
+
+[ orange icon + OnSpot        purple circle ]
+Earnings summary
+Last 6 months
+
+[ TOTAL EARNED THIS MONTH ]
+[        $3,455           ]
+[ ▲ 18% vs last month     ]
+
+[ AVG RATE ] [ ACTIVE CLIENTS ]
+[ $20/hr   ] [ 2              ]
+
+    ▂  ▃  ▂  ▄  ▄  ▆
+   Mar Apr May Jun Jul Aug
+
+EARNINGS BY CLIENT
+
+New Tech AI                    $2,000
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+John Roberts LLC               $1,455
+━━━━━━━━━━━━━━━━━━━━
+
+POSITIONING INSIDE HERO
+- Keep phone on the right side.
+- Vertically center it against the left hero content.
+- Do not enlarge it until it dominates the slide.
+- Preserve generous whitespace around it.
+
+RESPONSIVE
+- Desktop: 210–230px width
+- Medium laptop: 190–210px
+- Tablet: 175–195px
+- Mobile: max-width around 78vw, capped around 250px
+
+Use clamp() for scaling instead of fixed values where possible.
+
+VERY IMPORTANT
+Do not:
+- remove the bar chart
+- replace the cream earnings card with a blue card
+- omit the green growth badge
+- omit the client progress bars
+- change the copy
+- touch Slide 1, 2, 4, or 5
+- change carousel behavior
+
+After implementation, compare the phone side-by-side against the SECOND supplied screenshot and keep adjusting until the density and proportions visually match.
