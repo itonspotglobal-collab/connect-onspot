@@ -1355,10 +1355,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // /api/talent-auth/login works with the same credentials.
         try {
           const candidateResult = await query(
-            `INSERT INTO candidates (full_name, email, password_hash)
-             VALUES ($1, $2, $3)
+            `INSERT INTO candidates (full_name, email, password_hash, user_id)
+             VALUES ($1, $2, $3, $4)
              RETURNING id`,
-            [`${first_name} ${last_name}`.trim(), email, passwordHash],
+            [`${first_name} ${last_name}`.trim(), email, passwordHash, userId],
           );
           talentCandidateId = candidateResult.rows[0]?.id ?? null;
           console.log(`✅ Candidate record created for talent [${requestId}]: ${talentCandidateId}`);
@@ -4456,10 +4456,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Auto-create the missing candidates record
               const fullName = `${userRow.first_name || ""} ${userRow.last_name || ""}`.trim() || userRow.email;
               const autoCreate = await query(
-                `INSERT INTO candidates (full_name, email, password_hash)
-                 VALUES ($1, $2, $3)
+                `INSERT INTO candidates (full_name, email, password_hash, user_id)
+                 VALUES ($1, $2, $3, $4)
                  RETURNING id`,
-                [fullName, userRow.email.toLowerCase(), userRow.password_hash],
+                [fullName, userRow.email.toLowerCase(), userRow.password_hash, userRow.id],
               );
               const newCandidateId = autoCreate.rows[0].id;
               console.log(`✅ [talent-auth/login]: Auto-created candidates record for legacy talent user: ${newCandidateId}`);
@@ -5183,15 +5183,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ profilePicture: storagePath })
           .where(eq(profiles.userId, userId));
 
-        // Sync to the linked candidate record (matched by email) so the public
-        // talent profile page picks up the photo without a separate upload flow.
-        const userEmail = req.user?.email;
-        if (userEmail) {
-          const publicPhotoUrl = `/api/profile-picture/${userId}`;
-          await db
-            .update(candidatesTable)
-            .set({ profilePhotoUrl: publicPhotoUrl } as any)
-            .where(sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})`);
+        // Sync to the linked candidate record so the public talent profile page
+        // picks up the photo without a separate upload flow.
+        // Prefer joining on user_id (stable FK) so an email change never breaks
+        // the link; fall back to email for legacy rows that predate the FK column.
+        const publicPhotoUrl = `/api/profile-picture/${userId}`;
+        const syncResult = await db
+          .update(candidatesTable)
+          .set({ profilePhotoUrl: publicPhotoUrl } as any)
+          .where(sqlOp`${candidatesTable.userId} = ${userId}`);
+        // Fallback: legacy rows without user_id set — match by email
+        const syncedByUserId = (syncResult as any).rowCount ?? 0;
+        if (syncedByUserId === 0) {
+          const userEmail = req.user?.email;
+          if (userEmail) {
+            await db
+              .update(candidatesTable)
+              .set({ profilePhotoUrl: publicPhotoUrl } as any)
+              .where(sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})`);
+          }
         }
 
         console.log(`✅ Profile photo uploaded [${req.requestId}]:`, { userId, storagePath });
@@ -5213,17 +5223,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ profilePicture: null })
         .where(eq(profiles.userId, userId));
 
-      // Also clear the linked candidate's photo if it was synced from the profile upload
-      const userEmail = req.user?.email;
-      if (userEmail) {
-        const profilePhotoPrefix = `/api/profile-picture/${userId}`;
-        await db
-          .update(candidatesTable)
-          .set({ profilePhotoUrl: null } as any)
-          .where(
-            sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})
-              AND ${candidatesTable.profilePhotoUrl} = ${profilePhotoPrefix}`
-          );
+      // Also clear the linked candidate's photo if it was synced from the profile upload.
+      // Join on user_id (stable FK) so an email change doesn't leave the photo stuck.
+      // Fall back to email for legacy rows that predate the FK column.
+      const profilePhotoPrefix = `/api/profile-picture/${userId}`;
+      const deleteSync = await db
+        .update(candidatesTable)
+        .set({ profilePhotoUrl: null } as any)
+        .where(
+          sqlOp`${candidatesTable.userId} = ${userId}
+            AND ${candidatesTable.profilePhotoUrl} = ${profilePhotoPrefix}`
+        );
+      if (((deleteSync as any).rowCount ?? 0) === 0) {
+        const userEmail = req.user?.email;
+        if (userEmail) {
+          await db
+            .update(candidatesTable)
+            .set({ profilePhotoUrl: null } as any)
+            .where(
+              sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})
+                AND ${candidatesTable.profilePhotoUrl} = ${profilePhotoPrefix}`
+            );
+        }
       }
 
       res.json({ success: true });

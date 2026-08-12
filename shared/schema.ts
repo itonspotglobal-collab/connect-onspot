@@ -1182,6 +1182,9 @@ export type HotSearch = typeof hotSearches.$inferSelect;
 // Candidates — Find Best Matches flow (no auth required)
 export const candidates = pgTable("candidates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Stable FK to users — added to survive email changes without breaking photo sync.
+  // Nullable for legacy rows created before this column existed; backfilled at startup.
+  userId: varchar("user_id").references(() => users.id),
   fullName: text("full_name").notNull().default(""),
   // Separate given / family name — added to support multi-word first names.
   // Nullable so existing rows without the split are handled gracefully via legacyNameFallback().
@@ -1226,6 +1229,7 @@ export const candidates = pgTable("candidates", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
+  index("idx_candidates_user_id").on(table.userId),
   index("idx_candidates_email").on(table.email),
   index("idx_candidates_category").on(table.category),
   index("idx_candidates_created_at").on(table.createdAt),

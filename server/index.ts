@@ -286,21 +286,36 @@ app.use((req, res, next) => {
   logDatabaseConnection();
   logJWTConfiguration();
 
-  // ── One-time backfill: sync profilePicture → candidates.profilePhotoUrl ──
-  // Talent users who uploaded a photo before the forward-sync was introduced
-  // will have profiles.profile_picture set but candidates.profile_photo_url
-  // still null. This runs at every startup but the WHERE clause makes it a
-  // no-op once all rows are already populated (idempotent).
+  // ── One-time migrations: candidates table ────────────────────────────────
+  // 1. Ensure the user_id FK column exists (safe to run repeatedly).
+  // 2. Backfill user_id for legacy rows that predate the column.
+  // 3. Sync profilePicture → profilePhotoUrl for rows that are still null.
+  // All three are idempotent — they are no-ops once fully applied.
   try {
-    const backfillResult = await query(
-      `UPDATE candidates c
-       SET    profile_photo_url = '/api/profile-picture/' || u.id
-       FROM   users u
-       JOIN   profiles p ON p.user_id = u.id
-       WHERE  lower(c.email) = lower(u.email)
-         AND  p.profile_picture IS NOT NULL
-         AND  c.profile_photo_url IS NULL`,
-    );
+    // Ensure the FK column exists (added in task-77; no-op if already present)
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS user_id varchar REFERENCES users(id)`);
+
+    // Backfill user_id on legacy rows that were created before this column
+    await query(`
+      UPDATE candidates c
+      SET    user_id = u.id
+      FROM   users u
+      WHERE  lower(c.email) = lower(u.email)
+        AND  u.role = 'talent'
+        AND  c.user_id IS NULL
+    `);
+
+    // Backfill profilePhotoUrl — prefer joining on user_id (stable), fall back
+    // to email for any row that still has user_id NULL after the step above.
+    const backfillResult = await query(`
+      UPDATE candidates c
+      SET    profile_photo_url = '/api/profile-picture/' || u.id
+      FROM   users u
+      JOIN   profiles p ON p.user_id = u.id
+      WHERE  (c.user_id = u.id OR lower(c.email) = lower(u.email))
+        AND  p.profile_picture IS NOT NULL
+        AND  c.profile_photo_url IS NULL
+    `);
     const updated = backfillResult.rowCount ?? 0;
     if (updated > 0) {
       console.log(`✅ Backfill: synced profile photos for ${updated} candidate(s)`);
