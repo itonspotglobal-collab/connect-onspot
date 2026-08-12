@@ -365,118 +365,173 @@ function LaptopMockup() {
     { r: "Sales Associate",      c: "6 candidates in review", d: "Open 3 days" },
     { r: "Data Analyst",         c: "3 candidates in review", d: "Open 1 day"  },
   ];
+
+  // Reference tokens (matches the HTML design file exactly)
+  const R = {
+    purple:       "#474EAD",
+    purpleLight:  "#7B81D4",
+    purpleTint:   "#EEEDFB",
+    goldTint:     "#FDF1DE",
+    gold:         "#F5A623",
+    green:        "#1D8A5A",
+    greenTint:    "#E6F5EC",
+    bg2:          "#F6F6FA",
+    text:         "#1D1D1F",
+    textDim:      "#6E6E76",
+    textDim2:     "#A1A1A8",
+    line:         "#ECECF1",
+  };
+
   return (
-    <div className="relative w-full" style={{ maxWidth: "clamp(440px, 40vw, 600px)" }}>
-      {/* Purple glow */}
+    <div className="relative w-full" style={{ maxWidth: "clamp(440px, 40vw, 580px)" }}>
+      {/* Ambient purple glow */}
       <div
         aria-hidden
-        className="absolute -inset-6 rounded-full"
-        style={{ background: "radial-gradient(60% 55% at 50% 55%, rgba(75,81,184,0.18), transparent 70%)", filter: "blur(12px)" }}
+        className="pointer-events-none absolute"
+        style={{ inset: "-50px", background: "radial-gradient(ellipse 70% 60% at 55% 48%, rgba(71,78,173,0.22) 0%, transparent 70%)", filter: "blur(16px)", zIndex: 0 }}
       />
-      {/* Laptop shell */}
-      <div
-        className="relative rounded-[14px] p-[10px]"
-        style={{ background: "linear-gradient(170deg, #2a2a2f 0%, #18181c 100%)", border: "1.5px solid rgba(255,255,255,0.12)", boxShadow: "0 32px 64px -24px rgba(10,12,50,0.6)" }}
-      >
-        {/* Camera dot */}
-        <div className="flex justify-center mb-1.5">
-          <div className="h-[3px] w-[3px] rounded-full" style={{ background: "#3a3a3c" }} />
-        </div>
-        {/* Screen */}
-        <div className="overflow-hidden rounded-[8px] bg-white">
 
-          {/* Top bar */}
-          <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: "#EDEDF2" }}>
-            <span className="text-[12px] font-bold" style={{ color: C.charcoal }}>OnSpot</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px]" style={{ color: C.grayLight }}>Gentech LLC</span>
-              <div className="h-5 w-5 rounded-full flex-shrink-0" style={{ background: C.indigoLight }} />
+      {/* iPad shell — flat dark, rounded 34px, 20px padding (scaled ~55%) */}
+      <div
+        className="relative"
+        style={{
+          zIndex: 1,
+          background: "#1c1c1e",
+          borderRadius: "clamp(20px, 2.5vw, 34px)",
+          padding: "clamp(11px, 1.4vw, 20px)",
+          boxShadow: "0 40px 70px rgba(0,0,0,0.5)",
+        }}
+      >
+        {/* Camera dot — absolute, centered at top */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "clamp(5px, 0.7vw, 9px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "clamp(3px, 0.4vw, 5px)",
+            height: "clamp(3px, 0.4vw, 5px)",
+            borderRadius: "50%",
+            background: "#3a3a3c",
+          }}
+        />
+
+        {/* Screen */}
+        <div style={{ background: "#fff", borderRadius: "clamp(8px, 1vw, 14px)", overflow: "hidden" }}>
+
+          {/* App nav */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "clamp(10px,1.3vw,18px) clamp(12px,1.8vw,28px) clamp(8px,1vw,14px)", borderBottom: `1px solid ${R.line}` }}>
+            <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: "clamp(8px,1vw,14px)", color: R.text }}>OnSpot</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px,0.8vw,12px)" }}>
+              <span style={{ fontSize: "clamp(7px,0.8vw,11px)", color: R.textDim }}>Gentech LLC</span>
+              <div style={{ width: "clamp(16px,1.8vw,26px)", height: "clamp(16px,1.8vw,26px)", borderRadius: "50%", background: R.purpleLight, flexShrink: 0 }} />
             </div>
           </div>
 
-          <div className="px-4 pb-3.5 pt-2.5">
+          {/* App body */}
+          <div style={{ padding: "clamp(10px,1.4vw,20px) clamp(12px,1.8vw,28px) clamp(12px,1.6vw,24px)" }}>
+
             {/* Dashboard header */}
-            <div className="flex items-baseline justify-between mb-2.5">
-              <p className="text-[13px] font-bold" style={{ color: C.charcoal }}>Team dashboard</p>
-              <p className="text-[9px]" style={{ color: C.grayLight }}>Last 6 months</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "clamp(10px,1.2vw,18px)" }}>
+              <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,16px)", fontWeight: 700, color: R.text }}>Team dashboard</span>
+              <span style={{ fontSize: "clamp(6px,0.75vw,10px)", color: R.textDim2 }}>Last 6 months</span>
             </div>
 
-            {/* 4 stat cards */}
-            <div className="grid grid-cols-4 gap-1.5 mb-3">
+            {/* 4 stat tiles — grey bg, only Monthly Cost is purple-tint */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "clamp(6px,0.9vw,13px)", marginBottom: "clamp(10px,1.4vw,20px)" }}>
               {[
-                { label: "MONTHLY COST",     value: "$18,400", sub: "▼ 22% vs traditional", subColor: "#2E7D32" },
-                { label: "HEADCOUNT",        value: "8",       sub: "Active members",        subColor: C.gray },
-                { label: "AVG. PERFORMANCE", value: "4.8/5",   sub: "Across roles",          subColor: C.gray },
-                { label: "RETENTION",        value: "94%",     sub: "Continuity",            subColor: C.gray },
+                { label: "Monthly cost",      value: "$18,400", sub: "▼ 22% vs traditional", cost: true  },
+                { label: "Headcount",         value: "8",       sub: "Active team members",   cost: false },
+                { label: "Avg. performance",  value: "4.8/5",   sub: "Across all roles",      cost: false },
+                { label: "Retention",         value: "94%",     sub: "Team continuity",       cost: false },
               ].map((s) => (
-                <div key={s.label} className="rounded-[7px] px-2 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
-                  <p className="font-bold uppercase tracking-wide leading-tight" style={{ fontSize: "6px", color: C.indigo }}>{s.label}</p>
-                  <p className="font-bold leading-tight mt-0.5" style={{ fontSize: "13px", color: C.charcoal }}>{s.value}</p>
-                  <p className="mt-0.5" style={{ fontSize: "6.5px", color: s.subColor }}>{s.sub}</p>
+                <div
+                  key={s.label}
+                  style={{
+                    background: s.cost ? R.purpleTint : R.bg2,
+                    border: s.cost ? `1px solid rgba(71,78,173,0.2)` : "none",
+                    borderRadius: "clamp(6px,0.8vw,11px)",
+                    padding: "clamp(7px,0.9vw,14px) clamp(8px,1vw,16px)",
+                  }}
+                >
+                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(5px,0.55vw,8px)", textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(3px,0.4vw,6px)" }}>{s.label}</p>
+                  <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(10px,1.3vw,19px)", fontWeight: 800, color: s.cost ? R.purple : R.text, lineHeight: 1 }}>{s.value}</p>
+                  <p style={{ fontSize: "clamp(5px,0.55vw,8px)", color: s.cost ? R.green : R.textDim2, fontWeight: s.cost ? 600 : 400, marginTop: "clamp(2px,0.3vw,4px)" }}>{s.sub}</p>
                 </div>
               ))}
             </div>
 
-            {/* Team Performance */}
-            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Team Performance</p>
-            <div className="mb-2.5" style={{ border: "1px solid #EEEDFB", borderRadius: 7, overflow: "hidden" }}>
-              {TEAM.map((m, idx) => (
-                <div
-                  key={m.i}
-                  className="flex items-center justify-between px-2.5 py-1.5"
-                  style={{ borderTop: idx > 0 ? "1px solid #EEEDFB" : "none" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="h-[18px] w-[18px] flex-shrink-0 rounded-full flex items-center justify-center font-bold text-white" style={{ fontSize: "6.5px", background: C.indigo }}>{m.i}</div>
-                    <div>
-                      <p className="font-semibold leading-none" style={{ fontSize: "9px", color: C.charcoal }}>{m.n}</p>
-                      <p className="leading-none mt-[2px]" style={{ fontSize: "7.5px", color: C.grayLight }}>{m.r}</p>
+            {/* Split row — 1.15fr / 1fr */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: "clamp(10px,1.4vw,18px)" }}>
+
+              {/* Left — Team performance */}
+              <div>
+                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(6px,0.8vw,11px)" }}>Team performance</p>
+                {TEAM.map((m, idx) => (
+                  <div
+                    key={m.i}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "clamp(5px,0.65vw,8px) 0",
+                      borderTop: `1px solid ${R.line}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px,0.7vw,9px)" }}>
+                      {/* Avatar — purple-tint bg, purple text */}
+                      <div style={{
+                        width: "clamp(14px,1.7vw,24px)", height: "clamp(14px,1.7vw,24px)",
+                        borderRadius: "50%", flexShrink: 0,
+                        background: R.purpleTint, color: R.purple,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700,
+                        fontSize: "clamp(5px,0.6vw,8.5px)",
+                      }}>{m.i}</div>
+                      <div>
+                        <p style={{ fontSize: "clamp(7px,0.85vw,11px)", fontWeight: 600, color: R.text, lineHeight: 1 }}>{m.n}</p>
+                        <p style={{ fontSize: "clamp(5.5px,0.65vw,8.5px)", color: R.textDim2, lineHeight: 1, marginTop: "clamp(1px,0.15vw,2px)" }}>{m.r}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px,0.7vw,10px)", flexShrink: 0 }}>
+                      <span style={{ fontSize: "clamp(5.5px,0.65vw,8.5px)", fontWeight: 700, color: R.green, background: R.greenTint, padding: "clamp(2px,0.25vw,3px) clamp(4px,0.55vw,7px)", borderRadius: 100 }}>{m.perf}/5</span>
+                      <span style={{ fontSize: "clamp(6.5px,0.8vw,10px)", fontWeight: 700, color: R.text, width: "clamp(30px,3.8vw,52px)", textAlign: "right" }}>{m.sal}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="rounded-full px-1.5 py-[2px] font-semibold" style={{ fontSize: "7px", background: "rgba(34,197,94,0.12)", color: "#15803d" }}>★ {m.perf}</span>
-                    <span className="font-semibold" style={{ fontSize: "9px", color: C.charcoal }}>{m.sal}</span>
+                ))}
+              </div>
+
+              {/* Right — Hiring + Vacant roles */}
+              <div>
+                {/* Hiring mini tiles — gold-tint */}
+                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(6px,0.8vw,11px)" }}>Hiring</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(5px,0.7vw,9px)", marginBottom: "clamp(8px,1vw,14px)" }}>
+                  <div style={{ background: R.goldTint, border: `1px solid rgba(245,166,35,0.25)`, borderRadius: "clamp(5px,0.7vw,9px)", padding: "clamp(6px,0.8vw,10px) clamp(7px,0.9vw,12px)" }}>
+                    <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,15px)", fontWeight: 800, color: R.text }}>3</p>
+                    <p style={{ fontSize: "clamp(5.5px,0.65vw,8px)", color: R.textDim, marginTop: "clamp(1px,0.2vw,3px)", lineHeight: 1.3 }}>Open roles</p>
+                  </div>
+                  <div style={{ background: R.goldTint, border: `1px solid rgba(245,166,35,0.25)`, borderRadius: "clamp(5px,0.7vw,9px)", padding: "clamp(6px,0.8vw,10px) clamp(7px,0.9vw,12px)" }}>
+                    <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,15px)", fontWeight: 800, color: R.text }}>6 <span style={{ fontSize: "clamp(6px,0.7vw,9px)", fontWeight: 600 }}>days</span></p>
+                    <p style={{ fontSize: "clamp(5.5px,0.65vw,8px)", color: R.textDim, marginTop: "clamp(1px,0.2vw,3px)", lineHeight: 1.3 }}>Avg. time-to-fill <span style={{ color: R.purple }}>(vs 39 avg)</span></p>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Hiring */}
-            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Hiring</p>
-            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
-              <div className="rounded-[7px] px-2.5 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
-                <p className="font-bold leading-none" style={{ fontSize: "16px", color: C.charcoal }}>3</p>
-                <p className="font-semibold mt-0.5" style={{ fontSize: "8px", color: C.indigo }}>Open roles</p>
-              </div>
-              <div className="rounded-[7px] px-2.5 py-2" style={{ background: "#EEEDFB", border: "1px solid rgba(75,81,184,0.15)" }}>
-                <p className="font-bold leading-none" style={{ fontSize: "16px", color: C.charcoal }}>6 <span style={{ fontSize: "9px", fontWeight: 600 }}>days</span></p>
-                <p className="leading-tight mt-0.5" style={{ fontSize: "7px", color: C.grayLight }}>Avg. time-to-fill <span style={{ color: C.indigo }}>(vs 39 industry avg)</span></p>
-              </div>
-            </div>
-
-            {/* Vacant Roles */}
-            <p className="font-bold uppercase tracking-wide mb-1" style={{ fontSize: "7.5px", color: C.grayLight }}>Vacant Roles</p>
-            <div style={{ border: "1px solid #EEEDFB", borderRadius: 7, overflow: "hidden" }}>
-              {VACANT.map((v, idx) => (
-                <div
-                  key={v.r}
-                  className="flex items-center justify-between px-2.5 py-1.5"
-                  style={{ borderTop: idx > 0 ? "1px solid #EEEDFB" : "none" }}
-                >
-                  <div>
-                    <p className="font-semibold leading-none" style={{ fontSize: "9px", color: C.charcoal }}>{v.r}</p>
-                    <p className="leading-none mt-[2px]" style={{ fontSize: "7.5px", color: C.indigo }}>{v.c}</p>
+                {/* Vacant roles */}
+                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(4px,0.5vw,7px)" }}>Vacant roles</p>
+                {VACANT.map((v) => (
+                  <div key={v.r} style={{ padding: "clamp(5px,0.65vw,8px) 0", borderTop: `1px solid ${R.line}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "clamp(1px,0.2vw,3px)" }}>
+                      <span style={{ fontSize: "clamp(7px,0.85vw,11px)", fontWeight: 600, color: R.text }}>{v.r}</span>
+                      <span style={{ fontSize: "clamp(5px,0.6vw,8px)", color: R.textDim2 }}>{v.d}</span>
+                    </div>
+                    <span style={{ fontSize: "clamp(6px,0.75vw,9.5px)", color: R.purple, fontWeight: 600 }}>{v.c}</span>
                   </div>
-                  <p className="flex-shrink-0 ml-2" style={{ fontSize: "7.5px", color: C.grayLight }}>{v.d}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Laptop base */}
-      <div className="mx-auto mt-1 h-1.5 rounded-b-lg" style={{ width: "80%", background: "linear-gradient(180deg, #1c1c20, #28282d)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }} />
-      <div className="mx-auto h-[3px] rounded-full" style={{ width: "70%", background: "#111116" }} />
+                ))}
+              </div>
+
+            </div>{/* end split */}
+          </div>{/* end app-body */}
+        </div>{/* end screen */}
+      </div>{/* end iPad shell */}
     </div>
   );
 }
