@@ -530,26 +530,29 @@ const BAR_DATA = [
 
 function PhoneMockup() {
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(205px, 17vw, 235px)", maxWidth: "100%" }}>
-      {/* Ambient glow */}
-      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(55% 50% at 50% 48%, rgba(255,174,33,0.14), transparent 70%)", filter: "blur(14px)" }} />
+    <div className="relative ml-auto" style={{ width: "clamp(250px, 22vw, 295px)", maxWidth: "100%" }}>
+      {/* Large indigo glow matching slide bg — phone "emerges" instead of floating */}
+      <div aria-hidden className="absolute pointer-events-none" style={{ inset: "-80px", background: "radial-gradient(ellipse 80% 70% at 50% 46%, rgba(58,66,149,0.72) 0%, rgba(39,38,104,0.45) 45%, transparent 72%)", filter: "blur(18px)", zIndex: 0 }} />
+      {/* Subtle orange warmth at base */}
+      <div aria-hidden className="absolute pointer-events-none" style={{ left: "10%", right: "10%", bottom: "-30px", height: "50%", background: "radial-gradient(ellipse at 50% 100%, rgba(255,174,33,0.13), transparent 65%)", filter: "blur(10px)", zIndex: 0 }} />
 
-      {/* Phone shell — dark navy, tall aspect, large corners */}
+      {/* Phone shell — borderless, blends into dark bg via shadow only */}
       <div
-        className="relative rounded-[36px] p-[8px]"
+        className="relative rounded-[42px] p-[9px]"
         style={{
-          background: "linear-gradient(170deg, #111328 0%, #080a1a 100%)",
-          border: "1.5px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 40px 80px -16px rgba(4,6,24,0.85), inset 0 1px 0 rgba(255,255,255,0.06)",
+          zIndex: 1,
+          background: "linear-gradient(170deg, #0f1226 0%, #060818 100%)",
+          border: "1px solid rgba(255,255,255,0.055)",
+          boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 50px 90px -12px rgba(4,6,24,0.95), 0 20px 40px -8px rgba(20,22,60,0.7), inset 0 1px 0 rgba(255,255,255,0.07)",
         }}
       >
         {/* Dynamic Island — black pill notch */}
-        <div className="flex justify-center pt-[7px] pb-[5px]">
-          <div className="h-[7px] w-[52px] rounded-full" style={{ background: "#000" }} />
+        <div className="flex justify-center pt-[8px] pb-[6px]">
+          <div className="h-[8px] w-[58px] rounded-full" style={{ background: "#000" }} />
         </div>
 
         {/* White screen */}
-        <div className="overflow-hidden rounded-[28px] bg-white">
+        <div className="overflow-hidden rounded-[32px] bg-white">
 
           {/* App top bar */}
           <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1.5">
