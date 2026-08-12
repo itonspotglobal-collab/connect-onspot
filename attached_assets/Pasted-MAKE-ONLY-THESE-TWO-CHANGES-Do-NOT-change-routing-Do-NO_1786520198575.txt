@@ -1,0 +1,309 @@
+MAKE ONLY THESE TWO CHANGES.
+
+Do NOT change routing.
+Do NOT change navbar menu contents.
+Do NOT redesign the Settings form.
+Do NOT alter Talent Profile functionality.
+
+## 1. ADD A BACK BUTTON TO PROFILE SETTINGS
+
+The `/settings` page currently has no in-app way to go back.
+
+Add a Back button above the `Profile Settings` title.
+
+Placement:
+
+* inside the same centered page container
+* above the page heading
+* aligned to the left edge of the content
+* approximately 20–24px below the navbar
+* approximately 18–22px above the heading
+
+Design:
+
+* subtle secondary button
+* transparent or very pale lavender background
+* indigo icon/text
+* rounded 10px
+* approximately 38–42px high
+
+Content:
+
+`← Back`
+
+Use a proper left-arrow icon from the existing icon library.
+
+Behavior:
+Use browser/application history so the user returns to the page they came from.
+
+Preferred:
+
+```tsx
+onClick={() => window.history.back()}
+```
+
+or use the router's equivalent history-back API if already available.
+
+IMPORTANT:
+Do NOT hardcode the Back button to Talent Profile.
+
+It should return to whichever page actually opened Settings.
+
+If there is no usable history entry, fall back to the Talent Profile page or the application's appropriate authenticated home route.
+
+Example logic:
+
+```tsx
+const handleBack = () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    navigate("/talent-profile");
+  }
+};
+```
+
+Keep the existing `Profile Settings` title and subtitle directly below it.
+
+---
+
+# 2. MATCH TOPNAVIGATION VISUALLY TO TALENT PROFILE NAVBAR
+
+The Talent Profile page has an older/custom navbar whose visual proportions look better.
+
+Use that Talent Profile navbar as the VISUAL REFERENCE ONLY.
+
+The shared `TopNavigationBar` must keep its CURRENT CONTENT.
+
+Do NOT replace its menu items.
+
+Keep whatever the shared navbar currently contains, such as:
+
+* OnSpot logo
+* Hire Talent
+* Find Work / More
+* Talent Profile dropdown
+* any currently intended authenticated actions
+
+Only change:
+
+* background color / gradient
+* navbar height
+* content width
+* horizontal padding
+* logo scale
+* vertical alignment
+* overall proportions
+
+## REFERENCE COLOR
+
+Match the Talent Profile navbar's indigo gradient.
+
+Approximate:
+
+```css
+background:
+  linear-gradient(
+    90deg,
+    #4B55BD 0%,
+    #3A47A8 45%,
+    #2F327F 100%
+  );
+```
+
+Use the actual existing Talent Profile navbar colors if they are already defined in the codebase rather than introducing duplicate constants.
+
+Do NOT use the current lighter/washed-out TopNavigation background.
+
+---
+
+## NAVBAR HEIGHT
+
+Make the shared TopNavigation approximately the same height as Talent Profile's navbar.
+
+Target:
+`72px–82px`
+
+Prefer using the existing navbar CSS variable if present:
+
+```css
+--nav-h
+```
+
+Set one shared value and use it consistently.
+
+Avoid having one page use a 56px navbar and another use an 80px navbar.
+
+---
+
+## CONTENT WIDTH
+
+The current TopNavigation content appears constrained too narrowly.
+
+Match the Talent Profile navbar's broader visual span.
+
+Use approximately:
+
+```css
+width: 100%;
+max-width: none;
+```
+
+for the outer navbar surface.
+
+Then use an inner content container approximately:
+
+```css
+width: min(100% - 64px, 1500px);
+margin-inline: auto;
+```
+
+or match the actual Talent Profile navbar's container width.
+
+For large displays:
+
+* logo should sit closer to the left side
+* account controls should sit closer to the right
+* navigation should use the full available horizontal space
+
+Do NOT constrain the navbar to `max-w-7xl` if that is what currently causes the shorter appearance.
+
+If current code contains something like:
+
+```tsx
+max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+```
+
+replace it with the wider shared navbar container.
+
+---
+
+## LOGO
+
+Match the Talent Profile navbar logo size.
+
+The OnSpot logo should be visually larger than in the current TopNavigation.
+
+Target approximate width:
+
+`150px–175px desktop`
+
+Preserve aspect ratio.
+
+Do not stretch the image.
+
+Use the same OnSpot logo asset used by Talent Profile if possible.
+
+Do NOT introduce a different logo variation unless Talent Profile already uses it.
+
+---
+
+## NAVIGATION ALIGNMENT
+
+All navbar elements should be vertically centered.
+
+Use:
+
+```css
+display: flex;
+align-items: center;
+height: 100%;
+```
+
+Keep menu items comfortably spaced.
+
+Do not change menu labels or destinations.
+
+---
+
+## TALENT PROFILE BUTTON
+
+Keep the redesigned Talent Profile account trigger.
+
+Only make sure it scales proportionally with the taller/wider navbar.
+
+It should remain:
+
+* right aligned
+* vertically centered
+* indigo/violet gradient
+* avatar/initial visible
+* dropdown behavior unchanged
+
+Do NOT restore the old Talent Profile navigation menu.
+
+---
+
+## SETTINGS PAGE NAVBAR
+
+The Settings page should use this same shared TopNavigationBar.
+
+It should NOT create its own separate header.
+
+The visual result should be:
+
+same navbar color
+same navbar height
+same logo scale
+same horizontal width
+
+across:
+
+* homepage/authenticated pages
+* Settings
+* Hire Talent
+* Find Work
+
+---
+
+## RESPONSIVE
+
+Desktop:
+
+* full-width navbar
+* large OnSpot logo
+* full existing menu
+
+Tablet:
+
+* reduce logo slightly
+* preserve navbar height
+* maintain existing responsive menu behavior
+
+Mobile:
+
+* do not force desktop navigation into viewport
+* preserve whatever current hamburger/mobile implementation already exists
+* use the same indigo gradient
+
+---
+
+## DO NOT CHANGE
+
+Do NOT change:
+
+* dropdown routes
+* Settings routing
+* Talent Profile routing
+* navbar menu text
+* authentication behavior
+* profile dropdown implementation
+* Settings fields
+* database/API logic
+
+This task is VISUAL NAVBAR ALIGNMENT + SETTINGS BACK BUTTON ONLY.
+
+## FINAL VERIFICATION
+
+Check:
+
+1. `/settings` shows `← Back` above Profile Settings.
+2. Clicking Back returns to the previous page.
+3. Settings still saves normally.
+4. TopNavigation color matches Talent Profile navbar.
+5. TopNavigation height matches Talent Profile navbar.
+6. Logo scale closely matches.
+7. Navbar spans the screen similarly to Talent Profile.
+8. Existing TopNavigation contents remain unchanged.
+9. Talent Profile dropdown still works.
+10. Test at 1920, 1440, 1024 and mobile widths.

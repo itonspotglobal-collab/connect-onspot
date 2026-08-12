@@ -539,7 +539,7 @@ export function TopNavigation() {
 
       <nav
         ref={navRef}
-        className={`nav-over-hero fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] ${
+        className={`nav-over-hero fixed top-0 left-0 right-0 z-50 backdrop-blur-md ${
           isVisible ? "translate-y-0" : "-translate-y-full"
         } ${isScrolled ? "nav-scrolled" : ""}`}
         data-scrolled={isScrolled}

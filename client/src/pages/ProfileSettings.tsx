@@ -19,6 +19,7 @@ import {
   X,
   Eye,
   Settings2,
+  ArrowLeft,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -381,6 +382,45 @@ export default function ProfileSettings() {
   return (
     <div className="min-h-screen" style={{ background: BG, paddingBottom: 60 }}>
       <div style={{ maxWidth: 1240, marginInline: "auto", paddingInline: "clamp(16px,4vw,32px)", paddingTop: 48 }}>
+
+        {/* ── Back button ── */}
+        <div className="mb-5">
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = "/talent-profile";
+              }
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 40,
+              paddingInline: 14,
+              borderRadius: 10,
+              border: `1.5px solid rgba(75,81,184,0.18)`,
+              background: "rgba(75,81,184,0.07)",
+              color: "#4B51B8",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background 150ms ease, border-color 150ms ease",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(75,81,184,0.13)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(75,81,184,0.30)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(75,81,184,0.07)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(75,81,184,0.18)";
+            }}
+          >
+            <ArrowLeft style={{ width: 16, height: 16 }} />
+            Back
+          </button>
+        </div>
 
         {/* ── Page header ── */}
         <div className="mb-10">
