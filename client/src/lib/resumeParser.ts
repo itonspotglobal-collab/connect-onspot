@@ -468,7 +468,27 @@ function extractPhone(allText: string): string {
 const LOCATION_HINTS_RX = /\b(?:cebu|manila|davao|quezon|makati|taguig|pasig|mandaluyong|paranaque|muntinlupa|caloocan|las\s+pinas|malabon|navotas|valenzuela|marikina|pasay|san\s+juan|cavite|laguna|batangas|rizal|bulacan|pampanga|metro\s+manila|ncr|philippines|ph)\b/i;
 const CITY_PATTERN_RX = /\b[A-Z][a-zA-Z\s]+(?:City|Province|Region|District)\b/;
 
+// Labels that explicitly introduce an address/location line in a resume
+const LOCATION_LABEL_RX =
+  /^(?:address|location|current\s+address|home\s+address|residential\s+address|city|based\s+in|residence|residing\s+in|based\s+at)\s*[:\-–]\s*/i;
+
 function extractLocation(sections: ResumeSection[], allText: string): string {
+  // ── Pass 1: scan ALL lines for explicit "Address: …" / "Location: …" labels ──
+  // This is the highest-confidence signal — works regardless of where it appears.
+  const allLines = allText.split("\n");
+  for (const line of allLines) {
+    const t = line.trim();
+    if (!t || t.length > 120) continue;
+    if (LOCATION_LABEL_RX.test(t)) {
+      // Extract the value after the label
+      const value = t.replace(LOCATION_LABEL_RX, "").trim();
+      if (value.length >= 3 && value.length <= 100 && !EMAIL_RX.test(value)) {
+        return value;
+      }
+    }
+  }
+
+  // ── Pass 2: scan header section for unlabelled location patterns ──────────
   const header = sections.find((s) => s.type === "header");
   const searchLines = header ? header.lines.slice(0, 15) : allText.split("\n").slice(0, 20);
 
@@ -478,20 +498,19 @@ function extractLocation(sections: ResumeSection[], allText: string): string {
     // Skip lines that look like names, emails, phones, or section headings
     if (EMAIL_RX.test(t)) continue;
     if (PHONE_RX.test(t) && t.replace(/\D/g, "").length >= 7) continue;
-    
-    // Strong location hint — city/province name in the line
+
+    // Strong location hint — known PH city/province name in the line
     if (LOCATION_HINTS_RX.test(t) && t.split(/\s+/).length <= 8) {
       return t;
     }
     if (CITY_PATTERN_RX.test(t) && t.split(/\s+/).length <= 6) {
       return t;
     }
-    // Generic: "City, Country" pattern with comma
-    if (/^[A-Za-z\s]+,\s*[A-Za-z\s]+$/.test(t) && t.split(/\s+/).length <= 6) {
-      // Make sure it doesn't look like a name
+    // Generic: "City, Country" or "City, Province" pattern with comma
+    if (/^[A-Za-z\s.]+,\s*[A-Za-z\s.]+$/.test(t) && t.split(/\s+/).length <= 7) {
       const words = t.split(/[\s,]+/).filter(Boolean);
       const isLikelyLocation = words.some((w) =>
-        /^(?:city|province|state|region|country|ph|phl|philippines|usa|uk|australia|singapore|canada|uae|dubai|remote)$/i.test(w)
+        /^(?:city|province|state|region|country|ph|phl|philippines|usa|uk|australia|singapore|canada|uae|dubai|remote|metro)$/i.test(w)
       );
       if (isLikelyLocation) return t;
     }

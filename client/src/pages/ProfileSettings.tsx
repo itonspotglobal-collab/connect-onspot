@@ -47,6 +47,7 @@ import {
   candidatePhotoSrc,
 } from "@/hooks/useCandidateProfileSettings";
 import { CheckCircle2 } from "lucide-react";
+import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
 import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -351,6 +352,25 @@ export default function ProfileSettings() {
       toast({ title: "Not logged in", description: "Please log in to your Talent account.", variant: "destructive" });
       return;
     }
+
+    // Phone validation (only when a value is provided)
+    if (data.phoneNumber?.trim()) {
+      const country = countryFromTimezone(data.timezone);
+      const phoneResult = validatePhone(data.phoneNumber.trim(), country);
+      if (!phoneResult.valid) {
+        toast({ title: "Invalid phone number", description: phoneResult.error ?? "Please check your phone number.", variant: "destructive" });
+        return;
+      }
+      // Timezone ↔ phone country consistency check
+      if (data.timezone) {
+        const tzCheck = validatePhoneTimezoneMatch(data.phoneNumber.trim(), data.timezone);
+        if (!tzCheck.ok) {
+          toast({ title: "Phone / timezone mismatch", description: tzCheck.message ?? "", variant: "destructive", duration: 8000 });
+          return;
+        }
+      }
+    }
+
     try {
       // PATCH /api/candidates/:id — single request, includes all fields + coreSkills
       await saveSettings(data);

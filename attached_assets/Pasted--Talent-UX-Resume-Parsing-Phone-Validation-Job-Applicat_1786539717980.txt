@@ -1,0 +1,1036 @@
+# Talent UX + Resume Parsing + Phone Validation + Job Application Flow
+
+Please implement the following four changes as one coordinated Talent experience update.
+
+Do not redesign unrelated pages or break the recently fixed Candidate-based Talent Profile / Profile Settings architecture.
+
+Primary files to inspect first:
+
+* `client/src/pages/TalentProfile.tsx`
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/hooks/useCandidateProfileSettings.ts`
+* `client/src/pages/FindBestMatches.tsx`
+* `client/src/lib/resumeParser.ts`
+* `client/src/pages/JobApplyPage.tsx`
+* Talent signup/account creation components
+* shared phone/address form components
+* `client/src/components/TalentLoginModal.tsx`
+* `server/routes.ts`
+* `server/storage.ts`
+* `shared/schema.ts`
+
+Also search the whole repository for:
+
+```text id="31b5e8"
+Phone Number
+phoneNumber
+phone
+Apply Now
+Submit Application
+Finish Setting Up
+resumeParser
+address
+location
+video introduction
+cover letter
+```
+
+Reuse shared utilities/components where possible.
+
+---
+
+# CHANGE 1 — Make “Finish Setting Up” the primary Talent Profile action
+
+On the Talent Profile page, incomplete Talent profiles currently show a banner like:
+
+```text id="j4a6cz"
+Finish setting up your profile
+Upload your resume and complete your information...
+```
+
+with a `Finish Setting Up` button.
+
+The button is currently too visually secondary.
+
+## Goal
+
+When the Talent profile is incomplete, the first obvious action on the page should be:
+
+```text id="fsuv42"
+Finish Setting Up
+```
+
+## Requirements
+
+Make the CTA more prominent without redesigning the whole profile.
+
+Preferred behavior:
+
+* place it in a highly visible location near the top of the Talent Profile;
+* use the primary brand button styling;
+* visually prioritize it over `Contact`, `Back to Pool`, tabs, and other secondary actions when the profile belongs to the logged-in Talent;
+* keep the completion percentage visible;
+* CTA should clearly communicate that completing the profile is the next action.
+
+If practical, use text such as:
+
+```text id="9x34se"
+Complete Your Profile
+50% complete
+Finish Setting Up
+```
+
+The CTA should navigate to:
+
+```text id="brxxq2"
+/settings
+```
+
+or the correct Talent Profile Settings route.
+
+Do not show this CTA for profiles that are actually 100% complete.
+
+Use the shared persisted profile completion logic, not a separate hardcoded condition.
+
+---
+
+# CHANGE 2 — Resume parsing must populate Address / Location
+
+The `Find Best Matches` flow parses uploaded CVs but currently fails to populate Address/Location even when the resume contains a valid address.
+
+Inspect:
+
+```text id="kwm9jl"
+client/src/lib/resumeParser.ts
+client/src/pages/FindBestMatches.tsx
+```
+
+and the relevant server-side resume parsing/extraction if any.
+
+## Goal
+
+If a CV contains an identifiable residential/current address or location, automatically populate the corresponding Address/Location input.
+
+Examples that should be recognized:
+
+```text id="eav451"
+Cebu City, Philippines
+Makati City, Metro Manila
+Manila, Philippines
+123 Example Street, Quezon City, Philippines
+Davao City, Philippines
+```
+
+## Requirements
+
+Extend the existing resume parser instead of creating a completely separate parser.
+
+The parsed result should expose something explicit, for example:
+
+```ts id="hqnk81"
+{
+  fullName,
+  email,
+  phone,
+  address,
+  ...
+}
+```
+
+or:
+
+```ts id="m25fvt"
+location
+```
+
+depending on the existing data model.
+
+Populate Find Best Matches with this parsed value.
+
+Do not overwrite a value the user manually edited after parsing.
+
+Use confidence/sanity checks so random resume text is not treated as an address.
+
+Look for common resume labels such as:
+
+```text id="0aez7y"
+Address:
+Location:
+Current Address:
+City:
+Based in:
+```
+
+Also support common unlabelled city/country patterns where the parser already has sufficient confidence.
+
+If no reliable address is found, leave the field blank.
+
+Do not invent an address.
+
+---
+
+# CHANGE 3 — Standardize and validate every Phone Number field
+
+Find every Talent-facing phone input across the application, especially:
+
+* Profile Settings
+* Talent signup / account creation
+* Find Best Matches
+* Job Application
+* Onboarding
+* any account/profile form that contains `Phone Number`
+
+Create or reuse ONE shared phone validation utility/component.
+
+Do not duplicate regex logic across pages.
+
+## Goal
+
+Phone numbers must be validated for the selected/inferred country.
+
+A phone input must not be considered valid simply because it is non-empty.
+
+Example:
+
+For Philippines:
+
+```text id="0d06dy"
+Local mobile:
+09123456789
+```
+
+contains 11 digits.
+
+International equivalent:
+
+```text id="gmeo2i"
++639123456789
+```
+
+must also be accepted.
+
+A 10-digit PH mobile such as:
+
+```text id="utizgy"
+9123456789
+```
+
+must not be silently accepted as a complete local-format number unless it is explicitly normalized as an international number using the +63 country context.
+
+## Implementation
+
+Prefer using a proven phone-number parser/validator already installed in the project.
+
+If none exists, add a lightweight standard library such as `libphonenumber-js` rather than maintaining country regexes manually.
+
+Use functionality equivalent to:
+
+```ts id="wu9n71"
+parsePhoneNumberFromString
+isValidPhoneNumber
+```
+
+Do not rely only on string length.
+
+Normalize saved phone numbers consistently.
+
+Preferred canonical DB format:
+
+```text id="k5nwgb"
+E.164
+```
+
+Example:
+
+```text id="57ec9v"
++639123456789
+```
+
+Display formatting may be localized, but stored data should be normalized if this can be done without breaking existing records.
+
+---
+
+# Phone input UX
+
+Phone validation should provide clear inline feedback.
+
+Examples:
+
+```text id="ww6apg"
+Please enter a valid Philippine phone number.
+```
+
+```text id="6u0y0g"
+This number appears to be missing a digit.
+```
+
+```text id="24ocjl"
+Phone number does not match the selected country.
+```
+
+Do not wait until submission if validation can happen safely on blur/change.
+
+Do not show an error while the user has only typed the first few digits; validate once there is sufficient input or on blur/submission.
+
+---
+
+# Profile Settings timezone ↔ phone country validation
+
+This is specifically required.
+
+The Profile Settings page contains both:
+
+```text id="n4xedk"
+Phone Number
+Timezone
+```
+
+Add a consistency check.
+
+Example:
+
+```text id="ek2ifz"
+Timezone: Asia/Manila
+```
+
+should normally correspond to:
+
+```text id="xb389g"
+Country calling code: +63
+```
+
+## Important
+
+A timezone does not always uniquely determine a country.
+
+Therefore do NOT create a globally rigid `timezone = exact phone prefix` rule for every timezone.
+
+Instead:
+
+1. build a mapping for unambiguous/common supported Talent timezones;
+2. where the timezone clearly maps to a country, validate the phone country;
+3. where a timezone spans multiple countries or is ambiguous, do not block the user based solely on timezone.
+
+For current supported values, at minimum ensure:
+
+```text id="p9c4q8"
+Asia/Manila -> PH -> +63
+```
+
+If the selected timezone is `Asia/Manila` and the number resolves to a non-PH country, display an error and block Save until corrected.
+
+Example message:
+
+```text id="neua4l"
+Your selected timezone is Philippines (Asia/Manila), but this phone number appears to use a different country code.
+```
+
+Do not automatically rewrite a valid international number without the user's knowledge.
+
+---
+
+# Shared phone component
+
+Prefer creating something like:
+
+```text id="n959ah"
+client/src/components/PhoneNumberInput.tsx
+```
+
+and:
+
+```text id="8hfzvh"
+client/src/lib/phoneValidation.ts
+```
+
+The shared logic should accept:
+
+```ts id="sf2ll2"
+value
+country
+timezone
+onChange
+required
+```
+
+or equivalent.
+
+Use the same validator in backend request validation where phone integrity matters.
+
+Never rely exclusively on frontend validation.
+
+---
+
+# CHANGE 4 — Redesign Job Application flow around Talent Account first
+
+This is the largest change.
+
+Current application flow for new users is approximately:
+
+```text id="1kmcg4"
+Apply Now
+→ Application Form
+→ Account Creation
+→ Submit
+```
+
+Change it to:
+
+```text id="e5yv8j"
+Apply Now
+→ Account Creation / Sign In
+→ Prefilled Application Review
+→ Submit Application
+```
+
+For users who already have a Talent account:
+
+```text id="1i5dxr"
+Apply Now
+→ Load Talent profile
+→ Prefilled Application Review
+→ Submit Application
+```
+
+The form should become primarily a **review/confirmation step**, not a duplicate data-entry process.
+
+---
+
+# A. Detect Talent session immediately
+
+When a user clicks `Apply Now`, determine whether there is an active Candidate/Talent session using the existing Talent authentication system.
+
+Use:
+
+```text id="0sba2x"
+talent_profile_token
+loadTalentAuth()
+candidateId
+```
+
+Do not use only legacy `AuthContext` / `onspot_jwt_token`.
+
+## Logged-in Talent
+
+If a valid Talent session exists:
+
+1. resolve the Candidate using `candidateId`;
+2. fetch fresh persisted Candidate profile data;
+3. fetch persisted resume;
+4. fetch persisted video introduction if present;
+5. prefill the application;
+6. open the review form directly.
+
+Do not ask them to create an account again.
+
+---
+
+# B. New user / no Talent account
+
+If no valid Talent account/session exists:
+
+Clicking:
+
+```text id="jmi1zr"
+Apply Now
+```
+
+must first show:
+
+```text id="g4qc5n"
+Create Talent Account
+```
+
+with a secondary:
+
+```text id="ly2knm"
+Already have an account? Sign in
+```
+
+The user must establish Talent identity before the application form is generated.
+
+After successful account creation/login:
+
+1. create/fetch Candidate record;
+2. prefill any known account/profile data;
+3. proceed automatically to application review.
+
+Do not discard the selected job during account creation.
+
+Preserve:
+
+```text id="h1llbs"
+jobId
+job slug
+return URL
+application context
+```
+
+throughout auth.
+
+After auth success, return them to the same role they clicked Apply Now for.
+
+---
+
+# C. Prefill application from Talent profile
+
+For logged-in Talent, prefill all available application fields from the canonical persisted Candidate profile.
+
+At minimum:
+
+```text id="wnppw0"
+First Name
+Last Name
+Email Address
+Phone Number
+CV / Resume
+Video Introduction
+Cover Letter / Message
+```
+
+Also use job/application-specific data where relevant.
+
+## Name
+
+Use persisted separate:
+
+```text id="kxn7ro"
+firstName
+lastName
+```
+
+Do not split `fullName`.
+
+## Email
+
+Use Candidate/Talent authenticated email.
+
+Because this is identity data, consider making Email read-only on the application review form unless the product intentionally supports changing account email there.
+
+## Phone
+
+Use the canonical validated Candidate phone.
+
+Run the same shared phone validator.
+
+## Resume
+
+If the Talent already has a valid current resume:
+
+* show the filename/current uploaded document;
+* do not force them to upload it again;
+* allow `Replace` if desired.
+
+If no resume exists and resume is required for the job:
+
+* clearly highlight it as missing;
+* require upload before submit.
+
+## Video Introduction
+
+This is situational.
+
+Determine whether the job requires a video introduction.
+
+If the job does NOT require one:
+
+* do not block submission when missing;
+* if Candidate already has one, it can still be displayed/attached if appropriate.
+
+If the job DOES require one:
+
+* use the Candidate's existing video introduction if available;
+* otherwise require upload.
+
+Do not mark every job's video introduction required globally.
+
+## Cover Letter
+
+If there is previously saved/general cover-letter content suitable for reuse, prefill it.
+
+Otherwise leave it editable.
+
+Cover letter should remain application-specific and editable.
+
+---
+
+# D. Mismatch detection before submit
+
+The user asked specifically to double-check for mismatches.
+
+Before submission compare:
+
+```text id="xcgk1n"
+Application form
+vs
+Authenticated Candidate profile
+```
+
+Check at minimum:
+
+```text id="4fyvb2"
+First Name
+Last Name
+Email
+Phone
+Resume ownership/source
+Candidate ID
+```
+
+If the form's identity data differs unexpectedly from the authenticated Talent, do not silently submit.
+
+Show a clear review warning such as:
+
+```text id="8r5la3"
+Some application details differ from your Talent profile.
+Please review them before submitting.
+```
+
+Do not create false mismatches based purely on formatting differences.
+
+Normalize before comparing:
+
+```text id="m1gr83"
+trimmed names
+case-insensitive email
+E.164 phone
+canonical document IDs/URLs
+```
+
+For logged-in Talent, the authenticated Candidate ID must always be the owner of the application.
+
+Do not accept arbitrary Candidate IDs from the browser.
+
+---
+
+# E. Application review UI
+
+For logged-in users, the page should communicate:
+
+```text id="pnun3l"
+You are applying with your OnSpot Talent account.
+```
+
+Then show the prefilled data clearly.
+
+Where possible:
+
+* identity fields should be read-only or clearly profile-backed;
+* editable fields should be obvious;
+* existing resume/video should appear as attached files, not empty upload boxes;
+* include links/actions to update Profile Settings where appropriate.
+
+Example:
+
+```text id="zr97do"
+Resume
+✓ Frenzy_Legaspi_Resume.pdf
+[Replace]
+
+Video Introduction
+Not required for this role
+
+Phone
++63 912 345 6789
+```
+
+Do not make users re-enter data that already exists.
+
+---
+
+# F. Missing profile information
+
+If a logged-in Talent's profile is incomplete:
+
+Do not send them back to Account Creation.
+
+Instead show which application-required fields are missing.
+
+Example:
+
+```text id="cdxc05"
+Your Talent profile is missing:
+• Phone Number
+• Resume
+```
+
+Allow them to fill/update those items in the application review, and persist appropriate profile-level data back to the Candidate record when that is expected.
+
+Be careful:
+
+Application-specific fields such as Cover Letter should not overwrite unrelated Candidate profile fields unless intentionally designed.
+
+---
+
+# G. Account creation flow
+
+For new users, account creation should capture the minimum required identity fields first.
+
+Suggested flow:
+
+```text id="mttghf"
+Step 1 — Create Talent Account
+Email
+Password
+Confirm Password
+First Name
+Last Name
+
+Step 2 — Review Application
+Prefilled profile/application information
+
+Step 3 — Submit Application
+```
+
+If your existing Talent signup requires additional fields, preserve those requirements.
+
+Do not require users to fill the entire application before an account exists.
+
+---
+
+# H. Existing email detection
+
+During new-account application flow:
+
+If the email already belongs to a Talent Candidate account:
+
+Do not create a duplicate Candidate.
+
+Show:
+
+```text id="w5nexo"
+An OnSpot Talent account already exists with this email.
+Please sign in to continue your application.
+```
+
+Then preserve the job context and resume the application after successful login.
+
+If the email belongs to a Client/Admin account instead, retain existing cross-portal safeguards.
+
+---
+
+# I. Job requirements drive document requirements
+
+Inspect the job schema for flags/settings describing whether Resume and Video Introduction are required.
+
+Application validation should be dynamic.
+
+Example:
+
+```ts id="c510mq"
+resumeRequired = true;
+videoRequired = job.requiresVideoIntroduction;
+```
+
+Do not hardcode:
+
+```text id="utpizr"
+Video Introduction *
+```
+
+on every job if only some positions require it.
+
+Update labels accordingly:
+
+Required:
+
+```text id="tz9l8o"
+Video Introduction *
+```
+
+Optional:
+
+```text id="g2m0yj"
+Video Introduction (Optional)
+```
+
+---
+
+# J. Persist application against the authenticated Candidate
+
+When submitting:
+
+The backend must derive or validate the Candidate identity from the Talent JWT.
+
+The application must be associated with:
+
+```text id="xacgo6"
+authenticated candidateId
+jobId
+```
+
+Do not trust a browser-provided candidate/user ID without ownership validation.
+
+Protect against duplicate application submission to the same job if the current application rules require uniqueness.
+
+---
+
+# K. Avoid two separate Talent profile sources
+
+Continue using:
+
+```text id="fpq6pu"
+candidates
+talent_profile_token
+Candidate-based APIs
+```
+
+for current Talent identity/profile data.
+
+Do not reintroduce:
+
+```text id="oyxdts"
+/api/profiles/me
+legacy profiles
+legacy user_skills
+```
+
+into this new application flow.
+
+---
+
+# L. Keep profile/application documents synchronized correctly
+
+Inspect how Candidate resumes/video are currently persisted.
+
+The application should reference the existing stored Candidate file instead of unnecessarily duplicating binary uploads.
+
+If applications require their own immutable file snapshot/reference, store the correct reference at submission time.
+
+Do not delete or mutate the Candidate's original document just because an application is submitted.
+
+---
+
+# M. Resume parsing and application prefill must agree
+
+If a new Talent uploads a CV during onboarding/account creation:
+
+1. parse the resume;
+2. prefill profile fields;
+3. include Address/Location extraction;
+4. validate phone;
+5. persist confirmed profile data;
+6. then use the same persisted values to prefill the application.
+
+Avoid:
+
+```text id="af4edm"
+CV parser result
+→ application local state only
+```
+
+Prefer:
+
+```text id="gwahiz"
+CV parser
+→ user confirms
+→ Candidate DB
+→ application prefill from Candidate DB
+```
+
+This reduces mismatches.
+
+---
+
+# N. Phone validation test cases
+
+Test at minimum:
+
+### Philippines valid local
+
+```text id="d133s4"
+09123456789
+```
+
+Expected valid.
+
+### Philippines valid international
+
+```text id="4w04up"
++639123456789
+```
+
+Expected valid.
+
+### Philippines incomplete
+
+```text id="n08tgj"
+0912345678
+```
+
+Expected invalid.
+
+### Philippines mismatched timezone
+
+```text id="0vvkg9"
+Timezone: Asia/Manila
+Phone: +1 415 555 2671
+```
+
+Expected validation warning/error before Profile Settings Save.
+
+### Other countries
+
+Verify at least several supported regions using the selected/default country context.
+
+Do not validate all countries solely by digit count.
+
+---
+
+# O. Full application flow test cases
+
+## Test 1 — Existing Talent, complete profile
+
+1. Login as Talent.
+2. Open a job.
+3. Click Apply Now.
+4. Do not show Account Creation.
+5. Application review opens.
+6. First/Last Name prefilled.
+7. Email prefilled.
+8. Phone prefilled.
+9. Existing Resume shown.
+10. Existing Video shown if applicable.
+11. Submit.
+12. Application belongs to correct Candidate.
+13. No duplicate profile/account created.
+
+## Test 2 — Existing Talent, missing resume
+
+1. Login.
+2. Click Apply.
+3. Application review opens.
+4. Existing data prefilled.
+5. Resume clearly marked missing.
+6. Upload Resume.
+7. Resume persists to Candidate profile if intended.
+8. Submit succeeds.
+
+## Test 3 — New visitor
+
+1. Logged out/no Talent token.
+2. Open job.
+3. Click Apply Now.
+4. Account Creation is first.
+5. Create Talent account.
+6. Remain attached to same job context.
+7. Application review opens.
+8. Account/profile data is already prefilled.
+9. User fills only missing fields.
+10. Submit.
+
+## Test 4 — Existing Talent email entered during signup
+
+1. Logged out.
+2. Click Apply.
+3. Start Create Account.
+4. Enter email already belonging to Talent.
+5. Do not create duplicate.
+6. Prompt Sign In.
+7. After login return to same job.
+8. Prefilled application opens.
+
+## Test 5 — Video optional
+
+1. Job does not require video.
+2. Talent has no video.
+3. Application can be submitted.
+
+## Test 6 — Video required
+
+1. Job requires video.
+2. Talent has existing video.
+3. Existing video is pre-attached.
+4. Submit works without re-upload.
+
+Then test required-video job with no saved video and require upload.
+
+---
+
+# P. Do not break these existing features
+
+Regression-test:
+
+* Talent Profile
+* Profile Settings
+* Profile Completion
+* Talent account login
+* First/Last Name multi-word fix
+* Profile photo
+* Resume upload
+* Video upload
+* Find Best Matches
+* resume parsing
+* Talent Pool
+* job browsing
+* Client/Admin auth
+* existing applications
+* Applicant management
+
+---
+
+# Acceptance criteria
+
+## Talent Profile CTA
+
+* [ ] Incomplete profiles have a visually dominant `Finish Setting Up` CTA.
+* [ ] CTA goes to Profile Settings.
+* [ ] Complete profiles do not show the incomplete CTA.
+
+## Resume Address Parsing
+
+* [ ] Address/location is parsed from a CV when reliably present.
+* [ ] Find Best Matches auto-populates it.
+* [ ] User manual edits are not overwritten.
+* [ ] Parser does not invent addresses.
+
+## Phone Validation
+
+* [ ] Shared phone validation is used everywhere.
+* [ ] PH 10-digit incomplete numbers are rejected.
+* [ ] PH 11-digit local mobile works.
+* [ ] +63 format works.
+* [ ] Data is normalized consistently.
+* [ ] Profile Settings detects clear timezone/phone country mismatch.
+* [ ] Backend validation protects persisted data too.
+
+## Job Application
+
+* [ ] Existing Talent -> Apply Now -> prefilled review form.
+* [ ] Existing Talent does not create another account.
+* [ ] New Talent -> Apply Now -> Create Account first.
+* [ ] After account creation -> prefilled review form.
+* [ ] Existing Talent email during signup redirects to Sign In instead of duplicate account.
+* [ ] Name, email, phone, resume are prefilled from Candidate data.
+* [ ] Video requirement is job-specific.
+* [ ] Cover Letter remains application-specific/editable.
+* [ ] Mismatches are detected before submit.
+* [ ] Authenticated Candidate owns the application.
+* [ ] Job context survives login/signup.
+* [ ] Database records are verified.
+
+---
+
+# Final implementation report required
+
+After implementation, report:
+
+1. files changed;
+2. how the Talent Profile CTA priority was changed;
+3. how resume Address extraction works;
+4. phone validation library/strategy used;
+5. supported timezone-to-country validation behavior;
+6. how phone data is normalized in DB;
+7. old application flow;
+8. new application flow;
+9. how Talent session detection works;
+10. which Candidate fields prefill applications;
+11. how Resume is reused;
+12. how job-specific Video requirement works;
+13. how mismatches are detected;
+14. how duplicate Candidate accounts are prevented;
+15. backend ownership validation;
+16. DB verification performed;
+17. regression tests performed.
+
+Do not mark this task complete after UI-only changes. Verify the persisted Candidate and Application records in the database.

@@ -8838,27 +8838,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const files = (req as any).files as Record<string, Express.Multer.File[]> | undefined;
 
-      // ── CV validation (required for new submissions) ──────────────────────────
+      // ── Early auth check (needed before CV validation to support useProfileResume) ──
+      const useProfileResume = req.body.useProfileResume === "true";
+      let earlyAuthedUser: { id: string; email: string; role: string } | null = null;
+      try {
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith("Bearer ")) {
+          const jwtSecret =
+            process.env.JWT_SECRET ||
+            (process.env.NODE_ENV === "development" ? "development-fallback-secret-not-for-production" : "");
+          if (jwtSecret) {
+            const decoded = jwt.verify(authHeader.slice(7), jwtSecret) as any;
+            if (decoded?.userId) {
+              // Legacy JWT — look up by user ID
+              const ur = await query(`SELECT id, email, role FROM users WHERE id = $1`, [decoded.userId]);
+              if (ur.rows.length > 0) earlyAuthedUser = ur.rows[0];
+            } else if (decoded?.type === "candidate" && decoded?.candidateId && decoded?.email) {
+              // Talent Portal JWT — look up user by the candidate's email
+              const ur = await query(`SELECT id, email, role FROM users WHERE LOWER(email) = $1 LIMIT 1`, [decoded.email.toLowerCase()]);
+              if (ur.rows.length > 0) earlyAuthedUser = ur.rows[0];
+            }
+          }
+        }
+      } catch (_) { /* token absent or invalid — continue as public applicant */ }
+
+      // ── CV validation (required for new submissions; optional when reusing profile resume) ──
       const cvFile = files?.["resume"]?.[0];
-      if (!cvFile) {
+      if (!cvFile && !useProfileResume) {
         return res.status(400).json({ error: "CV / Resume is required. Please upload a PDF, DOC, or DOCX file." });
       }
-      const allowedCvMimes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      if (!allowedCvMimes.includes(cvFile.mimetype)) {
-        return res.status(400).json({ error: "Invalid CV format. Only PDF, DOC, and DOCX files are allowed." });
-      }
-      if (cvFile.size > 10 * 1024 * 1024) {
-        return res.status(400).json({ error: "CV file too large — maximum size is 10 MB." });
+      if (cvFile) {
+        const allowedCvMimes = [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ];
+        if (!allowedCvMimes.includes(cvFile.mimetype)) {
+          return res.status(400).json({ error: "Invalid CV format. Only PDF, DOC, and DOCX files are allowed." });
+        }
+        if (cvFile.size > 10 * 1024 * 1024) {
+          return res.status(400).json({ error: "CV file too large — maximum size is 10 MB." });
+        }
       }
 
       // ── Video introduction validation (required when job.requiresVideoIntro is true) ─
       const videoFile = files?.["video"]?.[0];
       const requiresVideoIntro = !!(job as any).requiresVideoIntro;
-      if (requiresVideoIntro && !videoFile) {
+      const useProfileVideo = req.body.useProfileVideo === "true";
+      if (requiresVideoIntro && !videoFile && !useProfileVideo) {
         return res.status(400).json({ error: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file." });
       }
       if (videoFile) {
@@ -8871,31 +8898,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // ── Upload CV to object storage ───────────────────────────────────────────
+      // ── Upload CV to object storage (only when a new file is attached) ────────
       let cvResumeUrl: string | null = null;
       let cvResumeFileName: string | null = null;
-      try {
-        const objectStorageService = new ObjectStorageService();
-        const objectId = randomUUID();
-        const privateObjectDir = objectStorageService.getPrivateObjectDir();
-        const fullPath = `${privateObjectDir}/application-resumes/${objectId}`;
-        const parts = fullPath.split("/").filter((p: string) => p);
-        const bucketName = parts[0];
-        const objectName = parts.slice(1).join("/");
-        const bucket = objectStorageClient.bucket(bucketName);
-        const objectFile = bucket.file(objectName);
-        await objectFile.save(cvFile.buffer, {
-          metadata: { contentType: cvFile.mimetype, metadata: { originalName: cvFile.originalname } },
-        });
-        await setObjectAclPolicy(objectFile, { visibility: "private" });
-        cvResumeUrl = `/objects/application-resumes/${objectId}`;
-        cvResumeFileName = cvFile.originalname;
-      } catch (uploadErr: any) {
-        console.error("CV upload to object storage failed:", uploadErr.message);
-        return res.status(500).json({
-          error: "cv_upload_failed",
-          message: "CV upload failed — please try a different file or check your connection.",
-        });
+      if (cvFile) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          const objectId = randomUUID();
+          const privateObjectDir = objectStorageService.getPrivateObjectDir();
+          const fullPath = `${privateObjectDir}/application-resumes/${objectId}`;
+          const parts = fullPath.split("/").filter((p: string) => p);
+          const bucketName = parts[0];
+          const objectName = parts.slice(1).join("/");
+          const bucket = objectStorageClient.bucket(bucketName);
+          const objectFile = bucket.file(objectName);
+          await objectFile.save(cvFile.buffer, {
+            metadata: { contentType: cvFile.mimetype, metadata: { originalName: cvFile.originalname } },
+          });
+          await setObjectAclPolicy(objectFile, { visibility: "private" });
+          cvResumeUrl = `/objects/application-resumes/${objectId}`;
+          cvResumeFileName = cvFile.originalname;
+        } catch (uploadErr: any) {
+          console.error("CV upload to object storage failed:", uploadErr.message);
+          return res.status(500).json({
+            error: "cv_upload_failed",
+            message: "CV upload failed — please try a different file or check your connection.",
+          });
+        }
       }
 
       // ── Upload video introduction to object storage (if present) ─────────────
@@ -8935,26 +8964,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const normalizedEmail = email.trim().toLowerCase();
 
-      // ── Optional auth: identify a logged-in Talent without blocking the public flow ──
-      let authedUser: { id: string; email: string; role: string } | null = null;
-      try {
-        const authHeader = req.headers.authorization;
-        if (authHeader?.startsWith("Bearer ")) {
-          const jwtSecret =
-            process.env.JWT_SECRET ||
-            (process.env.NODE_ENV === "development" ? "development-fallback-secret-not-for-production" : "");
-          if (jwtSecret) {
-            const decoded = jwt.verify(authHeader.slice(7), jwtSecret) as any;
-            if (decoded?.userId) {
-              const ur = await query(
-                `SELECT id, email, role FROM users WHERE id = $1`,
-                [decoded.userId],
-              );
-              if (ur.rows.length > 0) authedUser = ur.rows[0];
-            }
+      // Use the result from the early auth check (done before CV validation)
+      let authedUser: { id: string; email: string; role: string } | null = earlyAuthedUser;
+
+      // ── Profile-resume reuse: resolve existing resume URL from candidate's profile ──
+      if (useProfileResume && !cvResumeUrl) {
+        if (!authedUser || authedUser.role !== "talent") {
+          return res.status(400).json({ error: "CV / Resume is required. Please upload a resume file." });
+        }
+        // Try candidates table first (resume_url column)
+        const candRow = await query(
+          `SELECT resume_url, resume_file_name FROM candidates WHERE LOWER(email) = $1 LIMIT 1`,
+          [normalizedEmail],
+        );
+        if (candRow.rows.length > 0 && candRow.rows[0].resume_url) {
+          cvResumeUrl = candRow.rows[0].resume_url;
+          cvResumeFileName = candRow.rows[0].resume_file_name || null;
+        } else {
+          // Fall back to the documents table (most recent resume document)
+          const docRow = await query(
+            `SELECT file_url, file_name FROM documents WHERE user_id = $1 AND type = 'resume' ORDER BY created_at DESC LIMIT 1`,
+            [authedUser.id],
+          );
+          if (docRow.rows.length > 0) {
+            cvResumeUrl = docRow.rows[0].file_url;
+            cvResumeFileName = docRow.rows[0].file_name || null;
           }
         }
-      } catch (_) { /* token absent or invalid — continue as public applicant */ }
+        if (!cvResumeUrl) {
+          return res.status(400).json({ error: "No resume found on your Talent profile. Please upload a resume file." });
+        }
+      }
+
+      // ── Profile-video reuse: resolve existing video intro URL ─────────────────
+      if (useProfileVideo && !videoIntroUrl && authedUser) {
+        const vidRow = await query(
+          `SELECT file_url, file_name FROM documents WHERE user_id = $1 AND type = 'video_intro' ORDER BY created_at DESC LIMIT 1`,
+          [authedUser.id],
+        );
+        if (vidRow.rows.length > 0) {
+          videoIntroUrl = vidRow.rows[0].file_url;
+          videoIntroFileName = vidRow.rows[0].file_name || null;
+        }
+      }
 
       // ── Authenticated user fast-path ──────────────────────────────────────────
       if (authedUser) {

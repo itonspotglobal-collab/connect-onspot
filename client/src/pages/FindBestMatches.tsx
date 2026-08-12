@@ -52,6 +52,7 @@ import {
   type ExtractedCandidateProfile,
 } from "@/lib/resumeParser";
 import { useAuth } from "@/contexts/AuthContext";
+import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
 
 // ─── CandidateProfile type ────────────────────────────────────────────────────
 
@@ -1309,13 +1310,27 @@ function computeValuesAlignment(
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const EMAIL_FORMAT_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const PHONE_FORMAT_RX = /[\d\s\-+().]{7,}/;
 
 function isValidEmail(v: string): boolean {
   return EMAIL_FORMAT_RX.test(v.trim());
 }
+
+/** Validate phone using libphonenumber-js with PH as default country hint.
+ *  Accepts any valid international format (+XX…) or PH local format (09…). */
 function isValidPhone(v: string): boolean {
-  return PHONE_FORMAT_RX.test(v.trim()) && v.replace(/\D/g, "").length >= 7;
+  const raw = (v || "").trim();
+  if (!raw) return false;
+  try {
+    // Try Philippines local format first (most candidates are PH-based)
+    const parsed = libParsePhoneNumber(raw, "PH");
+    if (parsed?.isValid()) return true;
+    // Fall back to pure international format (number starting with +)
+    const intl = libParsePhoneNumber(raw);
+    return !!(intl?.isValid());
+  } catch {
+    // If the library throws, fall back to a generous length check
+    return raw.replace(/\D/g, "").length >= 7;
+  }
 }
 
 function canProceed(step: number, p: CandidateProfile): boolean {

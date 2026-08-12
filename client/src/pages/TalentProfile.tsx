@@ -901,24 +901,51 @@ export default function TalentProfile() {
       {/* ── Section Tabs ── */}
       <SectionTabs visibleIds={visibleSectionIds} />
 
-      {/* ── Finish Setup Banner (shown to owners with incomplete profiles) ── */}
+      {/* ── Complete Profile CTA (owner only, shown when profile is incomplete) ── */}
       {isOwner && completionPct < 100 && (
         <div className="mx-auto mt-4 max-w-4xl px-4 md:px-8">
-          <div className="flex flex-col gap-2 rounded-xl border border-[#474ead]/20 bg-[#474ead]/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#474ead]">Finish setting up your profile</p>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Upload your resume and complete your information to improve your job matches.
-                Your profile is {completionPct}% complete.
-              </p>
+          <div
+            className="relative overflow-hidden rounded-2xl p-5 sm:p-6"
+            style={{
+              background: "linear-gradient(135deg, #474ead 0%, #6366f1 60%, #818cf8 100%)",
+            }}
+          >
+            {/* Decorative background circle */}
+            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -bottom-6 right-16 h-24 w-24 rounded-full bg-white/5" />
+
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="mb-1.5 flex items-center gap-2">
+                  {/* Mini progress pill */}
+                  <span className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
+                    {completionPct}% complete
+                  </span>
+                </div>
+                <p className="text-lg font-bold text-white sm:text-xl">
+                  Complete Your Profile
+                </p>
+                <p className="mt-1 text-sm text-indigo-100">
+                  A complete profile improves your job matches and makes you stand out to clients.
+                </p>
+              </div>
+
+              <Button
+                size="lg"
+                className="shrink-0 rounded-full bg-white px-6 font-semibold text-[#474ead] shadow-lg hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#474ead]"
+                onClick={() => navigate("/settings")}
+              >
+                Finish Setting Up →
+              </Button>
             </div>
-            <Button
-              size="sm"
-              className="shrink-0 rounded-full bg-[#474ead] text-white"
-              onClick={() => navigate("/find-best-matches")}
-            >
-              Finish Setting Up
-            </Button>
+
+            {/* Progress bar */}
+            <div className="relative mt-4 h-1.5 overflow-hidden rounded-full bg-white/20">
+              <div
+                className="h-full rounded-full bg-white transition-all duration-700"
+                style={{ width: `${completionPct}%` }}
+              />
+            </div>
           </div>
         </div>
       )}
