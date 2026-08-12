@@ -4738,7 +4738,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
            js.submitted_at AS "submittedAt",
            js.updated_at   AS "updatedAt",
            js.resume_file_name AS "resumeFileName",
+           js.resume_url   AS "resumeUrl",
            js.cover_letter AS "coverLetter",
+           js.answers      AS "answers",
            j.id      AS "jobId",
            j.title   AS "jobTitle",
            j.company AS "jobCompany",
@@ -4769,14 +4771,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         applicationStatus: row.status,
         submittedAt: row.submittedAt,
         updatedAt: row.updatedAt,
-        resume: row.resumeFileName ? { fileName: row.resumeFileName } : undefined,
+        resume: (row.resumeFileName || row.resumeUrl)
+          ? { fileName: row.resumeFileName || undefined, url: row.resumeUrl || undefined }
+          : undefined,
         coverLetter: row.coverLetter || null,
+        answers: Array.isArray(row.answers) ? row.answers : (row.answers ? [] : null),
       }));
 
       return res.json(applications);
     } catch (error: any) {
       console.error("GET /api/talent/applications error:", error);
       return res.status(500).json({ error: "Failed to load applications" });
+    }
+  });
+
+  /**
+   * GET /api/talent/applications/:id/resume
+   * Streams the submitted resume for a specific application.
+   * Verifies the authenticated talent owns that submission before serving.
+   * Never exposes other applicants' files.
+   */
+  app.get("/api/talent/applications/:id/resume", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId, email: jwtEmail } = req.talentAuth;
+      const applicationId = req.params.id;
+
+      // Resolve canonical email from candidates table
+      const candRow = await query(
+        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const candidateEmail = candRow.rows[0].email as string;
+
+      // Resolve linked users.id
+      const userRow = await query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [candidateEmail],
+      );
+      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+
+      // Fetch only the submission the talent owns
+      const subResult = await query(
+        `SELECT js.resume_url AS "resumeUrl", js.resume_file_name AS "resumeFileName"
+         FROM job_submissions js
+         WHERE js.id = $1
+           AND (
+             ($2::text IS NOT NULL AND js.talent_id = $2::text)
+             OR (js.talent_id IS NULL AND lower(js.email) = lower($3))
+           )
+         LIMIT 1`,
+        [applicationId, linkedUserId, candidateEmail],
+      );
+
+      if (!subResult.rows.length) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      const row = subResult.rows[0];
+      if (!row.resumeUrl) {
+        return res.status(404).json({ error: "No resume attached to this application" });
+      }
+
+      const disposition = req.query.download === "1" ? "attachment" : "inline";
+      const fileName = (row.resumeFileName || "resume").replace(/"/g, "");
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(row.resumeUrl);
+      res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+      await objectStorageService.downloadObject(objectFile, res, 0);
+    } catch (err: any) {
+      console.error("GET /api/talent/applications/:id/resume error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve resume" });
     }
   });
 

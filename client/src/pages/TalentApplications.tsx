@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
-import { useTalentApplications, TalentApplication } from "@/hooks/useTalentApplications";
+import { useTalentApplications, TalentApplication, ApplicationAnswer } from "@/hooks/useTalentApplications";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import {
   Briefcase, MapPin, Calendar, ChevronRight, RefreshCw,
   Clock, CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
+  FileText, X, Download, MessageSquare, BookOpen,
 } from "lucide-react";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -89,9 +90,180 @@ function StatusTimeline({ status }: { status: string }) {
   );
 }
 
+// ─── Submission Drawer ────────────────────────────────────────────────────────
+
+function SubmissionDrawer({ app, onClose }: { app: TalentApplication; onClose: () => void }) {
+  const [downloading, setDownloading] = useState(false);
+
+  const submittedDate = app.submittedAt
+    ? new Date(app.submittedAt).toLocaleDateString("en-US", {
+        month: "long", day: "numeric", year: "numeric",
+      })
+    : null;
+
+  const hasAnswers = Array.isArray(app.answers) && app.answers.length > 0;
+  const hasCoverLetter = !!app.coverLetter;
+  const hasResume = !!app.resume;
+
+  /** Fetch the resume through the talent-authenticated endpoint and trigger a browser download. */
+  async function handleResumeDownload() {
+    const auth = loadTalentAuth();
+    if (!auth) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/talent/applications/${app.id}/resume?download=1`, {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = app.resume?.fileName || "resume";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Resume download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Slide-over panel */}
+      <div
+        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-slate-900"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Submission details"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-slate-900 dark:text-white truncate">{app.job.title}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {app.job.companyName}
+              {submittedDate && <span className="ml-2 text-slate-400">· Applied {submittedDate}</span>}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Status</span>
+            <StatusBadge status={app.applicationStatus} />
+          </div>
+
+          {/* Resume */}
+          <section>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <FileText className="h-4 w-4 text-slate-400" />
+              Resume
+            </h3>
+            {hasResume ? (
+              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                <FileText className="h-5 w-5 shrink-0 text-[#474ead]" />
+                <span className="flex-1 text-sm text-slate-700 dark:text-slate-200 truncate">
+                  {app.resume!.fileName || "Submitted resume"}
+                </span>
+                <button
+                  onClick={handleResumeDownload}
+                  disabled={downloading}
+                  className="shrink-0 flex items-center gap-1 text-xs font-medium text-[#474ead] hover:underline dark:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {downloading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  {downloading ? "Downloading…" : "Download"}
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">No resume was submitted with this application.</p>
+            )}
+          </section>
+
+          {/* Cover Letter */}
+          <section>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <BookOpen className="h-4 w-4 text-slate-400" />
+              Cover Letter
+            </h3>
+            {hasCoverLetter ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  {app.coverLetter}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">No cover letter was included.</p>
+            )}
+          </section>
+
+          {/* Application Answers */}
+          <section>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <MessageSquare className="h-4 w-4 text-slate-400" />
+              Application Questions
+            </h3>
+            {hasAnswers ? (
+              <div className="space-y-4">
+                {(app.answers as ApplicationAnswer[]).map((item, idx) => (
+                  <div key={item.questionId ?? idx} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                      Q{idx + 1}: {item.question}
+                    </p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                      {item.answer || <span className="italic text-slate-400">No answer provided</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">No additional questions were asked for this role.</p>
+            )}
+          </section>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+          <Button
+            variant="outline"
+            className="w-full rounded-full"
+            onClick={onClose}
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Application Card ─────────────────────────────────────────────────────────
 
-function ApplicationCard({ app }: { app: TalentApplication }) {
+function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; onViewSubmission: () => void }) {
   const [, navigate] = useLocation();
   const [expanded, setExpanded] = useState(false);
   const jobOpen = app.job.status === "open" || !app.job.status;
@@ -138,13 +310,23 @@ function ApplicationCard({ app }: { app: TalentApplication }) {
             ) : (
               <span className="text-xs text-slate-400 italic">Job closed</span>
             )}
-            <button
-              onClick={() => setExpanded((p) => !p)}
-              className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5"
-            >
-              {expanded ? "Hide" : "Timeline"}
-              <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onViewSubmission}
+                className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5"
+              >
+                <FileText className="h-3 w-3" />
+                View submission
+              </button>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+              <button
+                onClick={() => setExpanded((p) => !p)}
+                className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5"
+              >
+                {expanded ? "Hide" : "Timeline"}
+                <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -242,6 +424,7 @@ export default function TalentApplications() {
   const [, navigate] = useLocation();
   const auth = loadTalentAuth();
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
 
   const { data: applications, isLoading, isError, refetch } = useTalentApplications();
 
@@ -385,7 +568,11 @@ export default function TalentApplications() {
           {!isLoading && !isError && filtered.length > 0 && (
             <div className="space-y-3">
               {filtered.map((app) => (
-                <ApplicationCard key={app.id} app={app} />
+                <ApplicationCard
+                  key={app.id}
+                  app={app}
+                  onViewSubmission={() => setDrawerApp(app)}
+                />
               ))}
             </div>
           )}
@@ -411,6 +598,11 @@ export default function TalentApplications() {
           </Button>
         </div>
       </div>
+
+      {/* Submission drawer */}
+      {drawerApp && (
+        <SubmissionDrawer app={drawerApp} onClose={() => setDrawerApp(null)} />
+      )}
     </div>
   );
 }

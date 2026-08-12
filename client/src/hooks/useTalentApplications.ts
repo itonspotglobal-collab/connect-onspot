@@ -1,6 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 
+export interface ApplicationAnswer {
+  questionId?: string;
+  question: string;
+  answer: string;
+}
+
 export interface TalentApplication {
   id: string;
   job: {
@@ -14,8 +20,9 @@ export interface TalentApplication {
   applicationStatus: string;
   submittedAt: string;
   updatedAt: string;
-  resume?: { fileName?: string };
+  resume?: { fileName?: string; url?: string };
   coverLetter?: string | null;
+  answers?: ApplicationAnswer[] | null;
 }
 
 async function fetchTalentApplications(): Promise<TalentApplication[]> {
