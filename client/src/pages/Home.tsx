@@ -366,6 +366,13 @@ function LaptopMockup() {
     { r: "Data Analyst",         c: "3 candidates in review", d: "Open 1 day"  },
   ];
 
+  // Design tokens — exact match to the reference HTML
+  const T = {
+    purple: "#474EAD", purpleLight: "#7B81D4", purpleTint: "#EEEDFB",
+    goldTint: "#FDF1DE", green: "#1D8A5A", greenTint: "#E6F5EC",
+    bg2: "#F6F6FA", text: "#1D1D1F", dim: "#6E6E76", dim2: "#A1A1A8", line: "#ECECF1",
+  };
+
   // Reference tokens (matches the HTML design file exactly)
   const R = {
     purple:       "#474EAD",
@@ -383,155 +390,103 @@ function LaptopMockup() {
   };
 
   return (
-    <div className="relative w-full" style={{ maxWidth: "clamp(440px, 40vw, 580px)" }}>
-      {/* Ambient purple glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute"
-        style={{ inset: "-50px", background: "radial-gradient(ellipse 70% 60% at 55% 48%, rgba(71,78,173,0.22) 0%, transparent 70%)", filter: "blur(16px)", zIndex: 0 }}
-      />
-
-      {/* iPad shell — flat dark, rounded 34px, 20px padding (scaled ~55%) */}
+    <div style={{ perspective: "1200px", width: "clamp(320px, 30vw, 420px)", flexShrink: 0 }}>
       <div
         className="relative"
-        style={{
-          zIndex: 1,
-          background: "#1c1c1e",
-          borderRadius: "clamp(20px, 2.5vw, 34px)",
-          padding: "clamp(11px, 1.4vw, 20px)",
-          boxShadow: "0 40px 70px rgba(0,0,0,0.5)",
-        }}
+        style={{ transform: "rotateY(-9deg) rotateX(3deg)" }}
       >
-        {/* Camera dot — absolute, centered at top */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: "clamp(5px, 0.7vw, 9px)",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "clamp(3px, 0.4vw, 5px)",
-            height: "clamp(3px, 0.4vw, 5px)",
-            borderRadius: "50%",
-            background: "#3a3a3c",
-          }}
-        />
-
-        {/* Screen */}
-        <div style={{ background: "#fff", borderRadius: "clamp(8px, 1vw, 14px)", overflow: "hidden" }}>
-
-          {/* App nav */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "clamp(10px,1.3vw,18px) clamp(12px,1.8vw,28px) clamp(8px,1vw,14px)", borderBottom: `1px solid ${R.line}` }}>
-            <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: "clamp(8px,1vw,14px)", color: R.text }}>OnSpot</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "clamp(6px,0.8vw,12px)" }}>
-              <span style={{ fontSize: "clamp(7px,0.8vw,11px)", color: R.textDim }}>Gentech LLC</span>
-              <div style={{ width: "clamp(16px,1.8vw,26px)", height: "clamp(16px,1.8vw,26px)", borderRadius: "50%", background: R.purpleLight, flexShrink: 0 }} />
+        {/* Glow */}
+        <div aria-hidden className="pointer-events-none absolute" style={{ inset: "-60px", background: "radial-gradient(ellipse 70% 60% at 52% 50%, rgba(71,78,173,0.30) 0%, transparent 68%)", filter: "blur(20px)", zIndex: 0 }} />
+        {/* Side buttons */}
+        <div aria-hidden style={{ position: "absolute", right: -5, top: "18%", width: 5, height: 30, background: "#2c2c2e", borderRadius: "0 3px 3px 0", zIndex: 2 }} />
+        <div aria-hidden style={{ position: "absolute", left: -5, top: "21%", width: 5, height: 22, background: "#2c2c2e", borderRadius: "3px 0 0 3px", zIndex: 2 }} />
+        <div aria-hidden style={{ position: "absolute", left: -5, top: "31%", width: 5, height: 22, background: "#2c2c2e", borderRadius: "3px 0 0 3px", zIndex: 2 }} />
+        {/* iPad shell */}
+        <div className="relative" style={{ zIndex: 1, background: "#1c1c1e", borderRadius: 28, padding: "22px 20px", boxShadow: "0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)" }}>
+          {/* Camera */}
+          <div aria-hidden style={{ position: "absolute", top: 9, left: "50%", transform: "translateX(-50%)", width: 5, height: 5, borderRadius: "50%", background: "#3a3a3c" }} />
+          {/* Screen */}
+          <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden" }}>
+            {/* Nav */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px 9px", borderBottom: `1px solid ${T.line}` }}>
+              <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: 11, color: T.text }}>OnSpot</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 9, color: T.dim }}>Gentech LLC</span>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: T.purpleLight, flexShrink: 0 }} />
+              </div>
             </div>
-          </div>
-
-          {/* App body */}
-          <div style={{ padding: "clamp(10px,1.4vw,20px) clamp(12px,1.8vw,28px) clamp(12px,1.6vw,24px)" }}>
-
-            {/* Dashboard header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "clamp(10px,1.2vw,18px)" }}>
-              <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,16px)", fontWeight: 700, color: R.text }}>Team dashboard</span>
-              <span style={{ fontSize: "clamp(6px,0.75vw,10px)", color: R.textDim2 }}>Last 6 months</span>
-            </div>
-
-            {/* 4 stat tiles — grey bg, only Monthly Cost is purple-tint */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "clamp(6px,0.9vw,13px)", marginBottom: "clamp(10px,1.4vw,20px)" }}>
-              {[
-                { label: "Monthly cost",      value: "$18,400", sub: "▼ 22% vs traditional", cost: true  },
-                { label: "Headcount",         value: "8",       sub: "Active team members",   cost: false },
-                { label: "Avg. performance",  value: "4.8/5",   sub: "Across all roles",      cost: false },
-                { label: "Retention",         value: "94%",     sub: "Team continuity",       cost: false },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  style={{
-                    background: s.cost ? R.purpleTint : R.bg2,
-                    border: s.cost ? `1px solid rgba(71,78,173,0.2)` : "none",
-                    borderRadius: "clamp(6px,0.8vw,11px)",
-                    padding: "clamp(7px,0.9vw,14px) clamp(8px,1vw,16px)",
-                  }}
-                >
-                  <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(5px,0.55vw,8px)", textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(3px,0.4vw,6px)" }}>{s.label}</p>
-                  <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(10px,1.3vw,19px)", fontWeight: 800, color: s.cost ? R.purple : R.text, lineHeight: 1 }}>{s.value}</p>
-                  <p style={{ fontSize: "clamp(5px,0.55vw,8px)", color: s.cost ? R.green : R.textDim2, fontWeight: s.cost ? 600 : 400, marginTop: "clamp(2px,0.3vw,4px)" }}>{s.sub}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Split row — 1.15fr / 1fr */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: "clamp(10px,1.4vw,18px)" }}>
-
-              {/* Left — Team performance */}
-              <div>
-                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(6px,0.8vw,11px)" }}>Team performance</p>
-                {TEAM.map((m, idx) => (
-                  <div
-                    key={m.i}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "clamp(5px,0.65vw,8px) 0",
-                      borderTop: `1px solid ${R.line}`,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px,0.7vw,9px)" }}>
-                      {/* Avatar — purple-tint bg, purple text */}
-                      <div style={{
-                        width: "clamp(14px,1.7vw,24px)", height: "clamp(14px,1.7vw,24px)",
-                        borderRadius: "50%", flexShrink: 0,
-                        background: R.purpleTint, color: R.purple,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700,
-                        fontSize: "clamp(5px,0.6vw,8.5px)",
-                      }}>{m.i}</div>
-                      <div>
-                        <p style={{ fontSize: "clamp(7px,0.85vw,11px)", fontWeight: 600, color: R.text, lineHeight: 1 }}>{m.n}</p>
-                        <p style={{ fontSize: "clamp(5.5px,0.65vw,8.5px)", color: R.textDim2, lineHeight: 1, marginTop: "clamp(1px,0.15vw,2px)" }}>{m.r}</p>
+            {/* Body */}
+            <div style={{ padding: "12px 16px 14px" }}>
+              {/* Header row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 13, fontWeight: 700, color: T.text }}>Team dashboard</span>
+                <span style={{ fontSize: 8, color: T.dim2 }}>Last 6 months</span>
+              </div>
+              {/* 4 stat tiles */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 12 }}>
+                {[
+                  { label: "Monthly cost",     value: "$18,400", sub: "▼ 22% vs traditional", cost: true  },
+                  { label: "Headcount",        value: "8",       sub: "Active members",        cost: false },
+                  { label: "Avg. performance", value: "4.8/5",   sub: "Across all roles",      cost: false },
+                  { label: "Retention",        value: "94%",     sub: "Team continuity",       cost: false },
+                ].map((s) => (
+                  <div key={s.label} style={{ background: s.cost ? T.purpleTint : T.bg2, border: s.cost ? "1px solid rgba(71,78,173,0.2)" : "none", borderRadius: 8, padding: "8px 9px" }}>
+                    <p style={{ fontSize: 6, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 4 }}>{s.label}</p>
+                    <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 14, fontWeight: 800, color: s.cost ? T.purple : T.text, lineHeight: 1 }}>{s.value}</p>
+                    <p style={{ fontSize: 6, color: s.cost ? T.green : T.dim2, fontWeight: s.cost ? 600 : 400, marginTop: 3 }}>{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Split */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 12 }}>
+                {/* Left — Team performance */}
+                <div>
+                  <p style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 8 }}>Team performance</p>
+                  {TEAM.map((m) => (
+                    <div key={m.i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: T.purpleTint, color: T.purple, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: 6 }}>{m.i}</div>
+                        <div>
+                          <p style={{ fontSize: 8, fontWeight: 600, color: T.text, lineHeight: 1 }}>{m.n}</p>
+                          <p style={{ fontSize: 7, color: T.dim2, lineHeight: 1, marginTop: 2 }}>{m.r}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        <span style={{ fontSize: 7, fontWeight: 700, color: T.green, background: T.greenTint, padding: "2px 5px", borderRadius: 100 }}>{m.perf}/5</span>
+                        <span style={{ fontSize: 8, fontWeight: 700, color: T.text, minWidth: 34, textAlign: "right" }}>{m.sal}</span>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "clamp(5px,0.7vw,10px)", flexShrink: 0 }}>
-                      <span style={{ fontSize: "clamp(5.5px,0.65vw,8.5px)", fontWeight: 700, color: R.green, background: R.greenTint, padding: "clamp(2px,0.25vw,3px) clamp(4px,0.55vw,7px)", borderRadius: 100 }}>{m.perf}/5</span>
-                      <span style={{ fontSize: "clamp(6.5px,0.8vw,10px)", fontWeight: 700, color: R.text, width: "clamp(30px,3.8vw,52px)", textAlign: "right" }}>{m.sal}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Right — Hiring + Vacant roles */}
-              <div>
-                {/* Hiring mini tiles — gold-tint */}
-                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(6px,0.8vw,11px)" }}>Hiring</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(5px,0.7vw,9px)", marginBottom: "clamp(8px,1vw,14px)" }}>
-                  <div style={{ background: R.goldTint, border: `1px solid rgba(245,166,35,0.25)`, borderRadius: "clamp(5px,0.7vw,9px)", padding: "clamp(6px,0.8vw,10px) clamp(7px,0.9vw,12px)" }}>
-                    <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,15px)", fontWeight: 800, color: R.text }}>3</p>
-                    <p style={{ fontSize: "clamp(5.5px,0.65vw,8px)", color: R.textDim, marginTop: "clamp(1px,0.2vw,3px)", lineHeight: 1.3 }}>Open roles</p>
-                  </div>
-                  <div style={{ background: R.goldTint, border: `1px solid rgba(245,166,35,0.25)`, borderRadius: "clamp(5px,0.7vw,9px)", padding: "clamp(6px,0.8vw,10px) clamp(7px,0.9vw,12px)" }}>
-                    <p style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "clamp(9px,1.1vw,15px)", fontWeight: 800, color: R.text }}>6 <span style={{ fontSize: "clamp(6px,0.7vw,9px)", fontWeight: 600 }}>days</span></p>
-                    <p style={{ fontSize: "clamp(5.5px,0.65vw,8px)", color: R.textDim, marginTop: "clamp(1px,0.2vw,3px)", lineHeight: 1.3 }}>Avg. time-to-fill <span style={{ color: R.purple }}>(vs 39 avg)</span></p>
-                  </div>
+                  ))}
                 </div>
-
-                {/* Vacant roles */}
-                <p style={{ fontSize: "clamp(5.5px,0.65vw,9px)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: R.textDim, marginBottom: "clamp(4px,0.5vw,7px)" }}>Vacant roles</p>
-                {VACANT.map((v) => (
-                  <div key={v.r} style={{ padding: "clamp(5px,0.65vw,8px) 0", borderTop: `1px solid ${R.line}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "clamp(1px,0.2vw,3px)" }}>
-                      <span style={{ fontSize: "clamp(7px,0.85vw,11px)", fontWeight: 600, color: R.text }}>{v.r}</span>
-                      <span style={{ fontSize: "clamp(5px,0.6vw,8px)", color: R.textDim2 }}>{v.d}</span>
+                {/* Right — Hiring + Vacant */}
+                <div>
+                  <p style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 8 }}>Hiring</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+                    <div style={{ background: T.goldTint, border: "1px solid rgba(245,166,35,0.25)", borderRadius: 8, padding: "8px 9px" }}>
+                      <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 13, fontWeight: 800, color: T.text }}>3</p>
+                      <p style={{ fontSize: 7, color: T.dim, marginTop: 2, lineHeight: 1.3 }}>Open roles</p>
                     </div>
-                    <span style={{ fontSize: "clamp(6px,0.75vw,9.5px)", color: R.purple, fontWeight: 600 }}>{v.c}</span>
+                    <div style={{ background: T.goldTint, border: "1px solid rgba(245,166,35,0.25)", borderRadius: 8, padding: "8px 9px" }}>
+                      <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 13, fontWeight: 800, color: T.text }}>6 <span style={{ fontSize: 8, fontWeight: 600 }}>days</span></p>
+                      <p style={{ fontSize: 6, color: T.dim, marginTop: 2, lineHeight: 1.3 }}>Avg. fill <span style={{ color: T.purple }}>(vs 39)</span></p>
+                    </div>
                   </div>
-                ))}
+                  <p style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 5 }}>Vacant roles</p>
+                  {VACANT.map((v) => (
+                    <div key={v.r} style={{ padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+                        <span style={{ fontSize: 8, fontWeight: 600, color: T.text }}>{v.r}</span>
+                        <span style={{ fontSize: 7, color: T.dim2 }}>{v.d}</span>
+                      </div>
+                      <span style={{ fontSize: 7, color: T.purple, fontWeight: 600 }}>{v.c}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-
-            </div>{/* end split */}
-          </div>{/* end app-body */}
-        </div>{/* end screen */}
-      </div>{/* end iPad shell */}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
