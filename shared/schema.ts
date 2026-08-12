@@ -49,7 +49,7 @@ export const profiles = pgTable("profiles", {
   profilePicture: text("profile_picture"),
   phoneNumber: text("phone_number"),
   languages: text("languages").array().default(["English"]),
-  timezone: text("timezone").default("Asia/Manila"),
+  timezone: text("timezone").default("UTC"),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
   totalEarnings: decimal("total_earnings", { precision: 12, scale: 2 }).default("0"),
   jobSuccessScore: integer("job_success_score").default(0), // 0-100
@@ -978,7 +978,7 @@ export const csvTalentRowSchema = z.object({
     if (!val) return ["English"];
     return val.split(',').map(lang => lang.trim()).filter(lang => lang.length > 0);
   }).default("English").optional(),
-  timezone: z.string().default("Asia/Manila").optional(),
+  timezone: z.string().default("UTC").optional(),
   skills: z.string().transform((val) => {
     if (!val) return [];
     return val.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);

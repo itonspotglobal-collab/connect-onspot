@@ -27,7 +27,7 @@ export const profileFormSchema = z.object({
   phoneNumber: z.string().optional(),
   // ✅ Fix: languages MUST be an array of strings
   languages: z.array(z.string()).min(1, "At least one language is required"),
-  timezone: z.string().default("Asia/Manila"),
+  timezone: z.string().default("UTC"),
 });
 
 export type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -285,7 +285,6 @@ export function useTalentProfile() {
     profileMutation.mutateAsync(data);
   const updateSkills = async () => skillsMutation.mutateAsync(selectedSkills);
 
-
   const getDefaultFormValues = useCallback(
     (): ProfileFormData => ({
       firstName: profile?.firstName || user?.firstName || "",
@@ -301,7 +300,13 @@ export function useTalentProfile() {
       languages: Array.isArray(profile?.languages)
         ? profile.languages
         : ["English"],
-      timezone: profile?.timezone || "Asia/Manila",
+      timezone: profile?.timezone || (() => {
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+        } catch {
+          return "UTC";
+        }
+      })(),
     }),
     [profile, user],
   );

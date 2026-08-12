@@ -118,7 +118,13 @@ export default function GetHired() {
       availability: 'available',
       phoneNumber: '',
       languages: ['English'],
-      timezone: 'Asia/Manila'
+      timezone: (() => {
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        } catch {
+          return 'UTC';
+        }
+      })()
     }
   });
   
@@ -136,7 +142,13 @@ export default function GetHired() {
         availability: profile.availability || 'available',
         phoneNumber: profile.phoneNumber || '',
         languages: profile.languages || ['English'],
-        timezone: profile.timezone || 'Asia/Manila'
+        timezone: (() => {
+          try {
+            return profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+          } catch {
+            return profile.timezone || 'UTC';
+          }
+        })()
       });
       // Set profile photo URL from existing profile
       setProfilePhotoUrl(profile.profilePicture || '');

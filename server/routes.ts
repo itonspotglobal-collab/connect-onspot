@@ -1275,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
           INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
-          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
+          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'UTC', NOW(), NOW())
         `;
 
         console.log(`👤 Creating talent profile [${requestId}]:`, {
@@ -3454,7 +3454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rateCurrency: "USD",
             availability: "available",
             languages: ["English"],
-            timezone: "Asia/Manila",
+            timezone: "UTC",
           };
 
           const newProfile = await db
@@ -3575,7 +3575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             availability: validated.availability || "available",
             phoneNumber: validated.phoneNumber,
             languages: validated.languages || ["English"],
-            timezone: validated.timezone || "Asia/Manila",
+            timezone: validated.timezone || "UTC",
           };
 
           const updatedProfiles = await db
@@ -3603,7 +3603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             profilePicture: null,
             phoneNumber: validated.phoneNumber,
             languages: validated.languages || ["English"],
-            timezone: validated.timezone || "Asia/Manila",
+            timezone: validated.timezone || "UTC",
           };
 
           const insertedProfiles = await db
@@ -3780,7 +3780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             validated.availability || "available",
             validated.phoneNumber,
             validated.languages || ["English"],
-            validated.timezone || "Asia/Manila",
+            validated.timezone || "UTC",
           ];
 
           const updateResult = await query(updateQuery, updateParams);
@@ -3809,7 +3809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             validated.availability || "available",
             validated.phoneNumber,
             validated.languages || ["English"],
-            validated.timezone || "Asia/Manila",
+            validated.timezone || "UTC",
           ];
 
           const insertResult = await query(insertQuery, insertParams);
@@ -6244,7 +6244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hourlyRate: "50.00",
           rateCurrency: "USD",
           availability: "available",
-          timezone: "Asia/Manila",
+          timezone: "UTC",
         });
       }
 
@@ -6430,7 +6430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Optional. Status: "available", "busy", or "offline" (default: "available")',
           phoneNumber: "Optional. Contact phone number",
           languages: 'Optional. Comma-separated languages (default: "English")',
-          timezone: 'Optional. Timezone identifier (default: "Asia/Manila")',
+          timezone: 'Optional. Timezone identifier (default: "UTC")',
           skills: "Optional. Comma-separated list of skills",
         },
         requiredFields: ["firstName", "lastName", "email", "title", "bio"],
@@ -7131,7 +7131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
           INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
-          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'Asia/Manila', NOW(), NOW())
+          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'UTC', NOW(), NOW())
         `;
 
         console.log(`👤 Creating talent profile [${requestId}]:`, {

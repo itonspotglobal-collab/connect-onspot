@@ -562,7 +562,7 @@ export class MemStorage implements IStorage {
         profilePicture: null,
         phoneNumber: null,
         languages: ["English"],
-        timezone: "Asia/Manila",
+        timezone: "UTC",
         rating: "0",
         totalEarnings: "0",
         jobSuccessScore: 0,
@@ -594,7 +594,7 @@ export class MemStorage implements IStorage {
       rateCurrency: insertProfile.rateCurrency ?? "USD",
       availability: insertProfile.availability ?? "available",
       languages: insertProfile.languages ?? ["English"],
-      timezone: insertProfile.timezone ?? "Asia/Manila",
+      timezone: insertProfile.timezone ?? "UTC",
       rating: insertProfile.rating ?? "0",
       totalEarnings: insertProfile.totalEarnings ?? "0",
       jobSuccessScore: insertProfile.jobSuccessScore ?? 0,
@@ -1903,7 +1903,7 @@ export class MemStorage implements IStorage {
         availability: row.availability || "available",
         phoneNumber: row.phoneNumber,
         languages: row.languages || ["English"],
-        timezone: row.timezone || "Asia/Manila",
+        timezone: row.timezone || "UTC",
       };
 
       validRows.push({
@@ -1959,7 +1959,7 @@ export class MemStorage implements IStorage {
         availability: csvRow.availability || "available",
         phoneNumber: csvRow.phoneNumber,
         languages: csvRow.languages || ["English"],
-        timezone: csvRow.timezone || "Asia/Manila",
+        timezone: csvRow.timezone || "UTC",
       };
 
       const newProfile = await this.createProfile(profile);

@@ -93,7 +93,13 @@ export default function ProfileOnboarding({
       availability: 'available',
       phoneNumber: '',
       languages: ['English'],
-      timezone: 'Asia/Manila'
+      timezone: (() => {
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        } catch {
+          return 'UTC';
+        }
+      })()
     }
   });
 
