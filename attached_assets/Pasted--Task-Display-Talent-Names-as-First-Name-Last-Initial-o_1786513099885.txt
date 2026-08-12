@@ -1,0 +1,295 @@
+## Task: Display Talent Names as “First Name + Last Initial” on All Public Pages
+
+Please update the onSpot application so that **talent names shown anywhere on public-facing pages use this format:**
+
+**`First Name + Last Name Initial.`**
+
+Examples:
+
+* `Oddie Galang` → `Oddie G.`
+* `Odie Galang` → `Odie G.`
+* `Van Carlo Labanan` → `Van Carlo L.`
+* `Julie Stramer` → `Julie S.`
+* `Lesley Jean Valencinerina` → `Lesley Jean V.`
+* `Maria De la Cruz` → `Maria D.`
+* `John O'Connor` → `John O.`
+
+### Important
+
+This change is for **public display only**.
+
+Do **not** modify the talent's actual first name or last name in the database, authentication data, profile records, applications, or other stored data.
+
+Internal/admin/private areas may continue showing the talent's full name where necessary.
+
+---
+
+## 1. Inspect the Existing Code First
+
+Before making changes:
+
+1. Search the entire codebase for every public-facing place where a talent's name is displayed.
+2. Look for usages of fields or expressions such as:
+
+   * `firstName`
+   * `lastName`
+   * `first_name`
+   * `last_name`
+   * `fullName`
+   * `full_name`
+   * `name`
+   * string concatenations such as `${firstName} ${lastName}`
+3. Identify all reusable talent cards/components and public profile components.
+4. Determine whether there is already a shared utility for formatting names. If one exists, extend/reuse it instead of creating duplicate logic.
+
+Do not blindly replace every name in the application. Apply this rule specifically to **talent identities displayed publicly**.
+
+---
+
+## 2. Create One Shared Name Formatter
+
+Create or reuse a shared utility with behavior equivalent to:
+
+`formatPublicTalentName(firstName, lastName)`
+
+It should:
+
+* Keep the complete `firstName` value.
+* Trim unnecessary whitespace.
+* Take only the first meaningful character of the last name.
+* Make the last initial uppercase.
+* Add a period after the initial.
+* Never expose the remainder of the last name publicly.
+
+Expected behavior:
+
+```text
+Odie + Galang            => Odie G.
+Van Carlo + Labanan      => Van Carlo L.
+Julie + Stramer          => Julie S.
+Lesley Jean + Valencinerina => Lesley Jean V.
+Maria + De la Cruz       => Maria D.
+John + O'Connor          => John O.
+```
+
+### Edge cases
+
+Handle these safely:
+
+* No last name → show the first name only.
+* Empty/undefined/null last name → show the first name only.
+* Multi-word first names must remain intact.
+* Multi-word surnames use only the first character of the surname value.
+* Do not produce duplicate periods if data is already abbreviated.
+* Avoid output such as `undefined`, `null`, or extra spaces.
+* If the first name is unavailable, preserve the application's existing safe fallback/anonymous behavior and **do not reveal the full last name**.
+
+Prefer structured `firstName` and `lastName` fields instead of attempting to split a combined full-name string whenever structured fields are available.
+
+---
+
+## 3. Apply It to Every Public Talent Surface
+
+Update all public-facing pages/components where a talent name can appear, including but not limited to:
+
+### Public Talent Network / Landing Page
+
+In the Talent Network section shown on the homepage, names such as:
+
+```text
+Odie Galang
+Van Carlo Labanan
+Julie Stramer
+Lesley Jean Valencinerina
+```
+
+should display as:
+
+```text
+Odie G.
+Van Carlo L.
+Julie S.
+Lesley Jean V.
+```
+
+This includes talent search results, cards, carousels, featured talent lists, suggestions, and similar components.
+
+### Public Talent Profile
+
+On the public talent profile page, change the large profile heading from:
+
+```text
+Odie Galang
+```
+
+to:
+
+```text
+Odie G.
+```
+
+Apply the same rule anywhere else on that public profile where the name appears.
+
+### Other Public Pages
+
+Also inspect and update:
+
+* Public talent cards
+* Talent marketplace/pool pages
+* Public search results
+* Public profile/share links
+* Public portfolios
+* Recommendations or featured talent sections
+* Public modal/dialog content
+* Mobile/responsive versions of the same components
+* Public breadcrumbs if they contain talent names
+* Public page titles
+* Public metadata, Open Graph tags, or structured data if they currently expose the full surname
+* Public-facing accessibility text such as `aria-label`, title attributes, or image alt text containing the talent's full name
+
+The goal is that an unauthenticated/public visitor should not encounter a talent's full last name anywhere in the public UI.
+
+---
+
+## 4. Do Not Change Avatar Initials Unless Necessary
+
+Existing avatar initials such as:
+
+```text
+OG
+VL
+JS
+LV
+```
+
+can remain unchanged.
+
+This task is specifically about the **written talent name**, not the avatar initials.
+
+Do not unnecessarily alter avatar behavior or styling.
+
+---
+
+## 5. Keep Internal Full Names Intact
+
+Do not apply this formatter to areas where authorized users legitimately need the full talent name, such as:
+
+* Talent's own account/profile editing
+* Admin dashboards
+* Internal management pages
+* Employer/recruiter areas that are intentionally private and authorized to see full names
+* Database/API persistence
+* Emails or documents where full names are intentionally required
+
+Determine whether a route/component is genuinely public before changing it.
+
+---
+
+## 6. Avoid Data Model Changes
+
+This should primarily be a **display/presentation-layer change**.
+
+Do not:
+
+* Update existing talent records.
+* Truncate surnames in the database.
+* Add a database migration unless absolutely necessary.
+* Change the underlying `firstName` or `lastName` values.
+* Introduce a new dependency just to format the name.
+
+Use one reusable formatter so the rule remains consistent throughout the app.
+
+---
+
+## 7. Prevent Accidental Public Name Leaks
+
+After implementing the formatter, search the codebase again for public components that still directly render:
+
+```text
+firstName + lastName
+fullName
+talent.name
+```
+
+Make sure no public talent surface bypasses the shared formatter.
+
+Where a public API response or server-rendered payload unnecessarily sends a full surname solely for display purposes, review whether it can safely use a public display-name field instead. Do not break authenticated/internal consumers of the same API.
+
+---
+
+## 8. Testing
+
+Add or update automated tests for the shared formatter.
+
+At minimum test:
+
+```text
+"Oddie", "Galang"            => "Oddie G."
+"Odie", "Galang"             => "Odie G."
+"Van Carlo", "Labanan"       => "Van Carlo L."
+"Julie", "Stramer"           => "Julie S."
+"Lesley Jean", "Valencinerina" => "Lesley Jean V."
+"Maria", "De la Cruz"        => "Maria D."
+"John", "O'Connor"           => "John O."
+"Cher", ""                   => "Cher"
+```
+
+Also test `null`, `undefined`, and whitespace-only surname values according to the project's existing conventions.
+
+If the project has UI/component tests, add coverage for at least:
+
+1. The public Talent Network card/list.
+2. The public talent profile heading.
+
+---
+
+## 9. Preserve Existing Design
+
+Do not redesign the page.
+
+Keep all existing:
+
+* Font sizes
+* Font weights
+* Spacing
+* Colors
+* Card layouts
+* Responsive behavior
+* Profile/avatar styling
+
+Only replace the public name text with the privacy-safe format.
+
+---
+
+## 10. Verification Before Completion
+
+Run the project's existing:
+
+* Tests
+* Type checking
+* Linter
+* Build
+
+Fix any issues introduced by this change.
+
+Then provide me with a concise implementation summary containing:
+
+1. Every file changed.
+2. The shared formatter/helper created or reused.
+3. Every public route/component updated.
+4. Any remaining locations that intentionally still show the full talent name and why.
+5. Test/build results.
+
+### Acceptance Criteria
+
+The task is complete when:
+
+* Public `Odie Galang` displays as **`Odie G.`**
+* Public `Van Carlo Labanan` displays as **`Van Carlo L.`**
+* Public `Julie Stramer` displays as **`Julie S.`**
+* Public `Lesley Jean Valencinerina` displays as **`Lesley Jean V.`**
+* The public talent profile uses the same rule.
+* All other public talent-name displays use the same shared formatter.
+* Full names remain intact in the database and authorized internal/private areas.
+* Existing page styling and functionality are unchanged.
+* Tests, linting, type checks, and build succeed.

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -351,7 +352,7 @@ export default function CandidateProfile() {
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-slate-900">
-                    {candidate.fullName || "Candidate"}
+                    {formatPublicTalentNameFromFull(candidate.fullName) || "Candidate"}
                   </h1>
                   {candidate.targetPosition && (
                     <p className="text-sm text-slate-500">{candidate.targetPosition}</p>

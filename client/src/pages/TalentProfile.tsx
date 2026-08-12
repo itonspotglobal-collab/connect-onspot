@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin } from "@/lib/authUtils";
+import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import onspotLogo from "@assets/onspot-logo-white.png";
 import { apiRequest } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
@@ -883,10 +884,11 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  // Display name priority: displayName (custom public name) → fullName (registered) → fallback
+  // Public display name — full last name is never exposed to unauthenticated visitors.
+  // Priority: displayName (talent's own custom name, shown as-is) → formatted fullName → id fallback
   const displayName =
     candidate.displayName?.trim() ||
-    candidate.fullName?.trim() ||
+    formatPublicTalentNameFromFull(candidate.fullName) ||
     `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
