@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -246,6 +246,7 @@ export default function ProfileSettings() {
   const user = authContext?.user;
 
   const {
+    profile,
     skills,
     documents,
     availableSkills,
@@ -259,6 +260,53 @@ export default function ProfileSettings() {
   } = useTalentProfile();
 
   const [activeSection, setActiveSection] = useState("basic");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // photoVersion forces the <img> to re-fetch after upload/removal (same URL, new content)
+  const [photoVersion, setPhotoVersion] = useState(0);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Maximum photo size is 5 MB.", variant: "destructive" });
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      // Use dedicated photo endpoint — server validates MIME type and size
+      const formData = new FormData();
+      formData.append("photo", file);
+      // authAPI.post returns the parsed response body directly
+      const response = await authAPI.post("/api/profiles/me/photo", formData);
+      if (!response?.success) throw new Error(response?.error || "Upload failed");
+      // Refresh profile data and bump version so the avatar re-fetches
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setPhotoVersion((v) => v + 1);
+      toast({ title: "Photo updated", description: "Your profile photo has been saved." });
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error?.message || "Could not upload photo.", variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoUploading(true);
+    try {
+      // authAPI.delete returns the parsed body directly
+      await authAPI.delete("/api/profiles/me/photo");
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setPhotoVersion((v) => v + 1);
+      toast({ title: "Photo removed", description: "Your profile photo has been removed." });
+    } catch {
+      toast({ title: "Removal failed", description: "Could not remove photo. Please try again.", variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -406,6 +454,91 @@ export default function ProfileSettings() {
                 {/* ─ Basic Information ─ */}
                 {activeSection === "basic" && (
                   <SectionCard icon={User} title="Basic Information" subtitle="Update your personal information and contact details.">
+
+                    {/* Profile Photo */}
+                    <div className="mb-7">
+                      <label className={labelCls}>
+                        <Upload style={{ width: 15, height: 15, color: I }} />
+                        Profile Photo
+                      </label>
+                      <div className="flex items-center gap-5 mt-2">
+                        {/* Avatar preview */}
+                        <div
+                          style={{
+                            width: 84, height: 84, borderRadius: "50%", flexShrink: 0,
+                            overflow: "hidden", border: `2px solid ${BORDER}`,
+                            background: "#EEEDFB",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}
+                        >
+                          {profile?.profilePicture && user?.id ? (
+                            <img
+                              src={`/api/profile-picture/${user.id}?v=${photoVersion}`}
+                              alt="Profile"
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                            />
+                          ) : (
+                            <User style={{ width: 34, height: 34, color: I, opacity: 0.4 }} />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {/* Hidden file input */}
+                          <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            style={{ display: "none" }}
+                            onChange={handlePhotoUpload}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => photoInputRef.current?.click()}
+                            disabled={photoUploading}
+                            className="inline-flex items-center gap-2 font-semibold text-[14px] transition-colors"
+                            style={{
+                              height: 38, paddingInline: 16, borderRadius: 9,
+                              border: `1.5px solid ${BORDER}`, background: "#fff",
+                              color: photoUploading ? MUTED : TEXT,
+                              cursor: photoUploading ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {photoUploading ? (
+                              <>
+                                <div className="animate-spin rounded-full border-2 border-current border-t-transparent" style={{ width: 14, height: 14 }} />
+                                Uploading…
+                              </>
+                            ) : (
+                              <>
+                                <Upload style={{ width: 14, height: 14, color: I }} />
+                                {profile?.profilePicture ? "Replace Photo" : "Upload Photo"}
+                              </>
+                            )}
+                          </button>
+                          {profile?.profilePicture && (
+                            <button
+                              type="button"
+                              onClick={handleRemovePhoto}
+                              disabled={photoUploading}
+                              className="inline-flex items-center gap-2 text-[13px]"
+                              style={{
+                                height: 34, paddingInline: 14, borderRadius: 9,
+                                border: "1.5px solid #FCA5A5", background: "#FFF5F5",
+                                color: "#DC2626", cursor: photoUploading ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              <X style={{ width: 13, height: 13 }} />
+                              Remove Photo
+                            </button>
+                          )}
+                          <p className="text-[12px]" style={{ color: MUTED }}>
+                            JPG, PNG, WebP or GIF · Max 5 MB
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mb-5" style={{ borderTop: `1px solid ${BORDER}` }} />
 
                     {/* Row 1: First + Last name */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">

@@ -285,6 +285,7 @@ export function useTalentProfile() {
     profileMutation.mutateAsync(data);
   const updateSkills = async () => skillsMutation.mutateAsync(selectedSkills);
 
+
   const getDefaultFormValues = useCallback(
     (): ProfileFormData => ({
       firstName: profile?.firstName || user?.firstName || "",

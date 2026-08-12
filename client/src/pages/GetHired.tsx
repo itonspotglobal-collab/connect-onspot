@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { authAPI } from "@/lib/api";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 // Using consolidated profile form schema from hook
 // Removed duplicate schema definition
@@ -76,9 +78,13 @@ interface JobApplication {
 
 export default function GetHired() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>('');
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoVersion, setPhotoVersion] = useState(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   
   // Use consolidated profile system
   const {
@@ -205,40 +211,44 @@ export default function GetHired() {
     }
   };
 
-  // Profile photo upload handlers
-  const handleProfilePhotoUpload = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload");
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL
-    };
-  };
-
-  const handleProfilePhotoComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      const file = result.successful[0];
-      const photoUrl = file.uploadURL || file.url;
-      setProfilePhotoUrl(photoUrl);
-      
-      // Update profile with new photo URL immediately
-      if (profile && user?.id) {
-        updateProfile({
-          ...form.getValues(),
-          profilePicture: photoUrl
-        } as ProfileFormData & { profilePicture: string });
-      }
+  // Profile photo upload — uses the dedicated secure endpoint
+  const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Maximum photo size is 5 MB.", variant: "destructive" });
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const response = await authAPI.post("/api/profiles/me/photo", formData);
+      if (!response?.success) throw new Error(response?.error || "Upload failed");
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setPhotoVersion((v) => v + 1);
+      setProfilePhotoUrl("set"); // mark photo as present for UI state
+      toast({ title: "Photo updated", description: "Your profile photo has been saved." });
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error?.message || "Could not upload photo.", variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
     }
   };
 
-  const removeProfilePhoto = () => {
-    setProfilePhotoUrl('');
-    // Update profile to remove photo URL
-    if (profile && user?.id) {
-      updateProfile({
-        ...form.getValues(),
-        profilePicture: ''
-      } as ProfileFormData & { profilePicture: string });
+  const removeProfilePhoto = async () => {
+    setPhotoUploading(true);
+    try {
+      await authAPI.delete("/api/profiles/me/photo");
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setPhotoVersion((v) => v + 1);
+      setProfilePhotoUrl('');
+      toast({ title: "Photo removed", description: "Your profile photo has been removed." });
+    } catch {
+      toast({ title: "Removal failed", description: "Could not remove photo. Please try again.", variant: "destructive" });
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -253,12 +263,7 @@ export default function GetHired() {
     
     try {
       console.log('Calling updateProfile...');
-      // Include profile photo URL in the profile data
-      const profileDataWithPhoto = {
-        ...data,
-        profilePicture: profilePhotoUrl
-      };
-      await updateProfile(profileDataWithPhoto as ProfileFormData & { profilePicture: string });
+      await updateProfile(data);
       console.log('Profile updated successfully');
       
       if (selectedSkills && selectedSkills.length > 0) {
@@ -401,9 +406,9 @@ export default function GetHired() {
                     <div className="flex flex-col items-center space-y-4 pb-6 border-b border-border">
                       <div className="relative">
                         <Avatar className="w-24 h-24 ring-2 ring-border ring-offset-2">
-                          <AvatarImage 
-                            src={profilePhotoUrl} 
-                            alt={`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Profile'} 
+                          <AvatarImage
+                            src={profile?.profilePicture ? `/api/profile-picture/${user?.id}?v=${photoVersion}` : undefined}
+                            alt={`${profile?.firstName || ''} ${profile?.lastName || ''}`.trim() || 'Profile'}
                           />
                           <AvatarFallback className="text-2xl font-semibold bg-muted">
                             {profile?.firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
@@ -411,23 +416,33 @@ export default function GetHired() {
                           </AvatarFallback>
                         </Avatar>
                       </div>
-                      
+
+                      {/* Hidden file input — triggered by the button below */}
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleProfilePhotoChange}
+                      />
+
                       <div className="flex items-center gap-2">
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={5242880} // 5MB limit for images
-                          onGetUploadParameters={handleProfilePhotoUpload}
-                          onComplete={handleProfilePhotoComplete}
-                          buttonClassName="flex items-center gap-2"
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => photoInputRef.current?.click()}
+                          disabled={photoUploading}
+                          className="flex items-center gap-2"
                         >
                           <Camera className="w-4 h-4" />
-                          {profilePhotoUrl ? 'Change Photo' : 'Upload Photo'}
-                        </ObjectUploader>
-                        
-                        {profilePhotoUrl && (
-                          <Button 
+                          {photoUploading ? 'Uploading…' : profile?.profilePicture ? 'Change Photo' : 'Upload Photo'}
+                        </Button>
+
+                        {profile?.profilePicture && !photoUploading && (
+                          <Button
                             type="button"
-                            variant="outline" 
+                            variant="outline"
                             size="sm"
                             onClick={removeProfilePhoto}
                             className="flex items-center gap-2 text-destructive hover:text-destructive"

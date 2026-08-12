@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { authAPI } from "@/lib/api";
 import {
   ChevronDown,
   ChevronRight,
@@ -176,6 +177,27 @@ export function TopNavigation() {
   const talentCompletionPct = talentCandidateData
     ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate(talentCandidateData)))
     : 0;
+
+  // ── General talent profile picture (from /api/profiles/me) ──────────────
+  const { data: talentProfileMeData } = useQuery({
+    queryKey: ["/api/profiles/me"],
+    queryFn: async () => {
+      try {
+        return await authAPI.get("/api/profiles/me");
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!user && user.role === "talent",
+    staleTime: 2 * 60_000,
+  });
+  // Derive a public URL for the profile picture; use the stored UUID as a cache-busting key
+  // so the browser re-fetches when a new photo is uploaded (new UUID → new URL).
+  const _rawProfilePicture = (talentProfileMeData as any)?.profile?.profilePicture ?? null;
+  const generalTalentProfilePicture =
+    _rawProfilePicture && user?.id
+      ? `/api/profile-picture/${user.id}?v=${encodeURIComponent(_rawProfilePicture.split('/').pop() ?? 'x')}`
+      : null;
 
   // ── Talent profile completion — general JWT talent path ───────────────────
   const { data: generalTalentCandidateData } = useQuery({
@@ -731,10 +753,12 @@ export function TopNavigation() {
                         style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)', animation: 'shimmer 2s infinite' }}
                       />
                       <span className="relative z-10 flex items-center gap-2">
-                        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                          {(user.firstName || user.email || '')
-                            ? [(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()
-                            : <User style={{ width: 13, height: 13 }} />}
+                        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                          {generalTalentProfilePicture
+                            ? <img src={generalTalentProfilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : (user.firstName || user.email || '')
+                              ? [(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()
+                              : <User style={{ width: 13, height: 13 }} />}
                         </span>
                         Talent Profile
                         <ChevronDown style={{ width: 14, height: 14, opacity: 0.8, transform: generalTalentDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }} />
@@ -753,8 +777,10 @@ export function TopNavigation() {
                       {/* Profile header */}
                       <div style={{ padding: '14px 14px 12px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FAFAFF 100%)', borderRadius: 10, marginBottom: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: '#FFFFFF', boxShadow: '0 3px 10px rgba(75,81,184,0.3)' }}>
-                            {[(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: '#FFFFFF', boxShadow: '0 3px 10px rgba(75,81,184,0.3)', overflow: 'hidden' }}>
+                            {generalTalentProfilePicture
+                              ? <img src={generalTalentProfilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : [(user.firstName || ''), (user.lastName || '')].filter(Boolean).map(w => w[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -894,10 +920,13 @@ export function TopNavigation() {
                         background: 'rgba(255,255,255,0.22)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 11, fontWeight: 700, flexShrink: 0,
+                        overflow: 'hidden',
                       }}>
-                        {talentAuth.fullName
-                          ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
-                          : <User style={{ width: 13, height: 13 }} />}
+                        {talentCandidateData?.profilePhotoUrl
+                          ? <img src={`/api/candidate-photos/${talentCandidateData.profilePhotoUrl.replace('/objects/candidate-photos/', '')}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : talentAuth.fullName
+                            ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
+                            : <User style={{ width: 13, height: 13 }} />}
                       </span>
                       Talent Profile
                       <ChevronDown style={{
@@ -935,17 +964,20 @@ export function TopNavigation() {
                       marginBottom: 6,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        {/* Initials avatar */}
+                        {/* Photo or initials avatar */}
                         <div style={{
                           width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
                           background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 17, fontWeight: 700, color: '#FFFFFF',
                           boxShadow: '0 3px 10px rgba(75,81,184,0.3)',
+                          overflow: 'hidden',
                         }}>
-                          {talentAuth.fullName
-                            ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
-                            : '?'}
+                          {talentCandidateData?.profilePhotoUrl
+                            ? <img src={`/api/candidate-photos/${talentCandidateData.profilePhotoUrl.replace('/objects/candidate-photos/', '')}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : talentAuth.fullName
+                              ? talentAuth.fullName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
+                              : '?'}
                         </div>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

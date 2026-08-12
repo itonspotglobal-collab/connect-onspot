@@ -640,6 +640,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   });
 
+  // Dedicated Multer instance for profile photo uploads — enforces 5 MB at middleware level
+  // so oversized payloads are rejected before any handler logic runs.
+  const photoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+  });
+
   console.log("🔗 Registering API routes...");
 
   // ── One-time safe migration: set application_method = 'built_in_form' for
@@ -3517,6 +3524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Prepare profile data (already in camelCase, which Drizzle expects)
+        // NOTE: profilePicture is intentionally excluded — use POST/DELETE /api/profiles/me/photo
         const profileData = {
           userId: userId, // Add userId from authenticated session
           firstName: req.body.firstName,
@@ -3527,7 +3535,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hourlyRate: req.body.hourlyRate ? String(req.body.hourlyRate) : null,
           rateCurrency: req.body.rateCurrency,
           availability: req.body.availability,
-          profilePicture: req.body.profilePicture,
           phoneNumber: req.body.phoneNumber,
           languages: req.body.languages,
           timezone: req.body.timezone,
@@ -3555,7 +3562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             profileId: existingProfile[0].id,
           });
 
-          // Prepare update data with defaults
+          // Prepare update data with defaults (profilePicture excluded — managed by photo endpoint)
           const updateData = {
             firstName: validated.firstName,
             lastName: validated.lastName,
@@ -3565,7 +3572,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             hourlyRate: validated.hourlyRate,
             rateCurrency: validated.rateCurrency || "USD",
             availability: validated.availability || "available",
-            profilePicture: validated.profilePicture,
             phoneNumber: validated.phoneNumber,
             languages: validated.languages || ["English"],
             timezone: validated.timezone || "Asia/Manila",
@@ -3582,7 +3588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create new profile
           console.log(`➕ Creating new profile [${requestId}]`);
 
-          // Set defaults for required fields
+          // Set defaults for required fields (profilePicture starts null — managed by photo endpoint)
           const insertData = {
             userId: userId,
             firstName: validated.firstName,
@@ -3593,7 +3599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             hourlyRate: validated.hourlyRate,
             rateCurrency: validated.rateCurrency || "USD",
             availability: validated.availability || "available",
-            profilePicture: validated.profilePicture,
+            profilePicture: null,
             phoneNumber: validated.phoneNumber,
             languages: validated.languages || ["English"],
             timezone: validated.timezone || "Asia/Manila",
@@ -4805,6 +4811,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       if (error.name === "ObjectNotFoundError") return res.status(404).send("Not found");
       console.error("GET /api/candidate-photos error:", error);
+      res.status(500).send("Error serving photo");
+    }
+  });
+
+  // POST /api/profiles/me/photo — Upload / replace the authenticated user's profile photo.
+  // Dedicated endpoint with server-side MIME validation and size limit.
+  // Stores only in the /objects/profile-photos/{userId}/ namespace.
+  app.post(
+    "/api/profiles/me/photo",
+    authenticateJWT,
+    // Apply dedicated 5 MB Multer instance; intercept LIMIT_FILE_SIZE before it bubbles up
+    (req: any, res: any, next: any) => {
+      photoUpload.single("photo")(req, res, (err: any) => {
+        if (err?.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "File too large — max 5 MB" });
+        }
+        if (err) return next(err);
+        next();
+      });
+    },
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: "Authentication required" });
+
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+        // Server-side MIME validation (Multer reports multipart header, so also validate here)
+        const allowedMimes: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png":  "png",
+          "image/webp": "webp",
+          "image/gif":  "gif",
+        };
+        const ext = allowedMimes[file.mimetype];
+        if (!ext) {
+          return res.status(400).json({ error: "Only JPEG, PNG, WebP, or GIF images are allowed" });
+        }
+
+        // Store in dedicated profile-photos namespace: /objects/profile-photos/{userId}/{uuid}.{ext}
+        const objectStorageService = new ObjectStorageService();
+        const objectId = randomUUID();
+        const privateObjectDir = objectStorageService.getPrivateObjectDir();
+        const fullPath = `${privateObjectDir}/profile-photos/${userId}/${objectId}.${ext}`;
+        const parts = fullPath.split("/").filter((p: string) => p);
+        const bucketName = parts[0];
+        const objectName = parts.slice(1).join("/");
+
+        const bucket = objectStorageClient.bucket(bucketName);
+        const objectFile = bucket.file(objectName);
+        await objectFile.save(file.buffer, {
+          metadata: { contentType: file.mimetype },
+        });
+        await setObjectAclPolicy(objectFile, { visibility: "public" });
+
+        // Canonical path stored in the DB — namespace-scoped, never user-supplied
+        const storagePath = `/objects/profile-photos/${userId}/${objectId}.${ext}`;
+        await db
+          .update(profiles)
+          .set({ profilePicture: storagePath })
+          .where(eq(profiles.userId, userId));
+
+        console.log(`✅ Profile photo uploaded [${req.requestId}]:`, { userId, storagePath });
+        res.json({ success: true });
+      } catch (error: any) {
+        console.error(`❌ Profile photo upload failed [${req.requestId}]:`, error.message);
+        res.status(500).json({ error: "Failed to upload photo" });
+      }
+    },
+  );
+
+  // DELETE /api/profiles/me/photo — Remove the authenticated user's profile photo.
+  app.delete("/api/profiles/me/photo", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Authentication required" });
+      await db
+        .update(profiles)
+        .set({ profilePicture: null })
+        .where(eq(profiles.userId, userId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error(`❌ Profile photo removal failed [${req.requestId}]:`, error.message);
+      res.status(500).json({ error: "Failed to remove photo" });
+    }
+  });
+
+  // GET /api/profile-picture/:userId — Public: serve a talent's profile picture.
+  // SECURITY: only serves from the dedicated /objects/profile-photos/ namespace;
+  // forces a safe image Content-Type and adds nosniff / disposition headers.
+  const PROFILE_PHOTO_NAMESPACE = "/objects/profile-photos/";
+  app.get("/api/profile-picture/:userId", async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const rows = await db
+        .select({ profilePicture: profiles.profilePicture })
+        .from(profiles)
+        .where(eq(profiles.userId, userId));
+      const picturePath = rows[0]?.profilePicture;
+
+      // Allowed namespaces: the dedicated profile-photos namespace (current) and
+      // the legacy uploads namespace (for photos saved before the dedicated endpoint was added).
+      const LEGACY_NAMESPACE = "/objects/uploads/";
+      if (!picturePath || (
+        !picturePath.startsWith(PROFILE_PHOTO_NAMESPACE) &&
+        !picturePath.startsWith(LEGACY_NAMESPACE)
+      )) {
+        return res.status(404).send("No photo");
+      }
+
+      // Derive the allowed Content-Type from the file extension — reject non-image extensions.
+      // This provides defence-in-depth even for legacy paths.
+      const storedExt = picturePath.split(".").pop()?.toLowerCase();
+      const mimeByExt: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg",
+        png: "image/png", webp: "image/webp", gif: "image/gif",
+      };
+      const contentType = storedExt ? mimeByExt[storedExt] : undefined;
+      if (!contentType) return res.status(404).send("No photo");
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(picturePath);
+
+      // Stream with safe, forced headers — never trust stored metadata content type
+      const [metadata] = await objectFile.getMetadata();
+      res.set({
+        "Content-Type":              contentType,
+        "Content-Length":            metadata.size,
+        "Cache-Control":             "public, max-age=3600",
+        "Content-Disposition":       "inline",
+        "X-Content-Type-Options":    "nosniff",
+      });
+      objectFile.createReadStream().pipe(res);
+    } catch (error: any) {
+      if (error.name === "ObjectNotFoundError") return res.status(404).send("Not found");
+      console.error("GET /api/profile-picture error:", error);
       res.status(500).send("Error serving photo");
     }
   });
