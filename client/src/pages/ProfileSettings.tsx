@@ -11,7 +11,6 @@ import {
   Brain,
   MapPin,
   DollarSign,
-  Phone,
   Globe,
   Clock,
   Save,
@@ -48,6 +47,7 @@ import {
 } from "@/hooks/useCandidateProfileSettings";
 import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
+import { PhoneNumberInput } from "@/components/PhoneNumberInput";
 import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -679,12 +679,15 @@ export default function ProfileSettings() {
                     <div className="mb-5">
                       <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>
-                            <Phone style={{ width: 15, height: 15, color: I }} />
-                            Phone Number
-                          </FormLabel>
-                          <FormControl><StyledInput placeholder="Enter your phone number" {...field} data-testid="input-phone" /></FormControl>
-                          <FormMessage />
+                          <PhoneNumberInput
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            country={countryFromTimezone(form.watch("timezone"))}
+                            timezone={form.watch("timezone")}
+                            placeholder="+63 912 345 6789"
+                            label="Phone Number"
+                            id="settings-phone"
+                          />
                         </FormItem>
                       )} />
                     </div>
