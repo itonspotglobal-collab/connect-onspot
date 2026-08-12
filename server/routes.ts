@@ -21,7 +21,7 @@ import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db } from "./db.ts";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql as sqlOp } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
@@ -57,6 +57,7 @@ import {
   clientProfiles,
   insertClientProfileSchema,
   inquiries as inquiriesTable,
+  candidates as candidatesTable,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -4874,6 +4875,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ profilePicture: storagePath })
           .where(eq(profiles.userId, userId));
 
+        // Sync to the linked candidate record (matched by email) so the public
+        // talent profile page picks up the photo without a separate upload flow.
+        const userEmail = req.user?.email;
+        if (userEmail) {
+          const publicPhotoUrl = `/api/profile-picture/${userId}`;
+          await db
+            .update(candidatesTable)
+            .set({ profilePhotoUrl: publicPhotoUrl } as any)
+            .where(sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})`);
+        }
+
         console.log(`✅ Profile photo uploaded [${req.requestId}]:`, { userId, storagePath });
         res.json({ success: true });
       } catch (error: any) {
@@ -4892,6 +4904,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .update(profiles)
         .set({ profilePicture: null })
         .where(eq(profiles.userId, userId));
+
+      // Also clear the linked candidate's photo if it was synced from the profile upload
+      const userEmail = req.user?.email;
+      if (userEmail) {
+        const profilePhotoPrefix = `/api/profile-picture/${userId}`;
+        await db
+          .update(candidatesTable)
+          .set({ profilePhotoUrl: null } as any)
+          .where(
+            sqlOp`lower(${candidatesTable.email}) = lower(${userEmail})
+              AND ${candidatesTable.profilePhotoUrl} = ${profilePhotoPrefix}`
+          );
+      }
+
       res.json({ success: true });
     } catch (error: any) {
       console.error(`❌ Profile photo removal failed [${req.requestId}]:`, error.message);
