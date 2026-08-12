@@ -1,21 +1,24 @@
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
-import { useTalentApplications, TalentApplication, ApplicationAnswer } from "@/hooks/useTalentApplications";
+import {
+  useTalentApplications, TalentApplication, ApplicationAnswer, getTalentAppsLastViewedKey,
+} from "@/hooks/useTalentApplications";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import {
-  Briefcase, MapPin, Calendar, ChevronRight, RefreshCw,
-  Clock, CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
+  Briefcase, Calendar, ChevronRight, RefreshCw,
+  CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
   FileText, X, Download, MessageSquare, BookOpen,
 } from "lucide-react";
-import { useTalentApplications, TalentApplication, getTalentAppsLastViewedKey } from "@/hooks/useTalentApplications";
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 function StatusBadge({ status }: { status: string }) {
   const meta = getStatusMeta(status);
