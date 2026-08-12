@@ -4702,6 +4702,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * GET /api/talent/applications
+   * Returns the authenticated talent's own application history from job_submissions.
+   * Uses the same table as /admin/job-applications — no duplicate tracking tables.
+   * Ownership is derived server-side from the Talent JWT; never accepts a query param.
+   * Never exposes internal admin notes or other applicants' data.
+   */
+  app.get("/api/talent/applications", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId, email: jwtEmail } = req.talentAuth;
+
+      // Resolve the candidate's email (authoritative source: candidates table)
+      const candRow = await query(
+        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const candidateEmail = candRow.rows[0].email as string;
+
+      // Resolve the linked users.id (talent_id in job_submissions stores users.id)
+      const userRow = await query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [candidateEmail],
+      );
+      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+
+      // Fetch applications where:
+      //   - talent_id explicitly matches the linked users.id (preferred / secure), OR
+      //   - talent_id is NULL and email matches (legacy applications before talent linking)
+      const appsResult = await query(
+        `SELECT
+           js.id,
+           js.status,
+           js.submitted_at AS "submittedAt",
+           js.updated_at   AS "updatedAt",
+           js.resume_file_name AS "resumeFileName",
+           js.cover_letter AS "coverLetter",
+           j.id      AS "jobId",
+           j.title   AS "jobTitle",
+           j.company AS "jobCompany",
+           j.location AS "jobLocation",
+           j.work_setup AS "jobWorkSetup",
+           j.status  AS "jobStatus"
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE (
+           ($1::text IS NOT NULL AND js.talent_id = $1::text)
+           OR
+           (js.talent_id IS NULL AND lower(js.email) = lower($2))
+         )
+         ORDER BY js.submitted_at DESC`,
+        [linkedUserId, candidateEmail],
+      );
+
+      const applications = appsResult.rows.map((row) => ({
+        id: row.id,
+        job: {
+          id: row.jobId,
+          title: row.jobTitle,
+          companyName: row.jobCompany || "",
+          location: row.jobLocation || undefined,
+          workSetup: row.jobWorkSetup || undefined,
+          status: row.jobStatus || undefined,
+        },
+        applicationStatus: row.status,
+        submittedAt: row.submittedAt,
+        updatedAt: row.updatedAt,
+        resume: row.resumeFileName ? { fileName: row.resumeFileName } : undefined,
+        coverLetter: row.coverLetter || null,
+      }));
+
+      return res.json(applications);
+    } catch (error: any) {
+      console.error("GET /api/talent/applications error:", error);
+      return res.status(500).json({ error: "Failed to load applications" });
+    }
+  });
+
   app.post("/api/candidates", async (req, res) => {
     try {
       const { insertCandidateSchema } = await import("@shared/schema");

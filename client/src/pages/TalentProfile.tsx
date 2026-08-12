@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTalentApplications } from "@/hooks/useTalentApplications";
+import { getStatusMeta } from "@/lib/applicationStatus";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, Briefcase, Calendar, Globe2, Mail, Phone, Linkedin,
@@ -275,6 +277,7 @@ const SECTION_TABS = [
   { id: "section-certifications", label: "Certifications" },
   { id: "section-portfolio", label: "Portfolio" },
   { id: "section-resume",   label: "Resume" },
+  { id: "section-applications", label: "Applications" },
   { id: "section-preferences", label: "Preferences" },
   { id: "section-contact",  label: "Contact" },
 ];
@@ -766,6 +769,7 @@ export default function TalentProfile() {
     "section-certifications",
     "section-portfolio",
     "section-resume",
+    ...(isOwner ? ["section-applications"] : []),
     "section-preferences",
     ...(canSeeContact || isOwner ? ["section-contact"] : []),
   ]);
@@ -1319,6 +1323,9 @@ export default function TalentProfile() {
               <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
             </Section>
 
+            {/* Applications — only visible to profile owner */}
+            {isOwner && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
+
             {/* Contact (role-gated) */}
             {canSeeContact && (
               <Section id="section-contact" title="Contact" icon={Shield}>
@@ -1359,6 +1366,83 @@ export default function TalentProfile() {
       )}
     </div>
     </>
+  );
+}
+
+// ─── Applications Section (profile owner only) ────────────────────────────────
+
+function ApplicationsSection({ candidateId, talentToken }: { candidateId: string; talentToken?: string }) {
+  const [, navigate] = useLocation();
+  const { data: applications, isLoading } = useTalentApplications();
+
+  const apps = (applications ?? []).slice(0, 5);
+
+  return (
+    <Section id="section-applications" title="Applications" icon={Briefcase}>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          ))}
+        </div>
+      ) : apps.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-800/50">
+          <p className="text-sm text-slate-500 dark:text-slate-400">No applications yet.</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Explore open roles and find your next opportunity.
+          </p>
+          <button
+            onClick={() => navigate("/find-work/jobs")}
+            className="mt-3 text-xs font-medium text-[#474ead] hover:underline dark:text-indigo-400"
+          >
+            Browse Roles →
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {apps.map((app) => {
+            const meta = getStatusMeta(app.applicationStatus);
+            const dateStr = app.submittedAt
+              ? new Date(app.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : null;
+            return (
+              <div
+                key={app.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{app.job.title}</p>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                    {app.job.companyName}
+                    {dateStr && <span className="text-slate-400"> · Applied {dateStr}</span>}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.bgClass} ${meta.textClass} ${meta.borderClass}`}
+                >
+                  {meta.talentLabel}
+                </span>
+              </div>
+            );
+          })}
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={() => navigate("/my-applications")}
+              className="text-xs font-medium text-[#474ead] hover:underline dark:text-indigo-400"
+            >
+              View All Applications →
+            </button>
+            <button
+              onClick={() => navigate("/find-work/jobs")}
+              className="text-xs font-medium text-slate-500 hover:text-[#474ead] dark:text-slate-400 dark:hover:text-indigo-400"
+            >
+              Browse More Roles →
+            </button>
+          </div>
+        </div>
+      )}
+    </Section>
   );
 }
 

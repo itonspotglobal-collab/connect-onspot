@@ -76,6 +76,7 @@ import PilotDashboard from "@/pages/PilotDashboard";
 import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
 import TalentProfile from "@/pages/TalentProfile";
+import TalentApplications from "@/pages/TalentApplications";
 import ClientProfile from "@/pages/ClientProfile";
 import InquiryPage from "@/pages/InquiryPage";
 import InquiryReview from "@/pages/InquiryReview";
@@ -173,6 +174,7 @@ function PublicRouter() {
           <Route path="/jobs" component={FindWorkAllJobs} />
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
+          <Route path="/my-applications" component={TalentApplications} />
           <Route path="/talent/signup" component={TalentSignupFromApplication} />
           {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
           {/* Previously authenticated talent users were routed to TalentPortal here. */}

@@ -26,6 +26,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -272,6 +273,7 @@ export function TopNavigation() {
     // talent / default
     return [
       { label: "Talent Profile",       route: talentAuth ? `/talent-profile/${talentAuth.candidateId}` : "/find-best-matches", icon: User },
+      { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
       { label: "Finish Profile Setup", route: "/find-best-matches", icon: CheckCircle2 },
       { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
       { label: "Settings",             route: "/settings",          icon: Settings },

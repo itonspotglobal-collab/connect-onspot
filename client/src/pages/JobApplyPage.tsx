@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -167,6 +167,7 @@ export default function JobApplyPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const isTalent = user?.role === "talent";
   const isNonTalentUser = !!user && !isTalent;
@@ -587,6 +588,8 @@ export default function JobApplyPage() {
       const data = await res.json();
 
       if (data.accountAction === "already_authenticated") {
+        // Invalidate talent applications cache so the new submission appears immediately
+        queryClient.invalidateQueries({ queryKey: ["talent-applications"] });
         // Talent portal success → show in-page success screen
         setSuccessInfo({
           jobTitle: job?.title ?? "the role",

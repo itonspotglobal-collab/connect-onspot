@@ -1,0 +1,1363 @@
+# Add Talent “My Applications” + Real-Time Application Status Tracking
+
+We want Talent users to be able to see every job they have applied to and the current status of each application.
+
+This must use the SAME application records and status values used by:
+
+```text
+/admin/job-applications
+```
+
+Do not create a duplicate Talent-only application tracking table or separate status system.
+
+The Talent-facing application status must remain synchronized with whatever Admin updates in the Job Applications page.
+
+---
+
+# Main goals
+
+Implement three connected features:
+
+1. Add a `My Applications` / `Applied Jobs` item to the Talent Profile dropdown.
+2. Create a dedicated Talent page that lists:
+
+   * jobs already applied to;
+   * current application status;
+   * recommended roles;
+   * relevant actions.
+3. Add an `Applications` section inside the Talent Profile page showing recent applied jobs and statuses.
+
+At the bottom of the Talent Profile Applications section, add:
+
+```text
+Browse More Roles
+```
+
+which navigates to the existing:
+
+```text
+Find Work
+```
+
+page.
+
+---
+
+# Existing files to inspect first
+
+Inspect the current Replit workspace, especially:
+
+```text
+client/src/components/TopNavigation.tsx
+client/src/pages/TalentProfile.tsx
+client/src/pages/AdminJobApplications.tsx
+client/src/pages/FindWorkJob.tsx
+client/src/pages/JobApplyPage.tsx
+client/src/App.tsx
+
+server/routes.ts
+server/storage.ts
+shared/schema.ts
+```
+
+Also search for:
+
+```text
+jobApplications
+job_applications
+jobSubmissions
+job_submissions
+candidateId
+application status
+submitted
+under_review
+shortlisted
+interview
+hired
+rejected
+withdrawn
+Talent linked
+```
+
+Determine exactly which database table currently powers `/admin/job-applications`.
+
+That same table must power Talent application tracking.
+
+---
+
+# 1. Canonical application source
+
+Do NOT create another application history table.
+
+Identify the actual database model used by:
+
+```text
+/admin/job-applications
+```
+
+For example it may be:
+
+```text
+job_submissions
+```
+
+or:
+
+```text
+job_applications
+```
+
+or another existing application table.
+
+Use that existing table as the source of truth.
+
+The relationship should be:
+
+```text
+Candidate
+    ↓
+Application record
+    ↓
+Job
+    ↓
+Application Status
+```
+
+When Admin changes:
+
+```text
+Submitted
+→ Under Review
+```
+
+the Talent must see:
+
+```text
+Under Review
+```
+
+from the SAME row.
+
+---
+
+# 2. Add authenticated Talent applications API
+
+Create or reuse a secure Candidate/Talent endpoint such as:
+
+```text
+GET /api/talent/applications
+```
+
+or:
+
+```text
+GET /api/candidates/me/applications
+```
+
+Use whichever matches the current architecture.
+
+Authentication must use the existing Candidate/Talent session.
+
+Use:
+
+```text
+talent_profile_token
+candidateId
+```
+
+or the current canonical Talent JWT.
+
+Do not accept arbitrary:
+
+```text
+?candidateId=...
+```
+
+from the browser and trust it.
+
+The backend should determine the Candidate from the authenticated JWT.
+
+---
+
+# 3. Talent applications response
+
+Return enough information for the Talent UI without requiring many separate calls.
+
+Suggested response:
+
+```ts
+interface TalentApplication {
+  id: string;
+
+  job: {
+    id: string;
+    title: string;
+    companyName: string;
+    location?: string;
+    workSetup?: string;
+    status?: string;
+  };
+
+  applicationStatus:
+    | "submitted"
+    | "under_review"
+    | "shortlisted"
+    | "interview"
+    | "hired"
+    | "rejected"
+    | "withdrawn";
+
+  submittedAt: string;
+  updatedAt: string;
+
+  resume?: {
+    id?: string;
+    fileName?: string;
+  };
+
+  coverLetter?: string | null;
+}
+```
+
+Use the actual schema fields.
+
+Include only data the Talent is allowed to see.
+
+Do NOT expose:
+
+```text
+internal notes
+admin-only comments
+private recruiter scoring
+evaluation notes
+other applicants
+```
+
+---
+
+# 4. Status values must be shared with Admin
+
+Inspect `AdminJobApplications.tsx`.
+
+Find the exact application statuses currently supported.
+
+Use the same values everywhere.
+
+Do not create separate Talent labels that are impossible to map back.
+
+If internal database values are:
+
+```text
+submitted
+under_review
+shortlisted
+interview
+hired
+rejected
+```
+
+then the Talent UI may display:
+
+```text
+Submitted
+Under Review
+Shortlisted
+Interview
+Hired
+Not Selected
+```
+
+but keep one shared mapping utility.
+
+Example:
+
+```text
+client/src/lib/applicationStatus.ts
+```
+
+with something conceptually like:
+
+```ts
+export const APPLICATION_STATUS_META = {
+  submitted: {
+    label: "Submitted"
+  },
+
+  under_review: {
+    label: "Under Review"
+  },
+
+  shortlisted: {
+    label: "Shortlisted"
+  },
+
+  interview: {
+    label: "Interview"
+  },
+
+  hired: {
+    label: "Hired"
+  },
+
+  rejected: {
+    label: "Not Selected"
+  }
+};
+```
+
+Use this utility on both Admin and Talent pages if practical.
+
+Do not maintain duplicated status strings in multiple components.
+
+---
+
+# 5. Add “My Applications” to Talent Profile dropdown
+
+Current Talent dropdown contains items such as:
+
+```text
+Talent Profile
+Finish Profile Setup
+Find Work
+Settings
+Sign Out
+```
+
+Add:
+
+```text
+My Applications
+```
+
+Recommended ordering:
+
+```text
+Talent Profile
+My Applications
+Finish Profile Setup
+Find Work
+Settings
+----------------
+Sign Out
+```
+
+If the profile is already complete, keep the current logic for hiding or de-emphasizing `Finish Profile Setup`.
+
+Suggested icon:
+
+```text
+Briefcase
+ClipboardList
+FileCheck
+```
+
+Use the existing Lucide icon library.
+
+Do not redesign the dropdown.
+
+---
+
+# 6. Create new Talent Applications page
+
+Create a page such as:
+
+```text
+client/src/pages/TalentApplications.tsx
+```
+
+Suggested route:
+
+```text
+/my-applications
+```
+
+or:
+
+```text
+/talent/applications
+```
+
+Choose whichever matches the existing Talent routing style.
+
+Add it to:
+
+```text
+client/src/App.tsx
+```
+
+Protect the page so only authenticated Talent/Candidate users can access their application list.
+
+---
+
+# 7. Page header
+
+Suggested page:
+
+```text
+My Applications
+
+Track your applications and discover roles that match your profile.
+```
+
+Include useful high-level counts:
+
+```text
+Total Applications
+Under Review
+Shortlisted
+Interviews
+```
+
+Only add these if they can be calculated cleanly from the returned applications.
+
+Do not create fake analytics.
+
+---
+
+# 8. Applications list
+
+Display applications newest first.
+
+Each application should show:
+
+```text
+Job Title
+Company
+Location / Remote
+Date Applied
+Application Status
+```
+
+Optionally:
+
+```text
+View Job
+View Application
+```
+
+Example:
+
+```text
+AI / Automation Engineer
+
+Amptek · Remote
+
+Applied Aug 13, 2026
+
+Status:
+Under Review
+
+[View Job]
+```
+
+---
+
+# 9. Status design
+
+Use visually clear status chips.
+
+Examples:
+
+```text
+Submitted
+Under Review
+Shortlisted
+Interview
+Hired
+Not Selected
+```
+
+Do not imply stronger progress than Admin actually selected.
+
+For example:
+
+```text
+submitted
+```
+
+must not be displayed as:
+
+```text
+Under Review
+```
+
+unless Admin changed it.
+
+---
+
+# 10. Status timeline
+
+For the dedicated Applications page, add a lightweight progress/status timeline when an application is opened or expanded.
+
+For statuses following the normal pipeline:
+
+```text
+Submitted
+→ Under Review
+→ Shortlisted
+→ Interview
+→ Hired
+```
+
+Example:
+
+```text
+✓ Submitted
+✓ Under Review
+● Shortlisted
+○ Interview
+○ Hired
+```
+
+But do not infer dates or completed stages unless the database actually records status history.
+
+If the system only stores the current status, show the pipeline visually but do not invent historical timestamps.
+
+---
+
+# 11. Rejected / withdrawn status
+
+Handle terminal statuses gracefully.
+
+For example:
+
+```text
+Not Selected
+```
+
+or:
+
+```text
+Withdrawn
+```
+
+Do not make them look like an error in the application.
+
+Keep language professional.
+
+---
+
+# 12. Add Applications section to Talent Profile page
+
+Add a new Talent Profile section:
+
+```text
+Applications
+```
+
+Place it somewhere sensible after the major profile-content sections.
+
+Suggested section order:
+
+```text
+Overview
+About
+Skills
+Experience
+Education
+Certifications
+Portfolio
+Resume
+Applications
+Preferences
+Contact
+```
+
+Adjust based on current layout.
+
+Also add `Applications` to the profile section tabs if those tabs are dynamically generated.
+
+---
+
+# 13. Talent Profile Applications summary
+
+Do NOT render the entire application history on the main profile.
+
+Show the most recent:
+
+```text
+3
+```
+
+or:
+
+```text
+5
+```
+
+applications.
+
+Example:
+
+```text
+Applications
+
+AI / Automation Engineer
+Amptek
+Under Review
+Applied Aug 13
+
+Virtual Assistant
+OnSpot
+Submitted
+Applied Aug 12
+
+Accounting Manager
+OnSpot
+Shortlisted
+Applied Aug 10
+```
+
+At the bottom:
+
+```text
+View All Applications
+```
+
+and:
+
+```text
+Browse More Roles
+```
+
+`View All Applications` goes to:
+
+```text
+/my-applications
+```
+
+`Browse More Roles` goes to the existing Find Work page.
+
+---
+
+# 14. Empty state
+
+If Talent has never applied:
+
+Show:
+
+```text
+No applications yet
+
+Explore open roles and find your next opportunity.
+
+[Browse Roles]
+```
+
+Do not show an empty table.
+
+---
+
+# 15. Recommended roles on My Applications page
+
+The user also wants recommended jobs included.
+
+Add a section below the application history:
+
+```text
+Recommended for You
+```
+
+Reuse the existing job recommendation/matching logic if one already exists.
+
+Do NOT create a second recommendation algorithm just for this page.
+
+Relevant existing systems may include:
+
+```text
+Find Best Matches
+recommended jobs
+match scores
+candidate coreSkills
+candidate targetPosition
+previous applied roles
+```
+
+Inspect the existing matching implementation first.
+
+---
+
+# 16. Recommended role signals
+
+Recommendations may use:
+
+```text
+Candidate target position
+Core skills
+Secondary skills
+Job category
+Seniority
+Location/preferences
+Previous application role categories
+```
+
+But Candidate profile should remain more important than application history.
+
+Previous applications may be an additional preference signal.
+
+Do not assume:
+
+```text
+Applied to X
+=
+Only interested in X forever
+```
+
+---
+
+# 17. Exclude already-applied roles
+
+The `Recommended for You` section should normally exclude jobs the Talent already applied to.
+
+Also exclude:
+
+```text
+closed jobs
+inactive jobs
+archived jobs
+```
+
+Show open roles only.
+
+---
+
+# 18. “Browse More Roles”
+
+At the bottom of both:
+
+```text
+Talent Profile Applications section
+```
+
+and:
+
+```text
+My Applications page
+```
+
+include:
+
+```text
+Browse More Roles
+```
+
+Route to the existing Find Work jobs page.
+
+Use the current route, likely something such as:
+
+```text
+/find-work/jobs
+```
+
+Confirm the actual route before implementation.
+
+---
+
+# 19. Real-time / near-real-time status syncing
+
+The user wants status updates to appear when Admin updates `/admin/job-applications`.
+
+The Talent view must read the same DB data.
+
+Do not duplicate or manually synchronize two tables.
+
+For immediate UI refresh, use one of the following based on the existing stack:
+
+### Preferred simple implementation
+
+React Query polling:
+
+```ts
+refetchInterval: 15000
+```
+
+or around 15–30 seconds.
+
+Also refetch when the window regains focus:
+
+```ts
+refetchOnWindowFocus: true
+```
+
+This provides near-real-time behavior without adding unnecessary infrastructure.
+
+### If the project already uses WebSocket/SSE
+
+Reuse it.
+
+Do not introduce WebSockets solely for this feature unless necessary.
+
+---
+
+# 20. Query invalidation
+
+Use a shared query key such as:
+
+```ts
+["talent-applications"]
+```
+
+When anything Talent-side changes an application, invalidate it.
+
+Admin status updates occur in a different browser/session, so polling/refetch is still needed unless server push exists.
+
+---
+
+# 21. Admin status change behavior
+
+When Admin changes:
+
+```text
+Submitted
+→ Under Review
+```
+
+the database update should remain exactly where it currently is.
+
+The Talent page should simply fetch the updated application.
+
+Do NOT make Admin call a separate Talent endpoint.
+
+Correct flow:
+
+```text
+Admin changes status
+        ↓
+application DB row updated
+        ↓
+Talent API reads same row
+        ↓
+Talent UI refetches
+        ↓
+new status appears
+```
+
+---
+
+# 22. Status history if available
+
+Inspect whether the Admin page already stores:
+
+```text
+status history
+status_changed_at
+application_events
+stage history
+```
+
+If yes, return safe status history to the Talent.
+
+If not, do NOT invent it.
+
+A future enhancement could store application status events, but this task can use current status alone unless history already exists.
+
+---
+
+# 23. Privacy / authorization
+
+This is critical.
+
+A Talent may access only:
+
+```text
+applications where candidate_id = authenticatedCandidateId
+```
+
+or the equivalent linked Candidate relationship.
+
+Do not expose applications based solely on email.
+
+Do not permit:
+
+```text
+/api/talent/applications?candidateId=someone-else
+```
+
+unless Admin-authorized.
+
+Ownership must be derived server-side.
+
+---
+
+# 24. Legacy applications
+
+Some older applications may exist before the Candidate-linked architecture was finalized.
+
+Inspect existing records for fields such as:
+
+```text
+candidateId
+userId
+email
+talentLinked
+accountStatus
+```
+
+If safe and unambiguous, link legacy applications to the Candidate.
+
+Priority should be:
+
+```text
+explicit candidateId
+>
+explicit user link
+>
+verified exact Talent email migration/backfill
+```
+
+Do not dynamically expose unrelated application rows merely because an email string looks similar.
+
+If a migration/backfill is necessary, make it explicit and safe.
+
+---
+
+# 25. Existing “Talent linked” records
+
+The Admin screenshot already shows some rows with:
+
+```text
+Talent linked
+```
+
+Inspect how this is represented in the database.
+
+Use this relationship when querying Talent application history.
+
+Do not create a new linkage mechanism if this already exists.
+
+---
+
+# 26. Admin internal notes remain private
+
+The Admin Status modal contains:
+
+```text
+Internal note (optional)
+
+This note is not visible to the applicant.
+```
+
+Honor this.
+
+Never include `internalNote` or equivalent fields in the Talent API response.
+
+Even if the frontend does not display it, do not send it to the browser.
+
+---
+
+# 27. Recommended page layout
+
+Suggested:
+
+```text
+MY APPLICATIONS
+
+[Total 6] [Under Review 2] [Interview 1]
+
+--------------------------------
+
+YOUR APPLICATIONS
+
+AI / Automation Engineer
+Amptek · Remote
+Applied Aug 13, 2026
+[Under Review]
+[View Job]
+
+Virtual Assistant
+OnSpot · Remote
+Applied Aug 12, 2026
+[Submitted]
+[View Job]
+
+--------------------------------
+
+RECOMMENDED FOR YOU
+
+[Job card]
+[Job card]
+[Job card]
+
+[Browse More Roles]
+```
+
+Keep styling consistent with the existing OnSpot Talent pages.
+
+---
+
+# 28. Sorting and filters
+
+On the dedicated page, add lightweight filters if simple:
+
+```text
+All
+Active
+Interview
+Completed
+```
+
+Possible grouping:
+
+```text
+Active:
+Submitted
+Under Review
+Shortlisted
+Interview
+
+Completed:
+Hired
+Rejected
+Withdrawn
+```
+
+Do not overcomplicate the initial release.
+
+---
+
+# 29. Applied job still accessible
+
+If an applied job has since closed, keep it in My Applications.
+
+The Talent should still be able to see:
+
+```text
+Job title
+Company
+Application status
+Date applied
+```
+
+If the job detail page is no longer public, disable `View Job` gracefully.
+
+Do not delete application history because a job closes.
+
+---
+
+# 30. Application confirmation integration
+
+After the new one-click apply flow successfully submits:
+
+invalidate/refetch:
+
+```text
+["talent-applications"]
+```
+
+Then the new application should immediately appear in:
+
+```text
+My Applications
+Talent Profile Applications section
+```
+
+without requiring logout/login.
+
+---
+
+# 31. Suggested shared hook
+
+Create:
+
+```text
+client/src/hooks/useTalentApplications.ts
+```
+
+Conceptually:
+
+```ts
+export function useTalentApplications() {
+  return useQuery({
+    queryKey: ["talent-applications"],
+
+    queryFn: fetchTalentApplications,
+
+    refetchInterval: 15000,
+
+    refetchOnWindowFocus: true,
+  });
+}
+```
+
+Use this hook in:
+
+```text
+TalentApplications.tsx
+TalentProfile.tsx
+```
+
+Do not duplicate fetching logic.
+
+---
+
+# 32. Recommended jobs hook
+
+Reuse an existing recommendations hook/API where possible.
+
+If no reusable hook exists, extract the existing Find Best Matches recommendation query instead of copying its logic.
+
+Suggested:
+
+```text
+useRecommendedJobs()
+```
+
+or equivalent.
+
+---
+
+# 33. Loading state
+
+Use skeletons/spinners consistent with the current UI.
+
+Do not briefly show:
+
+```text
+No applications yet
+```
+
+while the API is still loading.
+
+---
+
+# 34. Error state
+
+If applications fail to load:
+
+```text
+We couldn't load your applications right now.
+
+[Try Again]
+```
+
+Do not treat it as zero applications.
+
+---
+
+# 35. Profile dropdown completion mismatch
+
+The screenshot shows the dropdown can display:
+
+```text
+Profile completion 0%
+```
+
+while Talent Profile itself displays:
+
+```text
+58%
+```
+
+While touching the dropdown, fix this as well.
+
+Both should use the SAME shared profile-completion calculation/query.
+
+Do not maintain separate completion calculations.
+
+Expected:
+
+```text
+Dropdown completion
+=
+Talent Profile completion
+=
+Profile Settings completion
+```
+
+from the same Candidate profile data.
+
+---
+
+# 36. Dropdown user identity
+
+Similarly, make sure the dropdown uses current persisted Candidate identity/profile:
+
+```text
+name
+email
+photo
+completion
+```
+
+and not stale cached signup values where avoidable.
+
+Use Candidate data as source of truth.
+
+---
+
+# 37. Backend query example
+
+Conceptually, the server query should resemble:
+
+```sql
+SELECT
+  a.id,
+  a.status,
+  a.submitted_at,
+  a.updated_at,
+
+  j.id AS job_id,
+  j.title,
+  j.location,
+  j.status AS job_status
+
+FROM job_applications a
+
+JOIN jobs j
+  ON j.id = a.job_id
+
+WHERE a.candidate_id = $1
+
+ORDER BY a.submitted_at DESC;
+```
+
+Do NOT copy this blindly.
+
+Use the actual existing table and column names.
+
+---
+
+# 38. Database verification
+
+Use a test Talent that appears in:
+
+```text
+/admin/job-applications
+```
+
+and has multiple applications.
+
+Verify:
+
+```sql
+candidate_id
+job_id
+status
+submitted_at
+```
+
+or their actual equivalents.
+
+Then confirm the Talent API returns exactly those applications.
+
+---
+
+# 39. Real-time test
+
+Test this exact scenario:
+
+1. Talent logs in.
+2. Open Talent Profile.
+3. Applications section shows:
+
+```text
+Customer Service Representative
+Submitted
+```
+
+4. In another Admin session open:
+
+```text
+/admin/job-applications
+```
+
+5. Change status to:
+
+```text
+Under Review
+```
+
+6. Save.
+7. Do NOT refresh Talent manually.
+8. Within the polling interval, Talent UI updates to:
+
+```text
+Under Review
+```
+
+9. Open My Applications.
+10. Same status appears there.
+
+This proves both sides share the same source of truth.
+
+---
+
+# 40. End-to-end application test
+
+1. Existing Talent logs in.
+2. Clicks Apply Now.
+3. Completes one-click application.
+4. Submits.
+5. Confirmation appears.
+6. New application appears immediately in My Applications.
+7. Application appears in Talent Profile.
+8. Admin Job Applications also shows it.
+9. Admin changes status.
+10. Talent sees updated status.
+
+---
+
+# Acceptance criteria
+
+## Dropdown
+
+* [ ] `My Applications` added.
+* [ ] Opens dedicated application-history page.
+* [ ] Existing dropdown design preserved.
+* [ ] Dropdown completion percentage matches Talent Profile.
+
+## My Applications
+
+* [ ] Shows all authenticated Talent applications.
+* [ ] Uses same application DB rows as Admin.
+* [ ] Shows job title/company/date/status.
+* [ ] Newest applications first.
+* [ ] Recommended roles section included.
+* [ ] Already-applied roles excluded from recommendations.
+* [ ] Browse More Roles button works.
+* [ ] Empty/loading/error states work.
+
+## Talent Profile
+
+* [ ] Applications section added.
+* [ ] Shows latest 3–5 applications.
+* [ ] Current status shown.
+* [ ] View All Applications works.
+* [ ] Browse More Roles works.
+
+## Status sync
+
+* [ ] Admin changes update same application DB row.
+* [ ] Talent uses same row.
+* [ ] Status updates automatically within polling/refetch interval.
+* [ ] No duplicate application status store.
+* [ ] Admin internal notes are never exposed.
+
+## Security
+
+* [ ] Talent can only access own applications.
+* [ ] Candidate ownership derived from auth.
+* [ ] No private Admin fields returned.
+
+---
+
+# Final implementation report required
+
+After implementation, report:
+
+1. which DB table is the canonical application source;
+2. how Candidate ownership is stored;
+3. Talent applications API added/changed;
+4. exact statuses shared with Admin;
+5. files changed;
+6. dropdown route added;
+7. new My Applications page route;
+8. Talent Profile Applications section implementation;
+9. polling/realtime strategy;
+10. recommendation logic reused;
+11. how already-applied jobs are excluded;
+12. how legacy applications are linked;
+13. confirmation that Admin internal notes are hidden;
+14. profile completion source-of-truth fix;
+15. end-to-end tests performed;
+16. confirmation that an Admin status change appears automatically for Talent.
