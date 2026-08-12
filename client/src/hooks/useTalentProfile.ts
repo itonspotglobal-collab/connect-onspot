@@ -18,15 +18,16 @@ import { Profile, PortfolioItem } from "@shared/schema";
 export const profileFormSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
-  title: z.string().min(2, "Professional title is required"),
+  // Optional — users saving Basic Info must not be blocked by empty Professional Details
+  title: z.string().optional(),
   bio: z.string().optional(),
-  location: z.string().min(2, "Location is required"),
-  hourlyRate: z.string().min(1, "Hourly rate is required"),
+  location: z.string().optional(),
+  hourlyRate: z.string().optional(),
   rateCurrency: z.string().default("USD"),
   availability: z.string().default("available"),
   phoneNumber: z.string().optional(),
-  // ✅ Fix: languages MUST be an array of strings
-  languages: z.array(z.string()).min(1, "At least one language is required"),
+  // Allow empty array so users can clear all languages
+  languages: z.array(z.string()).default([]),
   timezone: z.string().default("UTC"),
 });
 

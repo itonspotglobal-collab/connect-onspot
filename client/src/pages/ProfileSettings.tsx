@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -312,8 +312,16 @@ export default function ProfileSettings() {
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: getDefaultFormValues(),
-    values: getDefaultFormValues(),
   });
+
+  // Reset form when profile data finishes loading — does NOT overwrite dirty fields
+  // on every render (the `values` prop bug that was silently resetting edits).
+  useEffect(() => {
+    if (profile !== undefined) {
+      form.reset(getDefaultFormValues());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const onSubmit = async (data: ProfileFormData) => {
@@ -323,7 +331,11 @@ export default function ProfileSettings() {
     }
     try {
       await updateProfile(data);
-      if (skills && skills.length > 0) await updateSkills();
+      // Always persist current skill selection, even if it's empty (clearing all skills)
+      await updateSkills();
+      // Invalidate auth/user queries so the navbar name updates immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({ title: "Settings saved successfully.", description: "Your profile has been updated.", duration: 3000 });
     } catch (error: any) {
       toast({
@@ -332,6 +344,17 @@ export default function ProfileSettings() {
         variant: "destructive", duration: 6000,
       });
     }
+  };
+
+  // Surface validation errors as a toast so the user is never left clicking Save with zero feedback
+  const onInvalid = (errors: any) => {
+    console.error("Profile validation errors:", errors);
+    const firstError = Object.values(errors)[0] as any;
+    toast({
+      title: "Please check your information",
+      description: firstError?.message || "Some fields need attention before your settings can be saved.",
+      variant: "destructive",
+    });
   };
 
   // ── Document handlers ─────────────────────────────────────────────────────
@@ -489,7 +512,7 @@ export default function ProfileSettings() {
           {/* ── Main content ── */}
           <div>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+              <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="flex flex-col gap-6">
 
                 {/* ─ Basic Information ─ */}
                 {activeSection === "basic" && (
