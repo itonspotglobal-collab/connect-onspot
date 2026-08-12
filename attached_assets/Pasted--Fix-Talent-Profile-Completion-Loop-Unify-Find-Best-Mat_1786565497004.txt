@@ -1,0 +1,1137 @@
+# Fix Talent Profile Completion Loop — Unify Find Best Matches + Profile Settings
+
+There is now a major inconsistency in the Talent onboarding/profile-completion flow.
+
+## Current problem
+
+A Talent can complete the **Find Best Matches** journey multiple times, but when navigating to Talent Profile the system still redirects them back to Find Best Matches.
+
+At the same time:
+
+* Profile Settings has its own completion data;
+* Talent Profile has another completion percentage/state;
+* the Talent dropdown may show another completion value;
+* Find Best Matches has its own 5-step completion journey.
+
+These systems are no longer synchronized.
+
+The result is an onboarding loop:
+
+```text
+Complete Find Best Matches
+→ go to Talent Profile
+→ system still thinks profile is incomplete
+→ redirects back to Find Best Matches
+→ repeat
+```
+
+This must be fixed permanently.
+
+---
+
+# Goal
+
+Create ONE canonical Talent profile-completion system.
+
+Both:
+
+```text
+Find Best Matches
+```
+
+and:
+
+```text
+Profile Settings
+```
+
+must update the SAME Candidate profile data.
+
+Then:
+
+```text
+Talent Profile
+Top Navigation dropdown
+Profile Settings
+Find Best Matches
+```
+
+must all read completion from the SAME persisted Candidate data and shared completion calculator.
+
+The database must be the source of truth.
+
+---
+
+# Core architecture
+
+The desired architecture is:
+
+```text
+Find Best Matches
+        ↓
+   Candidate DB
+        ↑
+Profile Settings
+        ↓
+Shared Profile Completion Calculator
+        ↓
+Talent Profile
+Top Navigation
+Settings
+Find Best Matches
+```
+
+NOT:
+
+```text
+Find Best Matches local completion
++
+Profile Settings completion
++
+Talent Profile completion
++
+Navbar completion
+```
+
+with separate values.
+
+---
+
+# 1. Inspect all current completion logic
+
+Search the current Replit workspace for:
+
+```text
+profileCompletion
+profileStrength
+completion
+completionPct
+completionPercent
+isProfileComplete
+isOnboardingComplete
+onboardingComplete
+setupComplete
+finishProfile
+redirectToFindBestMatches
+find-best-matches
+profileStrengthFromCandidate
+buildCompletionItems
+calcCompletionPct
+```
+
+Inspect especially:
+
+```text
+client/src/pages/FindBestMatches.tsx
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/components/TopNavigation.tsx
+client/src/App.tsx
+client/src/hooks/useCandidateProfileSettings.ts
+client/src/lib/profileCompletion.ts
+client/src/lib/userActivityMemory.ts
+server/routes.ts
+server/storage.ts
+shared/schema.ts
+```
+
+Determine every place currently calculating profile completion.
+
+---
+
+# 2. Identify why Talent Profile redirects back to Find Best Matches
+
+Find the exact redirect condition.
+
+It may look conceptually like:
+
+```ts
+if (!profileComplete) {
+  navigate("/find-best-matches");
+}
+```
+
+or:
+
+```ts
+if (!onboardingComplete) {
+  return <Redirect ... />
+}
+```
+
+or depend on a localStorage/session flag.
+
+Document the exact condition.
+
+The redirect must NOT depend only on:
+
+```text
+localStorage
+sessionStorage
+Find Best Matches step number
+React component state
+```
+
+It should rely on persisted Candidate data.
+
+---
+
+# 3. Find Best Matches must save Candidate data
+
+At the end of each relevant Find Best Matches step, verify that the values are persisted to the Candidate record.
+
+Find Best Matches currently gathers data such as:
+
+```text
+Full Name
+Email
+Phone
+Location
+Target Job Position
+Job Category
+Experience
+Seniority
+Core Skills
+Secondary Skills
+Summary
+Resume
+Preferences / culture-match data
+```
+
+All reusable profile fields must be written to the SAME Candidate row used by Profile Settings.
+
+Do not leave them only in component state.
+
+---
+
+# 4. Map Find Best Matches fields to Candidate fields
+
+Inspect the actual Candidate schema and use existing fields.
+
+Example conceptual mapping:
+
+```text
+Find Best Matches            Candidate
+
+Full Name                  → fullName
+First/Last Name            → firstName / lastName
+Phone                      → phone
+Location                   → location
+Target Job Position        → targetPosition
+Job Category               → jobCategory
+Years of Experience        → yearsOfExperience
+Seniority                  → seniority
+Core Skills                → coreSkills
+Secondary Skills           → secondarySkills
+Summary                    → summary
+Resume                     → candidate resume/document
+Preferences                → preferences
+```
+
+Use the actual schema names.
+
+Do not create duplicate columns without checking the schema first.
+
+---
+
+# 5. Profile Settings must update the same Candidate row
+
+Profile Settings should continue using the Candidate system that was recently fixed.
+
+Verify that:
+
+```text
+Profile Settings
+```
+
+and:
+
+```text
+Find Best Matches
+```
+
+resolve the SAME:
+
+```text
+candidateId
+```
+
+and update the SAME Candidate DB row.
+
+Do not let one flow save into:
+
+```text
+profiles
+```
+
+while the other saves into:
+
+```text
+candidates
+```
+
+for the active Talent experience.
+
+---
+
+# 6. Create one shared completion calculator
+
+There should be exactly one shared helper for Candidate completion.
+
+Prefer something like:
+
+```text
+client/src/lib/profileCompletion.ts
+```
+
+or a server/shared utility.
+
+Example API:
+
+```ts
+calculateTalentProfileCompletion(candidate, documents)
+```
+
+returning:
+
+```ts
+{
+  percentage: number,
+  isComplete: boolean,
+  completedItems: string[],
+  missingItems: string[]
+}
+```
+
+Use this helper everywhere.
+
+---
+
+# 7. Define required profile-completion items
+
+Use the current product rules.
+
+At minimum consider fields such as:
+
+```text
+Name
+Email
+Phone
+Location
+Professional headline / target position
+Summary
+Core skills
+Experience
+Profile photo
+Resume
+```
+
+Only include fields that are truly required.
+
+If Video Introduction remains optional globally, do NOT require it for 100%.
+
+If some fields are job-specific, do NOT make them profile-completion requirements.
+
+---
+
+# 8. Separate profile completion from Find Best Matches journey progress
+
+This is important.
+
+These are two different concepts:
+
+### Journey progress
+
+```text
+Step 1 of 5
+20% complete
+```
+
+This means the user is on step 1 of Find Best Matches.
+
+### Profile completion
+
+```text
+58% profile complete
+```
+
+This means the Candidate's persisted profile contains 58% of required profile data.
+
+Do not mix them.
+
+Find Best Matches may show:
+
+```text
+Journey: Step 5 of 5
+Profile: 83% complete
+```
+
+if required profile fields are still missing.
+
+But completing the journey should persist enough data that the Candidate profile reflects the work that was completed.
+
+---
+
+# 9. Do not use Find Best Matches step completion as the Talent Profile guard
+
+Talent Profile access should not depend on:
+
+```text
+Find Best Matches step === 5
+```
+
+or:
+
+```text
+localStorage onboardingComplete
+```
+
+Instead, determine whether the Talent has enough persisted profile data to access the profile.
+
+Prefer allowing Talent Profile access even when incomplete.
+
+Do NOT continuously redirect incomplete users away from Talent Profile.
+
+Instead show the existing CTA:
+
+```text
+Finish setting up your profile
+```
+
+with:
+
+```text
+Finish Setting Up
+```
+
+This is a much better UX than a redirect loop.
+
+---
+
+# 10. Remove forced redirect loop
+
+If a logged-in Candidate has a valid Talent account:
+
+They should be allowed to open:
+
+```text
+/talent-profile
+```
+
+even if profile completion is:
+
+```text
+20%
+50%
+80%
+```
+
+The Talent Profile page can show incomplete sections and the setup CTA.
+
+Do NOT force them back to Find Best Matches automatically unless this is an intentional first-login-only onboarding requirement.
+
+Even in first-login onboarding, once they have completed the journey once, do not force it repeatedly.
+
+---
+
+# 11. If onboarding completion is still needed, persist it explicitly
+
+If the product needs to know whether Find Best Matches was completed, use a persisted Candidate property such as:
+
+```text
+onboardingCompletedAt
+```
+
+or:
+
+```text
+onboardingComplete
+```
+
+only if an equivalent field does not already exist.
+
+Do not use browser storage as the permanent flag.
+
+At the end of the Find Best Matches journey:
+
+```ts
+onboardingComplete = true
+```
+
+or:
+
+```ts
+onboardingCompletedAt = new Date()
+```
+
+should be persisted in DB.
+
+But profile completion should still be calculated separately from Candidate fields.
+
+---
+
+# 12. Completing Find Best Matches should update profile data incrementally
+
+Do not wait until the final page to save everything.
+
+Example:
+
+### Resume step
+
+Persist Resume.
+
+### Profile information step
+
+Persist:
+
+```text
+name
+email
+phone
+location
+targetPosition
+jobCategory
+```
+
+### Experience/skills step
+
+Persist:
+
+```text
+experience
+seniority
+coreSkills
+secondarySkills
+summary
+```
+
+### Preferences step
+
+Persist Candidate preferences.
+
+This prevents users from losing their progress and keeps Settings/Profile synchronized during the journey.
+
+---
+
+# 13. Profile Settings should immediately reflect Find Best Matches
+
+Test:
+
+1. Enter Location in Find Best Matches.
+2. Save/continue.
+3. Open Profile Settings.
+4. The same Location must appear.
+
+Then:
+
+1. Change Location in Profile Settings.
+2. Save.
+3. Return to Find Best Matches.
+4. Find Best Matches should load the updated persisted Candidate value.
+
+No duplicate values.
+
+---
+
+# 14. Find Best Matches should initialize from existing Candidate data
+
+For an existing Talent, do NOT always start Find Best Matches as a blank new journey.
+
+Load Candidate data first.
+
+Example:
+
+```text
+Name        ✓ already known
+Email       ✓
+Phone       ✓
+Location    ✓
+Skills      ✓
+Resume      ✓
+```
+
+Populate the fields from Candidate DB.
+
+Then the Talent only needs to fill missing data.
+
+Do not make them complete the same inputs three times.
+
+---
+
+# 15. Do not overwrite newer Profile Settings data
+
+Suppose:
+
+Candidate DB currently has:
+
+```text
+Location = "Cebu, Philippines"
+```
+
+because the user updated it in Profile Settings.
+
+An older Find Best Matches local state contains:
+
+```text
+Location = "Manila, Philippines"
+```
+
+Opening Find Best Matches must NOT overwrite the DB with the stale value.
+
+Use:
+
+```text
+Persisted Candidate data
+```
+
+as the initial source of truth.
+
+Only save values when the user intentionally edits/confirms them.
+
+---
+
+# 16. Unify profile completion in TopNavigation
+
+The Talent dropdown currently shows:
+
+```text
+Profile completion 0%
+```
+
+even when other pages show another percentage.
+
+Fix this.
+
+`TopNavigation.tsx` must use the shared Candidate profile completion result.
+
+Expected:
+
+```text
+Dropdown
+Talent Profile
+Profile Settings
+```
+
+all show the same percentage.
+
+---
+
+# 17. Unify Profile Settings completion
+
+The Profile Settings sidebar should use the exact same helper/query.
+
+Do not separately count its visible form fields.
+
+---
+
+# 18. Unify Talent Profile strength
+
+Talent Profile's:
+
+```text
+PROFILE STRENGTH
+```
+
+must use the same required-item definitions.
+
+Do not maintain its own hardcoded completion calculation.
+
+---
+
+# 19. Find Best Matches completion banner
+
+Find Best Matches can continue showing its journey progress separately.
+
+For example:
+
+```text
+Step 3 of 5 — Profile
+60% journey complete
+```
+
+But if displaying profile completion, calculate it from Candidate data.
+
+Label them clearly so the two percentages are not confused.
+
+---
+
+# 20. Suggested shared hook
+
+Create or consolidate:
+
+```text
+client/src/hooks/useTalentProfileCompletion.ts
+```
+
+Conceptually:
+
+```ts
+export function useTalentProfileCompletion() {
+  const candidate = useCandidateProfile();
+  const documents = useCandidateDocuments();
+
+  return calculateTalentProfileCompletion(
+    candidate,
+    documents
+  );
+}
+```
+
+Use this hook in:
+
+```text
+TopNavigation
+TalentProfile
+ProfileSettings
+FindBestMatches
+```
+
+Do not duplicate fetching/calculation logic.
+
+---
+
+# 21. Query keys must be shared
+
+Use consistent Candidate query keys.
+
+Example:
+
+```ts
+["candidate-profile", candidateId]
+["candidate-documents", candidateId]
+```
+
+When Find Best Matches saves:
+
+```ts
+queryClient.invalidateQueries({
+  queryKey: ["candidate-profile", candidateId]
+});
+```
+
+Do the same after:
+
+```text
+Profile Settings Save
+Resume upload
+Photo upload
+Skills update
+```
+
+This keeps every page synchronized.
+
+---
+
+# 22. Resume must remain part of shared completion
+
+The previous Profile Completion fix established that Resume is required for completion.
+
+Find Best Matches Resume upload must therefore update the same persisted Resume/document source used by the completion helper.
+
+After resume upload:
+
+```text
+hasResume = true
+```
+
+from actual persisted data.
+
+Do not keep a separate Find Best Matches `resumeUploaded` boolean as the canonical completion source.
+
+---
+
+# 23. Photo completion
+
+Likewise:
+
+```text
+hasPhoto
+```
+
+must come from Candidate's persisted:
+
+```text
+profilePhotoUrl
+```
+
+or existing canonical photo field.
+
+---
+
+# 24. Name completion
+
+Use persisted separate:
+
+```text
+firstName
+lastName
+```
+
+and not a fragile `fullName.split()` implementation.
+
+---
+
+# 25. Completion response example
+
+Prefer a shared result like:
+
+```ts
+{
+  percentage: 75,
+
+  items: {
+    photo: true,
+    name: true,
+    headline: false,
+    summary: true,
+    email: true,
+    phone: true,
+    location: true,
+    coreSkills: true,
+    experience: false,
+    resume: true
+  },
+
+  missingItems: [
+    "Professional headline",
+    "Experience"
+  ],
+
+  isComplete: false
+}
+```
+
+Then every UI renders the same data.
+
+---
+
+# 26. Talent Profile behavior when incomplete
+
+If incomplete:
+
+Show:
+
+```text
+Finish setting up your profile
+Your profile is 75% complete.
+
+[Finish Setting Up]
+```
+
+Button can take the Talent to:
+
+```text
+/settings
+```
+
+or optionally a completion hub.
+
+Do NOT automatically redirect them away.
+
+---
+
+# 27. Finish Profile Setup dropdown behavior
+
+The dropdown item:
+
+```text
+Finish Profile Setup
+```
+
+should navigate to the appropriate setup page.
+
+If the product wants both flows available, consider:
+
+```text
+/settings
+```
+
+as the canonical profile editor.
+
+Find Best Matches should remain a guided matching/onboarding experience, not the only place a Talent can complete their profile.
+
+---
+
+# 28. Completion from either flow
+
+The following must both work:
+
+### Flow A
+
+```text
+Find Best Matches
+→ fill Name
+→ fill Phone
+→ fill Location
+→ upload Resume
+→ add Skills
+→ save
+```
+
+Then Profile Settings and Talent Profile reflect those fields.
+
+### Flow B
+
+```text
+Profile Settings
+→ fill same fields
+→ save
+```
+
+Then Find Best Matches recognizes them as already completed.
+
+---
+
+# 29. Cross-flow completion test
+
+Create a new Talent.
+
+### Test A
+
+In Find Best Matches:
+
+```text
+Name
+Email
+Phone
+Location
+Target Position
+Summary
+Skills
+Resume
+```
+
+Save them.
+
+Then:
+
+1. navigate to Talent Profile;
+2. must NOT redirect back;
+3. completion should reflect persisted values;
+4. dropdown must show same percentage;
+5. Settings must show same values.
+
+---
+
+# 30. Partial completion test
+
+Complete only half of Find Best Matches.
+
+Navigate to Talent Profile.
+
+Expected:
+
+```text
+Talent Profile opens
+Profile completion < 100
+Finish Setting Up CTA appears
+```
+
+Do NOT redirect to Find Best Matches.
+
+---
+
+# 31. Profile Settings first test
+
+Create/edit a Talent entirely through Profile Settings.
+
+Populate all required fields.
+
+Then open Find Best Matches.
+
+Expected:
+
+```text
+existing profile values are pre-populated
+```
+
+The user should not need to re-enter them.
+
+---
+
+# 32. Resume test
+
+Upload Resume in Find Best Matches.
+
+Then:
+
+```text
+Profile Settings → Documents
+```
+
+must show that Resume.
+
+And:
+
+```text
+Talent Profile → Resume
+```
+
+must show the same Resume.
+
+The completion calculator must count it once.
+
+---
+
+# 33. Profile photo test
+
+Upload Profile Photo in Settings.
+
+Open Find Best Matches and Talent Profile.
+
+Same Candidate photo should appear where relevant.
+
+Completion must remain synchronized.
+
+---
+
+# 34. Refresh test
+
+After completing Find Best Matches:
+
+1. hard refresh browser;
+2. open Talent Profile;
+3. do not redirect;
+4. completion persists;
+5. values remain.
+
+This proves completion is not based on React/localStorage state.
+
+---
+
+# 35. Logout/login test
+
+After completing setup:
+
+1. logout;
+2. login again;
+3. open Talent Profile;
+4. no forced Find Best Matches redirect;
+5. same profile completion shown.
+
+---
+
+# 36. Another-device principle
+
+The architecture should work even if the Talent logs in from another browser/device.
+
+This means:
+
+```text
+DB persisted Candidate data
+```
+
+must determine completion.
+
+Not browser-local flags.
+
+---
+
+# 37. Fix completion mismatch visible in current screenshot
+
+The screenshot shows:
+
+```text
+Find Best Matches journey: 20% complete
+Talent dropdown Profile completion: 0%
+```
+
+These values can legitimately differ ONLY because one is **journey progress** and one is **profile completion**.
+
+But the profile completion should not remain 0% when the Candidate already has persisted profile fields.
+
+Make the labels explicit:
+
+```text
+Journey progress — 20%
+```
+
+and:
+
+```text
+Profile completion — 58%
+```
+
+for example.
+
+Do not call both simply “completion”.
+
+---
+
+# 38. Migration/backfill
+
+Some existing Talent Candidate rows may have completed Find Best Matches in the past but their data was not fully copied to canonical Candidate fields.
+
+Inspect whether any Find Best Matches data currently lives in:
+
+```text
+localStorage
+sessionStorage
+userActivityMemory
+separate onboarding record
+preferences JSON
+old profile tables
+```
+
+If persisted server-side data exists elsewhere, create a safe backfill/migration into Candidate where appropriate.
+
+Do not attempt to recover browser-local data for every user.
+
+---
+
+# 39. Remove stale completion flags
+
+Search for old values such as:
+
+```text
+onspot_new_talent_welcome
+onboarding_completed
+find_best_matches_complete
+profile_setup_complete
+```
+
+Determine whether they are still needed.
+
+Do not use them as the canonical profile completion signal.
+
+They may remain for UX state only.
+
+---
+
+# 40. Acceptance criteria
+
+Do not mark this complete until:
+
+* [ ] Find Best Matches saves reusable profile data to Candidate DB.
+* [ ] Profile Settings saves to the same Candidate row.
+* [ ] Talent Profile reads the same Candidate row.
+* [ ] One shared completion calculator exists.
+* [ ] Talent Profile no longer loops/redirects incomplete users back to Find Best Matches.
+* [ ] Incomplete Talent Profile shows Finish Setting Up CTA instead.
+* [ ] TopNavigation completion matches Talent Profile.
+* [ ] Profile Settings completion matches Talent Profile.
+* [ ] Find Best Matches loads existing Candidate data.
+* [ ] Resume uploaded in Find Best Matches appears in Settings/Profile.
+* [ ] Changes made in Settings appear in Find Best Matches.
+* [ ] Hard refresh preserves completion.
+* [ ] Logout/login preserves completion.
+* [ ] Completing Find Best Matches once does not require repeating it.
+* [ ] Journey progress and profile completion are treated as separate concepts.
+
+# Final implementation report
+
+After implementation, report:
+
+1. the exact redirect condition that caused the loop;
+2. which completion systems existed before;
+3. which one is now canonical;
+4. Candidate fields updated by Find Best Matches;
+5. Candidate fields updated by Profile Settings;
+6. shared completion helper/hook created;
+7. required completion items;
+8. whether Find Best Matches journey completion is separately persisted;
+9. how query invalidation keeps pages synchronized;
+10. what old local/session completion flags were removed or demoted;
+11. whether a migration/backfill was required;
+12. tests performed;
+13. confirmation that a Talent can complete Find Best Matches once, open Talent Profile, and not be redirected back again.
