@@ -53,6 +53,7 @@ import {
   type ExtractedCandidateProfile,
 } from "@/lib/resumeParser";
 import { useAuth } from "@/contexts/AuthContext";
+import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
 
 // ─── CandidateProfile type ────────────────────────────────────────────────────
@@ -1883,8 +1884,15 @@ export default function FindBestMatches() {
   // Set by TalentSignupFromApplication after creating a new account.
   // ── Auth context — authenticated talent user ───────────────────────────────
   const { user } = useAuth();
-  // Helper: get the stored JWT token for authenticated API calls
-  const getAuthToken = () => localStorage.getItem("onspot_jwt_token") ?? null;
+  // Helper: get the best available JWT token for authenticated API calls.
+  // Priority: Talent Portal JWT (type:"candidate", owns the candidateId) > main platform JWT.
+  // Using the portal JWT for PATCH /api/candidates/:id passes the `isTalentOwner` check
+  // directly; the main JWT only works if the JWT email matches the candidate's email.
+  const getAuthToken = () => {
+    const ta = loadTalentAuth();
+    if (ta?.token) return ta.token;
+    return localStorage.getItem("onspot_jwt_token") ?? null;
+  };
 
   // Read-and-clear so it fires exactly once per registration, never on return visits.
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -1910,11 +1918,19 @@ export default function FindBestMatches() {
   );
 
   // ── Candidate persistence state ──────────────────────────────────────────
-  // Seed candidateId from sessionStorage set by TalentSignupFromApplication
+  // candidateId priority:
+  //   1. sessionStorage — set by TalentSignupFromApplication right after creating a new account
+  //   2. Talent Portal JWT candidateId — the single reliable source for returning users;
+  //      avoids the /api/candidates/me email-lookup that returns 404 when the JWT user's
+  //      email differs from the candidate's email (different auth systems)
+  //   3. null — FBM will POST a new candidate on first save
   const [candidateId, setCandidateId] = useState<string | null>(() => {
     const stored = sessionStorage.getItem("onspot_talent_candidate_id");
-    if (stored) sessionStorage.removeItem("onspot_talent_candidate_id");
-    return stored ?? null;
+    if (stored) { sessionStorage.removeItem("onspot_talent_candidate_id"); return stored; }
+    // Use the portal JWT candidateId so FBM and Settings always write/read the SAME row
+    const ta = loadTalentAuth();
+    if (ta?.candidateId) return ta.candidateId;
+    return null;
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -2184,6 +2200,29 @@ export default function FindBestMatches() {
         const _derivedFirst = _nameParts.length > 1 ? _nameParts.slice(0, -1).join(" ") : (_nameParts[0] || "");
         const _derivedLast  = _nameParts.length > 1 ? (_nameParts.at(-1) ?? "") : "";
 
+        // ── DIAGNOSTIC: trace exactly what FBM is about to send ────────────
+        console.log("FBM FINAL CANDIDATE PAYLOAD", {
+          candidateId,
+          fullName:         profile.fullName,
+          phone:            profile.phone,
+          location:         profile.location,
+          targetPosition:   profile.targetPosition,
+          jobCategory:      profile.jobCategory,
+          yearsOfExperience: profile.yearsOfExperience,
+          seniority:        profile.seniority,
+          coreSkills:       profile.coreSkills,
+          secondarySkills:  profile.secondarySkills,
+          summary:          profile.summary,
+          workHistory:      profile.workHistory,
+          preferences:      {
+            setup:       profile.preferredSetup,
+            shift:       profile.preferredShift,
+            jobType:     profile.preferredJobType,
+            environment: profile.workEnvironment,
+          },
+          tokenSource: loadTalentAuth()?.token ? "portal-jwt" : "main-jwt",
+        });
+
         const payload = {
           fullName:        profile.fullName,
           firstName:       _derivedFirst,
@@ -2216,6 +2255,17 @@ export default function FindBestMatches() {
         const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
         if (res.ok) {
           const data = await res.json();
+          // ── DIAGNOSTIC: confirm what the server actually persisted ──────────
+          console.log("FBM SAVED CANDIDATE RESPONSE", {
+            id:             data.id,
+            location:       data.location,
+            targetPosition: data.targetPosition,
+            coreSkills:     data.coreSkills,
+            secondarySkills: data.secondarySkills,
+            summary:        data.summary,
+            preferences:    data.preferences,
+            profileCompleted: data.profileCompleted,
+          });
           let resolvedCandidateId = candidateId;
           if (!candidateId) {
             setCandidateId(data.id);

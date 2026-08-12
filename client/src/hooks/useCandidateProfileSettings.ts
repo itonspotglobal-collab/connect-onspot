@@ -91,6 +91,17 @@ function legacyNameFallback(fullName: string): { firstName: string; lastName: st
 
 /** Map a raw candidate API response to Settings form values. */
 function candidateToFormValues(candidate: any): CandidateSettingsFormData {
+  // DIAGNOSTIC — remove after sync is confirmed working
+  console.log("SETTINGS CANDIDATE RESPONSE", {
+    id:             candidate?.id,
+    location:       candidate?.location,
+    targetPosition: candidate?.targetPosition,
+    summary:        candidate?.summary,
+    coreSkills:     candidate?.coreSkills,
+    secondarySkills: candidate?.secondarySkills,
+    profileCompleted: candidate?.profileCompleted,
+    preferences:    candidate?.preferences,
+  });
   // Prefer the explicit first_name / last_name columns (populated after first Settings save).
   // Fall back to splitting fullName only when both are absent.
   let firstName: string;

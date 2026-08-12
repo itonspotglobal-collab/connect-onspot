@@ -1,0 +1,1145 @@
+# FIX — Find Best Matches Data Still Does NOT Populate Profile Settings
+
+The previous implementation did NOT solve the synchronization problem.
+
+I have now verified visually that Find Best Matches contains profile data, while Profile Settings still shows empty/default values.
+
+Do not make another cosmetic/frontend-only patch.
+
+We need to trace each field from:
+
+Find Best Matches form
+→ save payload
+→ server
+→ Candidate database row
+→ Candidate GET API
+→ useCandidateProfileSettings
+→ ProfileSettings form
+
+and identify exactly where each value is being lost.
+
+==================================================
+CURRENT EVIDENCE
+==================================================
+
+Find Best Matches currently contains values such as:
+
+Full Name:
+Frenzy Val Eloise L. Legaspi
+
+Phone:
+0976 065 6740
+
+Location:
+Cebu City, Philippines
+
+Target Job Position:
+Bachelor Of Science In Computer Engineering
+
+Job Category:
+Development
+
+Years of Experience:
+1–3 years
+
+Seniority:
+Entry / Junior
+
+Core Skills:
+Admin Support
+Data Entry
+
+Secondary Skills include:
+Automation Testing
+Quality Assurance
+Manual Testing
+Visual Studio
+ASP.NET
+Postman
+React
+HTML
+.NET
+SQL
+Git
+C#
+Full Stack Developer
+Javascript
+CSS
+Documentations
+etc.
+
+Work Preferences:
+Remote
+Flexible hours
+Full-time
+Structured & predictable
+
+Professional Summary:
+To succeed and be a part of a competitive organization that provides possibilities for professional development.
+
+But Profile Settings currently shows:
+
+Basic Information:
+Location = "City, Country"
+
+Professional Details:
+Professional Title = blank
+Professional Bio = blank
+
+Skills:
+"No skills selected yet"
+
+Documents:
+Resume is not being recognized consistently
+
+Profile completion:
+only 25%
+
+This proves Find Best Matches data is still not actually reaching the Settings data model.
+
+==================================================
+FIRST RULE: DO NOT ASSUME THE DATA IS SAVED
+==================================================
+
+Before changing ProfileSettings.tsx, inspect the database.
+
+Take the exact currently authenticated Candidate ID and inspect its DB row.
+
+Log/query these actual fields:
+
+firstName
+lastName
+fullName
+email
+phone
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+workHistory
+preferences
+profilePhotoUrl
+profileCompleted
+
+Also inspect the Candidate's Resume/document record.
+
+I need to know whether these Find Best Matches values are actually persisted.
+
+Do NOT assume that because Find Best Matches renders them, they exist in DB.
+
+==================================================
+1. ADD TEMPORARY DIAGNOSTICS AT FINAL FIND BEST MATCHES SAVE
+==================================================
+
+In FindBestMatches.tsx, before the Candidate PATCH/POST, log:
+
+console.log("FBM FINAL CANDIDATE PAYLOAD", {
+  candidateId,
+  fullName: profile.fullName,
+  phone: profile.phone,
+  location: profile.location,
+  targetPosition: profile.targetPosition,
+  jobCategory: profile.jobCategory,
+  yearsOfExperience: profile.yearsOfExperience,
+  seniority: profile.seniority,
+  coreSkills: profile.coreSkills,
+  secondarySkills: profile.secondarySkills,
+  summary: profile.summary,
+  workHistory: profile.workHistory,
+  preferences: profile.preferences,
+});
+
+Then after the API response:
+
+console.log("FBM SAVED CANDIDATE RESPONSE", responseCandidate);
+
+Compare the submitted values with the returned DB-backed values.
+
+Remove noisy debugging after the issue is fixed.
+
+==================================================
+2. VERIFY THE FIND BEST MATCHES SAVE PAYLOAD
+==================================================
+
+Find Best Matches must send ALL reusable profile values.
+
+Conceptually the final payload should include:
+
+{
+  fullName,
+  firstName,
+  lastName,
+  phone,
+  location,
+  targetPosition,
+  jobCategory,
+  yearsOfExperience,
+  seniority,
+  coreSkills,
+  secondarySkills,
+  summary,
+  workHistory,
+  preferences,
+  profileCompleted: true
+}
+
+Use only actual schema-supported properties.
+
+If Find Best Matches currently sends only:
+
+fullName
+email
+phone
+profileCompleted
+
+or some smaller subset, THAT is the bug.
+
+Fix it.
+
+==================================================
+3. CHECK SERVER ALLOW-LIST
+==================================================
+
+Even if frontend sends these values, the server may be silently dropping them.
+
+Inspect:
+
+PATCH /api/candidates/:id
+
+and/or the endpoint Find Best Matches actually uses.
+
+Check its update allow-list.
+
+Make sure it accepts the intended Candidate fields:
+
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+workHistory
+preferences
+
+Do not blindly allow all req.body.
+
+Use an explicit safe update schema.
+
+==================================================
+4. CHECK ZOD / DRIZZLE UPDATE SCHEMA
+==================================================
+
+Verify that the validation/update schema does not strip these properties.
+
+For every Find Best Matches field, compare:
+
+Frontend property
+↓
+Zod property
+↓
+Drizzle schema property
+↓
+Postgres column
+
+Example:
+
+targetPosition
+→ targetPosition
+→ target_position
+
+Do this explicitly for every field.
+
+If a field is inside JSON preferences rather than a direct column, map it correctly.
+
+==================================================
+5. CHECK storage.updateCandidate()
+==================================================
+
+Confirm storage.updateCandidate() actually persists:
+
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+workHistory
+preferences
+
+If it manually constructs an update object, add the missing properties.
+
+Do not only return them from frontend state.
+
+==================================================
+6. DB VERIFICATION IS MANDATORY
+==================================================
+
+After finishing Find Best Matches, directly inspect the Candidate row.
+
+Expected DB values for the current test Candidate should resemble:
+
+location =
+"Cebu City, Philippines"
+
+target_position =
+"Bachelor Of Science In Computer Engineering"
+
+job_category =
+"Development"
+
+years_of_experience =
+"1-3"
+
+seniority =
+"entry"
+
+core_skills =
+["Admin Support", "Data Entry"]
+
+secondary_skills =
+[...]
+
+summary =
+"To succeed and be a part of a competitive organization..."
+
+preferences should contain values equivalent to:
+
+{
+  workSetup: "remote",
+  shift: "flexible",
+  jobType: "full-time",
+  workEnvironment: "structured"
+}
+
+Use the actual data representation.
+
+If these are NOT in DB, stop working on Settings and fix Find Best Matches persistence first.
+
+==================================================
+7. VERIFY GET CANDIDATE RESPONSE
+==================================================
+
+After DB persistence works, inspect the Candidate API used by Settings.
+
+Log:
+
+console.log("SETTINGS CANDIDATE RESPONSE", candidate);
+
+It must contain:
+
+location
+targetPosition
+coreSkills
+secondarySkills
+summary
+preferences
+etc.
+
+If DB contains them but API response does not:
+
+fix Candidate serialization/API response.
+
+Do NOT work around the missing API fields with localStorage.
+
+==================================================
+8. FIX useCandidateProfileSettings MAPPING
+==================================================
+
+Once Candidate GET returns correct data, fix the Settings mapping.
+
+Create ONE explicit mapper such as:
+
+candidateToSettingsForm(candidate, documents)
+
+Conceptually:
+
+return {
+  firstName: candidate.firstName ?? "",
+  lastName: candidate.lastName ?? "",
+
+  phone:
+    candidate.phone ?? "",
+
+  location:
+    candidate.location ?? "",
+
+  timezone:
+    candidate.preferences?.timezone ??
+    candidate.timezone ??
+    "Asia/Manila",
+
+  languages:
+    candidate.preferences?.languages ??
+    candidate.languages ??
+    [],
+
+  title:
+    candidate.targetPosition ?? "",
+
+  bio:
+    candidate.summary ?? "",
+
+  hourlyRate:
+    candidate.preferences?.hourlyRate ??
+    candidate.hourlyRate ??
+    "",
+
+  rateCurrency:
+    candidate.preferences?.rateCurrency ??
+    candidate.rateCurrency ??
+    "USD",
+
+  availability:
+    candidate.availability ??
+    "available",
+
+  coreSkills:
+    candidate.coreSkills ?? [],
+
+  secondarySkills:
+    candidate.secondarySkills ?? []
+};
+
+Adapt this to the real Candidate schema.
+
+==================================================
+9. PROFESSIONAL TITLE MUST USE targetPosition
+==================================================
+
+This mapping is currently visibly broken.
+
+Find Best Matches:
+
+Target Job Position =
+Bachelor Of Science In Computer Engineering
+
+Profile Settings:
+
+Professional Title =
+blank
+
+If these represent the same canonical profile headline, Settings must do:
+
+title = candidate.targetPosition
+
+Do not read from an unrelated legacy:
+
+candidate.title
+profile.title
+user.title
+
+unless targetPosition is unavailable for a legacy row.
+
+==================================================
+10. PROFESSIONAL BIO MUST USE summary
+==================================================
+
+Find Best Matches currently contains:
+
+Professional Summary:
+"To succeed and be a part of a competitive organization..."
+
+Profile Settings Professional Bio is blank.
+
+Fix mapping:
+
+bio = candidate.summary
+
+If Settings currently reads:
+
+candidate.bio
+
+that explains the bug.
+
+Use one canonical field.
+
+==================================================
+11. LOCATION MUST USE candidate.location
+==================================================
+
+Find Best Matches shows:
+
+Cebu City, Philippines
+
+Settings shows:
+
+City, Country
+
+That placeholder/default must not replace persisted Candidate data.
+
+Settings must initialize:
+
+location = candidate.location
+
+Do not do:
+
+location = candidate.location || "City, Country"
+
+where "City, Country" becomes an actual form value.
+
+"City, Country" should be a placeholder only:
+
+<Input
+  value={location}
+  placeholder="City, Country"
+/>
+
+It must never be persisted as real candidate data.
+
+==================================================
+12. SKILLS — SETTINGS IS CLEARLY READING THE WRONG SOURCE
+==================================================
+
+Find Best Matches currently has:
+
+Core:
+Admin Support
+Data Entry
+
+plus many Secondary Skills.
+
+Settings says:
+
+No skills selected yet.
+
+This means Skills & Expertise is still likely using legacy/local state.
+
+Stop loading Candidate Talent skills from:
+
+user_skills
+/api/profiles/me/skills
+legacy profile skills
+
+for the active Candidate flow.
+
+Use:
+
+candidate.coreSkills
+candidate.secondarySkills
+
+==================================================
+13. FIX SKILL DISPLAY MAPPING
+==================================================
+
+The Settings UI currently has one visible "Your Skills" collection.
+
+For the current UI, display a de-duplicated union:
+
+const selectedSkills = [
+  ...(candidate.coreSkills ?? []),
+  ...(candidate.secondarySkills ?? [])
+].filter(unique);
+
+Do NOT lose the distinction in the database.
+
+Internally preserve:
+
+coreSkills
+secondarySkills
+
+If the user adds/removes Skills in Settings, decide how they map.
+
+Recommended:
+
+- existing coreSkills remain core unless explicitly changed;
+- existing secondarySkills remain secondary;
+- newly selected Settings skills may default to secondarySkills unless the UI later supports choosing core vs secondary.
+
+Do not overwrite all Candidate core skills accidentally.
+
+==================================================
+14. SETTINGS AVAILABLE SKILL LIST IS NOT THE SOURCE OF TRUTH
+==================================================
+
+The static list:
+
+Accounting
+Architecture
+Bookkeeping
+C#
+Call Center
+...
+
+is only a list of selectable suggestions.
+
+It is NOT the saved profile.
+
+"Your Skills" must populate from Candidate data even if a saved skill is not present in the predefined list.
+
+Example:
+
+Automation Testing
+
+must still display as selected even if it is not in the static suggestion list.
+
+==================================================
+15. RESUME — USE SAME PERSISTED DOCUMENT
+==================================================
+
+Find Best Matches Resume upload must result in a persisted Candidate Resume/document.
+
+Settings Documents must fetch that same record.
+
+Do not require re-upload.
+
+Inspect which endpoint/table Find Best Matches uses for Resume.
+
+Then use that same source in Settings.
+
+When Resume exists, render:
+
+Resume / CV
+
+✓ filename.pdf
+
+[View Resume]
+[Replace]
+[Remove]
+
+Do not render only:
+
+Upload Resume
+
+==================================================
+16. VIDEO INTRODUCTION REMAINS INDEPENDENT
+==================================================
+
+Video Introduction is not collected by Find Best Matches.
+
+That is fine.
+
+Do not fabricate a value.
+
+It should only populate if the Candidate uploaded one elsewhere.
+
+==================================================
+17. WORK PREFERENCES
+==================================================
+
+Find Best Matches currently collects:
+
+Remote
+Flexible hours
+Full-time
+Structured & predictable
+
+Persist these under the Candidate's canonical preferences model.
+
+Settings currently may not expose all of them.
+
+Do not discard them simply because Settings has no corresponding controls yet.
+
+They are needed for:
+
+Talent Profile
+Recommendations
+Find Work matching
+One-click Apply
+
+==================================================
+18. SAFE PREFERENCES MERGE
+==================================================
+
+This is critical.
+
+Never do:
+
+preferences = {
+  workSetup: profile.workSetup
+}
+
+if Candidate already has:
+
+timezone
+languages
+hourlyRate
+currency
+etc.
+
+Merge:
+
+preferences: {
+  ...(existingCandidate.preferences ?? {}),
+  ...updatedFindBestMatchesPreferences
+}
+
+Likewise Settings must merge rather than replace Find Best Matches preferences.
+
+==================================================
+19. FIND BEST MATCHES EMAIL / AUTH IDENTITY
+==================================================
+
+Verify Find Best Matches and Settings are using the SAME candidateId.
+
+Add temporary diagnostics:
+
+console.log("FBM candidateId", candidateId);
+
+console.log("SETTINGS candidateId", candidateId);
+
+They must match.
+
+If they don't, THAT is the architectural bug.
+
+Do not map values across separate Candidate records.
+
+==================================================
+20. PROFILE SETTINGS HYDRATION TIMING
+==================================================
+
+Settings must not call form.reset too early.
+
+Correct sequence:
+
+candidate loading
+documents loading
+↓
+candidate + documents available
+↓
+candidateToSettingsForm(...)
+↓
+form.reset(...)
+↓
+hydrated=true
+
+Do not initialize once with empty/default values and then block later Candidate hydration.
+
+Check for a bug like:
+
+const hasInitialized = useRef(false);
+
+useEffect(() => {
+  if (hasInitialized.current) return;
+
+  form.reset(...candidate);
+
+  hasInitialized.current = true;
+}, [candidate]);
+
+If this runs before candidate is available, Settings may permanently initialize defaults.
+
+Only mark initialized after real Candidate data exists.
+
+==================================================
+21. DO NOT LET auth user OVERRIDE Candidate
+==================================================
+
+A common bug is something like:
+
+firstName:
+  candidate.firstName ||
+  user.firstName
+
+but other fields are initialized from user only.
+
+The Candidate is canonical for Talent Profile Settings.
+
+Use auth only for identity fallback when Candidate field is missing.
+
+Priority:
+
+Candidate
+>
+authenticated Talent identity fallback
+>
+empty/default
+
+==================================================
+22. DO NOT USE DEFAULTS AS REAL VALUES
+==================================================
+
+These should remain placeholders/default UI choices, not Candidate profile data:
+
+"City, Country"
+25
+USD
+Available Now
+
+unless the DB genuinely contains those values.
+
+Especially:
+
+"City, Country"
+
+must not count toward profile completion.
+
+==================================================
+23. FIX PROFILE COMPLETION AFTER DATA CONNECTION
+==================================================
+
+Once Candidate data is correctly loaded:
+
+Profile Settings completion should automatically count:
+
+Name
+Phone
+Location
+Professional Title
+Summary
+Skills
+Resume
+etc.
+
+Do not manually bump the percentage.
+
+Use the shared profileStrengthFromCandidate implementation.
+
+For the current Candidate, completion should increase naturally when the corresponding DB values exist.
+
+==================================================
+24. CHECK EXACT CURRENT CANDIDATE RESPONSE
+==================================================
+
+I want Replit to report the actual data before and after the fix.
+
+Example report:
+
+BEFORE:
+
+GET Candidate returned:
+
+{
+  location: null,
+  targetPosition: null,
+  coreSkills: [],
+  secondarySkills: [],
+  summary: null
+}
+
+while Find Best Matches local state contained values.
+
+ROOT CAUSE:
+Find Best Matches never PATCHed these properties.
+
+OR:
+
+GET Candidate returned:
+
+{
+  location: "Cebu City, Philippines",
+  targetPosition: "...",
+  coreSkills: [...]
+}
+
+but Settings form was blank.
+
+ROOT CAUSE:
+ProfileSettings mapper was reading legacy fields.
+
+Do NOT say only:
+"Synchronization fixed."
+
+Tell me exactly which case it was.
+
+==================================================
+25. REQUIRED FIELD-BY-FIELD TRACE
+==================================================
+
+For each of these, verify all five stages:
+
+A. Find Best Matches state
+B. outgoing save payload
+C. DB value
+D. Candidate GET response
+E. Settings field
+
+Trace:
+
+1. Location
+
+FBM:
+"Cebu City, Philippines"
+
+DB:
+?
+
+GET Candidate:
+?
+
+Settings:
+must become "Cebu City, Philippines"
+
+
+2. Target Position
+
+FBM:
+" Bachelor Of Science In Computer Engineering "
+
+DB:
+?
+
+Settings Professional Title:
+must match
+
+
+3. Summary
+
+FBM:
+"To succeed and be a part..."
+
+DB:
+?
+
+Settings Professional Bio:
+must match
+
+
+4. Core Skills
+
+FBM:
+["Admin Support", "Data Entry"]
+
+DB:
+?
+
+Settings:
+must show both selected
+
+
+5. Secondary Skills
+
+FBM:
+[...]
+
+DB:
+?
+
+Settings:
+must show them selected
+
+
+6. Resume
+
+FBM:
+uploaded
+
+Persisted document:
+?
+
+Settings:
+must display existing Resume
+
+
+7. Preferences
+
+FBM:
+Remote
+Flexible hours
+Full-time
+Structured & predictable
+
+DB preferences:
+?
+
+Talent Profile / matching:
+must use them
+
+==================================================
+26. DO NOT CHANGE THE FIND BEST MATCHES UI
+==================================================
+
+The Find Best Matches UI itself is functioning and visibly contains the data.
+
+Do not redesign it.
+
+Focus on:
+
+persistence
+Candidate API
+Settings hydration
+
+==================================================
+27. DO NOT CHANGE THE SETTINGS DESIGN
+==================================================
+
+Keep the existing Settings UI.
+
+This is a data synchronization bug, not a visual redesign task.
+
+==================================================
+28. DATABASE IS THE ONLY ACCEPTABLE BRIDGE
+==================================================
+
+Do not fix this with:
+
+localStorage.setItem("findBestMatchesProfile"...)
+sessionStorage
+window state
+navigation state
+query parameters
+
+Correct:
+
+Find Best Matches
+→ DB
+→ Settings
+
+==================================================
+29. TEST EXACT FLOW
+==================================================
+
+Use the existing test Candidate.
+
+Step 1:
+Complete Find Best Matches with:
+
+Location:
+Cebu City, Philippines
+
+Target Position:
+Bachelor Of Science In Computer Engineering
+
+Core Skills:
+Admin Support
+Data Entry
+
+Professional Summary:
+existing summary
+
+Resume:
+existing upload
+
+Step 2:
+Finish/save Find Best Matches.
+
+Step 3:
+Inspect DB.
+
+Step 4:
+Open /settings.
+
+Expected:
+
+Basic Information:
+
+Location:
+Cebu City, Philippines
+
+Professional Details:
+
+Professional Title:
+Bachelor Of Science In Computer Engineering
+
+Professional Bio:
+To succeed and be a part...
+
+Skills:
+
+Admin Support
+Data Entry
+
+plus stored secondary skills
+
+Documents:
+
+existing Resume displayed
+
+Step 5:
+Hard refresh /settings.
+
+All values remain.
+
+==================================================
+30. REVERSE TEST
+==================================================
+
+Then change in Settings:
+
+Location:
+Cebu, Philippines
+
+Professional Title:
+Software Developer
+
+Bio:
+new test summary
+
+add React skill
+
+Save.
+
+Open Find Best Matches intentionally again.
+
+Expected:
+
+Location:
+Cebu, Philippines
+
+Target Position:
+Software Developer
+
+Summary:
+new test summary
+
+React:
+recognized in Candidate skills
+
+Do not load stale Find Best Matches local values over the newer Candidate DB values.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+Do NOT mark this complete until all are verified from DB:
+
+[ ] Find Best Matches Location persisted.
+[ ] Settings Location populated.
+[ ] Find Best Matches Target Position persisted.
+[ ] Settings Professional Title populated.
+[ ] Find Best Matches Summary persisted.
+[ ] Settings Professional Bio populated.
+[ ] Core Skills persisted.
+[ ] Settings selected skills populated.
+[ ] Secondary Skills persisted.
+[ ] Settings selected skills include them.
+[ ] Resume persisted.
+[ ] Settings Documents recognizes same Resume.
+[ ] Preferences persisted and not overwritten.
+[ ] FBM candidateId equals Settings candidateId.
+[ ] Hard refresh retains synchronization.
+[ ] Logout/login retains synchronization.
+[ ] Settings updates appear when Find Best Matches is reopened.
+[ ] Profile completion reflects persisted data automatically.
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+Report the exact field trace for:
+
+Location
+Target Position
+Summary
+Core Skills
+Secondary Skills
+Resume
+Preferences
+
+For each show:
+
+FBM value
+→ save payload
+→ DB field
+→ Candidate API response
+→ Settings field
+
+Also tell me:
+
+1. whether the main problem was persistence or Settings mapping;
+2. any fields the server was stripping;
+3. any fields storage.updateCandidate ignored;
+4. whether Settings was reading legacy Profile fields;
+5. whether Skills was still using user_skills;
+6. whether Resume used a different document source;
+7. the Candidate IDs used by both flows;
+8. exact files changed;
+9. DB verification performed;
+10. confirmation that this exact existing Candidate now pre-fills Settings correctly.
