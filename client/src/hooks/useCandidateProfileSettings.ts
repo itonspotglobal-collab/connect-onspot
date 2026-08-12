@@ -282,8 +282,14 @@ export function useCandidateProfileSettings() {
       return res.json(); // sanitised candidate row
     },
     onSuccess: () => {
-      // Refresh candidate so re-opening settings shows the latest values.
+      // Refresh all candidate query-key variants so Settings, TopNavigation,
+      // TalentProfile, and FindBestMatches all see the updated row immediately.
       queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+      queryClient.invalidateQueries({ queryKey: ["candidate", candidateId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
+      if (candidateId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] });
+      }
     },
     onError: (err: any) => {
       console.error("Candidate settings save failed:", err?.message);

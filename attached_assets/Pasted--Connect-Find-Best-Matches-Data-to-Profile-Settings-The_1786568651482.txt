@@ -1,0 +1,832 @@
+# Connect Find Best Matches Data to Profile Settings
+
+The redirect issue is now fixed and Talent Profile is accessible.
+
+The next issue is synchronization between:
+
+- Find Best Matches
+- Talent Profile Settings
+- Talent Profile
+
+Find Best Matches already collects a lot of Talent information during onboarding. That data must populate the matching fields in Profile Settings automatically.
+
+Do NOT create a second copy of the data in frontend state.
+
+The Candidate database record must remain the single source of truth.
+
+==================================================
+GOAL
+==================================================
+
+After a Talent completes or partially completes Find Best Matches:
+
+Find Best Matches
+    ↓
+Candidate DB
+    ↓
+Profile Settings
+    ↓
+Talent Profile
+
+Profile Settings should automatically show the same saved information.
+
+If the user later updates the information in Profile Settings:
+
+Profile Settings
+    ↓
+Candidate DB
+    ↓
+Find Best Matches / Talent Profile
+
+All three views must stay synchronized.
+
+==================================================
+CURRENT PROBLEM
+==================================================
+
+Find Best Matches has already gathered fields such as:
+
+- Full Name
+- Email
+- Phone Number
+- Location
+- Target Job Position
+- Job Category
+- Years of Experience
+- Seniority
+- Core Skills
+- Secondary Skills
+- Summary
+- Resume
+- Preferences
+
+But Profile Settings still shows empty/default fields, for example:
+
+Basic Information:
+- Profile Photo empty
+- First Name partly populated
+- Last Name
+- Phone
+- Location placeholder
+- Languages empty
+
+Professional Details:
+- Professional Title empty
+- Bio empty
+- hourly rate default
+
+Skills & Expertise:
+- no skills selected
+
+Documents:
+- Resume appears missing
+
+This means either:
+
+1. Find Best Matches is not persisting all these values to the Candidate row/document store, OR
+2. Profile Settings is not mapping persisted Candidate fields into its form correctly.
+
+Investigate both.
+
+==================================================
+1. USE ONE CANONICAL CANDIDATE RECORD
+==================================================
+
+Inspect:
+
+client/src/pages/FindBestMatches.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/hooks/useCandidateProfileSettings.ts
+client/src/pages/TalentProfile.tsx
+client/src/lib/profileCompletion.ts
+server/routes.ts
+server/storage.ts
+shared/schema.ts
+
+Verify that both Find Best Matches and Profile Settings resolve the SAME:
+
+candidateId
+
+and read/write the SAME Candidate DB row.
+
+Do not allow:
+
+Find Best Matches -> Candidate A
+Settings -> legacy Profile row
+
+or:
+
+Find Best Matches -> local/session state
+Settings -> Candidate DB
+
+Everything reusable must converge on Candidate.
+
+==================================================
+2. CREATE AN EXPLICIT FIELD MAPPING
+==================================================
+
+Define one mapping between Find Best Matches fields and Profile Settings fields.
+
+Use the actual schema names, but conceptually:
+
+Find Best Matches                 Candidate / Settings
+-------------------------------------------------------
+Full Name                      -> firstName + lastName / fullName
+Email                          -> email
+Phone Number                   -> phone
+Location                       -> location
+Target Job Position            -> targetPosition / Professional Title
+Job Category                   -> jobCategory
+Years of Experience            -> yearsOfExperience
+Seniority                      -> seniority
+Core Skills                    -> coreSkills
+Secondary Skills               -> secondarySkills
+Summary                        -> summary / Professional Bio
+Resume                         -> persisted resume document
+Preferences                    -> preferences
+Work Setup                     -> preferences.workSetup
+Availability                   -> availability if applicable
+
+Do not let each page invent its own translation.
+
+Create a shared helper if useful, for example:
+
+candidateToProfileSettingsForm(candidate, documents)
+
+and:
+
+findBestMatchesToCandidatePayload(profile)
+
+==================================================
+3. BASIC INFORMATION MAPPING
+==================================================
+
+Profile Settings Basic Information must be populated from Candidate.
+
+Expected mapping:
+
+First Name
+<- candidate.firstName
+
+Last Name
+<- candidate.lastName
+
+Phone Number
+<- candidate.phone
+
+Location
+<- candidate.location
+
+Languages
+<- candidate.languages OR candidate.preferences.languages
+depending on actual schema
+
+Timezone
+<- candidate.timezone OR candidate.preferences.timezone
+depending on actual schema
+
+Profile Photo
+<- candidate.profilePhotoUrl
+
+Do NOT re-split fullName if firstName and lastName already exist.
+
+Fallback parsing is only for old Candidate rows.
+
+==================================================
+4. PROFESSIONAL DETAILS MAPPING
+==================================================
+
+Profile Settings currently shows:
+
+Professional Title
+Professional Bio
+Hourly Rate
+Currency
+Availability
+
+Map Find Best Matches data appropriately.
+
+At minimum:
+
+Professional Title
+<- candidate.targetPosition
+
+Professional Bio
+<- candidate.summary
+
+If Find Best Matches already gathers rate / availability / work preferences, map those too.
+
+If it does NOT gather:
+
+- hourly rate
+- currency
+- availability
+
+then do not invent them.
+
+Keep existing Settings/default behavior for those fields.
+
+The important part is that fields Find Best Matches actually gathered should appear automatically.
+
+==================================================
+5. SKILLS & EXPERTISE MAPPING
+==================================================
+
+Find Best Matches already gathers:
+
+coreSkills
+secondarySkills
+
+Profile Settings Skills & Expertise must use these same Candidate fields.
+
+Do not use a disconnected legacy:
+
+user_skills
+
+table for the active Candidate Talent flow if Talent Profile uses Candidate skills.
+
+Recommended behavior:
+
+Settings selected skills =
+unique combination of:
+- coreSkills
+- secondarySkills
+
+OR preserve them as separate categories if the Settings UI supports that.
+
+When Settings saves skill changes:
+
+update Candidate coreSkills / secondarySkills using the same model used by Talent Profile.
+
+Do not allow:
+
+Find Best Matches shows:
+JavaScript, React, Data Entry
+
+while Settings says:
+
+No skills selected yet.
+
+==================================================
+6. DOCUMENTS — RESUME MUST BE SHARED
+==================================================
+
+This is especially important.
+
+If Resume was uploaded in Find Best Matches:
+
+Profile Settings -> Documents
+
+must recognize the same persisted Resume.
+
+Do NOT require another upload.
+
+The Documents section should show something like:
+
+Resume / CV
+
+✓ Frenzy_Legaspi_Resume.pdf
+
+[View]
+[Replace]
+[Remove]
+
+instead of:
+
+Upload Resume
+
+when a resume already exists.
+
+Video Introduction is NOT part of Find Best Matches, so it can remain empty unless the user uploaded one elsewhere.
+
+Do not try to hydrate a file input with a remote file.
+
+Use persisted document metadata:
+
+{
+  id,
+  fileName,
+  fileUrl,
+  uploadedAt
+}
+
+==================================================
+7. FIND BEST MATCHES MUST ACTUALLY SAVE ALL REUSABLE FIELDS
+==================================================
+
+Audit every Find Best Matches step.
+
+Do not only persist data at the final screen if intermediate data is reusable.
+
+When the Talent confirms profile information, save it to Candidate.
+
+Example fields:
+
+phone
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+workHistory
+preferences
+
+At final completion, save any remaining values and set:
+
+profileCompleted = true
+
+Do not leave reusable fields only in local React state.
+
+==================================================
+8. SETTINGS MUST HYDRATE FROM CANDIDATE ON MOUNT
+==================================================
+
+When /settings loads:
+
+1. resolve authenticated Candidate
+2. fetch Candidate
+3. fetch persisted Candidate documents
+4. map Candidate into Settings form
+5. only then render populated values
+
+Avoid this sequence:
+
+render defaults
+-> overwrite with auth user
+-> never apply Candidate
+
+Prefer:
+
+Candidate data
+-> Settings form defaults
+
+==================================================
+9. DO NOT OVERWRITE USER EDITS DURING ASYNC LOAD
+==================================================
+
+If the Candidate fetch completes after the user has already started typing:
+
+do not overwrite fields they manually changed.
+
+Use a hydration guard such as:
+
+hasHydratedRef
+
+or initialize/reset the form once when Candidate data becomes available.
+
+Example:
+
+useEffect(() => {
+  if (!candidate || hasHydrated.current) return;
+
+  form.reset(
+    candidateToProfileSettingsForm(candidate, documents)
+  );
+
+  hasHydrated.current = true;
+}, [candidate, documents]);
+
+Adapt to the actual form library.
+
+==================================================
+10. REVERSE SYNCHRONIZATION
+==================================================
+
+Connection must work both ways.
+
+Example:
+
+Find Best Matches saves:
+
+targetPosition = "Software Developer"
+
+Settings should show:
+
+Professional Title = Software Developer
+
+Then if Settings changes it to:
+
+Senior Software Engineer
+
+Candidate DB should update.
+
+When Find Best Matches is opened again for career-path change, it should show:
+
+Senior Software Engineer
+
+as the existing value.
+
+==================================================
+11. NAME HANDLING
+==================================================
+
+Preserve separate names.
+
+Example:
+
+First Name:
+Frenzy Val Eloise
+
+Last Name:
+Legaspi
+
+Candidate:
+
+firstName = "Frenzy Val Eloise"
+lastName = "Legaspi"
+fullName = "Frenzy Val Eloise Legaspi"
+
+Do not reconstruct:
+
+First Name = first word
+Last Name = remaining words
+
+==================================================
+12. LANGUAGE HANDLING
+==================================================
+
+Find Best Matches may not currently collect Languages.
+
+If not, leave Settings Languages independent.
+
+But if Candidate already has languages persisted:
+
+Settings must populate them.
+
+Do not erase existing Languages when Find Best Matches saves other fields.
+
+All Candidate PATCH operations must merge safely.
+
+Example:
+
+existing.preferences = {
+  languages: ["English"],
+  timezone: "Asia/Manila",
+  workSetup: "remote"
+}
+
+Find Best Matches updates workSetup.
+
+Do NOT replace preferences with:
+
+{
+  workSetup: "remote"
+}
+
+and lose languages/timezone.
+
+Merge nested preferences safely.
+
+==================================================
+13. LOCATION FIX
+==================================================
+
+The Find Best Matches Location field must save the confirmed current location to Candidate.location.
+
+Do not persist bad parsing results such as an Education heading or university address.
+
+Once the user confirms/edits Location:
+
+candidate.location = confirmed location
+
+Then Settings Basic Information must display exactly that value.
+
+==================================================
+14. TARGET POSITION / PROFESSIONAL TITLE
+==================================================
+
+This is an important mapping.
+
+Find Best Matches:
+
+Target Job Position
+
+should map to Profile Settings:
+
+Professional Title
+
+unless the schema intentionally has two different concepts.
+
+If they are intended to represent the same Talent headline, make Candidate.targetPosition canonical.
+
+Then:
+
+Find Best Matches
+Talent Profile
+Profile Settings
+
+must display the same value.
+
+==================================================
+15. SUMMARY / PROFESSIONAL BIO
+==================================================
+
+Find Best Matches:
+
+summary
+
+must populate Settings:
+
+Professional Bio
+
+and Talent Profile:
+
+About / Summary
+
+Do not keep separate summary and bio values if they represent the same thing.
+
+If legacy schema has both:
+
+normalize through one canonical Candidate field and maintain compatibility only where necessary.
+
+==================================================
+16. EXPERIENCE
+==================================================
+
+Find Best Matches gathers:
+
+yearsOfExperience
+seniority
+possibly workHistory
+
+Ensure those are persisted.
+
+Profile Settings may not currently display all of them.
+
+If no Settings inputs exist for years/seniority, do not add UI unnecessarily unless product requirements demand it.
+
+But Candidate must retain the data for Talent Profile and matching.
+
+==================================================
+17. PROFILE COMPLETION
+==================================================
+
+The completion calculator should immediately benefit from Find Best Matches data.
+
+Example:
+
+Find Best Matches saves:
+
+name
+phone
+location
+headline
+summary
+skills
+resume
+
+Then Settings sidebar should automatically increase.
+
+Do not require the user to open Settings and save those fields again.
+
+Completion is based on persisted Candidate data, not on which page was used to enter it.
+
+==================================================
+18. QUERY KEYS
+==================================================
+
+Align shared Candidate query keys.
+
+Use:
+
+["candidate", candidateId]
+
+for:
+
+TopNavigation
+TalentProfile
+ProfileSettings
+FindBestMatches
+
+Use a shared documents key too, such as:
+
+["candidate-documents", candidateId]
+
+After Find Best Matches saves:
+
+invalidate candidate + document queries.
+
+After Settings saves:
+
+invalidate candidate + document queries.
+
+This keeps all pages synchronized immediately.
+
+==================================================
+19. PROFILE SETTINGS DOCUMENT DISPLAY
+==================================================
+
+Update Documents UI to recognize existing Resume.
+
+Expected when resume exists:
+
+Resume / CV
+
+Frenzy_Resume.pdf
+Uploaded Aug 12, 2026
+
+[View Resume]
+[Replace Resume]
+[Remove]
+
+Expected when none exists:
+
+[Upload Resume]
+
+Video Introduction remains separate.
+
+==================================================
+20. DO NOT COPY FRONTEND STATE DIRECTLY BETWEEN PAGES
+==================================================
+
+Do NOT solve this through:
+
+localStorage.findBestMatchesProfile
+sessionStorage
+navigation state
+window variables
+
+Those may be used for temporary UX, but not as profile data.
+
+The synchronization must survive:
+
+refresh
+logout/login
+another device
+
+Therefore:
+
+Candidate DB + document storage = source of truth.
+
+==================================================
+21. MIGRATE / HANDLE EXISTING CANDIDATES
+==================================================
+
+Some Candidate records may have Find Best Matches data stored in fields that Settings currently does not read.
+
+Inspect the schema and existing DB.
+
+If Candidate already contains:
+
+targetPosition
+summary
+coreSkills
+secondarySkills
+resume
+location
+phone
+
+then simply fix Settings mapping.
+
+Do NOT duplicate the data into new fields.
+
+If some data exists only in preferences JSON, map it properly.
+
+==================================================
+22. TEST EXACT CURRENT EXAMPLE
+==================================================
+
+Using a Candidate who completed Find Best Matches:
+
+Find Best Matches has:
+
+Full Name:
+Frenzy Val Eloise L. Legaspi
+
+Phone:
+0976 065 6740
+
+Location:
+confirmed current location
+
+Target Position:
+Bachelor Of Science In Computer Engineering
+(or whatever the user confirmed)
+
+Category:
+Development
+
+Seniority:
+Entry / Junior
+
+Core Skills:
+Admin Support
+Data Entry
+
+Resume:
+uploaded
+
+After navigating to Settings, expected:
+
+Basic Information:
+First Name -> populated
+Last Name -> populated
+Phone -> populated
+Location -> populated
+
+Professional Details:
+Professional Title -> populated from targetPosition
+Professional Bio -> populated from summary
+
+Skills:
+Admin Support -> selected
+Data Entry -> selected
+other saved skills -> selected
+
+Documents:
+Resume -> existing uploaded Resume displayed
+
+Video Introduction:
+empty unless separately uploaded
+
+==================================================
+23. CROSS-PAGE TEST
+==================================================
+
+Test:
+
+1. Complete Find Best Matches.
+2. Confirm DB Candidate row.
+3. Open Settings.
+4. Verify matching fields populated.
+5. Change Professional Title in Settings.
+6. Save.
+7. Open Talent Profile.
+8. Confirm new title.
+9. Open Find Best Matches again.
+10. Confirm the new title is prefilled there.
+
+==================================================
+24. HARD REFRESH TEST
+==================================================
+
+After Find Best Matches completion:
+
+hard refresh /settings.
+
+Expected:
+
+all mapped values remain populated.
+
+This proves it comes from DB.
+
+==================================================
+25. LOGOUT / LOGIN TEST
+==================================================
+
+Complete Find Best Matches.
+
+Logout.
+
+Login.
+
+Open Settings.
+
+Expected:
+
+all fields still populated.
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+- [ ] Find Best Matches saves reusable profile data to Candidate DB.
+- [ ] Settings loads the same Candidate.
+- [ ] First Name populated.
+- [ ] Last Name populated.
+- [ ] Phone populated.
+- [ ] Location populated.
+- [ ] Professional Title populated from targetPosition.
+- [ ] Professional Bio populated from summary.
+- [ ] Skills populated from Candidate skills.
+- [ ] Resume uploaded in Find Best Matches appears in Settings Documents.
+- [ ] Video Introduction remains independent.
+- [ ] Settings changes appear in Talent Profile.
+- [ ] Settings changes appear in Find Best Matches on return.
+- [ ] Find Best Matches changes appear in Settings.
+- [ ] No localStorage-based profile synchronization.
+- [ ] Hard refresh preserves data.
+- [ ] Logout/login preserves data.
+- [ ] Shared completion updates automatically.
+
+==================================================
+FINAL REPORT
+==================================================
+
+After implementing, report:
+
+1. which Find Best Matches fields were not being persisted;
+2. which Settings fields were not being mapped;
+3. exact Candidate schema mapping used;
+4. how Professional Title maps to targetPosition;
+5. how Summary maps to Professional Bio;
+6. how skills are mapped;
+7. how Resume is shared;
+8. how preferences are merged safely;
+9. query keys/invalidation used;
+10. DB verification performed;
+11. cross-page test results;
+12. confirmation that completing Find Best Matches now automatically fills the corresponding Profile Settings fields.

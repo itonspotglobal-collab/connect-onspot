@@ -2176,27 +2176,37 @@ export default function FindBestMatches() {
       setIsSavingProfile(true);
       let savedOk = false;
       try {
+        // Derive firstName / lastName from fullName using the same heuristic as
+        // Settings (all words except the last = given name, last word = surname).
+        // This populates the separate DB columns so Settings doesn't need to fall back
+        // to splitting and the name round-trips correctly.
+        const _nameParts = (profile.fullName || "").trim().split(/\s+/).filter(Boolean);
+        const _derivedFirst = _nameParts.length > 1 ? _nameParts.slice(0, -1).join(" ") : (_nameParts[0] || "");
+        const _derivedLast  = _nameParts.length > 1 ? (_nameParts.at(-1) ?? "") : "";
+
         const payload = {
-          fullName: profile.fullName,
-          email: profile.email || user?.email || null,
-          phone: profile.phone || null,
-          location: profile.location || null,
-          targetPosition: profile.targetPosition,
-          category: profile.jobCategory,
+          fullName:        profile.fullName,
+          firstName:       _derivedFirst,
+          lastName:        _derivedLast,
+          email:           profile.email || user?.email || null,
+          phone:           profile.phone || null,
+          location:        profile.location || null,
+          targetPosition:  profile.targetPosition,
+          category:        profile.jobCategory,
           experienceYears: profile.yearsOfExperience || null,
-          seniority: profile.seniority || null,
-          coreSkills: profile.coreSkills,
+          seniority:       profile.seniority || null,
+          coreSkills:      profile.coreSkills,
           secondarySkills: profile.secondarySkills,
-          workHistory: profile.workHistory,
+          workHistory:     profile.workHistory,
           preferences: {
-            setup: profile.preferredSetup,
-            shift: profile.preferredShift,
-            jobType: profile.preferredJobType,
+            setup:       profile.preferredSetup,
+            shift:       profile.preferredShift,
+            jobType:     profile.preferredJobType,
             environment: profile.workEnvironment,
           },
-          summary: profile.summary || null,
+          summary:          profile.summary || null,
           profileCompleted: true,
-          updatedAt: new Date().toISOString(),
+          updatedAt:        new Date().toISOString(),
         };
         const token = getAuthToken();
         const url = candidateId ? `/api/candidates/${candidateId}` : "/api/candidates";
@@ -2213,12 +2223,15 @@ export default function FindBestMatches() {
           }
           savedOk = true;
 
-          // Invalidate shared candidate queries so TopNavigation and Settings
-          // reflect the updated completion % without a page reload.
+          // Invalidate ALL candidate query key variants so TopNavigation, Settings,
+          // and TalentProfile all see the fresh data without a page reload.
           queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
           if (resolvedCandidateId) {
             queryClient.invalidateQueries({ queryKey: ["/api/candidates", resolvedCandidateId] });
             queryClient.invalidateQueries({ queryKey: ["candidate", resolvedCandidateId] });
+            // Settings hook uses "candidate-profile" — bust its cache too so it
+            // shows the FBM-saved values as soon as the user opens /settings.
+            queryClient.invalidateQueries({ queryKey: ["candidate-profile", resolvedCandidateId] });
           }
 
           // Non-blocking: upload the resume file to object storage now that we have a candidateId.

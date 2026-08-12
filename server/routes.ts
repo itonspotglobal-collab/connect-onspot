@@ -5032,6 +5032,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.experienceYears !== undefined) candidateUpdates.experienceYears = body.experienceYears || null;
       // Allow clearing profilePhotoUrl (e.g. remove photo sets it to null)
       if ("profilePhotoUrl" in body)       candidateUpdates.profilePhotoUrl = body.profilePhotoUrl ?? null;
+      // Allow clearing resumeUrl / resumeFileName (e.g. talent removes their uploaded resume)
+      if ("resumeUrl"      in body)       (candidateUpdates as any).resumeUrl      = body.resumeUrl      ?? null;
+      if ("resumeFileName" in body)       (candidateUpdates as any).resumeFileName = body.resumeFileName ?? null;
 
       // Array columns (text[])
       if (body.coreSkills !== undefined) {

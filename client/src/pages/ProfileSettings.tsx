@@ -396,9 +396,25 @@ export default function ProfileSettings() {
   // ── Document handlers (via authAPI — works with talent token fallback) ─────
   const removeDocument = async (documentId: string) => {
     try {
-      await authAPI.delete(`/api/documents/${documentId}`);
-      // Invalidate hook's document query → completion recalculates automatically.
-      invalidateDocuments();
+      if (documentId === "__legacy_resume__") {
+        // Resume was uploaded via Find Best Matches → stored on candidate.resumeUrl.
+        // Clear it by patching the candidate row; there is no documents table entry.
+        // talentAuth is available from the hook in this component's scope.
+        if (!talentAuth?.token || !candidateId) throw new Error("No talent session");
+        const res = await fetch(`/api/candidates/${candidateId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${talentAuth.token}` },
+          body: JSON.stringify({ resumeUrl: null, resumeFileName: null }),
+        });
+        if (!res.ok) throw new Error("Failed to remove resume");
+        // Bust the candidate cache so legacyResumeDoc disappears.
+        queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+        queryClient.invalidateQueries({ queryKey: ["candidate", candidateId] });
+      } else {
+        await authAPI.delete(`/api/documents/${documentId}`);
+        // Invalidate hook's document query → completion recalculates automatically.
+        invalidateDocuments();
+      }
       toast({ title: "Document removed." });
     } catch {
       toast({ title: "Removal failed", description: "Please try again.", variant: "destructive" });
@@ -452,6 +468,23 @@ export default function ProfileSettings() {
 
   const resumeDocs = documents.filter((d) => d.type === "resume");
   const videoDocs  = documents.filter((d) => d.type === "video_intro");
+
+  // When FBM uploads a resume it writes to candidate.resumeUrl / candidate.resumeFileName
+  // (not to the documents table). Synthesise a display-only doc object so the
+  // Documents section shows "Resume on file" instead of the upload zone.
+  // Removal patches the candidate row to null out those two fields.
+  const legacyResumeDoc =
+    resumeDocs.length === 0 && candidate?.resumeUrl
+      ? {
+          id:        "__legacy_resume__",
+          type:      "resume",
+          fileName:  candidate.resumeFileName || "Resume",
+          fileUrl:   candidate.resumeUrl,
+          fileSize:  null,
+          mimeType:  null,
+          createdAt: null,
+        }
+      : null;
 
   return (
     <div className="min-h-screen" style={{ background: BG, paddingBottom: 60 }}>
@@ -937,9 +970,9 @@ export default function ProfileSettings() {
                       <Label className="text-[14px] font-semibold" style={{ color: TEXT }}>
                         Resume / CV
                       </Label>
-                      {resumeDocs.length > 0 ? (
+                      {(resumeDocs.length > 0 || legacyResumeDoc) ? (
                         <div className="space-y-2">
-                          {resumeDocs.map((doc) => (
+                          {(legacyResumeDoc ? [legacyResumeDoc, ...resumeDocs] : resumeDocs).map((doc) => (
                             <DocRow key={doc.id} doc={doc} onRemove={removeDocument} />
                           ))}
                         </div>
