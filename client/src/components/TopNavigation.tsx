@@ -280,15 +280,16 @@ export function TopNavigation() {
     ];
     // talent / default
     // resolvedTalentCandidateId covers both Talent Portal JWT and main JWT (role=talent).
-    // When no candidate record exists yet, send to /find-best-matches so they can create one.
-    // Never fall back to /settings because the Settings hook requires a Talent Portal JWT token
-    // and is non-functional for pure main-JWT talent users.
+    // Only fall back to /find-best-matches when the user has NO candidate record at all.
     const talentProfileRoute = resolvedTalentCandidateId
       ? `/talent-profile/${resolvedTalentCandidateId}`
       : "/find-best-matches";
-    // "Finish Profile Setup" — for Talent Portal users go to Settings (full editor);
-    // for main-JWT-only users, go to Find Best Matches (which uses any token type).
-    const finishSetupRoute = talentAuth ? "/settings" : "/find-best-matches";
+    // "Finish Profile Setup":
+    //   - Onboarding done (profileCompleted=true OR portal token present) → Settings
+    //   - No onboarding yet → Find Best Matches to complete initial onboarding
+    const finishSetupRoute = (talentAuth || generalTalentCandidateData?.profileCompleted)
+      ? "/settings"
+      : "/find-best-matches";
     return [
       { label: "Talent Profile",       route: talentProfileRoute,   icon: User },
       { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
@@ -811,29 +812,38 @@ export function TopNavigation() {
                             </div>
                           </div>
                         </div>
-                        {/* Completion bar */}
+                        {/* Completion bar.
+                            This dropdown is for general JWT talent users (user.role==="talent").
+                            Use talentCompletionPct when portal auth is also present (canonical),
+                            otherwise use generalTalentCompletionPct (from /api/candidates/me). */}
                         <div style={{ marginTop: 12 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                             <span style={{ fontSize: 11.5, fontWeight: 500, color: '#777B8C' }}>Profile completion</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#4D5CE8' }}>{generalTalentCompletionPct}%</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#4D5CE8' }}>{talentAuth ? talentCompletionPct : generalTalentCompletionPct}%</span>
                           </div>
                           <div style={{ height: 6, borderRadius: 999, background: '#ECECF8' }}>
-                            <div style={{ height: '100%', width: `${generalTalentCompletionPct}%`, borderRadius: 999, background: 'linear-gradient(90deg, #4D5CE8 0%, #774AF4 100%)', transition: 'width 600ms ease' }} />
+                            <div style={{ height: '100%', width: `${talentAuth ? talentCompletionPct : generalTalentCompletionPct}%`, borderRadius: 999, background: 'linear-gradient(90deg, #4D5CE8 0%, #774AF4 100%)', transition: 'width 600ms ease' }} />
                           </div>
                         </div>
                       </div>
 
                       {/* Nav items */}
                       <RadixDropdown.Item asChild>
-                        <button onClick={() => navigate("/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                        {/* "Talent Profile" must always route to the actual profile — never to
+                            /find-best-matches. resolvedTalentCandidateId covers both auth paths.
+                            Only fall back to FBM when truly no candidate record exists yet. */}
+                        <button onClick={() => navigate(resolvedTalentCandidateId ? `/talent-profile/${resolvedTalentCandidateId}` : "/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
                           <User style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
                           <span style={{ flex: 1 }}>Talent Profile</span>
                           <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
                         </button>
                       </RadixDropdown.Item>
-                      {generalTalentCompletionPct < 100 && (
+                      {(talentAuth ? talentCompletionPct : generalTalentCompletionPct) < 100 && (
                         <RadixDropdown.Item asChild>
-                          <button onClick={() => navigate("/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#5B52DC', borderRadius: 10, border: 'none', background: '#F4F2FF', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}>
+                          {/* "Finish Profile Setup":
+                              - profileCompleted=true  → Settings (onboarding done, just fill remaining fields)
+                              - profileCompleted=false → Find Best Matches (complete initial onboarding) */}
+                          <button onClick={() => navigate((generalTalentCandidateData?.profileCompleted || talentCandidateData?.profileCompleted) ? "/settings" : "/find-best-matches")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#5B52DC', borderRadius: 10, border: 'none', background: '#F4F2FF', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}>
                             <CheckCircle2 style={{ width: 18, height: 18, color: '#5B52DC', flexShrink: 0 }} />
                             <span style={{ flex: 1 }}>Finish Profile Setup</span>
                             <span style={{ fontSize: 10, fontWeight: 600, color: '#5B52DC', background: 'rgba(91,82,220,0.1)', padding: '2px 7px', borderRadius: 99, whiteSpace: 'nowrap' }}>Recommended</span>
@@ -1047,8 +1057,10 @@ export function TopNavigation() {
                     {/* Finish Profile Setup — only when incomplete */}
                     {talentCompletionPct < 100 && (
                       <RadixDropdown.Item asChild>
+                        {/* Portal users with an existing candidate record have already completed
+                            initial onboarding, so send them to Settings rather than restarting FBM. */}
                         <button
-                          onClick={() => navigate("/find-best-matches")}
+                          onClick={() => navigate("/settings")}
                           style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#5B52DC', borderRadius: 10, border: 'none', background: '#F4F2FF', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
                           onMouseEnter={e => { e.currentTarget.style.background = '#ECE8FF'; e.currentTarget.style.color = '#4438C2'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = '#F4F2FF'; e.currentTarget.style.color = '#5B52DC'; }}

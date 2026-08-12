@@ -1,0 +1,1089 @@
+# Finalize Find Best Matches as One-Time Talent Onboarding
+
+Task #103 is moving in the right direction, but the current behavior is still incorrect.
+
+## Current problems
+
+After successfully completing all steps in **Find Best Matches**:
+
+1. the user reaches the personalized results page;
+2. the Talent dropdown still shows:
+
+```text
+Profile completion: 0%
+```
+
+3. clicking `Talent Profile` sends the Talent back to:
+
+```text
+Find Best Matches
+Step 1 of 5
+```
+
+4. the Find Best Matches journey resets to:
+
+```text
+20% complete
+```
+
+5. the Talent cannot access their Talent Profile even though they already completed onboarding.
+
+This must be fixed permanently.
+
+---
+
+# Product behavior
+
+Find Best Matches is primarily the Talent onboarding flow.
+
+The intended lifecycle is:
+
+```text
+NEW TALENT
+Create Talent Account
+→ Find Best Matches onboarding
+→ Complete onboarding once
+→ Talent Profile becomes normal home/profile experience
+```
+
+After onboarding is completed:
+
+```text
+Talent Profile
+Settings
+My Applications
+Find Work
+```
+
+must all remain accessible.
+
+Find Best Matches should still be available later if the Talent intentionally wants to:
+
+```text
+Retake Assessment
+Change Career Path
+Update Job Preferences
+Find New Matches
+```
+
+But it must NOT automatically restart or become a mandatory gate again.
+
+---
+
+# 1. Separate THREE concepts clearly
+
+Do not mix these anymore.
+
+## A. Onboarding completed
+
+Persistent DB flag:
+
+```ts
+candidate.profileCompleted
+```
+
+Meaning:
+
+```text
+Has this Talent finished the initial Find Best Matches onboarding at least once?
+```
+
+Once true, it should normally remain true.
+
+---
+
+## B. Profile completion percentage
+
+Calculated from Candidate/profile data:
+
+```text
+photo
+name
+headline
+summary
+email
+phone
+location
+skills
+experience
+resume
+preferences
+etc.
+```
+
+This may be:
+
+```text
+58%
+75%
+100%
+```
+
+It can go up or down later.
+
+It must NOT determine whether onboarding must restart.
+
+---
+
+## C. Find Best Matches journey progress
+
+Temporary journey state:
+
+```text
+Step 1 of 5
+Step 2 of 5
+...
+Step 5 of 5
+```
+
+and:
+
+```text
+20%
+40%
+60%
+80%
+100%
+```
+
+This only describes the current guided session.
+
+Do not use it as profile completion.
+
+---
+
+# 2. `profileCompleted` becomes permanently true after first successful onboarding
+
+At the FINAL successful Find Best Matches completion action:
+
+persist:
+
+```ts
+profileCompleted: true
+```
+
+to the Candidate DB.
+
+Do not only set localStorage.
+
+Verify all layers:
+
+```text
+FindBestMatches payload
+→ server route
+→ validation
+→ storage.updateCandidate
+→ PostgreSQL
+```
+
+After final submission, query the DB directly and verify:
+
+```text
+candidates.profile_completed = true
+```
+
+for that Candidate.
+
+---
+
+# 3. Do NOT reset `profileCompleted` to false
+
+Search the entire codebase for:
+
+```text
+profileCompleted: false
+```
+
+and any code that recalculates/replaces it.
+
+Once initial onboarding is successfully completed:
+
+```text
+true
+```
+
+must not automatically become:
+
+```text
+false
+```
+
+because:
+
+* Resume was removed;
+* Summary was removed;
+* Settings became incomplete;
+* profile percentage dropped;
+* Find Best Matches was reopened;
+* browser storage was cleared;
+* user logged out.
+
+Those situations affect **profile completion**, not onboarding completion.
+
+---
+
+# 4. Talent Profile must NEVER route authenticated Talent to Find Best Matches automatically
+
+Search:
+
+```text
+client/src/pages/TalentProfile.tsx
+client/src/App.tsx
+client/src/components/TopNavigation.tsx
+route guards
+auth wrappers
+```
+
+for:
+
+```ts
+navigate("/find-best-matches")
+```
+
+or:
+
+```ts
+<Route ... redirect ... />
+```
+
+or any conditional equivalent.
+
+For an authenticated Talent with a valid Candidate record:
+
+```text
+Talent Profile
+```
+
+must always open the actual Talent Profile page.
+
+Even when:
+
+```text
+profileCompleted = false
+```
+
+or:
+
+```text
+profile completion = 20%
+```
+
+allow access.
+
+Show:
+
+```text
+Finish Setting Up
+```
+
+instead of redirecting.
+
+---
+
+# 5. Fix TopNavigation Talent Profile link permanently
+
+The dropdown item:
+
+```text
+Talent Profile
+```
+
+must never mean:
+
+```text
+Go to Find Best Matches if incomplete
+```
+
+Remove that conditional behavior.
+
+Desired:
+
+```ts
+Talent Profile
+→ /talent-profile/<candidateId>
+```
+
+for every authenticated Talent Candidate.
+
+Use the Candidate ID from:
+
+```text
+Talent Portal auth candidateId
+```
+
+or the resolved `/api/candidates/me` Candidate for the main Talent auth path.
+
+No fallback to:
+
+```text
+/find-best-matches
+```
+
+once authenticated Candidate identity is available.
+
+---
+
+# 6. `Finish Profile Setup` is the onboarding/profile-completion CTA
+
+The dropdown may continue showing:
+
+```text
+Finish Profile Setup
+Recommended
+```
+
+when appropriate.
+
+But that is a separate action.
+
+Recommended behavior:
+
+### Before initial onboarding is complete
+
+```text
+Finish Profile Setup
+→ Find Best Matches
+```
+
+### After initial onboarding is complete but profile percentage < 100%
+
+Prefer:
+
+```text
+Finish Profile Setup
+→ /settings
+```
+
+because the user already completed the onboarding journey.
+
+Do NOT automatically send them through Find Best Matches again.
+
+---
+
+# 7. Change Find Best Matches behavior for returning Talent
+
+When:
+
+```ts
+candidate.profileCompleted === true
+```
+
+and a Talent manually opens Find Best Matches:
+
+Do not behave like first-time onboarding.
+
+Show a returning-user entry state such as:
+
+```text
+Update Your Career Match
+
+You've already completed your Talent setup.
+You can retake this journey to update your career direction,
+preferences, and recommended roles.
+
+[Update My Career Path]
+[View My Matches]
+[Back to Talent Profile]
+```
+
+Or, if keeping the current results screen is simpler:
+
+load their existing saved results/profile instead of restarting Step 1 automatically.
+
+---
+
+# 8. Do NOT reset to Step 1 when onboarding is already complete
+
+The current screenshot shows that after completion the journey returns to:
+
+```text
+Step 1 of 5 — Upload
+20% complete
+```
+
+Find where `step` is initialized.
+
+It may currently do:
+
+```ts
+const [step, setStep] = useState(0);
+```
+
+and always render Step 1 when the page mounts.
+
+Change initialization logic.
+
+Conceptually:
+
+```ts
+if (candidate.profileCompleted) {
+  showReturningStateOrResults();
+} else {
+  beginInitialOnboarding();
+}
+```
+
+Do not depend only on browser-local state.
+
+---
+
+# 9. Persist final Find Best Matches results
+
+The results screen should be reproducible from persisted data.
+
+Persist the relevant output:
+
+```text
+targetPosition
+jobCategory
+seniority
+coreSkills
+secondarySkills
+preferences
+culture assessment
+match profile/archetype
+```
+
+using the existing Candidate fields/data model.
+
+When a completed Talent returns to Find Best Matches, use stored data to reconstruct the experience/results.
+
+Do not require them to complete all five steps merely because React state was lost.
+
+---
+
+# 10. Fix the 0% profile completion in TopNavigation
+
+The current screenshot still shows:
+
+```text
+Profile completion
+0%
+```
+
+even though Candidate data clearly exists.
+
+Do not source dropdown completion from:
+
+```text
+onboarding localStorage
+Find Best Matches step
+AuthContext user fields only
+```
+
+Use the same canonical completion result as:
+
+```text
+Talent Profile
+Profile Settings
+```
+
+Prefer:
+
+```ts
+useTalentProfileCompletion(candidateId)
+```
+
+or equivalent shared hook.
+
+---
+
+# 11. One canonical completion implementation
+
+Use:
+
+```ts
+profileStrengthFromCandidate(...)
+```
+
+only.
+
+All of these must consume the same result:
+
+```text
+TopNavigation
+TalentProfile
+ProfileSettings
+```
+
+Do not allow another `0%` calculation inside TopNavigation.
+
+If Resume/document data is stored separately, provide it consistently to the shared calculator.
+
+---
+
+# 12. Query synchronization
+
+Align Candidate fetching.
+
+Use a shared key:
+
+```ts
+["candidate", candidateId]
+```
+
+in:
+
+```text
+TopNavigation
+TalentProfile
+ProfileSettings
+FindBestMatches
+```
+
+After Find Best Matches saves any Candidate field:
+
+```ts
+queryClient.invalidateQueries({
+  queryKey: ["candidate", candidateId]
+});
+```
+
+Also invalidate document/completion queries where needed.
+
+---
+
+# 13. After onboarding final submission
+
+When the final Find Best Matches step completes:
+
+Perform this order:
+
+```text
+1. Save final Candidate profile fields
+2. Save assessment/preferences
+3. Set profileCompleted=true
+4. Await successful DB response
+5. Refetch Candidate
+6. Confirm returned profileCompleted=true
+7. Invalidate shared Candidate/completion queries
+8. Show personalized results
+```
+
+Do NOT mark onboarding finished before DB persistence succeeds.
+
+---
+
+# 14. Results page CTA
+
+On the final personalized results screen, provide a clear primary action:
+
+```text
+View Talent Profile
+```
+
+or:
+
+```text
+Go to My Talent Profile
+```
+
+This must route directly to:
+
+```text
+/talent-profile/<candidateId>
+```
+
+It should never restart Find Best Matches.
+
+Keep:
+
+```text
+Browse All Roles
+Retake Assessment
+```
+
+as secondary actions.
+
+---
+
+# 15. Retake Assessment behavior
+
+The current results screen already has:
+
+```text
+Retake Assessment
+```
+
+Use this as the intentional way to restart/update Find Best Matches.
+
+When clicked:
+
+do NOT set:
+
+```ts
+profileCompleted = false
+```
+
+Instead:
+
+```text
+profileCompleted remains true
+```
+
+and start a new temporary journey session.
+
+After retake completes:
+
+update Candidate matching/profile fields.
+
+Onboarding remains completed.
+
+---
+
+# 16. Change Career Path behavior
+
+Find Best Matches can now serve two modes.
+
+## First-time onboarding
+
+```text
+profileCompleted = false
+
+Find Best Matches
+→ guided onboarding
+→ final submit
+→ profileCompleted=true
+```
+
+## Returning / career-change mode
+
+```text
+profileCompleted = true
+
+Talent intentionally selects:
+Retake Assessment / Change Career Path
+
+→ guided Find Best Matches journey
+→ update Candidate preferences/results
+→ profileCompleted stays true
+```
+
+Do not mix the modes.
+
+---
+
+# 17. Find Best Matches should prepopulate returning Talent
+
+When returning:
+
+load Candidate values:
+
+```text
+fullName
+phone
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+workHistory
+preferences
+resume
+```
+
+If they intentionally retake the journey, these fields should already be filled.
+
+They should edit only what changed.
+
+---
+
+# 18. Resume behavior
+
+If Candidate already has a Resume:
+
+Step 1 must recognize it.
+
+Show:
+
+```text
+Resume on file
+✓ filename.pdf
+
+[Use Existing Resume]
+[Replace Resume]
+```
+
+Do not force another upload.
+
+Do not treat the absence of a browser File object as “no resume”.
+
+Use persisted Resume metadata.
+
+---
+
+# 19. Fix journey state restoration
+
+The 20% restart likely happens because Find Best Matches journey state exists only in:
+
+```text
+React state
+localStorage
+sessionStorage
+```
+
+That is okay for an in-progress session.
+
+But completed onboarding must come from:
+
+```text
+candidate.profileCompleted
+```
+
+Rules:
+
+```text
+profileCompleted=false
++ no temporary journey state
+→ Step 1
+
+profileCompleted=false
++ saved in-progress session
+→ optionally resume step
+
+profileCompleted=true
+→ results / returning state
+```
+
+Never:
+
+```text
+profileCompleted=true
+→ Step 1 automatically
+```
+
+---
+
+# 20. Login behavior
+
+After login:
+
+fetch Candidate.
+
+If:
+
+```ts
+candidate.profileCompleted === true
+```
+
+then AuthContext/route guards must consider initial onboarding completed.
+
+Do not require:
+
+```text
+onboarding_completed_<userId>
+```
+
+to exist locally.
+
+Test with localStorage cleared.
+
+---
+
+# 21. New device behavior
+
+Mandatory test:
+
+1. Complete Find Best Matches.
+2. Verify DB `profileCompleted=true`.
+3. Log out.
+4. Open another browser/incognito.
+5. Log in.
+6. Click Talent Profile.
+
+Expected:
+
+```text
+Talent Profile opens
+```
+
+NOT:
+
+```text
+Find Best Matches Step 1
+```
+
+This is the most important regression test.
+
+---
+
+# 22. Existing completed users
+
+For existing Candidates where:
+
+```text
+profileCompleted=true
+```
+
+but localStorage is missing:
+
+do not run onboarding again.
+
+No migration from browser storage is necessary.
+
+Trust DB.
+
+---
+
+# 23. Existing users who completed Find Best Matches but DB is false
+
+Some Candidates may have previously completed the flow while the DB flag was not persisted correctly.
+
+Inspect whether server-side evidence exists, for example:
+
+```text
+culture assessment exists
+matching preferences exist
+targetPosition exists
+coreSkills exist
+assessment/result row exists
+```
+
+If there is a safe and deterministic server-side way to identify completed onboarding, consider a one-time backfill.
+
+Do NOT infer completion only from partial Candidate fields if that could misclassify users.
+
+If no reliable evidence exists, document that those legacy cases may need to complete once more.
+
+---
+
+# 24. Profile completion vs onboarding message
+
+Talent Profile should behave like:
+
+### Onboarding complete + profile incomplete
+
+```text
+Your profile is 58% complete.
+
+Finish adding your profile details to improve your matches.
+
+[Finish Setting Up]
+```
+
+Do NOT say:
+
+```text
+Complete Find Best Matches again
+```
+
+---
+
+# 25. Dropdown behavior
+
+Example after first onboarding:
+
+```text
+Val Testing
+val.testtalent@onspotglobal.com
+
+Profile completion
+58%
+
+Talent Profile
+My Applications
+Finish Profile Setup
+Find Work
+Settings
+Sign Out
+```
+
+`Talent Profile` → profile.
+
+`Finish Profile Setup` → Settings when onboarding already completed.
+
+---
+
+# 26. Find Best Matches navigation item
+
+If you want Find Best Matches accessible after onboarding, expose it intentionally via:
+
+```text
+Find Work
+```
+
+or:
+
+```text
+Update Career Match
+```
+
+or from the results/profile page.
+
+Do not overload `Talent Profile` to mean Find Best Matches.
+
+---
+
+# 27. Mandatory automated/manual tests
+
+### Test 1 — New Talent
+
+```text
+profileCompleted=false
+```
+
+Complete all 5 steps.
+
+Expected:
+
+```text
+DB profileCompleted=true
+results shown
+Talent Profile opens
+```
+
+---
+
+### Test 2 — Refresh results
+
+After completing onboarding:
+
+hard refresh Find Best Matches.
+
+Expected:
+
+```text
+returning/results state
+```
+
+NOT:
+
+```text
+Step 1
+```
+
+---
+
+### Test 3 — Talent Profile navigation
+
+From results:
+
+click Talent Profile.
+
+Expected:
+
+Talent Profile.
+
+No redirect.
+
+---
+
+### Test 4 — TopNavigation
+
+Completion percentage on dropdown must match:
+
+```text
+Talent Profile
+Settings
+```
+
+---
+
+### Test 5 — logout/login
+
+Complete onboarding.
+
+Logout.
+
+Login.
+
+Talent Profile opens.
+
+---
+
+### Test 6 — localStorage cleared
+
+Complete onboarding.
+
+Delete:
+
+```text
+onboarding_completed_*
+```
+
+from localStorage.
+
+Refresh/login.
+
+Talent Profile still works.
+
+---
+
+### Test 7 — Retake
+
+Completed user clicks:
+
+```text
+Retake Assessment
+```
+
+Journey starts intentionally.
+
+After completion:
+
+```text
+profileCompleted remains true
+```
+
+Talent Profile remains accessible throughout.
+
+---
+
+### Test 8 — Incomplete profile after onboarding
+
+Complete Find Best Matches.
+
+Then remove Resume.
+
+Expected:
+
+```text
+profileCompleted = true
+profile percentage drops
+Talent Profile remains accessible
+Finish Setting Up shown
+```
+
+---
+
+# Acceptance criteria
+
+Do not mark complete until all are true:
+
+* [ ] Find Best Matches is treated as initial onboarding.
+* [ ] Completing it persists `candidate.profileCompleted=true`.
+* [ ] `profileCompleted` survives logout/browser/device.
+* [ ] Completed Talent does not automatically restart at Step 1.
+* [ ] Talent Profile always routes to Talent Profile.
+* [ ] No Talent Profile auto-redirect to Find Best Matches.
+* [ ] Find Best Matches results/returning state loads for completed Talent.
+* [ ] Retake Assessment intentionally restarts the journey.
+* [ ] Retaking does not set `profileCompleted=false`.
+* [ ] Profile completion percentage is separate from onboarding completion.
+* [ ] Dropdown no longer incorrectly shows 0% when Candidate data exists.
+* [ ] Dropdown, Profile, and Settings show identical profile completion.
+* [ ] Existing Resume is recognized in Find Best Matches.
+* [ ] Hard refresh after onboarding does not reset to Step 1.
+* [ ] New-device login does not restart onboarding.
+
+# Final report required
+
+Report:
+
+1. why completed users were returning to Step 1;
+2. why the dropdown showed 0%;
+3. where the Talent Profile redirect was happening;
+4. how `profileCompleted` is now persisted/read;
+5. how Find Best Matches distinguishes first-time vs returning users;
+6. how Retake Assessment works;
+7. how completion percentage is synchronized;
+8. how Resume is restored;
+9. which route guards were changed;
+10. DB verification performed;
+11. hard-refresh test;
+12. logout/login test;
+13. new-device/localStorage-cleared test;
+14. confirmation that completed Talent can always view Talent Profile.

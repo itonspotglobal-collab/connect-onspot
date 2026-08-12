@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import {
@@ -68,6 +69,10 @@ interface WorkHistoryEntry {
 interface CandidateProfile {
   // Step 1 — Upload
   resumeFile: File | null;
+  /** Persisted resume URL from DB — shown when no new File has been selected. */
+  resumeUrl: string;
+  /** Persisted filename from DB — displayed alongside the on-file indicator. */
+  resumeFileName: string;
   // Step 2 — Finalize Information (primary source of truth for matching)
   fullName: string;
   email: string;
@@ -98,6 +103,8 @@ const EMPTY_WORK_ENTRY: WorkHistoryEntry = {
 
 const EMPTY_PROFILE: CandidateProfile = {
   resumeFile: null,
+  resumeUrl: "",
+  resumeFileName: "",
   fullName: "",
   email: "",
   phone: "",
@@ -1865,8 +1872,12 @@ function NoStrongMatches({
 
 export default function FindBestMatches() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("flow");
   const [flowStep, setFlowStep] = useState(0);
+  // True when the DB confirms the talent already completed initial onboarding.
+  // Controls whether mount shows Step 1 (first-timer) or results (returning user).
+  const [profileAlreadyCompleted, setProfileAlreadyCompleted] = useState(false);
 
   // ── Post-registration welcome banner ─────────────────────────────────────
   // Set by TalentSignupFromApplication after creating a new account.
@@ -1921,10 +1932,12 @@ export default function FindBestMatches() {
   const [savedEvaluationId, setSavedEvaluationId] = useState<string | null>(null);
 
   // ── On mount: look up existing candidate data and pre-populate the form ──────
-  // If the user has started Find Best Matches before (or has a candidate record from
-  // TalentSignupFromApplication), we hydrate ALL form fields from the DB so returning
-  // users see their existing data instead of a blank form.
-  // Only sets fields that are currently empty — never overwrites user-entered data.
+  // Two objectives:
+  //   1. Detect returning users (profileCompleted=true in DB) and show results instead of Step 1.
+  //   2. Hydrate ALL form fields so returning users see their existing data, not a blank form.
+  //
+  // Key invariant: profileCompleted=true → results phase, NEVER Step 1 again automatically.
+  // The user must explicitly click "Retake Assessment" to restart the guided flow.
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
@@ -1948,6 +1961,15 @@ export default function FindBestMatches() {
         // Persist the candidateId so subsequent saves use PATCH instead of POST
         if (!candidateId) setCandidateId(data.id);
 
+        // ── Returning user detection ────────────────────────────────────────
+        // If the DB says onboarding was already completed, skip to results immediately.
+        // profileCompleted is the single source of truth — do not depend on localStorage.
+        if (data.profileCompleted === true) {
+          setProfileAlreadyCompleted(true);
+          setPhase("results");
+          // Still hydrate fields so Retake Assessment starts with pre-filled data.
+        }
+
         // Hydrate preferences sub-fields from the stored preferences JSONB object.
         // FindBestMatches saves them as: { setup, shift, jobType, environment }
         const prefs = (data.preferences && typeof data.preferences === "object")
@@ -1956,6 +1978,9 @@ export default function FindBestMatches() {
 
         setProfile((p) => ({
           ...p,
+          // Persisted resume info — shown in Step 1 when no new file is selected
+          resumeUrl:        p.resumeUrl        || data.resumeUrl        || "",
+          resumeFileName:   p.resumeFileName   || data.resumeFileName   || "",
           // Basic identity
           email:            p.email            || data.email            || user?.email || "",
           fullName:         p.fullName         || data.fullName         || "",
@@ -2188,6 +2213,14 @@ export default function FindBestMatches() {
           }
           savedOk = true;
 
+          // Invalidate shared candidate queries so TopNavigation and Settings
+          // reflect the updated completion % without a page reload.
+          queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
+          if (resolvedCandidateId) {
+            queryClient.invalidateQueries({ queryKey: ["/api/candidates", resolvedCandidateId] });
+            queryClient.invalidateQueries({ queryKey: ["candidate", resolvedCandidateId] });
+          }
+
           // Non-blocking: upload the resume file to object storage now that we have a candidateId.
           // Uses the standard talent user JWT — the resume endpoint accepts both candidate and user JWTs.
           if (profile.resumeFile && resolvedCandidateId) {
@@ -2309,14 +2342,17 @@ export default function FindBestMatches() {
     }
   }
   function handleRetake() {
-    setProfile(EMPTY_PROFILE);
+    // Restart the guided flow so the talent can update their career path/preferences.
+    // IMPORTANT: keep candidateId — subsequent saves must PATCH the existing candidate,
+    //   not POST a new one. Retaking does NOT reset profileCompleted.
+    // Keep profile data pre-filled — the user only edits what changed.
     setSecSkillInput("");
     setFlowStep(0);
     setPhase("flow");
     setExtracted(null);
     setExtractParseError(null);
     setExtracting(false);
-    setCandidateId(null);
+    // candidateId intentionally NOT cleared — saves must update the existing record.
     setProfileSaved(false);
     setShowWorkForm(false);
     setEditWorkIdx(null);
@@ -2362,20 +2398,31 @@ export default function FindBestMatches() {
               <Sparkles className="h-5 w-5 text-[#474ead]" />
             </div>
             <Badge className="rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] hover:bg-[#474ead]/10">
-              Your Results
+              {profileAlreadyCompleted ? "Your Career Match" : "Your Results"}
             </Badge>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-            Your personalized matches.
+            {profileAlreadyCompleted ? "Welcome back." : "Your personalized matches."}
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-500">
-            Below is your profile archetype, values alignment, and any active
-            posted roles that genuinely fit your background.
+            {profileAlreadyCompleted
+              ? "You've already completed your Talent setup. View your profile, browse roles, or retake the assessment to update your career direction."
+              : "Below is your profile archetype, values alignment, and any active posted roles that genuinely fit your background."}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
+            {/* Primary: view the actual Talent Profile — always available once candidateId is known */}
+            {candidateId && (
+              <Button
+                onClick={() => navigate(`/talent-profile/${candidateId}`)}
+                className="rounded-full bg-[#474ead] px-6 text-white"
+              >
+                <User className="mr-2 h-4 w-4" /> View Talent Profile
+              </Button>
+            )}
             <Button
               onClick={() => navigate("/find-work/jobs")}
-              className="rounded-full bg-[#474ead] px-6 text-white"
+              className={`rounded-full px-6 ${candidateId ? "bg-transparent text-[#474ead] border border-[#474ead]/30 hover:bg-[#474ead]/5" : "bg-[#474ead] text-white"}`}
+              variant={candidateId ? "outline" : "default"}
             >
               Browse All Roles
             </Button>
@@ -2473,6 +2520,40 @@ export default function FindBestMatches() {
               >
                 <XIcon className="h-4 w-4" />
               </button>
+            </div>
+          ) : profile.resumeUrl ? (
+            /* Resume already on file from a previous session — no upload needed */
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-900">Resume on file</p>
+                  <p className="text-xs text-emerald-700 mt-0.5 truncate">
+                    {profile.resumeFileName || "Your resume is saved"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFlowStep(1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors text-center"
+                >
+                  Use Existing Resume
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors text-center"
+                >
+                  Replace Resume
+                </button>
+              </div>
             </div>
           ) : (
             <button
