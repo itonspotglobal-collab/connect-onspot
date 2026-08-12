@@ -1,0 +1,565 @@
+# Fix the Remaining Talent Profile Settings PATCH 500
+
+There is progress: authentication is no longer the main failure.
+
+The current browser console now shows:
+
+```text
+PATCH /api/candidates/... 500 (Internal Server Error)
+
+Candidate settings save failed:
+Failed to update candidate
+```
+
+The failure now occurs from:
+
+```text
+useCandidateProfileSettings.ts
+```
+
+during the candidate PATCH request.
+
+Do **not** redesign the page or change authentication again unless the evidence proves it is needed.
+
+The Talent candidate request is reaching the server.
+
+The task now is to debug the **500 returned by `PATCH /api/candidates/:id`** and make every Profile Settings field persist correctly.
+
+## First requirement: inspect the actual backend exception
+
+Before changing code, reproduce the Settings save and inspect the Replit/server console.
+
+The backend currently catches the candidate update error and returns a generic:
+
+```text
+Failed to update candidate
+```
+
+I need the underlying error identified.
+
+Temporarily log safe diagnostic information in the PATCH route:
+
+```ts
+console.error("PATCH candidate update failed", {
+  candidateId: req.params.id,
+  fields: Object.keys(req.body || {}),
+  message: error instanceof Error ? error.message : String(error),
+});
+```
+
+If the error has PostgreSQL/Drizzle properties, also inspect:
+
+* `code`
+* `column`
+* `constraint`
+* `detail`
+
+Do not log passwords, tokens, or authorization headers.
+
+Find the **exact DB/schema error first**.
+
+---
+
+# Inspect these exact files
+
+* `client/src/hooks/useCandidateProfileSettings.ts`
+* `client/src/pages/ProfileSettings.tsx`
+* `server/routes.ts`
+* `server/storage.ts`
+* `shared/schema.ts`
+
+Specifically inspect:
+
+```text
+PATCH /api/candidates/:id
+```
+
+and:
+
+```ts
+storage.updateCandidate(...)
+```
+
+Also inspect the actual `candidates` table definition and its production/dev database columns.
+
+---
+
+# Current backend route issue to investigate
+
+The current candidate route effectively does:
+
+```ts
+const {
+  passwordHash: _stripped,
+  ...safeBody
+} = req.body;
+
+const updated = await storage.updateCandidate(
+  profileId,
+  safeBody,
+);
+```
+
+This is too permissive unless `storage.updateCandidate()` safely maps and validates every supported field.
+
+Do not blindly pass the full Settings form body into the database update.
+
+Create an explicit allow-list/mapping.
+
+---
+
+# Compare frontend payload to candidate schema
+
+Log the outgoing Settings payload once in development:
+
+```ts
+console.log(
+  "Candidate settings PATCH payload",
+  payload
+);
+```
+
+Then compare EVERY property with the actual Candidate schema.
+
+Check especially:
+
+```text
+firstName
+lastName
+fullName
+phone
+location
+timezone
+languages
+targetPosition
+summary
+hourlyRate
+rateCurrency
+availability
+coreSkills
+secondarySkills
+profilePhotoUrl
+```
+
+Determine which fields actually exist in the `candidates` table.
+
+Do not assume the old `profiles` fields also exist on `candidates`.
+
+---
+
+# Important: First Name / Last Name
+
+The Settings UI now displays:
+
+```text
+First Name: Val
+Last Name: Legaspi
+```
+
+Determine exactly how the Candidate table stores this.
+
+If Candidate has:
+
+```text
+first_name
+last_name
+full_name
+```
+
+then update all relevant values consistently.
+
+Example logical mapping:
+
+```ts
+{
+  firstName: data.firstName,
+  lastName: data.lastName,
+  fullName: `${data.firstName} ${data.lastName}`.trim(),
+}
+```
+
+If the schema only exposes:
+
+```ts
+fullName
+```
+
+then do not send nonexistent `firstName` / `lastName` properties into the DB update method.
+
+Instead either:
+
+1. add proper database/schema support through a migration if those fields are intended to exist; or
+2. map the UI fields to the existing canonical schema.
+
+Do not create an in-memory-only workaround.
+
+---
+
+# Build an explicit server-side update object
+
+Instead of doing:
+
+```ts
+storage.updateCandidate(profileId, req.body)
+```
+
+use only supported candidate fields.
+
+For example, conceptually:
+
+```ts
+const candidateUpdates = {
+  fullName,
+  firstName,
+  lastName,
+  phone,
+  location,
+  targetPosition,
+  summary,
+  coreSkills,
+  secondarySkills,
+  preferences,
+};
+```
+
+But use ONLY fields confirmed in `shared/schema.ts`.
+
+Do not copy this example blindly.
+
+---
+
+# Timezone / Languages / Rate / Availability
+
+These fields are particularly important because they may belong to the old `profiles` schema but not the candidate schema.
+
+Current Settings includes:
+
+```text
+timezone
+languages
+hourlyRate
+rateCurrency
+availability
+```
+
+Inspect whether Candidate actually has direct columns for them.
+
+If not, inspect whether the candidate model uses a JSON field such as:
+
+```text
+preferences
+```
+
+If that is the established design, map these settings into that object.
+
+Example only:
+
+```ts
+preferences: {
+  ...(existingCandidate.preferences ?? {}),
+  timezone: data.timezone,
+  languages: data.languages,
+  hourlyRate: data.hourlyRate,
+  rateCurrency: data.rateCurrency,
+  availability: data.availability,
+}
+```
+
+Do this only if `preferences` is confirmed as the intended canonical field.
+
+Preserve existing preference keys. Do not replace the entire object with only Settings values.
+
+---
+
+# Do not pass `undefined`
+
+Remove unsupported and undefined properties before database update.
+
+For example:
+
+```ts
+const cleanUpdates = Object.fromEntries(
+  Object.entries(candidateUpdates).filter(
+    ([, value]) => value !== undefined
+  )
+);
+```
+
+Be careful not to accidentally remove valid:
+
+```text
+false
+0
+""
+[]
+```
+
+if those are meaningful values.
+
+---
+
+# Validate before DB update
+
+Create or use a Candidate update Zod schema.
+
+Prefer:
+
+```ts
+insertCandidateSchema
+  .partial()
+  .omit({
+    id: true,
+    passwordHash: true,
+    createdAt: true,
+  })
+```
+
+or an explicit Settings update schema if safer.
+
+Return **400**, not 500, when the frontend sends an invalid field/value.
+
+Example response:
+
+```json
+{
+  "success": false,
+  "error": "Invalid candidate settings",
+  "details": [...]
+}
+```
+
+A schema mismatch is not an internal server error.
+
+---
+
+# Inspect `storage.updateCandidate()`
+
+This is critical.
+
+Find exactly how `storage.updateCandidate()` is implemented.
+
+Verify whether it:
+
+* uses Drizzle `.update()`;
+* uses raw SQL;
+* expects snake_case names;
+* expects camelCase schema fields;
+* serializes arrays correctly;
+* handles JSON columns correctly;
+* updates `updatedAt`;
+* returns the updated row.
+
+If it currently builds dynamic SQL from object property names, verify every key maps to the real DB column.
+
+Do not allow frontend field names to become SQL column names unchecked.
+
+---
+
+# Verify database migrations
+
+Compare:
+
+```text
+shared/schema.ts
+```
+
+against the real database.
+
+This project has had many candidate-profile changes.
+
+Check whether fields defined in code actually exist in PostgreSQL.
+
+Run appropriate inspection such as:
+
+```sql
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'candidates'
+ORDER BY ordinal_position;
+```
+
+Compare this against the Candidate schema.
+
+If code expects a column that hasn't been migrated, create/apply the proper migration.
+
+Do not simply catch the missing-column error.
+
+---
+
+# Use direct DB verification
+
+After fixing PATCH, test:
+
+```sql
+SELECT
+  id,
+  full_name,
+  first_name,
+  last_name,
+  phone,
+  location,
+  profile_photo_url,
+  preferences
+FROM candidates
+WHERE id = '<CURRENT CANDIDATE ID>';
+```
+
+Adjust the columns according to the actual schema.
+
+Confirm the row changes after clicking Save Settings.
+
+---
+
+# Frontend error reporting
+
+The frontend currently hides the useful server error behind:
+
+```text
+Failed to update candidate
+```
+
+Improve `useCandidateProfileSettings.ts` so development errors expose the backend message.
+
+Example:
+
+```ts
+const response = await fetch(...);
+
+const result = await response.json().catch(() => null);
+
+if (!response.ok) {
+  console.error(
+    "Candidate settings API error:",
+    result
+  );
+
+  throw new Error(
+    result?.message ||
+    result?.error ||
+    `Failed to update candidate (${response.status})`
+  );
+}
+```
+
+Do not show raw database errors to end users in production.
+
+Use them only in server/dev logging.
+
+---
+
+# Avoid partial misleading save states
+
+The Settings Save action should:
+
+1. construct validated Candidate payload;
+2. PATCH candidate;
+3. wait for successful DB response;
+4. refetch candidate;
+5. verify returned persisted values;
+6. then show:
+
+```text
+Settings saved successfully
+```
+
+If the PATCH returns 500, do not mutate the UI as though the save succeeded.
+
+---
+
+# Candidate photo is now working
+
+The screenshot confirms that the profile photo is now rendered correctly.
+
+Do not rewrite the photo architecture unless necessary.
+
+Preserve the working candidate photo implementation.
+
+Focus on the PATCH candidate settings failure.
+
+---
+
+# AbortError is probably separate
+
+The console still contains many:
+
+```text
+AbortError: The user aborted a request
+frame_ant.js
+```
+
+Do NOT mix that into this Settings PATCH bug unless investigation proves they are connected.
+
+The important error for this task is:
+
+```text
+PATCH ... 500
+```
+
+and:
+
+```text
+Failed to update candidate
+```
+
+Fix that first.
+
+---
+
+# Mandatory test sequence
+
+After implementing the fix:
+
+1. Login as the same Talent.
+2. Open `/settings`.
+3. Change First Name to a new test value.
+4. Change Last Name.
+5. Change Phone.
+6. Change Location.
+7. Click Save.
+8. Confirm PATCH returns HTTP 200.
+9. Inspect the DB candidate row.
+10. Confirm all values changed.
+11. Hard refresh `/settings`.
+12. Confirm the updated values remain.
+13. Open `/talent-profile`.
+14. Confirm the same values display there.
+15. Change timezone/languages.
+16. Save.
+17. Verify how they are persisted in the Candidate schema.
+18. Hard refresh again.
+19. Confirm photo still displays.
+20. Confirm no regression to Talent Profile editing.
+
+---
+
+# Do not mark complete until PATCH returns 200
+
+The primary acceptance criterion now is:
+
+```text
+PATCH /api/candidates/:candidateId -> 200
+```
+
+with the database row actually updated.
+
+A frontend success toast alone is not enough.
+
+---
+
+# Report the exact root cause
+
+At completion, tell me:
+
+1. the exact PostgreSQL/Drizzle/Zod exception that caused the 500;
+2. which payload field caused it;
+3. which frontend payload fields were invalid/mismatched;
+4. which Candidate database columns are canonical;
+5. whether timezone/languages/rate/availability use direct columns or `preferences`;
+6. what was changed in `storage.updateCandidate()`;
+7. what was changed in `PATCH /api/candidates/:id`;
+8. database query used to verify the save;
+9. confirmation that a hard refresh retained the values.
+
+Do not provide a generic answer like "fixed the API."
+
+Tell me exactly why the PATCH was returning 500.

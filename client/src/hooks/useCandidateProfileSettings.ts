@@ -179,22 +179,28 @@ export function useCandidateProfileSettings() {
           ? (candidate.preferences as Record<string, any>)
           : {};
 
+      // fullName / targetPosition / category are NOT NULL in the DB —
+      // send empty strings, not null, or PostgreSQL will throw a constraint violation.
       const patchBody = {
-        fullName:       `${data.firstName} ${data.lastName}`.trim(),
-        phone:          data.phoneNumber || null,
-        location:       data.location    || null,
-        targetPosition: data.title       || null,
-        summary:        data.bio         || null,
-        availability:   data.availability,
+        fullName:       `${data.firstName} ${data.lastName}`.trim() || "",
+        phone:          data.phoneNumber  || null,   // nullable column — null OK
+        location:       data.location     || null,   // nullable column — null OK
+        targetPosition: data.title        ?? "",     // NOT NULL — empty string, not null
+        summary:        data.bio          || null,   // nullable column — null OK
+        availability:   data.availability || "available",
         coreSkills:     data.coreSkills,
         preferences: {
           ...existingPrefs,
           timezone:     data.timezone,
           languages:    data.languages,
           hourlyRate:   data.hourlyRate   || null,
-          rateCurrency: data.rateCurrency,
+          rateCurrency: data.rateCurrency || "USD",
         },
       };
+
+      if (import.meta.env.DEV) {
+        console.log("Candidate settings PATCH payload", patchBody);
+      }
 
       const res = await fetch(`/api/candidates/${auth.candidateId}`, {
         method: "PATCH",
@@ -206,8 +212,11 @@ export function useCandidateProfileSettings() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as any).error || `Save failed (${res.status})`);
+        const result = await res.json().catch(() => null);
+        console.error("Candidate settings API error:", result);
+        throw new Error(
+          result?.message || result?.error || `Failed to update candidate (${res.status})`
+        );
       }
       return res.json(); // sanitised candidate row
     },

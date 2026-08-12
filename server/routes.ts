@@ -4762,13 +4762,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "You are not authorized to edit this profile" });
       }
 
-      // Never allow overwriting passwordHash through PATCH
-      const { passwordHash: _stripped, ...safeBody } = req.body;
-      const updated = await storage.updateCandidate(profileId, safeBody);
+      // Build an explicit allow-list — only confirmed candidates-table columns.
+      // This prevents raw req.body keys from reaching Drizzle's .set() directly.
+      const body = req.body as Record<string, any>;
+
+      const candidateUpdates: Record<string, any> = {};
+
+      // Text columns.
+      // ⚠️  fullName / targetPosition / category are NOT NULL in the schema — coerce null/empty to "".
+      // All other text columns are nullable — null is allowed.
+      if (body.fullName       !== undefined) candidateUpdates.fullName       = body.fullName       ?? "";  // NOT NULL
+      if (body.targetPosition !== undefined) candidateUpdates.targetPosition = body.targetPosition ?? "";  // NOT NULL
+      if (body.category       !== undefined) candidateUpdates.category       = body.category       ?? "";  // NOT NULL
+      if (body.phone          !== undefined) candidateUpdates.phone          = body.phone          || null;
+      if (body.location       !== undefined) candidateUpdates.location       = body.location       || null;
+      if (body.summary        !== undefined) candidateUpdates.summary        = body.summary        || null;
+      if (body.availability   !== undefined) candidateUpdates.availability   = body.availability   || null;
+      if (body.headline       !== undefined) candidateUpdates.headline       = body.headline       || null;
+      if (body.displayName    !== undefined) candidateUpdates.displayName    = body.displayName    || null;
+      if (body.linkedinUrl    !== undefined) candidateUpdates.linkedinUrl    = body.linkedinUrl    || null;
+      if (body.githubUrl      !== undefined) candidateUpdates.githubUrl      = body.githubUrl      || null;
+      if (body.portfolioUrl   !== undefined) candidateUpdates.portfolioUrl   = body.portfolioUrl   || null;
+      if (body.websiteUrl     !== undefined) candidateUpdates.websiteUrl     = body.websiteUrl     || null;
+      if (body.seniority      !== undefined) candidateUpdates.seniority      = body.seniority      || null;
+      if (body.experienceYears !== undefined) candidateUpdates.experienceYears = body.experienceYears || null;
+      // Allow clearing profilePhotoUrl (e.g. remove photo sets it to null)
+      if ("profilePhotoUrl" in body)       candidateUpdates.profilePhotoUrl = body.profilePhotoUrl ?? null;
+
+      // Array columns (text[])
+      if (body.coreSkills !== undefined) {
+        candidateUpdates.coreSkills = Array.isArray(body.coreSkills) ? body.coreSkills : [];
+      }
+      if (body.secondarySkills !== undefined) {
+        candidateUpdates.secondarySkills = Array.isArray(body.secondarySkills) ? body.secondarySkills : [];
+      }
+
+      // JSONB columns — merge preferences so existing keys (workSetup, shift, etc.) survive
+      if (body.preferences !== undefined && typeof body.preferences === "object") {
+        // Fetch the current row so we can merge preferences safely
+        const existing = await storage.getCandidate(profileId);
+        const existingPrefs = (existing?.preferences && typeof existing.preferences === "object")
+          ? (existing.preferences as Record<string, any>)
+          : {};
+        candidateUpdates.preferences = { ...existingPrefs, ...body.preferences };
+      }
+      if (body.workHistory !== undefined && Array.isArray(body.workHistory)) {
+        candidateUpdates.workHistory = body.workHistory;
+      }
+      if (body.education !== undefined && Array.isArray(body.education)) {
+        candidateUpdates.education = body.education;
+      }
+      if (body.certifications !== undefined && Array.isArray(body.certifications)) {
+        candidateUpdates.certifications = body.certifications;
+      }
+
+      // Boolean columns
+      if (body.profileCompleted !== undefined) candidateUpdates.profileCompleted = Boolean(body.profileCompleted);
+      if (body.accountCreated   !== undefined) candidateUpdates.accountCreated   = Boolean(body.accountCreated);
+
+      // Always stamp the update time
+      candidateUpdates.updatedAt = new Date();
+
+      console.log(`PATCH /api/candidates/${profileId} — updating fields:`, Object.keys(candidateUpdates));
+
+      if (Object.keys(candidateUpdates).length <= 1) {
+        // Only updatedAt — nothing useful to update
+        return res.status(400).json({ error: "No valid fields provided for update" });
+      }
+
+      const updated = await storage.updateCandidate(profileId, candidateUpdates as any);
       if (!updated) return res.status(404).json({ error: "Candidate not found" });
       res.json(sanitizeCandidate(updated));
     } catch (error) {
-      console.error("PATCH /api/candidates/:id error:", error);
+      const pgErr = error as any;
+      console.error("PATCH /api/candidates/:id FAILED", {
+        candidateId: req.params.id,
+        message:     pgErr instanceof Error ? pgErr.message : String(pgErr),
+        code:        pgErr?.code,
+        column:      pgErr?.column,
+        constraint:  pgErr?.constraint,
+        detail:      pgErr?.detail,
+        stack:       pgErr instanceof Error ? pgErr.stack?.split("\n").slice(0, 5).join(" | ") : undefined,
+      });
       res.status(500).json({ error: "Failed to update candidate" });
     }
   });
