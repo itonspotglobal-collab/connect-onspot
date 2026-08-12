@@ -1,0 +1,632 @@
+FIX THE PROFILE PHOTO FUNCTIONALITY IN `ProfileSettings`.
+
+CURRENT BUG:
+
+Uploading a profile photo from:
+
+`Profile Settings → Basic Information → Profile Photo`
+
+fails with:
+
+`Upload failed`
+`Request failed with status code 401`
+
+However, uploading/changing the profile photo from the existing **Talent Profile page already works correctly**.
+
+DO NOT create another independent upload system.
+
+Use the WORKING Talent Profile implementation as the source of truth.
+
+Also add the ability for users to adjust/crop the visible placement of their profile photo.
+
+---
+
+# PART 1 — TRACE THE WORKING TALENT PROFILE PHOTO UPLOAD
+
+First inspect the actual working Talent Profile page.
+
+Search for:
+
+```text
+profilePicture
+profile photo
+Upload Photo
+Replace Photo
+/api/profile
+/api/profiles
+/api/profile-picture
+ObjectUploader
+FormData
+uploadURL
+photo
+avatar
+```
+
+Find the EXACT code used when the Talent Profile page successfully uploads the user's photo.
+
+Identify:
+
+* API endpoint
+* request method
+* authentication mechanism
+* whether it uses `authAPI`
+* whether it uses `fetch`
+* whether cookies/credentials are included
+* whether it uploads through object storage first
+* required request body
+* multipart field name
+* query invalidation
+* profile refresh logic
+
+DO NOT assume `/api/profiles/me/photo` is correct simply because ProfileSettings currently uses it.
+
+---
+
+# PART 2 — REUSE THE WORKING IMPLEMENTATION
+
+The Settings page currently has its own implementation similar to:
+
+```tsx
+const formData = new FormData();
+formData.append("photo", file);
+
+await authAPI.post("/api/profiles/me/photo", formData);
+```
+
+This currently returns 401.
+
+REPLACE this flow with the SAME implementation used by the working Talent Profile page.
+
+Do not maintain two different photo-upload implementations.
+
+Prefer extracting the working logic into a shared hook/helper such as:
+
+```tsx
+useProfilePhoto()
+```
+
+or:
+
+```tsx
+uploadProfilePhoto()
+removeProfilePhoto()
+```
+
+Then use the SAME helper from:
+
+* Talent Profile
+* Profile Settings
+* any other profile-photo UI
+
+This should provide one source of truth.
+
+---
+
+# PART 3 — INVESTIGATE THE 401
+
+Before changing random authentication code, inspect why this specific request returns 401.
+
+Check:
+
+* Does `authAPI.post()` automatically attach the authorization token?
+* Does it correctly handle `FormData`?
+* Is it forcing `Content-Type: application/json`?
+* Is the multipart boundary being lost?
+* Does the working Talent Profile implementation use another API client?
+* Does the route require cookie authentication?
+* Is `credentials: "include"` missing?
+* Is `/api/profiles/me/photo` even the same protected endpoint used by Talent Profile?
+* Is the server expecting another form field name?
+* Does the existing photo route use the authenticated `user.id` differently?
+
+DO NOT bypass authentication.
+
+DO NOT make the photo endpoint public.
+
+Fix the client request to use the same secure authenticated method that is already proven to work.
+
+---
+
+# PART 4 — DO NOT BREAK EXISTING PROFILE DATA
+
+After upload succeeds:
+
+Refresh/invalidate all data that depends on the profile photo.
+
+At minimum inspect and refresh the actual query keys used for:
+
+```text
+/api/profiles/me
+authenticated user
+Talent Profile
+TopNavigation avatar
+Talent Profile dropdown avatar
+Profile Settings avatar
+```
+
+The new image should appear immediately in:
+
+1. Profile Settings
+2. Talent Profile hero/avatar
+3. TopNavigation Talent Profile trigger
+4. Account dropdown
+
+without requiring logout/login.
+
+If necessary, invalidate the shared authenticated-user/profile query rather than manually updating each component.
+
+---
+
+# PART 5 — FIX PHOTO REMOVAL TOO
+
+Profile Settings also has a Remove Photo action.
+
+Make sure photo deletion uses the SAME backend/authentication system as the working profile feature.
+
+After deletion:
+
+* remove image from database/profile record
+* refresh profile query
+* restore initials/default avatar
+* update navbar avatar
+* update Talent Profile avatar
+
+Do not leave stale cached images.
+
+---
+
+# PART 6 — ADD PROFILE PHOTO POSITION / CROP EDITOR
+
+After a user uploads a photo, do NOT immediately lock the image to `object-position: center`.
+
+Open a small editor allowing the user to control how their photo appears inside the circular avatar.
+
+Desired flow:
+
+```text
+Choose Photo
+    ↓
+Upload / preview
+    ↓
+Adjust Photo
+┌────────────────────────────┐
+│                            │
+│       circular crop        │
+│       preview              │
+│                            │
+└────────────────────────────┘
+
+Drag image to reposition
+
+Zoom  ━━━━━━━━━━━●━━━━
+
+[Cancel]     [Save Position]
+```
+
+---
+
+# PART 7 — DRAG TO REPOSITION
+
+Allow the photo to be dragged horizontally and vertically behind a circular crop mask.
+
+The circular preview should match how the actual avatar will appear.
+
+Support:
+
+* mouse drag
+* touch drag
+* mobile gestures
+
+Do NOT physically distort the image.
+
+Maintain original aspect ratio.
+
+Use:
+
+```css
+object-fit: cover;
+```
+
+with adjustable positioning.
+
+---
+
+# PART 8 — ZOOM CONTROL
+
+Add a simple zoom slider.
+
+Example range:
+
+```text
+1x → 2.5x
+```
+
+Default:
+
+```text
+1x
+```
+
+Allow the user to zoom in enough to properly frame their face.
+
+Prevent zooming out far enough to expose empty space inside the circular crop.
+
+---
+
+# PART 9 — STORE THE PHOTO POSITION
+
+Photo placement must persist after refresh.
+
+Do NOT keep crop coordinates only in React state.
+
+First inspect the existing profile schema for fields such as:
+
+```text
+profilePhotoPosition
+profilePhotoX
+profilePhotoY
+avatarPosition
+cropX
+cropY
+photoScale
+zoom
+```
+
+If fields already exist, reuse them.
+
+If they do NOT exist, add minimal fields to the existing talent/profile model, for example:
+
+```ts
+profilePhotoPositionX
+profilePhotoPositionY
+profilePhotoScale
+```
+
+Suggested defaults:
+
+```text
+X = 50
+Y = 50
+Scale = 1
+```
+
+Use percentages for X/Y where practical.
+
+Do NOT create a separate profile-photo database table unless architecture truly requires it.
+
+---
+
+# PART 10 — BACKEND UPDATE
+
+Extend the existing authenticated profile update API to save photo placement.
+
+Example payload:
+
+```json
+{
+  "profilePhotoPositionX": 50,
+  "profilePhotoPositionY": 35,
+  "profilePhotoScale": 1.25
+}
+```
+
+Use the existing profile update endpoint if appropriate.
+
+Do not create unnecessary duplicate APIs.
+
+Validate values server-side.
+
+Example bounds:
+
+```text
+X: 0–100
+Y: 0–100
+Scale: 1–2.5
+```
+
+---
+
+# PART 11 — USE SAVED POSITION EVERYWHERE
+
+All avatar/profile-photo renderers must honor the saved placement.
+
+Create one reusable component if practical:
+
+```tsx
+<ProfileAvatar
+  src={...}
+  positionX={...}
+  positionY={...}
+  scale={...}
+/>
+```
+
+Use it in:
+
+* Talent Profile
+* Profile Settings
+* TopNavigation
+* Talent Profile dropdown/account panel
+* any other user avatar using this profile photo
+
+Do NOT implement slightly different cropping logic in every page.
+
+---
+
+# PART 12 — VISUAL IMPLEMENTATION
+
+For normal rendering, use the stored placement.
+
+Conceptually:
+
+```tsx
+<img
+  src={photoUrl}
+  alt="Profile"
+  style={{
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    objectPosition: `${positionX}% ${positionY}%`,
+  }}
+/>
+```
+
+If zoom requires transforms, implement the shared avatar wrapper carefully so the crop stays centered and circular.
+
+Do not let the image overflow outside the avatar.
+
+---
+
+# PART 13 — PROFILE SETTINGS UI
+
+Keep the existing branded Settings UI.
+
+Under `Profile Photo`, provide:
+
+```text
+[ current circular avatar ]
+
+[ Replace Photo ]
+[ Adjust Position ]
+[ Remove Photo ]
+
+JPG, PNG, WebP or GIF · Max 5 MB
+```
+
+If no photo exists:
+
+```text
+[ Upload Photo ]
+```
+
+Do not show `Adjust Position` until a profile photo exists.
+
+Use the existing OnSpot:
+
+* indigo
+* violet
+* pale lavender
+* white
+* gold accent
+
+styling.
+
+---
+
+# PART 14 — ADJUST POSITION MODAL
+
+Clicking:
+
+`Adjust Position`
+
+should open a modal/dialog.
+
+Suggested header:
+
+```text
+Adjust profile photo
+Drag and zoom your photo until it looks right.
+```
+
+Large circular preview in center.
+
+Controls:
+
+```text
+Zoom
+────────●──────
+```
+
+Actions:
+
+```text
+Cancel
+Save Position
+```
+
+`Save Position` should:
+
+1. persist coordinates/scale
+2. close modal
+3. refresh profile data
+4. immediately update every avatar instance
+
+---
+
+# PART 15 — DO NOT RE-UPLOAD FOR POSITION CHANGES
+
+Changing position or zoom should NOT upload the image file again.
+
+Only save crop/placement metadata.
+
+This keeps adjustment fast and avoids creating duplicate files.
+
+---
+
+# PART 16 — IMAGE CACHE
+
+The existing Settings component currently forces photo refresh using a `photoVersion` query parameter.
+
+Keep or improve this behavior where necessary.
+
+After replacing a photo:
+
+* invalidate profile queries
+* ensure the browser does not keep displaying the previous cached photo
+
+Avoid adding timestamps continuously on every render.
+
+Only bust cache when photo content changes.
+
+---
+
+# PART 17 — ERROR HANDLING
+
+Replace the generic:
+
+`Request failed with status code 401`
+
+toast with useful handling.
+
+For authentication errors:
+
+```text
+Your session could not authorize this upload. Please sign in again.
+```
+
+But this should only be a fallback.
+
+The primary objective is to FIX the authentication flow so valid logged-in users can upload successfully.
+
+Upload validation:
+
+* supported image types only
+* maximum 5 MB
+* show clear error messages
+
+Do not start crop editing if upload fails.
+
+---
+
+# PART 18 — LOADING STATES
+
+While uploading:
+
+```text
+Uploading…
+```
+
+Disable:
+
+* Replace Photo
+* Remove Photo
+* Save Position
+
+during relevant mutations.
+
+While saving placement:
+
+```text
+Saving position…
+```
+
+Prevent duplicate requests.
+
+---
+
+# PART 19 — TEST EXACT FLOW
+
+Test this with an authenticated Talent account.
+
+### Upload from Settings
+
+1. Go to `/settings`.
+2. Basic Information.
+3. Click Upload/Replace Photo.
+4. Choose valid JPG/PNG.
+5. Upload succeeds — NO 401.
+6. New photo appears.
+7. Open Adjust Position.
+8. Drag image.
+9. Zoom image.
+10. Save.
+11. Refresh page.
+12. Position remains.
+
+### Verify Talent Profile
+
+Navigate to Talent Profile.
+
+The same:
+
+* image
+* crop
+* positioning
+
+must appear.
+
+### Verify navbar
+
+Check TopNavigation.
+
+The Talent Profile avatar must use the same updated image.
+
+### Verify dropdown
+
+Open account dropdown.
+
+Same avatar/crop must appear.
+
+### Replace photo
+
+Replace it again from Settings.
+
+All locations update.
+
+### Remove photo
+
+Remove it.
+
+All locations return to fallback/initials.
+
+---
+
+# PART 20 — DO NOT MODIFY UNRELATED FUNCTIONALITY
+
+Do NOT change:
+
+* Settings routing
+* TopNavigation routing
+* hero carousel
+* Talent Profile sections
+* profile completion calculations except if photo completion naturally changes
+* other Settings fields
+* authentication architecture
+* existing database data
+
+---
+
+# ACCEPTANCE CRITERIA
+
+This task is complete only when:
+
+* Profile Settings photo upload no longer returns 401
+* it uses the same proven upload/auth flow as Talent Profile
+* photo removal works
+* new image updates everywhere
+* user can drag photo position
+* user can zoom photo
+* placement persists in database
+* page refresh preserves placement
+* Talent Profile honors placement
+* TopNavigation avatar honors placement
+* account dropdown honors placement
+* mobile touch adjustment works
+* no duplicate upload architecture is introduced
+
+MOST IMPORTANT:
+
+Do not fix Profile Settings photo upload independently.
+
+**Trace and reuse the photo-upload implementation that already works on Talent Profile.**

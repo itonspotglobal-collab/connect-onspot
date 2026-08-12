@@ -1,0 +1,595 @@
+FIX THE EXISTING PROFILE SETTINGS SAVE FUNCTIONALITY.
+
+CURRENT BUG:
+
+In `/settings`, I can edit:
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+* Professional Details
+* Skills
+
+but clicking:
+
+`Save Settings`
+
+does nothing / changes do not persist.
+
+THIS USED TO WORK.
+
+Do NOT redesign the Settings page.
+Do NOT create another save API.
+Do NOT replace `useTalentProfile()`.
+
+The provided `ProfileSettings` component already has the intended save flow.
+
+The problem is that the existing flow is currently broken.
+
+---
+
+# 1. START FROM THE EXISTING SAVE CODE
+
+The component already uses:
+
+```tsx
+<form onSubmit={form.handleSubmit(onSubmit)}>
+```
+
+and:
+
+```tsx
+const onSubmit = async (data: ProfileFormData) => {
+  if (!authContext?.isAuthenticated || !user?.id) {
+    toast({
+      title: "Authentication Required",
+      description: "Please sign in.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  try {
+    await updateProfile(data);
+
+    if (skills && skills.length > 0) {
+      await updateSkills();
+    }
+
+    toast({
+      title: "Settings saved successfully.",
+      description: "Your profile has been updated."
+    });
+  } catch (error) {
+    ...
+  }
+};
+```
+
+KEEP this architecture unless the actual existing hook requires a small correction.
+
+Do not replace it with a new independent save implementation.
+
+---
+
+# 2. TRACE WHY SUBMIT IS NOT FIRING
+
+Add temporary debugging during development.
+
+Confirm:
+
+1. Save button click fires.
+2. form submission fires.
+3. `form.handleSubmit()` runs.
+4. validation passes or identify which field fails.
+5. `onSubmit(data)` is reached.
+6. `updateProfile(data)` is called.
+7. request reaches backend.
+8. backend returns success/failure.
+9. React Query cache refreshes.
+
+Temporarily log:
+
+```tsx
+console.log("SAVE BUTTON CLICKED");
+```
+
+Then inside `onSubmit`:
+
+```tsx
+console.log("PROFILE SETTINGS SUBMIT", data);
+```
+
+Remove debug logs after fixing.
+
+If the first log appears but the second does not, investigate React Hook Form validation.
+
+---
+
+# 3. ADD AN INVALID-SUBMIT HANDLER
+
+Right now validation may be preventing submission without making the reason obvious.
+
+Change submission handling during diagnosis to:
+
+```tsx
+const onInvalid = (errors: any) => {
+  console.error("Profile validation errors:", errors);
+
+  toast({
+    title: "Please check your information",
+    description: "Some fields need attention before your settings can be saved.",
+    variant: "destructive",
+  });
+};
+```
+
+Then:
+
+```tsx
+<form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
+```
+
+Keep proper inline `FormMessage` validation too.
+
+Do not leave the user clicking Save with zero feedback.
+
+---
+
+# 4. INSPECT `profileFormSchema`
+
+The form uses:
+
+```tsx
+zodResolver(profileFormSchema)
+```
+
+Inspect the exact schema in:
+
+```text
+@/hooks/useTalentProfile
+```
+
+Check every field being submitted against the schema:
+
+* firstName
+* lastName
+* phoneNumber
+* location
+* timezone
+* languages
+* title
+* bio
+* hourlyRate
+* rateCurrency
+* availability
+
+Look for outdated validation rules that no longer match the UI.
+
+Examples:
+
+* required `title` while user is saving Basic Information
+* `bio` requiring a minimum length even though Professional Details is incomplete
+* `hourlyRate` string vs number mismatch
+* undefined/null fields rejected
+* empty phone number rejected unexpectedly
+* languages schema expecting string instead of array
+
+IMPORTANT:
+
+The user must be able to save one settings section without being blocked by invisible validation errors from ANOTHER section.
+
+---
+
+# 5. FIX CROSS-SECTION VALIDATION
+
+This Settings page contains multiple tabs but ONE React Hook Form.
+
+If fields from Professional Details are invalid while the user is editing Basic Information, the global schema may block Basic Information from saving.
+
+Fix this cleanly.
+
+Preferred solution:
+
+Keep one profile model, but ensure optional/incomplete profile fields are actually optional in `profileFormSchema` unless required for the specific operation.
+
+For example:
+
+First Name and Last Name can remain required.
+
+But optional unfinished profile data should not block unrelated saves.
+
+Do NOT weaken truly necessary backend validation.
+
+---
+
+# 6. INSPECT `getDefaultFormValues()`
+
+The form currently uses:
+
+```tsx
+defaultValues: getDefaultFormValues(),
+values: getDefaultFormValues(),
+```
+
+Investigate this carefully.
+
+React Hook Form's `values` prop can continuously overwrite user edits when its input object changes/re-renders.
+
+This can make the form appear editable but reset or interfere with submission.
+
+Check whether `getDefaultFormValues()` creates a NEW object on every render.
+
+If so, fix the synchronization pattern.
+
+Preferred architecture:
+
+```tsx
+const form = useForm<ProfileFormData>({
+  resolver: zodResolver(profileFormSchema),
+  defaultValues: getDefaultFormValues(),
+});
+```
+
+Then when profile data finishes loading:
+
+```tsx
+useEffect(() => {
+  if (profile) {
+    form.reset(getDefaultFormValues());
+  }
+}, [profile]);
+```
+
+Use appropriate stable dependencies.
+
+Do NOT call `form.reset()` on every render.
+
+Do NOT continuously overwrite dirty fields.
+
+---
+
+# 7. TRACE `updateProfile()`
+
+Open:
+
+```text
+@/hooks/useTalentProfile
+```
+
+Find the actual `updateProfile` mutation.
+
+Verify:
+
+* correct API endpoint
+* correct HTTP method
+* authentication attached
+* payload field names match backend
+* undefined values handled correctly
+* numeric fields converted correctly
+* response errors are thrown rather than swallowed
+
+Do not create a new endpoint if the existing one previously worked.
+
+Compare against Git history if this hook was recently changed.
+
+---
+
+# 8. CHECK AUTHENTICATION
+
+The photo upload already showed a 401 problem, so verify that profile saving is not affected by the same authentication regression.
+
+Inspect the Network request when Save Settings is clicked.
+
+If response is:
+
+`401 Unauthorized`
+
+compare the API client with other working authenticated requests.
+
+Ensure:
+
+* Authorization header/token is included
+  OR
+* session cookies are included
+
+depending on the existing architecture.
+
+Do NOT make profile update endpoints public.
+
+---
+
+# 9. CHECK THE SAVE BUTTON ITSELF
+
+The existing button should remain:
+
+```tsx
+type="submit"
+```
+
+Verify nothing changed it to:
+
+```tsx
+type="button"
+```
+
+Ensure it is INSIDE the `<form>` element in the rendered DOM.
+
+Check that no overlay, chat widget, disabled container, or pointer-event style prevents clicking.
+
+Verify:
+
+```tsx
+disabled={isUpdating}
+```
+
+is not permanently true.
+
+If `isUpdating` is stuck true due to mutation state, fix the mutation lifecycle.
+
+---
+
+# 10. FIX SKILLS SAVING
+
+Current logic only calls:
+
+```tsx
+if (skills && skills.length > 0) {
+  await updateSkills();
+}
+```
+
+This has a bug when a user removes ALL skills.
+
+If the user has zero selected skills, the backend may never receive the empty selection.
+
+Change this to correctly persist the current skills state even when it is empty, assuming `updateSkills()` is designed for that.
+
+For example:
+
+```tsx
+await updateSkills();
+```
+
+Do not condition solely on `skills.length > 0`.
+
+Verify with the actual hook implementation first.
+
+---
+
+# 11. PRESERVE BASIC INFORMATION
+
+These values must persist correctly:
+
+```text
+firstName
+lastName
+phoneNumber
+location
+timezone
+languages
+```
+
+Test each individually.
+
+For languages:
+
+* adding a language saves
+* removing a language saves
+* refresh preserves final list
+
+---
+
+# 12. SAVE FEEDBACK
+
+When clicking Save Settings:
+
+IMMEDIATELY show the loading state:
+
+```text
+Saving…
+```
+
+The button should be disabled only while the mutation is active.
+
+On success:
+
+```text
+Settings saved successfully.
+Your profile has been updated.
+```
+
+On failure:
+
+Show the actual meaningful backend error where possible.
+
+Never fail silently.
+
+---
+
+# 13. REFRESH CACHES AFTER SUCCESS
+
+After a successful profile update, invalidate/refetch the profile data used throughout the app.
+
+At minimum confirm query refresh for:
+
+```text
+/api/profiles/me
+authenticated user/profile data
+Talent Profile
+TopNavigation avatar/name
+Profile completion
+```
+
+Use the actual query keys already defined by `useTalentProfile`.
+
+Do not require a full page reload.
+
+---
+
+# 14. UPDATE NAVBAR NAME TOO
+
+If the user changes:
+
+First Name
+or
+Last Name
+
+and saves successfully, the Talent Profile dropdown/navbar should update accordingly if it derives its display name from the same profile/user data.
+
+Invalidate the correct user/auth query.
+
+Do not leave stale names until logout.
+
+---
+
+# 15. PROFILE COMPLETION
+
+After saving information, profile completion should recalculate from the backend/existing hook.
+
+For example, filling First Name/Last Name must update completion if those fields contribute to it.
+
+Do NOT manually increment percentages in the UI.
+
+Use the existing completion calculation.
+
+---
+
+# 16. TEST ALL SETTINGS TABS
+
+Test saving from each state:
+
+### Basic Information
+
+Change:
+
+* First Name
+* Last Name
+* Phone
+* Location
+* Timezone
+* Languages
+
+Save and refresh.
+
+### Professional Details
+
+Change:
+
+* title
+* bio
+* rate
+* currency
+* availability
+
+Save and refresh.
+
+### Skills
+
+Add a skill.
+Save.
+Refresh.
+
+Remove the skill.
+Save.
+Refresh.
+
+### Documents
+
+Do not break existing document mutations.
+
+---
+
+# 17. CHECK BROWSER CONSOLE + NETWORK
+
+Before marking complete:
+
+Open DevTools.
+
+Click Save Settings.
+
+There MUST be an update request visible in Network.
+
+If there is NO request:
+the form submission is still broken.
+
+If there IS a request:
+inspect status and response.
+
+Expected success:
+2xx.
+
+Fix any:
+
+* 400
+* 401
+* 403
+* 404
+* 422
+* 500
+
+according to the existing API contract.
+
+---
+
+# 18. COMPARE WITH GIT HISTORY IF NECESSARY
+
+Because this used to work, use Git history if the current `useTalentProfile()` implementation is clearly regressed.
+
+Search:
+
+```bash
+git log -S"updateProfile" --all
+git log -S"profileFormSchema" --all
+git log -S"getDefaultFormValues" --all
+```
+
+Compare the previous working save implementation.
+
+Restore only the relevant behavior.
+
+Do NOT revert the entire application.
+
+---
+
+# ACCEPTANCE TEST
+
+The task is complete only when:
+
+1. Open `/settings`.
+2. Change First Name.
+3. Click Save Settings.
+4. Button changes to `Saving…`.
+5. Success toast appears.
+6. Refresh.
+7. New First Name is still there.
+
+Repeat for:
+
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+
+Then verify:
+
+* Talent Profile reflects updated data
+* TopNavigation reflects updated name/avatar where applicable
+* Profile completion updates correctly
+* no console errors
+* no silent validation failure
+* no 401/other failed save request
+
+MOST IMPORTANT:
+
+DO NOT rebuild the Settings form.
+
+Trace and repair the existing:
+
+`React Hook Form → onSubmit → updateProfile() → backend`
+
+pipeline.
