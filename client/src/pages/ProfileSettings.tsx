@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { TimezoneSelect } from "@/components/TimezoneSelect";
 import {
   useTalentProfile,
   profileFormSchema,
@@ -456,20 +457,13 @@ export default function ProfileSettings() {
                             <Clock style={{ width: 15, height: 15, color: I }} />
                             Timezone
                           </FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <StyledSelectTrigger data-testid="select-timezone">
-                                <SelectValue placeholder="Select timezone" />
-                              </StyledSelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Asia/Manila">Asia/Manila (GMT+8)</SelectItem>
-                              <SelectItem value="America/New_York">America/New_York (GMT-5)</SelectItem>
-                              <SelectItem value="Europe/London">Europe/London (GMT+0)</SelectItem>
-                              <SelectItem value="Asia/Tokyo">Asia/Tokyo (GMT+9)</SelectItem>
-                              <SelectItem value="Australia/Sydney">Australia/Sydney (GMT+10)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <TimezoneSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              data-testid="select-timezone"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
