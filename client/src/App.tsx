@@ -294,17 +294,18 @@ function TalentRouter() {
   );
 }
 
-// Named component so React never re-creates its identity on each render.
-// Handles the isLoading window: shows a spinner while JWT is being verified,
-// then branches by role once auth is resolved. Without this guard the
-// inline-arrow pattern that was here before would read user===null during
-// the loading window and immediately render PublicRouter → Coming Soon.
+// SettingsRoute — named component so React preserves its identity across
+// renders. Guards against the auth-loading race condition: the old inline
+// arrow function read user===null during the JWT verification window and
+// immediately fell through to PublicRouter → Coming Soon. This component
+// shows a spinner while loading, then renders ProfileSettings directly
+// (no nested ProtectedRoute wrappers whose own redirect useEffects could
+// race against this one). Unauthenticated users are redirected to /login.
 function SettingsRoute() {
   const { isLoading, user } = useAuth();
   const [, navigate] = useLocation();
 
-  // Hooks must all be at the top level — no hooks after conditional returns.
-  // Redirect to login once auth has resolved and there is no valid user.
+  // All hooks at top level — no hooks after conditional returns.
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/login");
@@ -322,27 +323,28 @@ function SettingsRoute() {
     );
   }
 
-  if (user?.role === "client") {
-    return (
-      <ClientProtectedRoute>
-        <ClientLayout>
-          <ProfileSettings />
-        </ClientLayout>
-      </ClientProtectedRoute>
-    );
-  }
-
+  // Auth resolved — render ProfileSettings directly. We do NOT nest
+  // TalentProtectedRoute / ClientProtectedRoute here because those components
+  // run their own redirect useEffects independently, and a timing difference
+  // can cause a logged-in talent to get bounced even when auth is fine.
   if (user?.role === "talent") {
     return (
-      <TalentProtectedRoute>
-        <div className="min-h-screen bg-background">
-          <ProfileSettings />
-        </div>
-      </TalentProtectedRoute>
+      <div className="min-h-screen bg-background">
+        <ProfileSettings />
+      </div>
     );
   }
 
-  return null; // useEffect above redirects to /login
+  if (user?.role === "client") {
+    return (
+      <ClientLayout>
+        <ProfileSettings />
+      </ClientLayout>
+    );
+  }
+
+  // Unauthenticated or unknown role — useEffect above navigates to /login.
+  return null;
 }
 
 function AppContent() {

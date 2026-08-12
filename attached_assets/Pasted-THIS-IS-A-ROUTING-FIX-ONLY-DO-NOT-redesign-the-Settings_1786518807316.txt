@@ -1,0 +1,409 @@
+THIS IS A ROUTING FIX ONLY.
+
+DO NOT redesign the Settings page.
+DO NOT create a new Settings page.
+DO NOT create another placeholder.
+DO NOT touch the new navbar design.
+
+There is ALREADY an existing working Profile Settings implementation in this project.
+
+The problem is that:
+
+`/settings`
+
+is STILL rendering the generic:
+
+“COMING SOON”
+“The next evolution of outsourcing.”
+
+page.
+
+I need you to FIND THE EXISTING PROFILE SETTINGS COMPONENT AND ROUTE `/settings` TO IT NOW.
+
+---
+
+## 1. FIND THE EXISTING PROFILE SETTINGS CODE
+
+Search the ENTIRE repository for the actual Profile Settings page.
+
+Search exact strings from the old working page:
+
+`Profile Settings`
+
+`Manage your profile information and preferences`
+
+`Basic Information`
+
+`Professional Details`
+
+`Skills & Expertise`
+
+`Documents`
+
+`Profile Status`
+
+`Save Settings`
+
+Also search filenames/components such as:
+
+`ProfileSettings`
+`ProfileSettingsPage`
+`TalentSettings`
+`SettingsPage`
+`TalentProfileSettings`
+`BasicInformation`
+`ProfessionalDetails`
+`SkillsExpertise`
+
+DO NOT recreate these components.
+
+Find the EXISTING implementation.
+
+---
+
+## 2. IDENTIFY THE FILE THAT CURRENTLY OWNS `/settings`
+
+Search all route declarations for:
+
+`/settings`
+
+There may be more than one.
+
+Search for:
+
+```tsx
+path="/settings"
+```
+
+and:
+
+```ts
+"/settings"
+```
+
+Also search route maps, switch statements, protected routes, nested routes, and catch-all routing.
+
+Determine exactly which route is being matched in the browser.
+
+The screenshot proves that the ACTIVE route currently resolves to the Coming Soon page.
+
+---
+
+## 3. REMOVE THE WRONG ROUTE MAPPING
+
+Find code equivalent to:
+
+```tsx
+<Route path="/settings" component={ComingSoonPage} />
+```
+
+or:
+
+```tsx
+<Route path="/settings">
+  <ComingSoonPage />
+</Route>
+```
+
+or:
+
+```ts
+{
+  path: "/settings",
+  component: ComingSoon
+}
+```
+
+or any fallback/catch-all causing `/settings` to render the placeholder.
+
+REMOVE ONLY THAT WRONG MAPPING.
+
+Do NOT delete the Coming Soon component globally if other unfinished routes use it.
+
+---
+
+## 4. CONNECT `/settings` TO THE EXISTING PROFILE SETTINGS COMPONENT
+
+Once the existing working component is found, wire it directly to `/settings`.
+
+Conceptually:
+
+```tsx
+<Route path="/settings">
+  <ProfileSettings />
+</Route>
+```
+
+or the correct syntax for the router already used by this project.
+
+Reuse the existing authenticated/protected-route wrapper if the old Settings page had one.
+
+DO NOT create a duplicate settings route.
+
+---
+
+## 5. ROUTE ORDER / FALLBACK CHECK
+
+Check whether a wildcard route is stealing `/settings`, for example:
+
+```tsx
+<Route path="*" component={ComingSoonPage} />
+```
+
+or:
+
+```tsx
+/:slug
+```
+
+If route ordering matters in the current router, ensure `/settings` is matched BEFORE the fallback.
+
+The intended flow is:
+
+`/settings`
+→ Existing Profile Settings component
+
+NOT:
+
+`/settings`
+→ wildcard
+→ Coming Soon
+
+---
+
+## 6. KEEP THE NEW NAVBAR
+
+Do NOT restore the old navigation bar.
+
+Keep the newly designed top navbar exactly as it is.
+
+Keep:
+
+* OnSpot logo
+* Hire Talent
+* Find Work
+* Talent Profile trigger
+* current dropdown design
+* user avatar/initial
+* authentication state
+
+The ONLY navbar-related requirement is:
+
+Settings menu item
+→ `/settings`
+
+---
+
+## 7. VERIFY THE DROPDOWN SETTINGS LINK
+
+Find the ACTIVE dropdown component.
+
+The Settings item should navigate to:
+
+```ts
+/settings
+```
+
+Use the application's existing router navigation method.
+
+Do not use a different route unless the existing Profile Settings component truly uses another canonical route.
+
+If the old settings page was previously accessible under another route, either:
+
+A. map `/settings` to that same component, preferred,
+
+or
+
+B. redirect `/settings` to that old route.
+
+Do not leave `/settings` pointing to Coming Soon.
+
+---
+
+## 8. DO NOT REBUILD THE SETTINGS PAGE
+
+The old working page already contained:
+
+LEFT:
+
+Settings
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+
+Profile Status
+Completion percentage
+Progress bar
+
+RIGHT:
+
+Basic Information
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+* Save Settings
+
+Use the existing code for this.
+
+Do NOT build another version.
+
+---
+
+## 9. PRESERVE EXISTING FUNCTIONALITY
+
+The restored page must retain the old:
+
+* database queries
+* authenticated user data
+* profile completion calculation
+* form values
+* validation
+* save/update mutation
+* professional details
+* skills
+* documents
+* timezone handling
+* language tags
+* API calls
+
+This task is not complete if only the UI appears.
+
+The page must function exactly as it did before.
+
+---
+
+## 10. PROVE YOU FOUND THE CORRECT COMPONENT
+
+Before changing the route, inspect the existing Profile Settings component and confirm that it contains the real settings UI.
+
+Do not assume based on filename alone.
+
+Verify it contains strings/components such as:
+
+`Basic Information`
+`Professional Details`
+`Skills & Expertise`
+`Documents`
+
+Only then connect it to `/settings`.
+
+---
+
+## 11. CHECK GIT HISTORY ONLY IF NECESSARY
+
+If the current repository somehow no longer contains the Settings component, inspect Git history.
+
+Use commands such as:
+
+```bash
+git log -S"Profile Settings" --all
+```
+
+```bash
+git log -S"Basic Information" --all
+```
+
+```bash
+git log -S"Professional Details" --all
+```
+
+```bash
+git log --all -- "*Settings*"
+```
+
+Recover ONLY the existing Settings implementation from history.
+
+Do NOT revert the entire project.
+
+---
+
+## 12. RESTART AND VERIFY
+
+After fixing the route:
+
+1. Stop the dev server.
+2. Restart it.
+3. Hard refresh the browser.
+4. Visit `/settings` directly.
+5. Confirm the real Profile Settings page appears.
+6. Confirm the Coming Soon page does NOT appear.
+7. Open the Talent Profile dropdown.
+8. Click Settings.
+9. Confirm it opens the same Profile Settings page.
+
+---
+
+## 13. FUNCTIONAL TEST
+
+On the restored Settings page verify:
+
+* authenticated talent data loads
+* First Name loads
+* Last Name loads
+* Phone Number loads
+* Location loads
+* Timezone loads
+* Languages load
+* completion percentage loads
+* all Settings tabs open
+* Save Settings works
+
+Change one safe test value.
+Save it.
+Refresh the page.
+
+The value must persist.
+
+---
+
+## 14. DEVTOOLS CHECK
+
+Inspect the rendered React component/DOM.
+
+The `/settings` page must now contain:
+
+`Profile Settings`
+`Basic Information`
+`Professional Details`
+`Skills & Expertise`
+`Documents`
+
+If DevTools still contains:
+
+`COMING SOON`
+
+or:
+
+`The next evolution of outsourcing`
+
+then the route is STILL WRONG.
+
+Do not mark complete.
+
+---
+
+## ACCEPTANCE CRITERIA
+
+Complete this task ONLY when:
+
+* `/settings` no longer renders Coming Soon
+* the EXISTING Profile Settings page is restored
+* no duplicate Settings page is created
+* Settings dropdown link opens it
+* new navbar remains unchanged
+* existing forms/data/API behavior works
+* existing save/update functionality works
+* all old Settings tabs are present
+* refresh preserves saved data
+* no routing fallback intercepts `/settings`
+
+THIS IS A REROUTE/RESTORE TASK.
+
+DO NOT SOLVE IT BY CREATING ANOTHER SETTINGS PAGE.
+FIND THE EXISTING CODE AND ROUTE `/settings` TO IT.

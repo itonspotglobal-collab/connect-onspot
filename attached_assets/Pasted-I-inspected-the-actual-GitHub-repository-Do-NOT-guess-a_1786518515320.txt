@@ -1,0 +1,347 @@
+I inspected the actual GitHub repository. Do NOT guess anymore.
+
+Repository:
+`itonspotglobal-collab/connect-onspot`
+
+The repository already contains:
+
+`client/src/pages/ProfileSettings.tsx`
+
+and `client/src/App.tsx` already imports:
+
+`ProfileSettings from "@/pages/ProfileSettings"`
+
+The redesigned Talent dropdown in:
+
+`client/src/components/TopNavigation.tsx`
+
+already has:
+
+`navigate("/settings")`
+
+for the Settings menu item.
+
+So DO NOT rewrite the dropdown link again.
+
+The actual bug is that the deployed/current app is not consistently rendering the existing `ProfileSettings` component when `/settings` is requested.
+
+TASK:
+TRACE AND FIX THE ROUTING EXECUTION PATH FOR `/settings`.
+
+## 1. Confirm current source matches deployed source
+
+Inspect the current working tree, not only GitHub history.
+
+Verify these files in the active Replit workspace:
+
+* `client/src/App.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/pages/ProfileSettings.tsx`
+
+Confirm the active workspace contains the same logic as the repository.
+
+If the workspace differs from GitHub, explain internally which file differs and fix the ACTIVE workspace version.
+
+Do not edit an unused copy.
+
+## 2. Keep the dropdown Settings handler
+
+In `TopNavigation.tsx`, Settings should remain:
+
+```tsx
+navigate("/settings")
+```
+
+Do not redirect Settings to `/talent-profile/:id`.
+
+Do not touch this handler unless the active workspace still differs.
+
+## 3. Inspect AppContent route order
+
+In `client/src/App.tsx`, there is already a `/settings` route near the bottom of `AppContent`.
+
+It currently behaves roughly like:
+
+```tsx
+<Route path="/settings" component={() => {
+  const { user } = useAuth();
+
+  if (user?.role === "client") {
+    return (
+      <ClientProtectedRoute>
+        <ClientLayout>
+          <ProfileSettings />
+        </ClientLayout>
+      </ClientProtectedRoute>
+    );
+  }
+
+  if (user?.role === "talent") {
+    return (
+      <TalentProtectedRoute>
+        <div className="min-h-screen bg-background">
+          <ProfileSettings />
+        </div>
+      </TalentProtectedRoute>
+    );
+  }
+
+  return <PublicRouter />;
+}} />
+```
+
+Do not remove `ProfileSettings`.
+
+Instead, determine why this branch is not being reached or why `user?.role` is wrong/empty at the moment `/settings` loads.
+
+## 4. Check authentication loading state
+
+A likely problem is that `/settings` evaluates before auth has finished loading.
+
+Inspect:
+
+* `useAuth()`
+* `isLoading`
+* `user`
+* `user.role`
+
+If `/settings` renders while auth is still loading and falls into:
+
+```tsx
+return <PublicRouter />
+```
+
+then the app can incorrectly show the public/placeholder route.
+
+Fix that.
+
+The `/settings` route must wait for authentication state to resolve before deciding which page to render.
+
+Implement a proper loading branch such as:
+
+```tsx
+if (isLoading) {
+  return <SettingsLoadingState />;
+}
+```
+
+Then:
+
+```tsx
+if (user?.role === "talent") {
+  return (
+    <TalentProtectedRoute>
+      <ProfileSettings />
+    </TalentProtectedRoute>
+  );
+}
+```
+
+Do NOT fall back to PublicRouter while authentication is still unresolved.
+
+## 5. Inspect DomainRouter
+
+`App` wraps `AppContent` with:
+
+`<DomainRouter>`
+
+Inspect `client/src/components/DomainRouter.tsx`.
+
+Determine whether `/settings` is being intercepted based on hostname/domain.
+
+The user has tested URLs on different Replit domains.
+
+Make sure `DomainRouter` does not send `/settings` to:
+
+* public marketing router
+* ComingSoon
+* another app shell
+* talent profile
+
+Authenticated application routes like `/settings` must be preserved regardless of preview/staging hostname unless explicitly intended otherwise.
+
+## 6. Inspect NewUserOnboardingWrapper
+
+`AppContent` is also wrapped in:
+
+`<NewUserOnboardingWrapper>`.
+
+Check whether this wrapper redirects talent users based on onboarding/profile completion.
+
+It must NOT override an explicit `/settings` navigation and redirect the user to:
+
+`/talent-profile/:id`
+
+unless that behavior is intentionally required.
+
+For `/settings`, allow the route through.
+
+## 7. Inspect TalentProtectedRoute
+
+Open:
+
+`client/src/components/ProtectedRoute.tsx`
+
+Check `TalentProtectedRoute`.
+
+Make sure it:
+
+* accepts a logged-in talent
+* does not redirect `/settings` to TalentProfile
+* does not redirect incomplete profiles away from Settings
+* does not use stale onboarding logic
+
+Settings must be one of the routes a talent is always allowed to access.
+
+## 8. Inspect catch-all behavior
+
+`TalentRouter` contains:
+
+```tsx
+<Route path="/settings" component={ProfileSettings} />
+<Route component={TalentPortal} />
+```
+
+and `AppContent` also contains a top-level `/settings` route.
+
+This duplication may be contributing to confusing routing behavior.
+
+Do not blindly delete routes.
+
+Trace which one is actually used.
+
+Prefer ONE authoritative `/settings` route at the AppContent level if that is the current architecture.
+
+If `TalentRouter` is currently unused because talent portal routes are redirected, remove or clearly isolate stale duplicate routing only if safe.
+
+## 9. Verify ProfileSettings component itself
+
+Open:
+
+`client/src/pages/ProfileSettings.tsx`
+
+Confirm it is the real settings implementation shown in the old screenshot:
+
+* Profile Settings
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+* Profile Status
+* Save Settings
+
+Do not replace it with a new page.
+
+Reuse and modernize this component only after routing works.
+
+## 10. Add temporary route diagnostics
+
+Temporarily log:
+
+```tsx
+console.log("[SETTINGS ROUTE]", {
+  pathname: window.location.pathname,
+  isLoading,
+  user,
+  role: user?.role
+});
+```
+
+Also add temporary logs inside:
+
+* DomainRouter
+* NewUserOnboardingWrapper
+* TalentProtectedRoute
+
+Only for `/settings`.
+
+Determine exactly which component redirects or replaces the page.
+
+Remove all debug logs after fixing.
+
+## 11. Required expected behavior
+
+Logged-in talent:
+
+```text
+Talent Profile dropdown
+→ Settings
+→ /settings
+→ ProfileSettings.tsx
+```
+
+Logged-in client:
+
+```text
+/settings
+→ ClientLayout
+→ ProfileSettings.tsx
+```
+
+Unauthenticated user:
+
+follow existing login/protected-route behavior.
+
+At no point should a logged-in talent going to `/settings` land on:
+
+* `/talent-profile/:id`
+* Coming Soon
+* TalentPortal
+* PublicRouter homepage
+
+## 12. Do not touch these
+
+Do NOT redesign or break:
+
+* homepage
+* hero carousel
+* Talent Profile route
+* Find Work
+* Hire Talent
+* navbar visual design
+* account dropdown visual design
+* auth backend
+* profile APIs
+
+This task is routing/state resolution first.
+
+## 13. Browser verification
+
+After fixing:
+
+1. Start app fresh.
+2. Login as the same talent account.
+3. Open Talent Profile dropdown.
+4. Click Settings.
+5. Confirm browser URL is exactly `/settings`.
+6. Confirm page displays `Profile Settings`.
+7. Confirm Basic Information appears.
+8. Refresh directly on `/settings`.
+9. Confirm it STILL displays Profile Settings.
+10. Open `/settings` in a new tab.
+11. Confirm it STILL works.
+12. Confirm no redirect to `/talent-profile/:id`.
+13. Confirm no Coming Soon page.
+14. Check browser console for routing/auth errors.
+
+Do not mark complete until direct refresh on `/settings` works.
+
+## 14. Only after routing works, improve branding
+
+Then update `ProfileSettings.tsx` UI to use the current OnSpot brand:
+
+* indigo/violet active navigation
+* white cards
+* subtle lavender borders
+* modern form fields
+* gradient Save Settings button
+* preserve ALL existing functionality
+
+But routing correctness is the priority.
+
+IMPORTANT:
+The repository already contains the Settings page and the Settings dropdown already points to `/settings`.
+
+Do NOT rebuild either from scratch.
+
+Find which wrapper/router/auth state is intercepting `/settings` and fix THAT exact code path.
