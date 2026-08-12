@@ -1,0 +1,117 @@
+FIX TALENT PROFILE NAVIGATION — DO NOT REDESIGN ANYTHING.
+
+CURRENT BUG:
+The Talent Profile page now has NO navigation bar.
+
+The previous task removed the TalentProfile-specific header correctly, but the shared `TopNavigation.tsx` was NOT successfully rendered.
+
+REQUIRED FIX:
+
+1. Open the actual route/component rendering this Talent Profile page.
+
+2. Find the existing shared component:
+   client/src/components/TopNavigation.tsx
+
+3. Import the REAL existing component. Do NOT create another navbar.
+
+Example:
+import TopNavigation from "@/components/TopNavigation";
+
+Use the project's correct import path if different.
+
+4. Render <TopNavigation /> ABOVE the Talent Profile hero/profile header.
+
+Expected structure:
+
+<>
+  <TopNavigation />
+
+  <main>
+    {/* EXISTING TALENT PROFILE PAGE */}
+  </main>
+</>
+
+5. IMPORTANT:
+Inspect whether TopNavigation is conditionally hidden based on:
+- pathname
+- route
+- user type
+- isTalentProfile
+- auth state
+- CSS
+- responsive classes
+
+If `/talent-profile`, `/talent/:id`, or the current TalentProfile route is excluded from TopNavigation, REMOVE THAT EXCLUSION.
+
+6. Check for CSS hiding it:
+display: none;
+visibility: hidden;
+opacity: 0;
+height: 0;
+overflow: hidden;
+hidden
+md:hidden
+
+The navigation MUST be visible on Talent Profile.
+
+7. Z-INDEX:
+TopNavigation must sit ABOVE the Talent Profile hero.
+
+Use the TopNavigation component's existing z-index. If the Talent Profile hero is covering it, fix the stacking context instead of duplicating the navbar.
+
+8. FIX PAGE OFFSET.
+
+If TopNavigation uses:
+position: fixed;
+
+Talent Profile content must start BELOW it using the SAME navbar-height variable/pattern used by other pages.
+
+Do NOT allow the blue Talent Profile hero to render underneath the navbar.
+
+9. DO NOT modify the Talent Profile content shown in the screenshot:
+- VT avatar
+- Val Testing
+- completion %
+- Back to Pool
+- Contact
+- tabs
+- Finish Setting Up
+- About
+- Skills
+- Profile Strength
+
+10. DO NOT restore the old TalentProfile navbar.
+
+11. DO NOT create:
+TopNavigation2
+TalentNavigation
+ProfileNavbar
+TalentProfileHeaderNav
+
+There must be ONE shared navigation system:
+TopNavigation.tsx
+
+12. VERIFY IN THE BROWSER, NOT JUST THE CODE.
+
+After implementation, navigate to the actual Talent Profile URL and visually confirm:
+
+[TopNavigation.tsx]
+-------------------------------
+[Talent Profile blue hero]
+[VT avatar / Val Testing]
+[Back to Pool / Contact]
+[Tabs]
+[Profile content]
+
+If the first visible element is still the large blue Talent Profile hero, THE TASK IS NOT COMPLETE.
+
+13. Also test:
+- Desktop
+- Tablet
+- Mobile
+- authenticated talent account
+
+FINAL REQUIREMENT:
+Do not report this as fixed merely because TopNavigation was imported.
+
+It is fixed ONLY when `TopNavigation.tsx` is visibly rendered at the very top of the Talent Profile page in the browser.

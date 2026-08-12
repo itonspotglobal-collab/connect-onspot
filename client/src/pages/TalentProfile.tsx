@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin } from "@/lib/authUtils";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import { apiRequest } from "@/lib/queryClient";
+import { TopNavigation } from "@/components/TopNavigation";
 import type { Candidate } from "@shared/schema";
 import {
   buildCompletionItems,
@@ -668,27 +669,33 @@ export default function TalentProfile() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#060816]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#474ead] border-t-transparent" />
-          <p className="text-sm text-slate-500">Loading profile…</p>
+      <>
+        <TopNavigation />
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#060816]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#474ead] border-t-transparent" />
+            <p className="text-sm text-slate-500">Loading profile…</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isError || !candidate) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-[#060816]">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-500">
-          <AlertCircle className="h-7 w-7" />
+      <>
+        <TopNavigation />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-[#060816]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-500">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Profile not found</h1>
+          <p className="text-sm text-slate-500">This talent profile doesn't exist or has been removed.</p>
+          <Button onClick={() => navigate("/talent-pool")} className="mt-2 rounded-full bg-[#474ead] text-white">
+            Back to Talent Pool
+          </Button>
         </div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Profile not found</h1>
-        <p className="text-sm text-slate-500">This talent profile doesn't exist or has been removed.</p>
-        <Button onClick={() => navigate("/talent-pool")} className="mt-2 rounded-full bg-[#474ead] text-white">
-          Back to Talent Pool
-        </Button>
-      </div>
+      </>
     );
   }
 
@@ -724,6 +731,8 @@ export default function TalentProfile() {
   ]);
 
   return (
+    <>
+    <TopNavigation />
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060816] dark:text-white">
 
       {/* ── Talent Login Modal ── */}
@@ -1280,6 +1289,7 @@ export default function TalentProfile() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
