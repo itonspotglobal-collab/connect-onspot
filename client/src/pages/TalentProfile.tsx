@@ -6,8 +6,7 @@ import {
   MapPin, Briefcase, Calendar, Globe2, Mail, Phone, Linkedin,
   Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
-  Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Lock, LogOut, Eye, EyeOff,
-  Menu, Users, Compass, Sparkles, Layers, Search,
+  Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Eye, EyeOff,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -26,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin } from "@/lib/authUtils";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
-import onspotLogo from "@assets/onspot-logo-white.png";
 import { apiRequest } from "@/lib/queryClient";
 import type { Candidate } from "@shared/schema";
 import {
@@ -265,185 +263,6 @@ function PhotoUploader({
   );
 }
 
-// ─── Profile Navbar ───────────────────────────────────────────────────────────
-
-const PROFILE_NAV_LINKS = [
-  { label: "Hire Talent", href: "/hire-talent",  icon: Users     },
-  { label: "Find Work",   href: "/find-work",    icon: Compass   },
-  { label: "Why OnSpot",  href: "/why-onspot",   icon: Sparkles  },
-  { label: "Solutions",   href: "/solutions",    icon: Layers    },
-];
-
-function ProfileNavbar({
-  displayName,
-  isOwner,
-  loggedInName,
-  onSignOut,
-  onSignIn,
-}: {
-  displayName: string;
-  isOwner: boolean;
-  /** Name of the currently logged-in viewer, or null if no one is logged in. */
-  loggedInName: string | null;
-  onSignOut: () => void;
-  onSignIn: () => void;
-}) {
-  const [location, navigate] = useLocation();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] backdrop-blur-md border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-14">
-
-          {/* Logo */}
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center flex-shrink-0"
-            aria-label="Go to OnSpot homepage"
-          >
-            <img
-              src={onspotLogo}
-              alt="OnSpot"
-              className="h-auto w-[130px] sm:w-[150px] object-contain"
-            />
-          </button>
-
-          {/* Divider — desktop only */}
-          <div className="hidden md:block w-px h-5 bg-white/20 flex-shrink-0 mx-3" />
-
-          {/* Desktop nav links */}
-          <nav className="hidden md:flex items-center flex-1 gap-0">
-            {PROFILE_NAV_LINKS.map(({ label, href, icon: Icon }) => {
-              const active = location === href;
-              return (
-                <button
-                  key={label}
-                  onClick={() => navigate(href)}
-                  className={`flex items-center gap-2 px-4 h-14 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 flex-shrink-0 ${
-                    active
-                      ? "border-white text-white"
-                      : "border-transparent text-white/70 hover:text-white hover:border-white/40"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Spacer on mobile */}
-          <div className="flex-1 md:hidden" />
-
-          {/* Right-side: auth controls — desktop */}
-          <div className="hidden md:flex items-center flex-shrink-0 pl-2 ml-1 border-l border-white/20 gap-1">
-            {loggedInName !== null ? (
-              <>
-                <span className="px-3 text-sm font-medium text-white/80 max-w-[180px] truncate">
-                  {loggedInName}
-                </span>
-                <button
-                  onClick={onSignOut}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 hover:text-white hover:bg-white/10"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={onSignIn}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 hover:text-white hover:bg-white/10"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                Sign in
-              </button>
-            )}
-          </div>
-
-          {/* Mobile: auth shortcut + hamburger */}
-          <div className="flex items-center gap-1 md:hidden">
-            {loggedInName !== null ? (
-              <button
-                onClick={onSignOut}
-                className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
-                style={{ width: 40, height: 40 }}
-                aria-label="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            ) : (
-              <button
-                onClick={onSignIn}
-                className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
-                style={{ width: 40, height: 40 }}
-                aria-label="Sign in"
-              >
-                <Lock className="h-4 w-4" />
-              </button>
-            )}
-            <button
-              className="flex items-center justify-center rounded-lg transition-colors text-white/80 hover:bg-white/10 hover:text-white"
-              style={{ width: 40, height: 40 }}
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label="Menu"
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Mobile dropdown */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden border-t border-white/10 md:hidden bg-gradient-to-b from-[#4F40F0] to-[#7F3DF4]"
-          >
-            <div className="flex flex-col gap-0.5 px-4 py-3">
-              {PROFILE_NAV_LINKS.map(({ label, href, icon: Icon }) => (
-                <button
-                  key={label}
-                  onClick={() => { navigate(href); setMobileOpen(false); }}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              ))}
-              <div className="mt-2 border-t border-white/10 pt-2">
-                {loggedInName !== null ? (
-                  <button
-                    onClick={() => { onSignOut(); setMobileOpen(false); }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { onSignIn(); setMobileOpen(false); }}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Sign in
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
-  );
-}
-
 // ─── Section Tabs ──────────────────────────────────────────────────────────────
 
 const SECTION_TABS = [
@@ -482,8 +301,8 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   function scrollTo(id: string) {
     const el = document.getElementById(id);
     if (el) {
-      // Offset for sticky top-nav (64px) + sticky tab bar (~52px) + small margin
-      const HEADER_OFFSET = 124;
+      // Offset for shared TopNavigation (80px via --nav-h) + sticky tab bar (~52px) + small margin
+      const HEADER_OFFSET = 136;
       const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
       window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       setActive(id);
@@ -496,7 +315,7 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   const tabs = SECTION_TABS.filter((t) => visibleIds.has(t.id));
 
   return (
-    <div className="sticky top-16 z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
+    <div className="sticky top-[var(--nav-h)] z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
       <div className="mx-auto max-w-4xl px-4 md:px-8">
         <div
           ref={tabsRef}
@@ -769,12 +588,6 @@ export default function TalentProfile() {
   // Admins can also edit; otherwise must be the authenticated owner
   const canEdit = isOwner || isAdminUser;
 
-  function handleLogout() {
-    clearTalentAuth();
-    setTalentAuth(null);
-    toast({ title: "Signed out", description: "You've been signed out of your profile." });
-  }
-
   // Local state for optimistic photo update
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
 
@@ -934,15 +747,6 @@ export default function TalentProfile() {
           saving={patchMutation.isPending}
         />
       )}
-
-      {/* ── Profile Navbar ── */}
-      <ProfileNavbar
-        displayName={displayName}
-        isOwner={isOwner}
-        loggedInName={talentAuth?.fullName ?? null}
-        onSignOut={handleLogout}
-        onSignIn={() => setShowLoginModal(true)}
-      />
 
       {/* ── Cover Banner ── */}
       <div id="section-overview" className="relative h-48 overflow-hidden bg-gradient-to-br from-[#474ead] via-[#5b61c0] to-[#6366f1] md:h-64">

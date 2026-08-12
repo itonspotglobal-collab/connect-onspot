@@ -1,0 +1,286 @@
+REMOVE THE BUILT-IN NAVIGATION BAR FROM THE TALENT PROFILE PAGE AND REPLACE IT WITH THE SHARED `TopNavigation.tsx` COMPONENT.
+
+Do NOT redesign TopNavigation.
+Do NOT duplicate navigation code.
+Do NOT keep both navbars.
+
+GOAL:
+Talent Profile should use the exact same shared navigation component as the rest of the app.
+
+---
+
+## 1. FIND THE TALENT PROFILE PAGE
+
+Open the actual Talent Profile page component.
+
+The current page has its own built-in `<header>` / navbar with content such as:
+
+* OnSpot logo
+* Hire Talent
+* Find Work
+* Why OnSpot
+* Solutions
+* user name
+* Sign out
+
+Remove ONLY this Talent Profile-specific navigation/header markup.
+
+Do NOT remove the Talent Profile page content below it.
+
+---
+
+## 2. REMOVE THE OLD CUSTOM NAVBAR COMPLETELY
+
+Delete the page-specific:
+
+```tsx
+<header>...</header>
+```
+
+or equivalent navigation wrapper from `TalentProfile.tsx`.
+
+Also remove any navbar-only:
+
+* state
+* handlers
+* imports
+* styles
+* mobile menu logic
+* sign-out UI
+* logo markup
+
+ONLY if they are no longer used elsewhere in TalentProfile.
+
+Do not leave an empty header spacer.
+
+---
+
+## 3. IMPORT THE SHARED TOP NAVIGATION
+
+Use the existing shared component:
+
+```tsx
+import TopNavigation from "@/components/TopNavigation";
+```
+
+Use the actual path already used elsewhere in the repository.
+
+Do not create a new copy of `TopNavigation.tsx`.
+
+---
+
+## 4. RENDER TOPNAVIGATION AT THE TOP OF TALENT PROFILE
+
+Talent Profile should begin with:
+
+```tsx
+<TopNavigation />
+```
+
+followed by the existing Talent Profile content.
+
+Conceptually:
+
+```tsx
+export default function TalentProfile() {
+  return (
+    <div className="min-h-screen">
+      <TopNavigation />
+
+      <main>
+        {/* existing Talent Profile content */}
+      </main>
+    </div>
+  );
+}
+```
+
+Use the existing app layout pattern if TopNavigation is normally mounted by a parent layout.
+
+IMPORTANT:
+Do not accidentally render TopNavigation twice.
+
+---
+
+## 5. CHECK WHETHER APP.TSX ALREADY RENDERS TOPNAVIGATION
+
+Before adding `<TopNavigation />` directly inside TalentProfile, inspect `App.tsx` / shared layout.
+
+If TopNavigation is ALREADY rendered globally for the Talent Profile route:
+
+* remove TalentProfile's custom navbar
+* do NOT add another TopNavigation
+
+If TalentProfile currently bypasses the shared layout:
+
+* move it into the shared layout
+  OR
+* render TopNavigation once inside TalentProfile
+
+The final page must have exactly ONE navbar.
+
+---
+
+## 6. REMOVE OLD NAVBAR SPACING
+
+The current Talent Profile page may contain spacing added specifically for its sticky navbar, such as:
+
+```tsx
+pt-20
+pt-[80px]
+mt-[var(--nav-h)]
+top-[...]
+```
+
+After replacing the navbar, inspect the layout.
+
+Use the same shared navbar spacing convention as other pages.
+
+Do not leave:
+
+* giant empty area under navbar
+* content hidden underneath fixed navbar
+* duplicate top padding
+
+---
+
+## 7. KEEP TALENT PROFILE CONTENT UNCHANGED
+
+Do NOT change:
+
+* profile overview
+* talent data
+* cards
+* sections
+* profile photo
+* completion data
+* buttons
+* APIs
+* settings links
+* database behavior
+
+This task is navigation replacement only.
+
+---
+
+## 8. KEEP TOPNAVIGATION CONTENT AS-IS
+
+Talent Profile should now inherit the current shared TopNavigation content, including whatever is already implemented there:
+
+* OnSpot logo
+* Hire Talent
+* Find Work / More
+* Talent Profile account button
+* redesigned profile dropdown
+
+Do NOT bring over the old Talent Profile navbar menu items.
+
+---
+
+## 9. REMOVE DUPLICATE SIGN OUT
+
+The old Talent Profile navbar had its own Sign Out control.
+
+Since Sign Out now exists in the shared Talent Profile dropdown:
+
+remove the old page-level Sign Out button.
+
+There should be only one account/logout flow.
+
+---
+
+## 10. REMOVE UNUSED IMPORTS / HANDLERS
+
+After deleting the old navbar, clean up unused code related to it.
+
+Examples:
+
+* old logo import
+* old nav arrays
+* menu state
+* mobile toggle state
+* signOut handler if only used by old navbar
+* old icons
+* scroll navbar state
+* header refs
+
+Do not remove logic still used elsewhere in the page.
+
+---
+
+## 11. VERIFY STICKY/FIXED BEHAVIOR
+
+TopNavigation already has its own position behavior.
+
+Do not wrap it in another sticky/fixed container.
+
+TalentProfile should not contain CSS like:
+
+```css
+position: sticky;
+top: 0;
+```
+
+around TopNavigation unless the shared component requires it.
+
+Let `TopNavigation.tsx` control its own navbar behavior.
+
+---
+
+## 12. RESPONSIVE TEST
+
+Test Talent Profile at:
+
+* 1920px
+* 1440px
+* 1024px
+* 768px
+* 390px
+
+Confirm:
+
+* exactly one navbar appears
+* shared OnSpot logo appears
+* Talent Profile dropdown works
+* no old navbar remains
+* no duplicate Sign Out
+* no top-spacing gap
+* page content does not sit underneath the navbar
+* mobile behavior matches other pages
+
+---
+
+## 13. SETTINGS / DROPDOWN CHECK
+
+From Talent Profile:
+
+Open the shared Talent Profile dropdown.
+
+Verify:
+
+* Talent Profile works
+* Finish Profile Setup works
+* Find Work works
+* Settings opens `/settings`
+* Sign Out works
+
+Do not change those routes during this task.
+
+---
+
+## ACCEPTANCE CRITERIA
+
+This task is complete only when:
+
+* TalentProfile's custom navbar is completely removed
+* `TopNavigation.tsx` is the only navbar shown
+* no duplicate navigation exists
+* no duplicate Sign Out exists
+* Talent Profile content remains intact
+* shared dropdown works
+* page spacing is correct
+* mobile layout is correct
+
+DO NOT CREATE ANOTHER NAVIGATION COMPONENT.
+
+USE THE EXISTING `TopNavigation.tsx`.
