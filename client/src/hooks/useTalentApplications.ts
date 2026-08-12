@@ -39,11 +39,15 @@ async function fetchTalentApplications(): Promise<TalentApplication[]> {
  * Shared hook for fetching the authenticated talent's application history.
  * Uses React Query with 15 s polling + refetch-on-window-focus so status
  * changes made by Admin appear automatically without a page reload.
+ *
+ * The query key includes candidateId so each account gets its own cache
+ * entry — switching between talent accounts in the same browser never
+ * leaks one candidate's data into another's badge or application list.
  */
 export function useTalentApplications() {
   const auth = loadTalentAuth();
   return useQuery<TalentApplication[]>({
-    queryKey: ["talent-applications"],
+    queryKey: ["talent-applications", auth?.candidateId ?? null],
     queryFn: fetchTalentApplications,
     enabled: !!auth,
     refetchInterval: 15_000,
@@ -53,10 +57,44 @@ export function useTalentApplications() {
 }
 
 /**
- * Returns a callback to invalidate the talent applications cache.
+ * Returns a callback to invalidate the talent applications cache for the
+ * currently authenticated candidate only.
  * Call after submitting a new application so it appears immediately.
  */
 export function useInvalidateTalentApplications() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: ["talent-applications"] });
+  const auth = loadTalentAuth();
+  return () =>
+    qc.invalidateQueries({
+      queryKey: ["talent-applications", auth?.candidateId ?? null],
+    });
+}
+
+/**
+ * Returns the count of applications whose `updatedAt` is newer than the
+ * per-candidate "last viewed" timestamp stored in localStorage.
+ * Returns 0 when:
+ *  - no talent-only session exists (wrong auth path — badge is unsupported)
+ *  - the talent has never visited My Applications (no baseline to compare against)
+ */
+export function useUnreadApplicationsCount(): number {
+  const auth = loadTalentAuth();
+  const { data: applications } = useTalentApplications();
+  if (!auth || !applications || applications.length === 0) return 0;
+  const raw = localStorage.getItem(getTalentAppsLastViewedKey(auth.candidateId));
+  if (!raw) return 0; // never visited — no unread baseline
+  const lastViewedMs = new Date(raw).getTime();
+  return applications.filter(
+    (app) => new Date(app.updatedAt).getTime() > lastViewedMs,
+  ).length;
+}
+
+
+/**
+ * Returns a per-candidate localStorage key for the "last viewed My Applications" timestamp.
+ * Scoping by candidateId ensures one talent's visit doesn't erase another's unread baseline
+ * when multiple accounts share the same browser profile.
+ */
+export function getTalentAppsLastViewedKey(candidateId: string): string {
+  return `talent_apps_last_viewed_${candidateId}`;
 }

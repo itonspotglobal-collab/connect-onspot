@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { TopNavigation } from "@/components/TopNavigation";
@@ -13,8 +12,10 @@ import {
   Clock, CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
   FileText, X, Download, MessageSquare, BookOpen,
 } from "lucide-react";
+import { useTalentApplications, TalentApplication, getTalentAppsLastViewedKey } from "@/hooks/useTalentApplications";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
+import { useState, useEffect } from "react";
 
 function StatusBadge({ status }: { status: string }) {
   const meta = getStatusMeta(status);
@@ -427,6 +428,14 @@ export default function TalentApplications() {
   const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
 
   const { data: applications, isLoading, isError, refetch } = useTalentApplications();
+
+  // Stamp the per-candidate "last viewed" timestamp so the nav badge resets on visit.
+  // Must be scoped by candidateId so one talent's visit doesn't clear another's baseline.
+  useEffect(() => {
+    if (auth?.candidateId) {
+      localStorage.setItem(getTalentAppsLastViewedKey(auth.candidateId), new Date().toISOString());
+    }
+  }, [auth?.candidateId]);
 
   // Redirect unauthenticated visitors to the portal login
   if (!auth) {
