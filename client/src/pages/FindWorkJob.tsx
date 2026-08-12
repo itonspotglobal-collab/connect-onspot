@@ -554,14 +554,14 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
     if ((job as any).applicationMethod === "built_in_form") {
       return (
         <Button className={cls} onClick={() => navigate(`/jobs/${job.id}/apply`)}>
-          Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+          Apply Now
         </Button>
       );
     }
     if (job.applyLink) {
       return (
         <Button className={cls} onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
-          Apply Now <ArrowRight className="ml-2 h-4 w-4" />
+          Apply Now
         </Button>
       );
     }
@@ -952,7 +952,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               className="rounded-full px-6"
               onClick={() => navigate("/find-work/jobs")}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
+              View all roles
             </Button>
           </div>
         </div>
@@ -1348,7 +1348,7 @@ export default function FindWorkJob() {
               className="rounded-full px-6"
               onClick={() => navigate("/find-work/jobs")}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" /> View all roles
+              View all roles
             </Button>
           </div>
         </div>
