@@ -1688,12 +1688,27 @@ function OpenJobsSection() {
           {jobs.map((job, i) => (
             <div
               key={i}
-              className="rounded-[18px] flex flex-col"
+              className="rounded-[18px] flex flex-col cursor-pointer"
               style={{
                 background: "rgba(255,255,255,0.055)",
                 border: "1px solid rgba(255,255,255,0.16)",
                 padding: "22px 22px 20px",
                 minHeight: 220,
+                transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 280ms ease, border-color 280ms ease, background 280ms ease",
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.transform = "translateY(-8px)";
+                el.style.boxShadow = "0 24px 48px rgba(58,58,248,0.28), 0 8px 20px rgba(0,0,0,0.35)";
+                el.style.borderColor = "rgba(255,255,255,0.34)";
+                el.style.background = "rgba(255,255,255,0.085)";
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLDivElement;
+                el.style.transform = "translateY(0)";
+                el.style.boxShadow = "";
+                el.style.borderColor = "rgba(255,255,255,0.16)";
+                el.style.background = "rgba(255,255,255,0.055)";
               }}
             >
               {/* HIRING NOW badge */}
