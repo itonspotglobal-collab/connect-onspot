@@ -736,7 +736,11 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
             </div>
           ) : (
             candidates.map((c: any) => {
-              const name = c.fullName || c.displayName || "Talent";
+              const rawName = c.fullName || c.displayName || "Talent";
+              const nameParts = rawName.trim().split(/\s+/);
+              const name = nameParts.length >= 2
+                ? `${nameParts[0]} ${nameParts[1][0]}.`
+                : nameParts[0];
               const role = c.targetPosition || c.headline || "Professional";
               const yrs  = c.experienceYears ? `${c.experienceYears} yr${c.experienceYears !== 1 ? "s" : ""}` : null;
               const isAvail = c.availability === "available" || c.availability === "Available";
