@@ -294,6 +294,57 @@ function TalentRouter() {
   );
 }
 
+// Named component so React never re-creates its identity on each render.
+// Handles the isLoading window: shows a spinner while JWT is being verified,
+// then branches by role once auth is resolved. Without this guard the
+// inline-arrow pattern that was here before would read user===null during
+// the loading window and immediately render PublicRouter → Coming Soon.
+function SettingsRoute() {
+  const { isLoading, user } = useAuth();
+  const [, navigate] = useLocation();
+
+  // Hooks must all be at the top level — no hooks after conditional returns.
+  // Redirect to login once auth has resolved and there is no valid user.
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [isLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading settings…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role === "client") {
+    return (
+      <ClientProtectedRoute>
+        <ClientLayout>
+          <ProfileSettings />
+        </ClientLayout>
+      </ClientProtectedRoute>
+    );
+  }
+
+  if (user?.role === "talent") {
+    return (
+      <TalentProtectedRoute>
+        <div className="min-h-screen bg-background">
+          <ProfileSettings />
+        </div>
+      </TalentProtectedRoute>
+    );
+  }
+
+  return null; // useEffect above redirects to /login
+}
+
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
   
@@ -367,50 +418,9 @@ function AppContent() {
       <Route path="/hired-talent-portal" component={RedirectToHome} />
       
       {/* Settings Routes - Available for both client and talent */}
-      <Route path="/settings" component={() => {
-        const { user } = useAuth();
-        if (user?.role === "client") {
-          return (
-            <ClientProtectedRoute>
-              <ClientLayout>
-                <ProfileSettings />
-              </ClientLayout>
-            </ClientProtectedRoute>
-          );
-        } else if (user?.role === "talent") {
-          return (
-            <TalentProtectedRoute>
-              <div className="min-h-screen bg-background">
-                <ProfileSettings />
-              </div>
-            </TalentProtectedRoute>
-          );
-        }
-        return <PublicRouter />;
-      }} />
-      
+      <Route path="/settings" component={SettingsRoute} />
       {/* Profile Settings Route - Alias for /settings */}
-      <Route path="/profile-settings" component={() => {
-        const { user } = useAuth();
-        if (user?.role === "client") {
-          return (
-            <ClientProtectedRoute>
-              <ClientLayout>
-                <ProfileSettings />
-              </ClientLayout>
-            </ClientProtectedRoute>
-          );
-        } else if (user?.role === "talent") {
-          return (
-            <TalentProtectedRoute>
-              <div className="min-h-screen bg-background">
-                <ProfileSettings />
-              </div>
-            </TalentProtectedRoute>
-          );
-        }
-        return <PublicRouter />;
-      }} />
+      <Route path="/profile-settings" component={SettingsRoute} />
       
       {/* Standalone Login Page — must be before catch-all */}
       <Route path="/login" component={PortalLogin} />

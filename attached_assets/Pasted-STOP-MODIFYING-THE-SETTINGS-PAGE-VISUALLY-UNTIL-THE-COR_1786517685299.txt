@@ -1,0 +1,509 @@
+STOP MODIFYING THE SETTINGS PAGE VISUALLY UNTIL THE CORRECT COMPONENT IS ACTUALLY RENDERING.
+
+CURRENT BUG:
+Opening:
+
+`/settings`
+
+still renders the generic:
+
+“COMING SOON”
+“The next evolution of outsourcing.”
+
+page.
+
+This proves the REAL Settings component is still NOT mounted on `/settings`.
+
+This task is now:
+
+1. TRACE THE ACTIVE ROUTE
+2. FIND THE OLD WORKING SETTINGS PAGE
+3. MOUNT IT TO `/settings`
+4. VERIFY IT VISUALLY
+5. ONLY THEN apply the OnSpot styling improvements
+
+Do NOT create another placeholder.
+Do NOT add CSS to the Coming Soon page.
+Do NOT tell me it is fixed just because the project compiles.
+
+---
+
+## STEP 1 — FIND THE COMPONENT CURRENTLY RENDERING `/settings`
+
+Search the entire repository for:
+
+`/settings`
+
+Also search for these exact strings:
+
+`COMING SOON`
+`The next evolution of outsourcing`
+`We're building something great here`
+`Launch AI Assistant`
+`Explore OnSpot`
+
+Identify the exact file/component currently rendering that page.
+
+Possible names:
+
+* ComingSoon
+* ComingSoonPage
+* PlaceholderPage
+* UnderConstruction
+* GenericPage
+* FuturePage
+
+Then identify exactly WHY `/settings` points to it.
+
+Check:
+
+* App.tsx
+* routes.tsx
+* router.tsx
+* main.tsx
+* route config objects
+* nested routes
+* authenticated routes
+* talent routes
+* wildcard routes
+
+---
+
+## STEP 2 — TEMPORARILY PROVE THE ACTIVE ROUTE
+
+In the component that currently renders `/settings`, temporarily add:
+
+`DEBUG: SETTINGS ROUTE IS USING COMING SOON`
+
+Run the app and open `/settings`.
+
+If that debug text appears, you have confirmed the active route/component.
+
+Remove the debug text after tracing.
+
+Do NOT continue until the active route is proven.
+
+---
+
+## STEP 3 — FIND THE OLD WORKING SETTINGS COMPONENT
+
+Search the ENTIRE repository for:
+
+`Profile Settings`
+
+`Manage your profile information and preferences`
+
+`Basic Information`
+
+`Professional Details`
+
+`Skills & Expertise`
+
+`Documents`
+
+`Profile Status`
+
+`Save Settings`
+
+These exact strings came from the OLD WORKING SETTINGS PAGE.
+
+The old page structure included:
+
+LEFT:
+Settings
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+
+Profile Status
+Completion %
+
+RIGHT:
+Basic Information
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+* Save Settings
+
+Find the component that contains these exact labels.
+
+Possible names:
+
+* SettingsPage.tsx
+* ProfileSettings.tsx
+* TalentSettings.tsx
+* AccountSettings.tsx
+* Settings.tsx
+
+If it exists, DO NOT rebuild it.
+Reuse it.
+
+---
+
+## STEP 4 — IF THE OLD COMPONENT IS NOT IN CURRENT FILES, USE GIT HISTORY
+
+Search git history.
+
+Run:
+
+`git log --all -S"Profile Settings" --oneline`
+
+`git log --all -S"Professional Details" --oneline`
+
+`git log --all -S"Save Settings" --oneline`
+
+`git log --all -- "*Settings*.tsx"`
+
+When you find the previous implementation:
+
+inspect it with:
+
+`git show <commit>:<path>`
+
+Restore ONLY the Settings-related files.
+
+Do NOT revert the whole repository.
+
+Do NOT overwrite the new homepage/navbar.
+
+---
+
+## STEP 5 — MOUNT THE REAL SETTINGS COMPONENT TO `/settings`
+
+Replace the current route mapping.
+
+Wrong example:
+
+```tsx
+<Route path="/settings" component={ComingSoonPage} />
+```
+
+or:
+
+```tsx
+{
+  path: "/settings",
+  element: <ComingSoonPage />
+}
+```
+
+Replace with the REAL component, e.g.:
+
+```tsx
+<Route path="/settings" component={ProfileSettings} />
+```
+
+or the equivalent for the routing library in this project.
+
+If the app uses nested/protected routes, preserve them.
+
+---
+
+## STEP 6 — CHECK WILDCARD / FALLBACK ROUTES
+
+The route may be falling through to something like:
+
+`*`
+`/:slug`
+`/:page`
+`ComingSoonPage`
+
+Make sure `/settings` is explicitly declared and matched BEFORE any fallback route when required.
+
+Verify there is no logic like:
+
+```ts
+const readyPages = [...]
+if (!readyPages.includes(path)) return <ComingSoonPage />
+```
+
+If such logic exists, add `/settings` to the ready/implemented routes.
+
+---
+
+## STEP 7 — KEEP AUTHENTICATION
+
+The Settings page must remain protected for logged-in users.
+
+Reuse the existing auth wrapper.
+
+Expected:
+
+Logged in talent:
+`/settings` → Profile Settings
+
+Logged out:
+follow existing login/auth behavior.
+
+Do NOT bypass authentication.
+
+---
+
+## STEP 8 — PRESERVE THE OLD SETTINGS FUNCTIONALITY
+
+The restored Settings page must keep its original real functionality.
+
+Basic Information:
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+
+Professional Details:
+restore previous fields
+
+Skills & Expertise:
+restore previous fields/tags
+
+Documents:
+restore previous document functionality
+
+Profile Status:
+use real completion percentage
+
+Save Settings:
+must persist to the existing backend/database.
+
+Do NOT hardcode sample values.
+
+---
+
+## STEP 9 — ONLY AFTER THE REAL PAGE IS VISIBLE, APPLY BRAND UI
+
+Once `/settings` visibly shows:
+
+`Profile Settings`
+
+and NOT:
+
+`COMING SOON`
+
+then apply the UI improvements.
+
+Use current OnSpot brand:
+
+Primary indigo:
+`#4B51B8`
+
+Deep indigo:
+`#2F327A`
+
+Violet:
+`#6D4FF7`
+
+Orange:
+`#FFAE22`
+
+Background:
+`#F8F8FC`
+
+Cards:
+white
+
+Borders:
+`rgba(75,81,184,.14)`
+
+Text:
+`#18181F`
+
+Muted:
+`#6D7180`
+
+---
+
+## STEP 10 — SETTINGS PAGE DESIGN
+
+Keep the old layout:
+
+Desktop:
+2-column structure
+
+Left:
+270px sidebar
+
+Right:
+main form panel
+
+Use:
+
+```css
+.settings-layout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 28px;
+}
+```
+
+Container:
+max-width around 1240px
+centered
+
+---
+
+## STEP 11 — SIDEBAR
+
+White card
+18px radius
+subtle indigo border
+soft shadow
+
+Menu:
+Basic Information
+Professional Details
+Skills & Expertise
+Documents
+
+Active state:
+indigo → violet gradient
+
+Do NOT use generic bright blue.
+
+---
+
+## STEP 12 — PROFILE STATUS
+
+Keep:
+Profile Status
+Completion %
+Progress bar
+
+Use actual completion value.
+
+Progress fill:
+indigo/violet gradient.
+
+---
+
+## STEP 13 — MAIN FORM CARD
+
+White
+18–20px radius
+soft border/shadow
+padding 28–32px
+
+Inputs:
+46–48px height
+10px radius
+
+Focus:
+indigo border + subtle focus ring.
+
+---
+
+## STEP 14 — SAVE SETTINGS
+
+Button:
+`Save Settings`
+
+Gradient:
+`#4B55D0 → #7049F4`
+
+White text
+save icon
+rounded 10–12px
+
+Loading:
+`Saving...`
+
+Success toast:
+`Settings saved successfully.`
+
+---
+
+## STEP 15 — PROVE THE FIX IN THE BROWSER
+
+Do NOT stop after coding.
+
+Run the app.
+
+Open:
+
+`/settings`
+
+Verify visually:
+
+1. “COMING SOON” is GONE.
+2. “Profile Settings” is visible.
+3. Basic Information is visible.
+4. Sidebar is visible.
+5. Profile Status is visible.
+6. Save Settings is visible.
+7. Data loads from the logged-in talent.
+8. New navbar remains.
+9. Talent Profile dropdown remains.
+10. Settings link opens this page.
+
+---
+
+## STEP 16 — DEVTOOLS PROOF
+
+Inspect the DOM.
+
+The `/settings` page must contain text nodes/components for:
+
+`Profile Settings`
+`Basic Information`
+`Professional Details`
+`Skills & Expertise`
+`Documents`
+`Save Settings`
+
+It must NOT contain:
+
+`COMING SOON`
+`The next evolution of outsourcing`
+
+If those Coming Soon strings still exist in the DOM for `/settings`, the task is NOT complete.
+
+---
+
+## STEP 17 — SAVE TEST
+
+Change one harmless field.
+
+Click Save Settings.
+
+Refresh browser.
+
+Confirm the new value remains.
+
+Check console/network for:
+
+* 404
+* 500
+* auth errors
+* failed mutations
+* route errors
+
+Fix relevant errors.
+
+---
+
+## ACCEPTANCE CRITERIA
+
+Do not mark this complete until ALL are true:
+
+* `/settings` renders the REAL old Settings page
+* Coming Soon is completely removed from `/settings`
+* old settings functionality is restored
+* real profile data loads
+* Save Settings persists
+* all Settings tabs work
+* profile completion works
+* new navbar is preserved
+* redesigned dropdown is preserved
+* UI uses current OnSpot colors
+* browser verification is completed
+* DevTools confirms the correct component is mounted
+
+CRITICAL:
+If `/settings` still looks like the screenshot with “The next evolution of outsourcing,” keep tracing the router. Do NOT make another styling-only change.
