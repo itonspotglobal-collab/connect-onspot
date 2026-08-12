@@ -9185,6 +9185,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/jobs/:jobId/my-application — check whether the authenticated talent has already applied.
+  // Accepts both Talent Portal JWTs (type:"candidate") and standard talent user JWTs because
+  // authenticateJWT resolves both to req.user = { id: users.id, email, role }.
+  // job_submissions.talent_id stores users.id, so we match on that.
+  // We also check by email as a fallback for unlinked submissions that have no talent_id yet.
+  app.get("/api/jobs/:jobId/my-application", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      const authedUser = (req as any).user as { id: string; email: string; role: string };
+
+      if (!authedUser || authedUser.role !== "talent") {
+        return res.status(403).json({ error: "Talent access required" });
+      }
+
+      const result = await query(
+        `SELECT id, created_at FROM job_submissions
+          WHERE job_id = $1
+            AND (talent_id = $2 OR lower(email) = lower($3))
+          ORDER BY created_at ASC LIMIT 1`,
+        [jobId, authedUser.id, authedUser.email],
+      );
+
+      if (result.rows.length === 0) {
+        return res.json({ applied: false });
+      }
+
+      return res.json({
+        applied: true,
+        appliedAt: result.rows[0].created_at,
+        submissionId: result.rows[0].id,
+      });
+    } catch (err: any) {
+      console.error("GET /api/jobs/:jobId/my-application error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // POST /api/jobs/:jobId/apply — submit a built-in application (multipart/form-data with optional CV)
   // Supports both authenticated Talent users (fast-path, no continuation token) and
   // unauthenticated applicants (continuation token → signup/login flow).

@@ -208,6 +208,10 @@ export default function JobApplyPage() {
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isVideoDragOver, setIsVideoDragOver] = useState(false);
 
+  // ── Prior application check ───────────────────────────────────────────────
+  const [priorApplication, setPriorApplication] = useState<{ appliedAt: string } | null>(null);
+  const [dismissedDuplicateWarning, setDismissedDuplicateWarning] = useState(false);
+
   // ── Dialog state ──────────────────────────────────────────────────────────
   const [signInDialog, setSignInDialog] = useState<{
     open: boolean;
@@ -242,24 +246,48 @@ export default function JobApplyPage() {
   const requiresVideoIntro = !!(job as any)?.requiresVideoIntro;
 
   // ── Mount: detect talent portal session ───────────────────────────────────
+  // Both the Talent Portal token and the legacy JWT are read from localStorage
+  // synchronously so this effect doesn't depend on useAuth() resolving.
   useEffect(() => {
     const auth = loadTalentAuth();
     setTalentSession(auth);
 
     if (!auth) {
-      // Non-talent paths: prefill from legacy JWT user if present
-      if (isTalent && user) {
-        setForm((prev) => ({
-          ...prev,
-          firstName: (user as any).firstName || prev.firstName,
-          lastName: (user as any).lastName || prev.lastName,
-          email: user.email || prev.email,
-        }));
+      // ── Legacy path: read localStorage directly (no useAuth() dependency) ──
+      // useAuth() resolves asynchronously after first render; checking it here
+      // would miss the session on a direct load or refresh.
+      const legacyToken = localStorage.getItem("onspot_jwt_token");
+      if (jobId && legacyToken) {
+        fetch(`/api/jobs/${jobId}/my-application`, {
+          headers: { Authorization: `Bearer ${legacyToken}` },
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((myApp) => {
+            if (myApp?.applied && myApp?.appliedAt) {
+              setPriorApplication({ appliedAt: myApp.appliedAt });
+            }
+          })
+          .catch(() => { /* non-fatal */ })
+          .finally(() => setIsLoadingTalent(false));
+      } else {
+        setIsLoadingTalent(false);
       }
-      setIsLoadingTalent(false);
     }
     // If auth exists, wait for job to load before calling prefill
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Legacy talent form prefill (runs once useAuth() resolves) ─────────────
+  // Kept separate so it doesn't block the duplicate check above.
+  useEffect(() => {
+    if (isTalent && user && !talentSession) {
+      setForm((prev) => ({
+        ...prev,
+        firstName: (user as any).firstName || prev.firstName,
+        lastName: (user as any).lastName || prev.lastName,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [user, isTalent, talentSession]);
 
   // ── Prefill fetch (extracted so it can be called on initial load AND on manual refresh) ──
   const runPrefillFetch = useCallback(
@@ -267,14 +295,27 @@ export default function JobApplyPage() {
       if (!session) return;
       if (isRefresh) setIsPrefillRefreshing(true);
 
-      fetch(`/api/jobs/${currentJobId}/application-prefill`, {
-        headers: { Authorization: `Bearer ${session.token}` },
-      })
-        .then(async (r) => {
+      Promise.all([
+        fetch(`/api/jobs/${currentJobId}/application-prefill`, {
+          headers: { Authorization: `Bearer ${session.token}` },
+        }).then(async (r) => {
           if (!r.ok) throw new Error("Prefill fetch failed");
           return r.json() as Promise<PrefillData>;
-        })
-        .then((data) => {
+        }),
+        // Check for a prior application on initial load only (not on manual refresh)
+        !isRefresh
+          ? fetch(`/api/jobs/${currentJobId}/my-application`, {
+              headers: { Authorization: `Bearer ${session.token}` },
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .catch(() => null)
+          : Promise.resolve(null),
+      ])
+        .then(([data, myApp]) => {
+          if (!isRefresh && myApp?.applied && myApp?.appliedAt) {
+            setPriorApplication({ appliedAt: myApp.appliedAt });
+          }
+
           setPrefillData(data);
           const cand = data.candidate;
           setForm({
@@ -1005,6 +1046,47 @@ export default function JobApplyPage() {
         </p>
       </div>
 
+      {/* Duplicate application warning */}
+      {priorApplication && !dismissedDuplicateWarning && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700/40 dark:bg-amber-900/20">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 text-sm text-amber-800 dark:text-amber-300">
+              <p className="font-medium">You've already applied for this role.</p>
+              <p className="mt-0.5">
+                Your previous application was submitted on{" "}
+                {new Date(priorApplication.appliedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+                . Submitting again will create a repeat application.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900/30"
+              onClick={() => navigate("/find-work/jobs")}
+            >
+              Browse other jobs
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="rounded-full text-amber-600 hover:text-amber-800 dark:text-amber-400"
+              onClick={() => setDismissedDuplicateWarning(true)}
+            >
+              Continue anyway
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Phone missing — hard block with action path */}
       {!form.phone.trim() && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/20">
@@ -1570,6 +1652,47 @@ export default function JobApplyPage() {
                 <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
                   Submit your application to continue.
                 </p>
+              )}
+
+              {/* Duplicate application warning (legacy path) */}
+              {priorApplication && !dismissedDuplicateWarning && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700/40 dark:bg-amber-900/20">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div className="flex-1 text-sm text-amber-800 dark:text-amber-300">
+                      <p className="font-medium">You've already applied for this role.</p>
+                      <p className="mt-0.5">
+                        Your previous application was submitted on{" "}
+                        {new Date(priorApplication.appliedAt).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                        . Submitting again will create a repeat application.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                      onClick={() => navigate("/find-work/jobs")}
+                    >
+                      Browse other jobs
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full text-amber-600 hover:text-amber-800 dark:text-amber-400"
+                      onClick={() => setDismissedDuplicateWarning(true)}
+                    >
+                      Continue anyway
+                    </Button>
+                  </div>
+                </div>
               )}
 
               {mismatchWarning && (
