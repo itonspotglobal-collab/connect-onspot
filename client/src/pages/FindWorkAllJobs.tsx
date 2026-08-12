@@ -780,6 +780,17 @@ export default function FindWorkAllJobs() {
     }
   }, [search, category, location, contractType, salary, sort, navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Scroll to #job-openings when navigated here with that hash (e.g. "Back to All Jobs" from a job detail page).
+  // Runs once on mount; a small delay lets the page finish painting before scrolling.
+  useEffect(() => {
+    if (window.location.hash === "#job-openings") {
+      const el = document.getElementById("job-openings");
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      }
+    }
+  }, []);
+
   // Auto-correct: if current page exceeds total pages (e.g. after deletions), jump to last valid page
   useEffect(() => {
     if (jobsData && currentPage > jobsData.meta.totalPages && jobsData.meta.totalPages > 0) {
@@ -1089,7 +1100,7 @@ export default function FindWorkAllJobs() {
       </div>
 
       {/* ── RESULTS ── */}
-      <div className="mx-auto max-w-7xl px-6 py-10 md:px-8 md:py-14">
+      <div id="job-openings" className="scroll-mt-24 mx-auto max-w-7xl px-6 py-10 md:px-8 md:py-14">
         {/* Sort + count bar */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>

@@ -1,0 +1,231 @@
+Update the **“Back to All Jobs”** navigation on the job detail page so that it redirects users directly to the **job openings/list section** of the `/find-work/jobs` page instead of landing at the top/hero section.
+
+### Current Behavior
+
+On the individual job detail page, there is a:
+
+**← Back to All Jobs**
+
+button.
+
+Currently, clicking it navigates to:
+
+`/find-work/jobs`
+
+This causes the user to land at the top of the page/hero section.
+
+### Desired Behavior
+
+When the user clicks **Back to All Jobs**, navigate to:
+
+`/find-work/jobs#job-openings`
+
+After navigation, the page should automatically scroll directly to the section containing:
+
+* Number of roles found
+* Sort/filter controls
+* Job opening cards/list
+
+The user should **not have to scroll through the hero section again**.
+
+---
+
+## 1. Add an Anchor ID to the Job Listings Section
+
+In `FindWorkAllJobs.tsx`, identify the main container that wraps the actual job listings area.
+
+This should be the section starting around:
+
+**“5 roles found”**
+
+and containing the sorting controls and job cards.
+
+Add:
+
+```tsx
+id="job-openings"
+```
+
+For example:
+
+```tsx
+<section id="job-openings">
+  {/* role count */}
+  {/* sorting/filter controls */}
+  {/* job cards */}
+</section>
+```
+
+Do NOT put the ID on the hero section.
+
+The anchor should represent the beginning of the actual job opening results.
+
+---
+
+## 2. Update “Back to All Jobs”
+
+In the job detail page component, likely `FindWorkJob.tsx`, update the **Back to All Jobs** button/link.
+
+Change its navigation destination from:
+
+```tsx
+/find-work/jobs
+```
+
+to:
+
+```tsx
+/find-work/jobs#job-openings
+```
+
+Use the existing React Router navigation approach already used by the project.
+
+For example, if using `navigate()`:
+
+```tsx
+navigate("/find-work/jobs#job-openings");
+```
+
+Or if it is a `<Link>`:
+
+```tsx
+<Link to="/find-work/jobs#job-openings">
+  Back to All Jobs
+</Link>
+```
+
+Do not change the visual styling of the button.
+
+---
+
+## 3. Make Sure Hash Scrolling Works with React Router
+
+Because this application uses client-side routing, verify that navigating to:
+
+`/find-work/jobs#job-openings`
+
+actually scrolls to the correct section after `FindWorkAllJobs.tsx` has rendered.
+
+If the browser/router does not automatically scroll to the hash target, add lightweight hash-scroll handling to `FindWorkAllJobs.tsx`.
+
+For example, after the component renders:
+
+```tsx
+useEffect(() => {
+  if (window.location.hash) {
+    const id = window.location.hash.substring(1);
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }
+}, []);
+```
+
+However, first check whether the project already has hash/scroll restoration logic. **Do not duplicate existing functionality.**
+
+---
+
+## 4. Account for the Sticky Header
+
+The site has a fixed/sticky navigation header.
+
+Make sure the beginning of the job listings section is not hidden underneath the navbar after scrolling.
+
+Prefer using Tailwind `scroll-mt-*` on the anchor section rather than manually calculating scroll positions.
+
+For example:
+
+```tsx
+<section
+  id="job-openings"
+  className="scroll-mt-24"
+>
+```
+
+Adjust the `scroll-mt-*` value to match the actual navbar height.
+
+The final scroll position should show the top of the listings area clearly, including:
+
+**“5 roles found” + Sort controls**
+
+---
+
+## 5. Preserve Normal `/find-work/jobs` Behavior
+
+This is important:
+
+Navigating normally to:
+
+`/find-work/jobs`
+
+should continue showing the page from the top/hero section.
+
+Only navigation containing:
+
+`#job-openings`
+
+should automatically scroll down to the job listings.
+
+Therefore:
+
+**Normal Find Work navigation**
+
+```text
+/find-work/jobs
+→ Hero section
+```
+
+**Back to All Jobs from job detail**
+
+```text
+/find-work/jobs#job-openings
+→ Job listings section
+```
+
+---
+
+## 6. Do Not Change Existing UI
+
+Do not redesign or modify:
+
+* Hero section
+* Job cards
+* Sort/filter controls
+* Navbar
+* Back to All Jobs button styling
+* Job detail content
+* Existing routing structure
+* Search/filter functionality
+
+This task should only introduce the anchor navigation and necessary scroll behavior.
+
+---
+
+## Expected User Flow
+
+**Job Detail Page**
+
+User is viewing:
+
+`/find-work/jobs/[job-id]`
+
+↓ clicks
+
+**← Back to All Jobs**
+
+↓ navigate to
+
+`/find-work/jobs#job-openings`
+
+↓ automatically scroll
+
+**Job Openings / Results Section**
+
+The user should immediately see the role count, sorting controls, and beginning of the job cards without having to scroll past the hero section again.
+
+Please inspect the existing routing/navigation implementation first and use the smallest change necessary to implement this behavior cleanly.

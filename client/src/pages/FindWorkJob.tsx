@@ -583,7 +583,7 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         <div className="relative mx-auto max-w-5xl px-5 pb-8 pt-6 sm:px-6 md:pb-10 md:pt-8 lg:px-8">
 
           {/* Back link */}
-          <button onClick={() => navigate("/find-work/jobs")}
+          <button onClick={() => navigate("/find-work/jobs#job-openings")}
             className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to All Jobs
           </button>
