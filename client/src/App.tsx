@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -43,6 +43,7 @@ import Insights from "@/pages/Insights";
 import InsightPost from "@/pages/InsightPost";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/ComingSoon";
+import { loadTalentAuth } from "@/components/TalentLoginModal";
 import PaymentProtection from "@/pages/PaymentProtection";
 import ClientVerification from "@/pages/ClientVerification";
 import TrustSafety from "@/pages/TrustSafety";
@@ -295,23 +296,35 @@ function TalentRouter() {
 }
 
 // SettingsRoute — named component so React preserves its identity across
-// renders. Guards against the auth-loading race condition: the old inline
-// arrow function read user===null during the JWT verification window and
-// immediately fell through to PublicRouter → Coming Soon. This component
-// shows a spinner while loading, then renders ProfileSettings directly
-// (no nested ProtectedRoute wrappers whose own redirect useEffects could
-// race against this one). Unauthenticated users are redirected to /login.
+// renders. Handles TWO separate auth systems that coexist in this app:
+//
+//   1. JWT auth (useAuth)      — client / admin / general-talent sessions.
+//   2. Talent-only auth        — stored in localStorage via TalentLoginModal,
+//                                used by /api/talent-auth/login. useAuth()
+//                                does NOT know about this session, so we call
+//                                loadTalentAuth() directly.
+//
+// Without checking both systems, a talent-only user sees user===null and gets
+// bounced to /login, which then redirects them back to /talent-profile/:id —
+// making it look like Settings "redirects to Talent Profile."
 function SettingsRoute() {
   const { isLoading, user } = useAuth();
   const [, navigate] = useLocation();
 
+  // Read talent-only localStorage session once on mount.
+  const [talentOnlyAuth] = useState(() => loadTalentAuth());
+
   // All hooks at top level — no hooks after conditional returns.
+  // Only redirect to login once JWT auth has resolved AND there is no
+  // talent-only session either.
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && !talentOnlyAuth) {
       navigate("/login");
     }
-  }, [isLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading, user, talentOnlyAuth]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Show spinner while JWT auth is still initialising.
+  // (Talent-only auth is synchronous, so no spinner needed for that path.)
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -323,10 +336,16 @@ function SettingsRoute() {
     );
   }
 
-  // Auth resolved — render ProfileSettings directly. We do NOT nest
-  // TalentProtectedRoute / ClientProtectedRoute here because those components
-  // run their own redirect useEffects independently, and a timing difference
-  // can cause a logged-in talent to get bounced even when auth is fine.
+  // Talent-only session (separate from JWT auth) — render directly.
+  if (talentOnlyAuth) {
+    return (
+      <div className="min-h-screen bg-background">
+        <ProfileSettings />
+      </div>
+    );
+  }
+
+  // JWT session: talent or client.
   if (user?.role === "talent") {
     return (
       <div className="min-h-screen bg-background">
@@ -343,7 +362,7 @@ function SettingsRoute() {
     );
   }
 
-  // Unauthenticated or unknown role — useEffect above navigates to /login.
+  // No valid session — useEffect above navigates to /login.
   return null;
 }
 

@@ -1,0 +1,253 @@
+STOP redirecting the Settings button to Talent Profile.
+
+I have now provided the ACTUAL existing `ProfileSettings` source code. Use THIS component.
+
+The provided file exports:
+
+```tsx
+export default function ProfileSettings()
+```
+
+This is the real Settings page. It already contains:
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+* Profile Status / completion
+* Profile photo upload
+* Save Settings
+* Existing `useTalentProfile()` integration
+* Existing API/database functionality
+
+### REQUIRED FIX
+
+Find the application's MAIN router.
+
+Import the provided component from its actual file location, for example:
+
+```tsx
+import ProfileSettings from "@/pages/ProfileSettings";
+```
+
+Use the real path discovered in the repository. Do NOT blindly use the example path.
+
+Then explicitly register:
+
+```tsx
+<Route path="/settings" component={ProfileSettings} />
+```
+
+or the equivalent syntax for the router version currently installed.
+
+### CRITICAL
+
+`/settings` MUST render:
+
+```tsx
+<ProfileSettings />
+```
+
+It must NOT render:
+
+```tsx
+<TalentProfile />
+```
+
+It must NOT render:
+
+```tsx
+<ComingSoon />
+```
+
+It must NOT redirect to another page.
+
+---
+
+### FIX THE NAVBAR DROPDOWN
+
+Find the CURRENT Talent Profile dropdown component.
+
+There are separate items for:
+
+* Talent Profile
+* Finish Profile Setup
+* Find Work
+* Settings
+* Sign Out
+
+These are NOT supposed to share the same destination.
+
+The Settings item must explicitly navigate to:
+
+```tsx
+/settings
+```
+
+Example:
+
+```tsx
+<DropdownMenuItem onSelect={() => navigate("/settings")}>
+  <Settings />
+  Settings
+</DropdownMenuItem>
+```
+
+Do NOT call the Talent Profile handler from the Settings item.
+
+Do NOT use:
+
+```tsx
+navigate("/talent-profile")
+```
+
+Do NOT use:
+
+```tsx
+navigate("/profile")
+```
+
+Do NOT use the parent Talent Profile button's navigation callback.
+
+---
+
+### CHECK FOR THE ACTUAL BUG
+
+Search the dropdown code for reused handlers such as:
+
+```tsx
+onClick={handleProfileClick}
+```
+
+or:
+
+```tsx
+onSelect={handleProfileClick}
+```
+
+If Settings is using the same handler as Talent Profile, separate them.
+
+For example:
+
+```tsx
+const handleSettingsClick = () => {
+  navigate("/settings");
+};
+```
+
+Then:
+
+```tsx
+<DropdownMenuItem onSelect={handleSettingsClick}>
+  <Settings />
+  Settings
+</DropdownMenuItem>
+```
+
+---
+
+### CHECK ROUTE COLLISIONS
+
+Search the entire project for EVERY occurrence of:
+
+```text
+/settings
+```
+
+There must not be another route later in the router that maps `/settings` to:
+
+* ComingSoon
+* TalentProfile
+* PlaceholderPage
+* UnderConstruction
+* Dashboard
+
+Also inspect:
+
+```tsx
+<Route path="*" ... />
+```
+
+and dynamic routes such as:
+
+```tsx
+<Route path="/:page" ... />
+```
+
+The explicit `/settings` route must resolve correctly.
+
+---
+
+### IMPORTANT: USE THE PROVIDED COMPONENT AS-IS
+
+Do NOT generate another Settings UI.
+
+The provided component already has the correct OnSpot branding:
+
+```tsx
+const I = "#4B51B8";
+const V = "#6E4DF5";
+const NAVY = "#171B4D";
+const GOLD = "#FFA91F";
+const BG = "#FAFAFD";
+```
+
+Do not replace it.
+
+It already calls:
+
+```tsx
+useTalentProfile()
+```
+
+and uses:
+
+```tsx
+updateProfile(data)
+updateSkills()
+```
+
+Do not duplicate these APIs.
+
+---
+
+### VERIFY IT YOURSELF BEFORE FINISHING
+
+Run the application and manually test:
+
+1. Log in as a Talent user.
+2. Open Talent Profile dropdown.
+3. Click `Settings`.
+4. URL must become `/settings`.
+5. Page must show `Profile Settings`.
+6. Page must show `Basic Information`.
+7. Sidebar must show:
+
+   * Basic Information
+   * Professional Details
+   * Skills & Expertise
+   * Documents
+8. It must NOT show the Talent Profile page.
+9. It must NOT show Coming Soon.
+10. Refresh `/settings` directly.
+11. The same ProfileSettings page must remain visible.
+12. Test Save Settings and confirm existing functionality still works.
+
+### DO NOT CLAIM THIS IS FIXED JUST BECAUSE THE ROUTE WAS EDITED.
+
+Actually run the app and verify the rendered page.
+
+If `/settings` still renders Talent Profile or Coming Soon, inspect the router again and find which route is actually winning.
+
+The final routing relationship MUST be:
+
+```text
+Talent Profile dropdown
+├── Talent Profile ───────→ existing Talent Profile route
+├── Finish Profile Setup → existing profile setup route
+├── Find Work ────────────→ existing Find Work route
+├── Settings ─────────────→ /settings → ProfileSettings
+└── Sign Out ─────────────→ existing logout handler
+```
+
+**Do not modify unrelated pages or redesign the navigation bar. Fix the Settings destination and router only.**

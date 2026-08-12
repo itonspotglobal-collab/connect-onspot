@@ -1,2 +1,3 @@
 - [Pilot/client config pattern](pilot-client-config.md) — how OnSpot models pilot clients (e.g. Saddleman) so new clients are addable by config, not code changes.
 - [Profile Strength fix](profile-completion-fix.md) — single source of truth in profileCompletion.ts; root causes of 80%→17% bug; how to use the module in future pages.
+- [Settings dual-auth routing](settings-dual-auth.md) — /settings kept bouncing talent users; two auth systems (JWT + talent-only localStorage) must both be checked in SettingsRoute.
