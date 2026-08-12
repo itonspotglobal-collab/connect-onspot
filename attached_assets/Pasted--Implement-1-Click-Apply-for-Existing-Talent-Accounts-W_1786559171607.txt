@@ -1,0 +1,1177 @@
+# Implement 1-Click Apply for Existing Talent Accounts
+
+We want to introduce a streamlined **1-Click Apply journey** for users who already have a Talent Account, especially Talent users who:
+
+* completed most or all of their Talent Profile;
+* already uploaded a Resume/CV;
+* already uploaded a Video Introduction when applicable;
+* have applied to one or more jobs before.
+
+The system should remember and reuse persisted Talent profile/application information so users do not repeatedly fill the same fields.
+
+Do not create a browser-only autofill solution.
+
+The database must remain the source of truth.
+
+---
+
+# Desired Journey
+
+For a logged-in Talent:
+
+```text
+1. Apply Now
+2. Review Application
+3. Answer Job-Specific Questions
+4. Select Resume
+5. Review & Confirm
+6. Submit Application
+7. Application Confirmation
+```
+
+The majority of profile fields should already be filled before the user reaches Step 2.
+
+The user should mainly:
+
+* verify their details;
+* answer job-specific questions;
+* select/confirm the resume;
+* attach/confirm video if required;
+* optionally adjust application-specific content;
+* submit.
+
+---
+
+# Primary files to inspect
+
+Inspect the current Replit workspace first, especially:
+
+```text
+client/src/pages/JobApplyPage.tsx
+client/src/pages/FindWorkJob.tsx
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/hooks/useCandidateProfileSettings.ts
+client/src/components/TalentLoginModal.tsx
+server/routes.ts
+server/storage.ts
+shared/schema.ts
+```
+
+Also search for:
+
+```text
+job applications
+job_applications
+job_submissions
+application questions
+screening questions
+resume
+video introduction
+coverLetter
+candidateId
+talent_profile_token
+requiresVideoIntro
+Apply Now
+Submit Application
+```
+
+Do not assume the old user/profile model is canonical.
+
+The active Talent identity/profile must continue using the Candidate-based Talent system.
+
+---
+
+# 1. Detect Talent session immediately
+
+When `Apply Now` is clicked, first determine whether a valid Talent session exists.
+
+Use the existing Candidate/Talent authentication mechanism, including:
+
+```text
+talent_profile_token
+candidateId
+loadTalentAuth()
+```
+
+Do not rely only on legacy:
+
+```text
+onspot_jwt_token
+AuthContext.user
+```
+
+if the Candidate Talent system is the current canonical Talent identity.
+
+Expected behavior:
+
+```text
+Valid Talent session
+→ fetch Candidate profile
+→ fetch reusable documents
+→ fetch previous application defaults if useful
+→ show Review Application
+```
+
+Do not show Account Creation for an authenticated Talent.
+
+---
+
+# 2. Create an Application Prefill API
+
+Do not make `JobApplyPage.tsx` individually call many unrelated endpoints and reconstruct the form client-side.
+
+Create a dedicated authenticated endpoint such as:
+
+```text
+GET /api/jobs/:jobId/application-prefill
+```
+
+or another route consistent with the project.
+
+It should identify the Talent from the authenticated Talent JWT and return a normalized application-ready object.
+
+Example shape:
+
+```ts
+{
+  candidate: {
+    id,
+    firstName,
+    lastName,
+    fullName,
+    email,
+    phone,
+    location
+  },
+
+  resume: {
+    id,
+    fileName,
+    fileUrl,
+    updatedAt
+  } | null,
+
+  videoIntroduction: {
+    id,
+    fileName,
+    fileUrl,
+    updatedAt
+  } | null,
+
+  previousApplicationDefaults: {
+    coverLetter?: string
+  },
+
+  job: {
+    id,
+    requiresResume,
+    requiresVideoIntro,
+    questions: [...]
+  }
+}
+```
+
+Use the actual existing schema names.
+
+Do not expose another candidate's data.
+
+---
+
+# 3. Prefill priority
+
+Use this precedence for reusable data:
+
+```text
+Current Candidate Profile
+>
+Candidate reusable documents
+>
+Most recent valid previous application value
+>
+blank
+```
+
+The Candidate profile should remain the primary source of identity data.
+
+Previous applications should only fill values that are genuinely application-related or missing from the Candidate profile.
+
+Do not allow old application records to overwrite newer Profile Settings.
+
+Example:
+
+Candidate currently has:
+
+```text
+Phone = +63 912 345 6789
+```
+
+Old application has:
+
+```text
+Phone = 09123456780
+```
+
+Use the current Candidate profile value.
+
+---
+
+# 4. Fields that should prefill automatically
+
+For authenticated Talent, prefill:
+
+```text
+First Name
+Last Name
+Email Address
+Phone Number
+Location, if displayed
+Resume
+Video Introduction, when available
+```
+
+Also prefill application-specific reusable values where appropriate:
+
+```text
+Cover Letter / Message
+```
+
+but treat Cover Letter carefully because it may be job-specific.
+
+---
+
+# 5. Identity fields should normally come from the profile
+
+For:
+
+```text
+First Name
+Last Name
+Email
+Phone
+```
+
+prefer making them visually read-only in the application review, with an action such as:
+
+```text
+Edit in Profile Settings
+```
+
+or allow editing only if the product intentionally wants application-time profile updates.
+
+Do not let a Talent accidentally submit an application under identity details that no longer match their account.
+
+If edits are allowed, clearly decide whether they:
+
+```text
+A. update only this application
+```
+
+or:
+
+```text
+B. also update the Candidate profile
+```
+
+Do not silently do both.
+
+Preferred behavior for identity data:
+
+```text
+Profile-backed and read-only
+```
+
+with a Settings link.
+
+---
+
+# 6. Previous applications should improve convenience
+
+If the Talent already applied before, inspect their most recent successful applications.
+
+Reusable examples:
+
+* previous cover-letter text;
+* preferred/latest Resume;
+* reusable Video Introduction;
+* answers to generic reusable questions, if questions have stable IDs and are intentionally reusable.
+
+Do not blindly copy all previous answers into a different role.
+
+---
+
+# 7. Step 1 — Start Application
+
+When authenticated Talent clicks:
+
+```text
+Apply Now
+```
+
+navigate directly to the application review flow.
+
+Show a short loading state such as:
+
+```text
+Preparing your application…
+```
+
+while fetching prefill data.
+
+Then show:
+
+```text
+Your application is ready to review.
+```
+
+Do not make them fill a blank form first.
+
+---
+
+# 8. Step 2 — Review Application
+
+Present the reusable profile data in a compact review format.
+
+Example:
+
+```text
+Your Information
+
+Name
+Frenzy Val Eloise Legaspi
+
+Email
+frenzy@example.com
+
+Phone
++63 912 345 6789
+
+Resume
+✓ Frenzy_Legaspi_Resume.pdf
+[Change]
+
+Video Introduction
+✓ Introduction.mp4
+```
+
+The page should make it obvious that data came from the Talent Profile.
+
+Suggested helper:
+
+```text
+Pre-filled from your Talent Profile
+```
+
+---
+
+# 9. Identify missing required profile data
+
+If an existing Talent profile is incomplete, one-click apply should degrade gracefully.
+
+Example:
+
+```text
+We need a few more details before you can apply:
+• Phone Number
+• Resume
+```
+
+Do NOT send authenticated Talent back to account creation.
+
+Allow them to add the missing required information within the application flow or direct them to Settings.
+
+If profile-level data is entered here and intended to be reusable, persist it to the Candidate profile after confirmation.
+
+---
+
+# 10. Step 3 — Job-specific questions
+
+Job-specific questions must remain separate from profile data.
+
+Inspect the current job schema for screening/application questions.
+
+Render only questions assigned to this particular job.
+
+Possible types may include:
+
+```text
+short text
+long text
+yes/no
+single-select
+multi-select
+number
+date
+```
+
+Use the existing question model where one exists.
+
+Do not hardcode questions into `JobApplyPage`.
+
+---
+
+# 11. Required question validation
+
+Questions marked required must be answered before proceeding.
+
+Show validation beside the relevant question.
+
+Do not wait until the final API call to reveal missing answers if they can be caught client-side.
+
+Backend must also validate required answers.
+
+---
+
+# 12. Reusing previous question answers
+
+Only reuse an answer when the question has a stable identifier.
+
+For example, if the same question ID is used:
+
+```text
+Are you legally authorized to work in this country?
+```
+
+then a previous answer may be prefilled if product rules allow it.
+
+Do NOT match questions by approximate text and copy answers blindly.
+
+Job-specific answers should still be reviewed.
+
+---
+
+# 13. Step 4 — Select Resume
+
+For an existing Talent with saved Resume(s), do not show only an empty upload box.
+
+Show available stored resumes.
+
+Example:
+
+```text
+Select Resume
+
+● Frenzy_Legaspi_Resume_2026.pdf
+  Uploaded Aug 10, 2026
+
+○ Older_Resume.pdf
+
+[Upload New Resume]
+```
+
+If the Candidate system currently stores only one resume, simply preselect it.
+
+---
+
+# 14. Resume behavior
+
+If resume is required and the user already has one:
+
+```text
+preselect saved resume
+```
+
+The Talent should not need to upload it again.
+
+Allow:
+
+```text
+Use this resume
+Replace
+Upload another
+```
+
+When the user uploads a new resume, determine whether it becomes:
+
+```text
+application-only
+```
+
+or:
+
+```text
+new Candidate default resume
+```
+
+Prefer offering an explicit checkbox if needed:
+
+```text
+Use this as my default resume for future applications
+```
+
+Do not unexpectedly replace the Talent's profile resume.
+
+---
+
+# 15. Resume snapshot/reference
+
+At final submission, the application must retain the Resume that was selected at that moment.
+
+Do not make historical applications automatically point to a newly replaced resume in the future.
+
+Use either:
+
+```text
+immutable stored object reference
+```
+
+or:
+
+```text
+application document snapshot/reference
+```
+
+according to the existing document architecture.
+
+A recruiter reviewing an old application should see the Resume that was submitted for that application.
+
+---
+
+# 16. Video Introduction
+
+Video behavior must remain job-specific.
+
+If:
+
+```text
+job.requiresVideoIntro === false
+```
+
+then video should not block submission.
+
+If:
+
+```text
+job.requiresVideoIntro === true
+```
+
+then:
+
+1. preselect saved Candidate Video Introduction when available;
+2. otherwise ask Talent to upload one;
+3. validate before final submission.
+
+If the Talent has a reusable Video Introduction, don't force another upload.
+
+---
+
+# 17. Step 5 — Review & Confirm
+
+Before final submission, show a consolidated application summary.
+
+Example:
+
+```text
+Review Your Application
+
+PROFILE
+Name: ...
+Email: ...
+Phone: ...
+
+DOCUMENTS
+Resume: ...
+Video: ...
+
+QUESTIONS
+Expected salary: ...
+Available start date: ...
+
+MESSAGE
+Cover Letter: ...
+```
+
+Include:
+
+```text
+Edit
+```
+
+actions for appropriate sections.
+
+The Talent should know exactly what will be submitted.
+
+---
+
+# 18. Mismatch detection
+
+Before submission, compare profile-backed identity values against the authenticated Candidate.
+
+At minimum check:
+
+```text
+candidateId
+firstName
+lastName
+email
+phone
+```
+
+Normalize before comparing:
+
+```text
+trim names
+case-insensitive email
+E.164 phone
+```
+
+If there is an unexpected mismatch, stop submission and show:
+
+```text
+Some details no longer match your Talent Profile.
+Please review your application.
+```
+
+Do not silently submit mismatched identity information.
+
+---
+
+# 19. Step 6 — Submit Application
+
+Submission must use the authenticated Candidate identity.
+
+Backend must derive Candidate ownership from JWT.
+
+Do not trust:
+
+```text
+candidateId from browser form
+```
+
+without verifying it against the token.
+
+Submission payload should mostly contain:
+
+```text
+jobId
+selected resume ID/reference
+selected video ID/reference
+cover letter
+job-specific answers
+```
+
+Identity/profile data should be resolved server-side where possible.
+
+This reduces tampering and mismatch issues.
+
+---
+
+# 20. Prevent duplicate applications
+
+Before creating the application, check whether this Candidate already has an active application for this job.
+
+If duplicate applications are not allowed:
+
+Return something like:
+
+```text
+You already applied to this role.
+```
+
+and optionally navigate to the existing application status.
+
+Do not create duplicate rows due to double-clicking.
+
+Also disable Submit while request is in progress.
+
+Backend should enforce uniqueness as well if appropriate.
+
+---
+
+# 21. Create the application transactionally
+
+At final submission:
+
+```text
+Candidate
++
+Job
++
+Selected documents
++
+Question answers
++
+Cover letter
+```
+
+must result in one consistent application.
+
+Prefer a DB transaction where the data model requires multiple inserts.
+
+Do not leave a half-created application if storing answers fails.
+
+---
+
+# 22. Step 7 — Confirmation
+
+After successful submission, show a proper confirmation page/state.
+
+Example:
+
+```text
+Application submitted!
+
+Your application for
+AI / Automation Engineer
+has been successfully submitted.
+```
+
+Include:
+
+```text
+View My Applications
+Browse More Jobs
+View Job
+```
+
+Do not immediately dump the user onto another generic page without confirmation.
+
+---
+
+# 23. Save reusable application defaults
+
+After successful submission, update reusable Candidate/application preference data where appropriate.
+
+Examples:
+
+```text
+last used resume ID
+last used video ID
+latest generic cover-letter draft
+```
+
+Do not store job-specific answers as universal profile data unless deliberately designed.
+
+---
+
+# 24. One-click apply eligibility
+
+Define a helper such as:
+
+```ts
+getOneClickApplyReadiness(...)
+```
+
+or equivalent.
+
+A profile may be:
+
+```text
+ready
+partially_ready
+missing_required_data
+```
+
+Example:
+
+```ts
+ready =
+  validCandidate &&
+  validName &&
+  validEmail &&
+  validPhone &&
+  (!job.requiresResume || hasResume) &&
+  (!job.requiresVideoIntro || hasVideo);
+```
+
+Do not require optional Profile fields just to use the streamlined flow.
+
+---
+
+# 25. CTA language
+
+For an authenticated Talent whose application is ready, consider changing:
+
+```text
+Apply Now
+```
+
+to:
+
+```text
+Apply Now
+```
+
+and then opening the prefilled review immediately.
+
+Do not literally submit the application from one click without review.
+
+“1-Click Apply” in this feature means:
+
+```text
+one click to start a pre-filled application
+```
+
+not:
+
+```text
+one click sends application with no review
+```
+
+The user must still review and explicitly click `Submit Application`.
+
+---
+
+# 26. Progress indicator
+
+Use a compact application progress indicator.
+
+Example:
+
+```text
+Review
+→ Questions
+→ Resume
+→ Confirm
+```
+
+Do not show Account Creation for logged-in Talent.
+
+If no questions exist, skip that step.
+
+If resume is already selected, the Resume step can be lightweight rather than forcing unnecessary interaction.
+
+---
+
+# 27. New-user flow remains separate
+
+For logged-out/new users, preserve the account-first flow:
+
+```text
+Apply Now
+→ Create Talent Account / Sign In
+→ Prefilled Review
+→ Questions
+→ Resume
+→ Confirm
+→ Submit
+```
+
+Do not apply the existing-Talent shortcut until a valid Candidate identity exists.
+
+---
+
+# 28. Authentication consistency
+
+Continue consolidating Talent flows around the active Candidate auth system.
+
+Do not create another token or session mechanism specifically for One-Click Apply.
+
+Use existing:
+
+```text
+Talent JWT
+candidateId
+Candidate ownership checks
+```
+
+---
+
+# 29. Database source of truth
+
+Reusable application prefill must come from persisted records.
+
+Do not rely on:
+
+```text
+localStorage application form values
+sessionStorage profile data
+React state from previous page
+```
+
+except for temporary UI/session navigation context.
+
+Persisted Candidate data and application history should survive:
+
+```text
+browser refresh
+logout/login
+another device
+```
+
+---
+
+# 30. Previous applications query
+
+Add or reuse a secured query for the authenticated Candidate's previous applications.
+
+For example:
+
+```text
+GET /api/talent/applications
+```
+
+or appropriate existing route.
+
+Use it to determine things such as:
+
+```text
+most recent resume
+previous reusable cover letter
+existing application to current job
+```
+
+Never allow a Talent to fetch another Talent's private application history.
+
+---
+
+# 31. Do not use application history to corrupt profile data
+
+Example:
+
+Candidate profile:
+
+```text
+First Name: Frenzy Val Eloise
+Last Name: Legaspi
+```
+
+Old application:
+
+```text
+First Name: Frenzy
+Last Name: Val Eloise Legaspi
+```
+
+The one-click application MUST use the corrected Candidate profile.
+
+Do not import stale values from old applications over current profile values.
+
+---
+
+# 32. Phone validation
+
+Run the existing shared phone validation before marking the application ready.
+
+If the stored phone is invalid:
+
+```text
+This phone number needs to be updated before submitting.
+```
+
+Allow Talent to correct it via Profile Settings or application review, according to current product design.
+
+Do not silently submit an invalid saved phone number.
+
+---
+
+# 33. Profile completion vs application readiness
+
+Do not equate:
+
+```text
+Profile Completion = 100%
+```
+
+with:
+
+```text
+Ready for every possible job
+```
+
+A Talent may have a complete general profile but still be missing a job-specific required video/question.
+
+Use separate concepts:
+
+```text
+profileCompletion
+```
+
+and:
+
+```text
+applicationReadiness
+```
+
+---
+
+# 34. Suggested ApplicationPrefill model
+
+Create a normalized type similar to:
+
+```ts
+interface ApplicationPrefill {
+  candidate: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    location?: string;
+  };
+
+  documents: {
+    resumes: ApplicationDocumentOption[];
+    selectedResumeId?: string;
+    videos: ApplicationDocumentOption[];
+    selectedVideoId?: string;
+  };
+
+  previousDefaults: {
+    coverLetter?: string;
+  };
+
+  job: {
+    id: string;
+    title: string;
+    requiresResume: boolean;
+    requiresVideoIntro: boolean;
+    questions: ApplicationQuestion[];
+  };
+
+  readiness: {
+    ready: boolean;
+    missing: string[];
+  };
+}
+```
+
+Adapt it to the actual project schema.
+
+---
+
+# 35. Acceptance tests
+
+## Existing Talent — fully ready
+
+1. Login as Talent.
+2. Ensure profile has valid name/email/phone.
+3. Resume already uploaded.
+4. Open job.
+5. Click Apply Now.
+6. Review page opens immediately.
+7. Name prefilled.
+8. Email prefilled.
+9. Phone prefilled.
+10. Resume already selected.
+11. Video selected if required and available.
+12. Answer job-specific questions.
+13. Review.
+14. Submit.
+15. Application DB row created.
+16. Confirmation shown.
+
+No account creation and no redundant identity typing.
+
+---
+
+## Existing Talent — previously applied
+
+1. Talent has at least one previous application.
+2. Open a different job.
+3. Click Apply Now.
+4. Current Candidate profile values are loaded.
+5. Recent reusable Resume is selected.
+6. Reusable application defaults are loaded where appropriate.
+7. Old stale identity fields do not overwrite Candidate profile.
+8. Submit succeeds.
+
+---
+
+## Existing Talent — missing resume
+
+1. Profile/account exists.
+2. No Resume.
+3. Job requires Resume.
+4. Apply Now.
+5. Application review is prefilled.
+6. Resume is shown as missing.
+7. Upload/select Resume.
+8. Continue.
+9. Submit.
+
+Do not require them to retype profile details.
+
+---
+
+## Existing Talent — optional video
+
+1. Job does not require video.
+2. Candidate has no video.
+3. One-click flow remains ready.
+4. Submission succeeds.
+
+---
+
+## Existing Talent — required video
+
+1. Job requires video.
+2. Candidate already has video.
+3. Preselect it.
+4. No re-upload required.
+
+Test again with no video and require one.
+
+---
+
+## New Talent
+
+1. Logged out.
+2. Apply Now.
+3. Account creation/sign-in occurs first.
+4. Account created.
+5. Candidate profile loaded.
+6. Prefilled application review opens.
+7. Complete missing items.
+8. Submit.
+
+---
+
+## Duplicate application
+
+1. Candidate already applied to job.
+2. Click Apply Now again.
+3. Do not create duplicate.
+4. Show existing application status/action.
+
+---
+
+# 36. Regression tests
+
+Do not break:
+
+```text
+Talent Profile
+Profile Settings
+Profile Completion
+Find Best Matches
+Resume parsing
+Talent login
+Talent signup
+Find Work
+Job details
+Admin applications
+Applicant pipeline
+Resume uploads
+Video uploads
+Client/Admin authentication
+```
+
+---
+
+# Final report required
+
+After implementation, report:
+
+1. old application flow;
+2. new existing-Talent flow;
+3. new new-user flow;
+4. Application Prefill API added/changed;
+5. canonical source for each prefilled field;
+6. how previous applications are used;
+7. how stale previous data is prevented from overriding Candidate profile;
+8. Resume reuse strategy;
+9. Video reuse strategy;
+10. job-specific question architecture;
+11. application readiness logic;
+12. mismatch detection;
+13. duplicate application prevention;
+14. Candidate ownership/security validation;
+15. database tables/fields involved;
+16. transaction behavior at submission;
+17. confirmation flow;
+18. tests performed.
+
+Do not mark this complete based only on a prefilled UI.
+
+Verify the final Application row, document references, question answers, and Candidate ownership in the database.
