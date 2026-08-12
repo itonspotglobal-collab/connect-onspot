@@ -464,11 +464,22 @@ function extractPhone(allText: string): string {
 
 // ─── Location extraction ──────────────────────────────────────────────────────
 
-// Common Philippine city/province names, localities, and generic location patterns.
-// Poblacion, Barangay, Brgy are strong Philippine address signals.
-const LOCATION_HINTS_RX = /\b(?:cebu|manila|davao|quezon|makati|taguig|pasig|mandaluyong|paranaque|muntinlupa|caloocan|las\s+pinas|malabon|navotas|valenzuela|marikina|pasay|san\s+juan|cavite|laguna|batangas|rizal|bulacan|pampanga|metro\s+manila|ncr|philippines|dalaguete|liloan|minglanilla|consolacion|mandaue|lapu-lapu|zamboanga|cagayan|iloilo|bacolod|antipolo|bacoor|imus|dasmarinas|poblacion|barangay|brgy)\b/i;
+// Philippine city/province names (including barangay-level and common localities)
+const PH_LOCATION_RX = /\b(?:cebu|manila|davao|quezon|makati|taguig|pasig|mandaluyong|paranaque|muntinlupa|caloocan|las\s+pinas|malabon|navotas|valenzuela|marikina|pasay|san\s+juan|cavite|laguna|batangas|rizal|bulacan|pampanga|metro\s+manila|ncr|philippines|dalaguete|liloan|minglanilla|consolacion|mandaue|lapu-lapu|zamboanga|cagayan|iloilo|bacolod|antipolo|bacoor|imus|dasmarinas|poblacion|barangay|brgy)\b/i;
+
+// Major international cities recognised without an explicit label
+const INTL_CITY_RX = /\b(?:sydney|melbourne|brisbane|perth|adelaide|auckland|wellington|christchurch|london|manchester|birmingham|glasgow|edinburgh|belfast|dublin|toronto|vancouver|calgary|montreal|ottawa|new\s+york|los\s+angeles|chicago|houston|phoenix|philadelphia|san\s+francisco|seattle|boston|miami|dallas|atlanta|denver|washington|dubai|abu\s+dhabi|sharjah|riyadh|jeddah|doha|kuwait|muscat|bahrain|singapore|kuala\s+lumpur|jakarta|bangkok|hong\s+kong|tokyo|osaka|seoul|taipei|beijing|shanghai|mumbai|delhi|bangalore|hyderabad|chennai|kolkata|pune|ahmedabad|karachi|lahore|islamabad|dhaka|colombo|kathmandu|nairobi|lagos|accra|johannesburg|cape\s+town|cairo|casablanca|addis\s+ababa|paris|berlin|madrid|rome|amsterdam|brussels|vienna|zurich|stockholm|oslo|copenhagen|helsinki|warsaw|prague|budapest|bucharest|lisbon|athens|istanbul|moscow|kyiv|toronto|montreal)\b/i;
+
+// Combined location-hint pattern
+const LOCATION_HINTS_RX = new RegExp(
+  `(?:${PH_LOCATION_RX.source}|${INTL_CITY_RX.source})`,
+  "i",
+);
 
 const CITY_PATTERN_RX = /\b[A-Z][a-zA-Z\s]+(?:City|Province|Region|District)\b/;
+
+// Comprehensive list of country names / territories for comma-pattern detection
+const COUNTRY_NAMES_RX = /\b(?:afghanistan|albania|algeria|andorra|angola|argentina|armenia|australia|austria|azerbaijan|bahamas|bahrain|bangladesh|belarus|belgium|belize|benin|bhutan|bolivia|bosnia|botswana|brazil|brunei|bulgaria|burkina|burundi|cambodia|cameroon|canada|chad|chile|china|colombia|comoros|congo|costa\s+rica|croatia|cuba|cyprus|czechia|denmark|djibouti|dominica|ecuador|egypt|eritrea|estonia|ethiopia|fiji|finland|france|gabon|gambia|georgia|germany|ghana|greece|guatemala|guinea|guyana|haiti|honduras|hungary|iceland|india|indonesia|iran|iraq|ireland|israel|italy|jamaica|japan|jordan|kazakhstan|kenya|kiribati|kuwait|kyrgyzstan|laos|latvia|lebanon|lesotho|liberia|libya|liechtenstein|lithuania|luxembourg|madagascar|malawi|malaysia|maldives|mali|malta|mauritania|mauritius|mexico|moldova|monaco|mongolia|montenegro|morocco|mozambique|myanmar|namibia|nepal|netherlands|new\s+zealand|nicaragua|niger|nigeria|norway|oman|pakistan|palau|panama|papua\s+new\s+guinea|paraguay|peru|philippines|poland|portugal|qatar|romania|russia|rwanda|samoa|saudi\s+arabia|senegal|serbia|sierra\s+leone|singapore|slovakia|slovenia|somalia|south\s+africa|south\s+korea|south\s+sudan|spain|sri\s+lanka|sudan|sweden|switzerland|syria|taiwan|tajikistan|tanzania|thailand|togo|tonga|trinidad|tunisia|turkey|turkmenistan|uganda|ukraine|united\s+arab\s+emirates|united\s+kingdom|united\s+states|uruguay|uzbekistan|venezuela|vietnam|yemen|zambia|zimbabwe|ph|phl|usa|uk|uae|us)\b/i;
 
 // Labels that explicitly introduce an address/location line in a resume
 const LOCATION_LABEL_RX =
@@ -634,6 +645,16 @@ function extractLocation(sections: ResumeSection[], allText: string): string {
     ) {
       const words = t.split(/[\s,]+/).filter(Boolean);
       if (words.some(isLikelyCountryOrRegion) || locationScore(t) >= 3) return t;
+    }
+
+    // Line contains a known international city OR country name without a comma —
+    // short enough to be a location line, not a sentence, and not a dot-leader.
+    if (
+      (INTL_CITY_RX.test(t) || COUNTRY_NAMES_RX.test(t)) &&
+      t.split(/\s+/).length <= 8 &&
+      !/[.]{2,}/.test(t)
+    ) {
+      return t;
     }
 
     // Multi-line address: city on one line, province/country on the next
