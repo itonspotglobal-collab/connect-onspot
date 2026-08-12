@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, CheckCircle2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
+import { saveTalentAuth } from "@/components/TalentLoginModal";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PrefillData {
@@ -53,11 +54,18 @@ export default function TalentSignupFromApplication() {
   const { toast } = useToast();
   const { refreshAuth } = useAuth();
 
-  // Parse token from URL
+  // Parse URL params
   const searchParams = new URLSearchParams(window.location.search);
   const applicationToken = searchParams.get("applicationToken") ?? "";
+  const returnTo = searchParams.get("returnTo") ?? "";
 
-  // State machine: loading | ready | submitting | done | error | refreshing | refreshed
+  // ── Mode detection ────────────────────────────────────────────────────────
+  // Account-first mode: user clicked "Create Talent Account & Apply" from a
+  // job page. No application exists yet; jobId is encoded in returnTo.
+  // Legacy continuation mode: user followed an emailed link with applicationToken.
+  const isAccountFirstMode = !applicationToken && !!returnTo;
+
+  // State machine: loading | ready | submitting | done | error | refreshing
   type Stage = "loading" | "ready" | "submitting" | "done" | "error" | "refreshing";
   const [stage, setStage] = useState<Stage>("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -74,14 +82,22 @@ export default function TalentSignupFromApplication() {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
-  // Resolve token on mount
+  // ── Resolve mode on mount ────────────────────────────────────────────────
   useEffect(() => {
+    // Account-first mode: no token needed, skip straight to the signup form
+    if (isAccountFirstMode) {
+      setStage("ready");
+      return;
+    }
+
+    // Truly invalid link — neither mode is active
     if (!applicationToken) {
       setErrorMsg("No application token found. Please apply for a job first.");
       setStage("error");
       return;
     }
 
+    // Legacy continuation: resolve the application token
     (async () => {
       try {
         const res = await fetch(`/api/job-applications/continue/${encodeURIComponent(applicationToken)}`);
@@ -118,7 +134,8 @@ export default function TalentSignupFromApplication() {
         setStage("error");
       }
     })();
-  }, [applicationToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setField = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
@@ -148,7 +165,6 @@ export default function TalentSignupFromApplication() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // If it was already used (race condition), show appropriate message
         setErrorKind(data.error === "Token already used" ? "used" : "generic");
         setErrorMsg(data.error === "Token already used"
           ? "This link has already been used to create an account. Please sign in."
@@ -156,7 +172,6 @@ export default function TalentSignupFromApplication() {
         setStage("error");
         return;
       }
-      // Navigate to same page with the new token
       const newUrl = `${window.location.pathname}?applicationToken=${encodeURIComponent(data.continuationToken)}`;
       window.location.replace(newUrl);
     } catch {
@@ -168,7 +183,9 @@ export default function TalentSignupFromApplication() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate() || !prefill) return;
+    if (!validate()) return;
+    // Legacy mode requires prefill to be loaded
+    if (!isAccountFirstMode && !prefill) return;
 
     setStage("submitting");
     try {
@@ -193,46 +210,72 @@ export default function TalentSignupFromApplication() {
       const signupData = await signupRes.json();
       const authToken: string = signupData.token;
 
-      // 2. Link the application to the new account (required — not best-effort)
-      const linkRes = await fetch("/api/job-applications/link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          submissionId: prefill.submissionId,
-          token: applicationToken,
-        }),
-      });
-      if (!linkRes.ok) {
-        const linkErr = await linkRes.json().catch(() => ({ error: "Linking failed" }));
-        throw new Error(linkErr.error || "Could not link your application to your new account. Please contact support.");
-      }
-
-      // 3. Persist auth using the app's standard localStorage contract
+      // 2. Persist standard JWT (both auth systems benefit from this)
       localStorage.setItem("onspot_jwt_token", authToken);
       localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
 
-      // 4. Sync AuthContext so guards see the user as authenticated, then
-      //    redirect new Talent accounts to the onboarding / Find Best Matches page.
-      await refreshAuth();
+      if (isAccountFirstMode) {
+        // ── Account-first flow ───────────────────────────────────────────────
+        // Establish the Talent portal session (talent_profile_token) so that
+        // JobApplyPage.tsx's loadTalentAuth() call finds it immediately.
+        if (signupData.talentToken && signupData.candidateId) {
+          saveTalentAuth({
+            token: signupData.talentToken,
+            candidateId: signupData.candidateId,
+            email: form.email.trim(),
+            fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
+          });
+        }
 
-      toast({
-        title: "🎉 Account created!",
-        description:
-          "Your account has been created and your application has been submitted successfully. You're now signed in and can apply for more opportunities.",
-        duration: 8000,
-      });
+        // Signal Find Best Matches / other pages about the new signup
+        sessionStorage.setItem("onspot_new_talent_welcome", "1");
+        if (signupData.candidateId) {
+          sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
+        }
 
-      // Signal the Find Best Matches page to show the post-registration welcome banner.
-      // Using sessionStorage so it fires exactly once and never pollutes the URL.
-      sessionStorage.setItem("onspot_new_talent_welcome", "1");
-      // Pass candidateId so Find Best Matches can PATCH (not POST) the profile on first save.
-      if (signupData.candidateId) {
-        sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
+        toast({
+          title: "🎉 Account created!",
+          description: "Your Talent account is ready. Review and submit your application below.",
+          duration: 6000,
+        });
+
+        // Return to the job application page — it will see the fresh session
+        navigate(returnTo);
+      } else {
+        // ── Legacy continuation flow ─────────────────────────────────────────
+        // Link the previously-submitted application to the new account
+        const linkRes = await fetch("/api/job-applications/link", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            submissionId: prefill!.submissionId,
+            token: applicationToken,
+          }),
+        });
+        if (!linkRes.ok) {
+          const linkErr = await linkRes.json().catch(() => ({ error: "Linking failed" }));
+          throw new Error(linkErr.error || "Could not link your application to your new account. Please contact support.");
+        }
+
+        // Sync AuthContext so guards see the user as authenticated
+        await refreshAuth();
+
+        toast({
+          title: "🎉 Account created!",
+          description:
+            "Your account has been created and your application has been submitted successfully. You're now signed in and can apply for more opportunities.",
+          duration: 8000,
+        });
+
+        sessionStorage.setItem("onspot_new_talent_welcome", "1");
+        if (signupData.candidateId) {
+          sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
+        }
+        navigate("/find-best-matches");
       }
-      navigate("/find-best-matches");
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message, variant: "destructive" });
       setStage("ready");
@@ -308,11 +351,15 @@ export default function TalentSignupFromApplication() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
             Create your Talent account
           </h1>
-          {prefill?.jobTitle && (
+          {isAccountFirstMode ? (
+            <p className="text-sm text-slate-500">
+              Create a free account to review and submit your application. Takes under a minute.
+            </p>
+          ) : prefill?.jobTitle ? (
             <p className="text-sm text-slate-500">
               Your application for <span className="font-medium text-slate-700 dark:text-slate-300">{prefill.jobTitle}</span> is saved — create an account to track it.
             </p>
-          )}
+          ) : null}
         </div>
 
         <Card>
@@ -346,20 +393,34 @@ export default function TalentSignupFromApplication() {
                 </div>
               </div>
 
-              {/* Email (locked to submitted value) */}
+              {/* Email — editable in account-first mode, locked in legacy mode */}
               <div className="space-y-1.5">
                 <Label htmlFor="email">
                   Email Address <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  readOnly
-                  className="bg-slate-100 dark:bg-white/5 cursor-not-allowed"
-                  autoComplete="email"
-                />
-                <p className="text-xs text-slate-400">Email is pre-filled from your application.</p>
+                {isAccountFirstMode ? (
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setField("email", e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                ) : (
+                  <>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={form.email}
+                      readOnly
+                      className="bg-slate-100 dark:bg-white/5 cursor-not-allowed"
+                      autoComplete="email"
+                    />
+                    <p className="text-xs text-slate-400">Email is pre-filled from your application.</p>
+                  </>
+                )}
+                {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
               </div>
 
               {/* Password */}
@@ -406,6 +467,8 @@ export default function TalentSignupFromApplication() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating account…
                     </>
+                  ) : isAccountFirstMode ? (
+                    "Create account & continue to application"
                   ) : (
                     "Create account & track my application"
                   )}
@@ -414,7 +477,13 @@ export default function TalentSignupFromApplication() {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => navigate("/")}
+                    onClick={() => {
+                      if (returnTo) {
+                        navigate(`/portal-login?portal=talent&returnTo=${encodeURIComponent(returnTo)}`);
+                      } else {
+                        navigate("/");
+                      }
+                    }}
                     className="text-[#474ead] hover:underline"
                   >
                     Sign in

@@ -1,0 +1,816 @@
+# Fix Remaining Job Application Flow + Resume Address Parsing
+
+Two bugs remain after the recent Talent application-flow changes.
+
+Do not revert the new desired flow.
+
+The intended flow remains:
+
+```text
+NEW USER:
+Apply Now
+→ Create Talent Account / Sign In
+→ Prefilled Application Review
+→ Submit Application
+
+EXISTING TALENT:
+Apply Now
+→ Prefilled Application Review
+→ Submit Application
+```
+
+## BUG 1 — “Create Talent Account & Apply” leads to Link Unavailable
+
+Current behavior:
+
+1. Logged-out visitor opens a job.
+2. Clicks Apply Now.
+3. Sees:
+
+   * Create Talent Account & Apply
+   * Sign In to Existing Account
+4. Clicks `Create Talent Account & Apply`.
+5. Lands on:
+
+```text
+Link unavailable
+No application token found.
+Please apply for a job first.
+```
+
+This is wrong.
+
+---
+
+# Confirmed root cause
+
+Inspect:
+
+```text
+client/src/pages/TalentSignupFromApplication.tsx
+client/src/pages/JobApplyPage.tsx
+client/src/pages/FindWorkJob.tsx
+client/src/App.tsx
+server/routes.ts
+```
+
+The existing `TalentSignupFromApplication.tsx` still assumes the OLD flow.
+
+It currently expects:
+
+```ts
+const applicationToken =
+  searchParams.get("applicationToken") ?? "";
+```
+
+and then immediately fails when it is missing.
+
+That page was originally designed for:
+
+```text
+Application submitted first
+→ backend creates continuationToken
+→ redirect to signup with applicationToken
+```
+
+But the product flow has now changed to:
+
+```text
+Account first
+→ Application second
+```
+
+Therefore the signup page must no longer require a previously-created application token for the new-user Apply flow.
+
+---
+
+# 1. Preserve JOB context, not APPLICATION context
+
+When the user clicks:
+
+```text
+Create Talent Account & Apply
+```
+
+pass the selected job identifier to account creation.
+
+For example:
+
+```text
+/talent/signup?jobId=<job-id>&intent=apply
+```
+
+or use a safe route/state/session mechanism already established in the project.
+
+The important thing is:
+
+```text
+jobId must survive account creation
+```
+
+Do NOT require:
+
+```text
+applicationToken
+submissionId
+```
+
+because no application should exist yet.
+
+---
+
+# 2. Support two signup entry modes temporarily
+
+`TalentSignupFromApplication.tsx` may still be used by old continuation links.
+
+Do not break existing historical links unnecessarily.
+
+Support:
+
+### New account-first mode
+
+Input:
+
+```text
+jobId
+intent=apply
+```
+
+Behavior:
+
+```text
+Create Talent account
+→ authenticate
+→ create/fetch Candidate
+→ return to /jobs/:jobId/apply
+→ show prefilled application
+```
+
+### Legacy continuation mode
+
+Input:
+
+```text
+applicationToken
+```
+
+If this old workflow is still needed anywhere, preserve it separately.
+
+Do not make `applicationToken` mandatory when `jobId` exists.
+
+Conceptually:
+
+```ts
+if (applicationToken) {
+  // legacy application-first continuation
+} else if (jobId) {
+  // new account-first flow
+} else {
+  // truly invalid link
+}
+```
+
+---
+
+# 3. After account creation, establish the correct Talent session
+
+The active Talent system uses the Candidate/Talent authentication architecture.
+
+Inspect the current signup response and Talent login flow.
+
+After creating a new Talent account, make sure the same auth state used by the Talent Profile is established.
+
+That may include:
+
+```text
+talent_profile_token
+candidateId
+TalentAuthState
+```
+
+Do NOT only set:
+
+```text
+onspot_jwt_token
+onspot_user
+```
+
+if the current Candidate-based pages require `talent_profile_token`.
+
+Avoid creating another auth split.
+
+After signup, verify:
+
+```ts
+loadTalentAuth()
+```
+
+returns the newly-created Candidate session if that is now the canonical Talent auth mechanism.
+
+---
+
+# 4. Redirect back to the SAME job
+
+After successful signup:
+
+Do NOT redirect the user to Find Best Matches.
+
+For an Apply flow, return them directly to the selected job application:
+
+```text
+/find-work/job/<jobId>/apply
+```
+
+or the correct existing application route.
+
+The application page should then see the Talent session and load the Candidate profile.
+
+Expected:
+
+```text
+Create account
+→ authenticated
+→ application review page
+```
+
+with no extra navigation required.
+
+---
+
+# 5. Existing Talent Sign In flow
+
+The button:
+
+```text
+Sign In to Existing Account
+```
+
+must also preserve:
+
+```text
+jobId
+```
+
+After successful sign-in:
+
+```text
+return to the same application
+```
+
+Do not send them to a generic dashboard.
+
+Example desired flow:
+
+```text
+/job/123/apply
+→ Sign In
+→ /job/123/apply
+```
+
+---
+
+# 6. Do not create an application record before account creation
+
+This is essential.
+
+For a new visitor, clicking Apply Now should NOT yet call:
+
+```text
+POST /api/jobs/:jobId/apply
+```
+
+because the user has not reviewed the application form yet.
+
+Application creation should happen only after:
+
+1. account exists;
+2. Candidate profile is loaded;
+3. application is prefilled;
+4. user reviews it;
+5. user clicks Submit Application.
+
+The backend application record should therefore be created at the final submission step.
+
+---
+
+# 7. Update JobApplyPage state machine
+
+Refactor `JobApplyPage.tsx` to use an explicit flow.
+
+Conceptually:
+
+```ts
+type ApplyStage =
+  | "account_gate"
+  | "loading_profile"
+  | "review"
+  | "submitting"
+  | "success";
+```
+
+Behavior:
+
+```text
+No Talent session
+→ account_gate
+
+Valid Talent session
+→ loading_profile
+→ review
+
+Successful signup/signin with job context
+→ review
+```
+
+Do not let old continuation-token logic control the new primary flow.
+
+---
+
+# 8. Prefill from Candidate after auth
+
+When the user reaches application review, fetch fresh Candidate data.
+
+Prefill:
+
+```text
+First Name
+Last Name
+Email
+Phone
+Resume
+Video Introduction if applicable
+```
+
+Do not use empty local form state when Candidate data already exists.
+
+Use separate `firstName` / `lastName`.
+
+Do not split `fullName`.
+
+---
+
+# 9. Test BUG 1 exactly
+
+Test this sequence:
+
+### New user
+
+1. Log out completely.
+2. Open an open role.
+3. Click Apply Now.
+4. Click `Create Talent Account & Apply`.
+5. Account form opens.
+6. No “application token missing” screen.
+7. Create account.
+8. Talent session becomes active.
+9. Return automatically to SAME job.
+10. Application review appears.
+11. Candidate/account fields are prefilled.
+12. Submit Application.
+13. Application DB row is created only now.
+
+### Existing user
+
+1. Log out.
+2. Open job.
+3. Apply Now.
+4. Sign In to Existing Account.
+5. Sign in.
+6. Return to SAME job.
+7. Prefilled review opens.
+
+---
+
+# BUG 2 — Find Best Matches resume Address/Location parsing still blank
+
+The resume parser already exposes:
+
+```ts
+location: string
+```
+
+inside:
+
+```text
+ExtractedCandidateProfile
+```
+
+but the Find Best Matches Location input remains blank after CV upload even when the resume contains an address.
+
+Investigate the full pipeline:
+
+```text
+Uploaded CV
+→ extractTextFromFile()
+→ resume parser
+→ parsed profile.location
+→ FindBestMatches state
+→ Location input
+```
+
+Find exactly where the value is getting lost.
+
+---
+
+# 10. Add parser diagnostics first
+
+During development, log ONLY safe parsed metadata:
+
+```ts
+console.log("Resume location extraction:", {
+  extractedLocation: result.location,
+  extractedFields: result.extractedFields,
+});
+```
+
+Do not log the full resume text in production.
+
+Also log the Find Best Matches mapping:
+
+```ts
+console.log("Applying resume parse result:", {
+  location: parsed.location,
+});
+```
+
+Determine whether:
+
+### Case A
+
+```text
+parsed.location is empty
+```
+
+Then the extraction logic itself is failing.
+
+### Case B
+
+```text
+parsed.location contains the address
+```
+
+but the UI field is blank.
+
+Then the state mapping/reset logic is failing.
+
+Fix the correct layer.
+
+---
+
+# 11. Improve location extraction
+
+Inspect the current location extraction inside:
+
+```text
+client/src/lib/resumeParser.ts
+```
+
+Support clearly-labeled formats such as:
+
+```text
+Address: Cebu City, Philippines
+Address: 123 Example Street, Cebu City, Philippines
+Location: Manila, Philippines
+Current Address: Makati City, Metro Manila
+Current Location: Davao City, Philippines
+Based in: Cebu, Philippines
+Residence: Quezon City, Philippines
+```
+
+Case-insensitive labels.
+
+Conceptually:
+
+```ts
+const labeledLocationPatterns = [
+  /(?:current\s+)?address\s*[:\-]\s*(.+)/i,
+  /(?:current\s+)?location\s*[:\-]\s*(.+)/i,
+  /based\s+in\s*[:\-]?\s*(.+)/i,
+  /residence\s*[:\-]\s*(.+)/i,
+];
+```
+
+But adapt this to the actual parser structure.
+
+---
+
+# 12. Handle PDF line reconstruction
+
+The PDF extractor rebuilds text by Y-coordinate.
+
+Addresses may be fragmented into lines such as:
+
+```text
+Cebu City
+Philippines
+```
+
+or:
+
+```text
+123 Sample Street
+Cebu City, Philippines
+```
+
+Add logic to examine nearby contact/header lines when appropriate.
+
+The parser should not require the full address to exist on one line if PDF extraction splits it naturally.
+
+---
+
+# 13. Prefer header/contact region
+
+Address/location is normally found near:
+
+```text
+Name
+Email
+Phone
+Address
+LinkedIn
+```
+
+Prioritize early resume/contact lines before Work Experience or Education.
+
+Do not accidentally treat employer locations as the candidate's home/current location.
+
+Examples to avoid:
+
+```text
+Software Engineer — Cebu City
+ABC Company — Manila
+University of Cebu
+```
+
+Those are not necessarily the Talent's address.
+
+---
+
+# 14. Location confidence rules
+
+Use strong candidates first:
+
+### High confidence
+
+Explicit:
+
+```text
+Address:
+Location:
+Current Address:
+Current Location:
+Based in:
+Residence:
+```
+
+### Medium confidence
+
+A city/province/country line appearing in the contact/header block beside email/phone.
+
+### Reject
+
+Locations found only inside:
+
+```text
+Work Experience
+Education
+Projects
+References
+```
+
+unless another strong signal indicates personal location.
+
+---
+
+# 15. Philippine address support
+
+Since many Talent profiles are PH-based, ensure common formats work:
+
+```text
+Cebu City, Philippines
+Cebu, Philippines
+Makati City, Metro Manila
+Quezon City, NCR
+Davao City, Philippines
+Taguig City, Metro Manila
+Pasig City, Philippines
+Manila, Philippines
+Lapu-Lapu City, Cebu
+Mandaue City, Cebu
+```
+
+Also allow street/barangay formats:
+
+```text
+Brgy. Lahug, Cebu City, Cebu
+123 Example St., Makati City
+```
+
+Do not hardcode only these locations.
+
+---
+
+# 16. Find Best Matches mapping
+
+After parsing, make sure:
+
+```ts
+parsed.location
+```
+
+actually populates the Location input state.
+
+Example:
+
+```ts
+setProfile(prev => ({
+  ...prev,
+  location:
+    userHasManuallyEditedLocation
+      ? prev.location
+      : parsed.location || prev.location,
+}));
+```
+
+Use the actual state architecture.
+
+Do not overwrite manually edited Location after the user changes it.
+
+---
+
+# 17. Watch for state reset
+
+Inspect `FindBestMatches.tsx` for effects that may do:
+
+```ts
+setLocation("")
+```
+
+or restore Candidate/default data after parsing.
+
+A common failure pattern is:
+
+```text
+parser fills location
+→ async Candidate fetch completes
+→ useEffect resets form
+→ location becomes blank
+```
+
+Fix ordering/race conditions.
+
+Candidate/server data should win initially, but resume parsing should fill missing fields when the Candidate profile is incomplete.
+
+Recommended precedence:
+
+```text
+manual user edit
+> persisted Candidate value
+> parsed resume value
+> empty/default
+```
+
+But for a new Candidate with no location:
+
+```text
+parsed resume location
+```
+
+should populate the field.
+
+---
+
+# 18. Verify extractedFields
+
+If Location is successfully parsed, ensure:
+
+```text
+extractedFields
+```
+
+contains:
+
+```text
+location
+```
+
+if the rest of the parser uses that array to decide which fields to populate.
+
+A parser can correctly assign `result.location` yet still fail UI mapping if `extractedFields` does not include it.
+
+---
+
+# 19. Resume parsing tests
+
+Add/test these samples.
+
+### Explicit location
+
+Resume contains:
+
+```text
+Frenzy Val Eloise Legaspi
+frenzy@example.com
++63 912 345 6789
+Cebu City, Philippines
+```
+
+Expected:
+
+```text
+location = "Cebu City, Philippines"
+```
+
+### Labeled address
+
+```text
+Address: Cebu City, Cebu, Philippines
+```
+
+Expected populated.
+
+### Full street address
+
+```text
+Current Address: Brgy. Lahug, Cebu City, Cebu, Philippines
+```
+
+Expected populated.
+
+### Employer location only
+
+```text
+Software Engineer
+ABC Corp
+Cebu City, Philippines
+```
+
+inside Work Experience.
+
+Expected:
+
+Do NOT confidently use this as candidate location unless other evidence exists.
+
+---
+
+# 20. Do not break existing resume parsing
+
+Regression-test:
+
+```text
+Full Name
+Email
+Phone
+Professional Title
+Category
+Experience
+Skills
+Summary
+```
+
+Do not fix Location by degrading existing extraction.
+
+---
+
+# Acceptance criteria
+
+## Application flow
+
+* [ ] `Create Talent Account & Apply` no longer requires an applicationToken.
+* [ ] New apply flow preserves jobId.
+* [ ] Account creation happens before application.
+* [ ] Successful signup returns to same job.
+* [ ] Sign-in returns to same job.
+* [ ] Application form is prefilled after auth.
+* [ ] No application DB record is created before final Submit.
+* [ ] Legacy applicationToken links remain supported if still needed.
+* [ ] No `Link unavailable` in normal Apply flow.
+
+## Resume Location
+
+* [ ] Parser extracts labeled Address.
+* [ ] Parser extracts reliable header Location.
+* [ ] `parsed.location` reaches Find Best Matches state.
+* [ ] Location input auto-populates.
+* [ ] Manual edits are not overwritten.
+* [ ] Employer locations are not incorrectly selected.
+* [ ] PDF multi-line address cases are handled.
+* [ ] Existing resume parsing fields still work.
+
+---
+
+# Final report
+
+After fixing, tell me:
+
+1. why `Create Talent Account & Apply` was missing the token;
+2. why that old token requirement was incompatible with account-first flow;
+3. how job context is now preserved;
+4. where the user is redirected after signup/sign-in;
+5. when the application DB row is now created;
+6. whether old applicationToken links remain supported;
+7. whether the resume parser was failing extraction or UI mapping;
+8. exact Location extraction logic changed;
+9. whether a state reset/race condition was involved;
+10. test cases performed for Address/Location;
+11. confirmation that both screenshots' issues are resolved.

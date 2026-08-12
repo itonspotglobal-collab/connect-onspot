@@ -470,49 +470,108 @@ const CITY_PATTERN_RX = /\b[A-Z][a-zA-Z\s]+(?:City|Province|Region|District)\b/;
 
 // Labels that explicitly introduce an address/location line in a resume
 const LOCATION_LABEL_RX =
-  /^(?:address|location|current\s+address|home\s+address|residential\s+address|city|based\s+in|residence|residing\s+in|based\s+at)\s*[:\-–]\s*/i;
+  /^(?:address|location|current\s+address|home\s+address|residential\s+address|city|based\s+in|based\s+at|residence|residing\s+in|permanent\s+address|present\s+address|mailing\s+address|current\s+location|home\s+location)\s*[:\-–]\s*/i;
+
+// Country/territory/region keywords for the comma-pattern heuristic in Pass 2.
+// Covers the most common values that appear after a comma in "City, Country" resume lines.
+const COUNTRY_KEYWORDS = new Set([
+  "city","province","state","region","country","district",
+  "ph","phl","philippines",
+  "usa","us","america",
+  "uk","england","scotland","wales","united kingdom",
+  "australia","aus","new zealand","nz",
+  "canada","ca",
+  "singapore","sg",
+  "uae","dubai","abu dhabi",
+  "india","in",
+  "germany","de",
+  "france","fr",
+  "japan","jp",
+  "china","cn","hong kong","hk","taiwan",
+  "malaysia","my","indonesia","id","thailand","th","vietnam","vn","myanmar",
+  "south korea","korea","kr",
+  "saudi arabia","ksa","qatar","bahrain","kuwait","oman",
+  "ireland","ie","netherlands","nl","belgium","be",
+  "spain","es","italy","it","portugal","pt",
+  "brazil","br","mexico","mx","argentina","ar","colombia","co",
+  "south africa","za","nigeria","ng","kenya","ke","ghana","gh",
+  "pakistan","pk","bangladesh","bd","sri lanka","lk","nepal","np",
+  "remote","worldwide","global","metro","ncr",
+]);
+
+function isLikelyCountryOrRegion(word: string): boolean {
+  return COUNTRY_KEYWORDS.has(word.trim().toLowerCase());
+}
 
 function extractLocation(sections: ResumeSection[], allText: string): string {
-  // ── Pass 1: scan ALL lines for explicit "Address: …" / "Location: …" labels ──
-  // This is the highest-confidence signal — works regardless of where it appears.
   const allLines = allText.split("\n");
+
+  // ── Pass 1: scan ALL lines for explicit "Address: …" / "Location: …" labels ──
+  // Highest-confidence signal — works regardless of position in the document.
   for (const line of allLines) {
     const t = line.trim();
-    if (!t || t.length > 120) continue;
+    if (!t || t.length > 150) continue;
     if (LOCATION_LABEL_RX.test(t)) {
-      // Extract the value after the label
       const value = t.replace(LOCATION_LABEL_RX, "").trim();
-      if (value.length >= 3 && value.length <= 100 && !EMAIL_RX.test(value)) {
+      if (value.length >= 3 && value.length <= 120 && !EMAIL_RX.test(value)) {
         return value;
+      }
+      // Label found but value might be on the NEXT line (e.g. "Address:\nCebu City")
+      const idx = allLines.indexOf(line);
+      if (idx !== -1 && idx + 1 < allLines.length) {
+        const next = allLines[idx + 1].trim();
+        if (next.length >= 3 && next.length <= 120 && !EMAIL_RX.test(next)) {
+          return next;
+        }
       }
     }
   }
 
-  // ── Pass 2: scan header section for unlabelled location patterns ──────────
+  // ── Pass 2: scan header/contact block for unlabelled location patterns ────
+  // Only look in the first ~20 lines to avoid picking up employer locations
+  // from Work Experience sections.
   const header = sections.find((s) => s.type === "header");
-  const searchLines = header ? header.lines.slice(0, 15) : allText.split("\n").slice(0, 20);
+  const searchLines = header ? header.lines.slice(0, 15) : allLines.slice(0, 20);
 
-  for (const line of searchLines) {
-    const t = line.trim();
-    if (!t || NOISE_LINE_RX.test(t) || t.length > 80 || t.length < 3) continue;
-    // Skip lines that look like names, emails, phones, or section headings
+  for (let i = 0; i < searchLines.length; i++) {
+    const t = searchLines[i].trim();
+    if (!t || NOISE_LINE_RX.test(t) || t.length > 100 || t.length < 3) continue;
     if (EMAIL_RX.test(t)) continue;
     if (PHONE_RX.test(t) && t.replace(/\D/g, "").length >= 7) continue;
 
-    // Strong location hint — known PH city/province name in the line
+    // Strong signal — known PH city/province name anywhere in the line
     if (LOCATION_HINTS_RX.test(t) && t.split(/\s+/).length <= 8) {
       return t;
     }
+    // "Somewhere City" / "Somewhere Province" pattern
     if (CITY_PATTERN_RX.test(t) && t.split(/\s+/).length <= 6) {
       return t;
     }
-    // Generic: "City, Country" or "City, Province" pattern with comma
-    if (/^[A-Za-z\s.]+,\s*[A-Za-z\s.]+$/.test(t) && t.split(/\s+/).length <= 7) {
+
+    // Generic comma-separated "City, Country" or "City, State" pattern
+    if (/^[A-Za-z\u00C0-\u024F\s.\-']+,\s*[A-Za-z\u00C0-\u024F\s.\-']+$/.test(t) && t.split(/\s+/).length <= 8) {
       const words = t.split(/[\s,]+/).filter(Boolean);
-      const isLikelyLocation = words.some((w) =>
-        /^(?:city|province|state|region|country|ph|phl|philippines|usa|uk|australia|singapore|canada|uae|dubai|remote|metro)$/i.test(w)
-      );
-      if (isLikelyLocation) return t;
+      if (words.some(isLikelyCountryOrRegion)) return t;
+    }
+
+    // Multi-line address: city on one line, country/province on the next
+    // e.g. "Cebu City" / "Philippines" when PDF extraction splits them
+    if (i + 1 < searchLines.length) {
+      const next = searchLines[i + 1].trim();
+      if (
+        next && !EMAIL_RX.test(next) &&
+        !(PHONE_RX.test(next) && next.replace(/\D/g, "").length >= 7) &&
+        next.length <= 40 && next.split(/\s+/).length <= 4
+      ) {
+        const combined = `${t}, ${next}`;
+        const combinedWords = combined.split(/[\s,]+/).filter(Boolean);
+        if (
+          (LOCATION_HINTS_RX.test(combined) || combinedWords.some(isLikelyCountryOrRegion)) &&
+          combined.split(/\s+/).length <= 10
+        ) {
+          return combined;
+        }
+      }
     }
   }
   return "";

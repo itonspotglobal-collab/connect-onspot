@@ -1983,10 +1983,23 @@ export default function FindBestMatches() {
     try {
       const result = await parseResumeFile(file);
 
+      if (import.meta.env.DEV) {
+        console.log("[FindBestMatches] Resume parse result:", {
+          extractedLocation: result.location,
+          extractedFields: result.extractedFields,
+          parseError: result.parseError,
+        });
+      }
+
       if (result.parseError) {
         setExtractParseError(result.parseError);
       } else {
         setExtracted(result);
+        if (import.meta.env.DEV) {
+          console.log("[FindBestMatches] Applying location to profile:", {
+            location: result.location,
+          });
+        }
         // Hydrate profile with extracted values — suggestions only, never overwrite user edits
         setProfile((prev) => ({
           ...prev,
