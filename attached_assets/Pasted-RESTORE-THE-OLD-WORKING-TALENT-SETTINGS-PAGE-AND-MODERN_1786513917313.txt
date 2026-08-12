@@ -1,0 +1,577 @@
+RESTORE THE OLD WORKING TALENT SETTINGS PAGE AND MODERNIZE ITS UI.
+
+Use the attached screenshot as the functional and structural source of truth.
+
+IMPORTANT:
+This page already existed and worked before the navigation redesign.
+
+Do NOT create a fake replacement.
+Do NOT remove existing settings functionality.
+Do NOT hardcode profile values.
+
+The goal is to:
+
+1. Restore the previous working Settings page.
+2. Keep all existing database/API behavior.
+3. Improve the UI so it matches the current OnSpot brand system.
+4. Keep it fully responsive.
+5. Keep the new navigation bar and redesigned Talent Profile dropdown.
+
+---
+
+## 1. RESTORE THIS EXACT SETTINGS STRUCTURE
+
+The page should contain:
+
+PAGE HEADER
+
+Title:
+`Profile Settings`
+
+Subtitle:
+`Manage your profile information and preferences. Keep your information up to date to attract better opportunities.`
+
+Desktop layout:
+
+LEFT SIDEBAR
+
+Settings navigation:
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+
+Below it:
+
+Profile Status
+Completion percentage
+Progress bar
+Supporting text:
+`Complete your profile to attract more clients.`
+
+RIGHT MAIN CONTENT
+
+The active settings panel.
+
+The screenshot currently shows:
+
+`Basic Information`
+
+Subtitle:
+`Update your personal information and contact details.`
+
+Fields:
+
+* First Name *
+* Last Name *
+* Phone Number
+* Location
+* Timezone
+* Languages
+
+Bottom/right:
+`Save Settings`
+
+Restore the other existing settings tabs and their previous functionality as well.
+
+---
+
+## 2. KEEP ALL EXISTING DATA CONNECTIONS
+
+Do NOT replace real data with static values.
+
+The page must continue loading the logged-in talent's real profile information.
+
+Reuse existing:
+
+* database models
+* API endpoints
+* hooks
+* mutations
+* validation
+* save/update behavior
+* profile completion logic
+
+Fields should load from the authenticated user's current profile.
+
+After Save Settings:
+
+* persist changes to database
+* show success feedback
+* update UI immediately
+* preserve changes after refresh
+
+---
+
+## 3. MATCH CURRENT ONSPOT BRAND COLORS
+
+Replace the generic bright-blue styling with the current OnSpot design system.
+
+PRIMARY INDIGO:
+approximately:
+#4B51B8
+#4652B5
+
+DARK NAVY:
+#171B4D
+#222762
+
+VIOLET ACCENT:
+#6E4DF5
+
+ORANGE / GOLD:
+#FFA91F
+#FFB83F
+
+PAGE BACKGROUND:
+warm off-white / pale lavender:
+#FAFAFD
+or
+#F7F7FC
+
+TEXT:
+Primary:
+#18181F
+
+Secondary:
+#6F7280
+
+Borders:
+rgba(75,81,184,0.14)
+
+Do not use generic Bootstrap-blue styling.
+
+---
+
+## 4. PAGE LAYOUT
+
+Use a centered responsive container.
+
+Desktop:
+
+max-width: approximately 1240px;
+margin-inline: auto;
+padding-inline: 32px;
+
+Main layout:
+display:grid;
+grid-template-columns: 270px minmax(0,1fr);
+gap: 28px;
+
+The left sidebar should stay compact.
+The main content should take the majority of the space.
+
+---
+
+## 5. PAGE HEADER DESIGN
+
+Title:
+`Profile Settings`
+
+Style:
+
+* near-black
+* bold
+* approximately 38–44px desktop
+* tight letter-spacing
+
+Subtitle:
+
+* muted gray
+* approximately 16–18px
+* max-width around 800px
+
+Add more breathing room below the page header.
+
+---
+
+## 6. SETTINGS SIDEBAR
+
+Redesign the current sidebar into a polished account-navigation card.
+
+Card:
+
+* white
+* rounded 18px
+* thin indigo-tinted border
+* soft shadow
+* padding around 18px
+
+Heading:
+`Settings`
+
+Menu items:
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+
+Each item:
+
+* height approximately 46–50px
+* display:flex
+* align-items:center
+* gap:12px
+* border-radius:10px
+* padding-inline:12px
+* icon around 18px
+
+Inactive:
+
+* dark text
+* muted icon
+
+Hover:
+
+* pale lavender background
+
+ACTIVE ITEM:
+Use an indigo → violet gradient instead of bright blue.
+
+Example:
+linear-gradient(135deg,#4B55D0,#7248F4)
+
+Active text/icon:
+white
+
+Add subtle shadow to active state.
+
+---
+
+## 7. PROFILE STATUS CARD
+
+Keep this as a second card below Settings.
+
+Title:
+`Profile Status`
+
+Display:
+`Completion`
+and the real percentage, e.g. `13%`
+
+Progress track:
+
+* pale lavender
+* height 7px
+* rounded
+
+Progress:
+
+* indigo/violet gradient
+* smooth transition
+
+Supporting copy:
+`Complete your profile to attract more clients.`
+
+OPTIONAL IMPROVEMENT:
+If completion is below 100%, add a small subtle gold label such as:
+`Keep going`
+
+Do not make it distracting.
+
+---
+
+## 8. MAIN SETTINGS CARD
+
+Main panel:
+
+* white
+* large rounded card
+* approximately 18–20px radius
+* thin indigo-tinted border
+* subtle shadow
+* padding around 28–32px
+
+Header row:
+
+icon
+`Basic Information`
+
+Subtitle:
+`Update your personal information and contact details.`
+
+Use a small indigo icon container if appropriate.
+
+---
+
+## 9. FORM FIELDS
+
+Modernize all form inputs.
+
+Labels:
+
+* dark
+* semibold
+* 14–15px
+
+Inputs:
+
+* approximately 46–48px height
+* white or very subtle lavender surface
+* thin border
+* rounded 10px
+
+Default border:
+rgba(75,81,184,.18)
+
+Focus:
+border-color: #525BC8
+box-shadow: 0 0 0 3px rgba(82,91,200,.12)
+
+Do NOT use harsh blue focus rings.
+
+Placeholder:
+muted gray.
+
+Validation:
+
+* preserve existing rules
+* error border = soft red
+* error message beneath field
+
+---
+
+## 10. BASIC INFORMATION FORM LAYOUT
+
+Desktop:
+
+ROW 1
+First Name
+Last Name
+
+ROW 2
+Phone Number — full width
+
+ROW 3
+Location
+Timezone
+
+ROW 4
+Languages — full width
+
+Use:
+display:grid;
+grid-template-columns: repeat(2,minmax(0,1fr));
+gap: 18–20px;
+
+Full-width fields should span both columns.
+
+---
+
+## 11. LANGUAGES INPUT
+
+Keep existing language tags/chips.
+
+Example:
+`English ×`
+
+Improve chip styling:
+
+* light lavender background
+* dark indigo text
+* small rounded pill
+* compact × button
+
+Input below:
+`Type a language and press Enter`
+
+Preserve add/remove behavior.
+
+---
+
+## 12. TIMEZONE SELECT
+
+Keep the real timezone logic.
+
+Example:
+`Asia/Manila (GMT+8)`
+
+Style dropdown consistently with other fields.
+
+Do not replace functional select with static text.
+
+---
+
+## 13. SAVE SETTINGS BUTTON
+
+Replace generic bright blue with branded indigo/violet styling.
+
+Button:
+`Save Settings`
+
+Style:
+linear-gradient(135deg,#4B55D0,#7049F4)
+
+* white text
+* save icon
+* rounded 10–12px
+* approximately 160–190px wide
+* height 46–48px
+* soft indigo shadow
+
+Hover:
+slightly brighter + small translateY(-1px)
+
+Loading state:
+
+* disable button
+* show spinner
+* `Saving...`
+
+Success:
+show a subtle toast:
+`Settings saved successfully.`
+
+Error:
+show proper failure message.
+
+---
+
+## 14. OTHER SETTINGS TABS
+
+Restore the OLD working contents for:
+
+### Professional Details
+
+Preserve all existing fields and save behavior.
+
+### Skills & Expertise
+
+Preserve:
+
+* existing skill selection
+* experience data
+* tags/chips
+* save/update behavior
+
+### Documents
+
+Preserve:
+
+* document upload
+* existing uploaded document list
+* delete/download/view functionality if previously available
+
+Do NOT leave these tabs empty.
+
+---
+
+## 15. RESPONSIVE DESIGN
+
+Desktop:
+sidebar + main content
+
+At <= 900px:
+stack layout vertically.
+
+Settings navigation should become:
+
+* horizontal scrollable tabs
+  OR
+* compact card above form
+
+Profile Status moves below navigation.
+
+Mobile:
+
+* padding-inline: 16–20px
+* heading around 30–34px
+* form becomes one column
+* Save Settings full width
+* no horizontal overflow
+
+---
+
+## 16. NEW NAVIGATION INTEGRATION
+
+Keep the NEW navbar and profile dropdown.
+
+When user clicks:
+
+Talent Profile
+→ Settings
+
+it must open THIS restored Settings page.
+
+Do not bring back the old navbar.
+
+Only restore the page content/functionality.
+
+---
+
+## 17. REMOVE PLACEHOLDER SETTINGS ROUTE
+
+The generic:
+`COMING SOON`
+`The next evolution of outsourcing.`
+
+page must NOT render at `/settings`.
+
+The real Settings page must own the route.
+
+---
+
+## 18. VERIFY DATABASE BEHAVIOR
+
+Test using the logged-in talent account.
+
+Verify:
+
+* First Name loads from database
+* Last Name loads
+* Phone Number loads
+* Location loads
+* Timezone loads
+* Languages load
+* profile completion loads
+* Professional Details load
+* Skills load
+* Documents load
+
+Change a test field.
+Save.
+Refresh.
+Confirm value persists.
+
+---
+
+## 19. FINAL VISUAL TARGET
+
+The finished page should feel like the same functional Settings page from the screenshot, but upgraded to match the current OnSpot brand:
+
+* pale off-white/lavender background
+* indigo/violet navigation states
+* orange used sparingly for emphasis
+* clean white cards
+* subtle borders
+* soft shadows
+* rounded 16–20px surfaces
+* modern typography
+* polished form inputs
+* stronger visual hierarchy
+
+Do NOT overdecorate it.
+
+The UI should remain professional and product-like, not marketing-heavy.
+
+---
+
+## ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* old functional Settings page is restored
+* `/settings` loads it
+* new navbar remains intact
+* Settings dropdown link works
+* database values load
+* Save Settings works
+* refresh preserves saved data
+* all 4 settings tabs work
+* profile completion works
+* documents functionality is preserved
+* desktop/tablet/mobile layouts are clean
+* styling matches current OnSpot brand
+* no Coming Soon page appears for Settings
