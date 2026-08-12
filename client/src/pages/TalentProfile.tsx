@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { isAdmin } from "@/lib/authUtils";
+import { isAdmin, isClient } from "@/lib/authUtils";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
@@ -279,7 +279,11 @@ const SECTION_TABS = [
   { id: "section-contact",  label: "Contact" },
 ];
 
-function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
+// --nav-h is 80px (see index.css); tab bar renders at ~48px.
+const NAVBAR_H = 80;
+const TABBAR_H = 48;
+
+function SectionTabs({ visibleIds, navbarVisible }: { visibleIds: Set<string>; navbarVisible: boolean }) {
   const [active, setActive] = useState("section-overview");
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -302,8 +306,9 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   function scrollTo(id: string) {
     const el = document.getElementById(id);
     if (el) {
-      // Offset for shared TopNavigation (80px via --nav-h) + sticky tab bar (~52px) + small margin
-      const HEADER_OFFSET = 136;
+      // When navbar is visible: nav (80px) + tab bar (48px) + margin (8px) = 136px
+      // When navbar is hidden: tab bar (48px) + margin (8px) = 56px
+      const HEADER_OFFSET = navbarVisible ? NAVBAR_H + TABBAR_H + 8 : TABBAR_H + 8;
       const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
       window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       setActive(id);
@@ -316,7 +321,7 @@ function SectionTabs({ visibleIds }: { visibleIds: Set<string> }) {
   const tabs = SECTION_TABS.filter((t) => visibleIds.has(t.id));
 
   return (
-    <div className="sticky top-[var(--nav-h)] z-40 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90">
+    <div className={`sticky z-40 transition-[top] duration-300 border-b border-slate-200/60 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-[#060816]/90 ${navbarVisible ? "top-[var(--nav-h)]" : "top-0"}`}>
       <div className="mx-auto max-w-4xl px-4 md:px-8">
         <div
           ref={tabsRef}
@@ -569,7 +574,42 @@ export default function TalentProfile() {
   const qc = useQueryClient();
   const isAdminUser = isAdmin(user);
   const isTalentAcquisition = user?.role === "talent_acquisition";
-  const canSeeContact = isAdminUser || isTalentAcquisition;
+  const isClientUser = isClient(user);
+  // "Client viewer" = any account that should see recruiter actions (Back to Pool, Contact)
+  const isClientViewer = isAdminUser || isTalentAcquisition || isClientUser;
+  const canSeeContact = isClientViewer;
+
+  // ── Navbar visibility tracking (mirrors TopNavigation scroll logic) ────────
+  // Lets SectionTabs know whether the fixed nav is currently in view so it
+  // can shift its own sticky offset from top-[80px] to top-0 seamlessly.
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const profileLastScrollY = useRef(0);
+  const profileTicking = useRef(false);
+
+  useEffect(() => {
+    const controlNavVisibility = () => {
+      const currentScrollY = Math.max(0, window.scrollY);
+      const scrollDelta = Math.abs(currentScrollY - profileLastScrollY.current);
+      if (scrollDelta < 10) { profileTicking.current = false; return; }
+      if (currentScrollY < 100) {
+        setIsNavbarVisible(true);
+      } else if (currentScrollY > profileLastScrollY.current && currentScrollY > 200) {
+        setIsNavbarVisible(false);
+      } else if (currentScrollY < profileLastScrollY.current) {
+        setIsNavbarVisible(true);
+      }
+      profileLastScrollY.current = currentScrollY;
+      profileTicking.current = false;
+    };
+    const handleScroll = () => {
+      if (!profileTicking.current) {
+        requestAnimationFrame(controlNavVisibility);
+        profileTicking.current = true;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // ── Talent auth state ──────────────────────────────────────────────────────
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
@@ -870,13 +910,15 @@ export default function TalentProfile() {
 
           {/* Right: action buttons */}
           <div className="flex flex-wrap gap-2 pt-1">
-              <Button
-                onClick={() => navigate("/talent-pool")}
-                variant="outline"
-                className="rounded-full text-sm"
-              >
-                <ChevronRight className="mr-1 h-4 w-4 rotate-180" /> Back to Pool
-              </Button>
+              {isClientViewer && (
+                <Button
+                  onClick={() => navigate("/talent-pool")}
+                  variant="outline"
+                  className="rounded-full text-sm"
+                >
+                  <ChevronRight className="mr-1 h-4 w-4 rotate-180" /> Back to Pool
+                </Button>
+              )}
               {candidate.resumeUrl && (
                 <Button
                   variant="outline"
@@ -886,7 +928,7 @@ export default function TalentProfile() {
                   <FileText className="mr-1.5 h-4 w-4" /> View Resume
                 </Button>
               )}
-              {(canSeeContact || isOwner) && candidate.email && (
+              {isClientViewer && candidate.email && (
                 <Button className="rounded-full bg-[#474ead] text-sm text-white" asChild>
                   <a href={`mailto:${candidate.email}`}>
                     <Mail className="mr-1.5 h-4 w-4" /> Contact
@@ -899,7 +941,7 @@ export default function TalentProfile() {
       </div>
 
       {/* ── Section Tabs ── */}
-      <SectionTabs visibleIds={visibleSectionIds} />
+      <SectionTabs visibleIds={visibleSectionIds} navbarVisible={isNavbarVisible} />
 
       {/* ── Complete Profile CTA (owner only, shown when profile is incomplete) ── */}
       {isOwner && completionPct < 100 && (

@@ -1,0 +1,358 @@
+# Replit Prompt — Fix Talent Profile Client Actions and Scroll Navigation
+
+Please update the Talent Profile page in:
+
+`client/src/pages/TalentProfile.tsx`
+
+Do not redesign the page. Preserve the existing UI, styling, mobile responsiveness, profile editing behavior, dark mode, and existing functionality unless explicitly requested below.
+
+## 1. Show "Back to Pool" and "Contact" only to Client Accounts
+
+Currently, the Talent Profile header contains these action buttons:
+
+* Back to Pool
+* View Resume
+* Contact
+
+Change the authorization/display rules as follows:
+
+### Required behavior
+
+#### When a Talent Account is viewing their own profile:
+
+* DO NOT show `Back to Pool`
+* DO NOT show `Contact`
+* Keep `View Resume` available if appropriate based on the existing behavior.
+
+#### When another Talent Account is viewing a Talent profile:
+
+* DO NOT show `Back to Pool`
+* DO NOT show `Contact`
+
+#### When a Client Account visits a Talent profile:
+
+* SHOW `Back to Pool`
+* SHOW `Contact` when the candidate has an email address
+
+#### Admin / Talent Acquisition
+
+Preserve their existing access where appropriate. If the application's existing client-side roles treat Admin or Talent Acquisition as client-side recruiters, they may retain these actions.
+
+### Important implementation requirement
+
+Do NOT determine this using only:
+
+```ts
+isOwner
+```
+
+The visibility must be based on the authenticated viewer's actual account/role.
+
+Inspect the existing `useAuth()` user object and existing role/account-type conventions in the project before implementing.
+
+Create a clear boolean such as:
+
+```ts
+const isClientViewer = ...
+```
+
+or a similarly descriptive name based on the project's actual role values.
+
+Then use that single boolean consistently for the recruiter/client actions.
+
+For example, conceptually:
+
+```tsx
+{isClientViewer && (
+  <Button onClick={() => navigate("/talent-pool")}>
+    Back to Pool
+  </Button>
+)}
+
+{isClientViewer && candidate.email && (
+  <Button asChild>
+    <a href={`mailto:${candidate.email}`}>
+      Contact
+    </a>
+  </Button>
+)}
+```
+
+Do not blindly copy this example if the project's actual role names are different.
+
+Also review this existing variable:
+
+```ts
+const canSeeContact = isAdminUser || isTalentAcquisition;
+```
+
+Update/refactor it if necessary so that Client Accounts receive the correct access without accidentally giving Talent Accounts client-only actions.
+
+---
+
+## 2. Fix SectionTabs scroll behavior
+
+The profile section navigation currently uses:
+
+```tsx
+<div className="sticky top-16 z-40 ...">
+```
+
+This causes a blank gap when the main `ProfileNavbar` disappears while scrolling.
+
+I want the profile tabs to behave together with the top navigation.
+
+### Desired scrolling behavior
+
+When the user scrolls DOWN:
+
+1. The top `ProfileNavbar` should hide, using the existing hide-on-scroll behavior/pattern used by the application's `TopNavigationBar`.
+2. The `SectionTabs` should move upward at the same time.
+3. Once the main navbar is hidden, the SectionTabs should sit directly at:
+
+```css
+top: 0
+```
+
+There must be NO empty 56px / 64px gap above the tabs.
+
+When the user scrolls UP:
+
+1. The main `ProfileNavbar` should reappear.
+2. The `SectionTabs` should smoothly move back underneath it.
+3. The tabs should not overlap the navbar.
+
+### Important
+
+Find the existing `TopNavigationBar` implementation in the project and reuse or mirror its scroll-direction logic instead of creating unrelated behavior.
+
+The Talent Profile page should feel consistent with the rest of the site.
+
+Prefer sharing the same hook/component behavior if there is already a reusable implementation.
+
+---
+
+## 3. Coordinate ProfileNavbar and SectionTabs state
+
+The two components currently operate independently:
+
+```tsx
+<ProfileNavbar ... />
+...
+<SectionTabs visibleIds={visibleSectionIds} />
+```
+
+Refactor them so they know whether the primary navbar is currently visible.
+
+A recommended architecture is:
+
+```ts
+const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+```
+
+The navbar scroll logic should update this state.
+
+Then pass it to the section tabs:
+
+```tsx
+<ProfileNavbar
+  ...
+  onVisibilityChange={setIsNavbarVisible}
+/>
+
+<SectionTabs
+  visibleIds={visibleSectionIds}
+  navbarVisible={isNavbarVisible}
+/>
+```
+
+You may use a better implementation if one already exists elsewhere in the codebase.
+
+The important requirement is that SectionTabs' sticky offset dynamically follows the real navbar visibility.
+
+Conceptually:
+
+```tsx
+className={`sticky z-40 transition-[top] duration-300 ${
+  navbarVisible ? "top-14" : "top-0"
+}`}
+```
+
+Use the ACTUAL height of `ProfileNavbar`.
+
+The current navbar uses:
+
+```tsx
+h-14
+```
+
+so its desktop/mobile height appears to be 56px. Do not use `top-16` unless the actual rendered navbar is 64px.
+
+---
+
+## 4. Make ProfileNavbar hide/reappear smoothly
+
+Update `ProfileNavbar` so it behaves like `TopNavigationBar`.
+
+Expected behavior:
+
+* At the top of the page → visible
+* Scroll down beyond a small threshold → slide upward out of view
+* Scroll up → slide back into view
+* Avoid flickering from tiny scroll movements
+* Mobile menu being open should not leave the navigation in a broken/hidden state
+* Preserve its current `z-50`
+* Preserve current gradient/design
+
+Use a transform transition rather than removing it from the DOM.
+
+Example concept:
+
+```tsx
+<header
+  className={`sticky top-0 z-50 transition-transform duration-300 ${
+    isNavbarVisible ? "translate-y-0" : "-translate-y-full"
+  }`}
+>
+```
+
+However, match the existing `TopNavigationBar` implementation if it already has a better scroll threshold/direction algorithm.
+
+---
+
+## 5. Fix section-tab click offsets
+
+`SectionTabs.scrollTo()` currently hardcodes:
+
+```ts
+const HEADER_OFFSET = 124;
+```
+
+This will become incorrect once the navbar can be hidden.
+
+Replace the hardcoded value with an offset based on the actual current navbar state.
+
+When navbar is visible:
+
+```text
+navbar height + section tabs height + small spacing
+```
+
+When navbar is hidden:
+
+```text
+section tabs height + small spacing
+```
+
+For example:
+
+```ts
+const HEADER_OFFSET = navbarVisible
+  ? NAVBAR_HEIGHT + TABBAR_HEIGHT + 8
+  : TABBAR_HEIGHT + 8;
+```
+
+Do not rely on magic values if the real element sizes can easily be measured or centralized as constants.
+
+Clicking:
+
+* Overview
+* About
+* Skills
+* Experience
+* Education
+* Certifications
+* Portfolio
+* Resume
+* Preferences
+* Contact
+
+must scroll the corresponding section into view without its heading being covered.
+
+---
+
+## 6. Preserve the horizontal tab navigation
+
+Do not alter the existing horizontal scrolling behavior:
+
+```tsx
+overflow-x-auto
+```
+
+The currently active tab should still automatically scroll into view.
+
+Do not introduce a second vertical or horizontal scrollbar.
+
+---
+
+## 7. Clean up sticky offsets
+
+Search `TalentProfile.tsx` for any assumptions tied to the old navigation height, including:
+
+```ts
+top-16
+HEADER_OFFSET = 124
+scroll-mt-28
+```
+
+Update them where needed so all section positioning works correctly with the hide/show navbar.
+
+Avoid unrelated changes.
+
+---
+
+## 8. Acceptance criteria
+
+Before finishing, verify all of these scenarios:
+
+### Talent owner
+
+* Sign into a Talent Account.
+* Open their own Talent Profile.
+* Back to Pool is hidden.
+* Contact is hidden.
+* Editing still works.
+* Scrolling down hides the main navbar.
+* Section tabs move to the very top with no gap.
+* Scrolling up restores the navbar and tabs move below it.
+
+### Talent viewing another Talent
+
+* Back to Pool hidden.
+* Contact hidden.
+
+### Client viewing Talent
+
+* Back to Pool visible.
+* Contact visible when an email exists.
+* Back to Pool navigates to `/talent-pool`.
+* Contact opens the candidate's email link.
+
+### Scroll behavior
+
+* At page top, navbar and section tabs appear normally.
+* Scroll down: navbar slides away.
+* Section tabs occupy `top: 0`.
+* No white/gray empty strip appears above SectionTabs.
+* Scroll up: navbar returns.
+* SectionTabs move below navbar.
+* No overlap or jumping.
+* Clicking section tabs positions section headings correctly.
+
+### Responsive
+
+Test desktop and mobile widths.
+
+The mobile navigation dropdown must still work.
+
+---
+
+## 9. Final response
+
+After implementing, provide:
+
+1. Files changed
+2. The actual account roles used for detecting a Client Account
+3. A short explanation of the navigation visibility logic
+4. Any constants/hooks/components added or reused
+5. Confirmation that no unrelated functionality was changed
