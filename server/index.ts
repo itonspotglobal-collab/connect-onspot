@@ -8,6 +8,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 import { ogMiddleware } from "./ogMiddleware";
+import { query } from "./db";
 
 // Extend Request interface to include requestId
 declare global {
@@ -284,7 +285,34 @@ app.use((req, res, next) => {
   // Log database connection on startup
   logDatabaseConnection();
   logJWTConfiguration();
-  
+
+  // ── One-time backfill: sync profilePicture → candidates.profilePhotoUrl ──
+  // Talent users who uploaded a photo before the forward-sync was introduced
+  // will have profiles.profile_picture set but candidates.profile_photo_url
+  // still null. This runs at every startup but the WHERE clause makes it a
+  // no-op once all rows are already populated (idempotent).
+  try {
+    const backfillResult = await query(
+      `UPDATE candidates c
+       SET    profile_photo_url = '/api/profile-picture/' || u.id
+       FROM   users u
+       JOIN   profiles p ON p.user_id = u.id
+       WHERE  lower(c.email) = lower(u.email)
+         AND  p.profile_picture IS NOT NULL
+         AND  c.profile_photo_url IS NULL`,
+    );
+    const updated = backfillResult.rowCount ?? 0;
+    if (updated > 0) {
+      console.log(`✅ Backfill: synced profile photos for ${updated} candidate(s)`);
+    } else {
+      console.log('✅ Backfill: no candidates needed profile photo sync');
+    }
+  } catch (err: any) {
+    // Non-fatal — don't block startup if the backfill fails
+    console.error('⚠️  Backfill: profile photo sync failed (non-fatal):', err.message);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Setup authentication first before routes
   await setupAuth(app);
 
