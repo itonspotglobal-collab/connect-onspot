@@ -68,10 +68,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check if this is a new user and handle onboarding
         const isNew = await checkNewUserStatus(loginData.user.id);
         
-        // Check if onboarding was already completed or skipped
+        // localStorage flag is the fast path (same-browser sessions).
+        // candidates.profileCompleted in the DB is the canonical gate for cross-device logins.
         const hasCompleted = localStorage.getItem(`onboarding_completed_${loginData.user.id}`) === 'true';
         const hasSkipped = localStorage.getItem(`onboarding_skipped_${loginData.user.id}`) === 'true';
         const needsOnboarding = isNew && !hasCompleted && !hasSkipped;
+
+        // For talent users whose localStorage flag is absent, check the DB to see if they already
+        // completed onboarding on another device. If profileCompleted = true, seed the cache and
+        // update the user object so the modal doesn't flash before the update arrives.
+        if (loginData.user.role === 'talent' && !hasCompleted && !hasSkipped) {
+          const jwtToken = loginData.token ?? localStorage.getItem('onspot_jwt_token');
+          if (jwtToken) {
+            fetch('/api/candidates/me', {
+              headers: { Authorization: `Bearer ${jwtToken}` },
+            })
+              .then((r) => r.ok ? r.json() : null)
+              .then((candidate) => {
+                if (candidate?.profileCompleted) {
+                  localStorage.setItem(`onboarding_completed_${loginData.user.id}`, 'true');
+                  setUser((prev) => prev ? { ...prev, needsOnboarding: false } : prev);
+                }
+              })
+              .catch(() => {});
+          }
+        }
         
         // Set user with all data at once to prevent double renders
         const finalUser = {
@@ -157,8 +178,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isAuth && storedUser) {
         console.log('🔐 JWT user found in localStorage:', storedUser);
         
+        // localStorage flag is the fast check (survives page reloads within the same browser).
+        // It is NOT the canonical gate — candidates.profileCompleted (DB) is.
+        // We supplement below with a background DB check for returning users on a new device.
         const hasCompleted = localStorage.getItem(`onboarding_completed_${storedUser.id}`) === 'true';
         const hasSkipped = localStorage.getItem(`onboarding_skipped_${storedUser.id}`) === 'true';
+
+        // For talent users whose localStorage flag is absent, check the DB in the background.
+        // If candidates.profileCompleted = true, seed the localStorage flag so future visits
+        // are fast and the ProfileOnboardingModal won't re-appear on the same device.
+        if (storedUser.role === 'talent' && !hasCompleted && !hasSkipped) {
+          const jwtToken = localStorage.getItem('onspot_jwt_token');
+          if (jwtToken) {
+            fetch('/api/candidates/me', {
+              headers: { Authorization: `Bearer ${jwtToken}` },
+            })
+              .then((r) => r.ok ? r.json() : null)
+              .then((candidate) => {
+                if (candidate?.profileCompleted) {
+                  // Seed the localStorage cache so subsequent refreshes don't need this fetch
+                  localStorage.setItem(`onboarding_completed_${storedUser.id}`, 'true');
+                  // Update the live user state so the modal disappears immediately
+                  setUser((prev) => prev ? { ...prev, needsOnboarding: false } : prev);
+                }
+              })
+              .catch(() => {});
+          }
+        }
         
         const mappedUser: User = {
           id: storedUser.id,

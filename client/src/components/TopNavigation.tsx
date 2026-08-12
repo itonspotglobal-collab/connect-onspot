@@ -216,16 +216,12 @@ export function TopNavigation() {
     staleTime: 2 * 60_000,
   });
   const generalTalentCompletionPct = generalTalentCandidateData
-    ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate({
-        fullName: generalTalentCandidateData.fullName,
-        email: generalTalentCandidateData.email,
-        headline: generalTalentCandidateData.targetPosition,
-        summary: generalTalentCandidateData.summary,
-        location: generalTalentCandidateData.location,
-        coreSkills: generalTalentCandidateData.coreSkills,
-        workHistory: generalTalentCandidateData.workHistory,
-        preferences: generalTalentCandidateData.preferences,
-      })))
+    ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate(
+        // profileStrengthFromCandidate handles both dual-key variants internally:
+        //   headline || targetPosition  and  preferences.workSetup || preferences.setup
+        // so spreading the full DTO is sufficient — no per-caller normalization needed.
+        generalTalentCandidateData
+      )))
     : 0;
   const [generalTalentDropdownOpen, setGeneralTalentDropdownOpen] = useState(false);
 
@@ -233,11 +229,19 @@ export function TopNavigation() {
   const unreadAppsCount = useUnreadApplicationsCount();
 
   // ── Profile route helpers ──────────────────────────────────────────────────
+  // Resolve candidate ID for talent users regardless of which auth path was used:
+  //   Talent Portal JWT  → talentAuth.candidateId
+  //   Main JWT (role=talent) → generalTalentCandidateData.id  (from /api/candidates/me)
+  // IMPORTANT: never fall back to /find-best-matches — that is what causes the redirect loop.
+  const resolvedTalentCandidateId =
+    talentAuth?.candidateId ?? generalTalentCandidateData?.id ?? null;
+
   const getProfileRoute = () => {
     if (user?.role === "client") return "/client-profile";
     if (user?.role === "admin") return "/admin/dashboard";
-    if (talentAuth?.candidateId) return `/talent-profile/${talentAuth.candidateId}`;
-    return "/find-best-matches";
+    if (resolvedTalentCandidateId) return `/talent-profile/${resolvedTalentCandidateId}`;
+    // No candidate record yet — send to Settings to complete profile setup
+    return "/settings";
   };
   const getProfileLabel = () => {
     if (user?.role === "client") return "Client Profile";
@@ -275,10 +279,20 @@ export function TopNavigation() {
       { label: "Insights",         route: "/admin/insights",          icon: Eye },
     ];
     // talent / default
+    // resolvedTalentCandidateId covers both Talent Portal JWT and main JWT (role=talent).
+    // When no candidate record exists yet, send to /find-best-matches so they can create one.
+    // Never fall back to /settings because the Settings hook requires a Talent Portal JWT token
+    // and is non-functional for pure main-JWT talent users.
+    const talentProfileRoute = resolvedTalentCandidateId
+      ? `/talent-profile/${resolvedTalentCandidateId}`
+      : "/find-best-matches";
+    // "Finish Profile Setup" — for Talent Portal users go to Settings (full editor);
+    // for main-JWT-only users, go to Find Best Matches (which uses any token type).
+    const finishSetupRoute = talentAuth ? "/settings" : "/find-best-matches";
     return [
-      { label: "Talent Profile",       route: talentAuth ? `/talent-profile/${talentAuth.candidateId}` : "/find-best-matches", icon: User },
+      { label: "Talent Profile",       route: talentProfileRoute,   icon: User },
       { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
-      { label: "Finish Profile Setup", route: "/find-best-matches", icon: CheckCircle2 },
+      { label: "Finish Profile Setup", route: finishSetupRoute,     icon: CheckCircle2 },
       { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
       { label: "Settings",             route: "/settings",          icon: Settings },
     ];

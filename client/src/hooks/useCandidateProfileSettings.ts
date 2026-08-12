@@ -23,7 +23,7 @@ import { loadTalentAuth } from "@/components/TalentLoginModal";
 import {
   buildCompletionItems,
   calcCompletionPct,
-  profileStrengthFromCandidateSettings,
+  profileStrengthFromCandidate,
   type CompletionItem,
 } from "@/lib/profileCompletion";
 import { z } from "zod";
@@ -196,9 +196,12 @@ export function useCandidateProfileSettings() {
 
   const completionItems: CompletionItem[] = useMemo(() => {
     if (!candidate) return [];
-    return buildCompletionItems(
-      profileStrengthFromCandidateSettings({ ...candidate, hasResume })
-    );
+    // Use the canonical 12-field calculator so Settings, Talent Profile, and TopNavigation
+    // all show the same percentage. profileStrengthFromCandidate handles both dual-key
+    // variants internally (headline || targetPosition, workSetup || setup) — no manual
+    // normalization needed here. Resume uses candidate.resumeUrl only (same source as
+    // TalentProfile and nav) for a consistent % across all surfaces.
+    return buildCompletionItems(profileStrengthFromCandidate(candidate as any));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate, hasResume]);
 

@@ -75,14 +75,25 @@ export function calcCompletionPct(items: CompletionItem[]): number {
 // ─── Model mappers ────────────────────────────────────────────────────────────
 
 /**
- * Map a Candidate record (from /api/candidates/:id) to ProfileStrengthInput.
+ * Map a Candidate record (from /api/candidates/:id or /api/candidates/me) to ProfileStrengthInput.
  * All 12 items are tracked — denominator is always 12.
+ *
+ * Dual-key handling (no caller mapping required):
+ *  - Title:       `headline` (edited on Talent Profile) OR `targetPosition` (saved by Find Best Matches)
+ *  - Preferences: `preferences.workSetup` (Talent Profile / Settings) OR `preferences.setup`
+ *                 (saved by Find Best Matches as { setup, shift, jobType, environment })
+ *
+ * This makes the function safe to call with the raw DB candidate object from any path
+ * without per-caller normalization.
  */
 export function profileStrengthFromCandidate(c: {
   profilePhotoUrl?: string | null;
   displayName?: string | null;
   fullName?: string | null;
+  /** Dedicated headline column — set via Talent Profile inline edits. */
   headline?: string | null;
+  /** Professional title column — set via Find Best Matches and Settings. */
+  targetPosition?: string | null;
   summary?: string | null;
   email?: string | null;
   location?: string | null;
@@ -104,20 +115,29 @@ export function profileStrengthFromCandidate(c: {
   return {
     hasPhoto:       !!c.profilePhotoUrl,
     hasName:        !!(c.displayName?.trim() || c.fullName?.trim()),
-    hasTitle:       !!c.headline,
+    // Either the dedicated `headline` column (Talent Profile path) or
+    // `targetPosition` (Find Best Matches / Settings path) counts.
+    hasTitle:       !!(c.headline || c.targetPosition),
     hasSummary:     !!c.summary,
     hasEmail:       !!c.email,
     hasLocation:    !!c.location,
     hasSkills:      (c.coreSkills?.length ?? 0) > 0,
     hasExperience:  wh.length > 0,
     hasEducation:   edu.length > 0,
-    hasPreferences: !!prefs?.workSetup,
+    // Either `workSetup` (Talent Profile / Settings JSONB key) or `setup`
+    // (Find Best Matches saves as preferences.setup) counts.
+    hasPreferences: !!(prefs?.workSetup || prefs?.setup),
     hasResume:      !!c.resumeUrl,
     hasLinks:       !!(c.linkedinUrl || c.portfolioUrl),
   };
 }
 
 /**
+ * @deprecated Use `profileStrengthFromCandidate` instead.
+ * Kept for backward compatibility with any remaining call sites.
+ * All pages (Settings, Talent Profile, TopNavigation) now use the canonical
+ * 12-field calculator so the completion % is always consistent everywhere.
+ *
  * Map a Candidate record to the 7 fields tracked on the Settings page.
  *
  * Only the items a talent can actually fill in on /settings are tracked here;
@@ -157,6 +177,11 @@ export function profileStrengthFromCandidateSettings(c: {
 }
 
 /**
+ * @deprecated Use `profileStrengthFromCandidate` for all completion calculations.
+ * Kept for legacy code paths that operate on the `profiles` table (separate from
+ * the `candidates` table used by the Talent Portal). New code should target the
+ * candidates table and use `profileStrengthFromCandidate` for a unified % everywhere.
+ *
  * Map a Profile record (from /api/profiles/me) + related API data to ProfileStrengthInput.
  * Email, experience, education, and preferences are not tracked in the profiles table,
  * so those keys are left undefined (excluded from the denominator).

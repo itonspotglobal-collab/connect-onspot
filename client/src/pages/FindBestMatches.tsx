@@ -1920,29 +1920,77 @@ export default function FindBestMatches() {
   const [evaluationSaveError, setEvaluationSaveError] = useState(false);
   const [savedEvaluationId, setSavedEvaluationId] = useState<string | null>(null);
 
-  // ── On mount: if no candidateId from sessionStorage, look up via /api/candidates/me ──
+  // ── On mount: look up existing candidate data and pre-populate the form ──────
+  // If the user has started Find Best Matches before (or has a candidate record from
+  // TalentSignupFromApplication), we hydrate ALL form fields from the DB so returning
+  // users see their existing data instead of a blank form.
+  // Only sets fields that are currently empty — never overwrites user-entered data.
   useEffect(() => {
-    if (candidateId) return; // already resolved from sessionStorage
     const token = getAuthToken();
-    if (!token) return;
-    fetch("/api/candidates/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.id) {
-          setCandidateId(data.id);
-          // Pre-fill email from candidate record if profile email is blank
-          setProfile((p) => ({
-            ...p,
-            email: p.email || data.email || user?.email || "",
-            fullName: p.fullName || data.fullName || "",
-          }));
-        } else if (user?.email) {
-          setProfile((p) => ({ ...p, email: p.email || user.email || "" }));
-        }
-      })
-      .catch(() => {});
+    if (!token) {
+      if (user?.email) {
+        setProfile((p) => ({ ...p, email: p.email || user.email || "" }));
+      }
+      return;
+    }
+
+    const fetchAndHydrate = async () => {
+      try {
+        const endpoint = candidateId
+          ? `/api/candidates/${candidateId}`
+          : "/api/candidates/me";
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+        const r = await fetch(endpoint, { headers });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (!data?.id) return;
+
+        // Persist the candidateId so subsequent saves use PATCH instead of POST
+        if (!candidateId) setCandidateId(data.id);
+
+        // Hydrate preferences sub-fields from the stored preferences JSONB object.
+        // FindBestMatches saves them as: { setup, shift, jobType, environment }
+        const prefs = (data.preferences && typeof data.preferences === "object")
+          ? data.preferences as Record<string, string>
+          : {};
+
+        setProfile((p) => ({
+          ...p,
+          // Basic identity
+          email:            p.email            || data.email            || user?.email || "",
+          fullName:         p.fullName         || data.fullName         || "",
+          phone:            p.phone            || data.phone            || "",
+          location:         p.location         || data.location         || "",
+          // Professional details
+          targetPosition:   p.targetPosition   || data.targetPosition   || "",
+          jobCategory:      p.jobCategory      || data.category         || "",
+          // API returns "experienceYears" (schema column: experience_years)
+          yearsOfExperience: p.yearsOfExperience || data.experienceYears || "",
+          seniority:        p.seniority        || data.seniority        || "",
+          summary:          p.summary          || data.summary          || "",
+          // Skills — only replace when the form still has no skills entered
+          coreSkills:      p.coreSkills.length      > 0 ? p.coreSkills      : (Array.isArray(data.coreSkills)      ? data.coreSkills      : []),
+          secondarySkills: p.secondarySkills.length > 0 ? p.secondarySkills : (Array.isArray(data.secondarySkills) ? data.secondarySkills : []),
+          // Work history — only replace when the form is still empty
+          workHistory: p.workHistory.length > 0
+            ? p.workHistory
+            : (Array.isArray(data.workHistory) ? data.workHistory : []),
+          // Preferences
+          preferredSetup:   p.preferredSetup   || prefs.setup        || "",
+          preferredShift:   p.preferredShift   || prefs.shift        || "",
+          preferredJobType: p.preferredJobType || prefs.jobType      || "",
+          workEnvironment:  p.workEnvironment  || prefs.environment  || "",
+          // Culture evaluation answers — only replace when none entered yet
+          valuesAnswers: Object.keys(p.valuesAnswers).length > 0
+            ? p.valuesAnswers
+            : (data.valuesAnswers && typeof data.valuesAnswers === "object" ? data.valuesAnswers : {}),
+        }));
+      } catch {
+        // Silently ignore — form defaults are fine
+      }
+    };
+
+    fetchAndHydrate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

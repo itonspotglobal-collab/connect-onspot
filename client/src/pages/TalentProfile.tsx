@@ -725,6 +725,9 @@ export default function TalentProfile() {
   }
 
   if (isError || !candidate) {
+    // IMPORTANT: Do NOT redirect authenticated talent users to /find-best-matches here.
+    // Doing so causes the completion loop (talent completes onboarding → navigates to profile
+    // → gets sent back to Find Best Matches). Show the "not found" state instead.
     return (
       <>
         <TopNavigation />
