@@ -3253,7 +3253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PHASE 1 PRIORITY ROUTES
 
-  // ==================== DOCUMENTS ====================
+  // ====== DOCUMENTS ======
   // GET /api/documents - Get user's documents
   app.get("/api/documents", authenticateJWT, async (req: any, res) => {
     try {
@@ -3370,7 +3370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // ==================== USERS ====================
+  // ====== USERS ======
   app.get(
     "/api/users/:id",
     validateRequest(
@@ -3465,7 +3465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // ==================== PROFILES ====================
+  // ====== PROFILES ======
 
   // GET /api/profiles/me - Get current user's profile (must come before /:id route)
   app.get(
@@ -3945,7 +3945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== LEAD INTAKE ====================
+  // ====== LEAD INTAKE ======
   app.post(
     "/api/lead-intake",
     validateRequest(insertLeadIntakeSchema),
@@ -4037,7 +4037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== WAITLIST ====================
+  // ====== WAITLIST ======
   app.post("/api/waitlist", async (req, res) => {
     try {
       const { email, fullName, businessName, phone } = req.body;
@@ -4075,7 +4075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== SKILLS ====================
+  // ====== SKILLS ======
   app.get("/api/skills", async (req, res) => {
     try {
       const category = req.query.category as string;
@@ -4126,7 +4126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== USER SKILLS ====================
+  // ====== USER SKILLS ======
   app.get("/api/users/:userId/skills", async (req, res) => {
     try {
       const includeNames = req.query.includeNames === "true";
@@ -4248,7 +4248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== HOT SEARCHES ====================
+  // ====== HOT SEARCHES ======
   app.post("/api/hot-searches/track", async (req, res) => {
     try {
       const { term } = req.body;
@@ -4274,7 +4274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== CANDIDATES ====================
+  // ====== CANDIDATES ======
   /**
    * POST /api/candidates/account-setup
    * Checks if a candidate with the given email exists.
@@ -4846,6 +4846,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * PATCH /api/talent/applications/:id/withdraw
+   * Allows the authenticated talent to withdraw one of their own applications.
+   * Only non-terminal applications (not hired/rejected/withdrawn) can be withdrawn.
+   */
+  app.patch("/api/talent/applications/:id/withdraw", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId, email: jwtEmail } = req.talentAuth;
+      const applicationId = req.params.id;
+
+      // Resolve the candidate's email
+      const candRow = await query(
+        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const candidateEmail = candRow.rows[0].email as string;
+
+      // Resolve linked users.id
+      const userRow = await query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [candidateEmail],
+      );
+      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+
+      // Fetch the application, verifying ownership
+      const appRow = await query(
+        `SELECT id, status FROM job_submissions
+         WHERE id = $1
+           AND (
+             ($2::text IS NOT NULL AND talent_id = $2::text)
+             OR
+             (talent_id IS NULL AND lower(email) = lower($3))
+           )
+         LIMIT 1`,
+        [applicationId, linkedUserId, candidateEmail],
+      );
+
+      if (!appRow.rows.length) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      const currentStatus = appRow.rows[0].status as string;
+      const TERMINAL = new Set(["hired", "rejected", "withdrawn"]);
+      if (TERMINAL.has(currentStatus)) {
+        return res.status(409).json({
+          error: "Cannot withdraw",
+          message: `This application is already in a terminal state (${currentStatus}).`,
+        });
+      }
+
+      // Perform the withdrawal
+      const updated = await query(
+        `UPDATE job_submissions SET status = 'withdrawn', updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, status, updated_at AS "updatedAt"`,
+        [applicationId],
+      );
+
+      console.log(`✅ Talent ${candidateEmail} withdrew application ${applicationId}`);
+      return res.json(updated.rows[0]);
+    } catch (error: any) {
+      console.error("PATCH /api/talent/applications/:id/withdraw error:", error);
+      return res.status(500).json({ error: "Failed to withdraw application" });
+    }
+  });
+
   app.post("/api/candidates", async (req, res) => {
     try {
       const { insertCandidateSchema } = await import("@shared/schema");
@@ -5384,7 +5451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== CULTURE EVALUATIONS ====================
+  // ====== CULTURE EVALUATIONS ======
 
   /**
    * POST /api/candidates/:candidateId/culture-evaluation
@@ -5466,7 +5533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== JOBS ====================
+  // ====== JOBS ======
   // Advanced Job Search - Critical for job discovery (must come before :id route)
   app.get("/api/jobs/search", async (req, res) => {
     try {
@@ -5609,7 +5676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== ADMIN JOBS ====================
+  // ====== ADMIN JOBS ======
   app.get("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
@@ -5954,7 +6021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== JOB SKILLS ====================
+  // ====== JOB SKILLS ======
   app.get("/api/jobs/:jobId/skills", async (req, res) => {
     try {
       const jobSkills = await storage.getJobSkills(req.params.jobId);
@@ -5994,7 +6061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== JOB MATCHING ====================
+  // ====== JOB MATCHING ======
   // Job matching algorithm endpoint - personalized job recommendations
   app.get("/api/matches", isAuthenticated, async (req: any, res) => {
     try {
@@ -6037,7 +6104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== PROPOSALS ====================
+  // ====== PROPOSALS ======
   app.get("/api/proposals/:id", async (req, res) => {
     try {
       const proposal = await storage.getProposal(req.params.id);
@@ -6140,7 +6207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // ==================== CONTRACTS (Phase 2 Priority) ====================
+  // ====== CONTRACTS (Phase 2 Priority) ======
   app.get("/api/contracts/:id", async (req, res) => {
     try {
       const contract = await storage.getContract(req.params.id);
@@ -6208,7 +6275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== MESSAGES (Phase 1 Priority) ====================
+  // ====== MESSAGES (Phase 1 Priority) ======
   app.get("/api/message-threads/:id", async (req, res) => {
     try {
       const thread = await storage.getMessageThread(req.params.id);
@@ -6282,7 +6349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== ADDITIONAL ROUTES (Stubs for Phase 2+) ====================
+  // ====== ADDITIONAL ROUTES (Stubs for Phase 2+) ======
 
   // Milestones
   app.get("/api/contracts/:contractId/milestones", async (req, res) => {
@@ -6477,7 +6544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== LINKEDIN INTEGRATION ====================
+  // ====== LINKEDIN INTEGRATION ======
 
   // LinkedIn OAuth Connect - Initiate LinkedIn authentication
   app.post("/api/linkedin/connect", async (req, res) => {
@@ -7649,14 +7716,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================
+  // ======
   // Inquiry & Payment Flow
   // POST   /api/inquiries              — submit a new inquiry
   // GET    /api/inquiries/:id          — fetch a single inquiry
   // PATCH  /api/inquiries/:id/endorse  — approve/endorse an inquiry
   // POST   /api/payments               — create Stripe PaymentIntent, return clientSecret
   // PATCH  /api/inquiries/:id/paid     — verify PI with Stripe and mark inquiry as paid
-  // ============================================
+  // ======
 
   const inquirySubmitSchema = z.object({
     fullName: z.string().min(1, "Full name is required"),
@@ -7849,12 +7916,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================
+  // ======
   // Admin Inquiry Routes
   // GET  /api/inquiries           — list all (TODO: protect with admin auth before production)
   // PATCH /api/inquiries/:id/status — update status / payment method
   // PATCH /api/inquiries/:id/notes  — update admin notes
-  // ============================================
+  // ======
 
   app.get("/api/inquiries", async (req: Request, res: Response) => {
     try {
@@ -8062,10 +8129,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================
+  // ======
   // Blog Posts API (Insights page) - No Auth Required
   // Publishing, editing, and deleting posts
-  // ============================================
+  // ======
 
   // Validation schema for creating posts
   const createPostSchema = z.object({
@@ -8489,10 +8556,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================================================
+  // ======
   // ADMIN POSTS ROUTES
   // TODO: Add authentication middleware when login system is complete
-  // ============================================================================
+  // ======
 
   // GET /api/admin/posts - Admin endpoint to fetch all posts (draft + published)
   app.get("/api/admin/posts", async (req: Request, res: Response) => {
@@ -8702,13 +8769,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ============================================================================
+  // ======
   // POST /api/admin/upload-image - Upload cover image for blog posts
   // Uses Replit Object Storage to store images and returns a public URL
   // 
   // NOTE: This endpoint is temporarily unauthenticated to match other admin routes.
   // TODO: Add authentication middleware when login system is complete.
-  // ============================================================================
+  // ======
   const imageUpload = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -8991,7 +9058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
+  // ====== JOB SUBMISSIONS (Built-in Application Form) ======
 
   // GET /api/jobs/:jobId/application-prefill — returns prefilled candidate data for 1-Click Apply
   app.get("/api/jobs/:jobId/application-prefill", authenticateTalentJWT, async (req: Request, res: Response) => {

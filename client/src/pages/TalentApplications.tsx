@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,7 @@ import { useTalentApplications, TalentApplication, getTalentAppsLastViewedKey } 
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 function StatusBadge({ status }: { status: string }) {
   const meta = getStatusMeta(status);
@@ -267,14 +267,41 @@ function SubmissionDrawer({ app, onClose }: { app: TalentApplication; onClose: (
 function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; onViewSubmission: () => void }) {
   const [, navigate] = useLocation();
   const [expanded, setExpanded] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const qc = useQueryClient();
   const jobOpen = app.job.status === "open" || !app.job.status;
   const meta = getStatusMeta(app.applicationStatus);
+  const canWithdraw = !meta.isTerminal;
 
   const submittedDate = app.submittedAt
     ? new Date(app.submittedAt).toLocaleDateString("en-US", {
         month: "short", day: "numeric", year: "numeric",
       })
     : null;
+
+  async function handleWithdraw() {
+    const auth = loadTalentAuth();
+    if (!auth) return;
+    setWithdrawing(true);
+    try {
+      const res = await fetch(`/api/talent/applications/${app.id}/withdraw`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error("Withdraw failed:", body);
+        return;
+      }
+      // Optimistic update: flip status immediately then refetch
+      qc.setQueryData<TalentApplication[]>(["talent-applications"], (old) =>
+        old?.map((a) => a.id === app.id ? { ...a, applicationStatus: "withdrawn" } : a) ?? old,
+      );
+      qc.invalidateQueries({ queryKey: ["talent-applications"] });
+    } finally {
+      setWithdrawing(false);
+    }
+  }
 
   return (
     <Card className="overflow-hidden border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 hover:shadow-md transition-shadow">
@@ -328,6 +355,37 @@ function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; on
                 <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
               </button>
             </div>
+            {canWithdraw && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    disabled={withdrawing}
+                    className="text-xs text-red-400 hover:text-red-600 hover:underline dark:text-red-400 dark:hover:text-red-300 flex items-center gap-0.5 disabled:opacity-50"
+                  >
+                    {withdrawing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    Withdraw
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Withdraw Application?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You're about to withdraw your application for <strong>{app.job.title}</strong>
+                      {app.job.companyName ? ` at ${app.job.companyName}` : ""}. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleWithdraw}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Yes, Withdraw
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
 
