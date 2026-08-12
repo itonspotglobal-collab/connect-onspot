@@ -4795,6 +4795,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const photoUrl = `/objects/candidate-photos/${objectId}.${ext}`;
       await storage.updateCandidate(id, { profilePhotoUrl: photoUrl } as any);
 
+      // Sync to profiles.profilePicture so the Settings page photo stays in
+      // step with the TalentProfile page upload.
+      const talentEmail = (req as any).talentAuth?.email;
+      if (talentEmail) {
+        try {
+          await db
+            .update(profiles)
+            .set({ profilePicture: photoUrl })
+            .where(
+              sqlOp`lower(${profiles.userId}) = (
+                SELECT lower(id) FROM users WHERE lower(email) = lower(${talentEmail}) LIMIT 1
+              )`
+            );
+        } catch (syncErr: any) {
+          // Non-fatal — candidate photo was saved; just log the sync failure
+          console.warn("POST /api/candidates/:id/photo — profile sync failed:", syncErr.message);
+        }
+      }
+
       res.json({ success: true, profilePhotoUrl: photoUrl });
     } catch (error: any) {
       console.error("POST /api/candidates/:id/photo error:", error);
@@ -4938,12 +4957,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(profiles.userId, userId));
       const picturePath = rows[0]?.profilePicture;
 
-      // Allowed namespaces: the dedicated profile-photos namespace (current) and
-      // the legacy uploads namespace (for photos saved before the dedicated endpoint was added).
+      // Allowed namespaces: the dedicated profile-photos namespace (current),
+      // the legacy uploads namespace (pre-dedicated-endpoint photos), and the
+      // candidate-photos namespace (synced from the TalentProfile page uploader).
       const LEGACY_NAMESPACE = "/objects/uploads/";
+      const CANDIDATE_PHOTO_NAMESPACE = "/objects/candidate-photos/";
       if (!picturePath || (
         !picturePath.startsWith(PROFILE_PHOTO_NAMESPACE) &&
-        !picturePath.startsWith(LEGACY_NAMESPACE)
+        !picturePath.startsWith(LEGACY_NAMESPACE) &&
+        !picturePath.startsWith(CANDIDATE_PHOTO_NAMESPACE)
       )) {
         return res.status(404).send("No photo");
       }
