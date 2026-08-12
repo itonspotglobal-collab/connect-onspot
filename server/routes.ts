@@ -1027,6 +1027,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  email sender migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: candidate separate first/last name columns ──
+  try {
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS first_name text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS last_name  text`);
+    console.log("✅ Migration: candidates.first_name / last_name columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  candidates name migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -4771,7 +4780,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Text columns.
       // ⚠️  fullName / targetPosition / category are NOT NULL in the schema — coerce null/empty to "".
       // All other text columns are nullable — null is allowed.
-      if (body.fullName       !== undefined) candidateUpdates.fullName       = body.fullName       ?? "";  // NOT NULL
+
+      // firstName / lastName are stored separately; fullName is kept in sync.
+      // If the client sends firstName + lastName, derive fullName from them.
+      // If the client sends only fullName, write that directly.
+      if (body.firstName !== undefined) candidateUpdates.firstName = body.firstName ?? "";
+      if (body.lastName  !== undefined) candidateUpdates.lastName  = body.lastName  ?? "";
+
+      if (body.firstName !== undefined || body.lastName !== undefined) {
+        // Recompute fullName from the explicit parts so the columns never diverge.
+        const fn = (body.firstName ?? "").trim();
+        const ln = (body.lastName  ?? "").trim();
+        candidateUpdates.fullName = [fn, ln].filter(Boolean).join(" ") || "";
+      } else if (body.fullName !== undefined) {
+        candidateUpdates.fullName = body.fullName ?? "";  // NOT NULL
+      }
+
       if (body.targetPosition !== undefined) candidateUpdates.targetPosition = body.targetPosition ?? "";  // NOT NULL
       if (body.category       !== undefined) candidateUpdates.category       = body.category       ?? "";  // NOT NULL
       if (body.phone          !== undefined) candidateUpdates.phone          = body.phone          || null;

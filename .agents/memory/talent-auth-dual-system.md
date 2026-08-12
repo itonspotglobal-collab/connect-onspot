@@ -32,6 +32,16 @@ Accepts both token types:
 - Standard JWT (`{userId, email, role}`) → looks up user in DB, sets `req.user`
 - Candidate JWT (`{type:"candidate", candidateId, email}`) → looks up user by email, uses users.id if found, falls back to candidateId
 
+## Candidate name storage (first_name / last_name)
+
+`candidates` table now has `first_name` + `last_name` columns (nullable, added via migration).
+- PATCH route writes all three: `firstName`, `lastName`, and derives `fullName = trim(firstName + " " + lastName)`
+- Hook sends `{ firstName, lastName }` — never re-splits `fullName`
+- Load: prefers `candidate.firstName`/`candidate.lastName` when non-empty; falls back to `legacyNameFallback(fullName)` (splits at last space, NOT first) only for old rows
+- `legacyNameFallback("A B C D")` → `{ firstName: "A B C", lastName: "D" }` — all words except last go to firstName
+
+**Why:** `splitFullName` put only the first word as firstName, breaking compound given names like "Frenzy Val Eloise".
+
 ## ProfileSettings canonical data layer (definitive fix)
 
 Settings page now uses `candidates` as the ONLY source of truth for talent data.

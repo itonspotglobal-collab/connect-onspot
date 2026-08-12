@@ -1181,6 +1181,10 @@ export type HotSearch = typeof hotSearches.$inferSelect;
 export const candidates = pgTable("candidates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   fullName: text("full_name").notNull().default(""),
+  // Separate given / family name — added to support multi-word first names.
+  // Nullable so existing rows without the split are handled gracefully via legacyNameFallback().
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   email: text("email"),
   phone: text("phone"),
   location: text("location"),

@@ -68,17 +68,39 @@ function detectTimezone(): string {
   }
 }
 
-/** Split a fullName string into firstName + lastName. */
-function splitFullName(fullName: string): { firstName: string; lastName: string } {
+/**
+ * Legacy fallback — only used when the candidate row has no separate
+ * first_name / last_name stored.  Treats ALL words except the last as the
+ * given name so "Frenzy Val Eloise Legaspi" → "Frenzy Val Eloise" / "Legaspi".
+ */
+function legacyNameFallback(fullName: string): { firstName: string; lastName: string } {
   const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
-  const firstName = parts[0] || "";
-  const lastName  = parts.slice(1).join(" ") || "";
-  return { firstName, lastName };
+  if (parts.length === 0)  return { firstName: "",        lastName: "" };
+  if (parts.length === 1)  return { firstName: parts[0],  lastName: "" };
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName:  parts.at(-1) ?? "",
+  };
 }
 
 /** Map a raw candidate API response to Settings form values. */
 function candidateToFormValues(candidate: any): CandidateSettingsFormData {
-  const { firstName, lastName } = splitFullName(candidate.fullName || "");
+  // Prefer the explicit first_name / last_name columns (populated after first Settings save).
+  // Fall back to splitting fullName only when both are absent.
+  let firstName: string;
+  let lastName: string;
+
+  const hasSeparate =
+    (candidate.firstName != null && candidate.firstName !== "") ||
+    (candidate.lastName  != null && candidate.lastName  !== "");
+
+  if (hasSeparate) {
+    firstName = candidate.firstName ?? "";
+    lastName  = candidate.lastName  ?? "";
+  } else {
+    ({ firstName, lastName } = legacyNameFallback(candidate.fullName || ""));
+  }
+
   const prefs = (candidate.preferences && typeof candidate.preferences === "object")
     ? candidate.preferences as Record<string, any>
     : {};
@@ -86,15 +108,15 @@ function candidateToFormValues(candidate: any): CandidateSettingsFormData {
   return {
     firstName,
     lastName,
-    phoneNumber:  candidate.phone    || "",
-    location:     candidate.location || "",
-    timezone:     prefs.timezone     || detectTimezone(),
+    phoneNumber:  candidate.phone          || "",
+    location:     candidate.location       || "",
+    timezone:     prefs.timezone           || detectTimezone(),
     languages:    Array.isArray(prefs.languages) ? prefs.languages : [],
     title:        candidate.targetPosition || "",
     bio:          candidate.summary        || "",
     hourlyRate:   prefs.hourlyRate   ? String(prefs.hourlyRate) : "",
     rateCurrency: prefs.rateCurrency || "USD",
-    availability: candidate.availability  || "available",
+    availability: candidate.availability   || "available",
     coreSkills:   Array.isArray(candidate.coreSkills) ? candidate.coreSkills : [],
   };
 }
@@ -154,8 +176,8 @@ export function useCandidateProfileSettings() {
   // ── Default form values ───────────────────────────────────────────────────
   const getDefaultFormValues = useCallback((): CandidateSettingsFormData => {
     if (candidate) return candidateToFormValues(candidate);
-    // Fallback while loading — pre-populate from the token's fullName
-    const { firstName, lastName } = splitFullName(talentAuth?.fullName || "");
+    // Fallback while loading — pre-populate from the token's fullName (legacy split)
+    const { firstName, lastName } = legacyNameFallback(talentAuth?.fullName || "");
     return {
       firstName, lastName,
       phoneNumber: "", location: "", timezone: detectTimezone(),
@@ -179,10 +201,12 @@ export function useCandidateProfileSettings() {
           ? (candidate.preferences as Record<string, any>)
           : {};
 
-      // fullName / targetPosition / category are NOT NULL in the DB —
+      // firstName / lastName / targetPosition are NOT NULL in the DB —
       // send empty strings, not null, or PostgreSQL will throw a constraint violation.
+      // The server derives fullName = firstName + " " + lastName automatically.
       const patchBody = {
-        fullName:       `${data.firstName} ${data.lastName}`.trim() || "",
+        firstName:      data.firstName.trim(),
+        lastName:       data.lastName.trim(),
         phone:          data.phoneNumber  || null,   // nullable column — null OK
         location:       data.location     || null,   // nullable column — null OK
         targetPosition: data.title        ?? "",     // NOT NULL — empty string, not null

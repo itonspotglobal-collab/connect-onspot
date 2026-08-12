@@ -1,0 +1,441 @@
+# Fix Talent Name Persistence + Investigate Console Error Spam
+
+The Talent Profile Settings save is working now, but two problems remain.
+
+Do not rewrite the working Candidate authentication, photo upload, or Settings PATCH architecture.
+
+## Problem 1 — Multi-word First Name is still being moved into Last Name
+
+Current intended values:
+
+```text
+First Name: Frenzy Val Eloise
+Last Name: Legaspi
+```
+
+After Save Settings, the PATCH payload correctly shows:
+
+```text
+fullName: "Frenzy Val Eloise Legaspi"
+```
+
+But after the page reloads, the form becomes:
+
+```text
+First Name: Frenzy
+Last Name: Val Eloise Legaspi
+```
+
+This is wrong.
+
+The application is still splitting `fullName` somewhere.
+
+## Important requirement
+
+Once a user explicitly enters First Name and Last Name, preserve those two values exactly.
+
+For this example, the database should contain:
+
+```text
+first_name = "Frenzy Val Eloise"
+last_name  = "Legaspi"
+full_name  = "Frenzy Val Eloise Legaspi"
+```
+
+Do not reconstruct First Name and Last Name from `fullName` after save.
+
+---
+
+# 1. Find every full-name splitter
+
+Search the entire repository for logic involving:
+
+```ts
+fullName.split
+```
+
+```ts
+split(" ")
+```
+
+```ts
+slice(1).join
+```
+
+```ts
+const [firstName, ...rest]
+```
+
+or anything mapping Candidate `fullName` back into form fields.
+
+Inspect especially:
+
+* `client/src/hooks/useCandidateProfileSettings.ts`
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/pages/TalentProfile.tsx`
+* `client/src/components/TalentLoginModal.tsx`
+* `server/routes.ts`
+* `server/storage.ts`
+* `shared/schema.ts`
+
+The current GitHub main branch may not yet contain `useCandidateProfileSettings.ts`, so inspect the actual Replit workspace version currently running.
+
+---
+
+# 2. Persist firstName and lastName separately
+
+Check whether `candidates` already contains:
+
+```text
+first_name
+last_name
+full_name
+```
+
+If yes, use those existing fields.
+
+If `first_name` and `last_name` do not exist, add them with a proper migration.
+
+Do not solve this with frontend-only state.
+
+---
+
+# 3. Correct Settings load behavior
+
+When loading Profile Settings, do this:
+
+```ts
+firstName: candidate.firstName ?? ""
+lastName: candidate.lastName ?? ""
+```
+
+Do NOT do this for candidates that already have separate values:
+
+```ts
+const pieces = candidate.fullName.split(" ");
+firstName = pieces[0];
+lastName = pieces.slice(1).join(" ");
+```
+
+That logic is the bug.
+
+---
+
+# 4. Legacy fallback only
+
+Older Candidate rows may only have `fullName`.
+
+Only for rows where BOTH separate values are missing, use a one-time fallback:
+
+```ts
+function legacyNameFallback(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+
+  if (parts.length === 0) {
+    return { firstName: "", lastName: "" };
+  }
+
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts.at(-1) ?? "",
+  };
+}
+```
+
+For:
+
+```text
+Frenzy Val Eloise Legaspi
+```
+
+this gives:
+
+```text
+First Name: Frenzy Val Eloise
+Last Name: Legaspi
+```
+
+This is still only a fallback.
+
+Once the user clicks Save Settings, persist the explicit separate fields and never run the fallback again for that candidate.
+
+---
+
+# 5. Correct PATCH behavior
+
+When Settings submits:
+
+```json
+{
+  "firstName": "Frenzy Val Eloise",
+  "lastName": "Legaspi"
+}
+```
+
+the backend should explicitly write:
+
+```ts
+candidateUpdates.firstName = "Frenzy Val Eloise";
+candidateUpdates.lastName = "Legaspi";
+candidateUpdates.fullName = "Frenzy Val Eloise Legaspi";
+```
+
+Do not only write `fullName`.
+
+If the PATCH currently strips or ignores `firstName` / `lastName`, fix that.
+
+---
+
+# 6. Do not re-split the returned candidate
+
+After PATCH succeeds and React Query refetches the Candidate record, make sure the refetched record still exposes:
+
+```text
+firstName
+lastName
+```
+
+If the API response only returns `fullName`, update the API/schema mapping to return the separate fields.
+
+The frontend must not be forced to guess.
+
+---
+
+# 7. Test compound names
+
+Test all of these:
+
+### Multiple given names
+
+```text
+First Name: Frenzy Val Eloise
+Last Name: Legaspi
+```
+
+Must survive Save + hard refresh unchanged.
+
+### Multiple given names
+
+```text
+First Name: Mary Anne
+Last Name: Santos
+```
+
+Must remain:
+
+```text
+Mary Anne / Santos
+```
+
+### Compound surname
+
+```text
+First Name: Maria Clara
+Last Name: de la Cruz
+```
+
+Must remain:
+
+```text
+Maria Clara / de la Cruz
+```
+
+Do not infer surname boundaries from spaces.
+
+---
+
+# Problem 2 — Console errors are noisy and should be separated by source
+
+There are multiple unrelated console errors.
+
+## A. Stripe iframe errors
+
+The browser console repeatedly shows errors such as:
+
+```text
+Unchecked runtime.lastError:
+Cannot create item with duplicate id Generate Secure Password
+```
+
+and they point to:
+
+```text
+https://js.stripe.com/...
+```
+
+These appear to originate from a Stripe iframe / browser integration rather than Talent Profile Settings.
+
+Investigate whether these are caused by:
+
+* a browser password-manager extension;
+* Stripe Elements mounting more than once;
+* duplicate iframe initialization;
+* duplicate payment component mounting;
+* browser extension injection into Stripe frames.
+
+Do not modify Profile Settings to suppress these.
+
+If they are browser-extension-generated, document that clearly because application code may not be able to eliminate them.
+
+Test in:
+
+* Incognito/private mode with extensions disabled;
+* another browser;
+* a page where Stripe is not mounted.
+
+If the errors disappear with extensions disabled, do not change application code for them.
+
+---
+
+# B. Repeated AbortError
+
+The console also repeatedly shows:
+
+```text
+Uncaught (in promise) AbortError:
+The user aborted a request.
+```
+
+with source:
+
+```text
+frame_ant.js
+```
+
+Investigate what creates `frame_ant.js`.
+
+Search the application for:
+
+```text
+frame_ant
+```
+
+and inspect any injected:
+
+* iframe scripts;
+* Vanessa/chat widget code;
+* browser extension scripts;
+* analytics code;
+* third-party widgets.
+
+If `frame_ant.js` does not exist in the project source and appears only in DevTools as an injected script, verify whether a browser extension is responsible.
+
+Test with extensions disabled.
+
+Do not add:
+
+```ts
+window.onunhandledrejection = () => {};
+```
+
+or any global error suppression.
+
+Do not swallow legitimate application errors.
+
+---
+
+# C. Preload warning
+
+There is also a warning similar to:
+
+```text
+The resource was preloaded using link preload
+but not used within a few seconds
+```
+
+Identify which asset is being preloaded.
+
+If the preload is unnecessary, remove it.
+
+If the preload is intentional and the asset is used later, ensure the correct:
+
+```html
+as="..."
+```
+
+attribute is set.
+
+This is a warning, not the cause of the Settings name bug.
+
+---
+
+# 8. Categorize console output
+
+After testing, report errors in three buckets:
+
+1. **Application errors**
+2. **Third-party library errors**
+3. **Browser extension/injected-script errors**
+
+Do not claim every console message is caused by the app.
+
+---
+
+# 9. Database verification for the name fix
+
+After saving:
+
+```text
+First Name: Frenzy Val Eloise
+Last Name: Legaspi
+```
+
+query the Candidate row directly.
+
+Verify:
+
+```text
+first_name = "Frenzy Val Eloise"
+last_name = "Legaspi"
+full_name = "Frenzy Val Eloise Legaspi"
+```
+
+Then:
+
+1. hard refresh `/settings`;
+2. confirm First Name remains `Frenzy Val Eloise`;
+3. confirm Last Name remains `Legaspi`;
+4. open Talent Profile;
+5. confirm full display name is `Frenzy Val Eloise Legaspi`;
+6. log out and back in;
+7. confirm it remains correct.
+
+---
+
+# Acceptance criteria
+
+Do not mark complete until:
+
+* [ ] `Frenzy Val Eloise` remains entirely in First Name.
+* [ ] `Legaspi` remains entirely in Last Name.
+* [ ] Separate name values are persisted in the database.
+* [ ] `fullName` remains correct.
+* [ ] No normal reload logic splits `fullName`.
+* [ ] Legacy-only rows use fallback once.
+* [ ] Compound surnames are preserved.
+* [ ] Existing Settings save still works.
+* [ ] Photo upload still works.
+* [ ] Stripe console errors are identified as app vs extension/third-party.
+* [ ] `frame_ant.js` origin is identified.
+* [ ] No global console/error suppression is added.
+
+## Final report
+
+Tell me exactly:
+
+1. where the incorrect `fullName` split was located;
+2. why it was still happening after the previous fix;
+3. whether `first_name` / `last_name` existed in the DB;
+4. what database/schema changes were needed;
+5. how Candidate load/save now handles names;
+6. whether the Stripe errors came from the app or an extension;
+7. what `frame_ant.js` belongs to;
+8. which console errors can actually be fixed in our code;
+9. confirmation that `Frenzy Val Eloise / Legaspi` survives a hard refresh.
