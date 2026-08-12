@@ -32,6 +32,21 @@ Accepts both token types:
 - Standard JWT (`{userId, email, role}`) → looks up user in DB, sets `req.user`
 - Candidate JWT (`{type:"candidate", candidateId, email}`) → looks up user by email, uses users.id if found, falls back to candidateId
 
+## ProfileSettings canonical data layer (definitive fix)
+
+Settings page now uses `candidates` as the ONLY source of truth for talent data.
+- New hook: `client/src/hooks/useCandidateProfileSettings.ts`
+- Uses `loadTalentAuth()` from TalentLoginModal (not AuthContext/onspot_jwt_token)
+- Fetches GET `/api/candidates/:id` (public) for form defaults
+- Saves via PATCH `/api/candidates/:id` with talent Bearer token
+- Photos via POST `/api/candidates/:id/photo` (authenticateTalentJWT)
+- Timezone/languages/hourlyRate/rateCurrency stored in `preferences` JSONB (merged, not replaced)
+- `fullName` = `${firstName} ${lastName}.trim()` (split on load, join on save)
+- Skills → `coreSkills` string array on candidates table (NOT user_skills)
+- Photo URL helper: `candidatePhotoSrc()` converts `/objects/candidate-photos/x` → `/api/candidate-photos/x`
+
+**Why:** The old code was saving to `profiles` table (legacy system) while TalentProfile reads `candidates`. Two disconnected sources of truth.
+
 ## Double-toast prevention (`useTalentProfile.ts`)
 
 `profileMutation.onError` must NOT show a toast — the caller (`ProfileSettings.onSubmit`) already wraps `mutateAsync` in try/catch and shows its own error toast. Having both fires two toasts for the same error.

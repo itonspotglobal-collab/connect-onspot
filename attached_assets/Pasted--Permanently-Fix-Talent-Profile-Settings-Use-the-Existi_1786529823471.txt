@@ -1,0 +1,771 @@
+# Permanently Fix Talent Profile Settings — Use the Existing Candidate Talent System
+
+This has been attempted multiple times and is still broken.
+
+Do **not** make another superficial patch to `ProfileSettings.tsx`.
+
+I need you to first understand the architecture problem and then fix it at the correct data/authentication layer.
+
+## Confirmed architecture problem
+
+There are currently TWO different Talent/profile systems in this repository:
+
+### Legacy user/profile system
+
+Uses:
+
+* `users`
+* `profiles`
+* `/api/profiles/me`
+* `useTalentProfile()`
+* `AuthContext`
+* `onspot_jwt_token`
+* JWT claims such as:
+
+  * `userId`
+  * `email`
+  * `role`
+
+### Current Talent Profile system
+
+Uses:
+
+* `candidates`
+* Talent Profile page
+* `/api/candidates/:id`
+* `/api/candidates/:id/photo`
+* `/api/talent-auth/login`
+* `TalentLoginModal`
+* `talent_profile_token`
+* JWT claims:
+
+  * `type: "candidate"`
+  * `candidateId`
+  * `email`
+
+The Talent Profile page already uses the candidate system successfully.
+
+The `/settings` page is still wired to the legacy `/api/profiles/me` system.
+
+This is the main bug.
+
+---
+
+# Goal
+
+Make **Talent Profile Settings** edit the SAME Talent profile record that `/talent-profile` displays.
+
+For logged-in Talent accounts:
+
+> `candidates` must be the canonical source of truth.
+
+Do not continue saving Talent Settings into a separate `profiles` row while Talent Profile reads from `candidates`.
+
+After this fix:
+
+`Talent Profile Settings -> candidates database row -> Talent Profile`
+
+must all use the same data.
+
+---
+
+# Files to inspect first
+
+Inspect these carefully before changing anything:
+
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/pages/TalentProfile.tsx`
+* `client/src/components/TalentLoginModal.tsx`
+* `client/src/hooks/useTalentProfile.ts`
+* `client/src/lib/api.ts`
+* `client/src/contexts/AuthContext.tsx`
+* `server/routes.ts`
+* `server/storage.ts`
+* `shared/schema.ts`
+
+Also inspect the candidate fields/database schema.
+
+---
+
+# 1. Stop using `/api/profiles/me` as the Talent Settings source
+
+`ProfileSettings.tsx` currently relies on `useTalentProfile()`.
+
+That hook performs:
+
+```ts
+authAPI.get("/api/profiles/me")
+```
+
+and:
+
+```ts
+authAPI.put("/api/profiles/me", data)
+```
+
+This is wrong for the current Talent Profile architecture.
+
+`/api/profiles/me` uses the normal user JWT and the `profiles` table.
+
+The logged-in Talent profile system uses `candidateId` and the `candidates` table instead.
+
+Refactor Talent Profile Settings so it loads/saves the authenticated Talent candidate.
+
+---
+
+# 2. Use `talent_profile_token`
+
+Use the existing helpers from:
+
+`client/src/components/TalentLoginModal.tsx`
+
+including:
+
+```ts
+loadTalentAuth()
+```
+
+The existing Talent auth object contains:
+
+```ts
+{
+  token,
+  candidateId,
+  email,
+  fullName
+}
+```
+
+Use this identity for Talent Profile Settings.
+
+Do NOT rely on:
+
+```ts
+useAuth().user
+```
+
+as the only identity source for Talent Profile Settings.
+
+Do NOT assume:
+
+```ts
+onspot_jwt_token
+```
+
+contains the Talent candidate JWT.
+
+---
+
+# 3. Create a dedicated Talent Settings data hook
+
+Prefer creating something explicit such as:
+
+`client/src/hooks/useCandidateProfileSettings.ts`
+
+instead of continuing to overload `useTalentProfile()`.
+
+The hook should:
+
+1. call `loadTalentAuth()`;
+2. obtain `candidateId`;
+3. fetch the candidate;
+4. map candidate fields into Settings form fields;
+5. PATCH the candidate;
+6. invalidate/refetch the candidate query after saving.
+
+Example canonical query key:
+
+```ts
+["candidate-profile", candidateId]
+```
+
+Do not mix this with:
+
+```ts
+["/api/profiles/me"]
+```
+
+for Talent Settings.
+
+---
+
+# 4. Fetch the candidate record
+
+Load the profile using the candidate endpoint.
+
+Use either the appropriate authenticated owner endpoint or existing candidate endpoint after confirming security requirements.
+
+The canonical record must be:
+
+```text
+candidates.id = talentAuth.candidateId
+```
+
+The Settings form must populate from that candidate record.
+
+---
+
+# 5. Save Settings through `/api/candidates/:id`
+
+Use the existing candidate update route.
+
+The backend already supports:
+
+```text
+PATCH /api/candidates/:id
+```
+
+and understands candidate ownership.
+
+Make Settings send:
+
+```http
+Authorization: Bearer <talent_profile_token>
+```
+
+Do not use the generic API client unless you modify it in a safe way that explicitly understands both JWT systems.
+
+It is acceptable and probably safer to create a dedicated Talent API helper.
+
+Example:
+
+```ts
+export async function talentApiRequest(
+  url: string,
+  options: RequestInit = {}
+) {
+  const auth = loadTalentAuth();
+
+  if (!auth?.token) {
+    throw new Error("Talent session not found");
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+}
+```
+
+Do not globally overwrite the normal Client/Admin authentication behavior.
+
+---
+
+# 6. Map Settings fields to candidate fields
+
+Determine the actual candidate schema before implementing.
+
+Map the visible Settings fields into the canonical candidate fields.
+
+At minimum support:
+
+### Basic Information
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+
+### Professional Details
+
+* Professional Title
+* Bio / Summary
+* Hourly Rate
+* Currency
+* Availability
+
+### Skills
+
+Settings skills must update the same candidate skill fields the Talent Profile displays.
+
+Do not continue writing candidate skills into `user_skills` if Talent Profile displays `candidates.coreSkills` / `secondarySkills`.
+
+### Profile photo
+
+Must update:
+
+```text
+candidates.profile_photo_url
+```
+
+or the actual candidate schema field equivalent.
+
+---
+
+# 7. First Name / Last Name mapping
+
+The candidate model currently appears to include fields such as:
+
+* `fullName`
+* possibly `firstName`
+* possibly `lastName`
+
+Inspect `shared/schema.ts` and the DB before deciding.
+
+If the candidate table has `first_name` and `last_name`, use them.
+
+Keep `full_name` synchronized.
+
+For example:
+
+```ts
+fullName = `${firstName} ${lastName}`.trim();
+```
+
+The Talent Profile page and navigation must display the updated name immediately after save.
+
+If only `full_name` is currently canonical, adapt the Settings form safely without creating conflicting duplicate truth.
+
+---
+
+# 8. Photo upload — use the existing working endpoint
+
+The current Settings code incorrectly calls:
+
+```ts
+POST /api/profiles/me/photo
+```
+
+Stop using this for Talent Settings.
+
+Reuse the exact working pattern from `TalentProfile.tsx`.
+
+Use:
+
+```ts
+POST /api/candidates/${candidateId}/photo
+```
+
+with:
+
+```http
+Authorization: Bearer <talent_profile_token>
+```
+
+and:
+
+```ts
+const form = new FormData();
+form.append("photo", file);
+```
+
+Do not manually set `Content-Type`.
+
+The server already stores candidate photos and writes the resulting path into the candidate row.
+
+---
+
+# 9. Fix photo rendering
+
+Do not render the Talent Settings photo using:
+
+```ts
+/api/profile-picture/${user.id}
+```
+
+That belongs to the other profile system.
+
+Reuse the same `photoSrc()` behavior already implemented in `TalentProfile.tsx`.
+
+For candidate photo URLs such as:
+
+```text
+/objects/candidate-photos/abc.jpg
+```
+
+render them through:
+
+```text
+/api/candidate-photos/abc.jpg
+```
+
+Make this helper reusable rather than duplicating incompatible avatar logic.
+
+Example shared helper:
+
+```ts
+export function candidatePhotoSrc(url?: string | null) {
+  if (!url) return "";
+
+  if (url.startsWith("/objects/candidate-photos/")) {
+    return url.replace(
+      "/objects/candidate-photos/",
+      "/api/candidate-photos/"
+    );
+  }
+
+  return url;
+}
+```
+
+After upload:
+
+1. update/refetch candidate data;
+2. update the Settings avatar immediately;
+3. update the Talent Profile avatar;
+4. update navbar/account avatar if it uses the candidate photo;
+5. hard refresh must still show the image.
+
+Do not use only `photoVersion` against an unrelated `/api/profile-picture/:userId` endpoint.
+
+---
+
+# 10. Fix the false success toast
+
+Currently Settings can display:
+
+> Photo updated
+> Your profile photo has been saved.
+
+while the avatar does not change.
+
+A success toast is only allowed after:
+
+1. upload endpoint succeeds;
+2. candidate DB row contains the new `profilePhotoUrl`;
+3. refreshed candidate query returns that URL.
+
+Then render the returned persisted URL.
+
+---
+
+# 11. Skills save is currently capable of causing the Save Settings failure
+
+Inspect this carefully.
+
+The Settings `onSubmit()` currently does:
+
+```ts
+await updateProfile(data);
+await updateSkills();
+```
+
+The current `useTalentProfile.updateSkills()` contains:
+
+```ts
+if (!user?.id) throw new Error("User not authenticated");
+```
+
+This explains why the UI can show:
+
+> User not authenticated
+
+even after the profile update logic itself is changed.
+
+For Candidate-based Talent Settings, remove this dependency completely.
+
+Settings save must not invoke legacy `user_skills` mutations for Candidate Talent profiles.
+
+Map skills to the candidate model instead.
+
+If Basic Information changes successfully but Skills persistence fails, do not incorrectly report that nothing was saved.
+
+Prefer one canonical candidate update transaction/request where practical.
+
+---
+
+# 12. Do not use legacy profile validation for candidate settings
+
+The current `profileFormSchema` requires:
+
+```ts
+title: min(2)
+hourlyRate: min(1)
+location: min(2)
+languages: at least 1
+```
+
+That means someone editing only First Name can potentially fail validation because an unrelated Professional field is missing.
+
+Create a Candidate Settings schema that matches the actual Talent profile requirements.
+
+Do not require hidden/off-section fields merely to save Basic Information unless they truly are database/business requirements.
+
+Saving First Name + Last Name must work independently.
+
+---
+
+# 13. Save ALL Settings sections
+
+Each Settings section must persist correctly.
+
+### Basic
+
+* firstName
+* lastName
+* phone
+* location
+* timezone
+* languages
+* profile photo
+
+### Professional
+
+* title/target position
+* bio/summary
+* hourly rate
+* currency
+* availability
+
+### Skills
+
+* core skills
+* secondary skills or the appropriate candidate representation
+
+### Documents
+
+Keep the current working resume/document behavior if it belongs to the same canonical Talent record.
+
+If documents currently depend on `users.id`, inspect whether Candidate Talent accounts can access them.
+
+Do not silently leave Documents bound to a different user ID model without documenting/fixing it.
+
+---
+
+# 14. Database persistence is mandatory
+
+Do not consider this done based on React state.
+
+Verify the database directly.
+
+For the authenticated Talent candidate:
+
+```sql
+SELECT *
+FROM candidates
+WHERE id = '<candidateId>';
+```
+
+After editing Settings, confirm the candidate row actually changes.
+
+For photo:
+
+confirm:
+
+```text
+profile_photo_url
+```
+
+contains the permanent stored object path.
+
+---
+
+# 15. Hard-refresh test
+
+Test this exact flow:
+
+1. Talent signs into Talent Portal.
+2. `talent_profile_token` exists.
+3. Open `/settings`.
+4. Change First Name.
+5. Change Last Name.
+6. Save.
+7. Confirm candidate DB row changed.
+8. Hard refresh `/settings`.
+9. Confirm new names remain.
+10. Open `/talent-profile`.
+11. Confirm same new name appears there.
+12. Change phone.
+13. Change location.
+14. Change timezone.
+15. Change language(s).
+16. Save.
+17. Hard refresh.
+18. Confirm all values remain.
+19. Upload profile image.
+20. Confirm candidate DB `profile_photo_url` changed.
+21. Confirm image appears in Settings.
+22. Hard refresh.
+23. Confirm image remains.
+24. Open Talent Profile.
+25. Confirm same image appears there.
+
+---
+
+# 16. Fix duplicate profile sources
+
+Search for all Talent-facing pages using:
+
+```text
+profiles
+/api/profiles/me
+useTalentProfile
+```
+
+Determine whether they are truly part of the active Talent Portal or legacy pages.
+
+Do not blindly delete legacy APIs because Clients/Admin or older pages may still require them.
+
+But for the **current Talent Profile / Talent Settings**, establish:
+
+```text
+candidates = canonical Talent profile
+```
+
+Document this clearly in code.
+
+---
+
+# 17. Authentication must remain separated safely
+
+There are currently:
+
+### Normal user JWT
+
+Local storage:
+
+```text
+onspot_jwt_token
+```
+
+Payload:
+
+```text
+userId
+email
+role
+```
+
+### Talent Profile JWT
+
+Local storage:
+
+```text
+talent_profile_token
+```
+
+Payload:
+
+```text
+type: "candidate"
+candidateId
+email
+```
+
+Do not accidentally replace one with the other.
+
+Do not make the global axios interceptor always pick the Talent token.
+
+That could break Client/Admin APIs.
+
+Prefer explicit API clients/helpers for each authentication domain.
+
+---
+
+# 18. Investigate AbortError separately
+
+The browser still shows repeated:
+
+```text
+Uncaught (in promise) AbortError:
+The user aborted a request.
+```
+
+Find the actual source.
+
+Do not assume this causes Profile Settings authentication.
+
+Inspect:
+
+* Vanessa/chat widget
+* iframe injected scripts
+* request cancellation
+* fetch AbortControllers
+* cleanup effects
+* repeated polling
+
+If it originates from the embedded Vanessa/chat iframe or injected script and is unrelated to Profile Settings, say so clearly and fix it separately if feasible.
+
+Do not mask it with a global `window.onunhandledrejection`.
+
+---
+
+# 19. Security
+
+Do not make:
+
+```text
+PATCH /api/candidates/:id
+```
+
+public.
+
+The authenticated candidate may only edit:
+
+```text
+candidateId === JWT candidateId
+```
+
+Admin/staff permissions should remain as currently intended.
+
+Never trust a candidate ID supplied by the frontend without checking ownership server-side.
+
+---
+
+# 20. Cleanup
+
+Once Settings uses the Candidate system:
+
+* remove unused `useAuth()` dependency from Talent Settings where appropriate;
+* remove incorrect `/api/profiles/me/photo`;
+* remove incorrect `/api/profile-picture/${user.id}` avatar rendering;
+* stop invoking legacy `updateSkills()` from Candidate Settings;
+* remove stale comments claiming the Axios interceptor automatically handles the Candidate token unless you actually implement that behavior.
+
+Do not redesign the page.
+
+Keep the current Settings UI.
+
+---
+
+# Acceptance criteria
+
+This task is complete ONLY when all of these are true:
+
+* [ ] First Name saves.
+* [ ] Last Name saves.
+* [ ] Phone saves.
+* [ ] Location saves.
+* [ ] Timezone saves.
+* [ ] Languages save.
+* [ ] Professional fields save.
+* [ ] Skills save to the canonical candidate model.
+* [ ] Photo uploads.
+* [ ] Photo URL is stored in `candidates`.
+* [ ] Uploaded photo displays immediately.
+* [ ] Uploaded photo survives hard refresh.
+* [ ] Talent Profile displays the same updated data.
+* [ ] No "User not authenticated" error while the Talent session is valid.
+* [ ] Settings does not depend on `onspot_jwt_token` for Candidate Talent authentication.
+* [ ] Settings does not update a disconnected `profiles` row instead of the candidate row.
+* [ ] The database is verified directly.
+* [ ] Client/Admin authentication continues working.
+* [ ] Existing Talent Profile editing continues working.
+
+---
+
+# Final response required
+
+After fixing it, report:
+
+1. exact root cause;
+2. why the previous fixes did not work;
+3. old data/auth flow;
+4. new data/auth flow;
+5. files changed;
+6. API routes used;
+7. database table/columns changed;
+8. how First/Last Name are persisted;
+9. how profile photos are persisted/rendered;
+10. how Skills are persisted;
+11. tests performed;
+12. confirmation that hard refresh retains all changes.
+
+Do not stop after changing frontend code.
+
+Do not mark this complete until you have verified the actual `candidates` database row.

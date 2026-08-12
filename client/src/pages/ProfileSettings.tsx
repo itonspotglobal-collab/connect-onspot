@@ -41,24 +41,24 @@ import {
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { TimezoneSelect } from "@/components/TimezoneSelect";
 import {
-  useTalentProfile,
-  profileFormSchema,
-  ProfileFormData,
-} from "@/hooks/useTalentProfile";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+  useCandidateProfileSettings,
+  candidateSettingsSchema,
+  CandidateSettingsFormData,
+  candidatePhotoSrc,
+} from "@/hooks/useCandidateProfileSettings";
 import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
-const I = "#4B51B8";       // primary indigo
-const V = "#6E4DF5";       // violet accent
-const NAVY = "#171B4D";
-const GOLD = "#FFA91F";
-const BG = "#FAFAFD";
-const TEXT = "#18181F";
-const MUTED = "#6F7280";
+const I      = "#4B51B8";
+const V      = "#6E4DF5";
+const NAVY   = "#171B4D";
+const GOLD   = "#FFA91F";
+const BG     = "#FAFAFD";
+const TEXT   = "#18181F";
+const MUTED  = "#6F7280";
 const BORDER = "rgba(75,81,184,0.14)";
 const ACTIVE_BG = "linear-gradient(135deg,#4B55D0,#7248F4)";
 const SAVE_BG   = "linear-gradient(135deg,#4B55D0,#7049F4)";
@@ -233,61 +233,103 @@ function DocRow({ doc, onRemove }: { doc: any; onRemove: (id: string) => void })
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Sections ──────────────────────────────────────────────────────────────────
 const sections = [
-  { id: "basic",        title: "Basic Information",   icon: User    },
-  { id: "professional", title: "Professional Details", icon: Brain   },
-  { id: "skills",       title: "Skills & Expertise",  icon: FileText },
-  { id: "documents",    title: "Documents",            icon: Upload  },
+  { id: "basic",        title: "Basic Information",    icon: User     },
+  { id: "professional", title: "Professional Details",  icon: Brain    },
+  { id: "skills",       title: "Skills & Expertise",   icon: FileText },
+  { id: "documents",    title: "Documents",             icon: Upload   },
 ];
 
+// ─── Main component ────────────────────────────────────────────────────────────
 export default function ProfileSettings() {
   const { toast } = useToast();
-  const authContext = useAuth();
-  const user = authContext?.user;
 
   const {
-    profile,
-    skills,
-    documents,
-    availableSkills,
-    profileCompletion,
+    talentAuth,
+    candidateId,
+    candidate,
     isLoading,
-    isUpdating,
-    toggleSkill,
-    updateProfile,
-    updateSkills,
+    isSaving,
+    profileCompletion,
     getDefaultFormValues,
-  } = useTalentProfile();
+    saveSettings,
+    uploadPhoto,
+    removePhoto,
+    availableSkills,
+  } = useCandidateProfileSettings();
 
-  const [activeSection, setActiveSection] = useState("basic");
+  const [activeSection, setActiveSection]   = useState("basic");
   const [photoUploading, setPhotoUploading] = useState(false);
+  // localPhotoUrl: set immediately after upload for instant avatar update.
+  // Reset to undefined when the candidate query refetches with the persisted URL.
+  const [localPhotoUrl, setLocalPhotoUrl]   = useState<string | undefined>(undefined);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // photoVersion forces the <img> to re-fetch after upload/removal (same URL, new content)
-  const [photoVersion, setPhotoVersion] = useState(0);
+  // Documents state (loaded via authAPI — works via talent token fallback in Axios interceptor)
+  const [documents, setDocuments] = useState<any[]>([]);
 
+  // Fetch documents — uses authAPI which falls back to talent_profile_token
+  useEffect(() => {
+    let cancelled = false;
+    authAPI.get("/api/documents")
+      .then((data) => { if (!cancelled && Array.isArray(data)) setDocuments(data); })
+      .catch(() => {}); // Not critical — documents section degrades gracefully
+    return () => { cancelled = true; };
+  }, [candidateId]);
+
+  const form = useForm<CandidateSettingsFormData>({
+    resolver: zodResolver(candidateSettingsSchema),
+    defaultValues: getDefaultFormValues(),
+  });
+
+  // Reset form when candidate data loads from server.
+  useEffect(() => {
+    if (candidate !== undefined && candidate !== null) {
+      form.reset(getDefaultFormValues());
+      // Clear localPhotoUrl — the persisted URL is now in candidate.profilePhotoUrl
+      setLocalPhotoUrl(undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidate]);
+
+  // ── Derived photo state ────────────────────────────────────────────────────
+  // localPhotoUrl is set right after upload so the avatar updates immediately;
+  // after the candidate query refetches, we use the persisted candidate URL.
+  const persistedPhotoUrl = candidate?.profilePhotoUrl as string | null | undefined;
+  const displayPhotoSrc   = candidatePhotoSrc(localPhotoUrl ?? persistedPhotoUrl ?? null);
+  const hasPhoto          = !!(localPhotoUrl || persistedPhotoUrl);
+
+  // ── Photo upload ────────────────────────────────────────────────────────────
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Client-side validation
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Unsupported file type", description: "Please upload a JPEG, PNG, or WebP image.", variant: "destructive" });
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: "File too large", description: "Maximum photo size is 5 MB.", variant: "destructive" });
       return;
     }
+
+    if (!talentAuth?.token) {
+      toast({ title: "Not logged in", description: "Please log in to your Talent account to upload a photo.", variant: "destructive" });
+      return;
+    }
+
     setPhotoUploading(true);
     try {
-      // Use dedicated photo endpoint — server validates MIME type and size
-      const formData = new FormData();
-      formData.append("photo", file);
-      // authAPI.post returns the parsed response body directly
-      const response = await authAPI.post("/api/profiles/me/photo", formData);
-      if (!response?.success) throw new Error(response?.error || "Upload failed");
-      // Refresh profile data and bump version so the avatar re-fetches
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      setPhotoVersion((v) => v + 1);
+      // POST /api/candidates/:id/photo — authenticateTalentJWT + multer
+      const storedPath = await uploadPhoto(file);
+      // Show avatar immediately using the returned path (before query refetch)
+      setLocalPhotoUrl(storedPath);
       toast({ title: "Photo updated", description: "Your profile photo has been saved." });
-    } catch (error: any) {
-      toast({ title: "Upload failed", description: error?.message || "Could not upload photo.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err?.message || "Could not upload photo.", variant: "destructive" });
     } finally {
       setPhotoUploading(false);
       if (photoInputRef.current) photoInputRef.current.value = "";
@@ -295,12 +337,11 @@ export default function ProfileSettings() {
   };
 
   const handleRemovePhoto = async () => {
+    if (!talentAuth?.token) return;
     setPhotoUploading(true);
     try {
-      // authAPI.delete returns the parsed body directly
-      await authAPI.delete("/api/profiles/me/photo");
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      setPhotoVersion((v) => v + 1);
+      await removePhoto();
+      setLocalPhotoUrl(undefined);
       toast({ title: "Photo removed", description: "Your profile photo has been removed." });
     } catch {
       toast({ title: "Removal failed", description: "Could not remove photo. Please try again.", variant: "destructive" });
@@ -309,59 +350,39 @@ export default function ProfileSettings() {
     }
   };
 
-  const form = useForm<ProfileFormData>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: getDefaultFormValues(),
-  });
-
-  // Reset form when profile data finishes loading — does NOT overwrite dirty fields
-  // on every render (the `values` prop bug that was silently resetting edits).
-  useEffect(() => {
-    if (profile !== undefined) {
-      form.reset(getDefaultFormValues());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
-
   // ── Save ──────────────────────────────────────────────────────────────────
-  const onSubmit = async (data: ProfileFormData) => {
-    // Note: auth is handled by the shared API client (Axios interceptor), which picks
-    // up whichever token is active (JWT or talent candidate token). We no longer gate on
-    // authContext.isAuthenticated here because talent users authenticate via a separate
-    // token system that does not populate authContext.
+  const onSubmit = async (data: CandidateSettingsFormData) => {
+    if (!talentAuth?.token) {
+      toast({ title: "Not logged in", description: "Please log in to your Talent account.", variant: "destructive" });
+      return;
+    }
     try {
-      await updateProfile(data);
-      // Always persist current skill selection, even if it's empty (clearing all skills)
-      await updateSkills();
-      // Invalidate all profile-related queries so the navbar/profile completion update
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      // PATCH /api/candidates/:id — single request, includes all fields + coreSkills
+      await saveSettings(data);
       toast({ title: "Settings saved successfully.", description: "Your profile has been updated.", duration: 3000 });
     } catch (error: any) {
       toast({
         title: "Unable to save settings",
-        description: `${error?.message || "Something went wrong"}. Please try again.`,
+        description: error?.message || "Something went wrong. Please try again.",
         variant: "destructive", duration: 6000,
       });
     }
   };
 
-  // Surface validation errors as a toast so the user is never left clicking Save with zero feedback
   const onInvalid = (errors: any) => {
-    console.error("Profile validation errors:", errors);
     const firstError = Object.values(errors)[0] as any;
     toast({
       title: "Please check your information",
-      description: firstError?.message || "Some fields need attention before your settings can be saved.",
+      description: firstError?.message || "Some fields need attention before saving.",
       variant: "destructive",
     });
   };
 
-  // ── Document handlers ─────────────────────────────────────────────────────
+  // ── Document handlers (via authAPI — works with talent token fallback) ─────
   const removeDocument = async (documentId: string) => {
     try {
       await authAPI.delete(`/api/documents/${documentId}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setDocuments((prev) => prev.filter((d) => d.id !== documentId));
       toast({ title: "Document removed." });
     } catch {
       toast({ title: "Removal failed", description: "Please try again.", variant: "destructive" });
@@ -372,19 +393,33 @@ export default function ProfileSettings() {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
       try {
-        await authAPI.post("/api/documents", {
+        const saved = await authAPI.post("/api/documents", {
           type, fileName: file.name, fileUrl: file.uploadURL,
           fileSize: file.size || null, mimeType: file.type || null,
           isPublic: false, isPrimary: false,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+        setDocuments((prev) => [...prev, saved?.document ?? saved]);
         toast({ title: "Document uploaded", description: `Your ${type === "resume" ? "resume" : "video introduction"} was saved.` });
       } catch {
         toast({ title: "Upload error", description: "File uploaded but metadata failed to save.", variant: "destructive" });
       }
     }
   };
+
+  // ── No talent session ─────────────────────────────────────────────────────
+  if (!talentAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
+        <div className="text-center max-w-sm">
+          <User style={{ width: 48, height: 48, color: I, opacity: 0.3, margin: "0 auto 16px" }} />
+          <h2 className="font-bold text-[20px] mb-2" style={{ color: TEXT }}>Talent login required</h2>
+          <p className="text-[14px]" style={{ color: MUTED }}>
+            Please sign in to your Talent account to access your profile settings.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -398,8 +433,8 @@ export default function ProfileSettings() {
     );
   }
 
-  const resumeDocs   = documents?.filter((d) => d.type === "resume")     ?? [];
-  const videoDocs    = documents?.filter((d) => d.type === "video_intro") ?? [];
+  const resumeDocs = documents.filter((d) => d.type === "resume");
+  const videoDocs  = documents.filter((d) => d.type === "video_intro");
 
   return (
     <div className="min-h-screen" style={{ background: BG, paddingBottom: 60 }}>
@@ -409,25 +444,15 @@ export default function ProfileSettings() {
         <div className="mb-5">
           <button
             onClick={() => {
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                window.location.href = "/talent-profile";
-              }
+              if (window.history.length > 1) window.history.back();
+              else window.location.href = "/talent-profile";
             }}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              height: 40,
-              paddingInline: 14,
-              borderRadius: 10,
+              display: "inline-flex", alignItems: "center", gap: 7,
+              height: 40, paddingInline: 14, borderRadius: 10,
               border: `1.5px solid rgba(75,81,184,0.18)`,
-              background: "rgba(75,81,184,0.07)",
-              color: "#4B51B8",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
+              background: "rgba(75,81,184,0.07)", color: "#4B51B8",
+              fontSize: 14, fontWeight: 600, cursor: "pointer",
               transition: "background 150ms ease, border-color 150ms ease",
             }}
             onMouseEnter={e => {
@@ -533,9 +558,10 @@ export default function ProfileSettings() {
                             display: "flex", alignItems: "center", justifyContent: "center",
                           }}
                         >
-                          {profile?.profilePicture && user?.id ? (
+                          {displayPhotoSrc ? (
                             <img
-                              src={`/api/profile-picture/${user.id}?v=${photoVersion}`}
+                              key={displayPhotoSrc}
+                              src={displayPhotoSrc}
                               alt="Profile"
                               style={{ width: "100%", height: "100%", objectFit: "cover" }}
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
@@ -549,7 +575,7 @@ export default function ProfileSettings() {
                           <input
                             ref={photoInputRef}
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            accept="image/jpeg,image/png,image/webp"
                             style={{ display: "none" }}
                             onChange={handlePhotoUpload}
                           />
@@ -573,11 +599,11 @@ export default function ProfileSettings() {
                             ) : (
                               <>
                                 <Upload style={{ width: 14, height: 14, color: I }} />
-                                {profile?.profilePicture ? "Replace Photo" : "Upload Photo"}
+                                {hasPhoto ? "Replace Photo" : "Upload Photo"}
                               </>
                             )}
                           </button>
-                          {profile?.profilePicture && (
+                          {hasPhoto && (
                             <button
                               type="button"
                               onClick={handleRemovePhoto}
@@ -594,7 +620,7 @@ export default function ProfileSettings() {
                             </button>
                           )}
                           <p className="text-[12px]" style={{ color: MUTED }}>
-                            JPG, PNG, WebP or GIF · Max 5 MB
+                            JPG, PNG, or WebP · Max 5 MB
                           </p>
                         </div>
                       </div>
@@ -613,14 +639,14 @@ export default function ProfileSettings() {
                       )} />
                       <FormField control={form.control} name="lastName" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>Last Name *</FormLabel>
+                          <FormLabel className={labelCls}>Last Name</FormLabel>
                           <FormControl><StyledInput placeholder="Enter your last name" {...field} data-testid="input-last-name" /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                     </div>
 
-                    {/* Row 2: Phone (full) */}
+                    {/* Row 2: Phone */}
                     <div className="mb-5">
                       <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem>
@@ -664,7 +690,7 @@ export default function ProfileSettings() {
                       )} />
                     </div>
 
-                    {/* Row 4: Languages (full) */}
+                    {/* Row 4: Languages */}
                     <FormField control={form.control} name="languages" render={({ field }) => (
                       <FormItem>
                         <FormLabel className={labelCls}>
@@ -722,7 +748,7 @@ export default function ProfileSettings() {
                     <div className="mb-5">
                       <FormField control={form.control} name="title" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>Professional Title *</FormLabel>
+                          <FormLabel className={labelCls}>Professional Title</FormLabel>
                           <FormControl>
                             <StyledInput placeholder="e.g., Full Stack Developer, Virtual Assistant" {...field} data-testid="input-title" />
                           </FormControl>
@@ -808,60 +834,65 @@ export default function ProfileSettings() {
                 {/* ─ Skills & Expertise ─ */}
                 {activeSection === "skills" && (
                   <SectionCard icon={FileText} title="Skills & Expertise" subtitle="Select your skills to help clients find you for relevant projects.">
-                    <div className="space-y-6">
-
-                      {/* Selected */}
-                      <div>
-                        <Label className="text-[13px] font-semibold uppercase tracking-wider mb-3 block" style={{ color: MUTED }}>
-                          Your Skills
-                        </Label>
-                        {skills && skills.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {skills.map((skill) => (
-                              <span
-                                key={skill}
-                                className="inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-full"
-                                style={{ background: ACTIVE_BG, color: "#fff" }}
-                              >
-                                {skill}
-                                <button
-                                  type="button" onClick={() => toggleSkill(skill)}
-                                  style={{ display: "flex", alignItems: "center", opacity: 0.8, cursor: "pointer", background: "none", border: "none", padding: 0, color: "#fff" }}
-                                >
-                                  <X style={{ width: 12, height: 12 }} />
-                                </button>
-                              </span>
-                            ))}
+                    <FormField control={form.control} name="coreSkills" render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-6">
+                          {/* Selected skills */}
+                          <div>
+                            <Label className="text-[13px] font-semibold uppercase tracking-wider mb-3 block" style={{ color: MUTED }}>
+                              Your Skills
+                            </Label>
+                            {field.value && field.value.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {field.value.map((skill) => (
+                                  <span
+                                    key={skill}
+                                    className="inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-full"
+                                    style={{ background: ACTIVE_BG, color: "#fff" }}
+                                  >
+                                    {skill}
+                                    <button
+                                      type="button"
+                                      onClick={() => field.onChange(field.value.filter((s) => s !== skill))}
+                                      style={{ display: "flex", alignItems: "center", opacity: 0.8, cursor: "pointer", background: "none", border: "none", padding: 0, color: "#fff" }}
+                                    >
+                                      <X style={{ width: 12, height: 12 }} />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[14px]" style={{ color: MUTED }}>No skills selected yet. Add some from the list below.</p>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-[14px]" style={{ color: MUTED }}>No skills selected yet. Add some from the list below.</p>
-                        )}
-                      </div>
 
-                      {/* Available */}
-                      <div>
-                        <Label className="text-[13px] font-semibold uppercase tracking-wider mb-3 block" style={{ color: MUTED }}>
-                          Add Skills
-                        </Label>
-                        <div className="flex flex-wrap gap-2">
-                          {availableSkills
-                            ?.filter((s: any) => !skills?.includes(s.name))
-                            ?.map((s: any) => (
-                              <button
-                                key={s.id} type="button"
-                                onClick={() => toggleSkill(s.name)}
-                                className="inline-flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-full transition-all duration-100"
-                                style={{ border: `1.5px solid ${BORDER}`, background: "#fff", color: TEXT, cursor: "pointer" }}
-                                onMouseEnter={(e) => { (e.currentTarget).style.background = "#EEEDFB"; (e.currentTarget).style.borderColor = I; }}
-                                onMouseLeave={(e) => { (e.currentTarget).style.background = "#fff"; (e.currentTarget).style.borderColor = BORDER; }}
-                              >
-                                <Plus style={{ width: 12, height: 12 }} />
-                                {s.name}
-                              </button>
-                            ))}
+                          {/* Available skills */}
+                          <div>
+                            <Label className="text-[13px] font-semibold uppercase tracking-wider mb-3 block" style={{ color: MUTED }}>
+                              Add Skills
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                              {availableSkills
+                                .filter((s) => !field.value?.includes(s.name))
+                                .map((s) => (
+                                  <button
+                                    key={s.id} type="button"
+                                    onClick={() => field.onChange([...(field.value ?? []), s.name])}
+                                    className="inline-flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-full transition-all duration-100"
+                                    style={{ border: `1.5px solid ${BORDER}`, background: "#fff", color: TEXT, cursor: "pointer" }}
+                                    onMouseEnter={(e) => { (e.currentTarget).style.background = "#EEEDFB"; (e.currentTarget).style.borderColor = I; }}
+                                    onMouseLeave={(e) => { (e.currentTarget).style.background = "#fff"; (e.currentTarget).style.borderColor = BORDER; }}
+                                  >
+                                    <Plus style={{ width: 12, height: 12 }} />
+                                    {s.name}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </SectionCard>
                 )}
 
@@ -891,14 +922,12 @@ export default function ProfileSettings() {
                             if (result.successful && result.successful.length > 0) {
                               const file = result.successful[0];
                               try {
-                                await authAPI.post("/api/documents", {
+                                const saved = await authAPI.post("/api/documents", {
                                   type: "resume", fileName: file.name, fileUrl: file.uploadURL,
                                   fileSize: file.size || null, mimeType: file.type || null,
                                   isPublic: false, isPrimary: false,
                                 });
-                                queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-                                queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-                                if (user?.id) queryClient.invalidateQueries({ queryKey: ["/api/users", user.id, "skills"] });
+                                setDocuments((prev) => [...prev, saved?.document ?? saved]);
                               } catch {
                                 toast({ title: "Metadata save failed", description: "Resume uploaded but failed to save.", variant: "destructive" });
                               }
@@ -944,21 +973,21 @@ export default function ProfileSettings() {
                 <div className="flex justify-end pt-2 pb-4">
                   <button
                     type="submit"
-                    disabled={isUpdating}
+                    disabled={isSaving}
                     data-testid="button-save-settings"
                     className="inline-flex items-center gap-2 font-semibold transition-all duration-150"
                     style={{
                       height: 46, minWidth: 170, paddingInline: 24, borderRadius: 11,
                       border: "none",
-                      background: isUpdating ? "#A5A9DC" : SAVE_BG,
+                      background: isSaving ? "#A5A9DC" : SAVE_BG,
                       color: "#fff", fontSize: 15,
-                      cursor: isUpdating ? "not-allowed" : "pointer",
+                      cursor: isSaving ? "not-allowed" : "pointer",
                       boxShadow: "0 4px 18px rgba(75,85,208,0.28)",
                     }}
-                    onMouseEnter={(e) => { if (!isUpdating) { (e.currentTarget).style.transform = "translateY(-1px)"; (e.currentTarget).style.boxShadow = "0 6px 22px rgba(75,85,208,0.36)"; } }}
+                    onMouseEnter={(e) => { if (!isSaving) { (e.currentTarget).style.transform = "translateY(-1px)"; (e.currentTarget).style.boxShadow = "0 6px 22px rgba(75,85,208,0.36)"; } }}
                     onMouseLeave={(e) => { (e.currentTarget).style.transform = "translateY(0)"; (e.currentTarget).style.boxShadow = "0 4px 18px rgba(75,85,208,0.28)"; }}
                   >
-                    {isUpdating ? (
+                    {isSaving ? (
                       <>
                         <div className="animate-spin rounded-full border-2 border-white border-t-transparent" style={{ width: 16, height: 16 }} />
                         Saving…
