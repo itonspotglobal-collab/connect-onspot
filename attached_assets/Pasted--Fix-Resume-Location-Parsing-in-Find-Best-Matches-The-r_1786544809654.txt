@@ -1,0 +1,534 @@
+# Fix Resume Location Parsing in Find Best Matches
+
+The remaining issue is specifically the `Location` field in Find Best Matches.
+
+The uploaded resume DOES contain a location.
+
+In the resume contact/header area, the content is:
+
+```text id="x25wwe"
+Frenzy Val Eloise L. Legaspi
+0976 065 6740
+frenzvallagahid81@gmail.com
+Poblacion, Dalaguete, Cebu
+```
+
+The parser successfully extracts:
+
+```text id="2yij58"
+Name
+Email
+Phone
+Job Title
+Seniority
+Category
+Skills
+Summary
+```
+
+but Location remains blank.
+
+## Important
+
+Do NOT rename the application's canonical `location` field to `address` just to make this work.
+
+The problem is parsing/mapping.
+
+Resume terminology may be:
+
+```text id="7f4x74"
+Address
+Current Address
+Location
+Current Location
+Residence
+Based in
+```
+
+or it may contain an UNLABELED location line in the contact block.
+
+All of these should map into:
+
+```ts id="c9fj2a"
+candidate.location
+```
+
+or:
+
+```ts id="fa0azx"
+parsed.location
+```
+
+depending on the current architecture.
+
+---
+
+# Confirmed test resume
+
+The current resume contains the contact block:
+
+```text id="7kug6q"
+Frenzy Val Eloise L. Legaspi
+0976 065 6740
+frenzvallagahid81@gmail.com
+Poblacion, Dalaguete, Cebu
+```
+
+Expected parser output:
+
+```ts id="z91mpq"
+{
+  fullName: "Frenzy Val Eloise L. Legaspi",
+  phone: "0976 065 6740",
+  email: "frenzvallagahid81@gmail.com",
+  location: "Poblacion, Dalaguete, Cebu"
+}
+```
+
+This exact resume should be used as the primary regression test.
+
+---
+
+# 1. Inspect current parser
+
+Inspect:
+
+```text id="56bqve"
+client/src/lib/resumeParser.ts
+client/src/pages/FindBestMatches.tsx
+```
+
+Search specifically for where:
+
+```ts id="8jsyf7"
+location
+```
+
+is assigned.
+
+Determine whether the parser only supports labeled values such as:
+
+```text id="w0qcbr"
+Address:
+Location:
+```
+
+If so, that is insufficient.
+
+---
+
+# 2. Parse labeled AND unlabeled contact locations
+
+Support explicit labels first.
+
+Examples:
+
+```text id="ta46mt"
+Address: Poblacion, Dalaguete, Cebu
+Location: Cebu City, Philippines
+Current Address: Makati City, Metro Manila
+Current Location: Davao City, Philippines
+Residence: Quezon City
+Based in: Cebu, Philippines
+```
+
+Then add support for unlabeled location lines in the top/contact section.
+
+For the uploaded resume:
+
+```text id="hjjhog"
+Poblacion, Dalaguete, Cebu
+```
+
+should be recognized as a likely contact location because it appears:
+
+1. near the top of the resume;
+2. immediately after phone/email;
+3. before the `About Me` section;
+4. outside Work Experience and Education.
+
+---
+
+# 3. Build a contact/header block
+
+Create or improve logic that identifies the resume header/contact section before major section headings.
+
+For example, stop the contact block at headings such as:
+
+```text id="tuvl9e"
+About Me
+Summary
+Objective
+Work Experience
+Education
+Skills
+Specialization
+Projects
+References
+```
+
+Then search only that header block for personal contact details.
+
+Conceptually:
+
+```ts id="v17uwn"
+const contactLines = lines.slice(
+  0,
+  firstMajorSectionIndex
+);
+```
+
+Use the actual parser structure.
+
+This reduces the risk of mistakenly selecting employer or university locations.
+
+---
+
+# 4. Detect unlabeled address/location lines
+
+Within the header/contact block, after excluding:
+
+```text id="2brstk"
+name
+email
+phone
+URLs
+section headings
+```
+
+look for location-like lines.
+
+The resume line:
+
+```text id="9y1y0w"
+Poblacion, Dalaguete, Cebu
+```
+
+should score highly because it contains multiple geographic segments separated by commas.
+
+Possible signals:
+
+```text id="xafpyh"
+contains comma-separated place segments
+contains City / Province / Cebu / Manila / Philippines
+contains Barangay / Brgy / Poblacion
+does not contain @
+does not primarily contain digits
+does not look like a job title
+does not look like a school/company
+appears in top contact block
+```
+
+Do not rely on only one signal.
+
+---
+
+# 5. Add Philippine locality recognition
+
+Support common Philippine address words and formats.
+
+Examples:
+
+```text id="ubwna0"
+Poblacion, Dalaguete, Cebu
+Lahug, Cebu City
+Cebu City, Cebu
+Cebu City, Philippines
+Makati City, Metro Manila
+Quezon City, NCR
+Taguig City, Metro Manila
+Davao City, Philippines
+Brgy. Lahug, Cebu City
+Barangay Poblacion, Dalaguete, Cebu
+```
+
+Useful address tokens may include:
+
+```text id="8ty7nw"
+Barangay
+Brgy.
+Poblacion
+City
+Province
+Metro Manila
+NCR
+Cebu
+Philippines
+```
+
+Do not hardcode only these examples; use them as strong hints.
+
+---
+
+# 6. Avoid false positives
+
+The same resume also contains:
+
+```text id="056nox"
+N. Bacalso Avenue, Cebu City
+```
+
+under Education.
+
+That should NOT replace the candidate's personal location.
+
+It is the university address, not necessarily the Talent's home/current location.
+
+Therefore use this precedence:
+
+```text id="nx4lnj"
+explicit contact Address/Location
+>
+unlabeled contact-header geographic line
+>
+other location candidates
+```
+
+Do not scan the entire resume and simply return the first line containing `Cebu`.
+
+---
+
+# 7. Do not use Education location
+
+The resume contains:
+
+```text id="bhmhep"
+Cebu Institute of Technology University
+Bachelor of Science in Computer Engineering
+N. Bacalso Avenue, Cebu City
+```
+
+The parser must NOT select:
+
+```text id="pwcrxg"
+N. Bacalso Avenue, Cebu City
+```
+
+because it belongs to Education.
+
+Expected candidate location remains:
+
+```text id="mvhijr"
+Poblacion, Dalaguete, Cebu
+```
+
+---
+
+# 8. Fix extractedFields
+
+When a location is successfully detected:
+
+```ts id="j0t7nm"
+result.location = detectedLocation;
+```
+
+also ensure:
+
+```ts id="dgnb34"
+result.extractedFields
+```
+
+contains:
+
+```text id="ml4h2z"
+location
+```
+
+if Find Best Matches uses that array to determine which fields to populate.
+
+For this resume, the detected chips should include Location.
+
+---
+
+# 9. Verify Find Best Matches mapping
+
+After parser success, verify the UI actually does:
+
+```ts id="8v37vy"
+location: parsed.location
+```
+
+or equivalent.
+
+Add temporary dev logging:
+
+```ts id="yy029x"
+console.log("Parsed resume location", {
+  location: parsed.location,
+  extractedFields: parsed.extractedFields,
+});
+```
+
+and:
+
+```ts id="qxe16j"
+console.log("Find Best Matches location state", {
+  location: form.location,
+});
+```
+
+Determine whether the issue is:
+
+```text id="hk3i84"
+parser returns ""
+```
+
+or:
+
+```text id="4su2j3"
+parser returns "Poblacion, Dalaguete, Cebu"
+but UI resets it
+```
+
+Fix whichever layer is responsible.
+
+---
+
+# 10. Field naming
+
+Keep the UI label:
+
+```text id="xdv924"
+Location
+```
+
+if that is the product's intended terminology.
+
+You may optionally change the helper/placeholder text to:
+
+```text id="csbqcg"
+City, Province/Region, Country
+```
+
+or:
+
+```text id="0scwjc"
+Current location or address
+```
+
+But changing the UI label from `Location` to `Address` should NOT be required for parsing.
+
+Internally it is perfectly valid to parse:
+
+```text id="r1p44p"
+resume address
+```
+
+into:
+
+```text id="vchxwc"
+candidate.location
+```
+
+---
+
+# 11. Exact regression test
+
+Use the currently uploaded resume.
+
+Expected:
+
+```text id="ofnz2a"
+Full Name:
+Frenzy Val Eloise L. Legaspi
+
+Email:
+frenzvallagahid81@gmail.com
+
+Phone:
+0976 065 6740
+
+Location:
+Poblacion, Dalaguete, Cebu
+```
+
+After uploading the resume in Find Best Matches:
+
+1. parser finishes;
+2. `Location` chip appears in the detected-fields banner;
+3. Location input automatically contains:
+
+```text id="4mw8cn"
+Poblacion, Dalaguete, Cebu
+```
+
+4. no validation error appears for Location;
+5. user can still edit it manually.
+
+---
+
+# 12. Additional parser tests
+
+### Explicit address
+
+```text id="8zvjyz"
+Address: Poblacion, Dalaguete, Cebu
+```
+
+Expected detected.
+
+### Explicit location
+
+```text id="wl696t"
+Location: Manila, Philippines
+```
+
+Expected detected.
+
+### Unlabeled contact line
+
+```text id="0y795e"
+Maria Santos
+maria@example.com
+09171234567
+Makati City, Metro Manila
+```
+
+Expected detected.
+
+### Education-only location
+
+```text id="cnzoei"
+Education
+Example University
+Cebu City, Philippines
+```
+
+with no personal location.
+
+Expected:
+
+```text id="3u4vxb"
+location = ""
+```
+
+rather than using the school address.
+
+---
+
+# Acceptance criteria
+
+Do not mark complete until:
+
+* [ ] Current uploaded resume parses `Poblacion, Dalaguete, Cebu`.
+* [ ] Find Best Matches Location input is populated.
+* [ ] `Location` appears in detected-fields indicator.
+* [ ] Unlabeled contact addresses work.
+* [ ] `Address:` labels also work.
+* [ ] `Location:` labels work.
+* [ ] Education address is not mistaken for personal location.
+* [ ] Work Experience locations are not mistaken for personal location.
+* [ ] Manual Location edits are not overwritten.
+* [ ] Existing Name/Email/Phone/etc. parsing still works.
+
+## Final report
+
+After fixing, tell me:
+
+1. why `Poblacion, Dalaguete, Cebu` was previously missed;
+2. whether the parser only supported labeled addresses;
+3. how the contact/header block is identified;
+4. how unlabeled locations are scored;
+5. how Education/Work locations are excluded;
+6. whether `extractedFields` was part of the problem;
+7. confirmation that this exact resume now populates Location correctly.

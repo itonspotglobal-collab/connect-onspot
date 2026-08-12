@@ -464,16 +464,20 @@ function extractPhone(allText: string): string {
 
 // ─── Location extraction ──────────────────────────────────────────────────────
 
-// Common Philippine city/province names and generic location patterns
-const LOCATION_HINTS_RX = /\b(?:cebu|manila|davao|quezon|makati|taguig|pasig|mandaluyong|paranaque|muntinlupa|caloocan|las\s+pinas|malabon|navotas|valenzuela|marikina|pasay|san\s+juan|cavite|laguna|batangas|rizal|bulacan|pampanga|metro\s+manila|ncr|philippines|ph)\b/i;
+// Common Philippine city/province names, localities, and generic location patterns.
+// Poblacion, Barangay, Brgy are strong Philippine address signals.
+const LOCATION_HINTS_RX = /\b(?:cebu|manila|davao|quezon|makati|taguig|pasig|mandaluyong|paranaque|muntinlupa|caloocan|las\s+pinas|malabon|navotas|valenzuela|marikina|pasay|san\s+juan|cavite|laguna|batangas|rizal|bulacan|pampanga|metro\s+manila|ncr|philippines|dalaguete|liloan|minglanilla|consolacion|mandaue|lapu-lapu|zamboanga|cagayan|iloilo|bacolod|antipolo|bacoor|imus|dasmarinas|poblacion|barangay|brgy)\b/i;
+
 const CITY_PATTERN_RX = /\b[A-Z][a-zA-Z\s]+(?:City|Province|Region|District)\b/;
 
 // Labels that explicitly introduce an address/location line in a resume
 const LOCATION_LABEL_RX =
   /^(?:address|location|current\s+address|home\s+address|residential\s+address|city|based\s+in|based\s+at|residence|residing\s+in|permanent\s+address|present\s+address|mailing\s+address|current\s+location|home\s+location)\s*[:\-–]\s*/i;
 
-// Country/territory/region keywords for the comma-pattern heuristic in Pass 2.
-// Covers the most common values that appear after a comma in "City, Country" resume lines.
+// First major section heading — used to bound the contact/header block
+const MAJOR_SECTION_RX = /^(?:about\s+me|summary|professional\s+summary|objective[s]?|profile|professional\s+profile|career\s+objective|work\s+experience|experience|employment|education|skills?|specialization|certifications?|languages?|references?|projects?|achievements?|portfolio|hobbies?|interests?|activities)\s*:?\s*$/i;
+
+// Country/territory/region keywords for the comma-pattern heuristic.
 const COUNTRY_KEYWORDS = new Set([
   "city","province","state","region","country","district",
   "ph","phl","philippines",
@@ -497,10 +501,43 @@ const COUNTRY_KEYWORDS = new Set([
   "south africa","za","nigeria","ng","kenya","ke","ghana","gh",
   "pakistan","pk","bangladesh","bd","sri lanka","lk","nepal","np",
   "remote","worldwide","global","metro","ncr",
+  "cebu","manila","davao","quezon","makati","taguig","pasig",
+  "dalaguete","poblacion","barangay","brgy",
 ]);
 
 function isLikelyCountryOrRegion(word: string): boolean {
   return COUNTRY_KEYWORDS.has(word.trim().toLowerCase());
+}
+
+/** Strip phone number and email patterns from a line, returning the remainder. */
+function stripContactNoise(line: string): string {
+  return line
+    .replace(PHONE_RX, " ")
+    .replace(EMAIL_RX, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/linkedin\.com\/\S*/gi, " ")
+    .replace(/[|•·\u2022\u2023]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** Score a candidate line as a location: >0 = likely location, 0 = unlikely. */
+function locationScore(t: string): number {
+  if (!t || t.length < 3 || t.length > 120) return 0;
+  if (EMAIL_RX.test(t)) return 0;
+  if (PHONE_RX.test(t) && t.replace(/\D/g, "").length >= 7) return 0;
+  if (NOISE_LINE_RX.test(t)) return 0;
+
+  let score = 0;
+  if (LOCATION_HINTS_RX.test(t)) score += 3;
+  if (CITY_PATTERN_RX.test(t)) score += 2;
+  if (t.includes(",")) score += 1;
+  const words = t.split(/[\s,]+/).filter(Boolean);
+  if (words.some(isLikelyCountryOrRegion)) score += 2;
+  // Penalise lines that look like job titles or sentences
+  if (t.split(/\s+/).length > 10) score -= 2;
+  if (/\b(?:engineer|developer|manager|analyst|specialist|officer|coordinator|officer|lead|senior|junior|intern|associate|director|head|executive|assistant)\b/i.test(t)) score -= 2;
+  return score;
 }
 
 function extractLocation(sections: ResumeSection[], allText: string): string {
@@ -508,18 +545,17 @@ function extractLocation(sections: ResumeSection[], allText: string): string {
 
   // ── Pass 1: scan ALL lines for explicit "Address: …" / "Location: …" labels ──
   // Highest-confidence signal — works regardless of position in the document.
-  for (const line of allLines) {
-    const t = line.trim();
+  for (let i = 0; i < allLines.length; i++) {
+    const t = allLines[i].trim();
     if (!t || t.length > 150) continue;
     if (LOCATION_LABEL_RX.test(t)) {
       const value = t.replace(LOCATION_LABEL_RX, "").trim();
       if (value.length >= 3 && value.length <= 120 && !EMAIL_RX.test(value)) {
         return value;
       }
-      // Label found but value might be on the NEXT line (e.g. "Address:\nCebu City")
-      const idx = allLines.indexOf(line);
-      if (idx !== -1 && idx + 1 < allLines.length) {
-        const next = allLines[idx + 1].trim();
+      // Label found but value is on the next line (e.g. "Address:\nCebu City")
+      if (i + 1 < allLines.length) {
+        const next = allLines[i + 1].trim();
         if (next.length >= 3 && next.length <= 120 && !EMAIL_RX.test(next)) {
           return next;
         }
@@ -527,20 +563,60 @@ function extractLocation(sections: ResumeSection[], allText: string): string {
     }
   }
 
-  // ── Pass 2: scan header/contact block for unlabelled location patterns ────
-  // Only look in the first ~20 lines to avoid picking up employer locations
-  // from Work Experience sections.
-  const header = sections.find((s) => s.type === "header");
-  const searchLines = header ? header.lines.slice(0, 15) : allLines.slice(0, 20);
+  // ── Build the contact/header block ────────────────────────────────────────
+  // Strategy: take all raw lines BEFORE the first major section heading.
+  // This avoids the fragility of splitIntoSections section detection when
+  // PDFs have unusual layouts (sidebars, two columns, "About Me" before contact info).
+  // Also union with the first few lines of the summary section in case the
+  // PDF puts contact details inside the "About Me" block.
+  const trimmedLines = allLines.map((l) => l.trim()).filter(Boolean);
 
+  const firstMajorIdx = trimmedLines.findIndex((l) => MAJOR_SECTION_RX.test(l));
+  // Contact block = everything before the first major section (capped at 30 lines)
+  const contactBlockEnd = firstMajorIdx > 0
+    ? Math.min(firstMajorIdx, 30)
+    : Math.min(trimmedLines.length, 25);
+
+  // Also include lines from the summary/profile section (sometimes holds contact info)
+  const summarySection = sections.find((s) => s.type === "summary");
+  const summaryContactLines = summarySection
+    ? summarySection.lines.slice(0, 8).filter((l) => {
+        // Only include short lines that look like contact/address, not prose
+        return l.length < 60 && l.split(/\s+/).length <= 8;
+      })
+    : [];
+
+  // Build deduplicated search list: contact block lines + summary short lines
+  const seen = new Set<string>();
+  const searchLines: string[] = [];
+  const addLine = (l: string) => {
+    const t = l.trim();
+    if (t && !seen.has(t)) { seen.add(t); searchLines.push(t); }
+  };
+  for (let i = 0; i < contactBlockEnd; i++) addLine(trimmedLines[i]);
+  for (const l of summaryContactLines) addLine(l);
+
+  // ── Pass 2: scan the contact block for unlabelled location patterns ───────
   for (let i = 0; i < searchLines.length; i++) {
-    const t = searchLines[i].trim();
-    if (!t || NOISE_LINE_RX.test(t) || t.length > 100 || t.length < 3) continue;
-    if (EMAIL_RX.test(t)) continue;
-    if (PHONE_RX.test(t) && t.replace(/\D/g, "").length >= 7) continue;
+    const t = searchLines[i];
 
-    // Strong signal — known PH city/province name anywhere in the line
-    if (LOCATION_HINTS_RX.test(t) && t.split(/\s+/).length <= 8) {
+    // Check for compound contact lines (phone | email | address on one line)
+    // e.g. "+63 912 345 6789  •  user@email.com  •  Cebu City, Philippines"
+    if ((PHONE_RX.test(t) && t.replace(/\D/g, "").length >= 7) || EMAIL_RX.test(t)) {
+      const stripped = stripContactNoise(t);
+      // stripped should contain the address part if there is one
+      if (stripped.length >= 3 && locationScore(stripped) > 0) {
+        // Prefer this over continuing — it's a deduplicated contact line
+        const score = locationScore(stripped);
+        if (score >= 2) return stripped;
+      }
+      continue; // don't check raw line further if it's primarily a phone/email line
+    }
+
+    if (!t || NOISE_LINE_RX.test(t) || t.length > 100 || t.length < 3) continue;
+
+    // Strong PH location hint anywhere in the line
+    if (LOCATION_HINTS_RX.test(t) && t.split(/\s+/).length <= 10) {
       return t;
     }
     // "Somewhere City" / "Somewhere Province" pattern
@@ -548,25 +624,30 @@ function extractLocation(sections: ResumeSection[], allText: string): string {
       return t;
     }
 
-    // Generic comma-separated "City, Country" or "City, State" pattern
-    if (/^[A-Za-z\u00C0-\u024F\s.\-']+,\s*[A-Za-z\u00C0-\u024F\s.\-']+$/.test(t) && t.split(/\s+/).length <= 8) {
+    // Comma-separated address: supports "City, Country" AND "City, Province, Country"
+    // The character class allows letters + spaces + dots + hyphens + apostrophes.
+    // Commas are allowed as separators (handled by the {1,4} repetition).
+    if (
+      /^[A-Za-z\u00C0-\u024F\s.\-'#\d]+(?:,\s*[A-Za-z\u00C0-\u024F\s.\-'#\d]+){1,4}$/.test(t) &&
+      t.split(/\s+/).length <= 10 &&
+      t.includes(",")
+    ) {
       const words = t.split(/[\s,]+/).filter(Boolean);
-      if (words.some(isLikelyCountryOrRegion)) return t;
+      if (words.some(isLikelyCountryOrRegion) || locationScore(t) >= 3) return t;
     }
 
-    // Multi-line address: city on one line, country/province on the next
-    // e.g. "Cebu City" / "Philippines" when PDF extraction splits them
+    // Multi-line address: city on one line, province/country on the next
     if (i + 1 < searchLines.length) {
-      const next = searchLines[i + 1].trim();
+      const next = searchLines[i + 1];
       if (
         next && !EMAIL_RX.test(next) &&
         !(PHONE_RX.test(next) && next.replace(/\D/g, "").length >= 7) &&
-        next.length <= 40 && next.split(/\s+/).length <= 4
+        next.length <= 50 && next.split(/\s+/).length <= 5
       ) {
         const combined = `${t}, ${next}`;
-        const combinedWords = combined.split(/[\s,]+/).filter(Boolean);
         if (
-          (LOCATION_HINTS_RX.test(combined) || combinedWords.some(isLikelyCountryOrRegion)) &&
+          (LOCATION_HINTS_RX.test(combined) ||
+            combined.split(/[\s,]+/).filter(Boolean).some(isLikelyCountryOrRegion)) &&
           combined.split(/\s+/).length <= 10
         ) {
           return combined;
