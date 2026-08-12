@@ -7,6 +7,23 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Read the current bearer token from whichever auth system is active.
+// Priority: main JWT (admin/client) → talent candidate JWT (talent portal).
+function getBearerToken(): string | null {
+  const jwtToken = localStorage.getItem("onspot_jwt_token");
+  if (jwtToken) return jwtToken;
+  try {
+    const raw = localStorage.getItem("talent_profile_token");
+    if (raw) {
+      const parsed = JSON.parse(raw) as { token?: string };
+      return parsed.token || null;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -18,8 +35,7 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
   }
   
-  // Add JWT token from localStorage if available
-  const token = localStorage.getItem("onspot_jwt_token");
+  const token = getBearerToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -28,7 +44,7 @@ export async function apiRequest(
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include", // Include session cookies for compatibility
+    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -43,8 +59,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const headers: Record<string, string> = {};
     
-    // Add JWT token from localStorage if available
-    const token = localStorage.getItem("onspot_jwt_token");
+    const token = getBearerToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

@@ -325,17 +325,16 @@ export default function ProfileSettings() {
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const onSubmit = async (data: ProfileFormData) => {
-    if (!authContext?.isAuthenticated || !user?.id) {
-      toast({ title: "Authentication Required", description: "Please sign in.", variant: "destructive" });
-      return;
-    }
+    // Note: auth is handled by the shared API client (Axios interceptor), which picks
+    // up whichever token is active (JWT or talent candidate token). We no longer gate on
+    // authContext.isAuthenticated here because talent users authenticate via a separate
+    // token system that does not populate authContext.
     try {
       await updateProfile(data);
       // Always persist current skill selection, even if it's empty (clearing all skills)
       await updateSkills();
-      // Invalidate auth/user queries so the navbar name updates immediately
+      // Invalidate all profile-related queries so the navbar/profile completion update
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({ title: "Settings saved successfully.", description: "Your profile has been updated.", duration: 3000 });
     } catch (error: any) {
       toast({

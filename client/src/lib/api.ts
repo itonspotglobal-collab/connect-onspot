@@ -25,16 +25,33 @@ const api: AxiosInstance = axios.create({
   withCredentials: true, // Important for session cookies if needed
 });
 
+// Helper: read the current bearer token from whichever auth system is active.
+// Priority: main JWT (admin/client) → talent candidate JWT (talent portal).
+function getBearerToken(): string | null {
+  const jwtToken = localStorage.getItem("onspot_jwt_token");
+  if (jwtToken) return jwtToken;
+
+  // Talent users log in through the talent portal which stores a candidate JWT
+  // under a different key.  Fall back to that token so profile API calls work.
+  try {
+    const raw = localStorage.getItem("talent_profile_token");
+    if (raw) {
+      const parsed = JSON.parse(raw) as { token?: string };
+      return parsed.token || null;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+}
+
 // Request interceptor to add JWT token to requests
 api.interceptors.request.use(
   (config) => {
-    // Get JWT token from localStorage
-    const token = localStorage.getItem("onspot_jwt_token");
-
+    const token = getBearerToken();
     if (token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => {
@@ -51,19 +68,26 @@ api.interceptors.response.use(
   (error) => {
     // Handle unauthorized responses (token expired or invalid)
     if (error.response?.status === 401) {
-      // Remove invalid token
-      localStorage.removeItem("onspot_jwt_token");
-      localStorage.removeItem("onspot_user");
-
       // Only redirect to login if it's not already a login/signup request
       const isAuthRequest =
         error.config?.url?.includes("/login") ||
         error.config?.url?.includes("/signup");
 
       if (!isAuthRequest) {
-        console.warn("JWT token expired or invalid, removing from storage");
-        // You can dispatch a logout action here if using a global store
-        window.dispatchEvent(new CustomEvent("jwt-expired"));
+        const hasJwtToken = !!localStorage.getItem("onspot_jwt_token");
+        const hasTalentToken = !!localStorage.getItem("talent_profile_token");
+
+        if (hasJwtToken) {
+          // The main JWT is expired/invalid — remove it and signal logout.
+          localStorage.removeItem("onspot_jwt_token");
+          localStorage.removeItem("onspot_user");
+          console.warn("JWT token expired or invalid, removing from storage");
+          window.dispatchEvent(new CustomEvent("jwt-expired"));
+        } else if (hasTalentToken) {
+          // The talent token returned a 401. Don't fire jwt-expired (wrong system).
+          // The talent auth session will be cleared separately if needed.
+          console.warn("Talent auth request returned 401 — talent token may be expired");
+        }
       }
     }
 

@@ -115,16 +115,53 @@ const authenticateJWT = async (
     }
 
     // Verify and decode JWT
-    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+    const decoded = jwt.verify(token, jwtSecret) as any;
+
+    // ── Talent candidate token (type: "candidate") ──────────────────────────
+    // Talent users log in through the talent portal which issues a candidate JWT
+    // ({ type: "candidate", candidateId, email }) instead of a user JWT
+    // ({ userId, email, role }). Accept it here by resolving the linked user account.
+    if ((decoded as any).type === "candidate" && (decoded as any).candidateId) {
+      const candidateEmail = (decoded as any).email;
+      const talentUserQuery =
+        "SELECT id, email, role FROM users WHERE lower(email) = lower($1) LIMIT 1";
+      const talentUserResult = await query(talentUserQuery, [candidateEmail]);
+
+      if (talentUserResult.rows.length === 0) {
+        // No linked user account — use candidateId as the user id so profile
+        // routes can still find/create a profile row keyed to this identity.
+        // This handles candidates who were never registered as JWT users.
+        console.warn(
+          `⚠️ JWT Auth (talent): No user row for email ${candidateEmail} — using candidateId as userId`,
+        );
+        (req as any).user = {
+          id: (decoded as any).candidateId,
+          email: candidateEmail,
+          role: "talent",
+        };
+      } else {
+        const u = talentUserResult.rows[0];
+        (req as any).user = { id: u.id, email: u.email, role: u.role };
+      }
+
+      console.log(`✅ JWT Auth (talent token) [${(req as any).requestId}]:`, {
+        candidateId: (decoded as any).candidateId,
+        userId: (req as any).user.id,
+      });
+      return next();
+    }
+
+    // ── Standard user JWT (userId / email / role) ───────────────────────────
+    const stdDecoded = decoded as JWTPayload;
 
     // Validate JWT payload structure
-    if (!decoded.userId || !decoded.email || !decoded.role) {
+    if (!stdDecoded.userId || !stdDecoded.email || !stdDecoded.role) {
       console.error(
         `❌ JWT Auth failed: Invalid token payload [${(req as any).requestId}]:`,
         {
-          hasUserId: !!decoded.userId,
-          hasEmail: !!decoded.email,
-          hasRole: !!decoded.role,
+          hasUserId: !!stdDecoded.userId,
+          hasEmail: !!stdDecoded.email,
+          hasRole: !!stdDecoded.role,
         },
       );
       return res.status(401).json({
@@ -136,11 +173,11 @@ const authenticateJWT = async (
 
     // Verify user still exists in database
     const userQuery = "SELECT id, email, role FROM users WHERE id = $1";
-    const userResult = await query(userQuery, [decoded.userId]);
+    const userResult = await query(userQuery, [stdDecoded.userId]);
 
     if (userResult.rows.length === 0) {
       console.error(
-        `❌ JWT Auth failed: User not found in database [${(req as any).requestId}]: ${decoded.userId}`,
+        `❌ JWT Auth failed: User not found in database [${(req as any).requestId}]: ${stdDecoded.userId}`,
       );
       return res.status(401).json({
         error: "Invalid token",
@@ -152,13 +189,13 @@ const authenticateJWT = async (
     const dbUser = userResult.rows[0];
 
     // Verify role hasn't changed
-    if (dbUser.role !== decoded.role) {
+    if (dbUser.role !== stdDecoded.role) {
       console.error(
         `❌ JWT Auth failed: Role mismatch [${(req as any).requestId}]:`,
         {
-          tokenRole: decoded.role,
+          tokenRole: stdDecoded.role,
           dbRole: dbUser.role,
-          userId: decoded.userId,
+          userId: stdDecoded.userId,
         },
       );
       return res.status(401).json({
@@ -170,14 +207,14 @@ const authenticateJWT = async (
 
     // Add user to request object
     (req as any).user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
+      id: stdDecoded.userId,
+      email: stdDecoded.email,
+      role: stdDecoded.role,
     };
 
     console.log(`✅ JWT Auth successful [${(req as any).requestId}]:`, {
-      userId: decoded.userId,
-      role: decoded.role,
+      userId: stdDecoded.userId,
+      role: stdDecoded.role,
     });
 
     next();

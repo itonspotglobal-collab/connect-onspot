@@ -1,0 +1,452 @@
+FIX THE SETTINGS PAGE AUTHENTICATION + PROFILE UPDATE + PROFILE PHOTO UPLOAD.
+
+We now have confirmed evidence from DevTools.
+
+CURRENT ERRORS:
+
+1. Saving Basic Information:
+   "Authentication Required"
+   "Please sign in."
+
+2. Uploading Profile Photo:
+   POST request returns:
+   401 Unauthorized
+
+3. Console explicitly reports:
+   "JWT token expired or invalid, removing from storage"
+   "JWT expired, logging out user"
+   "JWT User logged out successfully"
+
+IMPORTANT:
+The user is visibly authenticated in the application and can access the
+Talent Profile, Settings, navbar account menu, etc.
+
+Therefore DO NOT redesign the Settings page again.
+DO NOT add fake authentication checks.
+DO NOT simply hide the error.
+FIX THE SHARED AUTHENTICATION/API PIPELINE.
+
+==================================================
+1. FIND THE WORKING IMPLEMENTATION FIRST
+==================================================
+
+Profile photo upload ALREADY WORKS from the Talent Profile page.
+
+Find the exact code used by TalentProfile for:
+
+- profile photo upload
+- authentication
+- API client
+- token/cookie handling
+- profile mutation
+- query invalidation
+
+Then compare it directly with ProfileSettings.
+
+DO NOT maintain two independent upload implementations.
+
+ProfileSettings must reuse the SAME working authenticated upload
+function/service/hook used by TalentProfile.
+
+==================================================
+2. TRACE THE 401
+==================================================
+
+Inspect the failed Network request.
+
+Determine whether this application authenticates using:
+
+A. Authorization: Bearer <JWT>
+
+or
+
+B. HttpOnly session cookies
+
+or another existing mechanism.
+
+Do not guess.
+
+Compare a WORKING authenticated request from TalentProfile against the
+FAILED Settings request.
+
+Compare:
+
+- Request URL
+- method
+- Authorization header
+- Cookie
+- credentials
+- API base URL
+- interceptor
+- token source
+- token refresh behavior
+
+The Settings request must use the exact same authentication mechanism.
+
+==================================================
+3. DO NOT LOG OUT A VALID USER BECAUSE OF ONE
+FAILED REQUEST
+==================================================
+
+Find the code producing:
+
+"JWT token expired or invalid, removing from storage"
+"JWT expired, logging out user"
+
+Determine WHY Settings is sending an expired/stale JWT while the rest
+of the application still considers the user authenticated.
+
+Possible regression to investigate:
+
+- Settings uses an old token from localStorage
+- AuthProvider uses a newer token
+- axios instance uses stale token
+- fetch and axios use different auth implementations
+- token is captured when axios instance initializes
+- refresh token occurs but API client is not updated
+- ProfileSettings uses a different API client
+- duplicate authentication systems exist
+- upload request manually builds Authorization header
+- stale JWT survives after session refresh
+
+FIX THE ROOT CAUSE.
+
+There must be ONE authoritative authentication source.
+
+==================================================
+4. FIX THE SHARED API CLIENT
+==================================================
+
+Search the project for:
+
+axios.create(
+Authorization
+Bearer
+localStorage
+getToken
+accessToken
+jwt
+401
+interceptors
+credentials
+
+All authenticated profile requests should go through the project's
+shared authenticated API client.
+
+Do not manually duplicate:
+
+headers: {
+  Authorization: `Bearer ${token}`
+}
+
+throughout individual components.
+
+If Bearer authentication is used, the shared client must obtain the
+CURRENT token when the request is sent — not capture an old token once
+at application startup.
+
+If cookie authentication is used, ensure the shared client sends:
+
+credentials: "include"
+
+or Axios equivalent where required.
+
+Follow the existing backend architecture.
+
+==================================================
+5. FIX SAVE SETTINGS
+==================================================
+
+The existing pipeline should remain:
+
+ProfileSettings
+→ React Hook Form
+→ onSubmit
+→ updateProfile()
+→ authenticated API
+→ backend
+→ invalidate profile queries
+
+Remove/repair any incorrect check that causes:
+
+"Authentication Required"
+
+while the application's actual AuthProvider/session says the user is
+authenticated.
+
+IMPORTANT:
+
+Do not solve this by deleting authentication protection.
+
+The backend endpoint MUST remain protected.
+
+Make the request authenticate correctly.
+
+==================================================
+6. FIX PROFILE PHOTO UPLOAD
+==================================================
+
+ProfileSettings photo upload currently fails with 401.
+
+TalentProfile photo upload already works.
+
+USE THE WORKING TALENTPROFILE IMPLEMENTATION.
+
+Refactor into one shared function if necessary:
+
+uploadProfilePhoto(file)
+
+Both pages must call the same implementation.
+
+It should:
+
+1. Validate file.
+2. Use the current authenticated session.
+3. Upload using the backend's expected multipart/form-data request.
+4. Receive the uploaded photo URL.
+5. Update profile state.
+6. Invalidate/refetch profile queries.
+7. Update TopNavigation avatar.
+8. Update TalentProfile avatar.
+9. Update Settings avatar.
+
+Do not manually set Content-Type incorrectly for FormData if the HTTP
+client needs to generate the multipart boundary.
+
+==================================================
+7. PROFILE PHOTO POSITIONING
+==================================================
+
+Keep the previously requested profile-photo placement feature.
+
+After successful upload, allow the user to reposition/crop the photo.
+
+Minimum UX:
+
+- circular preview
+- drag image to reposition
+- zoom control
+- Reset
+- Cancel
+- Save position
+
+Store the crop/position using the existing backend model if supported.
+
+If the backend does NOT currently support crop coordinates, implement
+the positioning safely without breaking photo upload.
+
+Do not fake persistence.
+
+==================================================
+8. KEEP PROFILE DATA SYNCHRONIZED
+==================================================
+
+After successful Basic Information save:
+
+invalidate/refetch the existing profile query.
+
+Updated information must immediately propagate to:
+
+- /settings
+- Talent Profile
+- TopNavigation
+- account dropdown
+- profile completion
+
+Do NOT require browser refresh.
+
+After successful photo upload, the new photo must immediately appear
+in:
+
+Settings
+Talent Profile
+TopNavigation
+
+==================================================
+9. HANDLE EXPIRED TOKENS CORRECTLY
+==================================================
+
+If this project has refresh-token support:
+
+401
+→ attempt existing refresh mechanism
+→ retry original request once
+→ continue session
+
+Do NOT create a second refresh-token system.
+
+If refresh fails legitimately, THEN log the user out and redirect to
+sign-in.
+
+Never create an infinite 401 retry loop.
+
+If the architecture intentionally has no token refresh mechanism,
+follow the existing authentication design rather than inventing one.
+
+==================================================
+10. REMOVE DUPLICATE AUTH IMPLEMENTATIONS
+==================================================
+
+Search ProfileSettings and useTalentProfile for direct API calls that
+bypass the working authenticated client.
+
+Especially inspect:
+
+uploadProfileImage()
+updateProfile()
+updateSkills()
+updateExperience()
+updateEducation()
+updateCertification()
+updatePortfolio()
+uploadResume()
+
+All protected profile mutations should follow the SAME authenticated
+request architecture.
+
+==================================================
+11. IMPORTANT: DO NOT CONFUSE STRIPE ERRORS
+WITH THIS BUG
+==================================================
+
+The console screenshot also contains Stripe/LastPass related messages
+such as duplicate IDs and frame_ant.js AbortError messages.
+
+Do not chase unrelated browser-extension/Stripe console noise unless
+it directly affects these profile requests.
+
+The relevant confirmed application failure is:
+
+POST → 401 Unauthorized
+JWT token expired or invalid
+
+Focus on that.
+
+==================================================
+12. TEST WITH NETWORK TAB
+==================================================
+
+Do not declare this fixed just because TypeScript compiles.
+
+TEST IT.
+
+TEST A — BASIC INFORMATION
+
+1. Sign in.
+2. Open /settings.
+3. Change:
+   First Name: Val
+   Last Name: Vallii
+4. Click Save Settings.
+
+EXPECTED:
+
+- authenticated update request appears
+- HTTP 2xx
+- NO "Authentication Required"
+- success toast
+- refresh browser
+- Val / Vallii remain saved
+
+TEST B — PHOTO
+
+1. Stay signed in.
+2. Open /settings.
+3. Upload JPG/PNG.
+
+EXPECTED:
+
+- authenticated upload request
+- HTTP 2xx
+- NO 401
+- image appears in Settings
+- image appears in TalentProfile
+- image appears in TopNavigation
+
+TEST C — SESSION CONSISTENCY
+
+Navigate:
+
+TalentProfile → Settings → TalentProfile → Settings
+
+Authentication must remain valid.
+
+TEST D — EXPIRED SESSION
+
+Test with a genuinely expired session.
+
+Expected behavior must follow the project's existing refresh/session
+architecture.
+
+It must NOT leave UI thinking user is authenticated while API requests
+use an obsolete JWT.
+
+==================================================
+13. VERIFY REQUESTS DIRECTLY
+==================================================
+
+For every failing request, inspect:
+
+Request Headers
+Response
+Status Code
+
+Before fix:
+401 Unauthorized
+
+After fix:
+2xx
+
+Do not use toast messages as proof of success.
+
+==================================================
+14. CHECK GIT HISTORY
+==================================================
+
+These features previously worked.
+
+Use Git history to locate the previous working authentication/profile
+implementation before rewriting anything:
+
+git log -S"uploadProfileImage" --all
+git log -S"updateProfile" --all
+git log -S"Authorization" --all
+git log -S"JWT token expired" --all
+git log -S"useTalentProfile" --all
+
+Restore the relevant working behavior if a recent refactor caused this.
+
+DO NOT revert the entire website or the new UI.
+
+==================================================
+FINAL ACCEPTANCE CRITERIA
+==================================================
+
+DO NOT MARK COMPLETE UNTIL ALL ARE TRUE:
+
+✓ Save Settings sends a real authenticated request
+✓ First/Last Name persist after refresh
+✓ Phone/location/timezone/languages persist
+✓ Settings photo upload returns 2xx
+✓ Settings photo upload uses same working system as TalentProfile
+✓ Profile photo can be repositioned
+✓ New photo appears on TalentProfile
+✓ New photo appears in TopNavigation
+✓ No false "Authentication Required" toast
+✓ No 401 during a valid authenticated session
+✓ Profile query refreshes after mutation
+✓ Existing Settings UI remains intact
+✓ Existing TalentProfile UI remains intact
+✓ Existing TopNavigation remains intact
+✓ No duplicate profile/authentication implementation
+
+MOST IMPORTANT:
+
+STOP PATCHING THE SETTINGS UI.
+
+The screenshots prove this is now an AUTHENTICATION/API consistency
+problem.
+
+Find why TalentProfile can successfully perform authenticated profile
+operations while ProfileSettings sends an expired/invalid JWT, and
+make BOTH use the same shared authenticated implementation.
