@@ -195,6 +195,7 @@ export const jobs = pgTable("jobs", {
   isFeatured: boolean("is_featured").notNull().default(false),
   isCompanyConfidential: boolean("is_company_confidential").notNull().default(false),
   requiresVideoIntro: boolean("requires_video_intro").notNull().default(false),
+  applicationQuestions: jsonb("application_questions"), // [{ id, label, type, required, options? }]
   confidentialClientOverview: text("confidential_client_overview"), // public-safe description shown when isCompanyConfidential = true
   proposalCount: integer("proposal_count").default(0),
   viewCount: integer("view_count").default(0),
@@ -695,6 +696,7 @@ export const jobSubmissions = pgTable("job_submissions", {
   talentId: varchar("talent_id").references(() => users.id),
   registrationStatus: text("registration_status").notNull().default("pending_account"),
   isRepeatApplication: boolean("is_repeat_application").notNull().default(false),
+  answers: jsonb("answers"), // [{ questionId, question, answer }]
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

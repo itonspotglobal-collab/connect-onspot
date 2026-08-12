@@ -1036,6 +1036,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  candidates name migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: 1-Click Apply — application_questions + answers ──
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_questions jsonb`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS answers jsonb`);
+    console.log("✅ Migration: jobs.application_questions + job_submissions.answers columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  1-click apply migration skipped:", migErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -8819,6 +8828,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== JOB SUBMISSIONS (Built-in Application Form) ====================
 
+  // GET /api/jobs/:jobId/application-prefill — returns prefilled candidate data for 1-Click Apply
+  app.get("/api/jobs/:jobId/application-prefill", authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      const talentAuth = (req as any).talentAuth as { candidateId: string; email: string };
+
+      // Load job
+      const job = await storage.getJob(jobId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      if ((job as any).applicationMethod === "external_link") {
+        return res.status(400).json({ error: "This job uses an external application link" });
+      }
+      if (job.status !== "open") {
+        return res.status(400).json({ error: "This job is not open for applications" });
+      }
+
+      // Load candidate
+      const candidate = await storage.getCandidate(talentAuth.candidateId);
+      if (!candidate) {
+        return res.status(404).json({ error: "Candidate profile not found" });
+      }
+
+      // Derive first/last name
+      const firstName =
+        candidate.firstName ||
+        (candidate.fullName || "").split(" ").slice(0, -1).join(" ") ||
+        (candidate.fullName || "").split(" ")[0] ||
+        "";
+      const lastName =
+        candidate.lastName ||
+        (candidate.fullName || "").split(" ").slice(-1)[0] ||
+        "";
+
+      // Load documents: first try to find linked user account, then query documents
+      let resumes: any[] = [];
+      let videos: any[] = [];
+      try {
+        const userRow = await query(
+          `SELECT id FROM users WHERE LOWER(email) = $1 LIMIT 1`,
+          [candidate.email?.toLowerCase() || ""],
+        );
+        if (userRow.rows.length > 0) {
+          const userId = userRow.rows[0].id;
+          const docsRow = await query(
+            `SELECT id, type, file_name, file_url, file_size, mime_type, is_primary, created_at
+             FROM documents
+             WHERE user_id = $1 AND type IN ('resume', 'video_intro')
+             ORDER BY is_primary DESC, created_at DESC`,
+            [userId],
+          );
+          for (const d of docsRow.rows) {
+            const doc = {
+              id: d.id,
+              fileName: d.file_name,
+              fileUrl: d.file_url,
+              fileSize: d.file_size,
+              mimeType: d.mime_type,
+              isPrimary: d.is_primary,
+              createdAt: d.created_at,
+            };
+            if (d.type === "resume") resumes.push(doc);
+            else videos.push(doc);
+          }
+        }
+      } catch (_) { /* non-fatal — continue without documents */ }
+
+      // Fallback: check candidates.resume_url if no documents found
+      if (resumes.length === 0 && candidate.resumeUrl) {
+        resumes.push({
+          id: "profile-resume",
+          fileName: (candidate as any).resumeFileName || "resume",
+          fileUrl: candidate.resumeUrl,
+          isPrimary: true,
+          createdAt: null,
+        });
+      }
+
+      const selectedResumeId = resumes.length > 0 ? resumes[0].id : null;
+      const selectedVideoId = videos.length > 0 ? videos[0].id : null;
+
+      // Readiness check
+      const missing: string[] = [];
+      if (!candidate.phone) missing.push("phone");
+      if ((job as any).requiresVideoIntro && videos.length === 0) missing.push("video_intro");
+      if (resumes.length === 0) missing.push("resume");
+
+      // Application questions from job
+      const questions: any[] = (job as any).applicationQuestions || [];
+
+      return res.json({
+        candidate: {
+          id: candidate.id,
+          firstName,
+          lastName,
+          email: candidate.email,
+          phone: candidate.phone || "",
+          location: candidate.location || "",
+        },
+        documents: {
+          resumes,
+          selectedResumeId,
+          videos,
+          selectedVideoId,
+        },
+        previousDefaults: {
+          coverLetter: undefined,
+        },
+        job: {
+          id: job.id,
+          title: job.title,
+          requiresResume: true,
+          requiresVideoIntro: !!(job as any).requiresVideoIntro,
+          questions,
+        },
+        readiness: {
+          ready: missing.length === 0,
+          missing,
+        },
+      });
+    } catch (err: any) {
+      console.error("GET /api/jobs/:jobId/application-prefill error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // POST /api/jobs/:jobId/apply — submit a built-in application (multipart/form-data with optional CV)
   // Supports both authenticated Talent users (fast-path, no continuation token) and
   // unauthenticated applicants (continuation token → signup/login flow).
@@ -9033,14 +9167,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         const isRepeat = parseInt(priorByTalent.rows[0].count, 10) > 0;
 
+        // Parse and validate answers — gated on explicit field presence, matching the contract
+        // that the wizard always sends "answers" (including []) while legacy forms never do.
+        let validatedAnswersAuth: any[] | null = null;
+        if (Object.prototype.hasOwnProperty.call(req.body, "answers")) {
+          let parsedAnswers: any = null;
+          try { parsedAnswers = JSON.parse(req.body.answers); } catch (_) { /* ignore */ }
+
+          const jobQuestionsForAuth: any[] = (job as any).applicationQuestions || [];
+          if (jobQuestionsForAuth.length > 0) {
+            const aMap = new Map<string, string>();
+            if (Array.isArray(parsedAnswers)) {
+              for (const a of parsedAnswers) {
+                if (a?.questionId) aMap.set(String(a.questionId), String(a.answer ?? "").trim());
+              }
+            }
+            const norm: any[] = [];
+            for (const q of jobQuestionsForAuth) {
+              const ans = aMap.get(q.id) ?? "";
+              if (q.required && !ans) {
+                return res.status(400).json({ error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
+              }
+              if (ans) {
+                if (q.type === "yes_no" && !["Yes", "No"].includes(ans)) {
+                  return res.status(400).json({ error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
+                }
+                if (q.type === "single_select" && Array.isArray(q.options) && !q.options.includes(ans)) {
+                  return res.status(400).json({ error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
+                }
+                if (q.type === "number" && isNaN(Number(ans))) {
+                  return res.status(400).json({ error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
+                }
+              }
+              norm.push({ questionId: q.id, question: q.label, answer: ans });
+            }
+            validatedAnswersAuth = norm;
+            // If no configured questions, discard any submitted payload (store null)
+          }
+        }
+
         // Insert directly linked — no continuation token needed
         const result = await query(
           `INSERT INTO job_submissions
              (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
               resume_url, resume_file_name,
               video_introduction_url, video_introduction_file_name,
-              status, registration_status, talent_id, is_repeat_application)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', 'linked', $13, $14)
+              status, registration_status, talent_id, is_repeat_application, answers)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', 'linked', $13, $14, $15)
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -9054,6 +9227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             videoIntroFileName,
             authedUser.id,
             isRepeat,
+            validatedAnswersAuth !== null ? JSON.stringify(validatedAnswersAuth) : null,
           ],
         );
 
@@ -9114,6 +9288,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accountAction = "create_account";
       }
 
+      // Parse and validate answers — only when the caller explicitly submitted an answers payload.
+      // Legacy talent forms (no Portal session) never post answers, so they must not be blocked.
+      // The 1-Click Apply wizard always posts answers (even [] when no questions are configured).
+      let validatedAnswersUnauth: any[] | null = null;
+      if (Object.prototype.hasOwnProperty.call(req.body, "answers")) {
+        let unauthParsedAnswers: any = null;
+        try { unauthParsedAnswers = JSON.parse(req.body.answers); } catch (_) { /* ignore */ }
+
+        const jobQuestionsUnauth: any[] = (job as any).applicationQuestions || [];
+        if (jobQuestionsUnauth.length > 0) {
+          const aMap2 = new Map<string, string>();
+          if (Array.isArray(unauthParsedAnswers)) {
+            for (const a of unauthParsedAnswers) {
+              if (a?.questionId) aMap2.set(String(a.questionId), String(a.answer ?? "").trim());
+            }
+          }
+          const norm2: any[] = [];
+          for (const q of jobQuestionsUnauth) {
+            const ans = aMap2.get(q.id) ?? "";
+            if (q.required && !ans) {
+              return res.status(400).json({ error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
+            }
+            if (ans) {
+              if (q.type === "yes_no" && !["Yes", "No"].includes(ans)) {
+                return res.status(400).json({ error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
+              }
+              if (q.type === "single_select" && Array.isArray(q.options) && !q.options.includes(ans)) {
+                return res.status(400).json({ error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
+              }
+              if (q.type === "number" && isNaN(Number(ans))) {
+                return res.status(400).json({ error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
+              }
+            }
+            norm2.push({ questionId: q.id, question: q.label, answer: ans });
+          }
+          validatedAnswersUnauth = norm2;
+          // If no configured questions, store null (discard any submitted payload)
+        }
+      }
+
       // Always insert the application first
       const applicantName = `${firstName.trim()} ${lastName.trim()}`;
       const insertResult = await query(
@@ -9121,8 +9335,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
            (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
             resume_url, resume_file_name,
             video_introduction_url, video_introduction_file_name,
-            status, registration_status, is_repeat_application)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', $13, $14)
+            status, registration_status, is_repeat_application, answers)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', $13, $14, $15)
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -9136,6 +9350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           videoIntroFileName,
           registrationStatus,
           isRepeat,
+          validatedAnswersUnauth !== null ? JSON.stringify(validatedAnswersUnauth) : null,
         ],
       );
       const submissionId = insertResult.rows[0].id;
