@@ -1,0 +1,512 @@
+# Fix Talent Profile Completion Status
+
+The Talent Profile Settings page is showing:
+
+```text
+Profile Completion: 100%
+```
+
+even though the Talent has **not uploaded a Resume/CV yet**.
+
+The Documents section currently shows:
+
+* Resume / CV — not uploaded
+* Video Introduction — not uploaded
+* Video Introduction is labeled **Optional**
+
+This means the current profile-completion calculation is not accurately reflecting the Talent's persisted profile data.
+
+Do not redesign the Settings page.
+
+Do not break the now-working:
+
+* Profile Settings save
+* Candidate authentication
+* First/Last Name persistence
+* Profile photo
+* Candidate profile data
+* Existing Talent Profile page
+
+## Goal
+
+Make Profile Completion reflect the actual persisted Candidate profile.
+
+At minimum:
+
+> A Talent profile must NOT show 100% while the required Resume/CV is missing.
+
+The database/server data must remain the source of truth.
+
+---
+
+# 1. Inspect the current completion calculation
+
+Search the current Replit workspace for:
+
+```text
+profileCompletion
+calcCompletionPct
+buildCompletionItems
+profileStrengthFromCandidate
+profileStrengthFromProfile
+hasResume
+hasDocuments
+resume
+video_intro
+```
+
+Inspect especially:
+
+* `client/src/lib/profileCompletion.ts`
+* `client/src/hooks/useCandidateProfileSettings.ts`
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/pages/TalentProfile.tsx`
+* Candidate/document API routes
+* `shared/schema.ts`
+
+Determine exactly why the current Candidate profile reaches 100% without a resume.
+
+Do not simply subtract an arbitrary percentage in the UI.
+
+---
+
+# 2. Establish one source of truth
+
+The completion calculation should be based on **persisted server data**, not:
+
+* unsaved form state
+* local UI state
+* whether an upload button was clicked
+* hardcoded `100`
+* stale cached values
+
+The flow should be:
+
+```text
+Candidate DB + persisted documents
+        ↓
+completion inputs
+        ↓
+single completion calculator
+        ↓
+Profile Settings / Talent Profile
+```
+
+Prefer one shared completion helper.
+
+Do not have Profile Settings and Talent Profile calculate different percentages.
+
+---
+
+# 3. Required completion fields
+
+Inspect the existing business rules first.
+
+At minimum, the completion model should consider appropriate fields such as:
+
+```text
+First Name
+Last Name
+Professional Title / Target Position
+Bio / Summary
+Location
+Profile Photo
+Skills
+Resume
+```
+
+Only count fields that are actually part of the intended Talent Profile.
+
+Do not require optional fields merely to reach 100%.
+
+---
+
+# 4. Resume must affect completion
+
+Resume/CV is a core Talent profile document.
+
+Determine where the current Candidate Talent resume is stored.
+
+It may be:
+
+* a Candidate resume URL/path
+* a field on `candidates`
+* a document row
+* Candidate-specific document metadata
+
+Use the actual architecture already used by the current Talent Profile.
+
+Add a persisted boolean such as:
+
+```ts
+hasResume
+```
+
+to the completion input.
+
+For example:
+
+```ts
+const hasResume =
+  Boolean(candidate.resumeUrl) ||
+  persistedDocuments.some(
+    (document) => document.type === "resume"
+  );
+```
+
+Use the real schema/routes instead of copying this blindly.
+
+A missing resume must contribute `false`.
+
+---
+
+# 5. Video Introduction is currently optional
+
+The UI explicitly says:
+
+```text
+Video Introduction (Optional)
+```
+
+Therefore, by default:
+
+**Do NOT make video introduction required for 100% completion.**
+
+A user should still be able to reach 100% without an optional video.
+
+If product requirements say video must count, then:
+
+1. remove the `Optional` label;
+2. make the requirement consistent across the UI;
+3. include it in the completion rules.
+
+Do not simultaneously call it optional and require it for 100%.
+
+---
+
+# 6. Suggested completion model
+
+Use the project's existing weighting system if one already exists.
+
+If no suitable Candidate-specific model exists, use an explicit set of completion items rather than magic arithmetic.
+
+For example conceptually:
+
+```ts
+const items = [
+  {
+    key: "name",
+    complete:
+      Boolean(firstName?.trim()) &&
+      Boolean(lastName?.trim()),
+  },
+  {
+    key: "title",
+    complete: Boolean(targetPosition?.trim()),
+  },
+  {
+    key: "bio",
+    complete: Boolean(summary?.trim()),
+  },
+  {
+    key: "location",
+    complete: Boolean(location?.trim()),
+  },
+  {
+    key: "photo",
+    complete: Boolean(profilePhotoUrl),
+  },
+  {
+    key: "skills",
+    complete:
+      Array.isArray(coreSkills) &&
+      coreSkills.length > 0,
+  },
+  {
+    key: "resume",
+    complete: hasResume,
+  },
+];
+```
+
+Then:
+
+```ts
+completion =
+  Math.round(
+    (completedItems / totalItems) * 100
+  );
+```
+
+But if `profileCompletion.ts` already supports weighted items, extend that existing implementation instead.
+
+Do not duplicate the algorithm.
+
+---
+
+# 7. 100% must mean all required items are complete
+
+This is the key acceptance rule:
+
+```text
+100% = every required completion item is actually persisted
+```
+
+For example, if Resume is missing:
+
+```text
+completion < 100
+```
+
+The exact percentage should come from the established weighting system.
+
+Do not hardcode:
+
+```ts
+if (!resume) return 90;
+```
+
+unless the existing system explicitly assigns Resume a 10% weight.
+
+---
+
+# 8. Profile Status message
+
+The current card shows:
+
+```text
+Completion
+100%
+
+Complete your profile to attract more clients.
+```
+
+This is internally inconsistent.
+
+Update the message based on the calculated status.
+
+Examples:
+
+If incomplete:
+
+```text
+Complete your profile to attract more clients.
+```
+
+If complete:
+
+```text
+Your profile is complete and ready for opportunities.
+```
+
+Do not show a "complete your profile" message beside 100%.
+
+---
+
+# 9. Show what is missing
+
+If practical, improve the completion model so it knows which items remain incomplete.
+
+For example:
+
+```ts
+missingItems = [
+  "Resume"
+]
+```
+
+Then the Profile Status card could optionally show:
+
+```text
+Add your resume to complete your profile.
+```
+
+Keep this visually subtle.
+
+Do not redesign the whole card.
+
+---
+
+# 10. Recalculate after upload/remove
+
+When a Resume is successfully uploaded:
+
+1. save it in the database/storage;
+2. invalidate/refetch the relevant query;
+3. recompute Profile Completion automatically;
+4. update the sidebar percentage.
+
+When the Resume is removed:
+
+1. delete the persisted record;
+2. refetch;
+3. reduce Profile Completion automatically.
+
+No page reload should be required.
+
+---
+
+# 11. Candidate vs legacy profile data
+
+The active Talent Profile now uses the Candidate-based architecture.
+
+Do not accidentally calculate completion from the old:
+
+```text
+profiles
+/api/profiles/me
+```
+
+system.
+
+For current Talent Settings, use the same canonical Candidate data that the Talent Profile page uses.
+
+If Resume/document storage still uses another table, connect that persisted record to the Candidate completion calculation correctly.
+
+---
+
+# 12. Test the exact current case
+
+Test a Talent with:
+
+```text
+Name: complete
+Phone: complete
+Location: complete
+Timezone: complete
+Languages: complete
+Profile Photo: complete
+Professional details: complete
+Skills: complete
+Resume: MISSING
+Video Introduction: MISSING / optional
+```
+
+Expected:
+
+```text
+Profile Completion < 100%
+```
+
+Then upload a Resume.
+
+Expected:
+
+```text
+Profile Completion = 100%
+```
+
+assuming every other required item is complete.
+
+Video should not prevent 100% while it remains labeled optional.
+
+---
+
+# 13. Additional test cases
+
+### Missing profile photo
+
+Resume present, photo missing.
+
+Expected:
+
+```text
+completion < 100
+```
+
+### Missing skills
+
+Resume present, no skills.
+
+Expected:
+
+```text
+completion < 100
+```
+
+### Missing summary/bio
+
+Resume present, summary missing.
+
+Expected according to existing completion business rules.
+
+### Everything required complete
+
+Expected:
+
+```text
+completion = 100
+```
+
+### Optional video missing
+
+Expected:
+
+```text
+completion can still be 100
+```
+
+---
+
+# 14. Hard refresh verification
+
+After calculating a non-100 value because Resume is missing:
+
+1. hard refresh `/settings`;
+2. percentage must remain the same;
+3. navigate to Talent Profile;
+4. percentage/status must use the same calculation if displayed there.
+
+Then upload Resume and hard refresh again.
+
+The new completion value must remain correct because it comes from persisted data.
+
+---
+
+# 15. Do not count fake/default values incorrectly
+
+Inspect defaults such as:
+
+```text
+Manila, Philippines
+English
+Asia/Singapore
+available
+```
+
+Make sure the completion calculation reflects intended business rules.
+
+Do not count placeholder/default UI values as user-completed fields if they were never actually persisted and the product considers them incomplete.
+
+But if those are legitimate persisted defaults by design, treat them consistently.
+
+---
+
+# Acceptance criteria
+
+Do not mark this complete until:
+
+* [ ] Resume is included in completion calculation.
+* [ ] Missing Resume prevents 100%.
+* [ ] Optional Video does not prevent 100%.
+* [ ] Percentage is calculated from persisted Candidate/server data.
+* [ ] Profile Settings and Talent Profile use the same completion logic.
+* [ ] Resume upload immediately recalculates completion.
+* [ ] Resume removal immediately recalculates completion.
+* [ ] Hard refresh preserves the correct percentage.
+* [ ] 100% only appears when every required item is complete.
+* [ ] The Profile Status text is consistent with the percentage.
+* [ ] Existing Candidate Settings functionality still works.
+
+## Final report
+
+After implementation, tell me:
+
+1. why the profile previously showed 100%;
+2. which fields/documents now count toward completion;
+3. whether Resume has a specific weight;
+4. why Video Introduction is or is not counted;
+5. what files were changed;
+6. which persisted data is used to determine `hasResume`;
+7. how completion updates after document upload/removal;
+8. confirmation that a Talent with no Resume can no longer show 100%.

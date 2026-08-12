@@ -46,6 +46,7 @@ import {
   CandidateSettingsFormData,
   candidatePhotoSrc,
 } from "@/hooks/useCandidateProfileSettings";
+import { CheckCircle2 } from "lucide-react";
 import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -252,6 +253,9 @@ export default function ProfileSettings() {
     isLoading,
     isSaving,
     profileCompletion,
+    completionItems,
+    documents,
+    invalidateDocuments,
     getDefaultFormValues,
     saveSettings,
     uploadPhoto,
@@ -266,17 +270,8 @@ export default function ProfileSettings() {
   const [localPhotoUrl, setLocalPhotoUrl]   = useState<string | undefined>(undefined);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // Documents state (loaded via authAPI — works via talent token fallback in Axios interceptor)
-  const [documents, setDocuments] = useState<any[]>([]);
-
-  // Fetch documents — uses authAPI which falls back to talent_profile_token
-  useEffect(() => {
-    let cancelled = false;
-    authAPI.get("/api/documents")
-      .then((data) => { if (!cancelled && Array.isArray(data)) setDocuments(data); })
-      .catch(() => {}); // Not critical — documents section degrades gracefully
-    return () => { cancelled = true; };
-  }, [candidateId]);
+  // `documents` is now managed by the hook (useQuery) so completion recalculates
+  // automatically after upload/remove without a separate local state + useEffect.
 
   const form = useForm<CandidateSettingsFormData>({
     resolver: zodResolver(candidateSettingsSchema),
@@ -382,7 +377,8 @@ export default function ProfileSettings() {
   const removeDocument = async (documentId: string) => {
     try {
       await authAPI.delete(`/api/documents/${documentId}`);
-      setDocuments((prev) => prev.filter((d) => d.id !== documentId));
+      // Invalidate hook's document query → completion recalculates automatically.
+      invalidateDocuments();
       toast({ title: "Document removed." });
     } catch {
       toast({ title: "Removal failed", description: "Please try again.", variant: "destructive" });
@@ -393,12 +389,13 @@ export default function ProfileSettings() {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
       try {
-        const saved = await authAPI.post("/api/documents", {
+        await authAPI.post("/api/documents", {
           type, fileName: file.name, fileUrl: file.uploadURL,
           fileSize: file.size || null, mimeType: file.type || null,
           isPublic: false, isPrimary: false,
         });
-        setDocuments((prev) => [...prev, saved?.document ?? saved]);
+        // Invalidate hook's document query → completion recalculates automatically.
+        invalidateDocuments();
         toast({ title: "Document uploaded", description: `Your ${type === "resume" ? "resume" : "video introduction"} was saved.` });
       } catch {
         toast({ title: "Upload error", description: "File uploaded but metadata failed to save.", variant: "destructive" });
@@ -527,9 +524,21 @@ export default function ProfileSettings() {
                 <div style={{ height: "100%", width: `${profileCompletion}%`, background: PROG_BG, borderRadius: 99, transition: "width 0.5s ease" }} />
               </div>
 
-              <p className="text-[12px] mt-3" style={{ color: MUTED }}>
-                Complete your profile to attract more clients.
-              </p>
+              {profileCompletion >= 100 ? (
+                <p className="text-[12px] mt-3 flex items-center gap-1" style={{ color: "#22c55e" }}>
+                  <CheckCircle2 style={{ width: 13, height: 13, flexShrink: 0 }} />
+                  Your profile is complete and ready for opportunities.
+                </p>
+              ) : (() => {
+                const missing = completionItems.find((i) => !i.done);
+                return (
+                  <p className="text-[12px] mt-3" style={{ color: MUTED }}>
+                    {missing
+                      ? `Add your ${missing.label.toLowerCase()} to strengthen your profile.`
+                      : "Complete your profile to attract more clients."}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 
@@ -922,12 +931,12 @@ export default function ProfileSettings() {
                             if (result.successful && result.successful.length > 0) {
                               const file = result.successful[0];
                               try {
-                                const saved = await authAPI.post("/api/documents", {
+                                await authAPI.post("/api/documents", {
                                   type: "resume", fileName: file.name, fileUrl: file.uploadURL,
                                   fileSize: file.size || null, mimeType: file.type || null,
                                   isPublic: false, isPrimary: false,
                                 });
-                                setDocuments((prev) => [...prev, saved?.document ?? saved]);
+                                invalidateDocuments();
                               } catch {
                                 toast({ title: "Metadata save failed", description: "Resume uploaded but failed to save.", variant: "destructive" });
                               }

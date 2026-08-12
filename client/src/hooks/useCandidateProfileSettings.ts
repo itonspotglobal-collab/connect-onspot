@@ -20,6 +20,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import {
+  buildCompletionItems,
+  calcCompletionPct,
+  profileStrengthFromCandidateSettings,
+  type CompletionItem,
+} from "@/lib/profileCompletion";
 import { z } from "zod";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -160,18 +166,46 @@ export function useCandidateProfileSettings() {
     },
   });
 
-  // ── Profile completion (computed from candidate data) ──────────────────────
-  const profileCompletion = useMemo(() => {
-    if (!candidate) return 0;
-    let score = 0;
-    if (candidate.fullName?.trim())                                               score += 20;
-    if (candidate.profilePhotoUrl)                                                score += 20;
-    if (candidate.targetPosition)                                                 score += 15;
-    if (candidate.summary)                                                        score += 15;
-    if (Array.isArray(candidate.coreSkills) && candidate.coreSkills.length > 0)  score += 15;
-    if (candidate.location)                                                       score += 15;
-    return score;
-  }, [candidate]);
+  // ── Documents (resume + video_intro stored in documents table) ────────────
+  // Fetched with the talent Bearer token so `/api/documents` (authenticateJWT)
+  // accepts it via the same fallback the Axios interceptor uses.
+  const { data: documents = [] } = useQuery<any[]>({
+    queryKey: ["candidate-documents", candidateId],
+    queryFn: async () => {
+      const auth = loadTalentAuth();
+      if (!auth?.token) return [];
+      const res = await fetch("/api/documents", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!candidateId,
+    staleTime: 30_000,
+  });
+
+  // Expose a refetch trigger so the Settings page can call it after upload/remove.
+  const invalidateDocuments = () =>
+    queryClient.invalidateQueries({ queryKey: ["candidate-documents", candidateId] });
+
+  // ── Profile completion (shared module — single source of truth) ────────────
+  // hasResume: true when a document of type "resume" is in the documents table
+  // OR when the candidate row itself has a resumeUrl (legacy / direct upload path).
+  const hasResume =
+    documents.some((d: any) => d.type === "resume") || !!candidate?.resumeUrl;
+
+  const completionItems: CompletionItem[] = useMemo(() => {
+    if (!candidate) return [];
+    return buildCompletionItems(
+      profileStrengthFromCandidateSettings({ ...candidate, hasResume })
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidate, hasResume]);
+
+  const profileCompletion = useMemo(
+    () => calcCompletionPct(completionItems),
+    [completionItems]
+  );
 
   // ── Default form values ───────────────────────────────────────────────────
   const getDefaultFormValues = useCallback((): CandidateSettingsFormData => {
@@ -316,7 +350,14 @@ export function useCandidateProfileSettings() {
     isLoading: candidateLoading && !!candidateId,
     isSaving:  saveMutation.isPending,
     error:     candidateError,
+    /** 0–100 percentage calculated from persisted server data via profileCompletion.ts. */
     profileCompletion,
+    /** Labelled checklist used to show which items are complete/missing. */
+    completionItems,
+    /** Documents from the `documents` table (resume + video_intro). */
+    documents,
+    /** Call after a document is uploaded or removed to trigger completion recalculation. */
+    invalidateDocuments,
     getDefaultFormValues,
     /** PATCH /api/candidates/:id with talent Bearer token. */
     saveSettings: (data: CandidateSettingsFormData) => saveMutation.mutateAsync(data),

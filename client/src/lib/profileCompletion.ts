@@ -118,6 +118,45 @@ export function profileStrengthFromCandidate(c: {
 }
 
 /**
+ * Map a Candidate record to the 7 fields tracked on the Settings page.
+ *
+ * Only the items a talent can actually fill in on /settings are tracked here;
+ * experience, education, preferences, and links are left `undefined` so they
+ * are excluded from the denominator and a talent CAN reach 100% from Settings alone.
+ *
+ * `hasResume` must be supplied explicitly because resume documents are stored
+ * in the `documents` table (not in `candidate.resumeUrl`) for Settings page uploads.
+ */
+export function profileStrengthFromCandidateSettings(c: {
+  profilePhotoUrl?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+  targetPosition?: string | null;
+  summary?: string | null;
+  location?: string | null;
+  coreSkills?: string[] | null;
+  hasResume: boolean;  // caller resolves from documents table OR candidate.resumeUrl
+}): ProfileStrengthInput {
+  // Prefer explicit first/last name columns; fall back to non-empty fullName.
+  const hasName =
+    !!(c.firstName?.trim() && c.lastName?.trim()) ||
+    !!(c.fullName?.trim());
+
+  return {
+    hasPhoto:    !!c.profilePhotoUrl,
+    hasName,
+    hasTitle:    !!c.targetPosition?.trim(),
+    hasSummary:  !!c.summary?.trim(),
+    hasLocation: !!c.location?.trim(),
+    hasSkills:   (c.coreSkills?.length ?? 0) > 0,
+    hasResume:   c.hasResume,
+    // experience, education, preferences, links, email — not tracked in Settings;
+    // leaving them `undefined` excludes them from the denominator.
+  };
+}
+
+/**
  * Map a Profile record (from /api/profiles/me) + related API data to ProfileStrengthInput.
  * Email, experience, education, and preferences are not tracked in the profiles table,
  * so those keys are left undefined (excluded from the denominator).
