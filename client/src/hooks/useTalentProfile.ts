@@ -214,7 +214,7 @@ export function useTalentProfile() {
   // ---- Mutations ----
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      // ✅ Ensure languages is ALWAYS an array
+      // Ensure languages is always an array before sending to the server
       const normalizedData = {
         ...data,
         languages: Array.isArray(data.languages)
@@ -222,10 +222,7 @@ export function useTalentProfile() {
           : [data.languages || "English"],
       };
 
-      console.log("🚀 Profile Update Payload:", normalizedData);
-
       const response = await authAPI.put("/api/profiles/me", normalizedData);
-      console.log("✅ Profile Update Response:", response);
       return response;
     },
     onSuccess: () => {
@@ -234,13 +231,10 @@ export function useTalentProfile() {
       // which then recomputes profileCompletion — all from fresh server data.
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
     },
+    // Error toasts are intentionally handled by the caller (ProfileSettings.onSubmit)
+    // to avoid duplicate toasts when mutateAsync is used in a try/catch.
     onError: (error: any) => {
-      console.error("❌ Profile Update Error:", error);
-      toast({
-        title: "Profile Save Failed",
-        description: error?.message || "Could not save profile",
-        variant: "destructive",
-      });
+      console.error("Profile update failed:", error?.response?.data || error?.message);
     },
   });
 

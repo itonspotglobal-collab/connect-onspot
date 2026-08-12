@@ -1,0 +1,365 @@
+# Fix Talent Profile Settings Save + Profile Photo Upload
+
+Please debug and fully fix the **Talent Profile Settings** page.
+
+## Scope
+
+Primary files to inspect first:
+
+* `client/src/pages/ProfileSettings.tsx`
+* `client/src/hooks/useTalentProfile.ts`
+* `client/src/lib/api.ts`
+* `client/src/contexts/AuthContext.tsx`
+* `client/src/components/ObjectUploader.tsx`
+* the backend route/controller/service for:
+
+  * `GET /api/profiles/me`
+  * `PUT /api/profiles/me`
+  * any profile-photo upload endpoint
+  * object-storage upload endpoints
+  * profile creation/update database logic
+* `shared/schema.ts` and the actual database schema for profiles/users/documents
+
+Also inspect **other working features in this project that already upload an image/file and save the resulting URL to the database**. Reuse their established authentication, object-storage, mutation, validation, and persistence pattern instead of inventing a separate implementation.
+
+## Current bugs
+
+### 1. Save Settings fails
+
+On `/settings`, changing fields such as:
+
+* First Name
+* Last Name
+* Phone Number
+* Location
+* Timezone
+* Languages
+* Professional Details
+
+and clicking **Save Settings** fails.
+
+The UI shows an error similar to:
+
+> Unable to save settings
+> User not authenticated. Please try again.
+
+Browser console also shows repeated:
+
+> AbortError: The user aborted a request.
+
+However, the user is visibly logged in and the page already loads their profile.
+
+The frontend currently uses:
+
+`authAPI.put("/api/profiles/me", normalizedData)`
+
+inside `useTalentProfile.ts`.
+
+Do not simply hide or replace the error message. Find and fix the actual authentication/request/backend persistence problem.
+
+### 2. Profile photo upload fails
+
+The Profile Photo section has an **Upload Photo** button, but uploading an image fails.
+
+The console/network request shows a POST request returning:
+
+`400 Bad Request`
+
+The toast shows:
+
+> Upload failed
+> Request failed with status code 400
+
+Fix the complete upload flow so the selected image is uploaded successfully and the resulting stored image URL/path is persisted against the logged-in Talent profile.
+
+## Required behavior
+
+### A. Authentication
+
+Audit how authenticated API requests are supposed to work in this project.
+
+Determine whether authentication uses:
+
+* session cookies,
+* JWT/Bearer tokens,
+* Replit Auth,
+* Passport,
+* or another project-specific mechanism.
+
+Then make Profile Settings use exactly the same authenticated request mechanism as the rest of the working app.
+
+Check:
+
+* `authAPI`
+* axios/fetch configuration
+* `withCredentials`
+* Authorization headers
+* cookie/session forwarding
+* auth middleware
+* user/session lookup
+* AbortController usage
+* React effects that may be cancelling requests prematurely
+
+The frontend and backend must agree on authentication.
+
+Do not add a fake user ID or trust a user ID supplied by the browser.
+
+The backend must identify the authenticated user from the authenticated session/token.
+
+### B. Save Settings to the database
+
+Fix `PUT /api/profiles/me` so that it reliably updates the database record belonging to the currently authenticated Talent.
+
+Persist all applicable Profile Settings fields, including at minimum:
+
+* `firstName`
+* `lastName`
+* `phoneNumber`
+* `location`
+* `timezone`
+* `languages`
+* `title`
+* `bio`
+* `hourlyRate`
+* `rateCurrency`
+* `availability`
+
+Use the existing schema/database column names rather than creating duplicate columns.
+
+If some of these fields are stored on `users` while others are stored on `profiles`, update the correct tables.
+
+If updating the settings requires modifying more than one table, perform the operation safely and consistently, preferably transactionally where supported.
+
+If `/api/profiles/me` should support an existing user without a profile row yet, make it perform the appropriate create/upsert behavior instead of returning an avoidable failure.
+
+### C. Keep User and Profile names consistent
+
+Inspect where `firstName` and `lastName` are considered the canonical values.
+
+The Settings form currently gets default values from either:
+
+* the Talent profile, or
+* the authenticated user.
+
+Make sure saving First Name and Last Name updates whichever database record is canonical for the rest of the website.
+
+After saving, the updated name must also appear correctly wherever the logged-in Talent's name is used, including navigation/profile areas if they use the same database value.
+
+Do not create two conflicting sources of truth.
+
+### D. Languages
+
+The frontend currently normalizes `languages` into an array.
+
+Verify how the backend/database expects languages to be stored.
+
+Do not stringify an array unless the DB/schema specifically requires JSON/text.
+
+The following should survive a save and reload unchanged:
+
+`["English", "Spanish"]`
+
+### E. Profile photo upload
+
+Implement/fix the Profile Photo uploader using the same proven storage pattern already used by working file/image uploads elsewhere in this repository.
+
+Requirements:
+
+1. Allow:
+
+   * JPG/JPEG
+   * PNG
+   * WebP
+   * GIF
+
+2. Maximum file size:
+
+   * 5 MB
+
+3. Reject unsupported files with a useful UI error.
+
+4. Obtain the upload URL/token using the correct authenticated backend endpoint.
+
+5. Upload the binary correctly using whatever HTTP method and content type the storage provider expects.
+
+6. Do not send the wrong body format to a presigned URL.
+
+7. Do not manually force a multipart `Content-Type` header when the browser needs to generate the multipart boundary.
+
+8. After the physical upload succeeds, persist the final stable object URL/object path to the Talent profile's existing profile-picture field, likely `profilePicture` if that is what the schema confirms.
+
+9. Do not save a temporary presigned upload URL if the project expects a permanent object path/public object URL.
+
+10. Immediately refresh:
+
+* `/api/profiles/me`
+* the displayed avatar
+* any authenticated-user/profile state that also contains the avatar
+
+11. The uploaded image must still appear after a hard browser refresh.
+
+### F. Reuse working upload code
+
+Search the project for:
+
+* `ObjectUploader`
+* `uploadURL`
+* `getUploadParameters`
+* presigned URLs
+* object storage routes
+* existing avatar/image uploads
+* resume/document uploads
+* Insights image uploads
+* company/client image uploads
+
+Compare the failing profile photo implementation with one that actually works.
+
+Reuse the existing uploader/storage architecture wherever possible.
+
+Do not create an unnecessary second storage system.
+
+### G. Frontend UX
+
+Keep the existing Settings page design.
+
+Do not redesign unrelated sections.
+
+For Save Settings:
+
+* disable the button while saving;
+* prevent duplicate submissions;
+* show a loading state;
+* show success only after the backend confirms the database write;
+* show one clean error message if it fails;
+* do not emit duplicate toasts.
+
+For Upload Photo:
+
+* show progress/loading;
+* prevent duplicate uploads;
+* update the avatar after success;
+* show a clear error if upload or DB persistence fails.
+
+### H. Fix AbortError spam
+
+Investigate the repeated console error:
+
+`Uncaught (in promise) AbortError: The user aborted a request.`
+
+Find the actual source.
+
+Possible causes to inspect:
+
+* an `AbortController` being aborted during rerenders;
+* duplicate React effects;
+* object uploader cleanup;
+* React Strict Mode behavior;
+* request cancellation that is not caught;
+* auth refresh/session requests being cancelled;
+* navigation/rerender-triggered cancellation.
+
+Expected result:
+
+* legitimate cancellation should not surface as an uncaught promise rejection;
+* saving/uploading should not be inadvertently cancelled;
+* the browser console should not continuously spam `AbortError`.
+
+Do not silence every error globally.
+
+### I. Backend validation and 400 responses
+
+For every relevant endpoint, inspect the request validation schema.
+
+If the upload currently returns `400`, determine exactly why.
+
+Log/inspect the validation error server-side during development and then fix the request/route contract.
+
+Return useful structured errors such as:
+
+```json
+{
+  "success": false,
+  "message": "Unsupported file type"
+}
+```
+
+instead of an unexplained generic 400.
+
+Likewise, if the settings payload contains a field the backend rejects, align the frontend schema and backend schema rather than dropping data silently.
+
+### J. Database verification
+
+This task is not complete just because the UI shows success.
+
+Verify directly that the data is persisted in the database.
+
+Test this sequence:
+
+1. Login as a Talent account.
+2. Open `/settings`.
+3. Change First Name.
+4. Change Last Name.
+5. Change Phone Number.
+6. Change Location.
+7. Change Timezone.
+8. Add/remove a Language.
+9. Change Professional Title/Bio where applicable.
+10. Click Save Settings.
+11. Confirm success.
+12. Query or inspect the database row(s).
+13. Hard-refresh the browser.
+14. Confirm every changed value reloads from the database.
+15. Navigate away and return to Settings.
+16. Confirm the values remain.
+17. Upload a valid profile image.
+18. Confirm the image/object is actually stored.
+19. Confirm the profile record contains its permanent image reference.
+20. Hard-refresh.
+21. Confirm the image still displays.
+
+### K. Regression test other profile features
+
+Do not break:
+
+* Talent onboarding
+* Talent Profile page
+* profile completion percentage
+* Skills
+* Documents/resume upload
+* Portfolio
+* Talent Search
+* navigation avatar/name
+* Client profile functionality
+
+The `useTalentProfile` hook is shared, so make sure changes do not regress the screens that consume it.
+
+## Important implementation rule
+
+Do not fix this using frontend-only local state.
+
+The database must remain the source of truth.
+
+A successful flow must be:
+
+`UI -> authenticated API -> backend validation -> database/storage -> successful response -> React Query/Auth state refresh -> UI`
+
+not:
+
+`UI -> local state -> fake success toast`
+
+## Expected deliverable
+
+After implementation, provide a concise summary containing:
+
+1. root cause of Save Settings failure;
+2. root cause of profile-photo HTTP 400;
+3. root cause of the repeated AbortError, if related;
+4. files changed;
+5. API endpoints changed;
+6. database fields/tables updated;
+7. how profile image persistence now works;
+8. tests performed;
+9. confirmation that changes survive a hard refresh;
+10. confirmation that existing related features still work.
+
+Please inspect the existing implementation first, then implement the fix. Do not stop after identifying the bug.

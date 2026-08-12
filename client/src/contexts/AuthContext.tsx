@@ -150,14 +150,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       
-      // Check if user has JWT token and user data in localStorage
+      // ── 1. Main JWT (admin / client / registered talent) ────────────────────
       const isAuth = checkIsAuthenticated();
       const storedUser = getCurrentUser();
       
       if (isAuth && storedUser) {
         console.log('🔐 JWT user found in localStorage:', storedUser);
         
-        // Check if onboarding was already completed or skipped
         const hasCompleted = localStorage.getItem(`onboarding_completed_${storedUser.id}`) === 'true';
         const hasSkipped = localStorage.getItem(`onboarding_skipped_${storedUser.id}`) === 'true';
         
@@ -172,24 +171,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userType: storedUser.role as "client" | "talent",
           authProvider: 'jwt',
           company: storedUser.company,
-          // Only mark as needing onboarding if they haven't completed or skipped it
           needsOnboarding: !hasCompleted && !hasSkipped && storedUser.role === 'talent'
         };
         
         setUser(mappedUser);
         setIsAuthenticated(true);
-      } else {
-        // No valid authentication found
-        console.log('🔒 No JWT authentication found');
-        setUser(null);
-        setIsAuthenticated(false);
+        return;
       }
+
+      // ── 2. Talent portal token (candidate JWT) ───────────────────────────────
+      // Talent users log in through the talent portal which stores a candidate JWT
+      // ({ type:"candidate", candidateId, email }) under a different localStorage key.
+      // AuthContext was unaware of this token, so user remained null → all
+      // useTalentProfile queries were disabled (enabled: !!user?.id).
+      try {
+        const talentRaw = localStorage.getItem('talent_profile_token');
+        if (talentRaw) {
+          const parsed = JSON.parse(talentRaw) as { token?: string };
+          const talentToken = parsed?.token;
+          if (talentToken) {
+            // Decode payload client-side (no crypto verification — just for reading claims)
+            const payloadB64 = talentToken.split('.')[1];
+            const payload = JSON.parse(atob(payloadB64)) as {
+              type?: string;
+              candidateId?: string;
+              email?: string;
+              exp?: number;
+            };
+
+            if (payload.type === 'candidate' && payload.email) {
+              // Check expiry before hitting the network
+              const nowSec = Math.floor(Date.now() / 1000);
+              if (payload.exp && payload.exp < nowSec) {
+                console.log('🔒 Talent token expired — clearing');
+                localStorage.removeItem('talent_profile_token');
+              } else {
+                // Ask the backend for the backend-resolved userId (the server looks up
+                // the users table by email and returns the real user row id).
+                console.log('🔐 Talent portal token found — resolving user via backend...');
+                const resp = await fetch('/api/profiles/me', {
+                  headers: { Authorization: `Bearer ${talentToken}` },
+                });
+
+                if (resp.ok) {
+                  const data = await resp.json() as { success: boolean; profile?: { userId: string; firstName?: string; lastName?: string } };
+                  const resolvedId = data.profile?.userId ?? payload.candidateId;
+                  if (resolvedId) {
+                    const talentUser: User = {
+                      id: resolvedId,
+                      email: payload.email,
+                      firstName: data.profile?.firstName || undefined,
+                      lastName: data.profile?.lastName || undefined,
+                      role: 'talent',
+                      userType: 'talent',
+                      authProvider: 'talent_portal',
+                    };
+                    console.log('✅ Talent portal user resolved:', { id: resolvedId, email: payload.email });
+                    setUser(talentUser);
+                    setIsAuthenticated(true);
+                    return;
+                  }
+                } else if (resp.status === 401) {
+                  // Token rejected by server — clear it
+                  console.log('🔒 Talent token rejected by server — clearing');
+                  localStorage.removeItem('talent_profile_token');
+                }
+                // For any other error (500, network) fall through to unauthenticated state
+              }
+            }
+          }
+        }
+      } catch (talentErr) {
+        // Don't let a malformed talent token prevent the app from loading
+        console.warn('⚠️ Could not parse talent portal token:', talentErr);
+      }
+
+      // ── 3. No valid authentication found ────────────────────────────────────
+      console.log('🔒 No JWT authentication found');
+      setUser(null);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error('Error refreshing JWT auth:', error);
       setError('Failed to check authentication status');
       setUser(null);
       setIsAuthenticated(false);
-      // Clear potentially corrupted data
       authAPI.logout();
     } finally {
       setIsLoading(false);

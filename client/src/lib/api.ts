@@ -45,9 +45,17 @@ function getBearerToken(): string | null {
   return null;
 }
 
-// Request interceptor to add JWT token to requests
+// Request interceptor to add JWT token and fix Content-Type for FormData
 api.interceptors.request.use(
   (config) => {
+    // When the body is FormData, remove the default 'application/json' Content-Type
+    // so the browser can set 'multipart/form-data; boundary=...' automatically.
+    // Without this, Multer on the server sees the wrong content type and cannot
+    // parse the file, returning a 400 "No file uploaded" error.
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     const token = getBearerToken();
     if (token && config.headers) {
       config.headers["Authorization"] = `Bearer ${token}`;
