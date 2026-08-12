@@ -543,15 +543,15 @@ function PhoneMockup() {
   const brio      = "'Bricolage Grotesque', sans-serif";
 
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(260px, 24vw, 320px)", maxWidth: "100%" }}>
+    <div className="relative ml-auto" style={{ height: "clamp(400px, calc(100svh - 180px), 545px)", width: "fit-content" }}>
       {/* Indigo ambient glow — phone emerges from slide background */}
       <div aria-hidden className="pointer-events-none absolute" style={{ inset: "-70px", background: "radial-gradient(ellipse 80% 70% at 50% 46%, rgba(58,66,149,0.68) 0%, rgba(39,38,104,0.4) 48%, transparent 72%)", filter: "blur(20px)", zIndex: 0 }} />
 
-      {/* Phone shell */}
-      <div style={{ position: "relative", zIndex: 1, background: "#111114", borderRadius: 46, padding: 12, boxShadow: "0 40px 70px rgba(0,0,0,0.55)" }}>
+      {/* Phone shell — fills wrapper height, width is fit-content (set by screen's aspect-ratio) */}
+      <div style={{ position: "relative", zIndex: 1, height: "100%", width: "fit-content", background: "#111114", borderRadius: 46, padding: 12, boxShadow: "0 40px 70px rgba(0,0,0,0.55)", boxSizing: "border-box" }}>
 
-        {/* Screen — true aspect ratio, Dynamic Island + home indicator both absolute */}
-        <div style={{ background: "#fff", borderRadius: 36, overflow: "hidden", position: "relative", aspectRatio: "9/19.5" }}>
+        {/* Screen — height fills shell (minus 24px padding), aspect-ratio determines width */}
+        <div style={{ height: "calc(100% - 24px)", aspectRatio: "9/19.5", background: "#fff", borderRadius: 36, overflow: "hidden", position: "relative" }}>
 
           {/* Dynamic Island pill */}
           <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", width: 90, height: 24, background: "#111114", borderRadius: 100, zIndex: 5 }} />
