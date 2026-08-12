@@ -529,114 +529,99 @@ const BAR_DATA = [
 ];
 
 function PhoneMockup() {
+  // Design tokens from reference
+  const purple    = "#474EAD";
+  const purpleL   = "#7B81D4";
+  const gold      = "#F5A623";
+  const goldTint  = "#FDF1DE";
+  const green     = "#1D8A5A";
+  const greenTint = "#E6F5EC";
+  const bg2       = "#F6F6FA";
+  const text      = "#1D1D1F";
+  const textDim   = "#6E6E76";
+  const textDim2  = "#A1A1A8";
+  const brio      = "'Bricolage Grotesque', sans-serif";
+
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(250px, 22vw, 295px)", maxWidth: "100%" }}>
-      {/* Large indigo glow matching slide bg — phone "emerges" instead of floating */}
-      <div aria-hidden className="absolute pointer-events-none" style={{ inset: "-80px", background: "radial-gradient(ellipse 80% 70% at 50% 46%, rgba(58,66,149,0.72) 0%, rgba(39,38,104,0.45) 45%, transparent 72%)", filter: "blur(18px)", zIndex: 0 }} />
-      {/* Subtle orange warmth at base */}
-      <div aria-hidden className="absolute pointer-events-none" style={{ left: "10%", right: "10%", bottom: "-30px", height: "50%", background: "radial-gradient(ellipse at 50% 100%, rgba(255,174,33,0.13), transparent 65%)", filter: "blur(10px)", zIndex: 0 }} />
+    <div className="relative ml-auto" style={{ width: "clamp(260px, 24vw, 320px)", maxWidth: "100%" }}>
+      {/* Indigo ambient glow — phone emerges from slide background */}
+      <div aria-hidden className="pointer-events-none absolute" style={{ inset: "-70px", background: "radial-gradient(ellipse 80% 70% at 50% 46%, rgba(58,66,149,0.68) 0%, rgba(39,38,104,0.4) 48%, transparent 72%)", filter: "blur(20px)", zIndex: 0 }} />
 
-      {/* Phone shell — borderless, blends into dark bg via shadow only */}
-      <div
-        className="relative rounded-[42px] p-[9px]"
-        style={{
-          zIndex: 1,
-          background: "linear-gradient(170deg, #0f1226 0%, #060818 100%)",
-          border: "1px solid rgba(255,255,255,0.055)",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 50px 90px -12px rgba(4,6,24,0.95), 0 20px 40px -8px rgba(20,22,60,0.7), inset 0 1px 0 rgba(255,255,255,0.07)",
-        }}
-      >
-        {/* Dynamic Island — black pill notch */}
-        <div className="flex justify-center pt-[8px] pb-[6px]">
-          <div className="h-[8px] w-[58px] rounded-full" style={{ background: "#000" }} />
-        </div>
+      {/* Phone shell */}
+      <div style={{ position: "relative", zIndex: 1, background: "#111114", borderRadius: 46, padding: 12, boxShadow: "0 40px 70px rgba(0,0,0,0.55)" }}>
 
-        {/* White screen */}
-        <div className="overflow-hidden rounded-[32px] bg-white">
+        {/* Screen — true aspect ratio, Dynamic Island + home indicator both absolute */}
+        <div style={{ background: "#fff", borderRadius: 36, overflow: "hidden", position: "relative", aspectRatio: "9/19.5" }}>
 
-          {/* App top bar */}
-          <div className="flex items-center justify-between px-3.5 pt-2.5 pb-1.5">
-            <div className="flex items-center gap-1.5">
-              <div className="h-[13px] w-[13px] rounded-[3px] flex-shrink-0" style={{ background: C.orange }} />
-              <span className="font-bold leading-none" style={{ fontSize: 10.5, color: C.charcoal }}>OnSpot</span>
-            </div>
-            <div className="h-[17px] w-[17px] rounded-full flex-shrink-0" style={{ background: "#6C63FF" }} />
+          {/* Dynamic Island pill */}
+          <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", width: 90, height: 24, background: "#111114", borderRadius: 100, zIndex: 5 }} />
+
+          {/* Home indicator */}
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", width: 110, height: 4, background: "rgba(0,0,0,0.22)", borderRadius: 100, zIndex: 5 }} />
+
+          {/* App nav — 52px top padding clears the island */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 20px 14px" }}>
+            <span style={{ fontFamily: brio, fontWeight: 700, fontSize: 14, color: text }}>OnSpot</span>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: purpleL, flexShrink: 0 }} />
           </div>
 
-          {/* Earnings title + subtitle */}
-          <div className="px-3.5 pb-1.5">
-            <p className="font-bold leading-tight" style={{ fontSize: 14, color: C.charcoal }}>Earnings summary</p>
-            <p className="mt-[2px]" style={{ fontSize: 9, color: C.grayLight }}>Last 6 months</p>
-          </div>
+          {/* App body */}
+          <div style={{ padding: "6px 20px 24px" }}>
 
-          <div className="px-3.5 pb-3 space-y-1.5">
-            {/* Main earnings card — cream bg, orange border */}
-            <div
-              className="rounded-[9px] px-3 py-2"
-              style={{ background: "#FFFAF3", border: "1px solid rgba(255,174,33,0.45)" }}
-            >
-              <p className="uppercase tracking-wider" style={{ fontSize: 7, fontWeight: 600, color: C.grayLight }}>
-                TOTAL EARNED THIS MONTH
-              </p>
-              <p className="font-bold leading-none mt-[3px]" style={{ fontSize: 26, color: C.charcoal }}>$3,455</p>
-              <span
-                className="inline-flex items-center gap-0.5 rounded-full px-1.5 mt-[5px]"
-                style={{ fontSize: 7, fontWeight: 600, paddingTop: 2, paddingBottom: 2, background: "rgba(34,197,94,0.12)", color: "#15803d" }}
-              >
-                ▲ 18% vs last month
-              </span>
+            {/* Page title */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: brio, fontSize: 19, fontWeight: 700, color: text }}>Earnings summary</div>
+              <div style={{ fontSize: 12, color: textDim2, marginTop: 2 }}>Last 6 months</div>
             </div>
 
-            {/* Secondary stat cards */}
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                { label: "AVG. RATE",      value: "$20/hr" },
-                { label: "ACTIVE\nCLIENTS", value: "2"     },
-              ].map((s) => (
-                <div key={s.label} className="rounded-[7px] px-2 py-1.5" style={{ background: "#F4F4F8" }}>
-                  <p className="uppercase tracking-wide leading-tight whitespace-pre-line" style={{ fontSize: 6.5, fontWeight: 700, color: C.grayLight }}>{s.label}</p>
-                  <p className="font-bold leading-none mt-[3px]" style={{ fontSize: 14, color: C.charcoal }}>{s.value}</p>
+            {/* Total tile — gold tint */}
+            <div style={{ background: goldTint, border: "1px solid rgba(245,166,35,0.25)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
+              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: textDim, marginBottom: 6 }}>Total Earned This Month</div>
+              <div style={{ fontFamily: brio, fontSize: 30, fontWeight: 800, color: text }}>$3,455</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: green, background: greenTint, padding: "3px 9px", borderRadius: 100, marginTop: 6 }}>▲ 18% vs last month</div>
+            </div>
+
+            {/* Stat tiles */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+              {[{ label: "Avg. rate", val: "$20/hr" }, { label: "Active clients", val: "2" }].map(s => (
+                <div key={s.label} style={{ background: bg2, borderRadius: 14, padding: "14px 16px" }}>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: textDim, marginBottom: 6 }}>{s.label}</div>
+                  <div style={{ fontFamily: brio, fontSize: 18, fontWeight: 800, color: text }}>{s.val}</div>
                 </div>
               ))}
             </div>
 
-            {/* Bar chart — pixel heights so bars always render */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 62, gap: 4, padding: "0 2px" }}>
-              {[
-                { month: "Mar", h: 18 },
-                { month: "Apr", h: 30 },
-                { month: "May", h: 22 },
-                { month: "Jun", h: 40 },
-                { month: "Jul", h: 34 },
-                { month: "Aug", h: 54 },
-              ].map((b) => (
-                <div key={b.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 2 }}>
-                  <div style={{ width: "100%", maxWidth: 22, minWidth: 10, height: b.h, background: "#FFAE22", borderRadius: "3px 3px 0 0", flexShrink: 0 }} />
-                  <span style={{ fontSize: 6, color: C.grayLight, lineHeight: 1, flexShrink: 0 }}>{b.month}</span>
-                </div>
-              ))}
+            {/* Bar chart — percentage heights */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 7, height: 60 }}>
+                {[42, 58, 38, 70, 65, 100].map((h, i) => (
+                  <div key={i} style={{ flex: 1, height: `${h}%`, background: "linear-gradient(180deg, #FFC968 0%, #F5A623 100%)", borderRadius: "4px 4px 0 0" }} />
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 7, marginTop: 6 }}>
+                {["Mar", "Apr", "May", "Jun", "Jul", "Aug"].map(m => (
+                  <span key={m} style={{ flex: 1, textAlign: "center", fontSize: 9.5, color: textDim2 }}>{m}</span>
+                ))}
+              </div>
             </div>
 
-            {/* Earnings by client — with progress bars */}
-            <div>
-              <p className="uppercase tracking-wider mb-1.5" style={{ fontSize: 7, fontWeight: 700, color: C.grayLight }}>
-                EARNINGS BY CLIENT
-              </p>
-              {[
-                { n: "New Tech AI",      amt: "$2,000", pct: 92 },
-                { n: "John Roberts LLC", amt: "$1,455", pct: 67 },
-              ].map((c) => (
-                <div key={c.n} className="mb-1.5 last:mb-0">
-                  <div className="flex items-center justify-between mb-[3px]">
-                    <p className="font-medium" style={{ fontSize: 9.5, color: C.charcoal }}>{c.n}</p>
-                    <p className="font-semibold" style={{ fontSize: 9.5, color: C.charcoal }}>{c.amt}</p>
-                  </div>
-                  <div className="h-[2.5px] w-full rounded-full" style={{ background: "#EEEDFB" }}>
-                    <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: C.indigo }} />
-                  </div>
+            {/* Earnings by client */}
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: textDim, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 12 }}>Earnings by client</div>
+            {[
+              { name: "New Tech AI",      amt: "$2,000", pct: 100 },
+              { name: "John Roberts LLC", amt: "$1,455", pct:  73 },
+            ].map(c => (
+              <div key={c.name} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: text }}>{c.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: textDim }}>{c.amt}</span>
                 </div>
-              ))}
-            </div>
+                <div style={{ height: 6, background: bg2, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${c.pct}%`, background: purple, borderRadius: 3 }} />
+                </div>
+              </div>
+            ))}
+
           </div>
         </div>
       </div>
