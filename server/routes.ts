@@ -4745,7 +4745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
            j.title   AS "jobTitle",
            j.company AS "jobCompany",
            j.location AS "jobLocation",
-           j.work_setup AS "jobWorkSetup",
+           j.work_days AS "jobWorkSetup",
            j.status  AS "jobStatus"
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
