@@ -235,6 +235,18 @@ function DocRow({ doc, onRemove }: { doc: any; onRemove: (id: string) => void })
   );
 }
 
+// ─── Completion items that can only be filled on the Talent Profile page ────────
+// Any checklist item whose label matches one of these must redirect the user
+// to /talent-profile/:id rather than expecting them to find it on /settings.
+// "Email" is intentionally excluded — it is not editable on the Talent Profile
+// page either (it is set at signup and has no edit UI anywhere yet).
+const PROFILE_ONLY_LABELS = new Set([
+  "Experience",
+  "Education",
+  "Preferences",
+  "LinkedIn / portfolio",
+]);
+
 // ─── Sections ──────────────────────────────────────────────────────────────────
 const sections = [
   { id: "basic",        title: "Basic Information",    icon: User     },
@@ -582,16 +594,75 @@ export default function ProfileSettings() {
                   <CheckCircle2 style={{ width: 13, height: 13, flexShrink: 0 }} />
                   Your profile is complete and ready for opportunities.
                 </p>
-              ) : (() => {
-                const missing = completionItems.find((i) => !i.done);
-                return (
-                  <p className="text-[12px] mt-3" style={{ color: MUTED }}>
-                    {missing
-                      ? `Add your ${missing.label.toLowerCase()} to strengthen your profile.`
-                      : "Complete your profile to attract more clients."}
-                  </p>
-                );
-              })()}
+              ) : (
+                <p className="text-[12px] mt-2" style={{ color: MUTED }}>
+                  Complete your profile to attract more opportunities.
+                </p>
+              )}
+
+              {/* Checklist — shown when there are items to display */}
+              {completionItems.length > 0 && (
+                <div className="mt-4 flex flex-col gap-1.5">
+                  {completionItems.map((item) => {
+                    const isProfileOnly = PROFILE_ONLY_LABELS.has(item.label);
+                    return (
+                      <div key={item.label} className="flex items-center justify-between gap-2 min-h-[24px]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.done ? (
+                            <CheckCircle2 style={{ width: 14, height: 14, color: "#22c55e", flexShrink: 0 }} />
+                          ) : (
+                            <div
+                              style={{
+                                width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
+                                border: `2px solid ${isProfileOnly ? "rgba(110,77,245,0.35)" : "rgba(75,81,184,0.3)"}`,
+                                background: isProfileOnly ? "rgba(110,77,245,0.06)" : "transparent",
+                              }}
+                            />
+                          )}
+                          <span
+                            className="text-[12px] truncate"
+                            style={{
+                              color: item.done ? MUTED : TEXT,
+                              fontWeight: item.done ? 400 : 500,
+                              textDecoration: item.done ? "line-through" : "none",
+                              opacity: item.done ? 0.6 : 1,
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                        {!item.done && isProfileOnly && candidateId && (
+                          <a
+                            href={`/talent-profile/${candidateId}`}
+                            className="shrink-0 text-[11px] font-semibold whitespace-nowrap transition-opacity hover:opacity-80"
+                            style={{ color: V, textDecoration: "none" }}
+                          >
+                            Edit on profile →
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Callout when profile-only items are still missing */}
+              {candidateId && completionItems.some((i) => !i.done && PROFILE_ONLY_LABELS.has(i.label)) && (
+                <div
+                  className="mt-4 rounded-xl px-3 py-2.5 text-[12px] leading-snug"
+                  style={{ background: "rgba(110,77,245,0.07)", border: "1.5px solid rgba(110,77,245,0.18)", color: "#5B3FC8" }}
+                >
+                  Some sections (experience, education, preferences) can only be edited from your{" "}
+                  <a
+                    href={`/talent-profile/${candidateId}`}
+                    className="font-semibold underline underline-offset-2 hover:opacity-80"
+                    style={{ color: V }}
+                  >
+                    Talent Profile
+                  </a>
+                  .
+                </div>
+              )}
             </div>
           </div>
 
