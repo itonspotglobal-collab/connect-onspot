@@ -255,7 +255,7 @@ function JobCard({
       <article
         className={
           featured
-            ? "overflow-hidden rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(42,46,130,0.45)] transition-all duration-300 hover:shadow-[0_12px_44px_rgba(42,46,130,0.65)] hover:border-white/20"
+            ? "overflow-hidden rounded-2xl shadow-[0_4px_24px_rgba(42,46,130,0.22),0_1px_6px_rgba(42,46,130,0.10)] transition-all duration-300 hover:shadow-[0_8px_36px_rgba(42,46,130,0.32)]"
             : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/[0.03]"
         }
         style={featured ? { background: "linear-gradient(135deg, #4B55BD 0%, #3A47A8 50%, #2F327F 100%)" } : undefined}
