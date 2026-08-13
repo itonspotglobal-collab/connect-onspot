@@ -381,7 +381,7 @@ function JobCard({
         {/* ── Body ──────────────────────────────────────────────────────────── */}
         <div
           className="px-5 py-4"
-          style={featured ? { background: "linear-gradient(to bottom, #2F3284 0%, #eef0fb 55%, #f5f6fd 100%)" } : undefined}
+          style={featured ? { background: "#f5f6fd" } : undefined}
         >
 
           {/* Card preview summary */}
