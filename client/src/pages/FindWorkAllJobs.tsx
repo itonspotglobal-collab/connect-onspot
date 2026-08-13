@@ -313,9 +313,9 @@ function JobCard({
 
               {/* Right: amber salary — warm accent on cool navy — + posted */}
               <div className="relative shrink-0 sm:text-right">
-                <p className="text-xl font-black text-amber-300 md:text-2xl drop-shadow">{payClean}</p>
+                <p className="text-lg font-semibold text-white md:text-xl">{payClean}</p>
                 {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md bg-amber-300/20 px-2 py-0.5 text-[10px] font-semibold text-amber-200 ring-1 ring-amber-300/30">
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/80 ring-1 ring-white/20">
                     {compensationBadgeLabel}
                   </span>
                 )}
