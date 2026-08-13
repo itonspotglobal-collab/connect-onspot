@@ -1,0 +1,725 @@
+# Update Talent Job Application Flow — Allow Editing Pre-Filled Details
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Update the existing logged-in Talent job application flow so that information pre-filled from the Talent account/profile remains convenient, but the Talent can **edit the application details before submitting the job application**.
+
+Use the screenshot supplied with this request as the UI reference.
+
+The current page is implemented in:
+
+`client/src/pages/JobApplyPage.tsx`
+
+Before changing anything, inspect the current implementation and preserve the existing:
+
+* job application flow
+* Talent authentication
+* account/application linking
+* CV upload
+* video introduction upload
+* validation
+* application submission endpoint
+* account conflict handling
+* email mismatch/security handling
+* Admin Job Applications integration
+
+Do not redesign or rebuild the application page.
+
+This is specifically an adjustment to how **pre-filled Talent details behave**.
+
+---
+
+# Current Behavior
+
+When an authenticated Talent applies for a job, the page pre-fills information from their Talent account/profile.
+
+Current fields include:
+
+* First Name
+* Last Name
+* Email Address
+* Phone Number
+* CV / Resume
+* Video Introduction when required
+* Cover Letter where applicable
+
+The page currently communicates that the Talent is:
+
+**“Applying with your OnSpot Talent account.”**
+
+This behavior should remain.
+
+However, the Talent should be allowed to adjust their personal application details before submitting.
+
+---
+
+# Required New Behavior
+
+## 1. Pre-Fill First, But Keep Fields Editable
+
+When an authenticated Talent opens the application page:
+
+Pre-fill the available information from their Talent account/profile.
+
+For example:
+
+```text
+First Name
+Val Testing
+
+Last Name
+Legaspi
+
+Email Address
+val.testtalent@onspotglobal.com
+
+Phone Number
++639675456756
+```
+
+These values should act as **defaults for this application**.
+
+The Talent must be able to edit the application information before clicking Continue/Submit.
+
+### Editable fields
+
+Allow editing of:
+
+* First Name
+* Last Name
+* Phone Number
+* application-specific Cover Letter
+* any other normal application field that is not security-sensitive
+
+Also allow editing of the displayed email according to the rules defined below.
+
+Do not render these values as static text-only rows.
+
+Use the existing form Inputs and design system.
+
+---
+
+# 2. Email Address Behavior
+
+The current implementation makes the email field `readOnly` for authenticated Talent users.
+
+Change this behavior carefully.
+
+The Talent should be able to edit the email **displayed on the application**, but changing the application contact email must NOT change which Talent account owns the application.
+
+The authenticated Talent/candidate ID must remain the authoritative application owner.
+
+### Important
+
+Do NOT use the edited email to determine Talent ownership when the user is already authenticated.
+
+For authenticated Talents:
+
+```text
+authenticated Talent ID / candidate ID
+```
+
+must remain the authoritative identity.
+
+The application may contain a different contact email if the Talent edits it.
+
+Example:
+
+Talent account email:
+
+```text
+val.testtalent@onspotglobal.com
+```
+
+Application contact email:
+
+```text
+val.personal@gmail.com
+```
+
+The application must still belong to the authenticated Val Talent account.
+
+---
+
+# 3. Remove Incorrect Email Mismatch Blocking for Authenticated Talent
+
+Inspect the existing backend logic for:
+
+`POST /api/jobs/:jobId/apply`
+
+The current application flow appears to contain an `email_mismatch` safeguard.
+
+That safeguard made sense when email was being used to determine application/account ownership.
+
+For an already authenticated Talent, do NOT reject the application simply because the application contact email differs from the Talent account's login email.
+
+Instead:
+
+```text
+Authenticated Talent
+    ↓
+Talent/candidate ID establishes ownership
+    ↓
+Application email is application contact information
+```
+
+Do not allow changing the form email to reassign the application to another Talent.
+
+### Security requirement
+
+Editing:
+
+* email
+* name
+* phone
+
+must never allow the application to become associated with another Talent account.
+
+For authenticated Talent users, ownership must always come from the authenticated token/session.
+
+---
+
+# 4. Do Not Automatically Update Talent Profile
+
+Changes made inside the job application form are **application-specific**.
+
+For example, if Talent changes:
+
+```text
+Phone:
++639675456756
+```
+
+to:
+
+```text
++639171234567
+```
+
+that new phone number should be saved to the submitted Job Application.
+
+It should NOT automatically overwrite the Talent Profile phone number.
+
+Likewise:
+
+* editing First Name should not modify the Talent Profile
+* editing Last Name should not modify the Talent Profile
+* editing Email should not modify login/account email
+* editing Phone should not modify the Talent Profile
+
+Unless the project already intentionally updates profile values during an application, do not introduce that behavior.
+
+The application record and Talent Profile must remain separate concerns.
+
+---
+
+# 5. Update the Current Review UI
+
+The screenshot shows the logged-in Talent application flow with:
+
+**Review your details**
+
+and text similar to:
+
+**These details come from your Talent profile. To update them, visit Profile Settings.**
+
+Change this messaging because the Talent can now edit the information directly for the application.
+
+Recommended copy:
+
+### Heading
+
+**Review your details**
+
+### Supporting text
+
+**We've pre-filled these details from your Talent profile. You can edit them for this application before continuing.**
+
+Do not tell the Talent that they must visit Profile Settings just to adjust the application.
+
+If useful, you may keep a small secondary Profile Settings link such as:
+
+**Changes made here only apply to this application. Update your profile in Profile Settings.**
+
+But this should be informational, not required.
+
+---
+
+# 6. Editable Field UI
+
+Keep the existing compact application layout.
+
+For the review step, use normal Input components.
+
+Example layout:
+
+```text
+First Name
+[ Val Testing              ]
+
+Last Name
+[ Legaspi                  ]
+
+Email Address
+[ val@example.com          ]
+
+Phone Number
+[ +639675456756            ]
+```
+
+All should visually look editable.
+
+Remove:
+
+* disabled-looking styling
+* `cursor-not-allowed`
+* greyed-out styling specifically intended to communicate locking
+* `readOnly={isTalent}` from the email Input
+
+Keep proper:
+
+* labels
+* required indicators
+* validation messages
+* autocomplete attributes
+* keyboard accessibility
+* mobile responsiveness
+
+---
+
+# 7. Pre-Fill Phone Number Properly
+
+The current authenticated Talent pre-fill logic in `JobApplyPage.tsx` appears to pre-fill:
+
+* first name
+* last name
+* email
+
+but phone may be coming from another profile source or separate application step.
+
+Inspect the existing Talent profile/candidate API.
+
+When available, pre-fill the Talent's phone number too.
+
+Do not rely only on the general authenticated `user` object if it does not contain all Talent profile fields.
+
+Use the same authenticated Talent/candidate data source already used by:
+
+* Talent Profile
+* Talent Profile completion
+* candidate data fetching
+
+Preferred behavior:
+
+```ts
+form.firstName = talentProfile.firstName
+form.lastName = talentProfile.lastName
+form.email = talentAccount.email
+form.phone = talentProfile.phone
+```
+
+Use the actual existing field names in the repository.
+
+Do not invent new profile fields.
+
+---
+
+# 8. Do Not Overwrite User Edits After Initial Pre-Fill
+
+This is important.
+
+If Talent starts editing a field, a later React Query refresh or user/profile state update must NOT overwrite what they typed.
+
+For example:
+
+1. Page loads.
+2. Phone is pre-filled with `+639675456756`.
+3. Talent edits it to `+639171234567`.
+4. Talent candidate query refetches.
+5. Form must remain `+639171234567`.
+
+Implement pre-fill as an **initialization**, not continuous synchronization.
+
+Possible approaches:
+
+* initialization flag
+* `useRef`
+* populate only while the form is still untouched
+* initialize once when authenticated profile data first becomes available
+
+Do not repeatedly call `setForm()` in a way that resets user input.
+
+---
+
+# 9. Validation
+
+Continue validating the application fields.
+
+Required:
+
+* First Name
+* Last Name
+* Email
+* Phone
+* CV / Resume
+* Video Introduction if the job requires one
+
+Email should still be validated as a valid email format.
+
+Example:
+
+```ts
+if (!form.email.trim()) {
+  errors.email = "Email is required";
+} else if (!validEmail(form.email)) {
+  errors.email = "Enter a valid email";
+}
+```
+
+Do NOT require the application email to equal the authenticated account email.
+
+---
+
+# 10. Submission Payload
+
+Continue submitting the edited values from local form state.
+
+For example:
+
+```ts
+formData.append("firstName", form.firstName.trim());
+formData.append("lastName", form.lastName.trim());
+formData.append("email", form.email.trim());
+formData.append("phone", form.phone.trim());
+```
+
+These should be saved as the **application snapshot**.
+
+The Admin Job Applications page should therefore see exactly what the Talent submitted.
+
+Example:
+
+Talent Profile phone:
+
+```text
++639675456756
+```
+
+Talent edits application phone to:
+
+```text
++639171234567
+```
+
+Admin Job Applications should show:
+
+```text
++639171234567
+```
+
+for that application.
+
+Talent Profile should remain:
+
+```text
++639675456756
+```
+
+---
+
+# 11. Application Ownership
+
+This requirement is critical.
+
+For an authenticated Talent:
+
+```text
+job application
+    ↓
+authenticated Talent account
+    ↓
+candidate/talent ID
+```
+
+must determine ownership.
+
+Never determine ownership from editable form values.
+
+Specifically, changing any of these:
+
+```text
+First Name
+Last Name
+Email
+Phone Number
+```
+
+must NOT change:
+
+* talentId
+* candidateId
+* account ownership
+* application owner
+
+The server must derive the owner from the verified Talent token/session.
+
+---
+
+# 12. Preserve Signed-Out Application Behavior
+
+Do not break the existing application flow for people who are NOT already authenticated.
+
+The existing flow may include:
+
+* new applicant
+* existing Talent email detection
+* `sign_in_required`
+* account creation
+* continuation token
+* account conflict for Client/Admin emails
+
+Keep all of that working.
+
+The relaxed email rule applies specifically to an **already authenticated Talent** because the account's identity is already known.
+
+For anonymous applicants, preserve the current email/account detection behavior unless changing it is strictly necessary.
+
+---
+
+# 13. Preserve Client/Admin Guard
+
+Client and Admin accounts must still not be treated as Talent applicants.
+
+Keep the existing non-Talent warning/guard.
+
+Do not allow this change to make Client/Admin users submit applications as if they were Talent accounts.
+
+---
+
+# 14. Review Step Behavior
+
+The screenshot shows a multi-step flow:
+
+```text
+1 Review
+2 Resume
+3 Confirm
+```
+
+Keep the existing steps.
+
+On the **Review** step:
+
+Talent can edit:
+
+* First Name
+* Last Name
+* Email
+* Phone Number
+
+Clicking **Continue** should validate the editable fields and proceed to the Resume step.
+
+Do not submit the final application simply because a field was edited.
+
+Preserve the existing step flow.
+
+---
+
+# 15. No Profile Save Button
+
+Do not add:
+
+```text
+Save to Profile
+```
+
+unless it is explicitly required elsewhere.
+
+For this task, edits are application-only.
+
+Keep the UX simple:
+
+```text
+Pre-filled from profile
+→ Talent edits if needed
+→ Continue
+→ Resume
+→ Confirm
+→ Submit Application
+```
+
+---
+
+# 16. Optional Visual Hint
+
+Add a subtle informational message above the editable fields.
+
+Recommended:
+
+**We've pre-filled your details from your Talent profile. You can edit them for this application.**
+
+Optionally add:
+
+**Changes here won't update your Talent profile.**
+
+Use a subtle informational style consistent with the existing purple/indigo Talent design.
+
+Do not show this as a warning/error.
+
+---
+
+# Files to Inspect
+
+At minimum inspect:
+
+```text
+client/src/pages/JobApplyPage.tsx
+client/src/pages/TalentProfile.tsx
+client/src/hooks/useTalentProfile.ts
+client/src/contexts/AuthContext.tsx
+client/src/components/TalentLoginModal.tsx
+shared/schema.ts
+server routes handling POST /api/jobs/:jobId/apply
+server/storage.ts
+```
+
+Search for:
+
+```text
+email_mismatch
+already_authenticated
+sign_in_required
+candidateId
+talentId
+jobApplications
+phone
+```
+
+Understand the current account-linking behavior before modifying it.
+
+---
+
+# Acceptance Criteria
+
+The task is complete only when all of these pass:
+
+* [ ] Logged-in Talent application fields are pre-filled
+* [ ] First Name is editable
+* [ ] Last Name is editable
+* [ ] Email is editable
+* [ ] Phone Number is editable
+* [ ] Phone is pre-filled from Talent profile when available
+* [ ] Fields no longer look disabled/locked
+* [ ] Edited values remain after focus changes
+* [ ] Profile/candidate refetch does not overwrite user edits
+* [ ] Edited application email may differ from Talent login email
+* [ ] Different application email does not trigger `email_mismatch` for an authenticated Talent
+* [ ] Application remains associated with the authenticated Talent
+* [ ] Edited values are saved in the Job Application record
+* [ ] Edited values appear correctly in Admin Job Applications
+* [ ] Talent Profile itself is NOT changed
+* [ ] Talent login email/account is NOT changed
+* [ ] CV upload still works
+* [ ] Required video upload still works
+* [ ] Review → Resume → Confirm flow still works
+* [ ] Signed-out/new applicant flow still works
+* [ ] Existing Talent sign-in-required flow still works
+* [ ] Client/Admin application protection still works
+* [ ] Mobile layout still works
+
+---
+
+# Manual Test Scenario
+
+Test the following:
+
+### Test 1 — Editable authenticated Talent application
+
+1. Log in as Talent.
+2. Open an available job.
+3. Click Apply.
+4. Confirm profile details are pre-filled.
+5. Change First Name.
+6. Change Last Name.
+7. Change Phone Number.
+8. Change Email Address to a different valid contact email.
+9. Continue through Resume and Confirm.
+10. Submit.
+11. Confirm application succeeds.
+
+### Test 2 — Verify application snapshot
+
+Open Admin Job Applications.
+
+Confirm the application shows the edited:
+
+* name
+* email
+* phone
+
+rather than the original profile values.
+
+### Test 3 — Verify Talent profile unchanged
+
+Return to Talent Profile.
+
+Confirm the Talent's original:
+
+* name
+* account email
+* phone
+
+have NOT been overwritten by the application edits.
+
+### Test 4 — Verify ownership
+
+Use a different contact email in the application.
+
+Submit successfully.
+
+Open the Talent's Application List.
+
+Confirm the application still belongs to the currently authenticated Talent.
+
+### Test 5 — Regression
+
+Verify:
+
+* signed-out applicant can still apply
+* existing Talent email detection still works for anonymous users
+* Client/Admin account conflict logic still works
+* CV upload works
+* video upload works
+* Admin Job Applications still works
+
+---
+
+# Important Implementation Rule
+
+Treat Talent profile information as:
+
+**pre-fill/default application data**
+
+not:
+
+**immutable application data**
+
+and not:
+
+**automatic profile update data**.
+
+For authenticated Talent users, always keep these concepts separate:
+
+```text
+Authentication identity
+        ≠
+Application contact information
+        ≠
+Talent Profile data
+```
+
+The authenticated Talent/candidate ID owns the application.
+
+The editable form values belong to that specific application.
+
+Do not use editable contact information to determine application ownership.

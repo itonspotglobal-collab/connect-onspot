@@ -20,7 +20,7 @@ import { TopNavigation } from "@/components/TopNavigation";
 import {
   ArrowLeft, Briefcase, MapPin, Loader2, ShieldAlert, UserCheck,
   LogIn, Upload, X, CheckCircle2, Video, UserPlus, AlertCircle,
-  ChevronRight, Check, Pencil, FileText, Phone, Mail, User,
+  ChevronRight, Check, Pencil, FileText, Phone, Mail, User, Info,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
@@ -318,13 +318,17 @@ export default function JobApplyPage() {
 
           setPrefillData(data);
           const cand = data.candidate;
-          setForm({
-            firstName: cand.firstName || "",
-            lastName: cand.lastName || "",
-            email: cand.email || "",
-            phone: cand.phone || "",
-            coverLetter: data.previousDefaults?.coverLetter || "",
-          });
+          // Pre-fill only on the initial load, not on manual refresh (isRefresh=true),
+          // so user edits made before a refresh are preserved.
+          if (!isRefresh) {
+            setForm({
+              firstName: cand.firstName || "",
+              lastName: cand.lastName || "",
+              email: cand.email || "",
+              phone: cand.phone || "",
+              coverLetter: data.previousDefaults?.coverLetter || "",
+            });
+          }
           setCandidateData(cand);
 
           // Map documents to the shape the rest of the component expects
@@ -1038,11 +1042,7 @@ export default function JobApplyPage() {
       <div>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Review your details</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          These details come from your Talent profile. To update them, visit{" "}
-          <a href="/talent-portal/settings" className="text-[#474ead] hover:underline dark:text-indigo-400">
-            Profile Settings
-          </a>
-          .
+          We've pre-filled these details from your Talent profile. You can edit them for this application before continuing.
         </p>
       </div>
 
@@ -1087,40 +1087,16 @@ export default function JobApplyPage() {
         </div>
       )}
 
-      {/* Phone missing — hard block with action path */}
-      {!form.phone.trim() && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700/40 dark:bg-amber-900/20">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <div className="flex-1 text-xs text-amber-800 dark:text-amber-300">
-            <p className="font-semibold">Phone number required to continue</p>
-            <p className="mt-0.5">
-              Add your phone number in{" "}
-              <a
-                href="/talent-portal/settings"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:no-underline font-medium"
-              >
-                Profile Settings ↗
-              </a>
-              , then click <strong>Refresh details</strong> below to continue.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 h-7 rounded-full text-xs border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300"
-            disabled={isPrefillRefreshing}
-            onClick={() => talentSession && jobId && runPrefillFetch(talentSession, jobId, true)}
-          >
-            {isPrefillRefreshing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              "Refresh details"
-            )}
-          </Button>
-        </div>
-      )}
+      {/* Subtle pre-fill info banner */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3.5 py-2.5 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400 dark:text-indigo-400" />
+        <p className="text-xs text-indigo-700 dark:text-indigo-300">
+          Changes made here only apply to this application and won't update your Talent profile.{" "}
+          <a href="/settings" className="underline hover:no-underline font-medium">
+            Update your profile in Settings.
+          </a>
+        </p>
+      </div>
 
       {/* Non-phone missing items (resume, video) — informational, not blocking */}
       {readinessMissing.filter((m) => m !== "phone").length > 0 && (
@@ -1136,41 +1112,61 @@ export default function JobApplyPage() {
         </div>
       )}
 
-      {/* Identity fields — read-only */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 divide-y divide-slate-200 dark:divide-slate-700">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <User className="h-4 w-4 shrink-0 text-slate-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-slate-400">Full Name</p>
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-              {form.firstName} {form.lastName}
-            </p>
-          </div>
+      {/* Editable identity fields */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="wiz-firstName">First Name <span className="text-red-500">*</span></Label>
+          <Input
+            id="wiz-firstName"
+            value={form.firstName}
+            onChange={(e) => setField("firstName", e.target.value)}
+            placeholder="Maria"
+            autoComplete="given-name"
+          />
+          {errors.firstName && <p className="text-xs text-red-500">{errors.firstName}</p>}
         </div>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Mail className="h-4 w-4 shrink-0 text-slate-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-slate-400">Email Address</p>
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{form.email}</p>
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="wiz-lastName">Last Name <span className="text-red-500">*</span></Label>
+          <Input
+            id="wiz-lastName"
+            value={form.lastName}
+            onChange={(e) => setField("lastName", e.target.value)}
+            placeholder="Santos"
+            autoComplete="family-name"
+          />
+          {errors.lastName && <p className="text-xs text-red-500">{errors.lastName}</p>}
         </div>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Phone className="h-4 w-4 shrink-0 text-slate-400" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-slate-400">Phone Number</p>
-            {form.phone ? (
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{form.phone}</p>
-            ) : (
-              <p className="text-sm text-amber-600 dark:text-amber-400 italic">Not set</p>
-            )}
-          </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="wiz-email">Email Address <span className="text-red-500">*</span></Label>
+          <Input
+            id="wiz-email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setField("email", e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+          {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="wiz-phone">Phone Number <span className="text-red-500">*</span></Label>
+          <Input
+            id="wiz-phone"
+            type="tel"
+            value={form.phone}
+            onChange={(e) => setField("phone", e.target.value)}
+            placeholder="+63 912 345 6789"
+            autoComplete="tel"
+          />
+          {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
         </div>
       </div>
 
       <Button
         className="w-full h-10 rounded-full bg-[#474ead] text-white hover:bg-[#3d439c] disabled:opacity-50"
         onClick={advanceWizard}
-        disabled={!form.phone.trim()}
       >
         Continue <ChevronRight className="ml-1.5 h-4 w-4" />
       </Button>
@@ -1738,8 +1734,6 @@ export default function JobApplyPage() {
                       id="email" type="email" value={form.email}
                       onChange={(e) => setField("email", e.target.value)}
                       placeholder="you@example.com" autoComplete="email"
-                      readOnly={isTalent}
-                      className={isTalent ? "cursor-not-allowed bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400" : ""}
                     />
                     {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                   </div>

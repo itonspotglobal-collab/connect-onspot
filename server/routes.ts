@@ -9447,13 +9447,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Reject email mismatch — never link to a different identity
-        if (normalizedEmail !== authedUser.email.toLowerCase()) {
-          return res.status(409).json({
-            error: "email_mismatch",
-            message: "You are signed in with a different email address. Sign out to apply using another account.",
-          });
-        }
+        // For authenticated Talent, the application contact email may differ from
+        // the account email — ownership is established by the verified token, not
+        // the submitted email.  We no longer block on email mismatch here.
+        // (The submitted email is stored as application contact info only; it
+        //  does NOT change talentId or account ownership.)
 
         // Repeat-application indicator (allowed, but flagged for admin visibility)
         const priorByTalent = await query(
