@@ -254,30 +254,33 @@ function JobCard({
     >
       <article className={
         featured
-          ? "overflow-hidden rounded-2xl border border-[#474ead]/40 bg-[#1C1917] shadow-[0_0_28px_rgba(71,78,173,0.18)] transition-all duration-300 hover:border-[#474ead]/65 hover:shadow-[0_4px_40px_rgba(71,78,173,0.28)]"
+          ? "overflow-hidden rounded-2xl border border-indigo-400/30 bg-white shadow-[0_4px_24px_rgba(58,58,248,0.18)] transition-all duration-300 hover:shadow-[0_8px_36px_rgba(58,58,248,0.28)] hover:border-indigo-400/50"
           : "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-white/10 dark:bg-white/[0.03]"
       }>
 
         {featured ? (
-          /* ── Featured: dark hero-matched header ──────────────────────────── */
-          <div className="relative overflow-hidden px-5 py-5">
-            {/* Ambient indigo glow — top right */}
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#474ead]/20 blur-[60px]" />
-            {/* Subtle amber pulse — bottom left */}
-            <div className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-amber-500/[0.07] blur-[50px]" />
+          /* ── Featured: nav-matched indigo-purple gradient header ─────────── */
+          <div
+            className="relative overflow-hidden px-5 py-5"
+            style={{ background: "linear-gradient(135deg, #3A3AF8 0%, #5B61D4 50%, #7F3DF4 100%)" }}
+          >
+            {/* Soft top-left shimmer */}
+            <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-white/[0.07] blur-[50px]" />
+            {/* Soft bottom-right depth */}
+            <div className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-black/10 blur-[40px]" />
 
-            {/* FEATURED badge — indigo pill, matching hero primary */}
+            {/* FEATURED badge */}
             <div className="relative mb-3.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#474ead]/40 bg-[#474ead]/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#8b91e3]">
-                <Sparkles className="h-3 w-3" aria-hidden="true" /> Featured Role
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20">
+                <Star className="h-3 w-3 fill-amber-300 text-amber-300" aria-hidden="true" /> Featured Role
               </span>
             </div>
 
             <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              {/* Left: indigo avatar + title + company + badges */}
+              {/* Left: white avatar + title + company + badges */}
               <div className="flex items-start gap-3.5 min-w-0">
                 <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#474ead] to-[#6366f1] text-sm font-bold text-white shadow-lg shadow-[#474ead]/30"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-sm font-bold text-white ring-1 ring-white/25 shadow-md"
                   aria-hidden="true"
                 >
                   {initials}
@@ -287,21 +290,21 @@ function JobCard({
                     {(job as any).professionalRoleName || job.title}
                   </h3>
                   {(job as any).originalRoleName && (
-                    <p className="mt-0.5 text-[11px] italic text-white/35 truncate leading-tight">
+                    <p className="mt-0.5 text-[11px] italic text-white/55 truncate leading-tight">
                       {(job as any).originalRoleName}
                     </p>
                   )}
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-white/45 md:text-sm">
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-white/70 md:text-sm">
                     {getPublicCompanyName(job as any)}
                   </p>
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {pilotId && (
-                      <span className="inline-flex items-center rounded-md border border-[#474ead]/30 bg-[#474ead]/10 px-2 py-1 text-[10px] font-medium md:text-[11px] text-[#8b91e3]">
+                      <span className="inline-flex items-center rounded-md bg-white/15 px-2 py-1 text-[10px] font-medium md:text-[11px] text-white/90 ring-1 ring-white/20">
                         Pilot
                       </span>
                     )}
                     {cardBadges.map((b) => (
-                      <span key={b.key} className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES[b.key] ?? badgeFallback}`}>
+                      <span key={b.key} className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-medium md:text-[11px] ${BADGE_STYLES[b.key] ?? "bg-white/15 text-white/90"}`}>
                         {b.label}
                       </span>
                     ))}
@@ -309,15 +312,15 @@ function JobCard({
                 </div>
               </div>
 
-              {/* Right: salary in amber (matches "Without" in hero) + posted + commission */}
+              {/* Right: amber salary (warm accent on cool indigo) + posted */}
               <div className="relative shrink-0 sm:text-right">
-                <p className="text-lg font-black text-amber-400 md:text-xl">{payClean}</p>
+                <p className="text-lg font-black text-amber-300 md:text-xl drop-shadow-sm">{payClean}</p>
                 {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md border border-amber-400/20 bg-amber-400/[0.08] px-2 py-0.5 text-[10px] font-medium text-amber-400/70">
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-amber-400/20 px-2 py-0.5 text-[10px] font-medium text-amber-200 ring-1 ring-amber-300/30">
                     {compensationBadgeLabel}
                   </span>
                 )}
-                <p className="mt-1 text-xs text-white/25">{postedLabel}</p>
+                <p className="mt-1 text-xs text-white/50">{postedLabel}</p>
                 {commissionEquityBadges}
               </div>
             </div>
@@ -377,13 +380,13 @@ function JobCard({
         )}
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
-        <div className={`px-5 py-4 ${featured ? "border-t border-white/[0.06]" : ""}`}>
+        <div className="px-5 py-4">
 
           {/* Card preview summary */}
           {(() => {
             const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
-              <p className={`line-clamp-2 text-sm leading-6 ${featured ? "text-white/45" : "text-slate-600 dark:text-slate-300"}`}>
+              <p className={`line-clamp-2 text-sm leading-6 ${featured ? "text-slate-600 dark:text-slate-300" : "text-slate-600 dark:text-slate-300"}`}>
                 {preview}
               </p>
             ) : null;
@@ -402,23 +405,13 @@ function JobCard({
               {visibleTags.map((tag) => (
                 <span
                   key={tag}
-                  className={
-                    featured
-                      ? "rounded-full border border-white/[0.08] bg-white/[0.05] px-2.5 py-1 text-xs text-white/50"
-                      : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
-                  }
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
                 >
                   {tag}
                 </span>
               ))}
               {extraTags > 0 && (
-                <span
-                  className={
-                    featured
-                      ? "rounded-full border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-xs text-white/30"
-                      : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500"
-                  }
-                >
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500">
                   +{extraTags} more
                 </span>
               )}
@@ -431,7 +424,7 @@ function JobCard({
               size="sm"
               className={
                 featured
-                  ? "rounded-full bg-[#474ead] px-5 text-white border-0 hover:bg-[#5a60c0] shadow-md shadow-[#474ead]/30 transition-all duration-200"
+                  ? "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90 shadow-sm"
                   : "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
               }
               onClick={() => {
@@ -446,11 +439,7 @@ function JobCard({
             </Button>
             <button
               onClick={() => onNavigate(job.id)}
-              className={
-                featured
-                  ? "inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-1.5 text-sm font-medium text-white/50 transition-all duration-200 hover:border-[#474ead]/50 hover:bg-[#474ead]/10 hover:text-[#8b91e3]"
-                  : "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
-              }
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
             >
               View details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -1227,43 +1216,30 @@ export default function FindWorkAllJobs() {
 
           return (
             <div className="space-y-4">
-              {/* ── Featured Roles banner (only when featured jobs exist) ── */}
+              {/* ── Featured Roles — individual cards with a slim label above ── */}
               {featuredJobs.length > 0 && (
-                <div className="overflow-hidden rounded-2xl border border-[#474ead]/25 bg-[#1C1917] shadow-[0_0_40px_rgba(71,78,173,0.12)]">
-                  {/* Section header */}
-                  <div className="relative overflow-hidden px-5 py-4 border-b border-white/[0.06]">
-                    {/* Ambient top glow */}
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(71,78,173,0.18),transparent)]" />
-                    <div className="relative flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#474ead]/20 border border-[#474ead]/30">
-                          <Star className="h-3.5 w-3.5 text-[#8b91e3]" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#474ead]/70">
-                            Featured Roles
-                          </p>
-                          <p className="text-xs text-white/30">
-                            {featuredJobs.length} handpicked opportunit{featuredJobs.length !== 1 ? "ies" : "y"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="hidden sm:flex items-center gap-1.5">
-                        <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#474ead]/30" />
-                        <span className="text-[10px] text-white/20">premium listings</span>
-                        <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#474ead]/30" />
-                      </div>
+                <>
+                  {/* Slim section label */}
+                  <div className="flex items-center gap-2.5 px-0.5">
+                    <Star className="h-3.5 w-3.5 fill-indigo-500 text-indigo-500" />
+                    <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-indigo-600">
+                      Featured Roles
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-indigo-200/80 to-transparent" />
+                  </div>
+                  {/* Individual featured cards — each stands alone */}
+                  {featuredJobs.map((job) => (
+                    <JobCard key={job.id} job={job} onNavigate={navigateJob(job)} />
+                  ))}
+                  {/* Divider before regular jobs */}
+                  {regularJobs.length > 0 && (
+                    <div className="flex items-center gap-2.5 px-0.5 pt-1">
+                      <div className="h-px flex-1 bg-slate-200/80" />
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">All Roles</span>
+                      <div className="h-px flex-1 bg-slate-200/80" />
                     </div>
-                  </div>
-                  {/* Featured cards — no gap between them, separated by subtle dividers */}
-                  <div className="divide-y divide-white/[0.05] p-4 space-y-3">
-                    {featuredJobs.map((job) => (
-                      <div key={job.id} className="pt-3 first:pt-0">
-                        <JobCard job={job} onNavigate={navigateJob(job)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  )}
+                </>
               )}
 
               {/* ── Regular jobs ── */}
