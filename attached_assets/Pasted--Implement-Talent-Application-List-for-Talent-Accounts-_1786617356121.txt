@@ -1,0 +1,729 @@
+# Implement Talent Application List for Talent Accounts
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Implement a new **Talent Application List** feature that is available **only to authenticated Talent accounts**.
+
+Before making changes, inspect the current implementation and reuse existing architecture, authentication, database schema, components, API patterns, styling, and application-status logic. Do **not** create a duplicate application system.
+
+Important existing files/components to inspect first:
+
+* `client/src/pages/TalentProfile.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/App.tsx`
+* `client/src/pages/AdminJobApplications.tsx`
+* `shared/schema.ts`
+* relevant server routes/services/storage dealing with `jobApplications`
+* existing Talent authentication logic, including both the Talent-specific auth token flow and the normal JWT Talent user flow
+
+The Admin Job Applications feature already manages the authoritative application records and status values. The Talent Application List must display those **same application records** and immediately reflect status changes made by Admin.
+
+---
+
+## Feature 1 — New Talent Application List Page
+
+Create a new Talent-only page, preferably:
+
+`client/src/pages/TalentApplications.tsx`
+
+Route suggestion:
+
+`/talent/applications`
+
+or, if the existing routing conventions indicate a more appropriate Talent route, follow the existing convention.
+
+### Access control
+
+This page must be accessible **only to the Talent account that owns the applications**.
+
+Do not expose another talent's applications.
+
+Support the existing Talent authentication mechanisms already used in the project.
+
+The backend must determine the current Talent from authenticated identity such as:
+
+* Talent JWT / authenticated user ID
+* candidate ID associated with the Talent account
+
+Do **not** trust a candidate ID, email, or talent ID supplied by the frontend query string to determine ownership.
+
+Client and Admin accounts must not be able to access the Talent Application List through this Talent route.
+
+If an unauthorized user attempts to access it, follow the project's existing redirect/authorization behavior.
+
+---
+
+# Backend / API
+
+Create or reuse a Talent-facing API that returns only the logged-in Talent's applications.
+
+Suggested endpoint:
+
+`GET /api/talent/applications`
+
+If a suitable existing endpoint already exists, reuse it instead.
+
+Do NOT call the Admin Job Applications endpoint directly from the Talent page if it requires admin privileges.
+
+The Talent endpoint should derive the authenticated Talent/candidate from the session/token and query the existing `jobApplications` records.
+
+Return enough information for the UI, for example:
+
+```ts
+{
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  jobCompany?: string;
+  status: string;
+  submittedAt?: string;
+  updatedAt?: string;
+}
+```
+
+Include additional existing job metadata when readily available, such as:
+
+* employment type
+* work setup/location
+* department/category
+* job slug or route needed to open the role
+
+Do not add redundant database fields if this information can already be obtained from existing application/job relationships.
+
+### Critical data requirement
+
+The Talent page must use the **same application record/status source** that powers:
+
+`client/src/pages/AdminJobApplications.tsx`
+
+Therefore, if Admin changes an application from:
+
+* `submitted`
+* `under_review`
+* `shortlisted`
+* `interview`
+* `offered`
+* `hired`
+* `rejected`
+* `withdrawn`
+
+the Talent must see the corresponding new status.
+
+Also preserve compatibility with any legacy status aliases already supported by the existing implementation, such as `new` or `reviewed`, if they still exist in stored data.
+
+---
+
+# Application statuses
+
+Reuse the existing status mapping from Admin Job Applications.
+
+Display labels:
+
+* `submitted` → **Submitted**
+* `under_review` → **Under Review**
+* `shortlisted` → **Shortlisted**
+* `interview` → **Interview**
+* `offered` → **Offered**
+* `hired` → **Hired**
+* `rejected` → **Rejected**
+* `withdrawn` → **Withdrawn**
+
+If legacy values exist:
+
+* `new` → **Submitted**
+* `reviewed` → **Under Review**
+
+Reuse the same or closely matching badge styling already used on `AdminJobApplications.tsx`.
+
+Do not create inconsistent new status colors unless required by the current design system.
+
+---
+
+# Page UI
+
+Create a clean responsive page matching the current OnSpot Talent UI.
+
+Use:
+
+* `<TopNavigation />`
+* existing page/container spacing
+* existing Cards
+* existing Buttons
+* existing Badge styles
+* lucide-react icons already used in the project
+* React Query / TanStack Query, consistent with the existing codebase
+
+Suggested page header:
+
+**My Applications**
+
+Subtitle:
+
+**Track the roles you've applied for and monitor your application status.**
+
+---
+
+## Application list
+
+Show only the logged-in Talent's applications.
+
+Desktop can use either a clean table or card-list layout, whichever best matches the current application.
+
+Each application should show at minimum:
+
+### Role
+
+Job title
+
+### Company
+
+Company/account name if available
+
+### Applied
+
+Application submitted date
+
+### Status
+
+Status badge
+
+### Action
+
+A `View Job` button/link when the job still has a valid public details route.
+
+Optional useful metadata may include:
+
+* Work setup
+* Employment type
+* Location
+* Last updated date
+
+Do not add admin controls.
+
+Talent users must NOT be able to:
+
+* change application status
+* delete an application through this feature
+* see internal admin notes
+* see registration status
+* see admin history/internal metadata
+* see other applicants
+* see account/internal recruiting fields
+
+This page is primarily for **monitoring application progress**.
+
+---
+
+# Filtering
+
+If straightforward using the existing implementation, add:
+
+### Search
+
+Search by job title/company.
+
+### Status filter
+
+Options:
+
+* All Statuses
+* Submitted
+* Under Review
+* Shortlisted
+* Interview
+* Offered
+* Hired
+* Rejected
+* Withdrawn
+
+Filtering may be client-side if application volume is expected to be small.
+
+If the existing backend list patterns already support pagination/filtering cleanly, it is acceptable to implement them server-side.
+
+Do not overengineer this.
+
+---
+
+# Empty state
+
+If the Talent has no applications, show a polished empty state.
+
+Example:
+
+**No applications yet**
+
+`Roles you apply for will appear here so you can track their progress.`
+
+Button:
+
+**Find Work**
+
+Navigate to:
+
+`/find-work/jobs`
+
+---
+
+# Loading / errors
+
+Provide:
+
+* skeleton/loading state
+* API error state
+* retry button where appropriate
+
+Do not display an empty list while a request is still loading.
+
+---
+
+# Feature 2 — Add Applications Card to Talent Profile
+
+Update:
+
+`client/src/pages/TalentProfile.tsx`
+
+Add a new card/section to the Talent's own profile.
+
+Suggested title:
+
+**My Applications**
+
+or:
+
+**Applications**
+
+This card is exclusive to the **owner Talent view**.
+
+It should NOT appear when:
+
+* Admin views another Talent profile
+* Client views a Talent profile
+* a visitor/public user views a Talent profile
+
+The Talent profile currently contains cards such as Preferences and Portfolio & Links. Add the Applications card in a location that fits naturally with those existing profile cards.
+
+---
+
+## Applications card content
+
+Fetch from the same Talent Applications source created above.
+
+Show a concise summary rather than the entire application history.
+
+Suggested structure:
+
+**Applications**
+
+`X active applications`
+
+Then show the latest 3 applications:
+
+```text
+Customer Service Representative
+Submitted
+
+Virtual Assistant
+Under Review
+
+Data Entry Specialist
+Shortlisted
+```
+
+Each item should display:
+
+* Job title
+* Status badge
+* optionally application date
+
+At the bottom include:
+
+**View All Applications →**
+
+Clicking it should navigate to:
+
+`/talent/applications`
+
+If there are zero applications, show:
+
+**No applications yet**
+
+and:
+
+**Find Work →**
+
+---
+
+## Active application count
+
+For the summary, consider these active:
+
+* submitted
+* under_review
+* shortlisted
+* interview
+* offered
+
+Do not count these as active:
+
+* hired
+* rejected
+* withdrawn
+
+However, all statuses should still remain visible in the full Applications page.
+
+---
+
+# Feature 3 — Add Application List to Talent Dropdown Navigation
+
+Update:
+
+`client/src/components/TopNavigation.tsx`
+
+There is already role-specific dropdown generation in this component.
+
+For the Talent dropdown, add:
+
+**Application List**
+
+Suggested icon:
+
+`ClipboardList`
+
+or:
+
+`FileText`
+
+or another existing Lucide icon that semantically matches applications.
+
+Route:
+
+`/talent/applications`
+
+Suggested Talent dropdown ordering:
+
+1. Talent Profile
+2. Finish Profile Setup
+3. Find Work
+4. Application List
+5. Settings
+6. Sign Out
+
+Alternatively, placing Application List directly under Find Work is acceptable.
+
+### Important role restriction
+
+`Application List` must appear ONLY for Talent accounts.
+
+It must NOT appear for:
+
+* Client
+* Admin
+* signed-out/public users
+
+Be careful because `TopNavigation.tsx` currently has separate role-based dropdown logic and also supports the Talent-specific auth state. Make sure this menu item appears for both valid Talent-auth flows used by the project, without appearing in Client/Admin menus.
+
+Do not redesign the existing Talent dropdown.
+
+Only add the new navigation item while preserving its current design and behavior.
+
+---
+
+# Routing
+
+Update:
+
+`client/src/App.tsx`
+
+Register the Talent Applications route using the routing structure already used by the app.
+
+Protect it so only authenticated Talent users can access it.
+
+Do not expose the page through the Admin or Client routing branches.
+
+---
+
+# Data association requirements
+
+A Talent's application list must be based on the actual existing Job Application records.
+
+Inspect `shared/schema.ts` and the application submission flow to determine how applications currently associate to Talent/Candidate records.
+
+Use the strongest existing relationship available, preferably:
+
+1. `talentId` / candidate relationship if already stored
+2. authenticated candidate ID
+3. existing normalized relationship used by Admin Job Applications
+
+Avoid relying only on raw email matching if a proper Talent/candidate relation exists.
+
+Email can be used only as a backwards-compatible fallback for older application records if the existing system requires it.
+
+If you implement fallback matching, ensure it cannot allow one account to read another account's applications.
+
+---
+
+# Registration/account linking
+
+The Admin Job Applications page appears to support application records becoming linked to Talent accounts.
+
+Make sure applications submitted before Talent registration still appear once the application has legitimately been associated with that Talent account according to the existing registration/linking process.
+
+Do not create duplicate application records during this process.
+
+---
+
+# React Query
+
+Use TanStack React Query consistent with the rest of the app.
+
+Suggested query key:
+
+```ts
+["/api/talent/applications"]
+```
+
+or an equivalent stable query key.
+
+When relevant application data changes in-session, make sure the Talent Profile card and full Application List use the same source/query strategy so they stay consistent.
+
+Avoid two separate implementations of the application fetching logic.
+
+Consider creating a reusable hook such as:
+
+`client/src/hooks/useTalentApplications.ts`
+
+if this avoids duplicate code between:
+
+* Talent Applications page
+* Talent Profile Applications card
+
+Example responsibility:
+
+```ts
+useTalentApplications()
+```
+
+should handle:
+
+* correct Talent auth headers
+* API fetch
+* response typing
+* normalized status values
+
+Do not create the hook if the project already has an established equivalent pattern.
+
+---
+
+# Security
+
+This requirement is critical.
+
+The API must enforce authorization server-side.
+
+A user must never be able to retrieve another Talent's applications simply by modifying:
+
+* candidate ID
+* talent ID
+* email
+* URL
+* request query parameter
+
+Do not rely on frontend route guards as the security boundary.
+
+The backend must verify the authenticated user and scope the query accordingly.
+
+---
+
+# Do not modify Admin behavior unnecessarily
+
+The existing:
+
+`client/src/pages/AdminJobApplications.tsx`
+
+must continue functioning exactly as before.
+
+Do not remove or change:
+
+* Admin application status controls
+* application history
+* resume features
+* email functionality
+* delete functionality
+* admin filters
+* admin summary cards
+
+Only reuse its statuses/data patterns.
+
+---
+
+# Design expectations
+
+Match the existing OnSpot design:
+
+* white cards
+* slate borders
+* subtle shadows
+* rounded corners
+* purple/indigo Talent branding
+* responsive desktop/mobile layouts
+* existing typography scale
+* existing Button and Badge components
+
+Do not introduce a completely different dashboard visual language.
+
+The screenshots supplied with this task should be treated as visual references:
+
+1. Current Talent Profile layout with Preferences / Portfolio cards
+2. Existing Admin Job Applications dashboard and application statuses
+3. Existing Talent Profile dropdown navigation
+
+The new feature should look like it belongs naturally within those screens.
+
+---
+
+# Suggested reusable status config
+
+Instead of allowing Talent and Admin status labels to drift apart, consider extracting the existing status mapping into a shared frontend utility if practical.
+
+Example:
+
+`client/src/lib/applicationStatus.ts`
+
+```ts
+export const APPLICATION_STATUS_CONFIG = {
+  submitted: {
+    label: "Submitted",
+    className: "bg-blue-100 text-blue-800 border-blue-200",
+  },
+  under_review: {
+    label: "Under Review",
+    className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  },
+  shortlisted: {
+    label: "Shortlisted",
+    className: "bg-purple-100 text-purple-800 border-purple-200",
+  },
+  interview: {
+    label: "Interview",
+    className: "bg-orange-100 text-orange-800 border-orange-200",
+  },
+  offered: {
+    label: "Offered",
+    className: "bg-teal-100 text-teal-800 border-teal-200",
+  },
+  hired: {
+    label: "Hired",
+    className: "bg-green-100 text-green-800 border-green-200",
+  },
+  rejected: {
+    label: "Rejected",
+    className: "bg-red-100 text-red-800 border-red-200",
+  },
+  withdrawn: {
+    label: "Withdrawn",
+    className: "bg-slate-100 text-slate-700 border-slate-200",
+  },
+};
+```
+
+Only refactor Admin to consume this shared config if doing so is low-risk.
+
+Do not perform a large unrelated refactor.
+
+---
+
+# Acceptance Criteria
+
+The implementation is complete only when all of these pass:
+
+### Talent Application List
+
+* [ ] Authenticated Talent can open `/talent/applications`
+* [ ] Talent sees only their own applications
+* [ ] Job title is shown
+* [ ] Company/account is shown when available
+* [ ] Application submitted date is shown
+* [ ] Current status is shown
+* [ ] Status matches Admin Job Applications
+* [ ] Admin status changes are reflected in the Talent view
+* [ ] Empty state works
+* [ ] Loading state works
+* [ ] Error state works
+* [ ] Mobile layout works
+
+### Talent Profile
+
+* [ ] Talent owner sees an Applications card
+* [ ] Card displays recent applications
+* [ ] Card displays application statuses
+* [ ] `View All Applications` works
+* [ ] Client/Admin/public Talent-profile viewers do NOT see this private card
+
+### Navigation
+
+* [ ] Talent dropdown contains `Application List`
+* [ ] It navigates to `/talent/applications`
+* [ ] Client dropdown does NOT contain it
+* [ ] Admin dropdown does NOT contain it
+* [ ] Public/signed-out navigation does NOT contain it
+* [ ] Existing Talent dropdown appearance remains unchanged
+
+### Security
+
+* [ ] Talent cannot query another Talent's applications
+* [ ] Backend scopes results using authenticated identity
+* [ ] Manipulating URL/query values does not expose another Talent's records
+* [ ] Admin endpoints remain admin-only
+
+### Regression
+
+* [ ] Find Work still works
+* [ ] Job application submission still works
+* [ ] Admin Job Applications still works
+* [ ] Admin status update still works
+* [ ] Talent Profile still loads
+* [ ] Client Profile is unaffected
+* [ ] Admin navigation is unaffected
+
+---
+
+# Testing
+
+After implementing, manually test this scenario:
+
+1. Log in as a Talent account.
+2. Apply to at least two jobs.
+3. Confirm both appear under **Application List**.
+4. Confirm they also appear in the Talent Profile Applications card.
+5. Log in as Admin.
+6. Open Admin Job Applications.
+7. Change one application from `Submitted` to `Under Review`.
+8. Change another application to `Shortlisted`.
+9. Log back in as that Talent.
+10. Confirm the updated statuses display correctly on:
+
+    * Talent Application List
+    * Talent Profile Applications card
+11. Log in as a second Talent.
+12. Confirm they cannot see the first Talent's applications.
+13. Log in as Client.
+14. Confirm `Application List` does not exist in the Client dropdown.
+15. Verify mobile and desktop layouts.
+
+Also run the project's normal TypeScript/build checks and fix any errors introduced by this change.
+
+---
+
+# Important implementation rule
+
+Before coding, trace the current application lifecycle end-to-end:
+
+**Find Work application submission → jobApplications storage → Talent/candidate linking → Admin Job Applications → Admin status update**
+
+Then build the Talent-facing feature on top of that same data flow.
+
+Do not create mock application data.
+
+Do not create a separate `talentApplications` table unless the current architecture absolutely requires it.
+
+The existing Job Application record must remain the single source of truth.
