@@ -379,7 +379,10 @@ function JobCard({
         )}
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
-        <div className={`px-5 py-4 ${featured ? "border-t border-white/10" : ""}`}>
+        <div
+          className="px-5 py-4"
+          style={featured ? { background: "linear-gradient(to bottom, #2F3284 0%, #eef0fb 55%, #f5f6fd 100%)" } : undefined}
+        >
 
           {/* Card preview summary */}
           {(() => {
@@ -431,7 +434,7 @@ function JobCard({
               size="sm"
               className={
                 featured
-                  ? "rounded-full bg-white px-5 text-[#3A47A8] font-semibold border-0 hover:bg-white/90 shadow-sm transition-all"
+                  ? "rounded-full bg-amber-400 px-5 text-[#2F327F] font-bold border-0 hover:bg-amber-300 shadow-sm transition-all"
                   : "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
               }
               onClick={() => {
@@ -448,7 +451,7 @@ function JobCard({
               onClick={() => onNavigate(job.id)}
               className={
                 featured
-                  ? "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/75 transition-all hover:bg-white/20 hover:text-white"
+                  ? "inline-flex items-center gap-1.5 rounded-full border border-[#3A47A8]/30 bg-[#3A47A8]/10 px-4 py-1.5 text-sm font-medium text-[#3A47A8] transition-all hover:bg-[#3A47A8]/20 hover:text-[#2F327F]"
                   : "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
               }
             >
