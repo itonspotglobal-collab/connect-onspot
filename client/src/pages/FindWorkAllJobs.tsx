@@ -325,27 +325,27 @@ function JobCard({
             </div>
           </div>
         ) : (
-          /* ── Regular: purple gradient header ──────────────────────────────── */
-          <header className="bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 py-4">
+          /* ── Regular: light indigo-tinted header ──────────────────────────── */
+          <header className="px-5 py-4 bg-[#eef0fb]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               {/* Left: initials avatar + title + company + badges */}
               <div className="flex items-start gap-3 min-w-0">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-sm font-semibold text-white ring-1 ring-white/20"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-semibold text-[#3A47A8] shadow-sm ring-1 ring-[#c7cbef]"
                   aria-hidden="true"
                 >
                   {initials}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold leading-snug text-white md:text-lg">
+                  <h3 className="text-base font-semibold leading-snug text-slate-800 md:text-lg">
                     {(job as any).professionalRoleName || job.title}
                   </h3>
                   {(job as any).originalRoleName && (
-                    <p className="mt-0.5 text-[11px] italic text-white/55 truncate leading-tight">
+                    <p className="mt-0.5 text-[11px] italic text-slate-400 truncate leading-tight">
                       {(job as any).originalRoleName}
                     </p>
                   )}
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-white/75 md:text-sm">
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 md:text-sm">
                     {getPublicCompanyName(job as any)}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -365,13 +365,13 @@ function JobCard({
 
               {/* Right: salary + compensation badge + posted + commission/equity */}
               <div className="shrink-0 sm:text-right">
-                <p className="text-lg font-semibold text-white md:text-xl">{payClean}</p>
+                <p className="text-lg font-bold text-[#3A47A8] md:text-xl">{payClean}</p>
                 {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/80 ring-1 ring-white/20">
+                  <span className="mt-1.5 inline-flex items-center rounded-md bg-[#3A47A8]/10 px-2 py-0.5 text-[10px] font-medium text-[#3A47A8] ring-1 ring-[#3A47A8]/15">
                     {compensationBadgeLabel}
                   </span>
                 )}
-                <p className="mt-1 text-xs text-white/70">{postedLabel}</p>
+                <p className="mt-1 text-xs text-slate-400">{postedLabel}</p>
                 {commissionEquityBadges}
               </div>
             </div>
