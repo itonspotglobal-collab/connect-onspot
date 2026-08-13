@@ -48,7 +48,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
-import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
+import { formatPublicTalentNameMasked } from "@/lib/formatPublicTalentName";
 import type { Candidate } from "@shared/schema";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
@@ -65,12 +65,13 @@ function candidatePhotoSrc(url: string | null | undefined): string {
   return url;
 }
 
-// Priority: displayName (talent's own custom name) → formatted fullName → id fallback
-// Public display only — full last name is never exposed to unauthenticated visitors.
+// Priority: displayName (talent's own custom name) → fullName → id fallback.
+// Both are masked: only the first name is shown in full; every other word is
+// reduced to its first initial (e.g. "Frenzy Val Eloise Legaspi" → "Frenzy V E L").
 function getTalentDisplayName(candidate: Candidate): string {
-  if (candidate.displayName?.trim()) return candidate.displayName.trim();
-  const formatted = formatPublicTalentNameFromFull(candidate.fullName);
-  if (formatted) return formatted;
+  const raw = candidate.displayName?.trim() || candidate.fullName?.trim() || "";
+  const masked = formatPublicTalentNameMasked(raw);
+  if (masked) return masked;
   const shortId = (candidate.id ?? "").slice(0, 6).toUpperCase();
   return `Candidate ${shortId || "—"}`;
 }

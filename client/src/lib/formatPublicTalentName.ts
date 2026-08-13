@@ -42,6 +42,32 @@ export function formatPublicTalentName(
 }
 
 /**
+ * formatPublicTalentNameMasked
+ *
+ * Stronger privacy variant: the FIRST word of the name is kept in full;
+ * every subsequent word is reduced to its first letter (uppercased, no period).
+ *
+ * "Frenzy Val Eloise Legaspi"  → "Frenzy V E L"
+ * "Maria Eubhe Regine T."      → "Maria E R T"
+ * "Ijeoma O."                  → "Ijeoma O"
+ * "John Smith"                 → "John S"
+ * "Cher"                       → "Cher"
+ * ""                           → ""
+ */
+export function formatPublicTalentNameMasked(
+  name: string | null | undefined,
+): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] ?? "";
+  const [firstName, ...rest] = parts;
+  const initials = rest
+    .map((p) => p.replace(/\./g, "").charAt(0))
+    .filter(Boolean)
+    .map((c) => c.toUpperCase());
+  return [firstName, ...initials].join(" ");
+}
+
+/**
  * Convenience overload for callers that only have a combined fullName string
  * and no structured firstName/lastName fields.
  *

@@ -2,18 +2,42 @@ import { useEffect, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, Sparkles, Star, Clock3, Globe2,
-  BriefcaseBusiness, DollarSign, ListChecks, CheckCircle2,
-  Award, Gift, Tag, AlertCircle, MapPin, Layers, Loader2,
-  Wifi, Monitor, CalendarDays, Wrench,
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  Star,
+  Clock3,
+  Globe2,
+  BriefcaseBusiness,
+  DollarSign,
+  ListChecks,
+  CheckCircle2,
+  Award,
+  Gift,
+  Tag,
+  AlertCircle,
+  MapPin,
+  Layers,
+  Loader2,
+  Wifi,
+  Monitor,
+  CalendarDays,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
-import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getEffectiveCurrencyCode, getPublicCompanyName, getPublicCompanyDescription } from "@/lib/jobUtils";
+import {
+  buildRateDisplay,
+  buildRateDisplayWithCode,
+  getJobBadges,
+  getTimeAgo,
+  getEffectiveCurrencyCode,
+  getPublicCompanyName,
+  getPublicCompanyDescription,
+} from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
-
 
 const roles = [
   {
@@ -28,7 +52,13 @@ const roles = [
     fit: 94,
     hook: "The backbone of every high-performing executive.",
     why: "Your background in calendar management, executive coordination, and proactive communication makes you a strong candidate for this high-trust role.",
-    tags: ["Remote", "Night shift", "Admin", "Executive support", "High demand"],
+    tags: [
+      "Remote",
+      "Night shift",
+      "Admin",
+      "Executive support",
+      "High demand",
+    ],
     overview:
       "Executive Virtual Assistants at OnSpot work directly with C-suite and senior executives across fast-growing US companies. You will be the operational anchor that keeps leaders focused, informed, and efficient — managing everything from scheduling and communications to research and project coordination.",
     description:
@@ -83,7 +113,13 @@ const roles = [
     fit: 91,
     hook: "Turn clients into lifelong brand advocates.",
     why: "Your ability to build long-term client relationships while driving measurable outcomes aligns precisely with what our US clients need from this high-value role.",
-    tags: ["Remote", "Night shift", "Customer success", "B2B SaaS", "Critical hire"],
+    tags: [
+      "Remote",
+      "Night shift",
+      "Customer success",
+      "B2B SaaS",
+      "Critical hire",
+    ],
     overview:
       "Customer Success Managers at OnSpot partner with US-based SaaS companies to ensure their clients achieve meaningful outcomes. You act as the primary relationship owner post-sale — driving adoption, reducing churn, and expanding accounts.",
     description:
@@ -244,7 +280,13 @@ const roles = [
     fit: 89,
     hook: "Solve fast. Communicate clearly. Build trust.",
     why: "Your technical troubleshooting skills and calm customer-facing communication style are exactly what high-volume US tech companies need in a Tier 1–2 support specialist.",
-    tags: ["Remote", "Rotating shifts", "Tech support", "SaaS", "Always hiring"],
+    tags: [
+      "Remote",
+      "Rotating shifts",
+      "Tech support",
+      "SaaS",
+      "Always hiring",
+    ],
     overview:
       "Technical Support Specialists at OnSpot serve as the front line of support for US and global SaaS, hardware, and tech product companies. You resolve tickets fast, communicate clearly, and escalate intelligently.",
     description:
@@ -297,7 +339,14 @@ const roles = [
     fit: 85,
     hook: "Fill pipelines. Start conversations that convert.",
     why: "Your outbound prospecting experience and high-energy approach to cold outreach align with what fast-growing US sales teams need to scale their top-of-funnel.",
-    tags: ["Remote", "Night shift", "Sales", "SDR", "Commission", "High demand"],
+    tags: [
+      "Remote",
+      "Night shift",
+      "Sales",
+      "SDR",
+      "Commission",
+      "High demand",
+    ],
     overview:
       "Sales Development Representatives at OnSpot generate qualified pipeline for US B2B companies through outbound prospecting via cold calls, LinkedIn, and email. You're the engine that starts every revenue conversation.",
     description:
@@ -347,7 +396,9 @@ type Role = (typeof roles)[number];
 function BulletRow({ text, color }: { text: string; color: string }) {
   return (
     <li className={`flex items-start gap-2.5 ${contentTextClass}`}>
-      <span className={`mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full ${color}`} />
+      <span
+        className={`mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full ${color}`}
+      />
       {text}
     </li>
   );
@@ -367,8 +418,14 @@ function Section({
   return (
     <div className="border-t border-slate-100 px-5 py-7 dark:border-white/[0.08] md:px-8 md:py-8">
       <div className="mb-4 flex items-center gap-3">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg}`}>{icon}</div>
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 md:text-2xl dark:text-white">{label}</h2>
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg}`}
+        >
+          {icon}
+        </div>
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 md:text-2xl dark:text-white">
+          {label}
+        </h2>
       </div>
       {children}
     </div>
@@ -387,7 +444,12 @@ function isHtml(str: string) {
 function parseListItems(html: string): string[] | null {
   const matches = html.match(/<li(?:[^>]*)>([\s\S]*?)<\/li>/g);
   if (!matches || matches.length === 0) return null;
-  return matches.map((m) => m.replace(/^<li[^>]*>/, "").replace(/<\/li>$/, "").trim());
+  return matches.map((m) =>
+    m
+      .replace(/^<li[^>]*>/, "")
+      .replace(/<\/li>$/, "")
+      .trim(),
+  );
 }
 
 /**
@@ -401,7 +463,10 @@ function WhatWeOfferGrid({ html }: { html: string }) {
     return (
       <ul className="grid gap-x-10 gap-y-3 sm:grid-cols-2">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-base leading-7 text-slate-600 dark:text-slate-300">
+          <li
+            key={i}
+            className="flex items-start gap-2.5 text-base leading-7 text-slate-600 dark:text-slate-300"
+          >
             <span className="mt-[10px] h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
             <span dangerouslySetInnerHTML={{ __html: item }} />
           </li>
@@ -423,7 +488,13 @@ const contentTextClass =
   "text-left sm:text-justify text-base leading-7 text-slate-600 dark:text-slate-300";
 
 /** Renders a section body that may be either plain-text bullets or rich HTML */
-function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: string }) {
+function SectionBody({
+  items,
+  bulletColor,
+}: {
+  items: string[];
+  bulletColor: string;
+}) {
   if (items.length === 0) return null;
   if (items.length === 1 && isHtml(items[0])) {
     return (
@@ -446,22 +517,40 @@ function SectionBody({ items, bulletColor }: { items: string[]; bulletColor: str
  *  Priority: 1. Same Function  2. Same Contract Type  3. Same Work Setup  4. Tag overlap
  *  Falls back to filling remaining slots with any other open job (already filtered open). */
 function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
-  const currentFunction = ((currentJob as any).jobFunction ?? currentJob.category ?? "").toLowerCase().trim();
+  const currentFunction = (
+    (currentJob as any).jobFunction ??
+    currentJob.category ??
+    ""
+  )
+    .toLowerCase()
+    .trim();
   const currentContract = (currentJob.contractType ?? "").toLowerCase().trim();
   const currentLocation = (currentJob.location ?? "").toLowerCase().trim();
-  const currentTags = new Set((currentJob.skillTags ?? []).map((t) => t.toLowerCase()));
+  const currentTags = new Set(
+    (currentJob.skillTags ?? []).map((t) => t.toLowerCase()),
+  );
 
   const scored = allJobs
     .filter((j) => j.id !== currentJob.id)
     .map((j) => {
       let score = 0;
       // Priority 1 — same job function
-      const jFunction = ((j as any).jobFunction ?? j.category ?? "").toLowerCase().trim();
+      const jFunction = ((j as any).jobFunction ?? j.category ?? "")
+        .toLowerCase()
+        .trim();
       if (currentFunction && jFunction === currentFunction) score += 3;
       // Priority 2 — same contract type
-      if (currentContract && (j.contractType ?? "").toLowerCase().trim() === currentContract) score += 2;
+      if (
+        currentContract &&
+        (j.contractType ?? "").toLowerCase().trim() === currentContract
+      )
+        score += 2;
       // Priority 3 — same work setup / location
-      if (currentLocation && (j.location ?? "").toLowerCase().trim() === currentLocation) score += 1;
+      if (
+        currentLocation &&
+        (j.location ?? "").toLowerCase().trim() === currentLocation
+      )
+        score += 1;
       // Skill tag overlap (bonus)
       const jTags = (j.skillTags ?? []).map((t) => t.toLowerCase());
       score += jTags.filter((t) => currentTags.has(t)).length;
@@ -470,7 +559,10 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
     .sort((a, b) => b.score - a.score);
 
   // Take jobs with at least one matching signal first
-  const top = scored.filter(({ score }) => score > 0).slice(0, limit).map(({ job }) => job);
+  const top = scored
+    .filter(({ score }) => score > 0)
+    .slice(0, limit)
+    .map(({ job }) => job);
   if (top.length >= limit) return top;
 
   // Fill remaining slots with deduplicated open jobs (sorted by score desc)
@@ -482,7 +574,13 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
 
   return [...top, ...extras];
 }
-function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => void }) {
+function DbJobDetail({
+  job,
+  navigate,
+}: {
+  job: Job;
+  navigate: (path: string) => void;
+}) {
   const pay = buildRateDisplayWithCode(job);
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
@@ -497,51 +595,96 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
   const aboutTheRole = roleMission?.trim() || job.description?.trim() || "";
 
   // "Key Responsibilities" — prefer JSP keyResponsibilities, else legacy array
-  const keyResponsibilities  = (job as any).keyResponsibilities as string | null | undefined;
+  const keyResponsibilities = (job as any).keyResponsibilities as
+    | string
+    | null
+    | undefined;
   const legacyResponsibilities = (job.responsibilities ?? []) as string[];
 
   // "Required Qualifications" — prefer JSP skillsAndCompetencies, else legacy array
-  const skillsAndCompetencies = (job as any).skillsAndCompetencies as string | null | undefined;
-  const legacyRequirements    = (job.requirements ?? []) as string[];
+  const skillsAndCompetencies = (job as any).skillsAndCompetencies as
+    | string
+    | null
+    | undefined;
+  const legacyRequirements = (job.requirements ?? []) as string[];
 
   // Cultural Fit — only shown when the job has actual saved data (no default fallback)
   const culturalFitData = (job.culturalFit ?? []) as string[];
-  const hasCulturalFit = culturalFitData.length > 0 && culturalFitData.some((s) => s.trim());
+  const hasCulturalFit =
+    culturalFitData.length > 0 && culturalFitData.some((s) => s.trim());
 
   // "Required Tools & Equipment"
-  const minimumInternetSpeed       = (job as any).minimumInternetSpeed       as string | null | undefined;
-  const systemRequirements         = (job as any).systemRequirements         as string | null | undefined;
-  const requiredToolsSoftware      = (job as any).requiredToolsSoftware      as string | null | undefined;
-  const otherEquipmentRequirements = (job as any).otherEquipmentRequirements as string | null | undefined;
+  const minimumInternetSpeed = (job as any).minimumInternetSpeed as
+    | string
+    | null
+    | undefined;
+  const systemRequirements = (job as any).systemRequirements as
+    | string
+    | null
+    | undefined;
+  const requiredToolsSoftware = (job as any).requiredToolsSoftware as
+    | string
+    | null
+    | undefined;
+  const otherEquipmentRequirements = (job as any).otherEquipmentRequirements as
+    | string
+    | null
+    | undefined;
   const hasToolsSection = !!(
-    minimumInternetSpeed?.trim() || systemRequirements?.trim() ||
-    requiredToolsSoftware?.trim() || otherEquipmentRequirements?.trim()
+    minimumInternetSpeed?.trim() ||
+    systemRequirements?.trim() ||
+    requiredToolsSoftware?.trim() ||
+    otherEquipmentRequirements?.trim()
   );
 
   // "Preferred Qualifications"
-  const preferredQualifications = (job as any).preferredQualifications as string | null | undefined;
+  const preferredQualifications = (job as any).preferredQualifications as
+    | string
+    | null
+    | undefined;
 
   // "Work Schedule"
-  const workDays            = (job as any).workDays            as string | null | undefined;
-  const timeZone            = (job as any).timeZone            as string | null | undefined;
-  const weeklyHours         = (job as any).weeklyHours         as string | null | undefined;
-  const scheduleFlexibility = (job as any).scheduleFlexibility as string | null | undefined;
-  const hasWorkSchedule     = !!(workDays?.trim() || timeZone?.trim() || weeklyHours?.trim() || scheduleFlexibility?.trim());
+  const workDays = (job as any).workDays as string | null | undefined;
+  const timeZone = (job as any).timeZone as string | null | undefined;
+  const weeklyHours = (job as any).weeklyHours as string | null | undefined;
+  const scheduleFlexibility = (job as any).scheduleFlexibility as
+    | string
+    | null
+    | undefined;
+  const hasWorkSchedule = !!(
+    workDays?.trim() ||
+    timeZone?.trim() ||
+    weeklyHours?.trim() ||
+    scheduleFlexibility?.trim()
+  );
 
   // "What We Offer" extra content
-  const whatWeOfferContent = (job as any).whatWeOffer as string | null | undefined;
+  const whatWeOfferContent = (job as any).whatWeOffer as
+    | string
+    | null
+    | undefined;
 
   // Compensation extras
-  const paymentFrequency  = (job as any).paymentFrequency  as string | null | undefined;
-  const compensationNotes = (job as any).compensationNotes as string | null | undefined;
+  const paymentFrequency = (job as any).paymentFrequency as
+    | string
+    | null
+    | undefined;
+  const compensationNotes = (job as any).compensationNotes as
+    | string
+    | null
+    | undefined;
 
   // Compensation
-  const currencyCode = getEffectiveCurrencyCode((job as any).budgetCurrency, (job as any).customCurrencyCode);
+  const currencyCode = getEffectiveCurrencyCode(
+    (job as any).budgetCurrency,
+    (job as any).customCurrencyCode,
+  );
 
   // "What We Offer"
-  const benefitsStr = ((job as any).benefits as string | null | undefined)?.trim() ?? "";
+  const benefitsStr =
+    ((job as any).benefits as string | null | undefined)?.trim() ?? "";
   const hasCommission = !!(job as any).hasCommission;
-  const hasEquity     = !!(job as any).hasEquity;
+  const hasEquity = !!(job as any).hasEquity;
   // Commission/Equity are now shown in the Compensation section only (no duplication in What We Offer)
   const hasWhatWeOffer = !!(benefitsStr || whatWeOfferContent?.trim());
 
@@ -553,14 +696,22 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
     const cls = `rounded-full bg-[#474ead] ${px} text-white shadow-[0_8px_32px_rgba(71,78,173,0.20)] hover:bg-[#3d439c]`;
     if ((job as any).applicationMethod === "built_in_form") {
       return (
-        <Button className={cls} onClick={() => navigate(`/jobs/${job.id}/apply`)}>
+        <Button
+          className={cls}
+          onClick={() => navigate(`/jobs/${job.id}/apply`)}
+        >
           Apply Now
         </Button>
       );
     }
     if (job.applyLink) {
       return (
-        <Button className={cls} onClick={() => window.open(job.applyLink!, "_blank", "noopener,noreferrer")}>
+        <Button
+          className={cls}
+          onClick={() =>
+            window.open(job.applyLink!, "_blank", "noopener,noreferrer")
+          }
+        >
           Apply Now
         </Button>
       );
@@ -574,17 +725,21 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] dark:bg-[#060816] dark:text-white">
-
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-        className="relative overflow-hidden bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="relative overflow-hidden bg-gradient-to-br from-[#0d0f2d] via-[#141656] to-[#0d0f2d]"
+      >
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#474ead]/25 blur-[90px]" />
         <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
         <div className="relative mx-auto max-w-5xl px-5 pb-8 pt-6 sm:px-6 md:pb-10 md:pt-8 lg:px-8">
-
           {/* Back link */}
-          <button onClick={() => navigate("/find-work/jobs#job-openings")}
-            className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
+          <button
+            onClick={() => navigate("/find-work/jobs#job-openings")}
+            className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+          >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to All Jobs
           </button>
 
@@ -596,10 +751,17 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               </span>
             )}
             {badges.map((b) => (
-              <span key={b.key} className={`rounded-full px-3 py-1 text-[11px] font-bold ${b.className}`}>{b.label}</span>
+              <span
+                key={b.key}
+                className={`rounded-full px-3 py-1 text-[11px] font-bold ${b.className}`}
+              >
+                {b.label}
+              </span>
             ))}
             {badges.length === 0 && (
-              <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">Open</span>
+              <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">
+                Open
+              </span>
             )}
             <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
               {timeAgo === "Just posted" ? "Just posted" : `Posted ${timeAgo}`}
@@ -611,7 +773,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             {(job as any).professionalRoleName || job.title}
           </h1>
           {(job as any).originalRoleName && (
-            <p className="mt-1.5 text-base italic text-slate-400">{(job as any).originalRoleName}</p>
+            <p className="mt-1.5 text-base italic text-slate-400">
+              {(job as any).originalRoleName}
+            </p>
           )}
           <p className="mt-2 flex items-center gap-1.5 text-base text-slate-400">
             {getPublicCompanyName(job as any)}
@@ -620,7 +784,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           {/* Compensation pill */}
           <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3">
             <div>
-              <div className="text-[10px] text-white/40">Monthly Compensation</div>
+              <div className="text-[10px] text-white/40">
+                Monthly Compensation
+              </div>
               <div className="text-sm font-bold text-white">{pay}</div>
             </div>
           </div>
@@ -628,13 +794,32 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           {/* Location / Function / Contract compact cards */}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              { icon: MapPin,             label: "Location", value: job.location ?? "Remote" },
-              { icon: BriefcaseBusiness, label: "Function", value: (job as any).jobFunction || job.category },
-              { icon: Layers,            label: "Engagement", value: (job.contractType ?? "Full-time").replace(/-/g, " ") },
+              {
+                icon: MapPin,
+                label: "Location",
+                value: job.location ?? "Remote",
+              },
+              {
+                icon: BriefcaseBusiness,
+                label: "Function",
+                value: (job as any).jobFunction || job.category,
+              },
+              {
+                icon: Layers,
+                label: "Engagement",
+                value: (job.contractType ?? "Full-time").replace(/-/g, " "),
+              },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-3">
-                <div className="flex items-center gap-1.5 text-[10px] text-white/40"><Icon className="h-3 w-3" /> {label}</div>
-                <div className="mt-1 text-sm font-semibold capitalize text-white">{value}</div>
+              <div
+                key={label}
+                className="rounded-xl border border-white/10 bg-white/[0.05] p-3"
+              >
+                <div className="flex items-center gap-1.5 text-[10px] text-white/40">
+                  <Icon className="h-3 w-3" /> {label}
+                </div>
+                <div className="mt-1 text-sm font-semibold capitalize text-white">
+                  {value}
+                </div>
               </div>
             ))}
           </div>
@@ -653,7 +838,6 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
         transition={{ delay: 0.15, duration: 0.4 }}
         className="mx-auto max-w-5xl"
       >
-
         {/* 1. About the Company */}
         {companyOverview?.trim() && (
           <Section
@@ -680,7 +864,11 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                 dangerouslySetInnerHTML={{ __html: aboutTheRole }}
               />
             ) : (
-              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>{aboutTheRole}</p>
+              <p
+                className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}
+              >
+                {aboutTheRole}
+              </p>
             )}
           </Section>
         )}
@@ -692,7 +880,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-blue-50 dark:bg-blue-900/30"
             label="Key Responsibilities"
           >
-            <SectionBody items={[keyResponsibilities.trim()]} bulletColor="bg-blue-400" />
+            <SectionBody
+              items={[keyResponsibilities.trim()]}
+              bulletColor="bg-blue-400"
+            />
           </Section>
         ) : legacyResponsibilities.length > 0 ? (
           <Section
@@ -700,7 +891,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-blue-50 dark:bg-blue-900/30"
             label="Key Responsibilities"
           >
-            <SectionBody items={legacyResponsibilities} bulletColor="bg-blue-400" />
+            <SectionBody
+              items={legacyResponsibilities}
+              bulletColor="bg-blue-400"
+            />
           </Section>
         ) : null}
 
@@ -711,7 +905,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
             label="Required Qualifications"
           >
-            <SectionBody items={[skillsAndCompetencies.trim()]} bulletColor="bg-emerald-500" />
+            <SectionBody
+              items={[skillsAndCompetencies.trim()]}
+              bulletColor="bg-emerald-500"
+            />
           </Section>
         ) : legacyRequirements.length > 0 ? (
           <Section
@@ -719,7 +916,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-emerald-50 dark:bg-emerald-900/30"
             label="Required Qualifications"
           >
-            <SectionBody items={legacyRequirements} bulletColor="bg-emerald-500" />
+            <SectionBody
+              items={legacyRequirements}
+              bulletColor="bg-emerald-500"
+            />
           </Section>
         ) : null}
 
@@ -730,7 +930,10 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             iconBg="bg-violet-50 dark:bg-violet-900/30"
             label="Preferred Qualifications"
           >
-            <SectionBody items={[preferredQualifications.trim()]} bulletColor="bg-violet-400" />
+            <SectionBody
+              items={[preferredQualifications.trim()]}
+              bulletColor="bg-violet-400"
+            />
           </Section>
         )}
 
@@ -758,7 +961,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Wifi className="h-3.5 w-3.5" /> Minimum Internet Speed
                   </div>
-                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{minimumInternetSpeed.trim()}</p>
+                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {minimumInternetSpeed.trim()}
+                  </p>
                 </div>
               )}
               {systemRequirements?.trim() && (
@@ -766,7 +971,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Monitor className="h-3.5 w-3.5" /> System &amp; Equipment
                   </div>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">{systemRequirements.trim()}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {systemRequirements.trim()}
+                  </p>
                 </div>
               )}
               {requiredToolsSoftware?.trim() && (
@@ -774,7 +981,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Wrench className="h-3.5 w-3.5" /> Required Tools / Software
                   </div>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">{requiredToolsSoftware.trim()}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {requiredToolsSoftware.trim()}
+                  </p>
                 </div>
               )}
               {otherEquipmentRequirements?.trim() && (
@@ -782,7 +991,9 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     <Monitor className="h-3.5 w-3.5" /> Other Equipment
                   </div>
-                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">{otherEquipmentRequirements.trim()}</p>
+                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
+                    {otherEquipmentRequirements.trim()}
+                  </p>
                 </div>
               )}
             </div>
@@ -799,26 +1010,42 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
             <div className="grid gap-4 sm:grid-cols-2">
               {workDays?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Days</div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{workDays.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Days
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {workDays.trim()}
+                  </p>
                 </div>
               )}
               {timeZone?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Time Zone</div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{timeZone.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Time Zone
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {timeZone.trim()}
+                  </p>
                 </div>
               )}
               {weeklyHours?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Weekly Hours</div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{weeklyHours.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Weekly Hours
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {weeklyHours.trim()}
+                  </p>
                 </div>
               )}
               {scheduleFlexibility?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Flexibility</div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{scheduleFlexibility.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Flexibility
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {scheduleFlexibility.trim()}
+                  </p>
                 </div>
               )}
             </div>
@@ -834,22 +1061,36 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
           >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Currency</div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{currencyCode}</p>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Currency
+                </div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  {currencyCode}
+                </p>
               </div>
               <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monthly Rate</div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{pay}</p>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Monthly Rate
+                </div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  {pay}
+                </p>
               </div>
               {paymentFrequency?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Payment Frequency</div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{paymentFrequency.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Payment Frequency
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {paymentFrequency.trim()}
+                  </p>
                 </div>
               )}
               {(hasCommission || hasEquity) && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Additional Compensation</div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Additional Compensation
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {hasCommission && (
                       <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
@@ -866,20 +1107,24 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               )}
               {compensationNotes?.trim() && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2 lg:col-span-3 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</div>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">{compensationNotes.trim()}</p>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Notes
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    {compensationNotes.trim()}
+                  </p>
                 </div>
               )}
             </div>
           </Section>
         )}
 
-        {/* 10. What We Offer — 2-col bullet grid on desktop, 1-col on mobile; benefits tags below */}
+        {/* 10. Choose Your Compliance Plan — 2-col bullet grid on desktop, 1-col on mobile; benefits tags below */}
         {hasWhatWeOffer && (
           <Section
             icon={<Gift className="h-5 w-5 text-purple-500" />}
             iconBg="bg-purple-50 dark:bg-purple-900/30"
-            label="What We Offer"
+            label="Choose Your Compliance Plan"
           >
             {whatWeOfferContent?.trim() && (
               <div className={benefitsStr ? "mb-6" : ""}>
@@ -887,7 +1132,13 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
               </div>
             )}
             {benefitsStr && (
-              <div className={whatWeOfferContent?.trim() ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]" : ""}>
+              <div
+                className={
+                  whatWeOfferContent?.trim()
+                    ? "border-t border-slate-100 pt-4 dark:border-white/[0.08]"
+                    : ""
+                }
+              >
                 <BenefitsDisplay benefits={benefitsStr} />
               </div>
             )}
@@ -916,12 +1167,8 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
         {/* 10. Ready to Apply CTA — text only (buttons follow the disclaimer) */}
         <div className="border-t border-slate-100 px-5 pb-0 pt-10 text-center dark:border-white/[0.08] md:px-8 md:pt-12">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">Ready to apply?</p>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">
             Apply for this role today.
-          </h2>
-          <p className="mt-2 text-sm text-slate-500 md:text-base">
-            Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
           </p>
 
           {/* Independent Contractor Disclaimer */}
@@ -935,10 +1182,12 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
                   Independent Contractor Engagement
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                  This is an independent contractor engagement, not an employment arrangement. As a
-                  contractor, you are responsible for your own taxes, government contributions
-                  (SSS, PhilHealth, Pag-IBIG), and professional expenses. Mandatory employee
-                  benefits do not apply. Please review the full terms before applying.
+                  This is an independent contractor engagement, not an
+                  employment arrangement. As a contractor, you are responsible
+                  for your own taxes, government contributions (SSS, PhilHealth,
+                  Pag-IBIG), and professional expenses. Mandatory employee
+                  benefits do not apply. Please review the full terms before
+                  applying.
                 </p>
               </div>
             </div>
@@ -959,23 +1208,34 @@ function DbJobDetail({ job, navigate }: { job: Job; navigate: (path: string) => 
 
         {/* 11. Similar roles */}
         <DbSimilarJobsSection currentJob={job} navigate={navigate} />
-
       </motion.div>
 
       {/* Compact page footer */}
       <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
         <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>© 2026 OnSpot Global — One marketplace connecting the world's best talent and clients.</span>
+            <span>
+              © 2026 OnSpot Global — One marketplace connecting the world's
+              best talent and clients.
+            </span>
             <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Link href="/terms-and-conditions" className="transition-colors hover:text-white">
+              <Link
+                href="/terms-and-conditions"
+                className="transition-colors hover:text-white"
+              >
                 Terms
               </Link>
-              <Link href="/privacy-policy" className="transition-colors hover:text-white">
+              <Link
+                href="/privacy-policy"
+                className="transition-colors hover:text-white"
+              >
                 Privacy
               </Link>
               {/* /contractor-agreement route not yet created — rendered non-clickable */}
-              <span className="cursor-default opacity-50" title="Page coming soon">
+              <span
+                className="cursor-default opacity-50"
+                title="Page coming soon"
+              >
                 Contractor Agreement
               </span>
             </nav>
@@ -992,10 +1252,19 @@ export default function FindWorkJob() {
 
   const rawId = params.jobId ?? "";
   const numericId = parseInt(rawId, 10);
-  const isStaticId = !isNaN(numericId) && numericId >= 1 && numericId <= 6 && String(numericId) === rawId;
+  const isStaticId =
+    !isNaN(numericId) &&
+    numericId >= 1 &&
+    numericId <= 6 &&
+    String(numericId) === rawId;
 
   // Only fetch from DB for UUID-style IDs — use the public single-job endpoint
-  const { data: dbJob, isLoading, isError, error } = useQuery<Job>({
+  const {
+    data: dbJob,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Job>({
     queryKey: ["/api/jobs", rawId],
     queryFn: async () => {
       const res = await fetch(`/api/jobs/${encodeURIComponent(rawId)}`);
@@ -1042,7 +1311,7 @@ export default function FindWorkJob() {
         fetch(`/api/jobs/${dbJob.id}/view`, { method: "POST" }).catch(() => {});
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbJob, isStaticId, rawId]);
 
   // Loading state for DB jobs
@@ -1098,8 +1367,12 @@ export default function FindWorkJob() {
           <AlertCircle className="h-8 w-8 text-slate-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job not found</h1>
-          <p className="mt-2 text-slate-500">This role may have been filled or removed.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Job not found
+          </h1>
+          <p className="mt-2 text-slate-500">
+            This role may have been filled or removed.
+          </p>
         </div>
         <Button
           className="rounded-full bg-[#474ead] px-6 text-white"
@@ -1114,7 +1387,6 @@ export default function FindWorkJob() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(71,78,173,0.10),transparent_30%),linear-gradient(to_bottom,#f8fafc,white)] dark:bg-[#060816] dark:text-white">
-
       {/* ── HERO HEADER ── */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
@@ -1126,7 +1398,6 @@ export default function FindWorkJob() {
         <div className="pointer-events-none absolute -left-12 bottom-0 h-48 w-48 rounded-full bg-indigo-600/15 blur-[70px]" />
 
         <div className="relative mx-auto max-w-5xl px-5 pb-8 pt-6 sm:px-6 md:pb-10 md:pt-8 lg:px-8">
-
           {/* Back link */}
           <button
             onClick={() => navigate("/find-work/jobs")}
@@ -1138,13 +1409,21 @@ export default function FindWorkJob() {
 
           {/* Badges */}
           <div className="mb-5 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">{role.demand}</span>
-            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">{role.speed}</span>
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">{role.fit}% match</span>
+            <span className="rounded-full bg-[#474ead] px-3 py-1 text-[11px] font-bold text-white">
+              {role.demand}
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
+              {role.speed}
+            </span>
+            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">
+              {role.fit}% match
+            </span>
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl">{role.title}</h1>
+          <h1 className="text-3xl font-bold leading-tight text-white md:text-4xl">
+            {role.title}
+          </h1>
           <p className="mt-2 text-base text-slate-400">{role.hook}</p>
 
           {/* Salary pill */}
@@ -1158,15 +1437,22 @@ export default function FindWorkJob() {
           {/* Meta grid */}
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
-              { Icon: Clock3,            label: "Schedule",  value: role.shift    },
-              { Icon: Globe2,            label: "Market",    value: role.market   },
-              { Icon: BriefcaseBusiness, label: "Category",  value: role.category },
+              { Icon: Clock3, label: "Schedule", value: role.shift },
+              { Icon: Globe2, label: "Market", value: role.market },
+              {
+                Icon: BriefcaseBusiness,
+                label: "Category",
+                value: role.category,
+              },
             ].map(({ Icon, label, value }) => (
               <div key={label} className="rounded-xl bg-white/[0.06] px-4 py-3">
                 <div className="flex items-center gap-1.5 text-[10px] text-white/40">
-                  <Icon className="h-3 w-3" />{label}
+                  <Icon className="h-3 w-3" />
+                  {label}
                 </div>
-                <div className="mt-1 text-sm font-bold text-white/90">{value}</div>
+                <div className="mt-1 text-sm font-bold text-white/90">
+                  {value}
+                </div>
               </div>
             ))}
           </div>
@@ -1190,14 +1476,17 @@ export default function FindWorkJob() {
         transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
         className="mx-auto max-w-5xl"
       >
-
         {/* Why you're a fit */}
         <div className="bg-[#474ead]/[0.04] px-5 py-6 md:px-8">
           <div className="flex items-start gap-4">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#474ead]" />
             <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">Why you're a fit</p>
-              <p className="text-left sm:text-justify text-[15px] leading-7 text-slate-700 dark:text-slate-300">{role.why}</p>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                Why you're a fit
+              </p>
+              <p className="text-left sm:text-justify text-[15px] leading-7 text-slate-700 dark:text-slate-300">
+                {role.why}
+              </p>
             </div>
           </div>
         </div>
@@ -1274,11 +1563,11 @@ export default function FindWorkJob() {
           </ul>
         </Section>
 
-        {/* What We Offer */}
+        {/* Choose Your Compliance Plan */}
         <Section
           icon={<Gift className="h-5 w-5 text-purple-500" />}
           iconBg="bg-purple-50 dark:bg-purple-900/30"
-          label="What We Offer"
+          label="Choose Your Compliance Plan"
         >
           <ul className="space-y-2">
             {role.benefits.map((item, i) => (
@@ -1307,12 +1596,15 @@ export default function FindWorkJob() {
 
         {/* Ready to Apply CTA — text only (buttons follow the disclaimer) */}
         <div className="border-t border-slate-100 px-5 pb-0 pt-10 text-center dark:border-white/[0.08] md:px-8 md:pt-12">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">Ready to apply?</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-violet-600">
+            Ready to apply?
+          </p>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
             Apply for this role today.
           </h2>
           <p className="mt-2 text-sm text-slate-500 md:text-base">
-            Takes under 30 seconds. Our team reviews and reaches out within 3 business days.
+            Takes under 30 seconds. Our team reviews and reaches out within 3
+            business days.
           </p>
 
           {/* Independent Contractor Disclaimer */}
@@ -1326,10 +1618,12 @@ export default function FindWorkJob() {
                   Independent Contractor Engagement
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                  This is an independent contractor engagement, not an employment arrangement. As a
-                  contractor, you are responsible for your own taxes, government contributions
-                  (SSS, PhilHealth, Pag-IBIG), and professional expenses. Mandatory employee
-                  benefits do not apply. Please review the full terms before applying.
+                  This is an independent contractor engagement, not an
+                  employment arrangement. As a contractor, you are responsible
+                  for your own taxes, government contributions (SSS, PhilHealth,
+                  Pag-IBIG), and professional expenses. Mandatory employee
+                  benefits do not apply. Please review the full terms before
+                  applying.
                 </p>
               </div>
             </div>
@@ -1361,7 +1655,9 @@ export default function FindWorkJob() {
             <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
               <div className="mb-5 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#474ead]" />
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar projects you might like</h2>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                  Similar projects you might like
+                </h2>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {similar.map((r) => (
@@ -1371,23 +1667,34 @@ export default function FindWorkJob() {
             </div>
           );
         })()}
-
       </motion.div>
 
       {/* Compact page footer */}
       <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
         <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>© 2026 OnSpot Global — One marketplace connecting the world's best talent and clients.</span>
+            <span>
+              © 2026 OnSpot Global — One marketplace connecting the world's
+              best talent and clients.
+            </span>
             <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Link href="/terms-and-conditions" className="transition-colors hover:text-white">
+              <Link
+                href="/terms-and-conditions"
+                className="transition-colors hover:text-white"
+              >
                 Terms
               </Link>
-              <Link href="/privacy-policy" className="transition-colors hover:text-white">
+              <Link
+                href="/privacy-policy"
+                className="transition-colors hover:text-white"
+              >
                 Privacy
               </Link>
               {/* /contractor-agreement route not yet created — rendered non-clickable */}
-              <span className="cursor-default opacity-50" title="Page coming soon">
+              <span
+                className="cursor-default opacity-50"
+                title="Page coming soon"
+              >
                 Contractor Agreement
               </span>
             </nav>
@@ -1406,7 +1713,10 @@ function getSimilarStaticRoles(currentId: number, limit = 3): Role[] {
   const currentCategory = current.category.toLowerCase();
   const currentTagsSet = new Set(current.tags.map((t) => t.toLowerCase()));
   const currentTitleWords = new Set(
-    current.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w)),
+    current.title
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !stopWords.has(w)),
   );
 
   return roles
@@ -1415,7 +1725,10 @@ function getSimilarStaticRoles(currentId: number, limit = 3): Role[] {
       let score = 0;
       if (r.category.toLowerCase() === currentCategory) score += 3;
       score += r.tags.filter((t) => currentTagsSet.has(t.toLowerCase())).length;
-      const rWords = r.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3 && !stopWords.has(w));
+      const rWords = r.title
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3 && !stopWords.has(w));
       score += rWords.filter((w) => currentTitleWords.has(w)).length;
       return { role: r, score };
     })
@@ -1452,7 +1765,9 @@ function DbSimilarJobsSection({
     <div className="border-t border-slate-100 px-5 py-8 dark:border-white/[0.08] md:px-8">
       <div className="mb-5 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-[#474ead]" />
-        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Similar projects you might like</h2>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Similar projects you might like
+        </h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {similar.map((job) => (
@@ -1463,7 +1778,13 @@ function DbSimilarJobsSection({
   );
 }
 
-function DbSimilarCard({ job, navigate }: { job: Job; navigate: (p: string) => void }) {
+function DbSimilarCard({
+  job,
+  navigate,
+}: {
+  job: Job;
+  navigate: (p: string) => void;
+}) {
   const pay = buildRateDisplay(job);
   const displayTitle = (job as any).professionalRoleName || job.title;
   const functionBadge = (job as any).jobFunction || job.category;
@@ -1484,15 +1805,25 @@ function DbSimilarCard({ job, navigate }: { job: Job; navigate: (p: string) => v
           {functionBadge}
         </span>
       )}
-      <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{pay}</p>
+      <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+        {pay}
+      </p>
       {companyName && (
-        <p className="text-xs text-slate-400 dark:text-slate-500">{companyName}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          {companyName}
+        </p>
       )}
     </button>
   );
 }
 
-function StaticSimilarCard({ role, navigate }: { role: Role; navigate: (p: string) => void }) {
+function StaticSimilarCard({
+  role,
+  navigate,
+}: {
+  role: Role;
+  navigate: (p: string) => void;
+}) {
   return (
     <button
       onClick={() => navigate(`/find-work/job/${role.id}`)}

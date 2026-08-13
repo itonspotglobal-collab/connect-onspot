@@ -1,0 +1,432 @@
+# Replit Prompt — Talent Privacy + Job Opening Label Update
+
+Please make the following targeted changes in the OnSpot project.
+
+Do not redesign unrelated components or change existing functionality outside these requirements.
+
+## 1. Protect Talent Names on Public Talent Cards
+
+Update the public Talent Pool cards in:
+
+`client/src/pages/TalentPool.tsx`
+
+Talent cards must NOT display the talent's full legal/full name.
+
+### Required format
+
+Only the first name should be written in full.
+
+Every remaining name should be reduced to its first initial.
+
+Examples:
+
+```text
+Frenzy Val Eloise Legaspi
+→ Frenzy V E L
+```
+
+```text
+Maria Eubhe Regine T.
+→ Maria E R T
+```
+
+```text
+Ijeoma O.
+→ Ijeoma O
+```
+
+```text
+John Smith
+→ John S
+```
+
+### Implementation
+
+Create a reusable helper instead of implementing the formatting inline in JSX.
+
+For example:
+
+```ts
+function formatPublicTalentName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length <= 1) {
+    return parts[0] ?? "";
+  }
+
+  const [firstName, ...remainingNames] = parts;
+
+  const initials = remainingNames
+    .map((part) => part.replace(/\./g, "").charAt(0).toUpperCase())
+    .filter(Boolean);
+
+  return [firstName, ...initials].join(" ");
+}
+```
+
+You may improve this implementation if necessary.
+
+### Important privacy rule
+
+Apply this specifically to PUBLIC candidate/talent displays.
+
+Do NOT overwrite or modify the candidate's stored:
+
+```ts
+fullName
+displayName
+```
+
+This is presentation-layer privacy only.
+
+The backend/database should continue storing the real name.
+
+### Public Talent Pool card
+
+Where the card currently renders something similar to:
+
+```tsx
+candidate.displayName
+```
+
+or:
+
+```tsx
+candidate.fullName
+```
+
+change the displayed value to the privacy-safe version.
+
+Prefer the same existing display-name priority, but mask the selected name afterward:
+
+```ts
+const rawDisplayName =
+  candidate.displayName?.trim() ||
+  candidate.fullName?.trim() ||
+  "";
+
+const publicDisplayName = formatPublicTalentName(rawDisplayName);
+```
+
+Then render:
+
+```tsx
+{publicDisplayName}
+```
+
+### Avatar initials
+
+Check the Talent Pool card avatar fallback as well.
+
+Do not expose additional name information through avatar initials.
+
+Using something like:
+
+```text
+FV
+```
+
+for `Frenzy Val Eloise Legaspi` is acceptable.
+
+Do not render the full name as hidden text, title text, tooltip, aria-label, or similar public UI unless it is necessary for accessibility and properly privacy-safe.
+
+---
+
+## 2. Check Other Public Talent Surfaces
+
+Search the frontend for other public candidate displays that use:
+
+```ts
+candidate.fullName
+candidate.displayName
+```
+
+especially:
+
+* Talent Pool cards
+* Quick View
+* search results
+* recommended talent cards
+* matching candidate cards
+* public talent previews
+
+Apply the same privacy rule anywhere a Talent's identity is displayed to a general/public viewer.
+
+Do NOT blindly mask names inside:
+
+* Admin pages
+* internal Talent Acquisition pages
+* private account-management pages
+* the talent's own editing forms
+
+The purpose is to prevent public-facing cards/previews from exposing the talent's full identity.
+
+If there is an existing shared utility for candidate naming, preferably centralize the public-name formatter there instead of duplicating it.
+
+---
+
+## 3. Full Talent Profile Privacy
+
+Check the behavior when clicking:
+
+```text
+Full Profile
+```
+
+If Full Profile is accessible publicly or by a user who is not an authorized Client/Admin/Talent Acquisition viewer, apply the same name protection there:
+
+```text
+Frenzy V E L
+```
+
+However, if the authenticated viewer is an authorized Client Account and the product is intentionally designed to reveal the full name to Clients, preserve that behavior.
+
+Use the application's actual roles and account permissions.
+
+Do not expose the full name simply because somebody knows the Talent Profile URL.
+
+The privacy behavior should be based on authorization, not just the route.
+
+---
+
+## 4. Change "What We Offer" on Job Opening Details
+
+On the Job Role / Job Opening details page shown in the screenshot, locate the section currently titled:
+
+```text
+What We Offer
+```
+
+The section contains items such as:
+
+```text
+OnSpot Plus
+OnSpot Rewards
+```
+
+Change the heading to:
+
+```text
+Choose Your Compliance Plan
+```
+
+So the final section should look conceptually like:
+
+```text
+🎁 Choose Your Compliance Plan
+
+OnSpot Plus    OnSpot Rewards
+```
+
+Do not change the actual plan/tag values unless required.
+
+Only change the section heading.
+
+### Search scope
+
+The phrase may appear in one or more files, including job-opening components/pages such as:
+
+```text
+client/src/pages/FindWorkJob.tsx
+client/src/pages/JobFormPage.tsx
+client/src/components/JobFormModal.tsx
+```
+
+Search the project for the exact UI string:
+
+```text
+What We Offer
+```
+
+Change the JOB DETAIL DISPLAY heading shown to applicants.
+
+Do not accidentally rename admin form fields, API/database fields, or unrelated marketing content just because they use the same phrase.
+
+---
+
+## 5. Preserve Existing Data Fields
+
+If the database/API currently uses a property such as:
+
+```ts
+whatWeOffer
+benefits
+offerings
+```
+
+do NOT rename the backend field just to accommodate this UI wording.
+
+This request is only to change the user-facing heading.
+
+For example:
+
+```tsx
+<h2>Choose Your Compliance Plan</h2>
+```
+
+can still render values stored under an existing field called:
+
+```ts
+whatWeOffer
+```
+
+No database migration should be necessary for this text change.
+
+---
+
+## 6. Privacy Edge Cases
+
+The public-name formatter should handle:
+
+```text
+"Frenzy"
+→ "Frenzy"
+```
+
+```text
+"Frenzy Val"
+→ "Frenzy V"
+```
+
+```text
+"Frenzy Val Eloise"
+→ "Frenzy V E"
+```
+
+```text
+"Frenzy Val Eloise Legaspi"
+→ "Frenzy V E L"
+```
+
+```text
+"  Frenzy   Val Eloise   Legaspi  "
+→ "Frenzy V E L"
+```
+
+Existing periods should not result in output such as:
+
+```text
+Frenzy V. E. L.
+```
+
+unless the site's design explicitly prefers periods.
+
+For consistency with the requested format, use:
+
+```text
+Frenzy V E L
+```
+
+---
+
+## 7. Do Not Affect Search or Matching
+
+Name masking is DISPLAY ONLY.
+
+Do not alter:
+
+* candidate search
+* database values
+* filtering
+* matching
+* authentication
+* email
+* API responses unless a real privacy/security issue requires it
+
+If APIs currently expose the full candidate name to unauthenticated users, flag this in your final response instead of silently making a large backend security refactor.
+
+---
+
+## 8. Acceptance Criteria
+
+### Talent cards
+
+Given:
+
+```text
+Frenzy Val Eloise Legaspi
+```
+
+Public card displays:
+
+```text
+Frenzy V E L
+```
+
+and never:
+
+```text
+Frenzy Val Eloise Legaspi
+```
+
+Given:
+
+```text
+Maria Eubhe Regine T.
+```
+
+card displays:
+
+```text
+Maria E R T
+```
+
+Given:
+
+```text
+Ijeoma O.
+```
+
+card displays:
+
+```text
+Ijeoma O
+```
+
+### Privacy
+
+* Full legal name remains stored normally.
+* Admin/internal tools still have access where authorized.
+* Public Talent Pool cards use masked names.
+* Quick View also uses masked names if it is public-facing.
+* Public Full Profile does not accidentally reveal the full name.
+* No tooltip/title/secondary card text leaks the original full name.
+
+### Job Opening
+
+The applicant-facing job detail page displays:
+
+```text
+Choose Your Compliance Plan
+```
+
+instead of:
+
+```text
+What We Offer
+```
+
+The `OnSpot Plus` and `OnSpot Rewards` tags remain unchanged.
+
+### Regression
+
+* Full Profile button still works.
+* Quick View still works.
+* Bookmark functionality still works.
+* Talent filtering/search still works.
+* Candidate photos still work.
+* Job details still load normally.
+* No database migration is introduced solely for the heading change.
+
+---
+
+## 9. Final Response
+
+After making the changes, report:
+
+1. Files changed
+2. Where the `formatPublicTalentName` helper was added
+3. Every public-facing Talent surface where masking was applied
+4. Whether the candidate API currently exposes the full name to unauthenticated users
+5. Where `What We Offer` was changed to `Choose Your Compliance Plan`
+6. Confirmation that stored talent names were not modified

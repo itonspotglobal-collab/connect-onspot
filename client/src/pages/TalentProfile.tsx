@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
-import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
+import { formatPublicTalentNameMasked } from "@/lib/formatPublicTalentName";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
 import type { Candidate } from "@shared/schema";
@@ -750,12 +750,17 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  // Public display name — full last name is never exposed to unauthenticated visitors.
-  // Priority: displayName (talent's own custom name, shown as-is) → formatted fullName → id fallback
-  const displayName =
+  // Name shown to the public — the raw preferred name is computed first, then
+  // masked for unauthenticated visitors.  Authorized viewers (owner, admin,
+  // client, talent-acquisition) keep the unmasked name.
+  const rawDisplayName =
     candidate.displayName?.trim() ||
-    formatPublicTalentNameFromFull(candidate.fullName) ||
+    candidate.fullName?.trim() ||
     `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
+  const isAuthorizedViewer = canEdit || isClientViewer;
+  const displayName = isAuthorizedViewer
+    ? rawDisplayName
+    : formatPublicTalentNameMasked(rawDisplayName);
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
   // Use the shared profileCompletion module — single source of truth for the number.
