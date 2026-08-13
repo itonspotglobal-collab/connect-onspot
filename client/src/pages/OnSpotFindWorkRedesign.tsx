@@ -786,7 +786,7 @@ function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void })
   );
 }
 
-// ─── Accordion-style role row ─────────────────────────────────────────────────
+// ─── Accordion-style role row — dark/hero-matched theme ──────────────────────
 
 function RoleRow({
   role,
@@ -807,8 +807,8 @@ function RoleRow({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className={`border-b border-stone-200 transition-colors duration-200 ${
-        isOpen ? "bg-stone-100" : "hover:bg-stone-50"
+      className={`border-b border-white/[0.07] transition-colors duration-200 ${
+        isOpen ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
       }`}
     >
       {/* Row header */}
@@ -816,30 +816,42 @@ function RoleRow({
         onClick={onToggle}
         className="flex w-full items-center gap-4 px-6 py-5 text-left md:px-8"
       >
-        <span className="w-6 shrink-0 text-xs font-bold text-stone-400">
+        {/* Index number */}
+        <span className="w-6 shrink-0 text-xs font-bold text-white/20">
           {String(index + 1).padStart(2, "0")}
         </span>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/20 bg-primary/5 text-xs font-black text-primary">
+
+        {/* Fit badge */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-xs font-black text-primary">
           {role.fit}%
         </div>
+
+        {/* Title + hook + demand */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-bold text-stone-900 md:text-lg">{role.title}</span>
-            <span className="hidden text-sm text-stone-400 md:inline">— {role.hook}</span>
+            <span className="text-base font-bold text-white md:text-lg">{role.title}</span>
+            <span className="hidden text-sm text-white/30 md:inline">— {role.hook}</span>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary/90">
               {role.demand}
             </span>
-            <span className="text-xs text-stone-400">{role.speed}</span>
+            <span className="text-xs text-white/25">{role.speed}</span>
           </div>
         </div>
+
+        {/* Salary — amber accent */}
         <div className="hidden shrink-0 text-right md:block">
-          <div className="text-xs text-stone-400">Monthly salary</div>
-          <div className="text-sm font-bold text-stone-900">{role.salaryPhp}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-white/25">Monthly salary</div>
+          <div className="mt-0.5 text-sm font-bold text-amber-400">{role.salaryPhp}</div>
         </div>
-        <div className="ml-2 shrink-0 text-stone-400">
-          {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+
+        {/* Toggle icon */}
+        <div className="ml-2 shrink-0 text-white/30 transition-colors group-hover:text-white/50">
+          {isOpen
+            ? <Minus className="h-4 w-4 text-primary/70" />
+            : <Plus  className="h-4 w-4" />
+          }
         </div>
       </button>
 
@@ -853,70 +865,78 @@ function RoleRow({
             transition={{ duration: 0.28, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="border-t border-stone-200 px-6 pb-6 pt-5 md:px-8">
-              <div className="grid gap-6 md:grid-cols-[1fr_264px]">
+            <div className="border-t border-white/[0.07] px-6 pb-7 pt-5 md:px-8">
+              {/* Mobile salary */}
+              <div className="mb-4 flex items-center gap-2 md:hidden">
+                <DollarSign className="h-3.5 w-3.5 text-amber-400/70" />
+                <span className="text-sm font-bold text-amber-400">{role.salaryPhp}</span>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-[1fr_252px]">
                 {/* Left — summary */}
                 <div>
-                  <p className="mb-4 text-sm text-stone-500 md:hidden">{role.hook}</p>
-
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {/* Meta chips — glassy */}
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                     {[
-                      { Icon: DollarSign,      l: "Monthly salary", v: role.salaryPhp  },
-                      { Icon: Clock3,          l: "Schedule",       v: role.shift      },
-                      { Icon: Globe2,          l: "Market",         v: role.market     },
-                      { Icon: BriefcaseBusiness, l: "Category",     v: role.category   },
+                      { Icon: DollarSign,        l: "Salary",    v: role.salaryPhp  },
+                      { Icon: Clock3,             l: "Schedule",  v: role.shift      },
+                      { Icon: Globe2,             l: "Market",    v: role.market     },
+                      { Icon: BriefcaseBusiness,  l: "Category",  v: role.category   },
                     ].map(({ Icon, l, v }) => (
-                      <div key={l} className="rounded-xl border border-stone-200 bg-white p-3">
-                        <div className="flex items-center gap-1.5 text-[11px] text-stone-400">
-                          <Icon className="h-3 w-3" />{l}
+                      <div key={l} className="rounded-xl border border-white/[0.08] bg-white/[0.05] p-3 backdrop-blur-sm">
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/30">
+                          <Icon className="h-2.5 w-2.5" />{l}
                         </div>
-                        <div className="mt-1 text-xs font-bold text-stone-900 leading-tight">{v}</div>
+                        <div className="mt-1 text-xs font-bold leading-tight text-white/85">{v}</div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 flex items-start gap-2 rounded-xl bg-primary/5 px-4 py-3">
+                  {/* Why you're a fit — primary glow pill */}
+                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.08] px-4 py-3.5">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <p className="text-sm leading-6 text-stone-700">
-                      <span className="font-semibold text-stone-900">Why you're a fit: </span>
+                    <p className="text-sm leading-6 text-white/70">
+                      <span className="font-semibold text-white/90">Why you're a fit: </span>
                       {role.why}
                     </p>
                   </div>
 
-                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-stone-500">{role.overview}</p>
+                  {/* Overview snippet */}
+                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-white/35">{role.overview}</p>
 
+                  {/* Tags */}
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {role.tags.map((tag) => (
-                      <span key={tag} className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-600">
+                      <span
+                        key={tag}
+                        className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-xs text-white/40"
+                      >
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Right — CTA panel */}
-                <div className="flex flex-col gap-4 rounded-2xl border border-stone-200 bg-white p-5">
+                {/* Right — CTA panel — glassy dark card */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-5 backdrop-blur-sm">
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-white/30">
                       Match score
                     </div>
                     <div className="mt-1 text-4xl font-black text-primary">{role.fit}%</div>
-                    <Progress value={role.fit} className="mt-2 h-1.5" />
+                    <Progress value={role.fit} className="mt-2 h-1 bg-white/10 [&>div]:bg-primary" />
                   </div>
 
                   <Button
-                    className="w-full rounded-xl"
+                    className="w-full rounded-xl bg-primary text-white hover:bg-primary/90"
                     onClick={() => navigate("/find-work/jobs")}
                   >
                     Apply in 30 seconds
                   </Button>
 
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDetails(role);
-                    }}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-sm font-medium text-stone-600 transition hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                    onClick={(e) => { e.stopPropagation(); onViewDetails(role); }}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.04] py-2.5 text-sm font-medium text-white/50 transition hover:border-primary/40 hover:bg-primary/[0.08] hover:text-primary"
                   >
                     View full details <ChevronRight className="h-4 w-4" />
                   </button>
@@ -1155,75 +1175,99 @@ export default function OnSpotFindWorkRedesign() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════════
-          ROLES — filter tabs + accordion rows
+          FEATURED ROLES — dark / hero-matched
       ════════════════════════════════════════════════════════════════════ */}
-      <section className="mx-auto max-w-7xl px-0 py-16 md:py-24">
-        <div className="mb-10 px-6 md:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-stone-400">
-                Top matches for you
-              </p>
-              <h2 className="text-4xl font-black tracking-tight text-stone-950 md:text-5xl">
-                Roles that feel more<br className="hidden md:block" /> like opportunities.
-              </h2>
-              <p className="mt-3 max-w-lg text-stone-500">
-                Designed to reduce random scrolling and help applicants focus on roles that fit their pay goals, schedule, and strengths.
-              </p>
-            </div>
-            <p className="text-sm font-semibold text-stone-400">
-              {filteredRoles.length} role{filteredRoles.length !== 1 ? "s" : ""} found
-            </p>
-          </div>
+      <section className="relative overflow-hidden bg-[#1C1917]">
+        {/* Ambient glow — top centre */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(71,78,173,0.18),transparent)]" />
+        {/* Subtle side glows */}
+        <div className="pointer-events-none absolute -left-32 top-1/3 h-80 w-80 rounded-full bg-primary/[0.07] blur-[90px]" />
+        <div className="pointer-events-none absolute -right-32 top-2/3 h-80 w-80 rounded-full bg-amber-500/[0.05] blur-[100px]" />
 
-          <div className="mt-8 flex flex-wrap gap-6">
-            {[
-              { label: "Earn",     options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"],                                     state: earning,  set: setEarning  },
-              { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                               state: schedule, set: setSchedule },
-              { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],        state: kind,     set: setKind     },
-            ].map((group) => (
-              <div key={group.label} className="flex items-center gap-2">
-                <span className="text-xs font-bold text-stone-400">{group.label}</span>
-                <div className="flex flex-wrap gap-1">
-                  {group.options.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => group.set(opt)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
-                        group.state === opt
-                          ? "bg-stone-900 text-white"
-                          : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+        <div className="relative mx-auto max-w-7xl px-0 py-20 md:py-28">
+
+          {/* ── Section header ── */}
+          <div className="mb-10 px-6 md:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                {/* Eye-line label */}
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="h-px w-8 bg-primary/50" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-primary/70">
+                    Featured roles
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="border-t border-stone-200">
-          <AnimatePresence>
-            {filteredRoles.length === 0 ? (
-              <div className="px-6 py-14 text-center md:px-8">
-                <Search className="mx-auto mb-3 h-8 w-8 text-stone-300" />
-                <p className="text-sm text-stone-400">No roles match your filters. Try adjusting your search.</p>
+                <h2 className="text-4xl font-black leading-[1.06] tracking-tight text-white md:text-5xl">
+                  Roles that feel<br className="hidden md:block" />
+                  {" "}like <span className="text-primary">opportunities</span>.
+                </h2>
+                <p className="mt-4 max-w-lg text-sm leading-7 text-white/40">
+                  Every listing shows salary, schedule, market, and a match score — so you can skip the guesswork and focus on roles that genuinely fit.
+                </p>
               </div>
-            ) : (
-              filteredRoles.map((role, i) => (
-                <RoleRow
-                  key={role.id}
-                  role={role}
-                  index={i}
-                  isOpen={openRoleId === role.id}
-                  onToggle={() => setOpenRoleId(openRoleId === role.id ? null : role.id)}
-                  onViewDetails={openModal}
-                />
-              ))
-            )}
-          </AnimatePresence>
+
+              {/* Role count */}
+              <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2">
+                <span className="text-2xl font-black text-white">{filteredRoles.length}</span>
+                <span className="text-xs text-white/30">role{filteredRoles.length !== 1 ? "s" : ""} matched</span>
+              </div>
+            </div>
+
+            {/* ── Filter pills — dark glassy ── */}
+            <div className="mt-8 flex flex-wrap gap-5">
+              {[
+                { label: "Earn",     options: ["Any pay", "₱45,000+", "₱60,000+", "₱85,000+"],                                  state: earning,  set: setEarning  },
+                { label: "Schedule", options: ["All schedules", "Day shift", "Night shift", "Flexible"],                            state: schedule, set: setSchedule },
+                { label: "Type",     options: ["All work", "Admin", "Support", "Finance", "Sales", "Marketing", "Operations"],     state: kind,     set: setKind     },
+              ].map((group) => (
+                <div key={group.label} className="flex items-center gap-2.5">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">{group.label}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => group.set(opt)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-150 ${
+                          group.state === opt
+                            ? "bg-primary text-white shadow-[0_0_14px_rgba(71,78,173,0.45)]"
+                            : "border border-white/[0.08] bg-white/[0.04] text-white/40 hover:border-white/[0.14] hover:bg-white/[0.08] hover:text-white/70"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Role list ── */}
+          <div className="border-t border-white/[0.07]">
+            <AnimatePresence>
+              {filteredRoles.length === 0 ? (
+                <div className="px-6 py-16 text-center md:px-8">
+                  <SearchX className="mx-auto mb-3 h-8 w-8 text-white/20" />
+                  <p className="text-sm text-white/30">No roles match your filters. Try adjusting your search.</p>
+                </div>
+              ) : (
+                filteredRoles.map((role, i) => (
+                  <RoleRow
+                    key={role.id}
+                    role={role}
+                    index={i}
+                    isOpen={openRoleId === role.id}
+                    onToggle={() => setOpenRoleId(openRoleId === role.id ? null : role.id)}
+                    onViewDetails={openModal}
+                  />
+                ))
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Bottom fade into next section */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#141210] to-transparent" />
         </div>
       </section>
 
