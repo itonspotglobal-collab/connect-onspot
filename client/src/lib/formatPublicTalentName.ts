@@ -44,13 +44,16 @@ export function formatPublicTalentName(
 /**
  * formatPublicTalentNameMasked
  *
- * Stronger privacy variant: the FIRST word of the name is kept in full;
- * every subsequent word is reduced to its first letter (uppercased, no period).
+ * Public-display privacy format: FIRST NAME + LAST NAME INITIAL + ".".
+ * Middle names are completely ignored — not shown, not initialled.
+ * Periods already present on the last-name token are stripped before extracting
+ * the initial so "O." becomes "O." not "O..".
  *
- * "Frenzy Val Eloise Legaspi"  → "Frenzy V E L"
- * "Maria Eubhe Regine T."      → "Maria E R T"
- * "Ijeoma O."                  → "Ijeoma O"
- * "John Smith"                 → "John S"
+ * "Frenzy Val Eloise Legaspi"  → "Frenzy L."
+ * "Maria Eubhe Regine T."      → "Maria T."
+ * "Ijeoma O."                  → "Ijeoma O."
+ * "John Michael Smith"         → "John S."
+ * "John Smith"                 → "John S."
  * "Cher"                       → "Cher"
  * ""                           → ""
  */
@@ -58,13 +61,12 @@ export function formatPublicTalentNameMasked(
   name: string | null | undefined,
 ): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return parts[0] ?? "";
-  const [firstName, ...rest] = parts;
-  const initials = rest
-    .map((p) => p.replace(/\./g, "").charAt(0))
-    .filter(Boolean)
-    .map((c) => c.toUpperCase());
-  return [firstName, ...initials].join(" ");
+  if (parts.length === 0) return "";
+  const firstName = parts[0];
+  if (parts.length === 1) return firstName;
+  const lastName = parts[parts.length - 1];
+  const lastInitial = lastName.replace(/\./g, "").charAt(0).toUpperCase();
+  return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
 }
 
 /**

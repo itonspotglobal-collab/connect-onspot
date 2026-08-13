@@ -1,0 +1,232 @@
+# Replit Prompt — Adjust Public Talent Name Privacy Format
+
+Please update the existing Talent Privacy implementation.
+
+The current public name masking displays:
+
+```text
+Frenzy Val Eloise Legaspi
+→ Frenzy V E L
+```
+
+This is not the desired format.
+
+## New required format
+
+For all public-facing Talent displays, show:
+
+```text
+FIRST NAME + LAST NAME INITIAL + PERIOD
+```
+
+Example:
+
+```text
+Frenzy Val Eloise Legaspi
+→ Frenzy L.
+```
+
+More examples:
+
+```text
+Maria Eubhe Regine T.
+→ Maria T.
+```
+
+```text
+Ijeoma O.
+→ Ijeoma O.
+```
+
+```text
+John Smith
+→ John S.
+```
+
+```text
+John Michael Smith
+→ John S.
+```
+
+```text
+Frenzy
+→ Frenzy
+```
+
+The middle names must NOT be displayed or represented by initials.
+
+---
+
+## Update the existing formatter
+
+Find the public talent-name formatter that was previously added, such as:
+
+```ts
+formatPublicTalentName(...)
+```
+
+Change it so that it:
+
+1. Trims whitespace.
+2. Splits the full/display name into name parts.
+3. Uses the FIRST name as-is.
+4. Uses ONLY the LAST name's first character.
+5. Adds a period after the last-name initial.
+6. Completely ignores all middle names.
+
+Recommended implementation:
+
+```ts
+function formatPublicTalentName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return "";
+
+  const firstName = parts[0];
+
+  if (parts.length === 1) {
+    return firstName;
+  }
+
+  const lastName = parts[parts.length - 1];
+  const lastInitial = lastName.replace(/\./g, "").charAt(0).toUpperCase();
+
+  return lastInitial
+    ? `${firstName} ${lastInitial}.`
+    : firstName;
+}
+```
+
+You may improve the implementation if needed, but preserve this exact output behavior.
+
+---
+
+## Important
+
+This remains DISPLAY-ONLY privacy.
+
+Do NOT modify stored:
+
+```ts
+candidate.fullName
+candidate.displayName
+```
+
+Do NOT update the database to store shortened names.
+
+The real name must remain intact for authorized/internal use.
+
+---
+
+## Apply consistently
+
+Update every public-facing Talent surface that currently uses the privacy formatter, including where applicable:
+
+* Talent Pool cards
+* Quick View
+* public Talent profile
+* recommended talent cards
+* search/matching previews
+
+If the privacy formatter is centralized in a shared utility, update that one helper so all existing consumers automatically get the new format.
+
+Avoid duplicating formatting logic.
+
+---
+
+## Last-name handling
+
+If the stored name already contains punctuation:
+
+```text
+Ijeoma O.
+```
+
+the output must still be:
+
+```text
+Ijeoma O.
+```
+
+NOT:
+
+```text
+Ijeoma O..
+```
+
+Likewise:
+
+```text
+Maria Eubhe Regine T.
+→ Maria T.
+```
+
+Remove any existing periods from the last-name token before extracting its initial.
+
+---
+
+## Acceptance criteria
+
+These must produce exactly:
+
+```text
+Frenzy Val Eloise Legaspi
+→ Frenzy L.
+```
+
+```text
+Maria Eubhe Regine T.
+→ Maria T.
+```
+
+```text
+Ijeoma O.
+→ Ijeoma O.
+```
+
+```text
+John Michael Smith
+→ John S.
+```
+
+```text
+John Smith
+→ John S.
+```
+
+```text
+John
+→ John
+```
+
+Extra whitespace must also be handled:
+
+```text
+"  Frenzy   Val Eloise   Legaspi  "
+→ "Frenzy L."
+```
+
+---
+
+## Regression requirements
+
+Do not change:
+
+* talent search
+* candidate matching
+* authentication
+* stored names
+* candidate editing
+* admin/internal full-name visibility
+* bookmarks
+* Quick View functionality
+* Full Profile navigation
+
+Only update the public display-name formatting.
+
+After completing the change, report:
+
+1. Which formatter/helper was changed
+2. Which files were affected
+3. Which public Talent surfaces now display `FirstName L.`
+4. Confirmation that stored full names remain unchanged
