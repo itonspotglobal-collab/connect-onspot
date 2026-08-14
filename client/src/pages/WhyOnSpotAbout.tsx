@@ -175,8 +175,10 @@ function Kicker({ children }: { children: React.ReactNode }) {
 export default function WhyOnSpotAbout() {
   const [navVisible, setNavVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [beliefsVisible, setBeliefsVisible] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
+  const beliefsRef = useRef<HTMLDivElement>(null);
 
   // Scroll-hide nav
   useEffect(() => {
@@ -197,6 +199,18 @@ export default function WhyOnSpotAbout() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Beliefs section entrance observer
+  useEffect(() => {
+    const el = beliefsRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setBeliefsVisible(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
   // Smooth scroll for anchor links
@@ -451,13 +465,34 @@ export default function WhyOnSpotAbout() {
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="about-grid-beliefs">
-            {beliefs.map((b) => (
+          <div ref={beliefsRef} style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="about-grid-beliefs">
+            {beliefs.map((b, i) => (
               <div
                 key={b.num}
-                style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 20, padding: "36px 28px", display: "flex", flexDirection: "column" }}
+                className={beliefsVisible ? "belief-card-in" : "belief-card-pre"}
+                style={{
+                  background: "#fff",
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 20,
+                  padding: "36px 28px",
+                  display: "flex",
+                  flexDirection: "column",
+                  animationDelay: `${i * 130}ms`,
+                  transition: "box-shadow 0.25s, transform 0.25s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 20px 48px rgba(71,78,173,0.13)`;
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
               >
-                <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 52, fontWeight: 800, lineHeight: 1, color: P, opacity: 0.1, marginBottom: 16, letterSpacing: "-0.04em" }}>{b.num}</span>
+                <span
+                  className={beliefsVisible ? "belief-num-in" : ""}
+                  style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 52, fontWeight: 800, lineHeight: 1, color: P, opacity: 0.1, marginBottom: 16, letterSpacing: "-0.04em", animationDelay: `${i * 130 + 260}ms` }}
+                >{b.num}</span>
                 <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 19, fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.01em", color: CHARCOAL, marginBottom: 14 }}>{b.title}</h3>
                 <p style={{ fontSize: 14.5, lineHeight: 1.72, color: GRAY, flexGrow: 1 }}>{b.body}</p>
               </div>
@@ -649,6 +684,25 @@ export default function WhyOnSpotAbout() {
 
       {/* ── Responsive grid helpers (injected as a style tag) ─────────────────── */}
       <style>{`
+        @keyframes _belief-in {
+          from { opacity: 0; transform: translateY(36px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes _num-pop {
+          0%   { opacity: 0; transform: scale(0.6); }
+          70%  { transform: scale(1.12); }
+          100% { opacity: 0.1; transform: scale(1); }
+        }
+        .belief-card-pre {
+          opacity: 0;
+          transform: translateY(36px);
+        }
+        .belief-card-in {
+          animation: _belief-in 0.55s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .belief-num-in {
+          animation: _num-pop 0.5s cubic-bezier(0.22,1,0.36,1) both;
+        }
         @media (max-width: 1024px) {
           .about-grid-5 { grid-template-columns: repeat(3,1fr) !important; }
           .about-grid-leaders { grid-template-columns: repeat(3,1fr) !important; }
