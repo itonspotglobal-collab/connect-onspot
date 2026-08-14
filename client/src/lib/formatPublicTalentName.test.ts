@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatPublicTalentName,
   formatPublicTalentNameFromFull,
+  formatPublicTalentNameMasked,
 } from "./formatPublicTalentName";
 
 // ─── formatPublicTalentName ───────────────────────────────────────────────────
@@ -99,5 +100,67 @@ describe("formatPublicTalentNameFromFull", () => {
   });
   it("extra whitespace is ignored", () => {
     expect(formatPublicTalentNameFromFull("  Julie   Stramer  ")).toBe("Julie S.");
+  });
+});
+
+// ─── formatPublicTalentNameMasked ────────────────────────────────────────────
+
+describe("formatPublicTalentNameMasked", () => {
+  // ── Core behaviour ──
+  it("single name → returned as-is", () => {
+    expect(formatPublicTalentNameMasked("Cher")).toBe("Cher");
+  });
+  it("two names → First S", () => {
+    expect(formatPublicTalentNameMasked("John Smith")).toBe("John S");
+  });
+  it("three names → First A B", () => {
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise")).toBe("Frenzy V E");
+  });
+  it("four names → First A B C", () => {
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi")).toBe("Frenzy V E L");
+  });
+
+  // ── Names with existing periods ──
+  it("strips trailing period from a token before taking its initial", () => {
+    // "Ijeoma O." → first word kept, "O." stripped to "O" then initialled → "O"
+    expect(formatPublicTalentNameMasked("Ijeoma O.")).toBe("Ijeoma O");
+  });
+  it("strips periods from all subsequent tokens", () => {
+    // "Maria E. R. T." → "Maria E R T"
+    expect(formatPublicTalentNameMasked("Maria E. R. T.")).toBe("Maria E R T");
+  });
+
+  // ── Whitespace handling ──
+  it("trims leading/trailing whitespace", () => {
+    expect(formatPublicTalentNameMasked("  John Smith  ")).toBe("John S");
+  });
+  it("collapses internal whitespace between tokens", () => {
+    expect(formatPublicTalentNameMasked("Van  Carlo   Labanan")).toBe("Van C L");
+  });
+
+  // ── Empty / null / undefined ──
+  it("empty string → empty string", () => {
+    expect(formatPublicTalentNameMasked("")).toBe("");
+  });
+  it("whitespace-only string → empty string", () => {
+    expect(formatPublicTalentNameMasked("   ")).toBe("");
+  });
+  it("null → empty string", () => {
+    expect(formatPublicTalentNameMasked(null)).toBe("");
+  });
+  it("undefined → empty string", () => {
+    expect(formatPublicTalentNameMasked(undefined)).toBe("");
+  });
+
+  // ── Privacy guarantee ──
+  it("never exposes a full subsequent word in the output", () => {
+    const result = formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi");
+    expect(result).not.toContain("Val");
+    expect(result).not.toContain("Eloise");
+    expect(result).not.toContain("Legaspi");
+    expect(result).toBe("Frenzy V E L");
+  });
+  it("initials are always uppercased", () => {
+    expect(formatPublicTalentNameMasked("anna smith")).toBe("anna S");
   });
 });

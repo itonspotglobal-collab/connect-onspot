@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import {
@@ -52,9 +53,8 @@ import {
   type ExtractedCandidateProfile,
 } from "@/lib/resumeParser";
 import { useAuth } from "@/contexts/AuthContext";
-import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
-import { queryClient } from "@/lib/queryClient";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
 
 // ─── CandidateProfile type ────────────────────────────────────────────────────
 
@@ -70,6 +70,10 @@ interface WorkHistoryEntry {
 interface CandidateProfile {
   // Step 1 — Upload
   resumeFile: File | null;
+  /** Persisted resume URL from DB — shown when no new File has been selected. */
+  resumeUrl: string;
+  /** Persisted filename from DB — displayed alongside the on-file indicator. */
+  resumeFileName: string;
   // Step 2 — Finalize Information (primary source of truth for matching)
   fullName: string;
   email: string;
@@ -100,6 +104,8 @@ const EMPTY_WORK_ENTRY: WorkHistoryEntry = {
 
 const EMPTY_PROFILE: CandidateProfile = {
   resumeFile: null,
+  resumeUrl: "",
+  resumeFileName: "",
   fullName: "",
   email: "",
   phone: "",
@@ -1867,15 +1873,26 @@ function NoStrongMatches({
 
 export default function FindBestMatches() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("flow");
   const [flowStep, setFlowStep] = useState(0);
+  // True when the DB confirms the talent already completed initial onboarding.
+  // Controls whether mount shows Step 1 (first-timer) or results (returning user).
+  const [profileAlreadyCompleted, setProfileAlreadyCompleted] = useState(false);
 
   // ── Post-registration welcome banner ─────────────────────────────────────
   // Set by TalentSignupFromApplication after creating a new account.
   // ── Auth context — authenticated talent user ───────────────────────────────
   const { user } = useAuth();
-  // Helper: get the stored JWT token for authenticated API calls
-  const getAuthToken = () => localStorage.getItem("onspot_jwt_token") ?? null;
+  // Helper: get the best available JWT token for authenticated API calls.
+  // Priority: Talent Portal JWT (type:"candidate", owns the candidateId) > main platform JWT.
+  // Using the portal JWT for PATCH /api/candidates/:id passes the `isTalentOwner` check
+  // directly; the main JWT only works if the JWT email matches the candidate's email.
+  const getAuthToken = () => {
+    const ta = loadTalentAuth();
+    if (ta?.token) return ta.token;
+    return localStorage.getItem("onspot_jwt_token") ?? null;
+  };
 
   // Read-and-clear so it fires exactly once per registration, never on return visits.
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -1901,11 +1918,19 @@ export default function FindBestMatches() {
   );
 
   // ── Candidate persistence state ──────────────────────────────────────────
-  // Seed candidateId from sessionStorage set by TalentSignupFromApplication
+  // candidateId priority:
+  //   1. sessionStorage — set by TalentSignupFromApplication right after creating a new account
+  //   2. Talent Portal JWT candidateId — the single reliable source for returning users;
+  //      avoids the /api/candidates/me email-lookup that returns 404 when the JWT user's
+  //      email differs from the candidate's email (different auth systems)
+  //   3. null — FBM will POST a new candidate on first save
   const [candidateId, setCandidateId] = useState<string | null>(() => {
     const stored = sessionStorage.getItem("onspot_talent_candidate_id");
-    if (stored) sessionStorage.removeItem("onspot_talent_candidate_id");
-    return stored ?? null;
+    if (stored) { sessionStorage.removeItem("onspot_talent_candidate_id"); return stored; }
+    // Use the portal JWT candidateId so FBM and Settings always write/read the SAME row
+    const ta = loadTalentAuth();
+    if (ta?.candidateId) return ta.candidateId;
+    return null;
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -1923,10 +1948,12 @@ export default function FindBestMatches() {
   const [savedEvaluationId, setSavedEvaluationId] = useState<string | null>(null);
 
   // ── On mount: look up existing candidate data and pre-populate the form ──────
-  // If the user has started Find Best Matches before (or has a candidate record from
-  // TalentSignupFromApplication), we hydrate ALL form fields from the DB so returning
-  // users see their existing data instead of a blank form.
-  // Only sets fields that are currently empty — never overwrites user-entered data.
+  // Two objectives:
+  //   1. Detect returning users (profileCompleted=true in DB) and show results instead of Step 1.
+  //   2. Hydrate ALL form fields so returning users see their existing data, not a blank form.
+  //
+  // Key invariant: profileCompleted=true → results phase, NEVER Step 1 again automatically.
+  // The user must explicitly click "Retake Assessment" to restart the guided flow.
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
@@ -1950,6 +1977,15 @@ export default function FindBestMatches() {
         // Persist the candidateId so subsequent saves use PATCH instead of POST
         if (!candidateId) setCandidateId(data.id);
 
+        // ── Returning user detection ────────────────────────────────────────
+        // If the DB says onboarding was already completed, skip to results immediately.
+        // profileCompleted is the single source of truth — do not depend on localStorage.
+        if (data.profileCompleted === true) {
+          setProfileAlreadyCompleted(true);
+          setPhase("results");
+          // Still hydrate fields so Retake Assessment starts with pre-filled data.
+        }
+
         // Hydrate preferences sub-fields from the stored preferences JSONB object.
         // FindBestMatches saves them as: { setup, shift, jobType, environment }
         const prefs = (data.preferences && typeof data.preferences === "object")
@@ -1958,6 +1994,9 @@ export default function FindBestMatches() {
 
         setProfile((p) => ({
           ...p,
+          // Persisted resume info — shown in Step 1 when no new file is selected
+          resumeUrl:        p.resumeUrl        || data.resumeUrl        || "",
+          resumeFileName:   p.resumeFileName   || data.resumeFileName   || "",
           // Basic identity
           email:            p.email            || data.email            || user?.email || "",
           fullName:         p.fullName         || data.fullName         || "",
@@ -2153,27 +2192,60 @@ export default function FindBestMatches() {
       setIsSavingProfile(true);
       let savedOk = false;
       try {
-        const payload = {
-          fullName: profile.fullName,
-          email: profile.email || user?.email || null,
-          phone: profile.phone || null,
-          location: profile.location || null,
-          targetPosition: profile.targetPosition,
-          category: profile.jobCategory,
-          experienceYears: profile.yearsOfExperience || null,
-          seniority: profile.seniority || null,
-          coreSkills: profile.coreSkills,
-          secondarySkills: profile.secondarySkills,
-          workHistory: profile.workHistory,
-          preferences: {
-            setup: profile.preferredSetup,
-            shift: profile.preferredShift,
-            jobType: profile.preferredJobType,
+        // Derive firstName / lastName from fullName using the same heuristic as
+        // Settings (all words except the last = given name, last word = surname).
+        // This populates the separate DB columns so Settings doesn't need to fall back
+        // to splitting and the name round-trips correctly.
+        const _nameParts = (profile.fullName || "").trim().split(/\s+/).filter(Boolean);
+        const _derivedFirst = _nameParts.length > 1 ? _nameParts.slice(0, -1).join(" ") : (_nameParts[0] || "");
+        const _derivedLast  = _nameParts.length > 1 ? (_nameParts.at(-1) ?? "") : "";
+
+        // ── DIAGNOSTIC: trace exactly what FBM is about to send ────────────
+        console.log("FBM FINAL CANDIDATE PAYLOAD", {
+          candidateId,
+          fullName:         profile.fullName,
+          phone:            profile.phone,
+          location:         profile.location,
+          targetPosition:   profile.targetPosition,
+          jobCategory:      profile.jobCategory,
+          yearsOfExperience: profile.yearsOfExperience,
+          seniority:        profile.seniority,
+          coreSkills:       profile.coreSkills,
+          secondarySkills:  profile.secondarySkills,
+          summary:          profile.summary,
+          workHistory:      profile.workHistory,
+          preferences:      {
+            setup:       profile.preferredSetup,
+            shift:       profile.preferredShift,
+            jobType:     profile.preferredJobType,
             environment: profile.workEnvironment,
           },
-          summary: profile.summary || null,
+          tokenSource: loadTalentAuth()?.token ? "portal-jwt" : "main-jwt",
+        });
+
+        const payload = {
+          fullName:        profile.fullName,
+          firstName:       _derivedFirst,
+          lastName:        _derivedLast,
+          email:           profile.email || user?.email || null,
+          phone:           profile.phone || null,
+          location:        profile.location || null,
+          targetPosition:  profile.targetPosition,
+          category:        profile.jobCategory,
+          experienceYears: profile.yearsOfExperience || null,
+          seniority:       profile.seniority || null,
+          coreSkills:      profile.coreSkills,
+          secondarySkills: profile.secondarySkills,
+          workHistory:     profile.workHistory,
+          preferences: {
+            setup:       profile.preferredSetup,
+            shift:       profile.preferredShift,
+            jobType:     profile.preferredJobType,
+            environment: profile.workEnvironment,
+          },
+          summary:          profile.summary || null,
           profileCompleted: true,
-          updatedAt: new Date().toISOString(),
+          updatedAt:        new Date().toISOString(),
         };
         const token = getAuthToken();
         const url = candidateId ? `/api/candidates/${candidateId}` : "/api/candidates";
@@ -2183,6 +2255,17 @@ export default function FindBestMatches() {
         const res = await fetch(url, { method, headers, body: JSON.stringify(payload) });
         if (res.ok) {
           const data = await res.json();
+          // ── DIAGNOSTIC: confirm what the server actually persisted ──────────
+          console.log("FBM SAVED CANDIDATE RESPONSE", {
+            id:             data.id,
+            location:       data.location,
+            targetPosition: data.targetPosition,
+            coreSkills:     data.coreSkills,
+            secondarySkills: data.secondarySkills,
+            summary:        data.summary,
+            preferences:    data.preferences,
+            profileCompleted: data.profileCompleted,
+          });
           let resolvedCandidateId = candidateId;
           if (!candidateId) {
             setCandidateId(data.id);
@@ -2190,11 +2273,15 @@ export default function FindBestMatches() {
           }
           savedOk = true;
 
-          // Invalidate TopNavigation candidate queries so the completion % updates immediately.
-          const talentAuth = loadTalentAuth();
-          queryClient.invalidateQueries({ queryKey: ["/api/candidates/me", user?.id] });
-          if (talentAuth?.candidateId) {
-            queryClient.invalidateQueries({ queryKey: ["/api/candidates", talentAuth.candidateId] });
+          // Invalidate ALL candidate query key variants so TopNavigation, Settings,
+          // and TalentProfile all see the fresh data without a page reload.
+          queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
+          if (resolvedCandidateId) {
+            queryClient.invalidateQueries({ queryKey: ["/api/candidates", resolvedCandidateId] });
+            queryClient.invalidateQueries({ queryKey: ["candidate", resolvedCandidateId] });
+            // Settings hook uses "candidate-profile" — bust its cache too so it
+            // shows the FBM-saved values as soon as the user opens /settings.
+            queryClient.invalidateQueries({ queryKey: ["candidate-profile", resolvedCandidateId] });
           }
 
           // Non-blocking: upload the resume file to object storage now that we have a candidateId.
@@ -2208,16 +2295,6 @@ export default function FindBestMatches() {
                 method: "POST",
                 headers: { Authorization: `Bearer ${uploadToken}` },
                 body: resumeForm,
-              }).then((r) => {
-                if (r.ok) {
-                  // Re-invalidate after the resume upload so the nav bar picks up
-                  // the persisted resumeUrl (which affects completion %).
-                  const talentAuthAfterResume = loadTalentAuth();
-                  queryClient.invalidateQueries({ queryKey: ["/api/candidates/me", user?.id] });
-                  if (talentAuthAfterResume?.candidateId) {
-                    queryClient.invalidateQueries({ queryKey: ["/api/candidates", talentAuthAfterResume.candidateId] });
-                  }
-                }
               }).catch(() => {}); // Non-blocking — profile JSON save already succeeded
             }
           }
@@ -2272,12 +2349,6 @@ export default function FindBestMatches() {
           if (res.ok) {
             const data = await res.json();
             setSavedEvaluationId(data.evaluationId ?? null);
-            // Invalidate TopNavigation candidate queries so the completion % updates immediately.
-            const talentAuthCulture = loadTalentAuth();
-            queryClient.invalidateQueries({ queryKey: ["/api/candidates/me", user?.id] });
-            if (talentAuthCulture?.candidateId) {
-              queryClient.invalidateQueries({ queryKey: ["/api/candidates", talentAuthCulture.candidateId] });
-            }
           } else {
             setEvaluationSaveError(true);
           }
@@ -2306,13 +2377,6 @@ export default function FindBestMatches() {
               cultureScore: score,
               updatedAt: new Date().toISOString(),
             }),
-          }).then(() => {
-            // Invalidate TopNavigation candidate queries so the completion % updates immediately.
-            const talentAuthScore = loadTalentAuth();
-            queryClient.invalidateQueries({ queryKey: ["/api/candidates/me", user?.id] });
-            if (talentAuthScore?.candidateId) {
-              queryClient.invalidateQueries({ queryKey: ["/api/candidates", talentAuthScore.candidateId] });
-            }
           }).catch(() => {});
         }
       }
@@ -2341,14 +2405,17 @@ export default function FindBestMatches() {
     }
   }
   function handleRetake() {
-    setProfile(EMPTY_PROFILE);
+    // Restart the guided flow so the talent can update their career path/preferences.
+    // IMPORTANT: keep candidateId — subsequent saves must PATCH the existing candidate,
+    //   not POST a new one. Retaking does NOT reset profileCompleted.
+    // Keep profile data pre-filled — the user only edits what changed.
     setSecSkillInput("");
     setFlowStep(0);
     setPhase("flow");
     setExtracted(null);
     setExtractParseError(null);
     setExtracting(false);
-    setCandidateId(null);
+    // candidateId intentionally NOT cleared — saves must update the existing record.
     setProfileSaved(false);
     setShowWorkForm(false);
     setEditWorkIdx(null);
@@ -2394,20 +2461,31 @@ export default function FindBestMatches() {
               <Sparkles className="h-5 w-5 text-[#474ead]" />
             </div>
             <Badge className="rounded-full bg-[#474ead]/10 px-4 py-1.5 text-[#474ead] hover:bg-[#474ead]/10">
-              Your Results
+              {profileAlreadyCompleted ? "Your Career Match" : "Your Results"}
             </Badge>
           </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-            Your personalized matches.
+            {profileAlreadyCompleted ? "Welcome back." : "Your personalized matches."}
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-500">
-            Below is your profile archetype, values alignment, and any active
-            posted roles that genuinely fit your background.
+            {profileAlreadyCompleted
+              ? "You've already completed your Talent setup. View your profile, browse roles, or retake the assessment to update your career direction."
+              : "Below is your profile archetype, values alignment, and any active posted roles that genuinely fit your background."}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
+            {/* Primary: view the actual Talent Profile — always available once candidateId is known */}
+            {candidateId && (
+              <Button
+                onClick={() => navigate(`/talent-profile/${candidateId}`)}
+                className="rounded-full bg-[#474ead] px-6 text-white"
+              >
+                <User className="mr-2 h-4 w-4" /> View Talent Profile
+              </Button>
+            )}
             <Button
               onClick={() => navigate("/find-work/jobs")}
-              className="rounded-full bg-[#474ead] px-6 text-white"
+              className={`rounded-full px-6 ${candidateId ? "bg-transparent text-[#474ead] border border-[#474ead]/30 hover:bg-[#474ead]/5" : "bg-[#474ead] text-white"}`}
+              variant={candidateId ? "outline" : "default"}
             >
               Browse All Roles
             </Button>
@@ -2505,6 +2583,40 @@ export default function FindBestMatches() {
               >
                 <XIcon className="h-4 w-4" />
               </button>
+            </div>
+          ) : profile.resumeUrl ? (
+            /* Resume already on file from a previous session — no upload needed */
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-emerald-900">Resume on file</p>
+                  <p className="text-xs text-emerald-700 mt-0.5 truncate">
+                    {profile.resumeFileName || "Your resume is saved"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFlowStep(1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors text-center"
+                >
+                  Use Existing Resume
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors text-center"
+                >
+                  Replace Resume
+                </button>
+              </div>
             </div>
           ) : (
             <button

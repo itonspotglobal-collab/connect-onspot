@@ -282,10 +282,10 @@ export function useCandidateProfileSettings() {
       return res.json(); // sanitised candidate row
     },
     onSuccess: () => {
-      // Refresh candidate so re-opening settings shows the latest values.
+      // Refresh all candidate query-key variants so Settings, TopNavigation,
+      // TalentProfile, and FindBestMatches all see the updated row immediately.
       queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
-      // Invalidate TopNavigation candidate queries so the completion % updates immediately.
-      // Use prefix-only invalidation for the JWT path (no user.id available in this hook).
+      queryClient.invalidateQueries({ queryKey: ["candidate", candidateId] });
       queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
       if (candidateId) {
         queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] });
