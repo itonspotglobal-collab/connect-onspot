@@ -693,38 +693,38 @@ export default function WhyOnSpotAbout() {
       <footer style={{ background: P, padding: "32px 0 28px" }}>
         <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* Single row: copyright · social icons · nav + legal */}
+          {/* Layout: left stack (copyright + socials) · right nav + legal */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
 
-            {/* Left: tagline + copyright */}
-            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em", flexShrink: 0 }}>
-              Work Without Limits · © {new Date().getFullYear()} OnSpot
-            </p>
-
-            {/* Centre: social icons */}
-            <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-              {[
-                { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={13} /> },
-                { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={13} /> },
-                { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={12} /> },
-                { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={12} /> },
-                { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={13} /> },
-                { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={12} /> },
-                { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={13} /> },
-              ].map(({ href, label, icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
-                >
-                  {icon}
-                </a>
-              ))}
+            {/* Left: copyright stacked above social icons */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
+                Work Without Limits · © {new Date().getFullYear()} OnSpot
+              </p>
+              <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                {[
+                  { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={13} /> },
+                  { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={13} /> },
+                  { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={12} /> },
+                  { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={12} /> },
+                  { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={13} /> },
+                  { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={12} /> },
+                  { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={13} /> },
+                ].map(({ href, label, icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
+                  >
+                    {icon}
+                  </a>
+                ))}
+              </div>
             </div>
 
             {/* Right: nav + legal */}
