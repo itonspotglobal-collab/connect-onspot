@@ -958,9 +958,14 @@ export default function JobApplyPage() {
             Video Introduction <span className="text-red-500">*</span>
           </Label>
         )}
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          This position requires a short video introduction.
-        </p>
+        <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+          <p>Grab your camera and record a brief 2-minute video telling us your story.</p>
+          <ol className="list-decimal list-inside space-y-0.5">
+            <li>A quick snapshot of your relevant experience</li>
+            <li>Your biggest wins and top contributions.</li>
+            <li>1–2 projects you spearheaded, including the final outcomes.</li>
+          </ol>
+        </div>
 
         {useExistingVideo && existingVideoDoc ? (
           <div className="flex items-center gap-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 dark:border-violet-700/40 dark:bg-violet-900/20">
@@ -1308,7 +1313,7 @@ export default function JobApplyPage() {
             ? "Your documents"
             : requiresResume
             ? "Your CV & Resume"
-            : "Video Introduction"}
+            : "We Want to Meet the Person Behind the Resume!"}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           {requiresResume && useExistingResume
@@ -1331,8 +1336,8 @@ export default function JobApplyPage() {
 
         {requiresVideoIntro && (
           <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Video Introduction <span className="text-red-500">*</span>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-0.5">
+              We Want to Meet the Person Behind the Resume! <span className="text-red-500">*</span>
             </p>
             {renderVideoSection()}
           </div>
