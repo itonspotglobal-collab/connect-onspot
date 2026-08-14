@@ -405,6 +405,7 @@ function AppContent() {
       <Route path="/jobs" component={PublicRouter} />
       <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
       <Route path="/jobs/:jobId" component={PublicRouter} />
+      <Route path="/my-applications" component={TalentApplications} />
       <Route path="/talent/signup" component={TalentSignupFromApplication} />
       <Route path="/get-hired" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
@@ -435,12 +436,12 @@ function AppContent() {
       <Route path="/contracts" component={ClientRouter} />
       <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
+      {/* Old /talent-portal/applications URL — redirect FIRST, before /talent-portal prefix can match it */}
+      <Route path="/talent-portal/applications" component={() => { const [, nav] = useLocation(); useEffect(() => { nav("/my-applications"); }, []); return null; }} />
       {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
       {/* Talent Portal routes temporarily redirect to the public homepage. */}
       <Route path="/talent-portal" component={RedirectToHome} />
       <Route path="/hired-talent-portal" component={RedirectToHome} />
-      {/* Old /talent-portal/applications URL — hard redirect to the correct page */}
-      <Route path="/talent-portal/applications" component={() => { const [, nav] = useLocation(); useEffect(() => { nav("/my-applications"); }, []); return null; }} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={SettingsRoute} />
