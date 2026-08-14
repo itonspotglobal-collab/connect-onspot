@@ -100,11 +100,8 @@ function HeroSection() {
   const liveTalents = useMemo(() => {
     const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
     const all = (rawCandidates ?? []).filter((c: any) => c.availability !== "unavailable");
-    // Prioritise candidates who actually have a profile photo so the card
-    // always shows faces when they exist; then fill up with the rest.
-    const withPhoto    = all.filter((c: any) => c.profilePhotoUrl);
-    const withoutPhoto = all.filter((c: any) => !c.profilePhotoUrl);
-    return [...shuffle(withPhoto), ...shuffle(withoutPhoto)].slice(0, 4);
+    // Shuffle randomly — no photo prioritisation (avatars always show initials, not faces)
+    return shuffle(all).slice(0, 4);
   }, [rawCandidates]);
 
   // Slide 5 — real job data from full search endpoint (same source as Browse Jobs)
@@ -791,14 +788,10 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
                   className="px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer"
                   style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 10, alignItems: "center" }}
                 >
-                  {/* Avatar */}
-                  {c.profilePhotoUrl ? (
-                    <img src={c.profilePhotoUrl} alt={name} className="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: C.indigo }}>
-                      {talentInitials(name)}
-                    </div>
-                  )}
+                  {/* Avatar — always initials; never expose talent faces on public pages */}
+                  <div className="h-9 w-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: C.indigo }}>
+                    {talentInitials(name)}
+                  </div>
                   {/* Name / role */}
                   <div className="min-w-0">
                     <p className="text-[12px] font-semibold leading-snug truncate" style={{ color: C.charcoal }}>{name}</p>
@@ -973,13 +966,9 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
                         <div className="flex items-center gap-1.5 mt-2">
                           <div className="flex -space-x-1.5">
                             {rowAvatars.map((c: any, i: number) => (
-                              c.profilePhotoUrl ? (
-                                <img key={i} src={c.profilePhotoUrl} alt="" className="h-5 w-5 rounded-full object-cover ring-[1.5px] ring-white flex-shrink-0" />
-                              ) : (
-                                <div key={i} className="h-5 w-5 rounded-full flex items-center justify-center ring-[1.5px] ring-white flex-shrink-0" style={{ background: C.indigo, fontSize: "7px", color: "white", fontWeight: 700 }}>
-                                  {talentInitials((c.displayName || c.fullName || "?"))}
-                                </div>
-                              )
+                              <div key={i} className="h-5 w-5 rounded-full flex items-center justify-center ring-[1.5px] ring-white flex-shrink-0" style={{ background: C.indigo, fontSize: "7px", color: "white", fontWeight: 700 }}>
+                                {talentInitials((c.displayName || c.fullName || "?"))}
+                              </div>
                             ))}
                           </div>
                           <span className="text-[9px]" style={{ color: C.grayLight }}>talents ready</span>
@@ -1783,13 +1772,10 @@ function OpenJobsSection() {
 
   const jobs = liveJobs.length >= 3 ? liveJobs : STATIC_JOBS;
 
-  // Avatar pool for job cards — candidates with photos first
+  // Avatar pool for job cards — random order; photos are never shown (initials only)
   const avatarPool: any[] = useMemo(() => {
     const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
-    const all = rawCandidates ?? [];
-    const withPhoto    = all.filter((c: any) => c.profilePhotoUrl);
-    const withoutPhoto = all.filter((c: any) => !c.profilePhotoUrl);
-    return [...shuffle(withPhoto), ...shuffle(withoutPhoto)].slice(0, 12);
+    return shuffle(rawCandidates ?? []).slice(0, 12);
   }, [rawCandidates]);
 
   return (
@@ -1881,13 +1867,9 @@ function OpenJobsSection() {
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex -space-x-2">
                       {cardAvatars.map((c: any, ci: number) => (
-                        c.profilePhotoUrl ? (
-                          <img key={ci} src={c.profilePhotoUrl} alt="" className="h-6 w-6 rounded-full object-cover flex-shrink-0" style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }} />
-                        ) : (
-                          <div key={ci} className="h-6 w-6 rounded-full flex items-center justify-center ring-2 flex-shrink-0" style={{ background: "rgba(75,81,184,0.7)", fontSize: "7px", color: "white", fontWeight: 700, outlineColor: "transparent", boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}>
-                            {talentInitials(c.displayName || c.fullName || "?")}
-                          </div>
-                        )
+                        <div key={ci} className="h-6 w-6 rounded-full flex items-center justify-center ring-2 flex-shrink-0" style={{ background: "rgba(75,81,184,0.7)", fontSize: "7px", color: "white", fontWeight: 700, outlineColor: "transparent", boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}>
+                          {talentInitials(c.displayName || c.fullName || "?")}
+                        </div>
                       ))}
                     </div>
                     <span style={{ color: "rgba(200,205,255,0.5)", fontSize: "0.72rem" }}>
