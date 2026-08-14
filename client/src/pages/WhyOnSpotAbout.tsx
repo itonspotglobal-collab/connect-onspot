@@ -49,22 +49,27 @@ const operatingValues = [
   {
     title: "Customer First",
     body: "Every decision starts with what's actually good for the client or the talent — not what's easiest for us.",
+    cardBg: "#FBF4E2", accent: "#C49A2A",
   },
   {
     title: "Extreme Ownership",
     body: "If something's broken, we fix it. We don't wait for someone else to notice, or for it to become someone else's problem.",
+    cardBg: "#FAF0EB", accent: "#C46A42",
   },
   {
     title: "Raise the Standard",
     body: '"Good enough for a traditional BPO" isn\'t good enough for us. We built this because the old bar was too low.',
+    cardBg: "#EBF2EC", accent: "#4E8A5A",
   },
   {
     title: "Keep It Simple",
     body: "One system, not five tools. If it needs a manual to explain, we've already made it too complicated.",
+    cardBg: "#EBF0F7", accent: "#4A6B9A",
   },
   {
     title: "Move Fast",
     body: "Speed is a feature. We'd rather ship something real and improve it than wait for it to be perfect.",
+    cardBg: "#F6ECEA", accent: "#A85C54",
   },
 ];
 
@@ -72,18 +77,22 @@ const peopleValues = [
   {
     title: "Build Leaders, Not Employees",
     body: "We're not looking for people who wait for instructions. We're building people who could run their own piece of this company.",
+    cardBg: "#FBF3DC", accent: "#B89020",
   },
   {
     title: "Hire Slowly, Only A-Players",
     body: "One wrong hire costs more than an empty seat. We'd rather wait for the right person than fill a role fast.",
+    cardBg: "#EAF2E8", accent: "#487A54",
   },
   {
     title: "Reward Initiative Over Tenure",
     body: "What gets rewarded here is who solves the problem — not who's been here the longest.",
+    cardBg: "#F7EDE6", accent: "#B06040",
   },
   {
     title: "Work Hard, Live Well",
     body: "Ambition and burnout aren't the same thing. We push hard because we care about the outcome — not to prove we can suffer for it.",
+    cardBg: "#EEEDF8", accent: "#5A64A8",
   },
 ];
 
@@ -177,9 +186,11 @@ export default function WhyOnSpotAbout() {
   const [navVisible, setNavVisible] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [beliefsVisible, setBeliefsVisible] = useState(false);
+  const [cultureVisible, setCultureVisible] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const beliefsRef = useRef<HTMLDivElement>(null);
+  const cultureRef = useRef<HTMLDivElement>(null);
 
   // Scroll-hide nav
   useEffect(() => {
@@ -209,6 +220,18 @@ export default function WhyOnSpotAbout() {
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setBeliefsVisible(true); obs.disconnect(); } },
       { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Culture section entrance observer
+  useEffect(() => {
+    const el = cultureRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setCultureVisible(true); obs.disconnect(); } },
+      { threshold: 0.08 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -525,12 +548,32 @@ export default function WhyOnSpotAbout() {
           </div>
 
           {/* How we operate */}
-          <div style={{ marginBottom: 52 }}>
+          <div style={{ marginBottom: 52 }} ref={cultureRef}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.09em", color: GRAY_LIGHT, marginBottom: 20 }}>How we operate</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14 }} className="about-grid-5">
-              {operatingValues.map((v) => (
-                <div key={v.title} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "22px 20px" }}>
-                  <div style={{ width: 28, height: 3, background: P, borderRadius: 2, marginBottom: 14 }} />
+              {operatingValues.map((v, i) => (
+                <div
+                  key={v.title}
+                  className={cultureVisible ? "culture-card-in" : "culture-card-pre"}
+                  style={{
+                    background: v.cardBg,
+                    border: `1px solid ${v.accent}22`,
+                    borderRadius: 16,
+                    padding: "22px 20px",
+                    transition: "transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s",
+                    animationDelay: cultureVisible ? `${i * 80}ms` : "0ms",
+                    cursor: "default",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = `0 12px 32px ${v.accent}28`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div style={{ width: 28, height: 3, background: v.accent, borderRadius: 2, marginBottom: 14 }} />
                   <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 700, color: CHARCOAL, marginBottom: 8, lineHeight: 1.3 }}>{v.title}</h3>
                   <p style={{ fontSize: 13, lineHeight: 1.68, color: GRAY }}>{v.body}</p>
                 </div>
@@ -542,9 +585,29 @@ export default function WhyOnSpotAbout() {
           <div>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.09em", color: GRAY_LIGHT, marginBottom: 20 }}>How we grow our people</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }} className="about-grid-4">
-              {peopleValues.map((v) => (
-                <div key={v.title} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "24px 20px" }}>
-                  <CheckCircle2 size={18} style={{ color: P, marginBottom: 12 }} />
+              {peopleValues.map((v, i) => (
+                <div
+                  key={v.title}
+                  className={cultureVisible ? "culture-card-in" : "culture-card-pre"}
+                  style={{
+                    background: v.cardBg,
+                    border: `1px solid ${v.accent}22`,
+                    borderRadius: 16,
+                    padding: "24px 20px",
+                    transition: "transform 0.22s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s",
+                    animationDelay: cultureVisible ? `${(operatingValues.length + i) * 80}ms` : "0ms",
+                    cursor: "default",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = `0 12px 32px ${v.accent}28`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <CheckCircle2 size={18} style={{ color: v.accent, marginBottom: 12 }} />
                   <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 15, fontWeight: 700, color: CHARCOAL, marginBottom: 8, lineHeight: 1.3 }}>{v.title}</h3>
                   <p style={{ fontSize: 13, lineHeight: 1.68, color: GRAY }}>{v.body}</p>
                 </div>
@@ -740,6 +803,10 @@ export default function WhyOnSpotAbout() {
           70%  { transform: scale(1.12); }
           100% { opacity: 0.1; transform: scale(1); }
         }
+        @keyframes _culture-in {
+          from { opacity: 0; transform: translateY(28px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .belief-card-pre {
           opacity: 0;
           transform: translateY(36px);
@@ -749,6 +816,13 @@ export default function WhyOnSpotAbout() {
         }
         .belief-num-in {
           animation: _num-pop 0.5s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .culture-card-pre {
+          opacity: 0;
+          transform: translateY(28px) scale(0.97);
+        }
+        .culture-card-in {
+          animation: _culture-in 0.5s cubic-bezier(0.22,1,0.36,1) both;
         }
         .about-footer-grid {
           grid-template-columns: 1fr 1fr 1fr;
