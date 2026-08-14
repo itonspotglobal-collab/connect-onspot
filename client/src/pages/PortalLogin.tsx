@@ -194,11 +194,15 @@ export default function PortalLogin() {
     if (applicationToken) return;
     try {
       const talentAuth = loadTalentAuth();
-      if (talentAuth?.candidateId) navigate(`/talent-profile/${talentAuth.candidateId}`);
+      if (talentAuth?.candidateId) {
+        // If we arrived from a specific page (e.g. the job apply gate), send the
+        // user there instead of their profile so they don't lose their place.
+        navigate(returnTo || `/talent-profile/${talentAuth.candidateId}`);
+      }
     } catch {
       // localStorage read failure — ignore and show login form
     }
-  }, [isAuthenticated, user, applicationToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, applicationToken, returnTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSignIn() {
     if (!email || !password || !selectedPortal) {
