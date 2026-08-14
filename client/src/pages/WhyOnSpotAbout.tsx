@@ -296,7 +296,7 @@ export default function WhyOnSpotAbout() {
       <section
         style={{
           background: "linear-gradient(180deg, #3A47A8 0%, #2F327F 28%, #1D1F40 62%, #0F0F13 100%)",
-          minHeight: "calc(100svh - 74px)",
+          height: "calc(100svh - 74px)",
           display: "flex",
           alignItems: "center",
           textAlign: "center",
