@@ -1,0 +1,386 @@
+# Talent Profile Adjustments — Remove View Resume and Reposition Applications
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Make two small, focused adjustments to the existing Talent Profile.
+
+Primary file:
+
+`client/src/pages/TalentProfile.tsx`
+
+Do not redesign the Talent Profile and do not modify unrelated functionality.
+
+---
+
+# 1. Remove “View Resume” From Talent Profile Header
+
+The Talent Profile currently displays a header action similar to:
+
+```text
+[ View Resume ]
+```
+
+when the candidate has a resume.
+
+Remove this action completely from the Talent Profile header.
+
+The current implementation appears similar to:
+
+```tsx
+{candidate.resumeUrl && (
+  <Button
+    variant="outline"
+    className="rounded-full text-sm"
+    onClick={() =>
+      window.open(`/api/candidates/${id}/resume-download`, "_blank")
+    }
+  >
+    <FileText className="mr-1.5 h-4 w-4" />
+    View Resume
+  </Button>
+)}
+```
+
+Remove this button from the header.
+
+## Important visibility requirement
+
+It must be removed from ALL Talent Profile viewing modes:
+
+* Talent owner view
+* Public View
+* Client viewing a Talent
+* visitor/logged-out view
+* Admin viewing the same public profile, unless Admin has a separate dedicated internal resume action elsewhere
+
+Do not just hide it for Talent accounts.
+
+The profile header should no longer show a direct **View Resume** button at all.
+
+---
+
+# Do Not Remove Resume Data or Resume Section
+
+This task is only about removing the header button.
+
+Do NOT:
+
+* delete `resumeUrl`
+* remove resume upload
+* remove resume storage
+* break profile completion
+* remove Resume from Talent setup
+* remove Admin resume access
+* remove resume from job applications
+* remove any dedicated Resume profile section unless explicitly required elsewhere
+
+If the Talent Profile already has a Resume section further down the page, leave it unchanged for now.
+
+Only remove the header-level:
+
+```text
+View Resume
+```
+
+button shown in the screenshot.
+
+---
+
+# Clean Up Imports
+
+After removing the button, check whether:
+
+```ts
+FileText
+```
+
+or any other import is still used elsewhere in `TalentProfile.tsx`.
+
+Only remove the import if it becomes unused.
+
+Do not blindly delete imports that are used by another section.
+
+Run TypeScript/build checks afterward.
+
+---
+
+# 2. Move Applications Section After Certifications
+
+The Talent Profile currently contains multiple main profile sections.
+
+Reposition the existing:
+
+```text
+Applications
+```
+
+section so that it appears **immediately after Certifications**.
+
+The desired order should be:
+
+```text
+...
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+...
+```
+
+The important requirement is:
+
+```text
+Certifications
+↓
+Applications
+↓
+Values Alignment
+```
+
+Applications must no longer appear at its previous location.
+
+Do not duplicate the Applications section.
+
+Move the existing implementation.
+
+---
+
+# Applications Section Behavior Must Stay the Same
+
+Do not change its functionality.
+
+Preserve:
+
+* application fetching
+* application status badges
+* recent application list
+* View All Applications action
+* Talent-only privacy
+* existing empty state
+* React Query behavior
+* loading/error behavior
+
+This is a layout/order change only.
+
+---
+
+# Owner-Only Privacy
+
+Applications remain private Talent data.
+
+The Applications section must still only appear for the authenticated Talent owner.
+
+It must NOT appear in:
+
+* Public View
+* Client Talent Profile view
+* logged-out visitor view
+* another Talent viewing the profile
+
+Keep the existing private visibility rules.
+
+Moving the component must not accidentally loosen those checks.
+
+Conceptually:
+
+```tsx
+{showPrivateOwnerSections && (
+  <ApplicationsSection />
+)}
+```
+
+or whatever equivalent logic is already used.
+
+---
+
+# Values Alignment
+
+Locate the existing **Values Alignment** section/card.
+
+Applications should render directly above it.
+
+Do not modify Values Alignment itself.
+
+Do not change:
+
+* scoring
+* labels
+* visuals
+* calculation
+* data source
+
+Only reposition Applications relative to it.
+
+---
+
+# Sticky Section Tabs
+
+The Talent Profile has a sticky section navigation.
+
+Update the section/tab ordering so it matches the new visual page order.
+
+Applications should appear in the navigation after:
+
+```text
+Certifications
+```
+
+and before:
+
+```text
+Values Alignment
+```
+
+if Values Alignment is represented in the tab navigation.
+
+Example:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+Portfolio
+Resume
+...
+```
+
+Use the actual current section list rather than blindly applying this exact example.
+
+The key requirement is that the sticky nav order matches the rendered content order.
+
+---
+
+# Section ID
+
+Keep the existing Applications section ID if already implemented.
+
+For example:
+
+```text
+section-applications
+```
+
+Do not create a duplicate ID.
+
+Ensure:
+
+* clicking Applications scrolls to the correct section
+* active tab highlighting still works
+* IntersectionObserver still tracks it correctly
+
+---
+
+# Public View Navigation
+
+Since Applications is owner-only, the Applications tab must continue to be hidden while the Talent is using Public View.
+
+The visitor must not see an Applications navigation item pointing to a hidden/private section.
+
+---
+
+# Responsive Layout
+
+Verify the moved Applications section behaves correctly on:
+
+* desktop
+* tablet
+* mobile
+
+Keep the same card width and spacing as the surrounding main-column sections.
+
+Do not move it into the right sidebar if Certifications and Values Alignment are part of the main content flow.
+
+---
+
+# Expected Result
+
+The upper profile header should become approximately:
+
+```text
+Talent Name
+
+Headline
+Location / Availability / Work Setup
+
+[ Back to Pool ]   [ Contact ]
+```
+
+There should be NO:
+
+```text
+[ View Resume ]
+```
+
+button.
+
+Further down, the section sequence should read:
+
+```text
+Certifications
+
+Applications
+
+Values Alignment
+```
+
+---
+
+# Acceptance Criteria
+
+## View Resume
+
+* [ ] View Resume button removed from Talent Profile header
+* [ ] Removed for Talent owner
+* [ ] Removed for Client view
+* [ ] Removed for Public View
+* [ ] Removed for logged-out visitor
+* [ ] Resume data remains intact
+* [ ] Resume upload remains intact
+* [ ] Admin/job-application resume functionality remains intact
+* [ ] No unused-import TypeScript errors introduced
+
+## Applications Position
+
+* [ ] Applications section exists only once
+* [ ] Applications appears immediately after Certifications
+* [ ] Applications appears above Values Alignment
+* [ ] Existing application data still loads correctly
+* [ ] Status badges still work
+* [ ] View All Applications still works
+* [ ] Applications remains Talent-owner only
+* [ ] Applications is hidden in Public View
+* [ ] Applications is hidden from Client/visitor Talent Profile
+* [ ] Sticky tab order matches page order
+* [ ] Applications sticky tab still scrolls correctly
+* [ ] Mobile layout remains correct
+
+---
+
+# Regression Testing
+
+After making the changes, verify:
+
+1. Log in as Talent.
+2. Open own Talent Profile.
+3. Confirm View Resume is gone from the header.
+4. Scroll to Certifications.
+5. Confirm Applications is directly below Certifications.
+6. Confirm Values Alignment is directly below Applications.
+7. Open Applications and verify the data/statuses still work.
+8. Switch to Public View.
+9. Confirm Applications disappears.
+10. Confirm View Resume remains absent.
+11. Open the profile as Client.
+12. Confirm Applications is hidden.
+13. Confirm View Resume is absent.
+14. Verify resume upload/profile completion still work elsewhere.
+15. Run the normal TypeScript/build checks.
+
+Keep this change focused. Do not introduce any additional layout redesign or unrelated refactoring.

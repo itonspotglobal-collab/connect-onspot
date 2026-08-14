@@ -292,9 +292,9 @@ const SECTION_TABS = [
   { id: "section-experience", label: "Experience" },
   { id: "section-education", label: "Education" },
   { id: "section-certifications", label: "Certifications" },
+  { id: "section-applications", label: "Applications" },
   { id: "section-portfolio", label: "Portfolio" },
   { id: "section-resume",   label: "Resume" },
-  { id: "section-applications", label: "Applications" },
   { id: "section-preferences", label: "Preferences" },
   { id: "section-contact",  label: "Contact" },
 ];
@@ -798,10 +798,10 @@ export default function TalentProfile() {
     "section-experience",
     "section-education",
     "section-certifications",
-    "section-portfolio",
-    "section-resume",
     // Applications are private — hidden in public preview and from non-owners
     ...(showPrivateOwnerSections ? ["section-applications"] : []),
+    "section-portfolio",
+    "section-resume",
     "section-preferences",
     ...(canSeeContact || isOwner ? ["section-contact"] : []),
   ]);
@@ -953,15 +953,6 @@ export default function TalentProfile() {
                   className="rounded-full text-sm"
                 >
                   <ChevronRight className="mr-1 h-4 w-4 rotate-180" /> Back to Pool
-                </Button>
-              )}
-              {candidate.resumeUrl && (
-                <Button
-                  variant="outline"
-                  className="rounded-full text-sm"
-                  onClick={() => window.open(`/api/candidates/${id}/resume-download`, "_blank")}
-                >
-                  <FileText className="mr-1.5 h-4 w-4" /> View Resume
                 </Button>
               )}
               {isClientViewer && candidate.email && (
@@ -1307,6 +1298,9 @@ export default function TalentProfile() {
               )}
             </Section>
 
+            {/* Applications — private, only visible to authenticated owner (hidden in public preview) */}
+            {showPrivateOwnerSections && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
+
             {/* Culture alignment */}
             {culture && (
               <Section title="Values Alignment" icon={Star}>
@@ -1426,9 +1420,6 @@ export default function TalentProfile() {
             <Section id="section-resume" title="Resume" icon={FileText}>
               <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
             </Section>
-
-            {/* Applications — private, only visible to authenticated owner (hidden in public preview) */}
-            {showPrivateOwnerSections && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
 
             {/* Contact (role-gated) */}
             {canSeeContact && (
