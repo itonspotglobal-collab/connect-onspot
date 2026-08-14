@@ -689,126 +689,64 @@ export default function WhyOnSpotAbout() {
         </div>
       </section>
 
-      {/* ── Minimal footer ── same bg as CTA for zero visual break ─────────── */}
-      <footer style={{ background: P, padding: "48px 0 32px" }}>
-        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px" }}>
+      {/* ── Fine-print footer ── same bg, zero visual break ─────────────────── */}
+      <footer style={{ background: P, padding: "28px 0 24px" }}>
+        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
 
-          {/* Main row: logo+social | Company | Contact */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 40, marginBottom: 40 }} className="about-footer-grid">
+          {/* Left: tagline + copyright */}
+          <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", margin: 0, letterSpacing: "0.01em" }}>
+            Work Without Limits · © {new Date().getFullYear()} OnSpot Global
+          </p>
 
-            {/* Brand */}
-            <div>
-              <img
-                src={onspotLogo}
-                alt="OnSpot"
-                style={{ height: 28, width: "auto", objectFit: "contain", marginBottom: 20, filter: "brightness(0) invert(1)" }}
-              />
-              <p style={{ fontSize: 13, lineHeight: 1.65, color: "rgba(255,255,255,0.52)", marginBottom: 20, maxWidth: 260 }}>
-                Work Without Limits.
-              </p>
-              {/* Social icons */}
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {[
-                  { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn", icon: <Linkedin size={15} /> },
-                  { href: "https://www.facebook.com/OnSpotGlobal", label: "Facebook", icon: <Facebook size={15} /> },
-                  { href: "https://x.com/OnSpotTribe", label: "X", icon: <SiX size={13} /> },
-                  { href: "https://www.threads.com/@onspotglobal", label: "Threads", icon: <SiThreads size={13} /> },
-                  { href: "https://www.instagram.com/onspotglobal", label: "Instagram", icon: <Instagram size={15} /> },
-                  { href: "https://www.tiktok.com/@onspottribe", label: "TikTok", icon: <SiTiktok size={13} /> },
-                  { href: "https://www.youtube.com/@OnSpotGlobal", label: "YouTube", icon: <SiYoutube size={15} /> },
-                ].map(({ href, label, icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.65)", border: "1px solid rgba(255,255,255,0.10)", transition: "background 0.15s, color 0.15s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.16)"; e.currentTarget.style.color = "#fff"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; }}
-                  >
-                    {icon}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Company */}
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.38)", marginBottom: 16 }}>Company</p>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { href: "/why-onspot/about", label: "About OnSpot" },
-                  { href: "/amazing", label: "Amazing Stories" },
-                  { href: "/insights", label: "Insights" },
-                  { href: "/affiliate-marketing", label: "Affiliate Marketing" },
-                  { href: "/bpo-partner", label: "BPO Partner" },
-                  { href: "/investors", label: "Investors Corner" },
-                  { href: "/operations-playbook", label: "Delivery Playbook" },
-                ].map(({ href, label }) => (
-                  <li key={label}>
-                    <Link
-                      to={href}
-                      style={{ fontSize: 13.5, color: "rgba(255,255,255,0.62)", textDecoration: "none", transition: "color 0.14s" }}
-                      onMouseEnter={(e: any) => (e.currentTarget.style.color = "#fff")}
-                      onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.62)")}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Contact Us */}
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.38)", marginBottom: 16 }}>Contact Us</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <a href="mailto:hello@onspotglobal.com" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, color: "rgba(255,255,255,0.62)", textDecoration: "none", transition: "color 0.14s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.62)")}>
-                  <Mail size={14} style={{ flexShrink: 0, opacity: 0.55 }} />
-                  hello@onspotglobal.com
-                </a>
-                <a href="tel:+17185405053" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, color: "rgba(255,255,255,0.62)", textDecoration: "none", transition: "color 0.14s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.62)")}>
-                  <Phone size={14} style={{ flexShrink: 0, opacity: 0.55 }} />
-                  1-718 540 5053
-                </a>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.55 }}>
-                  <MapPin size={14} style={{ flexShrink: 0, opacity: 0.55, marginTop: 2 }} />
-                  <span>US — 2248 Broadway, New York, 10024</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.55 }}>
-                  <MapPin size={14} style={{ flexShrink: 0, opacity: 0.55, marginTop: 2 }} />
-                  <span>PH — 17F High Street South Corporate Plaza Tower 2, BGC, Taguig</span>
-                </div>
-              </div>
-            </div>
+          {/* Centre: social icons */}
+          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            {[
+              { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={12} /> },
+              { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={12} /> },
+              { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={11} /> },
+              { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={11} /> },
+              { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={12} /> },
+              { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={11} /> },
+              { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={12} /> },
+            ].map(({ href, label, icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
+              >
+                {icon}
+              </a>
+            ))}
           </div>
 
-          {/* Bottom bar */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.10)", paddingTop: 24, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)", margin: 0 }}>
-              © {new Date().getFullYear()} OnSpot Global. All rights reserved.
-            </p>
-            <div style={{ display: "flex", gap: 24 }}>
-              {[
-                { to: "/privacy-policy", label: "Privacy Policy" },
-                { to: "/terms-and-conditions", label: "Terms & Conditions" },
-              ].map(({ to, label }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  style={{ fontSize: 12.5, color: "rgba(255,255,255,0.42)", textDecoration: "none", transition: "color 0.14s" }}
-                  onMouseEnter={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
-                  onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.42)")}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
+          {/* Right: Company links + legal */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", justifyContent: "flex-end" }}>
+            {[
+              { to: "/why-onspot/about",    label: "About" },
+              { to: "/amazing",             label: "Stories" },
+              { to: "/insights",            label: "Insights" },
+              { to: "/affiliate-marketing", label: "Affiliate" },
+              { to: "/bpo-partner",         label: "BPO Partner" },
+              { to: "/investors",           label: "Investors" },
+              { to: "/operations-playbook", label: "Playbook" },
+              { to: "/privacy-policy",      label: "Privacy Policy" },
+              { to: "/terms-and-conditions",label: "Terms" },
+            ].map(({ to, label }) => (
+              <Link
+                key={label}
+                to={to}
+                style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", textDecoration: "none", transition: "color 0.14s" }}
+                onMouseEnter={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
+                onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
 
         </div>
