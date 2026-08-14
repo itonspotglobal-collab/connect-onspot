@@ -304,8 +304,6 @@ export default function WhyOnSpotAbout() {
           overflow: "hidden",
         }}
       >
-        {/* Subtle grid texture */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 32px", position: "relative", width: "100%" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.48)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "6px 16px", marginBottom: 32 }}>
