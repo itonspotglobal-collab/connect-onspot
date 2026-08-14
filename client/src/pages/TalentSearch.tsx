@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,15 +179,6 @@ export default function TalentSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
-  // Scroll to #top-matches when navigated here with that hash (wouter doesn't do this automatically)
-  useEffect(() => {
-    if (window.location.hash === "#top-matches") {
-      const el = document.getElementById("top-matches");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
-    }
-  }, []);
 
   // Fetch profiles based on current filters  
   const { data: profiles = [], isLoading, error } = useQuery<Profile[]>({
