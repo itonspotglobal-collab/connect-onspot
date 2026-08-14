@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import jakePhoto from "@assets/Jake_1780574815787.png";
-import nurPhoto from "@assets/Nur_CEO_1786687616720.jpeg";
+const nurPhoto = "/nur-ceo.jpeg";
 import markPhoto from "@assets/Macky_1780574815788.png";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
