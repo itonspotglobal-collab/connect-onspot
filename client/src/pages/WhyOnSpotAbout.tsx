@@ -250,24 +250,16 @@ export default function WhyOnSpotAbout() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
             <Link
               to="/"
-              style={{ fontSize: 13.5, fontWeight: 600, color: "rgba(255,255,255,0.82)", border: "1px solid rgba(255,255,255,0.28)", padding: "9px 18px", borderRadius: 8, whiteSpace: "nowrap", transition: "background 0.15s" }}
-              className="hidden sm:block"
-              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = "transparent")}
+              className="hidden md:block px-5 py-2.5 rounded-lg font-semibold text-sm text-white/90 border border-white/25 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-200 whitespace-nowrap"
             >
               Log In
             </Link>
-            <a
-              href="https://calendly.com/hello-onspotglobal/lead-intake-schedule"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "9px 18px", borderRadius: 8, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
-              className="hidden sm:block"
-              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.opacity = "1")}
+            <Link
+              to="/"
+              className="hidden md:block text-[13px] font-medium text-white/55 hover:text-white/85 hover:underline transition-colors duration-200 whitespace-nowrap"
             >
               Sign Up
-            </a>
+            </Link>
 
             {/* Mobile hamburger — only on small screens */}
             <button
