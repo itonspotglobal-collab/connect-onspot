@@ -1336,8 +1336,8 @@ export default function JobApplyPage() {
 
         {requiresVideoIntro && (
           <div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-0.5">
-              We Want to Meet the Person Behind the Resume! <span className="text-red-500">*</span>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Video Introduction <span className="text-red-500">*</span>
             </p>
             {renderVideoSection()}
           </div>
