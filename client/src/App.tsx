@@ -439,6 +439,8 @@ function AppContent() {
       {/* Talent Portal routes temporarily redirect to the public homepage. */}
       <Route path="/talent-portal" component={RedirectToHome} />
       <Route path="/hired-talent-portal" component={RedirectToHome} />
+      {/* Old /talent-portal/applications URL — hard redirect to the correct page */}
+      <Route path="/talent-portal/applications" component={() => { const [, nav] = useLocation(); useEffect(() => { nav("/my-applications"); }, []); return null; }} />
       
       {/* Settings Routes - Available for both client and talent */}
       <Route path="/settings" component={SettingsRoute} />
