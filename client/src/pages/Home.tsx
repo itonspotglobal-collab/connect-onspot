@@ -2138,9 +2138,9 @@ function FinalCtaSection() {
         {/* Legal */}
         <p style={{ color: "rgba(255,255,255,0.28)", fontSize: "0.78rem" }}>
           By continuing you agree to our{" "}
-          <Link href="/terms" className="underline underline-offset-1 hover:opacity-70 transition">Terms</Link>
+          <Link href="/terms-and-conditions" className="underline underline-offset-1 hover:opacity-70 transition">Terms</Link>
           {" "}and{" "}
-          <Link href="/privacy" className="underline underline-offset-1 hover:opacity-70 transition">Privacy Policy</Link>.
+          <Link href="/privacy-policy" className="underline underline-offset-1 hover:opacity-70 transition">Privacy Policy</Link>.
         </p>
       </div>
     </section>

@@ -502,13 +502,13 @@ export function SignUpDialog({
                     />
                     <Label htmlFor="terms" className="text-xs text-white/45 leading-relaxed cursor-pointer">
                       I agree to the{" "}
-                      <button type="button" className="text-white/65 underline hover:text-white transition-colors">
+                      <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-white/65 underline hover:text-white transition-colors">
                         Terms of Service
-                      </button>{" "}
+                      </a>{" "}
                       and{" "}
-                      <button type="button" className="text-white/65 underline hover:text-white transition-colors">
+                      <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-white/65 underline hover:text-white transition-colors">
                         Privacy Policy
-                      </button>
+                      </a>
                     </Label>
                   </div>
                 </form>

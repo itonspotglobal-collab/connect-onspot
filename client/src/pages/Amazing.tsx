@@ -1470,8 +1470,8 @@ export default function Amazing() {
                 <span className="text-[10px] sm:text-xs text-white/50">Powered by OnSpot Intelligence</span>
               </div>
               <div className="flex gap-6">
-                <Link href="/privacy" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-privacy">Privacy Policy</Link>
-                <Link href="/terms" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-terms">Terms of Service</Link>
+                <Link href="/privacy-policy" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-privacy">Privacy Policy</Link>
+                <Link href="/terms-and-conditions" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-terms">Terms of Service</Link>
                 <Link href="/cookies" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-cookies">Cookie Policy</Link>
               </div>
             </div>
