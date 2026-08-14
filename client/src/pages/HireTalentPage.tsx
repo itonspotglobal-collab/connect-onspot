@@ -308,6 +308,16 @@ export default function HireTalentPage() {
     trackPilotActivity("viewedHireTalent");
   }, []);
 
+  // Scroll to #top-matches after React renders (browser's native hash scroll fires before the SPA renders)
+  useEffect(() => {
+    if (window.location.hash === "#top-matches") {
+      const el = document.getElementById("top-matches");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!query.trim()) return;
     const timer = window.setTimeout(() => {
@@ -539,7 +549,7 @@ export default function HireTalentPage() {
       </section>
 
       {/* ── Top Matches + Filters ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-6 py-4 pb-16 lg:px-8">
+      <section id="top-matches" className="mx-auto max-w-7xl px-6 py-4 pb-16 lg:px-8">
         <Card className="rounded-[30px] border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
           <CardContent className="p-6 lg:p-8">
 
