@@ -370,15 +370,16 @@ export default function JobApplyPage() {
   /** True when this application is via a Talent Portal session. */
   const hasTalentSession = !!talentSession && !!candidateData;
 
-  /** Wizard steps (computed, excluding "questions" when there are none, and "resume" when neither doc is required) */
-  const requiresDocuments = requiresResume || requiresVideoIntro;
+  /** Wizard steps — resume is never collected; the talent's profile is their resume.
+   *  The "Video" step only appears when the job requires a video introduction. */
+  const requiresDocuments = requiresVideoIntro;
   const wizardSteps = (() => {
     const steps: { key: WizardStep; label: string }[] = [
       { key: "review", label: "Review" },
     ];
     const questions: ApplicationQuestion[] = prefillData?.job?.questions ?? [];
     if (questions.length > 0) steps.push({ key: "questions", label: "Questions" });
-    if (requiresDocuments) steps.push({ key: "resume", label: "Documents" });
+    if (requiresVideoIntro) steps.push({ key: "resume", label: "Video" });
     steps.push({ key: "confirm", label: "Confirm" });
     return steps;
   })();
@@ -511,13 +512,8 @@ export default function JobApplyPage() {
   };
 
   const validateResume = () => {
-    const hasResume = useExistingResume || (cvFile && cvState === "ready");
-    if (requiresResume && !hasResume) {
-      setCvError("CV / Resume is required");
-      return false;
-    }
-    setCvError(null);
-
+    // Resume is never collected — the talent's profile serves as their resume.
+    // Only validate the video introduction when the role requires it.
     if (requiresVideoIntro) {
       const hasVideo = useExistingVideo || (videoFile && videoState === "ready");
       if (!hasVideo) {
@@ -1116,19 +1112,23 @@ export default function JobApplyPage() {
         </p>
       </div>
 
-      {/* Non-phone missing items (resume, video) — informational, not blocking */}
-      {readinessMissing.filter((m) => m !== "phone").length > 0 && (
-        <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-          <div className="text-xs text-slate-600 dark:text-slate-400">
-            <p className="font-medium">You can add these in the next steps:</p>
-            <ul className="mt-1 list-disc pl-4 space-y-0.5">
-              {requiresResume && readinessMissing.includes("resume") && <li>CV / Resume</li>}
-              {readinessMissing.includes("video_intro") && <li>Video introduction</li>}
-            </ul>
-          </div>
-        </div>
-      )}
+      {/* Profile completion nudge — always visible; encourages stronger applications */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-emerald-100 bg-emerald-50/60 px-3.5 py-2.5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+        <p className="text-xs text-emerald-700 dark:text-emerald-300">
+          A complete profile increases your chances of being shortlisted.{" "}
+          {talentSession?.candidateId && (
+            <a
+              href={`/talent-profile/${talentSession.candidateId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:no-underline font-medium"
+            >
+              Complete your profile →
+            </a>
+          )}
+        </p>
+      </div>
 
       {/* Editable identity fields */}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -1314,40 +1314,11 @@ export default function JobApplyPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          {requiresResume && requiresVideoIntro
-            ? "Your documents"
-            : requiresResume
-            ? "Your CV & Resume"
-            : "We Want to Meet the Person Behind the Resume!"}
+          We Want to Meet the Person Behind the Resume!
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          {requiresResume && useExistingResume
-            ? "Your saved resume will be submitted. You can replace it with a different file if you'd like."
-            : requiresResume
-            ? "Upload your CV to include with this application."
-            : ""}
-        </p>
       </div>
 
-      <div className="space-y-3">
-        {requiresResume && (
-          <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              CV / Resume <span className="text-red-500">*</span>
-            </p>
-            {renderResumeSection()}
-          </div>
-        )}
-
-        {requiresVideoIntro && (
-          <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Video Introduction <span className="text-red-500">*</span>
-            </p>
-            {renderVideoSection()}
-          </div>
-        )}
-      </div>
+      {requiresVideoIntro && renderVideoSection()}
 
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1 rounded-full" onClick={retreatWizard}>
@@ -1361,9 +1332,7 @@ export default function JobApplyPage() {
   );
 
   const renderWizardConfirm = () => {
-    const hasResume = useExistingResume || (cvFile && cvState === "ready");
     const hasVideo = useExistingVideo || (videoFile && videoState === "ready");
-    const resumeLabel = cvFile && !useExistingResume ? cvFile.name : existingResumeDoc?.fileName ?? "Profile resume";
     const videoLabel = videoFile && !useExistingVideo ? videoFile.name : existingVideoDoc?.fileName ?? "Profile video";
 
     return (
@@ -1421,28 +1390,20 @@ export default function JobApplyPage() {
           </div>
         </div>
 
-        {/* Documents section */}
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 px-4 py-2.5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Documents</p>
-            <button
-              type="button"
-              onClick={() => jumpToStep("resume")}
-              className="flex items-center gap-1 text-xs text-[#474ead] hover:underline"
-            >
-              <Pencil className="h-3 w-3" /> Edit
-            </button>
-          </div>
-          <div className="px-4 py-3 space-y-1.5">
-            <div className="flex gap-2 text-sm items-center">
-              <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-              {hasResume ? (
-                <span className="text-slate-800 dark:text-slate-200 truncate">{resumeLabel}</span>
-              ) : (
-                <span className="text-amber-600 dark:text-amber-400">No resume — add in previous step</span>
-              )}
+        {/* Video section — only shown when the role requires a video introduction */}
+        {requiresVideoIntro && (
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 px-4 py-2.5">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Video Introduction</p>
+              <button
+                type="button"
+                onClick={() => jumpToStep("resume")}
+                className="flex items-center gap-1 text-xs text-[#474ead] hover:underline"
+              >
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
             </div>
-            {requiresVideoIntro && (
+            <div className="px-4 py-3">
               <div className="flex gap-2 text-sm items-center">
                 <Video className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
                 {hasVideo ? (
@@ -1451,9 +1412,9 @@ export default function JobApplyPage() {
                   <span className="text-amber-600 dark:text-amber-400">No video — add in previous step</span>
                 )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Questions section */}
         {jobQuestions.length > 0 && (
