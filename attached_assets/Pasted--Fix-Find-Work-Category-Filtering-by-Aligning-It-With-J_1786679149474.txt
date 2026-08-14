@@ -1,0 +1,660 @@
+# Fix Find Work Category Filtering by Aligning It With Job Function
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Investigate and fix the mismatch between:
+
+* **Function** in Admin Create/Edit Job
+* **Category** filters on `/find-work/jobs`
+
+The Admin job form currently calls this field:
+
+**Function**
+
+while the public Find Work page calls the same taxonomy:
+
+**Category**
+
+This is confusing and may also be contributing to the current filtering bug.
+
+Do not add a second Admin field.
+
+The intended model should be:
+
+```text
+Admin: Function
+        ↓
+canonical jobFunction
+        ↓
+Find Work: Category filter
+```
+
+In other words:
+
+**Function is the underlying job classification.**
+
+The public Find Work page may continue to label it **Category** for UX purposes.
+
+---
+
+# Current Important Finding
+
+Inspect:
+
+`client/src/pages/JobFormPage.tsx`
+
+The current Admin job payload already does:
+
+```ts
+jobFunction: formData.jobFunction.trim(),
+category: formData.jobFunction.trim(),
+```
+
+Therefore, new jobs created through the current Admin form should normally save the selected Function into both fields.
+
+Do NOT remove this behavior until the backend/data model has been reviewed.
+
+The problem is more likely that:
+
+1. legacy jobs do not have both fields populated consistently, OR
+2. `/api/jobs/search` filters only `category`, OR
+3. stored values use older variations, OR
+4. the filter taxonomy and saved Function taxonomy have drifted apart.
+
+---
+
+# 1. Treat `jobFunction` as Canonical
+
+Going forward, treat:
+
+```ts
+job.jobFunction
+```
+
+as the canonical job taxonomy field.
+
+Examples:
+
+```text
+Executive
+Operations
+Engineering
+Artificial Intelligence
+Data & Analytics
+Product
+Design (UI/UX)
+Information Technology (IT)
+Marketing
+Sales
+Customer Success
+Customer Support
+Finance & Accounting
+Human Resources
+Legal & Compliance
+Procurement
+Supply Chain
+Business Development
+Strategy
+Project & Program Management
+Research & Development (R&D)
+```
+
+These are the same values displayed in the current Admin **Function** dropdown.
+
+---
+
+# 2. Keep `category` for Backward Compatibility
+
+Do NOT immediately delete the existing:
+
+```ts
+category
+```
+
+database field.
+
+It may still be used by:
+
+* legacy jobs
+* APIs
+* old components
+* imports
+* recommendation logic
+
+For now:
+
+```text
+jobFunction = canonical
+category = compatibility mirror / fallback
+```
+
+New and edited jobs should continue saving both:
+
+```ts
+jobFunction: selectedFunction,
+category: selectedFunction,
+```
+
+until a separate migration removes the redundancy.
+
+---
+
+# 3. Fix `/api/jobs/search`
+
+The public Find Work category filter must match against BOTH:
+
+```ts
+job.jobFunction
+```
+
+and:
+
+```ts
+job.category
+```
+
+Do not filter only against `category`.
+
+Conceptually:
+
+```ts
+const selectedCategory = normalizeFilterValue(req.query.category);
+
+const match =
+  normalizeFilterValue(job.jobFunction) === selectedCategory ||
+  normalizeFilterValue(job.category) === selectedCategory;
+```
+
+If the backend uses SQL/Drizzle, implement the equivalent OR condition there.
+
+Example conceptually:
+
+```ts
+or(
+  ilike(jobs.jobFunction, selectedCategory),
+  ilike(jobs.category, selectedCategory)
+)
+```
+
+Use actual schema field names and parameterized queries.
+
+---
+
+# 4. Normalize Before Comparing
+
+Do not depend on exact formatting.
+
+Add/reuse:
+
+```ts
+function normalizeJobFunction(value?: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+```
+
+This should make values such as:
+
+```text
+Finance & Accounting
+Finance and Accounting
+finance-accounting
+```
+
+comparable.
+
+Do not mutate stored database values.
+
+Normalize only during matching.
+
+---
+
+# 5. Verify the Actual Database Values
+
+Before changing filtering logic, inspect several current job records.
+
+For each, inspect:
+
+```text
+professionalRoleName
+jobFunction
+category
+status
+approval/status flags
+```
+
+Especially check jobs that visibly exist on `/find-work/jobs`.
+
+Example debugging table:
+
+```text
+IT Administrator
+
+jobFunction:
+Information Technology (IT)
+
+category:
+?
+
+status:
+open
+```
+
+and:
+
+```text
+Customer Service Representative
+
+jobFunction:
+Customer Support
+
+category:
+?
+
+status:
+open
+```
+
+This will confirm whether legacy jobs have empty or mismatched `category` values.
+
+Remove temporary debug logging after testing.
+
+---
+
+# 6. Backfill Legacy Jobs
+
+If database inspection confirms records such as:
+
+```text
+jobFunction = "Customer Support"
+category = null
+```
+
+or:
+
+```text
+jobFunction = "Information Technology (IT)"
+category = "Other"
+```
+
+create a safe migration/backfill.
+
+Preferred rule:
+
+```text
+If jobFunction is non-empty:
+    use jobFunction as the canonical category mirror
+```
+
+Potential SQL concept:
+
+```sql
+UPDATE jobs
+SET category = job_function
+WHERE job_function IS NOT NULL
+  AND TRIM(job_function) <> ''
+  AND (
+    category IS NULL
+    OR TRIM(category) = ''
+  );
+```
+
+Do not overwrite meaningful old category data blindly unless the taxonomy migration is intentional.
+
+Backend fallback must still remain even after a backfill.
+
+---
+
+# 7. Use the Same Taxonomy Everywhere
+
+Inspect:
+
+`client/src/lib/jobConstants.ts`
+
+There is already a canonical list used by the Admin Function dropdown.
+
+The public Find Work Category chips should use that exact same list.
+
+Avoid:
+
+```text
+Admin Function list A
+Public Category list B
+```
+
+Use:
+
+```ts
+JOB_FUNCTIONS
+```
+
+for both where possible.
+
+If the constant is currently client-only but the server also needs aliases/mappings, move the canonical taxonomy into an appropriate shared module.
+
+---
+
+# 8. Do NOT Add a Separate “Category” Field to Admin
+
+The Admin screen should remain simple.
+
+Do not create:
+
+```text
+Function: [ ... ]
+
+Category: [ ... ]
+```
+
+as two dropdowns representing the same concept.
+
+That would create more data inconsistency.
+
+Keep:
+
+```text
+Function *
+[ Information Technology (IT) ]
+```
+
+as the Admin field.
+
+---
+
+# 9. Optional Public Label Rename
+
+It is acceptable to keep the public filter heading:
+
+**CATEGORY**
+
+because that is understandable to job seekers.
+
+But internally the selected value should represent:
+
+```text
+jobFunction
+```
+
+If you want to make terminology completely consistent, changing the public label to:
+
+**JOB FUNCTION**
+
+is also acceptable, but this is optional.
+
+Do not make the filter bug dependent on a cosmetic rename.
+
+---
+
+# 10. Filter Query Naming
+
+For minimal regression risk, it is okay for the frontend to continue sending:
+
+```text
+?category=Customer Support
+```
+
+as long as the backend interprets that as:
+
+> filter by job classification/function
+
+and checks both fields.
+
+Alternatively, a future cleanup could rename it to:
+
+```text
+?jobFunction=Customer Support
+```
+
+but do NOT perform a broad API rename unless all callers are updated.
+
+For this task, backward compatibility is preferred.
+
+---
+
+# 11. Group Navigation Filters
+
+The existing Find Work page also uses grouped navigation mappings such as:
+
+```text
+Development & IT
+```
+
+that may map to multiple functions.
+
+Those should match against `jobFunction` as well.
+
+Example:
+
+```text
+Development & IT
+→ Engineering
+OR Information Technology (IT)
+```
+
+Do not make grouped filters depend only on the old category column.
+
+---
+
+# 12. Search Query Logic
+
+When category/function filtering is active:
+
+```text
+selected Function
+AND
+other filters
+```
+
+must apply.
+
+Example:
+
+```text
+Function = Customer Support
+Location = Remote
+Contract = Full Time
+```
+
+must return jobs matching all three.
+
+Do not OR unrelated filters together.
+
+---
+
+# 13. Filter Before Pagination
+
+Apply jobFunction/category filtering before:
+
+```text
+LIMIT
+OFFSET
+```
+
+Then calculate:
+
+```text
+meta.total
+meta.totalPages
+```
+
+from the filtered query.
+
+Otherwise the page may incorrectly show zero matches.
+
+---
+
+# 14. Suggested Data Model Direction
+
+For now:
+
+```text
+jobs
+├── jobFunction     ← canonical
+├── category        ← compatibility
+├── professionalRoleName
+├── originalRoleName
+├── ...
+```
+
+Admin:
+
+```text
+Function
+   ↓
+jobFunction
+   ↓
+category mirror
+```
+
+Public:
+
+```text
+Category chip
+   ↓
+search jobFunction/category
+```
+
+This keeps the UI terminology flexible without breaking filtering.
+
+---
+
+# Example
+
+Admin creates:
+
+```text
+Job title:
+IT Administrator
+
+Function:
+Information Technology (IT)
+```
+
+Save:
+
+```ts
+{
+  professionalRoleName: "IT Administrator",
+  jobFunction: "Information Technology (IT)",
+  category: "Information Technology (IT)"
+}
+```
+
+Public user clicks:
+
+```text
+Information Technology (IT)
+```
+
+Search endpoint should return that job.
+
+---
+
+# Another Example
+
+Legacy job:
+
+```ts
+{
+  professionalRoleName: "IT Administrator",
+  jobFunction: "Information Technology (IT)",
+  category: null
+}
+```
+
+Public filter must STILL return it.
+
+This is why the backend must check both fields.
+
+---
+
+# Acceptance Criteria
+
+## Admin
+
+* [ ] Admin still sees only one `Function` dropdown
+* [ ] Admin does NOT get a duplicate Category dropdown
+* [ ] Creating a job saves `jobFunction`
+* [ ] Creating a job also maintains `category` compatibility
+* [ ] Editing a job retains Function correctly
+* [ ] Existing Admin UX is unchanged
+
+## Public Find Work
+
+* [ ] Category chips map to the Admin Function taxonomy
+* [ ] Selecting Design (UI/UX) returns matching Function jobs
+* [ ] Selecting Information Technology (IT) works
+* [ ] Customer Support works
+* [ ] Operations works
+* [ ] Marketing works
+* [ ] All remaining Functions work
+* [ ] Legacy jobs with only `jobFunction` still appear
+* [ ] Jobs with only legacy `category` still appear
+
+## API
+
+* [ ] `/api/jobs/search?category=X` checks `jobFunction`
+* [ ] It also checks legacy `category`
+* [ ] Comparison is case-insensitive/normalized
+* [ ] Filters happen before pagination
+* [ ] `meta.total` is correct
+
+## Regression
+
+* [ ] Job Create works
+* [ ] Job Edit works
+* [ ] Find Work search works
+* [ ] Location filtering works
+* [ ] Contract filtering works
+* [ ] Salary filtering works
+* [ ] Sorting works
+* [ ] Featured jobs work
+* [ ] Job Details works
+* [ ] No TypeScript errors
+
+---
+
+# Manual Verification
+
+First, inspect existing database records before coding.
+
+Pick at least three displayed roles and compare:
+
+```text
+Role
+jobFunction
+category
+```
+
+Then test:
+
+1. Create a new Customer Support job.
+2. Confirm DB has:
+
+   * `jobFunction = Customer Support`
+   * `category = Customer Support`
+3. Open `/find-work/jobs`.
+4. Select Customer Support.
+5. Confirm it appears.
+6. Find a legacy job where category is missing.
+7. Confirm it still appears based on `jobFunction`.
+8. Test IT, Design, Finance, and Operations.
+9. Reset filters.
+10. Confirm all open jobs return.
+
+---
+
+# Important
+
+Do not solve this by adding a new Category dropdown to Admin.
+
+The cleaner fix is:
+
+**Admin Function = public Category taxonomy.**
+
+Make the search endpoint understand that relationship correctly.

@@ -49,6 +49,7 @@ export const LEGACY_FUNCTION_MAP: Record<string, string> = {
   "finance":          "Finance & Accounting",
   "hr":               "Human Resources",
   "customer success": "Customer Success",
+  "support":          "Customer Support",
   "customer support": "Customer Support",
   "development":      "Engineering",
   "tech support":     "Information Technology (IT)",

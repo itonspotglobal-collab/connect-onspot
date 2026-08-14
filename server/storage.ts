@@ -2996,8 +2996,12 @@ export class DbStorage extends MemStorage {
     const normStr = (s: string) =>
       s.trim().toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
 
-    // SQL expression that applies the same normalization to the stored job category.
-    const normDbCat = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.jobFunction}, ${jobsTable.category}, ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
+    // SQL expressions that normalise each stored field independently.
+    // We check job_function AND category as separate OR branches so that a job
+    // with only one field populated (or with a value in only one column) still
+    // surfaces when the other column matches.
+    const normDbJobFunction = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.jobFunction}, ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
+    const normDbCategory    = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.category},    ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
 
     // ── Build WHERE conditions ─────────────────────────────────────────────────
     const conditions: ReturnType<typeof sqlOp>[] = [];
@@ -3010,15 +3014,20 @@ export class DbStorage extends MemStorage {
       sqlOp`(${jobsTable.approvalStatus} = 'approved' OR ${jobsTable.approvalStatus} IS NULL)`,
     );
 
-    // Category filter
+    // Category filter — checks job_function OR category independently so that
+    // legacy jobs with only one field populated still match.
     if (filters.categories && filters.categories.length > 0) {
       // Multi-category (nav-group slug) — OR match across all supplied categories
       const normCats = filters.categories.map(normStr);
-      // Build: normDbCat = normCats[0] OR normDbCat = normCats[1] OR …
-      const catOrs = normCats.map(c => sqlOp`${normDbCat} = ${c}`);
+      // Build: (normDbJobFunction = c OR normDbCategory = c) for each c, all OR'd together
+      const catOrs = normCats.flatMap(c => [
+        sqlOp`${normDbJobFunction} = ${c}`,
+        sqlOp`${normDbCategory} = ${c}`,
+      ]);
       conditions.push(sqlOp`(${sqlOp.join(catOrs, sqlOp` OR `)})`);
     } else if (filters.category) {
-      conditions.push(sqlOp`${normDbCat} = ${normStr(filters.category)}`);
+      const cat = normStr(filters.category);
+      conditions.push(sqlOp`(${normDbJobFunction} = ${cat} OR ${normDbCategory} = ${cat})`);
     }
 
     // Contract type — exact match
