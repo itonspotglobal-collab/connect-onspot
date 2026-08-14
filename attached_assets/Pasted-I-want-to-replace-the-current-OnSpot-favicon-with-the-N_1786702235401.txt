@@ -1,0 +1,498 @@
+I want to replace the current OnSpot favicon with the NEW OnSpot favicon image I have provided.
+
+The new favicon is the OnSpot icon with:
+
+* purple/blue background
+* yellow "o"
+* white "n"
+* white rounded-square outline
+
+I need this favicon to become the GLOBAL favicon across the entire OnSpot website.
+
+This must NOT only work on the homepage.
+
+It must apply to ALL pages/routes, including:
+
+* https://onspotglobal.com/
+* https://onspotglobal.com/find-work
+* https://onspotglobal.com/find-work/jobs
+* https://onspotglobal.com/find-work/job/:id
+* https://onspotglobal.com/hire-talent
+* https://onspotglobal.com/why-onspot/*
+* https://onspotglobal.com/services/*
+* https://onspotglobal.com/pricing
+* https://onspotglobal.com/enterprise
+* https://onspotglobal.com/insights
+* https://onspotglobal.com/insights/:slug
+* https://onspotglobal.com/contact
+* https://onspotglobal.com/admin/*
+* authentication pages
+* dashboard pages
+* all other OnSpot routes
+
+The same favicon should appear in browser tabs regardless of which OnSpot page is opened.
+
+## 1. Inspect the Existing Favicon Implementation
+
+Before changing anything, search the entire repository for:
+
+```text
+favicon
+favicon.png
+favicon.svg
+favicon.ico
+apple-touch-icon
+manifest.json
+manifest.webmanifest
+site.webmanifest
+shortcut icon
+rel="icon"
+rel="shortcut icon"
+rel="apple-touch-icon"
+mask-icon
+theme-color
+```
+
+Also inspect:
+
+```text
+client/index.html
+index.html
+public/
+client/public/
+manifest files
+HeadSEO.tsx
+App.tsx
+main.tsx
+server/
+```
+
+Determine exactly how the favicon is currently configured.
+
+Do NOT simply add another favicon tag on top of the old ones.
+
+Remove or update conflicting favicon references.
+
+## 2. Use the New OnSpot Favicon
+
+Use the newly provided OnSpot favicon artwork as the source.
+
+Create a clean production favicon set from it.
+
+The source artwork is square, so preserve its aspect ratio.
+
+Do NOT stretch or distort the logo.
+
+Generate these assets if appropriate for the current project:
+
+```text
+/public/favicon.ico
+/public/favicon-16x16.png
+/public/favicon-32x32.png
+/public/favicon-48x48.png
+/public/apple-touch-icon.png
+/public/android-chrome-192x192.png
+/public/android-chrome-512x512.png
+```
+
+Also keep a high-resolution source if useful:
+
+```text
+/public/onspot-favicon-2026.png
+```
+
+Use high-quality downsampling when generating the smaller icons so the logo remains sharp.
+
+## 3. IMPORTANT — Keep the Logo Legible at Small Sizes
+
+The uploaded image has relatively fine details.
+
+When generating 16x16 and 32x32 versions:
+
+* keep the OnSpot "on" symbol centered
+* preserve the yellow "o"
+* preserve the white "n"
+* preserve the purple/blue background
+* keep the logo recognizable
+* avoid unnecessary whitespace
+* do not stretch the image
+
+If the thin outer white border becomes visually poor at 16x16, optimize the small favicon version so the central "on" mark remains the visual priority.
+
+Do not redesign the logo.
+
+## 4. Update index.html
+
+Inspect the actual HTML entry point used by the production application.
+
+Update the `<head>` favicon configuration.
+
+Use something equivalent to:
+
+```html
+<link
+  rel="icon"
+  type="image/png"
+  sizes="32x32"
+  href="/favicon-32x32.png"
+/>
+
+<link
+  rel="icon"
+  type="image/png"
+  sizes="16x16"
+  href="/favicon-16x16.png"
+/>
+
+<link
+  rel="shortcut icon"
+  href="/favicon.ico"
+/>
+
+<link
+  rel="apple-touch-icon"
+  sizes="180x180"
+  href="/apple-touch-icon.png"
+/>
+```
+
+If the project uses a web manifest, also include:
+
+```html
+<link
+  rel="manifest"
+  href="/site.webmanifest"
+/>
+```
+
+Adapt this to the existing project rather than creating unnecessary duplicate tags.
+
+## 5. Update the Web Manifest
+
+If a manifest already exists, update it.
+
+If the project needs one, create:
+
+```text
+/public/site.webmanifest
+```
+
+with the correct OnSpot icons.
+
+For example:
+
+```json
+{
+  "name": "OnSpot",
+  "short_name": "OnSpot",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#4b50b5",
+  "background_color": "#4b50b5",
+  "display": "standalone"
+}
+```
+
+Use the actual OnSpot background color from the provided favicon if possible instead of blindly using the example hex value.
+
+Do not create multiple competing manifests.
+
+## 6. Apple / iOS Support
+
+Generate:
+
+```text
+/apple-touch-icon.png
+```
+
+at:
+
+```text
+180x180
+```
+
+and reference it correctly.
+
+This should allow saved OnSpot pages on iPhone/iPad to use the updated icon.
+
+## 7. Favicon.ico Compatibility
+
+Create/update:
+
+```text
+/public/favicon.ico
+```
+
+for browsers and crawlers that still request `/favicon.ico` automatically.
+
+The ICO should contain appropriate common favicon sizes if the available image-processing tooling supports it.
+
+At minimum, ensure:
+
+```text
+https://onspotglobal.com/favicon.ico
+```
+
+returns a valid favicon after production deployment.
+
+## 8. Make It Global
+
+Do NOT implement the favicon separately inside individual React pages.
+
+The favicon should be defined in the global document `<head>` so that all SPA routes inherit it.
+
+Verify that navigating between:
+
+```text
+/
+/find-work
+/find-work/jobs
+/find-work/job/:id
+/hire-talent
+/admin
+/insights
+```
+
+does NOT cause React, HeadSEO, Helmet, or another SEO component to switch the favicon back to an old image.
+
+Search specifically for runtime code such as:
+
+```text
+document.querySelector('link[rel="icon"]')
+document.createElement("link")
+setAttribute("href", ...)
+Helmet
+HeadSEO
+favicon
+```
+
+If route-specific code changes the favicon, remove that behavior unless it is intentionally required.
+
+The OnSpot favicon should remain consistent across the website.
+
+## 9. Check for Multiple Frontends / HTML Entry Points
+
+Inspect the repository architecture.
+
+If the application contains multiple independently served HTML entry points — for example:
+
+```text
+client/index.html
+public/404.html
+admin HTML shell
+authentication shell
+static pages
+```
+
+make sure each actual independently loaded document uses the new favicon where appropriate.
+
+Do NOT assume changing one file covers everything without checking.
+
+## 10. Remove Old Favicon References
+
+Search the repository again after implementation.
+
+Identify references to:
+
+```text
+favicon.png
+favicon.svg
+old favicon assets
+old OnSpot icons
+```
+
+Do not delete an asset merely because its filename contains "favicon" if some unrelated functionality requires it.
+
+However, no active website favicon metadata should continue referencing the old design.
+
+## 11. Verify Direct Production URLs
+
+After deployment, verify these URLs directly:
+
+```text
+https://onspotglobal.com/favicon.ico
+https://onspotglobal.com/favicon-16x16.png
+https://onspotglobal.com/favicon-32x32.png
+https://onspotglobal.com/apple-touch-icon.png
+https://onspotglobal.com/android-chrome-192x192.png
+https://onspotglobal.com/android-chrome-512x512.png
+```
+
+Every configured asset must return:
+
+```text
+HTTP 200
+```
+
+with the correct image Content-Type.
+
+They must NOT return:
+
+```text
+404
+index.html
+text/html
+```
+
+## 12. Verify the Raw Production HTML
+
+After deployment, fetch:
+
+```text
+https://onspotglobal.com/
+```
+
+and inspect the original HTML.
+
+Confirm the `<head>` contains the NEW favicon references.
+
+Also test a deep URL such as:
+
+```text
+https://onspotglobal.com/find-work/jobs
+```
+
+and:
+
+```text
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+```
+
+The browser should still receive the global favicon configuration.
+
+## 13. IMPORTANT — Browser Favicon Caching
+
+Favicons are aggressively cached by Chrome, Edge, Safari, and other browsers.
+
+Therefore, do not assume the implementation failed just because an already-open tab temporarily displays the old icon.
+
+To help invalidate the old favicon cache, use NEW favicon filenames such as:
+
+```text
+/favicon-32x32-2026.png
+/favicon-16x16-2026.png
+/apple-touch-icon-2026.png
+/onspot-favicon-2026.ico
+```
+
+and reference those new filenames from the HTML.
+
+This is preferred if the existing favicon has already been heavily cached.
+
+For maximum cache busting, I prefer using the new versioned filenames rather than overwriting the old files.
+
+For example:
+
+```html
+<link
+  rel="icon"
+  type="image/png"
+  sizes="32x32"
+  href="/favicon-32x32-2026.png"
+/>
+
+<link
+  rel="icon"
+  type="image/png"
+  sizes="16x16"
+  href="/favicon-16x16-2026.png"
+/>
+
+<link
+  rel="shortcut icon"
+  href="/onspot-favicon-2026.ico"
+/>
+
+<link
+  rel="apple-touch-icon"
+  href="/apple-touch-icon-2026.png"
+/>
+```
+
+Also keep `/favicon.ico` updated as a compatibility fallback.
+
+## 14. Do NOT Touch the Social Preview
+
+We already fixed the Open Graph/social-sharing image.
+
+Do NOT replace or modify:
+
+```text
+og:image
+twitter:image
+DEFAULT_OG_IMAGE
+onspot-social-preview-2026-v3.png
+```
+
+as part of this task.
+
+FAVICON and SOCIAL PREVIEW are separate.
+
+The existing social preview should continue working exactly as it does now.
+
+## 15. Build and Deploy
+
+After making the changes:
+
+* run the production build
+* fix any build errors
+* restart the application if required
+* republish/redeploy the production app
+* verify the actual `onspotglobal.com` deployment
+
+Changes existing only inside the Replit workspace are NOT enough.
+
+## 16. Final Verification
+
+Give me a report containing:
+
+```text
+Source favicon used:
+Generated favicon files:
+
+HTML entry point updated:
+Manifest updated:
+Apple touch icon updated:
+favicon.ico updated:
+
+Homepage favicon:
+Find Work favicon:
+Find Work Jobs favicon:
+Individual Job favicon:
+Admin favicon:
+Insights favicon:
+
+Old favicon references remaining:
+
+Production favicon URL:
+HTTP status:
+Content-Type:
+
+Production build:
+Production deployment:
+```
+
+Most importantly, verify that opening these in NEW browser tabs:
+
+```text
+https://onspotglobal.com/
+https://onspotglobal.com/find-work
+https://onspotglobal.com/find-work/jobs
+https://onspotglobal.com/find-work/job/REAL_JOB_ID
+https://onspotglobal.com/hire-talent
+https://onspotglobal.com/admin
+```
+
+shows the SAME new OnSpot favicon.
+
+Do not mark the task complete until the favicon is global and the production favicon assets return HTTP 200.
