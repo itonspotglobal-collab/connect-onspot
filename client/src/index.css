@@ -2889,3 +2889,70 @@ body.has-floating-bottom-right {
     min-height: 160px;
   }
 }
+
+/* ─── Homepage hero carousel — mobile responsiveness ─────────────────────── */
+@media (max-width: 767px) {
+  /* Slide 1: hero heading smaller on mobile */
+  .hero-work-h1 {
+    font-size: 40px !important;
+    line-height: 1 !important;
+  }
+
+  /* Slide 1: allow subtitle to wrap instead of overflowing */
+  .hero-subtitle {
+    white-space: normal !important;
+    width: auto !important;
+    text-align: center;
+  }
+
+  /* TwoCol: tighter vertical gap when stacked */
+  .hero-twocol {
+    gap: 12px !important;
+  }
+
+  /* TwoCol right side: center the visual on mobile */
+  .hero-twocol-right {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  /* Slides 2–5 main headings: reduce from large clamp min */
+  .hero-slide-h1-sm {
+    font-size: 32px !important;
+    line-height: 1.05 !important;
+  }
+  /* Slides 2–5 large subtitles: reduce from 22px clamp min */
+  .hero-slide-sub {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    margin-top: 8px !important;
+  }
+
+  /* Slide 2 — laptop mockup: shrink & flatten rotation */
+  .hero-laptop-wrap {
+    width: min(88vw, 300px) !important;
+    margin-inline: auto !important;
+  }
+  .hero-laptop-3d {
+    transform: none !important;
+  }
+
+  /* Slide 3 — phone mockup: shrink */
+  .hero-phone-wrap {
+    width: min(36vw, 145px) !important;
+    margin-inline: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Slides 4 & 5 — talent/jobs cards: mobile-safe width + height cap */
+  .hero-talent-wrap,
+  .hero-jobs-wrap {
+    width: min(94vw, 360px) !important;
+    margin-inline: auto !important;
+    max-height: 255px;
+    overflow: hidden;
+    border-radius: 18px;
+  }
+}

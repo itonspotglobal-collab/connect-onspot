@@ -1,0 +1,395 @@
+# Fix Homepage Hero Carousel Mobile Responsiveness Only
+
+Please fix the **mobile responsiveness of the homepage and navigation only**.
+
+The desktop and laptop layout already looks correct and must remain visually unchanged.
+
+## Files to inspect first
+
+Primary files:
+
+* `client/src/pages/Home.tsx`
+* `client/src/components/TopNavigation.tsx`
+
+Do not blindly redesign the homepage. Inspect the existing responsive structure and make the smallest targeted changes necessary.
+
+## Important requirement
+
+**Do not ruin or visually change the existing desktop/laptop version.**
+
+Desktop/tablet-large behavior at approximately `1024px+` should remain as close to the current implementation as possible.
+
+Prefer mobile-specific Tailwind breakpoint classes, responsive CSS, or narrowly scoped media-query behavior rather than replacing the existing desktop styles.
+
+---
+
+# 1. Mobile Navigation
+
+Current problem:
+
+On mobile, the hamburger/menu icon is positioned too close to the OnSpot logo.
+
+Desired result:
+
+* Keep the OnSpot logo on the left.
+* Move the hamburger all the way toward the **right side of the mobile navbar**.
+* The navbar should visually behave like:
+
+`[ OnSpot logo ]                         [ hamburger ]`
+
+* Keep comfortable horizontal padding from both screen edges.
+* Keep the hamburger touch target at least `44px × 44px`.
+* Do not change the desktop navigation layout.
+* Do not change menu functionality, authentication logic, dropdowns, routing, scroll behavior, or navbar visibility behavior.
+
+In `TopNavigation.tsx`, inspect the mobile flex layout around:
+
+* the logo
+* desktop links
+* the `md:hidden` mobile menu toggle
+
+Use proper flex spacing such as `ml-auto`, `justify-between`, or an equivalent responsive layout rather than absolute positioning unless absolutely necessary.
+
+---
+
+# 2. Homepage Hero — General Mobile Rules
+
+The homepage uses a 5-slide hero carousel.
+
+The desktop version uses a fixed viewport-oriented composition and should stay that way.
+
+On mobile, however, slides 2–5 currently stack their content vertically and the mockups/cards become too tall. This causes the carousel navigation controls at the bottom to be pushed below the visible viewport or clipped.
+
+Fix this specifically for mobile.
+
+## Mobile hero requirements
+
+For screens below roughly `768px`:
+
+* All important slide content must remain inside the visible hero area.
+* The bottom carousel controls must be visible on **every slide**.
+* The previous, play/pause, next, slide counter, and progress dots must never be hidden behind a mockup.
+* Do not allow tablet/phone/card mockups to push the controls outside the viewport.
+* Prevent horizontal overflow.
+* Avoid text being clipped underneath the navbar.
+* Keep enough breathing room between navbar, heading, CTA, visual mockup, and carousel controls.
+* Maintain swipe behavior and existing carousel logic.
+* Maintain auto-advance logic.
+* Keep the current desktop hero height/layout intact.
+
+You may introduce a mobile-specific hero height/min-height strategy if necessary.
+
+For example, it is acceptable on mobile to use a controlled layout such as:
+
+* hero content area as a flex column
+* text block taking only the space it needs
+* visual/mockup area constrained with a responsive `max-height`
+* controls reserved at the bottom using `flex-shrink-0`
+
+Do not simply hide the controls.
+
+Do not solve this by giving the page an enormous arbitrary height.
+
+---
+
+# 3. Shared Two-Column Layout
+
+The shared `TwoCol` component currently becomes a single-column grid on mobile.
+
+Keep the two-column desktop layout exactly as it is.
+
+On mobile:
+
+* stack the text and visual vertically
+* center the right-side mockup/card horizontally
+* use a smaller vertical gap than desktop
+* ensure `width: 100%`
+* ensure children use `min-width: 0`
+* constrain the visual area so it cannot force the controls off-screen
+
+If useful, introduce mobile-only wrapper classes around the left/right sections.
+
+Do not change the desktop `lg:grid-cols-2` design.
+
+---
+
+# 4. Slide 1 — Work Without Limits
+
+This slide is already mostly good.
+
+Only make changes if needed to ensure mobile consistency.
+
+Requirements:
+
+* Keep the heading centered.
+* Keep both CTA buttons visible.
+* Keep the carousel controls visible.
+* Prevent subtitle text from overflowing horizontally.
+* On narrow phones, allow text wrapping instead of forcing `white-space: nowrap`.
+* Do not significantly change its current desktop appearance.
+
+---
+
+# 5. Slide 2 — Hire Without Limits
+
+Current issue:
+
+The text portion looks good, but the large tablet/dashboard visual becomes too tall on mobile and pushes the carousel controls out of view.
+
+Fix:
+
+* Keep the heading, supporting copy, and `Hire talent →` button visible.
+* Center the tablet mockup horizontally beneath the copy.
+* Scale the tablet down on mobile.
+* Remove or reduce the 3D rotation on small screens if it contributes to overflow.
+* Give the tablet a mobile-safe width such as a percentage of the viewport with a sensible max-width.
+* Constrain its height so it cannot cover or displace the carousel navigation.
+* The carousel navigation must stay visible beneath the mockup.
+* The tablet should not be cut awkwardly on either side.
+
+The mockup can be partially cropped vertically at the bottom if needed for the hero composition, but it should look intentional and centered.
+
+Do not alter the desktop tablet sizing or perspective unless inside a mobile breakpoint.
+
+---
+
+# 6. Slide 3 — Earn Without Limits
+
+This slide has essentially the same issue as slide 2.
+
+Fix:
+
+* Keep the complete heading and supporting text visible.
+* Keep `Find work →` visible.
+* Center the phone/earnings mockup horizontally.
+* Scale the phone down specifically on mobile.
+* Prevent the phone from pushing the carousel controls off-screen.
+* Make the visual crop intentional if the full device cannot fit.
+* Keep the controls visible at all times.
+
+Do not change the current desktop phone design.
+
+---
+
+# 7. Slide 4 — Talent Network / Ready to Work
+
+This slide is close to correct.
+
+Current problems:
+
+* The top heading is partially clipped under the navbar.
+* The bottom carousel navigation is not fully visible.
+* The talent-list card is slightly too tall for the available mobile hero space.
+
+Fix:
+
+* Add enough top spacing so the entire heading is visible beneath the navbar.
+* Reduce mobile heading sizes slightly if necessary.
+* Keep:
+
+  * eyebrow
+  * heading
+  * supporting text
+  * `Meet your talent →`
+    visible.
+* Center the talent list card.
+* Reduce the card dimensions/padding/row heights on mobile if necessary.
+* It is acceptable to show fewer visual rows within the card viewport on mobile, but do **not** alter the actual data-loading logic.
+* Keep the bottom carousel controls completely visible.
+
+Do not remove the card.
+
+---
+
+# 8. Slide 5 — Open Jobs
+
+This slide is also close to correct.
+
+Current problems:
+
+* The top heading is clipped underneath the navbar.
+* The carousel controls at the bottom are outside or almost outside the visible area.
+* The jobs card occupies too much vertical space on mobile.
+
+Fix:
+
+* Ensure the full heading is visible beneath the navbar.
+* Keep:
+
+  * eyebrow
+  * title
+  * supporting copy
+  * `Browse all jobs →`
+    visible.
+* Center the jobs card.
+* Scale/reduce card padding and row height on mobile if required.
+* The card should still clearly show the open roles.
+* Keep all carousel controls visible below it.
+
+Do not modify job fetching, filtering, links, featured state, or live data behavior.
+
+---
+
+# 9. Carousel Controls
+
+The carousel control row should be treated as a required reserved area on mobile.
+
+It currently contains:
+
+* Previous
+* Play/Pause
+* Next
+* `01 / 05` style counter
+* progress indicators
+
+Requirements:
+
+* Always visible on all 5 slides.
+* Never covered by tablet, phone, talent card, jobs card, or chat widget.
+* Keep controls horizontally aligned.
+* They may be made slightly smaller on very narrow devices, but preserve accessibility.
+* Add a small mobile horizontal gap if necessary.
+* Keep the current desktop sizing.
+
+If needed, give the controls a mobile-specific bottom padding that respects safe areas:
+
+`padding-bottom: calc(... + env(safe-area-inset-bottom));`
+
+---
+
+# 10. Chat Bubble
+
+There is a floating chat bubble on the lower-right side.
+
+Ensure it does not cover the carousel navigation controls on mobile.
+
+Do not remove it or change its functionality.
+
+If necessary, adjust only its mobile bottom/right offset so it sits above and to the right without obscuring the slide controls or CTA/card content.
+
+Desktop position should stay unchanged.
+
+---
+
+# 11. Responsive Typography
+
+The existing `clamp()` values are optimized mainly for large screens and some headings become oversized on phones.
+
+For mobile only, make the typography responsive enough that:
+
+* no title is clipped at the top
+* no title overflows horizontally
+* there are no awkward one-word lines unless intentional
+* text does not consume most of the viewport before the visual appears
+
+Use breakpoint-specific sizes if necessary.
+
+Do not significantly reduce desktop typography.
+
+---
+
+# 12. What NOT to change
+
+Do not change:
+
+* desktop/laptop layout
+* desktop carousel dimensions
+* colors
+* gradients
+* branding
+* text/content
+* carousel order
+* carousel timing
+* carousel swipe behavior
+* API calls
+* candidate fetching
+* job fetching
+* authentication
+* routing
+* button destinations
+* navbar behavior beyond mobile positioning
+* any sections below the hero unless needed solely to eliminate hero overlap
+
+Do not rebuild the hero from scratch.
+
+Do not replace the existing carousel library/logic.
+
+Do not remove mockups/cards to make mobile fit.
+
+---
+
+# 13. Preferred Implementation Approach
+
+Please favor responsive classes instead of JavaScript viewport checks.
+
+Examples:
+
+* `max-md:*`
+* `sm:*`
+* `md:*`
+* `lg:*`
+
+or scoped CSS media queries.
+
+Avoid using `window.innerWidth` for layout styling unless unavoidable.
+
+For visual/mockup sizing, prefer responsive CSS such as:
+
+* `width`
+* `max-width`
+* `max-height`
+* `transform: scale(...)`
+* `transform-origin`
+* flex/grid alignment
+* overflow clipping in a deliberate visual wrapper
+
+instead of hardcoding coordinates.
+
+---
+
+# 14. Test Sizes
+
+After implementing, test all five carousel slides at minimum at:
+
+* `320 × 568`
+* `360 × 640`
+* `375 × 667`
+* `390 × 844`
+* `412 × 915`
+* `430 × 932`
+* `768 × 1024`
+* `1024 × 768`
+* desktop `1440 × 900`
+
+At every mobile size verify:
+
+1. Logo is left aligned.
+2. Hamburger is right aligned.
+3. No horizontal scrolling exists.
+4. Heading is not hidden beneath the navbar.
+5. CTA is visible.
+6. Slide visual is centered.
+7. Previous/play/next controls are visible.
+8. Counter and dots are visible.
+9. Chat bubble does not cover controls.
+10. Swiping still changes slides.
+
+Then verify `1024px+` against the current desktop version and confirm there is no noticeable regression.
+
+---
+
+# 15. Acceptance Criteria
+
+The task is complete only when:
+
+* Slide 1 looks correct on mobile.
+* Slide 2 tablet is centered/scaled and carousel controls are visible.
+* Slide 3 phone is centered/scaled and carousel controls are visible.
+* Slide 4 heading is completely visible and carousel controls are visible.
+* Slide 5 heading is completely visible and carousel controls are visible.
+* Hamburger sits on the far-right side of the mobile navbar.
+* No horizontal overflow occurs.
+* No desktop layout regression occurs.
+* Desktop hero remains visually equivalent to the existing implementation.
+
+Before finishing, provide a concise summary of exactly which responsive styles/components you changed and confirm that desktop styles were preserved.

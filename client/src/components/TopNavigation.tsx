@@ -733,7 +733,7 @@ export function TopNavigation() {
 
           {/* Zone 3: Auth + Mobile Toggle */}
           <div 
-            className="flex items-center relative z-10 flex-shrink-0"
+            className="flex items-center relative z-10 flex-shrink-0 max-md:ml-auto"
             style={{ gap: 'clamp(8px, 1vw, 12px)' }}
           >
             {/* Mobile Menu Toggle */}

@@ -271,11 +271,11 @@ function SlideEyebrow({ text, isDark }: { text: string; isDark: boolean }) {
 function TwoCol({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
   return (
     <div
-      className="grid grid-cols-1 lg:grid-cols-2 items-center w-full"
+      className="grid grid-cols-1 lg:grid-cols-2 items-center w-full hero-twocol"
       style={{ gap: "clamp(24px, 6vw, 88px)" }}
     >
       <div className="min-w-0">{left}</div>
-      <div className="min-w-0 lg:flex lg:justify-end">{right}</div>
+      <div className="min-w-0 lg:flex lg:justify-end hero-twocol-right">{right}</div>
     </div>
   );
 }
@@ -287,7 +287,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
   return (
     <div className="mx-auto flex w-full flex-col items-center text-center" style={{ maxWidth: 950 }}>
       <h1
-        className="font-bold tracking-tight"
+        className="font-bold tracking-tight hero-work-h1"
         style={{ fontSize: "clamp(58px, 5.6vw, 82px)", lineHeight: 0.99, letterSpacing: "-0.03em" }}
       >
         <span className="text-white">Work </span>
@@ -295,7 +295,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
         <span className="text-white"> Limits</span>
       </h1>
 
-      <p className="mt-5" style={{ fontSize: "clamp(16px, 1.35vw, 22px)", lineHeight: 1.4, whiteSpace: "nowrap", width: "max-content", maxWidth: "100%", marginInline: "auto" }}>
+      <p className="mt-5 hero-subtitle" style={{ fontSize: "clamp(16px, 1.35vw, 22px)", lineHeight: 1.4, whiteSpace: "nowrap", width: "max-content", maxWidth: "100%", marginInline: "auto" }}>
         <span className="font-semibold text-white">One system.</span>{" "}
         <span style={{ color: "rgba(199,203,242,0.8)" }}>Highest pay for talents at lower cost to companies.</span>
       </p>
@@ -330,13 +330,13 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
         <>
           <SlideEyebrow text="FOR COMPANIES" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight leading-[1.04]"
+            className="font-bold tracking-tight leading-[1.04] hero-slide-h1-sm"
             style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
           >
             <span style={{ color: C.charcoal }}>Hire </span>
             <span style={{ color: C.indigo }}>Without<br />Limits.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45, color: C.charcoal }}>
+          <p className="mt-5 max-w-[460px] font-medium hero-slide-sub" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45, color: C.charcoal }}>
             The best talents —{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>without the outsourcing overhead.</span>
           </p>
@@ -394,9 +394,9 @@ function LaptopMockup() {
   };
 
   return (
-    <div style={{ perspective: "1200px", width: "clamp(320px, 30vw, 420px)", flexShrink: 0 }}>
+    <div className="hero-laptop-wrap" style={{ perspective: "1200px", width: "clamp(320px, 30vw, 420px)", flexShrink: 0 }}>
       <div
-        className="relative"
+        className="relative hero-laptop-3d"
         style={{ transform: "rotateY(-9deg) rotateX(3deg)" }}
       >
         {/* Glow */}
@@ -505,13 +505,13 @@ function TalentSlide({ isDark }: { isDark: boolean }) {
         <>
           <SlideEyebrow text="FOR TALENTS" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight text-white leading-[1.04]"
+            className="font-bold tracking-tight text-white leading-[1.04] hero-slide-h1-sm"
             style={{ fontSize: "clamp(46px, 5.2vw, 76px)", letterSpacing: "-0.03em" }}
           >
             Earn{" "}
             <span style={{ color: C.orangeLight }}>Without<br />Limits.</span>
           </h1>
-          <p className="mt-5 max-w-[460px] font-medium text-white" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45 }}>
+          <p className="mt-5 max-w-[460px] font-medium text-white hero-slide-sub" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.45 }}>
             The best clients —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>the highest pay for the work you do.</span>
           </p>
@@ -557,7 +557,7 @@ function PhoneMockup() {
   const brio      = "'Bricolage Grotesque', sans-serif";
 
   return (
-    <div className="relative ml-auto" style={{ width: "clamp(220px, 21vw, 265px)", maxWidth: "100%", flexShrink: 0 }}>
+    <div className="relative ml-auto hero-phone-wrap" style={{ width: "clamp(220px, 21vw, 265px)", maxWidth: "100%", flexShrink: 0 }}>
       {/* Indigo ambient glow — phone emerges from slide background */}
       <div aria-hidden className="pointer-events-none absolute" style={{ inset: "-70px", background: "radial-gradient(ellipse 80% 70% at 50% 46%, rgba(58,66,149,0.68) 0%, rgba(39,38,104,0.4) 48%, transparent 72%)", filter: "blur(20px)", zIndex: 0 }} />
 
@@ -653,7 +653,7 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
         <>
           <SlideEyebrow text="THE TALENT NETWORK" isDark={isDark} />
           <h1
-            className="font-bold"
+            className="font-bold hero-slide-h1-sm"
             style={{ letterSpacing: "-0.035em", lineHeight: 1.02, maxWidth: 620 }}
           >
             <span className="block" style={{ fontSize: "clamp(48px, 4.5vw, 72px)", color: "#17171D" }}>
@@ -663,7 +663,7 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
               Ready to work.
             </span>
           </h1>
-          <p className="mt-5 font-medium" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.3, color: C.charcoal, maxWidth: 520 }}>
+          <p className="mt-5 font-medium hero-slide-sub" style={{ fontSize: "clamp(22px, 2vw, 30px)", lineHeight: 1.3, color: C.charcoal, maxWidth: 520 }}>
             Vetted, experienced, and{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>ready to start in days — not months.</span>
           </p>
@@ -702,7 +702,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
   };
 
   return (
-    <div className="relative" style={{ width: "clamp(400px, 38vw, 520px)", maxWidth: "100%" }}>
+    <div className="relative hero-talent-wrap" style={{ width: "clamp(400px, 38vw, 520px)", maxWidth: "100%" }}>
       {/* Glow — pointer-events-none so it never blocks clicks */}
       <div aria-hidden className="pointer-events-none absolute -inset-6 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 50%, rgba(75,81,184,0.12), transparent 70%)", filter: "blur(10px)" }} />
       <div
@@ -830,14 +830,14 @@ function JobsSlide({ isDark, liveJobs, isLoading, liveTalents }: { isDark: boole
         <>
           <SlideEyebrow text="FOR TALENTS" isDark={isDark} />
           <h1
-            className="font-bold tracking-tight text-white"
+            className="font-bold tracking-tight text-white hero-slide-h1-sm"
             style={{ fontSize: "clamp(46px, 4.15vw, 68px)", lineHeight: 0.98, letterSpacing: "-0.03em", maxWidth: 510 }}
           >
             Hundreds of<br />
             high-paying jobs.<br />
             <span style={{ color: C.orangeLight }}>Open right now.</span>
           </h1>
-          <p className="mt-4 font-medium text-white" style={{ fontSize: "clamp(20px, 1.6vw, 27px)", lineHeight: 1.45, maxWidth: 510 }}>
+          <p className="mt-4 font-medium text-white hero-slide-sub" style={{ fontSize: "clamp(20px, 1.6vw, 27px)", lineHeight: 1.45, maxWidth: 510 }}>
             Real roles, real rates —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>and new jobs opening every week.</span>
           </p>
@@ -884,7 +884,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
   }, [liveTalents]);
 
   return (
-    <div className="relative" style={{ width: "clamp(400px, 37vw, 500px)", maxWidth: "100%" }}>
+    <div className="relative hero-jobs-wrap" style={{ width: "clamp(400px, 37vw, 500px)", maxWidth: "100%" }}>
       {/* Glow — pointer-events-none so it never blocks clicks */}
       <div aria-hidden className="pointer-events-none absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
       <div
