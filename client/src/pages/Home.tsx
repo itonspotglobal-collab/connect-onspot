@@ -69,12 +69,8 @@ export default function Home() {
       <OpenJobsSection />
       <ProcessSection />
       <FinalCtaSection />
-      {/*
-        blendFrom matches FinalCtaSection's bottom gradient stop (C.dark3 = #4652B5)
-        so the footer opens from that colour and settles into its own indigo —
-        visually one continuous dark field, no visible seam.
-      */}
-      <Footer blendFrom="#4652B5" />
+      {/* Same gradient as FinalCtaSection — zero visual break */}
+      <Footer bg={`radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), transparent 60%), linear-gradient(170deg, ${C.indigoDeep} 0%, #050D2E 55%, ${C.dark3} 100%)`} />
     </div>
   );
 }
