@@ -1,0 +1,97 @@
+I need to permanently delete a specific set of test/user accounts from the Production Database.
+
+IMPORTANT:
+- This is the Production Database.
+- Do NOT modify the database schema.
+- Do NOT add or change ON DELETE CASCADE constraints.
+- Do NOT drop any tables or constraints.
+- Do NOT delete any users other than the exact IDs listed below.
+- Do NOT modify application code.
+- Before performing destructive operations, inspect the foreign-key relationships for these users and their related candidate/profile records.
+- Delete dependent records in the correct foreign-key order before deleting the users.
+- Use exact ID matching only.
+- If you encounter an ambiguous relationship where deleting a record could affect another user/account, STOP and report it instead of deleting it.
+
+Users to permanently delete:
+
+1758276868539_5k2y2z5nv
+1758541048678_q63lcozqt
+1758636476437_p0bh7n57b
+1758638520660_u8yyfk441
+1759247077467_47e144gcu
+1759247101551_l4g5eks1c
+1759247254830_zvf7yegmv
+1759247336596_y52z25hz2
+1759247369730_iboxd7lub
+1759771106710_wtu60r8qa
+1759799420553_ac57jwjjo
+1779695517617_1mp60v5sd
+1784039975151_bsylmymmi
+1786041961565_f9b6wlfcg
+1786536788279_bkjpv2fa2
+
+Please perform this carefully in these stages:
+
+1. Verify which of the listed IDs currently exist in the users table.
+
+2. Inspect the database schema and determine every table that has a foreign key directly or indirectly associated with these users.
+
+We already know that at least these relationships may exist:
+
+profiles.user_id -> users.id
+candidates.user_id -> users.id
+
+But do NOT assume those are the only dependencies. Inspect the actual schema.
+
+3. Before deleting anything, show me a summary such as:
+
+Users matched: X
+Profiles matched: X
+Candidates matched: X
+Job applications matched: X
+Assessments matched: X
+Documents matched: X
+Other dependent records: X
+
+Also identify any records that appear shared with, owned by, or referenced by users NOT in the deletion list.
+
+4. If all dependent records belong exclusively to the listed users, delete them from the deepest child tables upward in the correct foreign-key order.
+
+For example, the dependency may look something like:
+
+candidate child records
+    ↓
+candidates
+    ↓
+profiles
+    ↓
+users
+
+Determine the real order from the database schema rather than assuming it.
+
+5. Use a database transaction where appropriate so that a failure does not leave the database partially cleaned up.
+
+6. Do NOT bypass foreign-key protections.
+
+7. After deletion, verify all listed user IDs:
+
+SELECT id
+FROM users
+WHERE id IN (...);
+
+The result should contain zero of the requested IDs.
+
+Also verify that no profile or candidate records remain referencing those user IDs.
+
+8. Give me a final report showing:
+- users deleted
+- profiles deleted
+- candidates deleted
+- dependent records deleted by table
+- IDs that did not exist
+- anything that could not safely be deleted
+- confirmation that unrelated users were not intentionally modified
+
+Do not perform broad DELETE statements without WHERE conditions.
+
+Only delete records that can be traced to these exact user IDs.
