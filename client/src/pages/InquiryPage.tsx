@@ -532,7 +532,7 @@ export default function InquiryPage() {
                 <DialogTitle className="text-base font-semibold text-slate-900 leading-tight">
                   {legalModal === "terms" ? "Terms of Service" : "Privacy Policy"}
                 </DialogTitle>
-                <p className="text-xs text-slate-400 mt-0.5">Last Updated: June 30, 2026</p>
+                <p className="text-xs text-slate-400 mt-0.5">Last Updated: August 14, 2026</p>
               </div>
             </div>
           </DialogHeader>
