@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRi
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import jakePhoto from "@assets/Jake_1780574815787.png";
 const nurPhoto = "/nur-ceo.jpeg";
-import markPhoto from "@assets/Macky_1780574815788.png";
+const markPhoto = "/mark-apostol.png";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
 const C = {

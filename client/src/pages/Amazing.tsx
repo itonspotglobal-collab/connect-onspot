@@ -53,7 +53,7 @@ import CultureFirst from "@assets/Culture_first_1780638648875.png";
 
 import NurLamineroPhoto from "@assets/Nur_1780574815788.png";
 import JakeWainbergPhoto from "@assets/Jake_1780574815787.png";
-import MarkApostolPhoto from "@assets/Macky_1780574815788.png";
+const MarkApostolPhoto = "/mark-apostol.png";
 import RenierMacalinoPhoto from "@assets/REN_1780657869137.png";
 import JaelAtendidoPhoto from "@assets/Jael_1780909035045.png";
 import ChristopherAlbaPhoto from "@assets/Christopher_Alba_1774264095055.jpg";

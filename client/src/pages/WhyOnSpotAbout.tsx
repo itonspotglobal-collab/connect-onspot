@@ -6,7 +6,7 @@ import nurPhoto from "@assets/Nur_1775038610216.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
 import alonPhoto from "@assets/Alon_1775058113450.png";
 import shanePhoto from "@assets/Shane_1775038610216.png";
-import mackyPhoto from "@assets/Macky_1775038610215.png";
+const mackyPhoto = "/mark-apostol.png";
 import galleryLeadership from "@assets/Leadership_Lifestyle_1775042849148.png";
 import galleryFounder from "@assets/Founder_Energy_1775042849148.png";
 import galleryLife from "@assets/Life_Outside_Work_1775042849149.png";
