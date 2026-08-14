@@ -1,0 +1,771 @@
+# Fix Secondary Filters on `/find-work/jobs`
+
+We already fixed the first filter group, **Category / Function**, on:
+
+`/find-work/jobs`
+
+Now the next filter group is not working correctly.
+
+The affected filters are:
+
+* Location
+* Contract Type
+* Minimum Salary
+
+Start with Location because this is the second filter group and the frontend is already wired correctly.
+
+Primary frontend file:
+
+`client/src/pages/FindWorkAllJobs.tsx`
+
+Also inspect the backend handler for:
+
+`GET /api/jobs/search`
+
+---
+
+# Current Frontend Behavior Is Already Wired
+
+The Location chips currently do:
+
+```ts
+onClick={() => setLocation(loc)}
+```
+
+with values such as:
+
+```text
+All Locations
+Remote
+Hybrid
+On-site
+```
+
+The Find Work query then sends:
+
+```ts
+if (location !== "All Locations") {
+  params.set("location", location);
+}
+```
+
+Therefore, clicking:
+
+```text
+Remote
+```
+
+should result in a request similar to:
+
+```text
+/api/jobs/search?status=open&location=Remote
+```
+
+Do NOT create a duplicate frontend filter.
+
+Investigate the backend query first.
+
+---
+
+# 1. Verify Actual Stored Job Location Values
+
+Inspect several job records currently shown on Find Work.
+
+For each, inspect:
+
+```text
+id
+professionalRoleName
+location
+contractType
+salaryDisplay
+budgetCurrency
+```
+
+Especially inspect jobs visibly displaying:
+
+```text
+Remote
+Hybrid
+Onsite / On-site
+```
+
+We need to know the exact database values.
+
+Possible mismatch examples:
+
+```text
+Frontend filter:
+Remote
+
+Database:
+remote
+REMOTE
+Remote Work
+Fully Remote
+```
+
+or:
+
+```text
+Frontend:
+On-site
+
+Database:
+Onsite
+On-site
+On Site
+onsite
+```
+
+---
+
+# 2. Add Location Normalization
+
+Create or reuse a normalization helper.
+
+Example:
+
+```ts
+function normalizeLocation(value?: string | null): string {
+  const normalized = (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (
+    normalized === "on site" ||
+    normalized === "onsite"
+  ) {
+    return "onsite";
+  }
+
+  if (
+    normalized === "remote work" ||
+    normalized === "fully remote"
+  ) {
+    return "remote";
+  }
+
+  return normalized;
+}
+```
+
+Do not modify the stored database value just for filtering.
+
+Normalize only for comparison.
+
+---
+
+# 3. Location Matching
+
+When the request contains:
+
+```text
+location=Remote
+```
+
+the backend must match jobs where normalized location is:
+
+```text
+remote
+```
+
+When:
+
+```text
+location=Hybrid
+```
+
+match:
+
+```text
+hybrid
+```
+
+When:
+
+```text
+location=On-site
+```
+
+also match legacy values:
+
+```text
+Onsite
+On Site
+on-site
+onsite
+```
+
+---
+
+# 4. Case-Insensitive Comparison
+
+These should all match:
+
+```text
+Remote
+remote
+REMOTE
+ Remote 
+```
+
+Do not use exact case-sensitive equality.
+
+If using Drizzle/Postgres, use safe case-insensitive logic or explicit normalized variants.
+
+---
+
+# 5. Verify `/api/jobs/search` Receives Location
+
+Temporarily log:
+
+```ts
+console.log("JOB SEARCH FILTERS", {
+  category: req.query.category,
+  location: req.query.location,
+  contractType: req.query.contractType,
+});
+```
+
+Then click:
+
+```text
+Remote
+```
+
+and confirm the request reaches the server as:
+
+```text
+location: "Remote"
+```
+
+Remove logs after debugging.
+
+---
+
+# 6. Confirm the Bug Is Backend-Side
+
+Run:
+
+```text
+GET /api/jobs/search?status=open
+```
+
+and note a Remote job.
+
+Then run:
+
+```text
+GET /api/jobs/search?status=open&location=Remote
+```
+
+Expected:
+
+The Remote job must remain in the response.
+
+If it disappears, Location matching is broken.
+
+---
+
+# 7. Contract Type Filter
+
+After Location is fixed, verify Contract Type.
+
+Current frontend options include values coming from:
+
+`FILTER_CONTRACT_TYPES`
+
+and render labels similar to:
+
+```text
+All Types
+Full Time
+Part Time
+Contract
+Hourly
+Fixed
+```
+
+Potential stored values:
+
+```text
+full-time
+fulltime
+Full Time
+
+part-time
+parttime
+Part Time
+```
+
+Normalize before comparing.
+
+Recommended helper:
+
+```ts
+function normalizeContractType(value?: string | null): string {
+  const normalized = (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+
+  if (normalized === "fulltime") return "fulltime";
+  if (normalized === "parttime") return "parttime";
+
+  return normalized;
+}
+```
+
+Then:
+
+```text
+Full Time
+full-time
+full_time
+fulltime
+```
+
+must match.
+
+---
+
+# 8. Verify the Actual Contract Values Sent by Frontend
+
+The frontend currently does:
+
+```ts
+onClick={() => setContractType(t)}
+```
+
+and renders:
+
+```ts
+t.replace(/-/g, " ")
+```
+
+Do not confuse the display label with the actual value.
+
+Inspect:
+
+`FILTER_CONTRACT_TYPES`
+
+and confirm the values sent to `/api/jobs/search`.
+
+Example:
+
+```ts
+{
+  value: "full-time",
+  label: "Full Time"
+}
+```
+
+The backend should match the stored canonical or legacy variations.
+
+---
+
+# 9. Salary Filter Needs Special Attention
+
+The Minimum Salary filter is currently handled differently.
+
+In the existing page, salary filtering may still be performed client-side after `/api/jobs/search` returns a page of results.
+
+That is a potential pagination bug.
+
+Current flow may be:
+
+```text
+server returns page of 25 jobs
+↓
+frontend filters those 25 by salary
+```
+
+This can incorrectly produce zero results even when salary-matching jobs exist on another page.
+
+Preferred architecture:
+
+```text
+all public jobs
+↓
+category
+↓
+location
+↓
+contract
+↓
+minimum salary
+↓
+count
+↓
+pagination
+```
+
+Move Minimum Salary filtering server-side if practical.
+
+---
+
+# 10. Salary Value Source
+
+Jobs appear to use fields such as:
+
+```text
+salaryDisplay
+budgetCurrency
+budget
+hourlyRateMin
+hourlyRateMax
+```
+
+Current new job postings use monthly compensation.
+
+Inspect the current canonical salary storage.
+
+If:
+
+```text
+salaryDisplay = "30,000 - 50,000"
+budgetCurrency = "PHP"
+```
+
+then:
+
+```text
+₱30,000+
+```
+
+should match.
+
+---
+
+# 11. Parse Salary Correctly
+
+Do not only read the first number in a salary range if the filter is intended to match the offered compensation range.
+
+For:
+
+```text
+30,000 - 50,000
+```
+
+derive:
+
+```text
+min = 30000
+max = 50000
+```
+
+Then decide the product rule.
+
+Recommended filter behavior:
+
+```text
+₱45,000+
+```
+
+matches if:
+
+```text
+max >= 45000
+```
+
+because the role offers compensation reaching that threshold.
+
+Keep this consistent with current intended behavior.
+
+---
+
+# 12. Currency Handling
+
+The UI minimum salary chips are PHP-based:
+
+```text
+₱30,000+
+₱45,000+
+...
+```
+
+Do not incorrectly exclude USD jobs unless that is the intended product behavior.
+
+Current logic appears to allow non-PHP jobs through salary filtering.
+
+Preserve current behavior unless explicitly redesigning salary filtering.
+
+---
+
+# 13. Multiple Filters Must Combine With AND
+
+Example:
+
+```text
+Category: Engineering
+Location: Remote
+Contract Type: Full Time
+```
+
+means:
+
+```text
+Engineering
+AND
+Remote
+AND
+Full Time
+```
+
+Do not use OR across filter groups.
+
+Within legacy aliases, OR is fine.
+
+---
+
+# 14. Filter Before Pagination
+
+This is critical for every backend filter.
+
+Correct order:
+
+```text
+eligible public/open jobs
+↓
+Category
+↓
+Location
+↓
+Contract Type
+↓
+Salary
+↓
+Search
+↓
+COUNT
+↓
+LIMIT/OFFSET
+```
+
+Do not paginate first.
+
+---
+
+# 15. `meta.total` Must Use the Same Conditions
+
+If Location = Remote and there are 3 Remote jobs:
+
+```text
+3 roles found
+```
+
+must appear.
+
+The count query and items query must use identical WHERE conditions.
+
+---
+
+# 16. Reset Page on Every Filter Change
+
+The existing page already tracks filter changes.
+
+Verify that clicking:
+
+```text
+Remote
+```
+
+while currently on page 2 resets the request to:
+
+```text
+page=1
+```
+
+immediately.
+
+Do this for:
+
+* Category
+* Location
+* Contract Type
+* Salary
+
+---
+
+# 17. Reset Filters
+
+Verify:
+
+```text
+Reset filters
+```
+
+restores:
+
+```text
+Category = All Categories
+Location = All Locations
+Contract Type = All Types
+Salary = Any pay
+Page = 1
+```
+
+and removes any hidden URL/category filter that would continue narrowing results.
+
+---
+
+# Expected Test Dataset
+
+Use known jobs such as:
+
+```text
+Job A
+Function: Engineering
+Location: Remote
+Contract: Full Time
+
+Job B
+Function: Engineering
+Location: Hybrid
+Contract: Part Time
+
+Job C
+Function: Customer Support
+Location: Remote
+Contract: Full Time
+```
+
+Expected:
+
+### Remote
+
+```text
+Job A
+Job C
+```
+
+### Hybrid
+
+```text
+Job B
+```
+
+### Engineering + Remote
+
+```text
+Job A
+```
+
+### Engineering + Hybrid
+
+```text
+Job B
+```
+
+### Engineering + Full Time
+
+```text
+Job A
+```
+
+### Remote + Full Time
+
+```text
+Job A
+Job C
+```
+
+---
+
+# Acceptance Criteria
+
+## Location
+
+* [ ] All Locations returns all eligible roles
+* [ ] Remote returns Remote roles
+* [ ] Hybrid returns Hybrid roles
+* [ ] On-site returns On-site/Onsite legacy values
+* [ ] Location is case-insensitive
+* [ ] Location filter works with Category
+
+## Contract Type
+
+* [ ] All Types works
+* [ ] Full Time works
+* [ ] Part Time works
+* [ ] Contract works
+* [ ] Hourly works
+* [ ] Fixed works
+* [ ] hyphen/spacing legacy values match
+* [ ] Contract filter works with Category and Location
+
+## Salary
+
+* [ ] Any pay works
+* [ ] ₱30,000+ works
+* [ ] ₱45,000+ works
+* [ ] ₱60,000+ works
+* [ ] ₱85,000+ works
+* [ ] ₱100,000+ works
+* [ ] Salary filtering does not only inspect the current paginated page
+* [ ] Count reflects salary-filtered results
+
+## API / Pagination
+
+* [ ] Filtering happens before pagination
+* [ ] `items` and `meta.total` use the same filters
+* [ ] Filter change resets to page 1
+* [ ] No false zero-result state
+
+## Regression
+
+* [ ] Category filter still works
+* [ ] Search still works
+* [ ] Featured jobs still display
+* [ ] Sorting still works
+* [ ] Job cards still work
+* [ ] Apply Now still works
+* [ ] No TypeScript errors
+
+---
+
+# Mandatory Debug Sequence
+
+Do not guess which secondary filter is failing.
+
+For one known Remote job:
+
+1. Call `/api/jobs/search?status=open`
+2. Confirm job appears.
+3. Call `/api/jobs/search?status=open&location=Remote`
+4. Confirm whether it disappears.
+5. Inspect its actual database `location`.
+6. Fix normalization/query.
+7. Repeat for Contract Type.
+8. Repeat for Salary.
+
+Remove debug logs when finished.
+
+---
+
+# Final Rule
+
+The filtering architecture should now be:
+
+```text
+Admin saved job values
+        ↓
+server-side normalized filters
+        ↓
+Category / Function
+Location
+Contract Type
+Salary
+        ↓
+pagination
+        ↓
+correct results + correct count
+```
+
+Do not fix each filter using unrelated one-off hacks.
+
+Use one consistent normalization and server-side filtering strategy.
