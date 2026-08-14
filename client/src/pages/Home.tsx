@@ -178,7 +178,7 @@ function HeroSection() {
         {/* Main content area — flex-1 so it fills remaining space; centers its children */}
         <div
           key={`slide-${slide}`}
-          className="flex flex-1 min-h-0 items-center"
+          className="flex flex-1 min-h-0 items-center hero-slide-content"
           style={{ animation: "homeHeroIn 0.55s ease forwards", opacity: 0 }}
         >
           {active.id === "work"      && <WorkSlide      isDark={isDark} />}

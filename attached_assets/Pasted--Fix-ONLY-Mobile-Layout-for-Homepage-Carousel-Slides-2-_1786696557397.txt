@@ -1,0 +1,368 @@
+# Fix ONLY Mobile Layout for Homepage Carousel Slides 2 and 3
+
+Please make a very targeted fix to the homepage hero carousel.
+
+## Critical requirement
+
+**DO NOT CHANGE THE DESKTOP OR LAPTOP VIEW.**
+
+The existing desktop layout is already correct and must remain visually identical.
+
+Only modify styles for screens below `768px`.
+
+Use one of these approaches:
+
+* Tailwind `max-md:` classes
+* `@media (max-width: 767px)` CSS
+* mobile-only wrapper classes
+
+Do NOT replace existing desktop styles.
+
+Do NOT change the existing `lg:` layout.
+
+Do NOT modify the desktop mockup dimensions, desktop transforms, desktop spacing, or desktop typography.
+
+---
+
+## Safe implementation strategy
+
+For every change you make, use this principle:
+
+```tsx
+Desktop/current style = unchanged
+Mobile override = added separately
+```
+
+For example, do NOT change:
+
+```tsx
+width: "clamp(320px, 30vw, 420px)"
+```
+
+globally.
+
+Instead, add a mobile class or CSS rule that overrides it only below `768px`.
+
+Example concept:
+
+```css
+@media (max-width: 767px) {
+  .hero-tablet-mobile {
+    width: min(72vw, 340px);
+    margin-inline: auto;
+    transform: none;
+  }
+}
+```
+
+Desktop must continue using the original value.
+
+---
+
+# Slide 2 — Hire Without Limits
+
+Current mobile problem:
+
+The dashboard/tablet is still too tall.
+
+It pushes the carousel controls completely below the visible hero.
+
+The text and CTA now look good, so do not significantly alter them.
+
+## Mobile-only fix
+
+For `<768px` only:
+
+### Tablet wrapper
+
+Reduce the tablet visual to approximately:
+
+```css
+width: min(68vw, 330px);
+max-width: 330px;
+margin-inline: auto;
+```
+
+If necessary, use:
+
+```css
+transform: scale(0.82);
+transform-origin: top center;
+```
+
+BUT ONLY on mobile.
+
+Do not apply that scale to desktop.
+
+### Remove 3D perspective on mobile
+
+The current desktop tablet uses perspective / rotation.
+
+Keep that on desktop.
+
+On mobile only, use:
+
+```css
+transform: none;
+```
+
+or greatly reduce the rotation.
+
+This will make the tablet visually centered and reduce accidental horizontal/vertical overflow.
+
+### Visual wrapper
+
+Place the tablet inside a mobile-only constrained visual area.
+
+Example concept:
+
+```css
+@media (max-width: 767px) {
+  .hero-device-area {
+    width: 100%;
+    max-height: 470px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+}
+```
+
+The bottom of the tablet may be intentionally cropped.
+
+That is acceptable.
+
+The important requirement is:
+
+**the carousel navigation must remain visible.**
+
+### Vertical spacing
+
+Reduce the gap between:
+
+* CTA button
+* tablet
+
+on mobile.
+
+For example use around:
+
+```css
+margin-top: 18px;
+```
+
+instead of a large desktop gap.
+
+Do not alter desktop spacing.
+
+---
+
+# Slide 3 — Earn Without Limits
+
+Current mobile version is much closer to correct.
+
+The carousel navigation is now visible.
+
+However, the phone still consumes a large amount of vertical space.
+
+Please make a small mobile-only refinement.
+
+For `<768px`:
+
+### Center the phone
+
+Ensure:
+
+```css
+margin-inline: auto;
+```
+
+and/or:
+
+```css
+display: flex;
+justify-content: center;
+```
+
+on its parent.
+
+### Slightly reduce phone size
+
+Reduce the phone approximately another `8–12%` from its current mobile size if necessary.
+
+Example:
+
+```css
+width: min(46vw, 240px);
+```
+
+or use a mobile-only scale.
+
+Do not change the desktop phone width.
+
+### Keep controls reserved
+
+The phone must not overlap or push down:
+
+* previous button
+* play/pause
+* next button
+* `03 / 05`
+* progress indicators
+
+Keep a dedicated space between the phone visual and carousel controls.
+
+---
+
+# Most Important Structural Fix
+
+The controls should not depend on how tall Slide 2 or Slide 3 content becomes.
+
+On mobile only, divide the hero into:
+
+```text
+Hero
+ ├── content area
+ │    ├── text
+ │    ├── CTA
+ │    └── mockup
+ │
+ └── carousel controls
+```
+
+The controls must use:
+
+```css
+flex-shrink: 0;
+```
+
+The content area should use:
+
+```css
+min-height: 0;
+overflow: hidden;
+```
+
+if needed.
+
+The mockup should be the thing that gets scaled/cropped—not the controls.
+
+Do NOT use `position: absolute` for the entire carousel controls unless necessary.
+
+---
+
+# Do NOT change these desktop values
+
+Be especially careful around:
+
+## `TwoCol`
+
+Keep:
+
+```tsx
+lg:grid-cols-2
+```
+
+and the existing desktop gap.
+
+Do not change its desktop alignment.
+
+Only add mobile behavior.
+
+## `LaptopMockup`
+
+Do not globally alter:
+
+* `perspective`
+* desktop width
+* desktop rotateY
+* desktop rotateX
+* shadow
+* tablet shell proportions
+
+Only provide mobile overrides.
+
+## Phone mockup
+
+Do not globally alter:
+
+* desktop width
+* device proportions
+* shadow
+* internal layout
+
+Only provide mobile overrides.
+
+---
+
+# Desktop regression protection
+
+After making the change, compare these viewport sizes before considering the task finished:
+
+```text
+1440 × 900
+1366 × 768
+1280 × 800
+1024 × 768
+```
+
+The desktop/laptop appearance must remain the same.
+
+Then test:
+
+```text
+430 × 932
+390 × 844
+375 × 667
+360 × 640
+```
+
+Only the mobile layouts should differ.
+
+---
+
+# Very important
+
+Do NOT:
+
+* refactor the whole hero
+* change carousel logic
+* change slide timing
+* change API calls
+* change slide text
+* change colors
+* change desktop typography
+* change desktop mockup sizes
+* change desktop positioning
+* alter Slide 1, 4, or 5 unless absolutely required for shared mobile CSS
+* modify anything above `768px`
+
+If shared CSS must be touched, make sure the new rule is explicitly wrapped in:
+
+```css
+@media (max-width: 767px)
+```
+
+or uses Tailwind `max-md:`.
+
+---
+
+# Acceptance criteria
+
+The task is complete when:
+
+1. Slide 2 text and CTA remain exactly as they currently look on mobile.
+2. Slide 2 tablet is smaller and centered.
+3. Slide 2 carousel navigation becomes fully visible.
+4. Slide 3 phone remains centered.
+5. Slide 3 carousel navigation remains fully visible.
+6. No horizontal overflow exists.
+7. Desktop and laptop views look visually unchanged.
+8. No changes above `768px` are introduced.
+
+Before finishing, explicitly tell me:
+
+* which CSS/classes were added for mobile
+* which existing desktop styles were left untouched
+* whether any global styles were modified

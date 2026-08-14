@@ -2910,11 +2910,14 @@ body.has-floating-bottom-right {
     gap: 12px !important;
   }
 
-  /* TwoCol right side: center the visual on mobile */
+  /* TwoCol right side: constrained device area — centers visual, clips overflow vertically */
   .hero-twocol-right {
     display: flex !important;
     justify-content: center !important;
+    align-items: flex-start !important;
     width: 100% !important;
+    max-height: 470px;
+    overflow: hidden;
   }
 
   /* Slides 2–5 main headings: reduce from large clamp min */
@@ -2929,21 +2932,25 @@ body.has-floating-bottom-right {
     margin-top: 8px !important;
   }
 
-  /* Slide 2 — laptop mockup: shrink & flatten rotation */
+  /* Slide 2 — laptop mockup: shrink to spec width & flatten rotation */
   .hero-laptop-wrap {
-    width: min(88vw, 300px) !important;
+    width: min(68vw, 330px) !important;
+    max-width: 330px !important;
     margin-inline: auto !important;
   }
   .hero-laptop-3d {
     transform: none !important;
   }
 
-  /* Slide 3 — phone mockup: shrink */
+  /* Slide 3 — phone mockup: shrink ~10% further */
   .hero-phone-wrap {
-    width: min(36vw, 145px) !important;
+    width: min(32vw, 130px) !important;
     margin-inline: auto !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+  }
+
+  /* Slide content area: allow shrink, clip overflow so controls are never pushed out */
+  .hero-slide-content {
+    overflow: hidden;
   }
 
   /* Slides 4 & 5 — talent/jobs cards: mobile-safe width + height cap */
