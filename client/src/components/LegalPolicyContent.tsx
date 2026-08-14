@@ -153,105 +153,124 @@ export function RefundContent() {
   );
 }
 
-// ─── Terms and Conditions ────────────────────────────────────────────────────
-
-const termsSections = [
-  {
-    n: 1,
-    title: "About OnSpot",
-    body: "OnSpot provides business support, remote talent, outsourcing, staffing, and related service solutions designed to help companies connect with qualified professionals and operational support. Our website allows users to explore services, submit inquiries, request assistance, and, where available, complete payments online.",
-  },
-  {
-    n: 2,
-    title: "Use of the Website",
-    body: "You agree to use the OnSpot website only for lawful and appropriate purposes. You must not misuse the website, interfere with its functionality, attempt unauthorized access, submit false information, or use the website in a way that could harm OnSpot, its users, clients, partners, or systems.",
-  },
-  {
-    n: 3,
-    title: "Inquiry Submissions",
-    body: "When you submit an inquiry through our website, you agree to provide accurate and complete information. Submission of an inquiry does not automatically create a service agreement, employment relationship, partnership, or guaranteed engagement with OnSpot. All inquiries are subject to review, validation, endorsement, and approval by the OnSpot team.",
-  },
-  {
-    n: 4,
-    title: "Endorsement and Approval",
-    body: "Some service requests may require internal review or endorsement before payment or service fulfillment can proceed. OnSpot reserves the right to approve, reject, request clarification, or modify the scope of an inquiry based on business requirements, service availability, compliance considerations, or operational capacity.",
-  },
-  {
-    n: 5,
-    title: "Service Scope",
-    body: "The final scope of service, pricing, timeline, deliverables, and responsibilities may be confirmed through a written agreement, proposal, invoice, email confirmation, or approved service arrangement. Any information displayed on the website is for general guidance and may not represent a final binding offer.",
-  },
-  {
-    n: 6,
-    title: "Payments",
-    body: "Where online payments are available, payments may be processed in United States Dollars (USD). Payment must be completed through the approved payment method shown on the website or communicated by OnSpot. By making a payment, you confirm that you are authorized to use the selected payment method and that the billing information provided is accurate.",
-  },
-  {
-    n: 7,
-    title: "Payment Processing",
-    body: "Payments may be processed through third-party payment providers such as Stripe, PayPal, bank transfer, or another authorized payment platform. OnSpot does not store complete credit card details on its servers unless expressly stated. Payment processing is subject to the terms, security policies, and privacy practices of the applicable payment provider.",
-  },
-  {
-    n: 8,
-    title: "Pricing and Currency",
-    body: "Unless otherwise stated, prices, estimates, invoices, and payments related to the website inquiry flow may be presented in USD. Prices may vary depending on service requirements, scope, complexity, timeline, and other business factors.",
-  },
-  {
-    n: 9,
-    title: "Account, Portal, or System Access",
-    body: "If OnSpot provides access to a portal, dashboard, account, or internal system, you are responsible for maintaining the confidentiality of your login credentials. You agree to notify OnSpot immediately if you believe your access has been compromised.",
-  },
-  {
-    n: 10,
-    title: "Intellectual Property",
-    body: "All content on the OnSpot website, including text, graphics, logos, design elements, branding, software, icons, images, layouts, and other materials, is owned by or licensed to OnSpot unless otherwise stated. You may not copy, reproduce, modify, distribute, or use OnSpot materials without prior written permission.",
-  },
-  {
-    n: 11,
-    title: "User-Provided Information",
-    body: "You retain responsibility for the information, documents, and materials you submit to OnSpot. By submitting information, you grant OnSpot permission to review, process, store, and use that information for purposes related to your inquiry, service request, payment, communication, and business relationship.",
-  },
-  {
-    n: 12,
-    title: "No Guarantee of Results",
-    body: "While OnSpot aims to provide high-quality support and service recommendations, we do not guarantee specific business outcomes, hiring results, financial results, operational improvements, or uninterrupted service unless expressly agreed in writing.",
-  },
-  {
-    n: 13,
-    title: "Third-Party Links and Services",
-    body: "The website may contain links to third-party websites, tools, platforms, or payment processors. OnSpot is not responsible for the content, security, privacy practices, or availability of third-party services.",
-  },
-  {
-    n: 14,
-    title: "Limitation of Liability",
-    body: "To the fullest extent permitted by law, OnSpot shall not be liable for indirect, incidental, consequential, special, punitive, or exemplary damages arising from your use of the website, inquiry process, payment features, or services.",
-  },
-  {
-    n: 15,
-    title: "Changes to the Website or Terms",
-    body: 'OnSpot may update the website, services, features, pricing, or these Terms from time to time. Updated Terms will be posted on this page with a revised "Last Updated" date. Continued use of the website means you accept the updated Terms.',
-  },
-  {
-    n: 16,
-    title: "Contact Us",
-    body: "If you have questions about these Terms and Conditions, please contact OnSpot through the official contact channels provided on our website.",
-  },
-];
+// ─── Terms of Service ────────────────────────────────────────────────────────
 
 export function TermsContent() {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
-        Welcome to OnSpot. These Terms and Conditions govern your access to and use of the OnSpot
-        website, inquiry forms, service request process, payment features, and related online
-        services. By using our website or submitting an inquiry, you agree to these Terms.
+        These Terms of Service form a binding agreement between you and{" "}
+        <strong>OnSpot Global Corporation</strong> ("OnSpot"). By accessing or using the Platform,
+        creating an account, or using our services, you agree to be bound by these Terms.
       </p>
+      <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-5 text-amber-800 font-medium">
+        PLEASE READ SECTION 19 — IT REQUIRES MOST DISPUTES TO BE RESOLVED BY BINDING INDIVIDUAL
+        ARBITRATION WITH A CLASS ACTION WAIVER. YOU MAY OPT OUT WITHIN 30 DAYS.
+      </div>
       <Divider />
-      {termsSections.map((s) => (
-        <PolicySection key={s.n} n={s.n} title={s.title}>
-          <p>{s.body}</p>
-        </PolicySection>
-      ))}
+
+      <PolicySection n={1} title="Acceptance of Terms">
+        <p>By creating an account or using the Platform you agree to these Terms and our Privacy Policy. Additional agreements (e.g. a Master Service Agreement) control their specific subject matter if there is a conflict.</p>
+      </PolicySection>
+
+      <PolicySection n={2} title="Definitions">
+        <p><strong>"Platform"</strong> — onspotglobal.com and related services. <strong>"Client"</strong> — a user engaging Talent. <strong>"Talent"</strong> — an individual offering services as an independent contractor. <strong>"Content"</strong> — any material submitted to the Platform.</p>
+      </PolicySection>
+
+      <PolicySection n={3} title="Eligibility">
+        <p>You must be at least 18 and able to form a binding contract. If acting for an organization, you represent you have authority to bind it. You may not use the Platform if subject to U.S. trade sanctions.</p>
+      </PolicySection>
+
+      <PolicySection n={4} title="Description of the Platform">
+        <p>OnSpot enables Clients to discover and engage Talent, and Talent to find work. OnSpot does not guarantee outcomes and is not a party to Client–Talent working relationships except under a separate signed agreement.</p>
+      </PolicySection>
+
+      <PolicySection n={5} title="Accounts & Registration">
+        <p>Provide accurate information and keep it updated. You are responsible for all activity under your account. Notify us at security@onspotglobal.com of any unauthorized use. Each User may hold only one active account.</p>
+      </PolicySection>
+
+      <PolicySection n={6} title="Client Terms">
+        <p>Clients are solely responsible for the accuracy and legality of postings and for ensuring their use of Talent complies with applicable labor, tax, and immigration law.</p>
+      </PolicySection>
+
+      <PolicySection n={7} title="Talent Terms & Independent Contractor Relationship">
+        <p>Talent are independent contractors — not employees of OnSpot or any Client. OnSpot does not guarantee minimum work or income. Talent are solely responsible for their tax filings and legal compliance.</p>
+      </PolicySection>
+
+      <PolicySection n={8} title="Fees, Payments & Taxes">
+        <p>Fees are as described on the Platform or in a Statement of Work. Billing for resourced engagements is in Half-Day or Full-Day increments. Each User is solely responsible for their own taxes. Fees are non-refundable except as stated in a Statement of Work or required by law.</p>
+      </PolicySection>
+
+      <PolicySection n={9} title="AI Features & Automated Tools">
+        <p>AI-generated recommendations, summaries, and drafted content are for informational purposes only — not professional advice. Do not rely solely on AI Features for material hiring or legal decisions. OnSpot may use Platform data to improve AI Features per our Privacy Policy.</p>
+      </PolicySection>
+
+      <PolicySection n={10} title="User Content & License Grant">
+        <p>You retain ownership of Content you submit and grant OnSpot a license to host, display, and distribute it as necessary to operate the Platform. You represent you have all necessary rights to submit your Content.</p>
+      </PolicySection>
+
+      <PolicySection n={11} title="Acceptable Use Policy">
+        <p>You agree not to use the Platform unlawfully, misrepresent your identity, interfere with Platform security, scrape without consent, upload malicious code, harass other users, circumvent OnSpot's engagement terms, or reverse-engineer the Platform.</p>
+      </PolicySection>
+
+      <PolicySection n={12} title="Intellectual Property Rights">
+        <p>The Platform and all its content are owned by OnSpot or its licensors. "OnSpot" and associated logos are trademarks of OnSpot. DMCA copyright notices should be sent to legal@onspotglobal.com.</p>
+      </PolicySection>
+
+      <PolicySection n={13} title="Third-Party Services & Links">
+        <p>The Platform may link to or integrate with third-party services. OnSpot is not responsible for those services, and your use of them is subject to their own terms.</p>
+      </PolicySection>
+
+      <PolicySection n={14} title="Privacy">
+        <p>Our collection and use of personal data is described in our Privacy Policy, incorporated into these Terms by reference.</p>
+      </PolicySection>
+
+      <PolicySection n={15} title="Disclaimers of Warranties">
+        <p className="uppercase text-xs leading-5 font-medium text-slate-500">
+          The Platform is provided "as is" and "as available" without warranties of any kind. OnSpot
+          does not warrant uninterrupted or error-free operation, or the accuracy of any content
+          including AI-generated output.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={16} title="Limitation of Liability">
+        <p className="uppercase text-xs leading-5 font-medium text-slate-500">
+          OnSpot's liability is limited to the greater of amounts you paid in the prior 12 months or
+          $100. OnSpot is not liable for indirect, incidental, or consequential damages.
+        </p>
+      </PolicySection>
+
+      <PolicySection n={17} title="Indemnification">
+        <p>You agree to defend and hold harmless OnSpot from claims arising from your use of the Platform, your Content, your violation of these Terms, or your violation of applicable law.</p>
+      </PolicySection>
+
+      <PolicySection n={18} title="Term, Suspension & Termination">
+        <p>These Terms remain in effect while you use the Platform. OnSpot may suspend or terminate your access at any time. Sections 10, 12, 15–17, and 19–22 survive termination.</p>
+      </PolicySection>
+
+      <PolicySection n={19} title="Dispute Resolution; Binding Arbitration">
+        <p>Before filing a claim, contact legal@onspotglobal.com for informal resolution (30 days). Unresolved disputes are settled by binding AAA arbitration in Delaware on an individual basis. Class actions and jury trials are waived. You may opt out of arbitration within 30 days of accepting these Terms by emailing legal@onspotglobal.com.</p>
+      </PolicySection>
+
+      <PolicySection n={20} title="Governing Law & Venue">
+        <p>These Terms are governed by Delaware law. Non-arbitrated disputes shall be brought in state or federal courts in Delaware.</p>
+      </PolicySection>
+
+      <PolicySection n={21} title="Export Control & Sanctions Compliance">
+        <p>You may not use the Platform if subject to U.S. export controls or comprehensive sanctions administered by OFAC or the U.S. Department of Commerce.</p>
+      </PolicySection>
+
+      <PolicySection n={22} title="Modifications to These Terms">
+        <p>OnSpot will provide at least 30 days' notice of material changes via the Platform or email. Continued use after changes take effect constitutes acceptance.</p>
+      </PolicySection>
+
+      <PolicySection n={23} title="General Provisions">
+        <p>These Terms are the entire agreement between you and OnSpot regarding the Platform. If any provision is unenforceable, the rest remains in effect. You may not assign these Terms without OnSpot's consent.</p>
+      </PolicySection>
+
+      <PolicySection n={24} title="Contact Information">
+        <p>Questions about these Terms: <strong>OnSpot Global Corporation</strong> — legal@onspotglobal.com</p>
+      </PolicySection>
     </div>
   );
 }
