@@ -690,73 +690,73 @@ export default function WhyOnSpotAbout() {
       </section>
 
       {/* ── Fine-print footer ── same bg, zero visual break ─────────────────── */}
-      <footer style={{ background: P, padding: "28px 0 24px" }}>
-        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px" }}>
+      <footer style={{ background: P, padding: "32px 0 28px" }}>
+        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* Tagline + copyright */}
-          <p style={{ fontSize: 11.5, fontWeight: 700, color: "rgba(255,255,255,0.38)", margin: "0 0 10px", letterSpacing: "0.01em" }}>
-            Work Without Limits · © {new Date().getFullYear()} OnSpot
-          </p>
-
-          {/* Company description */}
-          <p style={{ fontSize: 11.5, lineHeight: 1.7, color: "rgba(255,255,255,0.28)", margin: "0 0 20px", maxWidth: 680 }}>
-            OnSpot is a workforce platform between marketplace chaos and outsourcing overhead — vetted talent, transparent pricing, no hidden markup. One system to hire, manage, and pay people who actually show up. <strong style={{ fontWeight: 700 }}>Work Without Limits.</strong>
-          </p>
-
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-
-          {/* Centre: social icons */}
-          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-            {[
-              { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={12} /> },
-              { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={12} /> },
-              { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={11} /> },
-              { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={11} /> },
-              { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={12} /> },
-              { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={11} /> },
-              { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={12} /> },
-            ].map(({ href, label, icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
-              >
-                {icon}
-              </a>
-            ))}
+          {/* Row 1: description (left) + social icons (right) */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+            <p style={{ fontSize: 11.5, lineHeight: 1.75, color: "rgba(255,255,255,0.28)", margin: 0, maxWidth: 520 }}>
+              OnSpot is a workforce platform between marketplace chaos and outsourcing overhead — vetted talent, transparent pricing, no hidden markup. One system to hire, manage, and pay people who actually show up.
+            </p>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+              {[
+                { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={13} /> },
+                { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={13} /> },
+                { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={12} /> },
+                { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={12} /> },
+                { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={13} /> },
+                { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={12} /> },
+                { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={13} /> },
+              ].map(({ href, label, icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  style={{ color: "rgba(255,255,255,0.30)", transition: "color 0.14s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.72)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.30)")}
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Right: Company links + legal */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", justifyContent: "flex-end" }}>
-            {[
-              { to: "/why-onspot/about",    label: "About" },
-              { to: "/amazing",             label: "Stories" },
-              { to: "/insights",            label: "Insights" },
-              { to: "/affiliate-marketing", label: "Affiliate" },
-              { to: "/bpo-partner",         label: "BPO Partner" },
-              { to: "/investors",           label: "Investors" },
-              { to: "/operations-playbook", label: "Playbook" },
-              { to: "/privacy-policy",      label: "Privacy Policy" },
-              { to: "/terms-and-conditions",label: "Terms" },
-            ].map(({ to, label }) => (
-              <Link
-                key={label}
-                to={to}
-                style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", textDecoration: "none", transition: "color 0.14s" }}
-                onMouseEnter={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
-                onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
-              >
-                {label}
-              </Link>
-            ))}
+          {/* Hairline */}
+          <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
+
+          {/* Row 2: copyright (left) + nav + legal (right) */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
+              Work Without Limits · © {new Date().getFullYear()} OnSpot
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", justifyContent: "flex-end" }}>
+              {[
+                { to: "/why-onspot/about",     label: "About" },
+                { to: "/amazing",              label: "Stories" },
+                { to: "/insights",             label: "Insights" },
+                { to: "/affiliate-marketing",  label: "Affiliate" },
+                { to: "/bpo-partner",          label: "BPO Partner" },
+                { to: "/investors",            label: "Investors" },
+                { to: "/operations-playbook",  label: "Playbook" },
+                { to: "/privacy-policy",       label: "Privacy Policy" },
+                { to: "/terms-and-conditions", label: "Terms" },
+              ].map(({ to, label }) => (
+                <Link
+                  key={label}
+                  to={to}
+                  style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", textDecoration: "none", transition: "color 0.14s" }}
+                  onMouseEnter={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
+                  onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
 
-          </div>
         </div>
       </footer>
 
