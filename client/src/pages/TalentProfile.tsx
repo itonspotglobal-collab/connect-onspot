@@ -6,8 +6,8 @@ import { getStatusMeta } from "@/lib/applicationStatus";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, Briefcase, Calendar, Globe2, Mail, Phone, Linkedin,
-  Github, Link2, Star, ChevronRight, Upload, Pencil, Check,
-  X, Plus, Trash2, Award, BookOpen, User, FileText, ExternalLink,
+  Github, Link2, Star, ChevronRight, Pencil, Check,
+  X, Plus, Trash2, Award, BookOpen, User, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Eye, EyeOff,
 } from "lucide-react";
 import {
@@ -294,7 +294,6 @@ const SECTION_TABS = [
   { id: "section-certifications", label: "Certifications" },
   { id: "section-applications", label: "Applications" },
   { id: "section-portfolio", label: "Portfolio" },
-  { id: "section-resume",   label: "Resume" },
   { id: "section-preferences", label: "Preferences" },
   { id: "section-contact",  label: "Contact" },
 ];
@@ -801,7 +800,6 @@ export default function TalentProfile() {
     // Applications are private — hidden in public preview and from non-owners
     ...(showPrivateOwnerSections ? ["section-applications"] : []),
     "section-portfolio",
-    "section-resume",
     "section-preferences",
     ...(canSeeContact || isOwner ? ["section-contact"] : []),
   ]);
@@ -1416,11 +1414,6 @@ export default function TalentProfile() {
               </div>
             </Section>
 
-            {/* Resume */}
-            <Section id="section-resume" title="Resume" icon={FileText}>
-              <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
-            </Section>
-
             {/* Contact (role-gated) */}
             {canSeeContact && (
               <Section id="section-contact" title="Contact" icon={Shield}>
@@ -1840,91 +1833,6 @@ function PreferencesDisplay({
           />
         </div>
       ))}
-    </div>
-  );
-}
-
-function ResumeSection({
-  candidateId,
-  candidate,
-  canEdit = true,
-  talentToken,
-}: {
-  candidateId: string;
-  candidate: Candidate;
-  canEdit?: boolean;
-  talentToken?: string;
-}) {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  async function handleFile(file: File) {
-    const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-    if (!allowed.includes(file.type)) {
-      toast({ title: "Invalid file", description: "Only PDF or Word documents allowed.", variant: "destructive" });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 10 MB for resumes.", variant: "destructive" });
-      return;
-    }
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("resume", file);
-      const headers: HeadersInit = {};
-      if (talentToken) headers["Authorization"] = `Bearer ${talentToken}`;
-      const res = await fetch(`/api/candidates/${candidateId}/resume`, { method: "POST", headers, body: form });
-      if (!res.ok) throw new Error(await res.text());
-      qc.invalidateQueries({ queryKey: ["/api/candidates", candidateId] });
-      toast({ title: "Resume uploaded", description: "Your resume has been saved." });
-    } catch {
-      toast({ title: "Upload failed", description: "Could not upload resume. Try again.", variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      {canEdit && (
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.doc,.docx"
-          className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-        />
-      )}
-      {candidate.resumeUrl ? (
-        <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-white/[0.04]">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#474ead]/10">
-            <FileText className="h-4 w-4 text-[#474ead]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-              {candidate.resumeFileName ?? "Resume"}
-            </p>
-            <p className="text-xs text-slate-400">Uploaded</p>
-          </div>
-        </div>
-      ) : (
-        <p className="text-sm text-slate-400">No resume uploaded yet.</p>
-      )}
-      {canEdit && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="w-full rounded-full text-xs"
-        >
-          <Upload className="mr-1.5 h-3.5 w-3.5" />
-          {uploading ? "Uploading…" : candidate.resumeUrl ? "Replace Resume" : "Upload Resume"}
-        </Button>
-      )}
     </div>
   );
 }

@@ -1,0 +1,172 @@
+# Remove Resume Section from Talent Profile
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Make one final focused change to the Talent Profile:
+
+Remove the entire **Resume** section/card from the Talent Profile UI.
+
+This applies to both:
+
+* Talent owner view
+* Client/visitor/public view of the Talent Profile
+
+Primary file:
+
+`client/src/pages/TalentProfile.tsx`
+
+Do not redesign any other part of the profile.
+
+---
+
+# Remove Resume Section
+
+The Talent Profile currently contains a card similar to:
+
+```text
+Resume
+
+legaspi_resume.pdf
+Uploaded
+```
+
+Remove this entire section from the Talent Profile page.
+
+It must no longer render for:
+
+* Talent owner
+* Client viewing a Talent
+* Public View
+* logged-out visitor
+* other Talent accounts viewing the profile
+
+There should be no Resume card anywhere in the Talent Profile body.
+
+---
+
+# Remove Resume From Sticky Section Navigation
+
+The Talent Profile also has a sticky section navigation/tab list.
+
+Remove:
+
+```text
+Resume
+```
+
+from that navigation.
+
+If the current section uses:
+
+```text
+section-resume
+```
+
+remove it from:
+
+* `SECTION_TABS`
+* `visibleSectionIds`
+* any public-view visibility logic
+* any scroll/IntersectionObserver setup that depends on that section
+
+Do not leave a Resume tab that points to a missing section.
+
+---
+
+# Important: Do Not Delete Resume Functionality Globally
+
+This task is ONLY about removing Resume from the Talent Profile display.
+
+Do NOT remove or break:
+
+* resume upload during Talent profile setup
+* stored `resumeUrl`
+* resume file storage
+* job application resume upload
+* Admin resume access
+* Admin Job Applications resume view/download
+* candidate resume APIs
+* profile-completion logic that may still require a resume
+* existing database fields related to resume
+
+Resume should still exist internally and elsewhere in the platform.
+
+It simply should not be displayed as a public/profile section.
+
+---
+
+# Profile Strength
+
+If Resume currently contributes to Profile Strength/completion, leave that behavior unchanged unless the current product requirements explicitly say otherwise.
+
+The Talent can still be required to upload a resume as part of profile completion even though the resume is no longer displayed on their Talent Profile.
+
+Do not remove Resume from `profileCompletion.ts` just because the section is hidden.
+
+---
+
+# Public View
+
+Public View must not show any Resume section.
+
+This should now be naturally handled because the Resume card itself is removed.
+
+Do not create separate conditional logic that leaves it visible in some views.
+
+---
+
+# Expected Profile Section Order
+
+After this change, the profile should no longer contain Resume.
+
+For example:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Applications   ← owner-only
+Values Alignment
+Portfolio
+Preferences
+...
+```
+
+Use the actual current order in the codebase, but make sure Resume is completely removed from the Talent Profile navigation and rendered sections.
+
+---
+
+# Clean Up Code
+
+After removing the section:
+
+* remove unused `section-resume` references
+* remove unused Resume-specific UI code from `TalentProfile.tsx`
+* remove unused icons/imports only if they are no longer used elsewhere
+* do not remove shared resume APIs or schema fields
+
+Run TypeScript/build checks afterward.
+
+---
+
+# Acceptance Criteria
+
+* [ ] Resume card no longer appears in Talent owner view
+* [ ] Resume card no longer appears in Client view
+* [ ] Resume card no longer appears in Public View
+* [ ] Resume card no longer appears for logged-out visitors
+* [ ] Resume tab is removed from sticky profile navigation
+* [ ] No broken `section-resume` anchor remains
+* [ ] Resume upload still works elsewhere
+* [ ] Resume data remains stored
+* [ ] Admin can still access resumes where currently allowed
+* [ ] Job application resume functionality still works
+* [ ] Profile Strength behavior remains unchanged
+* [ ] No TypeScript errors
+* [ ] No duplicate or empty whitespace section remains where Resume used to be
+
+Keep this change narrowly scoped to the Talent Profile display.
