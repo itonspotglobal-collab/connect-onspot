@@ -724,9 +724,6 @@ export default function WhyOnSpotAbout() {
             </div>
           </div>
 
-          {/* Hairline */}
-          <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
-
           {/* Row 2: copyright (left) + nav + legal (right) */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
