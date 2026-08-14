@@ -12,9 +12,25 @@ import {
   MapPin,
 } from "lucide-react";
 
-export function Footer() {
+interface FooterProps {
+  /**
+   * CSS color the immediately preceding section ends at.
+   * When provided, the footer's background opens with a gradient that transitions
+   * from this color into the footer's own brand indigo, making the footer feel
+   * like a natural downward continuation of whatever section sits above it.
+   */
+  blendFrom?: string;
+}
+
+const FOOTER_BASE = "#3F4698";
+
+export function Footer({ blendFrom }: FooterProps = {}) {
+  const bg = blendFrom
+    ? `linear-gradient(to bottom, ${blendFrom} 0%, ${FOOTER_BASE} 28%, ${FOOTER_BASE} 100%)`
+    : FOOTER_BASE;
+
   return (
-    <footer className="relative overflow-hidden bg-[#3F4698]">
+    <footer className="relative overflow-hidden" style={{ background: bg }}>
       {/* Enhanced Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white/8 rounded-full blur-2xl animate-pulse"></div>

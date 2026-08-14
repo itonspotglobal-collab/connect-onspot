@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
+import { Footer } from "@/components/Footer";
 import jakePhoto from "@assets/Jake_1780574815787.png";
 const nurPhoto = "/nur-ceo.jpeg";
 const markPhoto = "/mark-apostol.png";
@@ -68,7 +69,12 @@ export default function Home() {
       <OpenJobsSection />
       <ProcessSection />
       <FinalCtaSection />
-
+      {/*
+        blendFrom matches FinalCtaSection's bottom gradient stop (C.dark3 = #4652B5)
+        so the footer opens from that colour and settles into its own indigo —
+        visually one continuous dark field, no visible seam.
+      */}
+      <Footer blendFrom="#4652B5" />
     </div>
   );
 }
