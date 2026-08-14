@@ -691,7 +691,14 @@ export default function WhyOnSpotAbout() {
 
       {/* ── Fine-print footer ── same bg, zero visual break ─────────────────── */}
       <footer style={{ background: P, padding: "28px 0 24px" }}>
-        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px" }}>
+
+          {/* Company description */}
+          <p style={{ fontSize: 11.5, lineHeight: 1.7, color: "rgba(255,255,255,0.28)", margin: "0 0 20px", maxWidth: 680 }}>
+            OnSpot is a workforce platform between marketplace chaos and outsourcing overhead — vetted talent, transparent pricing, no hidden markup. One system to hire, manage, and pay people who actually show up. Work Without Limits.
+          </p>
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
 
           {/* Left: tagline + copyright */}
           <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", margin: 0, letterSpacing: "0.01em" }}>
@@ -749,6 +756,7 @@ export default function WhyOnSpotAbout() {
             ))}
           </div>
 
+          </div>
         </div>
       </footer>
 
