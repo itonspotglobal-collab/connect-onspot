@@ -2910,14 +2910,12 @@ body.has-floating-bottom-right {
     gap: 12px !important;
   }
 
-  /* TwoCol right side: constrained device area — centers visual, clips overflow vertically */
+  /* TwoCol right side: center the visual on mobile; cropping handled by window divs */
   .hero-twocol-right {
     display: flex !important;
     justify-content: center !important;
     align-items: flex-start !important;
     width: 100% !important;
-    max-height: 470px;
-    overflow: hidden;
   }
 
   /* Slides 2–5 main headings: reduce from large clamp min */
@@ -2932,19 +2930,42 @@ body.has-floating-bottom-right {
     margin-top: 8px !important;
   }
 
-  /* Slide 2 — laptop mockup: shrink to spec width & flatten rotation */
+  /* Slide 2 — tablet crop window: fixed-height overflow container, shows top portion */
+  .hero-mobile-device-window {
+    position: relative;
+    width: 100%;
+    height: clamp(250px, 36vh, 340px);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* Slide 2 — laptop mockup: centered inside crop window, 3D rotation flattened */
   .hero-laptop-wrap {
-    width: min(68vw, 330px) !important;
-    max-width: 330px !important;
+    width: min(76vw, 340px) !important;
+    max-width: 340px !important;
     margin-inline: auto !important;
   }
   .hero-laptop-3d {
     transform: none !important;
   }
 
-  /* Slide 3 — phone mockup: shrink ~10% further */
+  /* Slide 3 — phone crop window: fixed-height overflow container */
+  .hero-phone-window {
+    position: relative;
+    width: 100%;
+    height: clamp(220px, 32vh, 300px);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* Slide 3 — phone mockup: larger now that window handles cropping */
   .hero-phone-wrap {
-    width: min(32vw, 130px) !important;
+    width: min(42vw, 180px) !important;
+    max-width: 180px !important;
     margin-inline: auto !important;
   }
 

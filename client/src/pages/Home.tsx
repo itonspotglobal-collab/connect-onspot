@@ -352,7 +352,11 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
           </Link>
         </>
       }
-      right={<LaptopMockup />}
+      right={
+        <div className="hero-mobile-device-window">
+          <LaptopMockup />
+        </div>
+      }
     />
   );
 }
@@ -527,7 +531,11 @@ function TalentSlide({ isDark }: { isDark: boolean }) {
           </Link>
         </>
       }
-      right={<PhoneMockup />}
+      right={
+        <div className="hero-phone-window">
+          <PhoneMockup />
+        </div>
+      }
     />
   );
 }

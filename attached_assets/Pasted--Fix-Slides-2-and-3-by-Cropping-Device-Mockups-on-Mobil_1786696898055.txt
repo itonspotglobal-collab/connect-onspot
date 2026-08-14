@@ -1,0 +1,450 @@
+# Fix Slides 2 and 3 by Cropping Device Mockups on Mobile Only
+
+Please update ONLY the mobile version of homepage carousel Slides 2 and 3.
+
+## Critical requirement
+
+**Desktop and laptop views must remain completely unchanged.**
+
+Do not modify the existing desktop mockup sizes, transforms, spacing, or carousel layout.
+
+All changes below must apply ONLY under:
+
+```css
+@media (max-width: 767px)
+```
+
+or equivalent Tailwind `max-md:` classes.
+
+---
+
+# Goal
+
+On mobile, do NOT try to display the entire tablet or phone.
+
+Instead:
+
+* show only the upper/important portion of the device
+* crop the lower half intentionally
+* keep the device centered
+* keep the CTA visible
+* ALWAYS keep the carousel controls visible
+
+The mobile hero should prioritize:
+
+1. Heading
+2. Supporting text
+3. CTA
+4. Important upper section of the device mockup
+5. Carousel controls
+
+The device mockup does NOT need to be fully visible on mobile.
+
+---
+
+# Slide 2 — Tablet / Team Dashboard
+
+The current tablet is too tall and causes the entire carousel control row to disappear.
+
+## New mobile behavior
+
+Create a dedicated wrapper around the tablet visual.
+
+Concept:
+
+```tsx
+<div className="hero-mobile-device-window">
+  <LaptopMockup />
+</div>
+```
+
+On mobile only:
+
+```css
+.hero-mobile-device-window {
+  position: relative;
+  width: 100%;
+  height: 330px;
+  overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+```
+
+The exact height can be adjusted between approximately:
+
+```css
+300px - 360px
+```
+
+depending on screen height.
+
+The tablet itself should remain centered inside this crop window.
+
+Example:
+
+```css
+.hero-tablet-mobile {
+  width: min(76vw, 340px);
+  margin-inline: auto;
+  transform-origin: top center;
+}
+```
+
+If necessary:
+
+```css
+.hero-tablet-mobile {
+  transform: scale(0.9);
+}
+```
+
+but only on mobile.
+
+## Important
+
+Do NOT scale the tablet so much that the dashboard becomes tiny.
+
+It is preferable to show:
+
+```text
+┌───────────────────────┐
+│ OnSpot        Company │
+│                       │
+│ Team dashboard        │
+│                       │
+│ stats                 │
+│                       │
+│ team performance      │
+│                       │
+│        ↓ cropped      │
+└───────────────────────┘
+```
+
+rather than trying to show the entire device.
+
+The lower portion may be hidden.
+
+That is intentional.
+
+---
+
+# Slide 3 — Phone / Earnings Summary
+
+Use the same idea.
+
+The phone currently fits better than Slide 2, but it still takes too much vertical space.
+
+Wrap the phone in a mobile crop window.
+
+Example:
+
+```css
+.hero-phone-window {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+```
+
+Center the phone horizontally.
+
+Example:
+
+```css
+.hero-phone-mobile {
+  margin-inline: auto;
+}
+```
+
+Show primarily:
+
+```text
+┌─────────────┐
+│    phone    │
+│             │
+│ OnSpot      │
+│             │
+│ Earnings    │
+│ summary     │
+│             │
+│ Total       │
+│ earned      │
+│      ↓      │
+│   cropped   │
+└─────────────┘
+```
+
+The lower analytics/data area may be hidden on mobile.
+
+That is acceptable.
+
+---
+
+# Reserve Space for Carousel Controls
+
+This is the most important part.
+
+The carousel controls must have their own dedicated space that device mockups cannot enter.
+
+Mobile hero structure should behave like:
+
+```text
+┌─────────────────────────┐
+│ Heading                 │
+│ Supporting copy         │
+│ CTA                     │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Device crop window  │ │
+│ │                     │ │
+│ │ mockup              │ │
+│ │                     │ │
+│ │ cropped here ↓      │ │
+│ └─────────────────────┘ │
+│                         │
+│ ←   Pause   →  02 / 05 │
+│                         │
+└─────────────────────────┘
+```
+
+The controls must NEVER be inside the crop wrapper.
+
+They must remain outside and below it.
+
+---
+
+# Hero Mobile Flex Structure
+
+On mobile, use something similar to:
+
+```tsx
+<section className="...">
+  <div className="hero-mobile-layout">
+
+    <div className="hero-mobile-content">
+      {/* slide text */}
+      {/* CTA */}
+      {/* cropped device area */}
+    </div>
+
+    <div className="hero-carousel-controls">
+      ...
+    </div>
+
+  </div>
+</section>
+```
+
+Mobile CSS concept:
+
+```css
+.hero-mobile-layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hero-carousel-controls {
+  flex-shrink: 0;
+}
+```
+
+This guarantees that the device gets cropped before the carousel controls disappear.
+
+---
+
+# Very Important: Controls Win Over Mockups
+
+If there is not enough vertical room:
+
+DO THIS:
+
+```text
+crop more of the device
+```
+
+DO NOT:
+
+```text
+hide carousel controls
+```
+
+DO NOT:
+
+```text
+push carousel controls below the hero
+```
+
+DO NOT:
+
+```text
+increase the mobile hero to an extremely tall height
+```
+
+The priority is:
+
+```text
+Controls > Device bottom
+```
+
+---
+
+# Responsive Crop Height
+
+Because mobile phones have different heights, you can use CSS such as:
+
+```css
+@media (max-width: 767px) {
+  .hero-mobile-device-window {
+    height: clamp(250px, 36vh, 350px);
+  }
+}
+```
+
+For shorter screens:
+
+```css
+@media (max-width: 767px) and (max-height: 700px) {
+  .hero-mobile-device-window {
+    height: 240px;
+  }
+}
+```
+
+For taller phones:
+
+```css
+@media (max-width: 767px) and (min-height: 800px) {
+  .hero-mobile-device-window {
+    height: 320px;
+  }
+}
+```
+
+This is much safer than using one giant fixed device size.
+
+---
+
+# Slide 2 Specific Acceptance Criteria
+
+On mobile:
+
+* `Hire Without Limits.` is fully visible.
+* Supporting copy is fully visible.
+* `Hire talent →` is fully visible.
+* Tablet is horizontally centered.
+* Tablet top/dashboard area is visible.
+* Bottom of tablet may be cropped.
+* Carousel controls are completely visible.
+* The next homepage section must NOT appear inside the hero before the controls.
+
+The current screenshot where:
+
+```text
+tablet
+↓
+next homepage section
+```
+
+appears without carousel controls is NOT acceptable.
+
+---
+
+# Slide 3 Specific Acceptance Criteria
+
+On mobile:
+
+* `Earn Without Limits.` is fully visible.
+* Supporting copy is fully visible.
+* `Find work →` is fully visible.
+* Phone is centered.
+* Important upper portion of earnings screen is visible.
+* Bottom part of phone may be cropped.
+* Carousel controls remain completely visible.
+* There should be comfortable space between phone crop and controls.
+
+---
+
+# Desktop Protection
+
+Do NOT change the current desktop styles for:
+
+* `TwoCol`
+* `LaptopMockup`
+* phone mockup
+* hero height
+* desktop gap
+* desktop device perspective
+* desktop typography
+* desktop carousel controls
+
+Any new sizing/cropping rules MUST be scoped only under:
+
+```css
+@media (max-width: 767px)
+```
+
+or equivalent mobile-only Tailwind utilities.
+
+At `768px` and above, the page should continue using the existing implementation.
+
+---
+
+# Test These Mobile Sizes
+
+Please specifically test:
+
+```text
+360 × 640
+375 × 667
+390 × 844
+412 × 915
+430 × 932
+```
+
+At every size verify:
+
+* CTA visible
+* device centered
+* device intentionally cropped
+* carousel controls visible
+* counter visible
+* progress dots visible
+* no horizontal overflow
+* next homepage section does not invade the hero
+
+Then test:
+
+```text
+1024 × 768
+1366 × 768
+1440 × 900
+```
+
+and confirm the desktop design is unchanged.
+
+---
+
+# Final Instruction
+
+Do not continue trying to shrink the entire device until everything fits.
+
+For mobile only, **crop the mockup instead**.
+
+The mockup is decorative/supporting content.
+
+The carousel controls are functional content and must always remain visible.
