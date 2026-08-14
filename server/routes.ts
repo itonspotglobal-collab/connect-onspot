@@ -1036,6 +1036,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  candidates name migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: candidate more_about_me long-form text ──
+  try {
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS more_about_me text`);
+    console.log("✅ Migration: candidates.more_about_me column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  candidates more_about_me migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: 1-Click Apply — application_questions + answers ──
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_questions jsonb`);
@@ -5021,6 +5029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.phone          !== undefined) candidateUpdates.phone          = body.phone          || null;
       if (body.location       !== undefined) candidateUpdates.location       = body.location       || null;
       if (body.summary        !== undefined) candidateUpdates.summary        = body.summary        || null;
+      if (body.moreAboutMe    !== undefined) candidateUpdates.moreAboutMe    = body.moreAboutMe    || null;
       if (body.availability   !== undefined) candidateUpdates.availability   = body.availability   || null;
       if (body.headline       !== undefined) candidateUpdates.headline       = body.headline       || null;
       if (body.displayName    !== undefined) candidateUpdates.displayName    = body.displayName    || null;

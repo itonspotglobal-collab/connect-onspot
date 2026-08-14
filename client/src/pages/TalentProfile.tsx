@@ -107,6 +107,7 @@ function EditField({
   placeholder,
   canEdit = true,
   nameMode = false,
+  minHeight,
 }: {
   label: string;
   value: string;
@@ -115,6 +116,7 @@ function EditField({
   placeholder?: string;
   canEdit?: boolean;
   nameMode?: boolean;
+  minHeight?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -150,13 +152,26 @@ function EditField({
     }
     return (
       <div className="group flex items-start gap-2">
-        <span className="flex-1 text-sm text-slate-700 dark:text-slate-300">
-          {value || <span className="text-slate-400">{placeholder ?? `Add ${label.toLowerCase()}…`}</span>}
-        </span>
+        <div className="flex-1 min-w-0">
+          {multiline && value ? (
+            // Multi-paragraph rendering — split on blank lines, preserve intra-paragraph newlines
+            <div className="space-y-3">
+              {value.split(/\n[ \t]*\n/).map((para, i) => (
+                <p key={i} className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                  {para.trim()}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <span className="text-sm text-slate-700 dark:text-slate-300">
+              {value || <span className="text-slate-400">{placeholder ?? `Add ${label.toLowerCase()}…`}</span>}
+            </span>
+          )}
+        </div>
         {canEdit && (
           <button
             onClick={() => setEditing(true)}
-            className="invisible mt-0.5 rounded p-1 text-slate-400 transition hover:text-[#474ead] group-hover:visible"
+            className="invisible mt-0.5 shrink-0 rounded p-1 text-slate-400 transition hover:text-[#474ead] group-hover:visible"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
@@ -170,7 +185,8 @@ function EditField({
         <Textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="min-h-[100px] text-sm"
+          className="text-sm"
+          style={{ minHeight: minHeight ?? "100px" }}
           placeholder={placeholder}
           autoFocus
         />
@@ -271,6 +287,7 @@ function PhotoUploader({
 const SECTION_TABS = [
   { id: "section-overview", label: "Overview" },
   { id: "section-about",    label: "About" },
+  { id: "section-more-about", label: "More About Me" },
   { id: "section-skills",   label: "Skills" },
   { id: "section-experience", label: "Experience" },
   { id: "section-education", label: "Education" },
@@ -629,8 +646,12 @@ export default function TalentProfile() {
   }, [id]);
 
   const isOwner = talentAuth?.candidateId === id;
-  // Admins can also edit; otherwise must be the authenticated owner
-  const canEdit = isOwner || isAdminUser;
+  // Public View: owner visits their own profile with ?view=public — disables all editing controls
+  const isPublicPreview = isOwner && new URLSearchParams(window.location.search).get("view") === "public";
+  // Admins can also edit; otherwise must be the authenticated owner and NOT in public preview
+  const canEdit = (isOwner || isAdminUser) && !isPublicPreview;
+  // Sections that are private to the authenticated owner (hidden when previewing as a visitor)
+  const showPrivateOwnerSections = isOwner && !isPublicPreview;
 
   // Local state for optimistic photo update
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
@@ -771,13 +792,16 @@ export default function TalentProfile() {
   const visibleSectionIds = new Set([
     "section-overview",
     "section-about",
+    // More About Me: visible to owner always, visible to others only when non-empty
+    ...(candidate.moreAboutMe?.trim() || showPrivateOwnerSections ? ["section-more-about"] : []),
     "section-skills",
     "section-experience",
     "section-education",
     "section-certifications",
     "section-portfolio",
     "section-resume",
-    ...(isOwner ? ["section-applications"] : []),
+    // Applications are private — hidden in public preview and from non-owners
+    ...(showPrivateOwnerSections ? ["section-applications"] : []),
     "section-preferences",
     ...(canSeeContact || isOwner ? ["section-contact"] : []),
   ]);
@@ -948,6 +972,41 @@ export default function TalentProfile() {
                 </Button>
               )}
 
+              {/* Public View + Copy Link — profile owner only, not while already in preview */}
+              {isOwner && !isPublicPreview && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="rounded-full text-sm"
+                    aria-label="Preview public profile"
+                    onClick={() => navigate(`/talent-profile/${id}?view=public`)}
+                  >
+                    <Eye className="mr-1.5 h-4 w-4" /> Public View
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full text-sm text-slate-500 hover:text-slate-700"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/talent-profile/${id}`);
+                      toast({ title: "Profile link copied" });
+                    }}
+                  >
+                    Copy Link
+                  </Button>
+                </>
+              )}
+              {/* Return to Edit View banner button (also shown inline in action area) */}
+              {isPublicPreview && (
+                <Button
+                  variant="outline"
+                  className="rounded-full text-sm border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300"
+                  aria-label="Return to profile editing"
+                  onClick={() => navigate(`/talent-profile/${id}`)}
+                >
+                  <EyeOff className="mr-1.5 h-4 w-4" /> Edit View
+                </Button>
+              )}
+
             </div>
           </div>
       </div>
@@ -955,8 +1014,29 @@ export default function TalentProfile() {
       {/* ── Section Tabs ── */}
       <SectionTabs visibleIds={visibleSectionIds} navbarVisible={isNavbarVisible} />
 
+      {/* ── Public View preview banner ── */}
+      {isPublicPreview && (
+        <div className="mx-auto mt-3 max-w-4xl px-4 md:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+            <div className="flex items-center gap-2.5 text-sm text-indigo-700 dark:text-indigo-300">
+              <Eye className="h-4 w-4 shrink-0" />
+              <span>You are viewing your profile as visitors see it.</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 shrink-0 rounded-full border-indigo-300 text-xs text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+              aria-label="Return to profile editing"
+              onClick={() => navigate(`/talent-profile/${id}`)}
+            >
+              Return to Edit View
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ── Complete Profile CTA (owner only, shown when profile is incomplete) ── */}
-      {isOwner && completionPct < 100 && (
+      {showPrivateOwnerSections && completionPct < 100 && (
         <div className="mx-auto mt-4 max-w-4xl px-4 md:px-8">
           <div
             className="relative overflow-hidden rounded-2xl p-5 sm:p-6"
@@ -1016,11 +1096,27 @@ export default function TalentProfile() {
                 label="Summary"
                 value={candidate.summary ?? ""}
                 multiline
+                minHeight="120px"
                 placeholder="Write a short professional summary…"
                 onSave={(v) => save("summary", v)}
                 canEdit={canEdit}
               />
             </Section>
+
+            {/* More About Me — hidden for public visitors when empty */}
+            {(canEdit || candidate.moreAboutMe?.trim()) && (
+              <Section id="section-more-about" title="More About Me" icon={BookOpen}>
+                <EditField
+                  label="More About Me"
+                  value={candidate.moreAboutMe ?? ""}
+                  multiline
+                  minHeight="180px"
+                  placeholder="Share more about yourself, your working style, goals, interests, or what you'd like potential employers to know…"
+                  onSave={(v) => save("moreAboutMe", v)}
+                  canEdit={canEdit}
+                />
+              </Section>
+            )}
 
             {/* Skills */}
             <Section
@@ -1331,8 +1427,8 @@ export default function TalentProfile() {
               <ResumeSection candidateId={candidate.id} candidate={candidate} canEdit={canEdit} talentToken={talentAuth?.token} />
             </Section>
 
-            {/* Applications — only visible to profile owner */}
-            {isOwner && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
+            {/* Applications — private, only visible to authenticated owner (hidden in public preview) */}
+            {showPrivateOwnerSections && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
 
             {/* Contact (role-gated) */}
             {canSeeContact && (

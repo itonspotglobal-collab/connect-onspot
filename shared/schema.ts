@@ -1202,6 +1202,8 @@ export const candidates = pgTable("candidates", {
   workHistory: jsonb("work_history").default([]),
   preferences: jsonb("preferences").default({}),
   summary: text("summary"),
+  // Long-form personal/professional information — shown publicly, optional
+  moreAboutMe: text("more_about_me"),
   profileCompleted: boolean("profile_completed").default(false),
   accountCreated: boolean("account_created").default(false),
   cultureScore: integer("culture_score"),

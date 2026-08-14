@@ -1,0 +1,1134 @@
+# Enhance Talent Profile — About Formatting, More About Me, and Public View
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Update the existing Talent Profile feature with the following three changes:
+
+1. Improve the **About** section so the content displays naturally as proper paragraph-form text.
+2. Add a new **More About Me** section for longer and more personal/professional information about the Talent.
+3. Add a **Public View** feature so the Talent can preview exactly how visitors see their profile, with all editing controls removed.
+
+Do not redesign the entire Talent Profile.
+
+Preserve the existing:
+
+* Talent Profile layout
+* profile cards
+* Profile Strength
+* sticky section navigation
+* inline editing
+* owner/non-owner behavior
+* Talent authentication
+* responsive layout
+* current OnSpot styling
+
+Primary file to inspect:
+
+`client/src/pages/TalentProfile.tsx`
+
+Also inspect:
+
+```text
+client/src/hooks/useTalentProfile.ts
+client/src/App.tsx
+client/src/components/TopNavigation.tsx
+shared/schema.ts
+server/storage.ts
+server routes related to candidates / Talent Profile
+client/src/lib/profileCompletion.ts
+```
+
+Before coding, understand the current `isOwner`, `canEdit`, candidate/profile API, and route behavior.
+
+---
+
+# FEATURE 1 — Improve About Section Formatting
+
+## Current issue
+
+The current About section can contain a large amount of text, but it renders visually like one dense block of text.
+
+This makes the section feel crowded and difficult to read.
+
+We want the About section to display as proper **paragraph-form content**.
+
+---
+
+## Desired behavior
+
+Keep the existing About field and data source.
+
+Do NOT create another About field.
+
+Improve only how it is entered and rendered.
+
+When the Talent writes multiple paragraphs such as:
+
+```text
+I am an entrepreneur, executive, and company builder focused on turning ambitious ideas into scalable businesses.
+
+My career has been built at the intersection of strategy, technology, operations, and people.
+
+Today, much of my focus is on technology-enabled businesses and new operating models.
+```
+
+the profile should render them visually as separate paragraphs with natural spacing.
+
+Do not collapse everything into one continuous wall of text.
+
+---
+
+# About Rendering
+
+Preserve line breaks and paragraph breaks entered by the Talent.
+
+Preferred output behavior:
+
+```tsx
+<p>First paragraph...</p>
+
+<p>Second paragraph...</p>
+
+<p>Third paragraph...</p>
+```
+
+or an equivalent implementation such as:
+
+```tsx
+whitespace-pre-line
+```
+
+if it produces the correct readable result.
+
+However, proper paragraph spacing is preferred.
+
+Example:
+
+```tsx
+value
+  .split(/\n\s*\n/)
+  .filter(Boolean)
+  .map(...)
+```
+
+Do not use `dangerouslySetInnerHTML`.
+
+Do not interpret user-entered text as HTML.
+
+---
+
+# About Styling
+
+The About section should have:
+
+* comfortable line height
+* readable paragraph width
+* clear spacing between paragraphs
+* consistent text size
+* no excessive indentation
+* no justified text
+* no strange word wrapping
+
+Suggested styling:
+
+```text
+text-sm / text-base
+leading-7
+text-slate-700
+space-y-4
+```
+
+Adapt this to the existing Talent Profile design.
+
+The screenshot supplied with this request demonstrates the current dense block that needs improvement.
+
+---
+
+# About Editing
+
+The owner must still be able to edit the About section.
+
+The textarea should support multiple paragraphs naturally.
+
+When editing:
+
+* Enter = new line
+* blank line = new paragraph
+* saving must preserve paragraph breaks
+
+Do not strip newline characters from the saved value.
+
+If the current backend or update function trims the value, trimming leading/trailing whitespace is fine, but preserve internal newlines.
+
+---
+
+# FEATURE 2 — Add “More About Me”
+
+Create an additional Talent Profile section:
+
+**More About Me**
+
+This is different from the existing short About/Summary field.
+
+The existing About section should answer approximately:
+
+> Who are you professionally?
+
+The new More About Me section should allow the Talent to provide deeper information such as:
+
+* professional philosophy
+* working style
+* career goals
+* industries they are interested in
+* preferred team culture
+* strengths
+* motivations
+* interests
+* achievements
+* additional background
+* anything else they want potential employers/clients to know
+
+Do not force these into individual fields.
+
+Use one flexible long-form text field.
+
+---
+
+# Data Model
+
+Add a dedicated field to the existing Candidate/Talent Profile data model.
+
+Preferred name:
+
+```ts
+moreAboutMe
+```
+
+or:
+
+```ts
+more_about_me
+```
+
+depending on the project's existing database/schema naming conventions.
+
+Use the existing convention.
+
+Do not store this in localStorage.
+
+Do not overload another unrelated field such as `summary`, `preferences`, or `coverLetter`.
+
+This information must persist in the Talent profile database.
+
+Update all appropriate layers:
+
+```text
+shared/schema.ts
+database schema if required
+server storage/update logic
+candidate profile API
+client types
+TalentProfile.tsx
+```
+
+If a migration is necessary, create it according to the project's existing migration strategy.
+
+Do not delete existing Talent data.
+
+---
+
+# More About Me UI
+
+Add a new card using the existing `Section` component/style.
+
+Suggested icon:
+
+```text
+Sparkles
+UserRound
+MessageCircle
+Heart
+BookOpen
+```
+
+Use an already available Lucide icon that fits the design.
+
+Example:
+
+```text
+[icon] More About Me
+
+I enjoy building high-performing teams and working in environments
+where strategy, technology, and operations intersect.
+
+Outside of my core experience...
+```
+
+---
+
+# Placement
+
+Place **More About Me directly after About**.
+
+Recommended profile order:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Portfolio
+Resume
+Applications
+...
+```
+
+If the current implementation has right-column sections such as Preferences, keep those in their existing column.
+
+More About Me should be part of the main profile content column.
+
+---
+
+# Sticky Section Navigation
+
+Update the existing Talent Profile section tabs.
+
+Add:
+
+```text
+More About Me
+```
+
+Suggested section ID:
+
+```text
+section-more-about
+```
+
+The section should work with the existing:
+
+* sticky navigation
+* `IntersectionObserver`
+* active tab highlighting
+* smooth scrolling
+* mobile horizontal tab scrolling
+
+Do not build a separate navigation system.
+
+---
+
+# More About Me Owner Editing
+
+Only the Talent who owns the profile can edit this section.
+
+Reuse the existing ownership logic.
+
+The owner should see an edit action consistent with the other profile sections.
+
+Use the existing `EditField` or equivalent reusable editing behavior where practical.
+
+Set it as multiline.
+
+Suggested placeholder:
+
+```text
+Share more about yourself, your working style, goals, interests, or what you'd like potential employers to know...
+```
+
+Recommended textarea size:
+
+```text
+min-height: 160px–220px
+```
+
+because this field is intended to support longer content.
+
+---
+
+# More About Me Display
+
+Display the text using the same proper paragraph formatting implemented for About.
+
+If the Talent writes:
+
+```text
+I enjoy working with ambitious teams that value ownership and clear communication.
+
+My strongest environments are fast-moving organizations where I can combine strategy and execution.
+
+Outside of work, I enjoy...
+```
+
+render three readable paragraphs.
+
+Do not show it as one giant text block.
+
+---
+
+# Empty State
+
+For the **owner**, if More About Me is empty:
+
+```text
+Tell visitors more about yourself, your goals, and how you like to work.
+```
+
+with an Edit/Add action.
+
+For **public visitors**, if More About Me is completely empty:
+
+**hide the section entirely.**
+
+Do not show:
+
+```text
+No information added
+```
+
+on a public profile.
+
+---
+
+# Profile Strength
+
+Do NOT make More About Me a mandatory Profile Strength field unless explicitly required.
+
+The current Profile Strength score should remain unchanged for this task.
+
+Adding More About Me should not suddenly decrease existing profile completion percentages.
+
+It is an optional enhancement.
+
+---
+
+# FEATURE 3 — Talent Public View
+
+Add a feature allowing the Talent to preview their profile exactly from a visitor's perspective.
+
+The Talent currently has an owner view where editable controls appear.
+
+We need a clear way to switch into:
+
+**Public View**
+
+This is not a separate editable version of the profile.
+
+It is a read-only preview of the existing profile.
+
+---
+
+# Public View Meaning
+
+Public View represents:
+
+> “What does another person see when they visit my Talent Profile?”
+
+When Public View is enabled:
+
+* no Pencil icons
+* no Add buttons
+* no Delete buttons
+* no upload controls
+* no editable textareas
+* no edit modals
+* no profile photo upload overlay
+* no owner-only management UI
+* no private application information
+* no owner-only account controls inside the profile body
+
+All profile information should be read-only.
+
+---
+
+# Important: Reuse the Same Profile UI
+
+Do NOT build:
+
+```text
+TalentProfile.tsx
+PublicTalentProfile.tsx
+```
+
+as two completely duplicated implementations.
+
+Use the same Talent Profile rendering and derive:
+
+```ts
+canEdit
+```
+
+from something like:
+
+```ts
+isOwner && !isPublicPreview
+```
+
+Conceptually:
+
+```ts
+const canEdit = isOwner && !publicView;
+```
+
+Then pass `canEdit` through existing editable components.
+
+This prevents the owner profile and public profile from visually drifting apart.
+
+---
+
+# Public View Entry Point
+
+Add a clearly visible button for the profile owner.
+
+Recommended location:
+
+Near the Talent profile header actions.
+
+Button:
+
+```text
+[Eye icon] Public View
+```
+
+or:
+
+```text
+Preview Public Profile
+```
+
+Use the existing Lucide `Eye` icon if already imported.
+
+Do not put the button in every section.
+
+It should be a single profile-level action.
+
+---
+
+# Preferred Public View UX
+
+When Talent clicks:
+
+**Public View**
+
+switch the existing page into public-preview mode.
+
+Recommended URL strategy:
+
+```text
+/talent-profile/:candidateId?view=public
+```
+
+or:
+
+```text
+/talent-profile/:candidateId?preview=public
+```
+
+Use whichever fits the current router cleanly.
+
+Using a URL state is preferable because:
+
+* refresh preserves preview
+* browser Back works
+* link state is understandable
+* UI state does not get lost
+
+Do not create fragile localStorage-based preview state.
+
+---
+
+# Public Preview Banner
+
+When the owner is previewing their public profile, show a small persistent indicator above the profile:
+
+```text
+You are viewing your profile as a visitor.
+```
+
+Include a button:
+
+```text
+Return to Edit View
+```
+
+Example:
+
+```text
+👁 Public View
+You are viewing your profile as visitors see it.
+
+[Return to Edit View]
+```
+
+Use a subtle indigo/slate informational banner.
+
+Do not cover profile content.
+
+---
+
+# Public Preview Behavior
+
+While in Public View:
+
+### Hide all owner editing actions
+
+This includes:
+
+* Pencil buttons
+* Add buttons
+* Remove buttons
+* Delete icons
+* upload controls
+* profile photo `Change`
+* Save/Cancel editing state
+* drag-and-drop upload areas
+* edit dialogs
+* application management controls
+
+### Show public profile information normally
+
+Keep:
+
+* profile photo
+* name
+* headline
+* location
+* About
+* More About Me
+* Skills
+* Experience
+* Education
+* Certifications
+* Portfolio
+* resume presence where public
+* Preferences where intended for visitors
+* LinkedIn/portfolio links
+* other public-facing information
+
+---
+
+# Applications Privacy
+
+The **Applications** section is private Talent-account information.
+
+Public visitors must NOT see:
+
+* jobs Talent has applied to
+* application statuses
+* application dates
+* interview status
+* rejected/hired state
+* application count
+
+Therefore:
+
+```text
+Applications
+```
+
+must be hidden in Public View.
+
+It should remain available only in the authenticated owner experience.
+
+This applies both to:
+
+* the profile Applications section/card
+* the Applications section navigation/tab
+
+---
+
+# Other Private Data
+
+Inspect the profile carefully for other owner-only/private information.
+
+Do not show sensitive/private fields publicly unless they are already intentionally public.
+
+Examples that may need to remain private depending on existing product behavior:
+
+* account email used for login
+* personal phone number
+* internal candidate IDs
+* application history
+* internal admin metadata
+* profile completion controls
+* upload management UI
+
+Do not accidentally expose information just because Public View disables editing.
+
+**Read-only does not automatically mean public.**
+
+Preserve existing visibility rules.
+
+---
+
+# Real Visitor Behavior
+
+This task includes more than just owner preview.
+
+If another person navigates to:
+
+```text
+/talent-profile/:candidateId
+```
+
+and they are NOT the profile owner:
+
+they should automatically receive the same read-only/public profile experience.
+
+Therefore the visual output should be consistent between:
+
+```text
+Owner → Public View
+```
+
+and:
+
+```text
+Actual visitor → Talent profile
+```
+
+The owner preview is a simulation of the existing visitor state.
+
+---
+
+# Public View and Admin
+
+Do not confuse:
+
+```text
+public visitor
+```
+
+with:
+
+```text
+Admin viewing a Talent
+```
+
+If Admin currently has legitimate internal access to additional candidate data, preserve the existing Admin behavior.
+
+However, Admin must still not receive Talent-owner editing controls unless that is explicitly supported elsewhere.
+
+Do not break existing Admin Talent Pool / profile workflows.
+
+---
+
+# Owner Detection
+
+Use the current profile ownership logic already present in `TalentProfile.tsx`.
+
+Do NOT compare only display name or email to determine ownership.
+
+Use:
+
+* authenticated Talent account
+* candidate ID
+* verified Talent auth/session
+
+according to the existing implementation.
+
+Then calculate something like:
+
+```ts
+const isPublicPreview = isOwner && searchParams.get("view") === "public";
+
+const canEdit = isOwner && !isPublicPreview;
+```
+
+Adapt to Wouter/current project conventions.
+
+---
+
+# Public Profile URL
+
+If the profile can already be visited by candidate ID:
+
+```text
+/talent-profile/:candidateId
+```
+
+reuse it.
+
+Do not unnecessarily create another public profile database record.
+
+The public profile should always display current Talent profile data.
+
+---
+
+# Optional “Copy Public Link”
+
+If easy to implement without expanding scope too much, add:
+
+```text
+Copy Public Link
+```
+
+next to Public View.
+
+It should copy:
+
+```text
+${origin}/talent-profile/${candidateId}
+```
+
+or the project's canonical public profile URL.
+
+Display toast:
+
+```text
+Profile link copied
+```
+
+This is optional.
+
+Do not block completion of the three primary requirements for this.
+
+---
+
+# About and More About Me in Public View
+
+Both sections should:
+
+* show proper paragraph formatting
+* preserve intentional paragraph breaks
+* have readable line heights
+* hide edit controls
+* display exactly what the Talent saved
+
+If More About Me is empty, hide it publicly.
+
+---
+
+# Mobile Public View
+
+Ensure Public View works on mobile.
+
+The preview banner must not cause horizontal overflow.
+
+The Public View / Edit View action should remain accessible.
+
+Sticky profile tabs should continue working.
+
+Do not make desktop-only controls.
+
+---
+
+# Accessibility
+
+Buttons should have clear accessible names.
+
+Examples:
+
+```text
+aria-label="Preview public profile"
+aria-label="Return to profile editing"
+```
+
+Public mode should not leave invisible-but-focusable edit buttons in the DOM.
+
+If editing isn't allowed, don't merely apply:
+
+```text
+opacity-0
+```
+
+Remove/skip the editing controls from rendering.
+
+---
+
+# Suggested Implementation Structure
+
+Avoid duplicating conditional checks everywhere.
+
+Derive clear booleans near the main Talent Profile component:
+
+```ts
+const isPublicPreview = ...
+const canEditProfile = isOwner && !isPublicPreview;
+const showPrivateOwnerSections = isOwner && !isPublicPreview;
+```
+
+Then reuse them.
+
+Example:
+
+```tsx
+<EditField
+  value={candidate.summary ?? ""}
+  canEdit={canEditProfile}
+/>
+```
+
+For Applications:
+
+```tsx
+{showPrivateOwnerSections && (
+  <ApplicationsSection />
+)}
+```
+
+For Photo:
+
+```tsx
+{canEditProfile && (
+  <PhotoUploader ... />
+)}
+```
+
+Keep the conditions centralized and understandable.
+
+---
+
+# Section Visibility
+
+Update the existing `visibleIds` / section-tab visibility logic.
+
+### Owner Edit View
+
+May include:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Portfolio
+Resume
+Applications
+Preferences
+Contact
+```
+
+according to existing behavior.
+
+### Public View
+
+Only include sections that are public and have relevant content.
+
+For example:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Portfolio
+Resume
+Preferences
+```
+
+Do NOT include Applications.
+
+Do not include empty optional public sections unless the current profile intentionally shows empty placeholders to visitors.
+
+---
+
+# Data Persistence
+
+Verify `moreAboutMe` works through the existing candidate update flow.
+
+Expected lifecycle:
+
+```text
+Talent enters text
+    ↓
+Save
+    ↓
+Candidate API
+    ↓
+Database
+    ↓
+React Query invalidation/refetch
+    ↓
+Talent Profile updates
+    ↓
+Public profile immediately reflects updated content
+```
+
+Do not require a second save specifically for Public View.
+
+The same candidate profile is the single source of truth.
+
+---
+
+# Regression Requirements
+
+Do NOT break:
+
+* Talent Profile inline editing
+* Profile photo upload
+* headline editing
+* About editing
+* Skills modal
+* Experience
+* Education
+* Certifications
+* Portfolio
+* Resume
+* Preferences
+* Applications
+* Profile Strength
+* Talent authentication
+* Client profile
+* Admin Talent Pool
+* Talent Application List
+* mobile layout
+
+---
+
+# Acceptance Criteria
+
+The feature is complete only when all of these pass.
+
+## About
+
+* [ ] About displays as readable paragraph-form content
+* [ ] Blank lines create visible paragraph separation
+* [ ] Newlines survive save/refetch
+* [ ] Owner can still edit About
+* [ ] Public visitors see formatted About
+* [ ] No HTML injection is possible
+
+## More About Me
+
+* [ ] New `moreAboutMe` field persists in the database
+* [ ] More About Me appears after About
+* [ ] Owner can add/edit the content
+* [ ] Long multiline content is supported
+* [ ] Text displays in proper paragraphs
+* [ ] Section appears in sticky navigation
+* [ ] Clicking its nav tab scrolls correctly
+* [ ] Empty owner state is useful
+* [ ] Empty public section is hidden
+* [ ] Existing Profile Strength percentage is unaffected
+
+## Public View
+
+* [ ] Talent owner sees a Public View button
+* [ ] Clicking Public View switches the profile into visitor/read-only mode
+* [ ] Public View URL survives refresh
+* [ ] Public View shows a “viewing as visitor” indicator
+* [ ] Owner can return to Edit View
+* [ ] Pencil icons are hidden
+* [ ] Add/Delete controls are hidden
+* [ ] Profile photo upload control is hidden
+* [ ] Inline editing cannot activate
+* [ ] Applications are hidden
+* [ ] Applications nav tab is hidden
+* [ ] Private owner-only data is hidden
+* [ ] Public profile data remains visible
+* [ ] Actual non-owner visitor receives the same public presentation
+* [ ] Public View works on mobile
+
+---
+
+# Manual Testing
+
+## Test 1 — About paragraph formatting
+
+1. Sign in as Talent.
+2. Edit About.
+3. Enter three paragraphs separated by blank lines.
+4. Save.
+5. Refresh the page.
+6. Confirm all paragraph breaks remain.
+7. Confirm text is visually comfortable and readable.
+
+---
+
+## Test 2 — More About Me
+
+1. Sign in as Talent.
+2. Navigate to More About Me.
+3. Add several paragraphs.
+4. Save.
+5. Refresh.
+6. Confirm the content persists.
+7. Confirm the sticky More About Me tab scrolls correctly.
+
+---
+
+## Test 3 — Public View
+
+1. Sign in as Talent.
+2. Click Public View.
+3. Confirm profile visually switches to visitor mode.
+4. Confirm there are no edit controls.
+5. Confirm photo cannot be changed.
+6. Confirm About and More About Me remain visible.
+7. Confirm Applications is hidden.
+8. Confirm private fields are hidden.
+9. Refresh while in Public View.
+10. Confirm Public View remains active.
+11. Click Return to Edit View.
+12. Confirm editing controls return.
+
+---
+
+## Test 4 — Actual visitor
+
+1. Copy/open the Talent profile URL.
+2. Open it in a logged-out/private browser session.
+3. Confirm profile loads read-only.
+4. Confirm no owner editing controls.
+5. Confirm Applications are not visible.
+6. Confirm visible content matches owner Public View.
+
+---
+
+## Test 5 — Other account roles
+
+1. Log in as Client.
+2. Open the Talent profile.
+3. Confirm there are no Talent-owner editing controls.
+4. Verify Client functionality remains unchanged.
+5. Log in as Admin.
+6. Verify existing Admin Talent/Profile workflows are not broken.
+
+---
+
+# Final Implementation Rules
+
+Do not create two independent Talent Profile implementations.
+
+The target architecture should remain:
+
+```text
+Talent Profile data
+        ↓
+same TalentProfile UI
+        ↓
+┌──────────────────────────────┐
+│ Owner Edit View              │
+│ isOwner = true               │
+│ publicPreview = false        │
+│ canEdit = true               │
+└──────────────────────────────┘
+
+┌──────────────────────────────┐
+│ Owner Public Preview         │
+│ isOwner = true               │
+│ publicPreview = true         │
+│ canEdit = false              │
+└──────────────────────────────┘
+
+┌──────────────────────────────┐
+│ Actual Visitor               │
+│ isOwner = false              │
+│ canEdit = false              │
+└──────────────────────────────┘
+```
+
+The Public View must be a faithful preview of the actual visitor profile.
+
+Keep profile data, rendering, and visibility logic centralized.
+
+Do not create duplicate data sources or duplicate profile components.
