@@ -2,11 +2,17 @@ import { Link } from "wouter";
 
 interface FooterProps {
   /**
-   * CSS background value for the footer — pass the same value the preceding
-   * section uses so the footer reads as a seamless continuation (zero visual break).
+   * CSS background value for the footer.
+   * Pass "transparent" when the footer is nested inside a shared background
+   * container with the section above it (one continuous surface).
    * Defaults to the brand indigo used on the About page.
    */
   bg?: string;
+  /**
+   * When true, renders a subtle top border to visually separate the footer
+   * from the section above without breaking the shared background.
+   */
+  separator?: boolean;
 }
 
 const NAV_LINKS = [
@@ -23,9 +29,15 @@ const NAV_LINKS = [
   { href: "/terms-and-conditions",label: "Terms" },
 ];
 
-export function Footer({ bg = "#474EAD" }: FooterProps) {
+export function Footer({ bg = "#474EAD", separator = false }: FooterProps) {
   return (
-    <footer style={{ background: bg, padding: "32px 0 28px" }}>
+    <footer
+      style={{
+        background: bg,
+        padding: "32px 0 28px",
+        ...(separator && { borderTop: "1px solid rgba(255,255,255,0.10)" }),
+      }}
+    >
       <div
         style={{
           maxWidth: 1140,

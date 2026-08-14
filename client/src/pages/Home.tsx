@@ -68,9 +68,11 @@ export default function Home() {
       <SplitTestimonialSection />
       <OpenJobsSection />
       <ProcessSection />
-      <FinalCtaSection />
-      {/* Same gradient as FinalCtaSection — zero visual break */}
-      <Footer bg={`radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), transparent 60%), linear-gradient(170deg, ${C.indigoDeep} 0%, #050D2E 55%, ${C.dark3} 100%)`} />
+      {/* One shared gradient field — CTA + footer are the same surface */}
+      <div style={{ background: FINAL_BG }}>
+        <FinalCtaSection />
+        <Footer bg="transparent" separator />
+      </div>
     </div>
   );
 }
@@ -2171,6 +2173,9 @@ function ProcessSection() {
 }
 
 // ── SECTION 8 — FINAL CTA ─────────────────────────────────────────────────────
+// Shared background for FinalCtaSection + Footer — one continuous field
+const FINAL_BG = `radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), transparent 60%), linear-gradient(170deg, ${C.indigoDeep} 0%, #050D2E 55%, ${C.dark3} 100%)`;
+
 function FinalCtaSection() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -2184,9 +2189,6 @@ function FinalCtaSection() {
 
   return (
     <section
-      style={{
-        background: `radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), transparent 60%), linear-gradient(170deg, ${C.indigoDeep} 0%, #050D2E 55%, ${C.dark3} 100%)`,
-      }}
       className="px-6 sm:px-10 py-24 lg:py-40 text-center"
     >
       <div className="mx-auto max-w-[640px]">
