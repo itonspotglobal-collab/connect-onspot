@@ -375,20 +375,63 @@ export default function WhyOnSpotAbout() {
 
           {/* Right: Founder quote card */}
           <div>
-            <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 20, padding: "36px 32px" }}>
-              <div style={{ width: 36, height: 3, background: P, borderRadius: 2, marginBottom: 24 }} />
-              <blockquote style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 19, fontWeight: 600, lineHeight: 1.52, color: CHARCOAL, margin: "0 0 28px" }}>
+            <div style={{
+              position: "relative",
+              background: "linear-gradient(145deg, #2F327F 0%, #1D1F40 60%, #12131F 100%)",
+              borderRadius: 24,
+              padding: "44px 40px 36px",
+              overflow: "hidden",
+              boxShadow: "0 32px 64px rgba(15,23,42,0.18), 0 0 0 1px rgba(255,255,255,0.06)",
+            }}>
+              {/* Glow accent top-right */}
+              <div style={{ position: "absolute", top: -60, right: -40, width: 220, height: 220, background: `radial-gradient(circle, ${P}55 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+              {/* Giant decorative quote mark */}
+              <div style={{
+                position: "absolute",
+                top: 16,
+                left: 32,
+                fontFamily: "'Bricolage Grotesque',sans-serif",
+                fontSize: 160,
+                lineHeight: 1,
+                fontWeight: 800,
+                color: "rgba(255,255,255,0.055)",
+                userSelect: "none",
+                pointerEvents: "none",
+              }}>"</div>
+
+              {/* Gold accent bar */}
+              <div style={{ width: 40, height: 3, background: GOLD, borderRadius: 2, marginBottom: 28, position: "relative" }} />
+
+              <blockquote style={{
+                fontFamily: "'Bricolage Grotesque',sans-serif",
+                fontSize: "clamp(17px,1.6vw,20px)",
+                fontWeight: 600,
+                lineHeight: 1.58,
+                color: "rgba(255,255,255,0.92)",
+                margin: "0 0 36px",
+                position: "relative",
+              }}>
                 "We've watched good companies get stuck choosing between marketplace chaos and outsourcing overhead — and good talent get squeezed by both sides of that same trade-off. So we built OnSpot the way operators build things — not software developers guessing at the problem from the outside."
               </blockquote>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <img
-                  src={nurPhoto}
-                  alt="Nur Laminero"
-                  style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", objectPosition: "50% 18%", flexShrink: 0 }}
-                />
+
+              {/* Divider */}
+              <div style={{ height: 1, background: "rgba(255,255,255,0.08)", marginBottom: 24 }} />
+
+              {/* Attribution */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative" }}>
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <img
+                    src={nurPhoto}
+                    alt="Nur Laminero"
+                    style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", objectPosition: "50% 18%", display: "block", border: "2px solid rgba(255,255,255,0.15)" }}
+                  />
+                  {/* Online indicator */}
+                  <div style={{ position: "absolute", bottom: 2, right: 2, width: 10, height: 10, borderRadius: "50%", background: GOLD, border: "2px solid #1D1F40" }} />
+                </div>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: CHARCOAL, margin: 0 }}>Nur Laminero</p>
-                  <p style={{ fontSize: 12.5, color: GRAY_LIGHT, margin: 0 }}>Co-Founder & CEO</p>
+                  <p style={{ fontSize: 14.5, fontWeight: 700, color: "#fff", margin: "0 0 2px" }}>Nur Laminero</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 500 }}>Co-Founder & CEO</p>
                 </div>
               </div>
             </div>
