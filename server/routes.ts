@@ -4948,11 +4948,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return safe;
   }
 
-  app.get("/api/candidates", async (req, res) => {
+  // Mask a combined name string to "FirstName LastInitial." for public display.
+  // "Maria Eubhe Regine Tantog" → "Maria T."
+  // "John Smith" → "John S."
+  // "Cher" → "Cher"
+  function maskPublicName(name: string | null | undefined): string {
+    const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "";
+    const first = parts[0];
+    if (parts.length === 1) return first;
+    const lastToken = parts[parts.length - 1];
+    const initial = lastToken.replace(/\./g, "").charAt(0).toUpperCase();
+    return initial ? `${first} ${initial}.` : first;
+  }
+
+  // Public-safe candidate: strips contact fields and masks the name.
+  // Used whenever the requester is NOT the owner or an admin/TA.
+  function publicSanitizeCandidate(c: any) {
+    const { passwordHash: _ph, email: _e, phone: _ph2, userId: _uid, ...safe } = c;
+    const rawName = (c.displayName?.trim() || c.fullName?.trim() || "");
+    const maskedName = maskPublicName(rawName);
+    return {
+      ...safe,
+      fullName: maskedName,
+      displayName: maskedName,
+      firstName: maskedName ? maskedName.split(" ")[0] : "",
+      lastName: "",   // never expose surname to non-privileged viewers
+      email: null,    // explicitly null so UI never tries to render it
+      phone: null,
+    };
+  }
+
+  // Determine whether a request's Authorization header belongs to a
+  // privileged viewer for the given candidate id.
+  // Privileged = admin | talent_acquisition role  OR  profile owner.
+  async function isPrivilegedCandidateViewer(req: any, candidateId: string, candidateEmail?: string | null): Promise<boolean> {
+    const token = (req.headers["authorization"] ?? "").split(" ")[1];
+    if (!token) return false;
+    try {
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      const decoded: any = jwt.verify(token, jwtSecret);
+      // Internal staff
+      if (decoded.userId && ["admin", "talent_acquisition"].includes(decoded.role)) return true;
+      // Candidate JWT owner
+      if (decoded.type === "candidate" && decoded.candidateId === candidateId) return true;
+      // Talent user JWT owner (email match)
+      if (decoded.role === "talent" && decoded.email && candidateEmail) {
+        return decoded.email.toLowerCase() === candidateEmail.toLowerCase();
+      }
+    } catch { /* invalid/expired token → not privileged */ }
+    return false;
+  }
+
+  app.get("/api/candidates", async (req: any, res) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
       const all = await storage.getCandidates();
-      const { items, meta } = pageSlice(all.map(sanitizeCandidate), page, pageSize);
+      // Admin/TA get full data; everyone else gets public-safe records
+      const token = (req.headers["authorization"] ?? "").split(" ")[1];
+      let callerIsPrivileged = false;
+      if (token) {
+        try {
+          const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+          const decoded: any = jwt.verify(token, jwtSecret);
+          callerIsPrivileged = decoded.userId && ["admin", "talent_acquisition"].includes(decoded.role);
+        } catch { /* ignore */ }
+      }
+      const sanitized = callerIsPrivileged
+        ? all.map(sanitizeCandidate)
+        : all.map(publicSanitizeCandidate);
+      const { items, meta } = pageSlice(sanitized, page, pageSize);
       res.json({ items, meta });
     } catch (error) {
       console.error("GET /api/candidates error:", error);
@@ -4960,11 +5025,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/candidates/:id", async (req, res) => {
+  app.get("/api/candidates/:id", async (req: any, res) => {
     try {
       const candidate = await storage.getCandidate(req.params.id);
       if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-      res.json(sanitizeCandidate(candidate));
+      const privileged = await isPrivilegedCandidateViewer(req, req.params.id, candidate.email);
+      res.json(privileged ? sanitizeCandidate(candidate) : publicSanitizeCandidate(candidate));
     } catch (error) {
       console.error("GET /api/candidates/:id error:", error);
       res.status(500).json({ error: "Failed to fetch candidate" });

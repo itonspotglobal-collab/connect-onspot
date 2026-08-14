@@ -646,9 +646,10 @@ export default function TalentProfile() {
   const isAdminUser = isAdmin(user);
   const isTalentAcquisition = user?.role === "talent_acquisition";
   const isClientUser = isClient(user);
-  // "Client viewer" = any account that should see recruiter actions (Back to Pool, Contact)
+  // "Client viewer" = client-role accounts that get recruiter actions (Back to Pool)
   const isClientViewer = isAdminUser || isTalentAcquisition || isClientUser;
-  const canSeeContact = isClientViewer;
+  // Contact info (email, phone) visible only to admin, talent acquisition, or the profile owner.
+  // Resolved after isOwner is derived — see canSeeContact assignment below.
 
   // ── Navbar visibility tracking (mirrors TopNavigation scroll logic) ────────
   // Lets SectionTabs know whether the fixed nav is currently in view so it
@@ -721,6 +722,9 @@ export default function TalentProfile() {
   const canEdit = (isOwner || isAdminUser) && !isPublicPreview;
   // Sections that are private to the authenticated owner (hidden when previewing as a visitor)
   const showPrivateOwnerSections = isOwner && !isPublicPreview;
+  // Contact info (email, phone) visible only to admin, talent acquisition, or the profile owner.
+  // Client-role users and unauthenticated public visitors do NOT see personal contact details.
+  const canSeeContact = isAdminUser || isTalentAcquisition || isOwner;
 
   // Local state for optimistic photo update
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
@@ -840,15 +844,16 @@ export default function TalentProfile() {
   const education = (candidate.education ?? []) as EduEntry[];
   const certifications = (candidate.certifications ?? []) as CertEntry[];
   const allSkills = [...(candidate.coreSkills ?? []), ...(candidate.secondarySkills ?? [])];
-  // Name shown to the public — the raw preferred name is computed first, then
-  // masked for unauthenticated visitors.  Authorized viewers (owner, admin,
-  // client, talent-acquisition) keep the unmasked name.
+  // Name shown to the public — masked to "First LastInitial." for everyone
+  // except the profile owner and admin.  The server already strips sensitive
+  // fields for non-privileged callers, but we re-apply the mask client-side
+  // so public-preview mode (owner simulating visitor view) also shows the
+  // masked form.  canEdit = (isOwner || isAdminUser) && !isPublicPreview.
   const rawDisplayName =
     candidate.displayName?.trim() ||
     candidate.fullName?.trim() ||
     `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
-  const isAuthorizedViewer = canEdit || isClientViewer;
-  const displayName = isAuthorizedViewer
+  const displayName = canEdit
     ? rawDisplayName
     : formatPublicTalentNameMasked(rawDisplayName);
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
@@ -871,7 +876,7 @@ export default function TalentProfile() {
     ...(showPrivateOwnerSections ? ["section-applications"] : []),
     "section-portfolio",
     "section-preferences",
-    ...(canSeeContact || isOwner ? ["section-contact"] : []),
+    ...(canSeeContact ? ["section-contact"] : []),
   ]);
 
   return (
@@ -1023,7 +1028,7 @@ export default function TalentProfile() {
                   <ChevronRight className="mr-1 h-4 w-4 rotate-180" /> Back to Pool
                 </Button>
               )}
-              {isClientViewer && candidate.email && (
+              {(isAdminUser || isTalentAcquisition) && candidate.email && (
                 <Button className="rounded-full bg-[#474ead] text-sm text-white" asChild>
                   <a href={`mailto:${candidate.email}`}>
                     <Mail className="mr-1.5 h-4 w-4" /> Contact
