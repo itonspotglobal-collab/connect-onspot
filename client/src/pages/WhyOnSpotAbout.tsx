@@ -695,7 +695,7 @@ export default function WhyOnSpotAbout() {
 
           {/* Left: tagline + copyright */}
           <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", margin: 0, letterSpacing: "0.01em" }}>
-            Work Without Limits · © {new Date().getFullYear()} OnSpot Global
+            Work Without Limits · © {new Date().getFullYear()} OnSpot
           </p>
 
           {/* Centre: social icons */}
