@@ -693,12 +693,16 @@ export default function WhyOnSpotAbout() {
       <footer style={{ background: P, padding: "32px 0 28px" }}>
         <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* Row 1: description (left) + social icons (right) */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
-            <p style={{ fontSize: 11.5, lineHeight: 1.75, color: "rgba(255,255,255,0.28)", margin: 0, maxWidth: 520 }}>
-              OnSpot is a workforce platform between marketplace chaos and outsourcing overhead — vetted talent, transparent pricing, no hidden markup. One system to hire, manage, and pay people who actually show up.
+          {/* Single row: copyright · social icons · nav + legal */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+
+            {/* Left: tagline + copyright */}
+            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em", flexShrink: 0 }}>
+              Work Without Limits · © {new Date().getFullYear()} OnSpot
             </p>
-            <div style={{ display: "flex", gap: 16, alignItems: "center", flexShrink: 0, paddingTop: 2 }}>
+
+            {/* Centre: social icons */}
+            <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
               {[
                 { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={13} /> },
                 { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={13} /> },
@@ -714,21 +718,16 @@ export default function WhyOnSpotAbout() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  style={{ color: "rgba(255,255,255,0.30)", transition: "color 0.14s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.72)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.30)")}
+                  style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
                 >
                   {icon}
                 </a>
               ))}
             </div>
-          </div>
 
-          {/* Row 2: copyright (left) + nav + legal (right) */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
-              Work Without Limits · © {new Date().getFullYear()} OnSpot
-            </p>
+            {/* Right: nav + legal */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", justifyContent: "flex-end" }}>
               {[
                 { to: "/why-onspot/about",     label: "About" },
