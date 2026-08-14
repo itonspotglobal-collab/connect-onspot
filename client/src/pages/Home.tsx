@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import jakePhoto from "@assets/Jake_1780574815787.png";
-import nurPhoto from "@assets/Nur_1780574815788.png";
+import nurPhoto from "@assets/Nur_CEO_1786687616720.jpeg";
 import markPhoto from "@assets/Macky_1780574815788.png";
 
 // ── Design tokens (matched to screenshots) ────────────────────────────────────
@@ -1556,23 +1556,41 @@ function FounderQuoteSection() {
           />
 
           {/* Author row */}
-          <div className="flex items-center gap-4">
-            <img
-              src={nurPhoto}
-              alt="Nur Lamimero"
-              className="flex-shrink-0 rounded-full object-cover"
-              style={{
-                width: 54,
-                height: 54,
-                objectPosition: "center top",
-                border: "2px solid rgba(255,255,255,0.22)",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
-              }}
-            />
-            <div>
-              <p className="font-bold text-white" style={{ fontSize: "1rem" }}>Nur Lamimero</p>
-              <p className="font-semibold" style={{ color: C.orange, fontSize: "0.85rem" }}>Co-founder &amp; CEO</p>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <img
+                src={nurPhoto}
+                alt="Nur Laminero"
+                className="flex-shrink-0 rounded-full object-cover"
+                style={{
+                  width: 54,
+                  height: 54,
+                  objectPosition: "center top",
+                  border: "2px solid rgba(255,255,255,0.22)",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+                }}
+              />
+              <div>
+                <p className="font-bold text-white" style={{ fontSize: "1rem" }}>Nur Laminero</p>
+                <p className="font-semibold" style={{ color: C.orange, fontSize: "0.85rem" }}>Co-founder &amp; CEO</p>
+              </div>
             </div>
+            <Link
+              href="/why-onspot/about"
+              className="inline-flex items-center gap-1.5 font-semibold transition-opacity hover:opacity-80"
+              style={{
+                fontSize: "0.875rem",
+                color: "rgba(255,255,255,0.72)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: 999,
+                padding: "7px 16px",
+                background: "rgba(255,255,255,0.07)",
+                backdropFilter: "blur(4px)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              About OnSpot <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>
