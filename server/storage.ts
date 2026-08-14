@@ -2982,6 +2982,7 @@ export class DbStorage extends MemStorage {
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
+    minSalary?: number;
     status?: string;
     q?: string;
     location?: string;
@@ -3035,9 +3036,11 @@ export class DbStorage extends MemStorage {
       conditions.push(sqlOp`(${normDbJobFunction} = ${cat} OR ${normDbCategory} = ${cat})`);
     }
 
-    // Contract type — exact match
+    // Contract type — normalized comparison: strips hyphens/spaces/underscores so
+    // "full-time", "Full Time", "fulltime", and "full_time" all resolve to "fulltime".
     if (filters.contractType) {
-      conditions.push(sqlOp`${jobsTable.contractType} = ${filters.contractType}`);
+      const normContract = filters.contractType.toLowerCase().replace(/[^a-z0-9]/g, "");
+      conditions.push(sqlOp`regexp_replace(lower(COALESCE(${jobsTable.contractType}, '')), '[^a-z0-9]', '', 'g') = ${normContract}`);
     }
 
     // Experience level — exact match
@@ -3053,9 +3056,32 @@ export class DbStorage extends MemStorage {
       conditions.push(sqlOp`${jobsTable.budget}::numeric <= ${filters.maxBudget}`);
     }
 
-    // Location — substring / ILIKE match
+    // Minimum salary — server-side, PHP-currency jobs only (non-PHP jobs always pass).
+    // All digit sequences are extracted from salary_display (commas/underscores stripped),
+    // the MAX is taken, and the budget column is also considered as a numeric fallback.
+    // This correctly handles ranges like "30,000 - 50,000" by using the upper bound (50,000).
+    if (filters.minSalary !== undefined) {
+      conditions.push(sqlOp`(
+        upper(COALESCE(${jobsTable.budgetCurrency}, 'PHP')) <> 'PHP'
+        OR GREATEST(
+          COALESCE((
+            SELECT max(m[1]::numeric)
+            FROM regexp_matches(
+              regexp_replace(COALESCE(${jobsTable.salaryDisplay}, ''), '[,_]', '', 'g'),
+              '(\\d+)',
+              'g'
+            ) AS m
+          ), 0),
+          COALESCE(${jobsTable.budget}::numeric, 0)
+        ) >= ${filters.minSalary}
+      )`);
+    }
+
+    // Location — normalized comparison so "On-site" matches "Onsite", "on site", etc.
+    // Both sides strip all non-alphanumeric characters and lowercase before comparing.
     if (filters.location) {
-      conditions.push(sqlOp`${jobsTable.location} ILIKE ${"%" + filters.location + "%"}`);
+      const normLoc = filters.location.toLowerCase().replace(/[^a-z0-9]/g, "");
+      conditions.push(sqlOp`regexp_replace(lower(COALESCE(${jobsTable.location}, '')), '[^a-z0-9]', '', 'g') = ${normLoc}`);
     }
 
     // Full-text search — matches title, description, category, function, role name,

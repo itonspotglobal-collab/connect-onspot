@@ -534,7 +534,7 @@ export default function FindWorkAllJobs() {
   const { data: jobsData, isLoading } = useQuery<PaginatedJobsResponse>({
     queryKey: [
       "/api/jobs/search",
-      { status: "open", page: currentPage, pageSize: PAGE_SIZE, q: search, category, contractType, location, navSlug },
+      { status: "open", page: currentPage, pageSize: PAGE_SIZE, q: search, category, contractType, location, salary, navSlug },
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -545,6 +545,10 @@ export default function FindWorkAllJobs() {
       if (category !== "All Categories") params.set("category", category);
       if (contractType !== "All Types") params.set("contractType", contractType);
       if (location !== "All Locations") params.set("location", location);
+      if (salary !== "Any pay") {
+        const minSalary = parseInt(salary.replace(/[^0-9]/g, ""), 10);
+        if (!isNaN(minSalary) && minSalary > 0) params.set("minSalary", String(minSalary));
+      }
       // navGroup: pass all matching category names so server filters across all pages
       if (navGroup && navGroup.cats.length > 0 && category === "All Categories") {
         params.set("categories", navGroup.cats.join(","));
@@ -674,30 +678,9 @@ export default function FindWorkAllJobs() {
   }, [talentAuth, talentProfile, openJobs]);
 
   const filtered = useMemo(() => {
-    // Search, category, location, and contractType are all server-side now.
-    // Only the PHP salary threshold remains client-side (currency-dependent).
-    let list = salary === "Any pay"
-      ? openJobs
-      : openJobs.filter((job) => {
-          const jobCurrency = ((job as any).budgetCurrency || "PHP").toUpperCase();
-          if (jobCurrency !== "PHP") return true;
-          const display: string = (job as any).salaryDisplay || "";
-          let max: number;
-          if (display) {
-            const match = display.replace(/[,_]/g, "").match(/[\d]+/);
-            max = match ? parseFloat(match[0]) : 0;
-          } else {
-            max = parseFloat((job as any).hourlyRateMax ?? (job as any).budget ?? "0");
-          }
-          if (salary === "₱30,000+") return max >= 30000;
-          if (salary === "₱45,000+") return max >= 45000;
-          if (salary === "₱60,000+") return max >= 60000;
-          if (salary === "₱85,000+") return max >= 85000;
-          if (salary === "₱100,000+") return max >= 100000;
-          return true;
-        });
-
-    const sorted = sortJobs(list, sort);
+    // All filtering (category, location, contractType, salary) is now server-side.
+    // Here we only sort and deduplicate results returned by the API.
+    const sorted = sortJobs(openJobs, sort);
     const seen = new Set<string>();
     const unique = sorted.filter((j) => {
       if (seen.has(j.id)) return false;
@@ -707,7 +690,7 @@ export default function FindWorkAllJobs() {
     const featuredOnes = unique.filter((j) => (j as any).isFeatured === true);
     const regularOnes  = unique.filter((j) => (j as any).isFeatured !== true);
     return [...featuredOnes, ...regularOnes];
-  }, [openJobs, salary, sort]);
+  }, [openJobs, sort]);
 
   function applyHotSearch(term: string) {
     setSearch(term);

@@ -5660,6 +5660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         experienceLevel: req.query.experienceLevel as string | undefined,
         minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
         maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
+        minSalary: req.query.minSalary ? Number(req.query.minSalary) : undefined,
         status: (req.query.status as string) || "open",
         q: req.query.q as string | undefined,
         location: req.query.location as string | undefined,
