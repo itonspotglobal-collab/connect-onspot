@@ -1577,17 +1577,8 @@ function FounderQuoteSection() {
             </div>
             <Link
               href="/why-onspot/about"
-              className="inline-flex items-center gap-1.5 font-semibold transition-opacity hover:opacity-80"
-              style={{
-                fontSize: "0.875rem",
-                color: "rgba(255,255,255,0.72)",
-                border: "1px solid rgba(255,255,255,0.18)",
-                borderRadius: 999,
-                padding: "7px 16px",
-                background: "rgba(255,255,255,0.07)",
-                backdropFilter: "blur(4px)",
-                whiteSpace: "nowrap",
-              }}
+              className="inline-flex items-center gap-1 font-semibold transition-opacity hover:opacity-70"
+              style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.52)", whiteSpace: "nowrap" }}
             >
               About OnSpot <ArrowRight className="h-3.5 w-3.5" />
             </Link>
