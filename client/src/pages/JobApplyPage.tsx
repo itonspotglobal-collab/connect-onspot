@@ -1497,7 +1497,7 @@ export default function JobApplyPage() {
       <div className="w-full space-y-2">
         <Button
           className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
-          onClick={() => navigate(talentSession?.candidateId ? "/my-applications" : "/find-work/jobs")}
+          onClick={() => { window.location.href = "/my-applications"; }}
         >
           View My Applications
         </Button>
