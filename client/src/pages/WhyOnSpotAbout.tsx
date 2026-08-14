@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X, Mail, Phone, MapPin } from "lucide-react";
-import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
-import { Linkedin, Facebook, Instagram } from "lucide-react";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
 
@@ -696,36 +694,10 @@ export default function WhyOnSpotAbout() {
           {/* Layout: left stack (copyright + socials) · right nav + legal */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
 
-            {/* Left: copyright stacked above social icons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
-                Work Without Limits · © {new Date().getFullYear()} OnSpot
-              </p>
-              <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                {[
-                  { href: "https://www.linkedin.com/company/onspotglobal/", label: "LinkedIn",  icon: <Linkedin size={13} /> },
-                  { href: "https://www.facebook.com/OnSpotGlobal",          label: "Facebook",  icon: <Facebook size={13} /> },
-                  { href: "https://x.com/OnSpotTribe",                      label: "X",         icon: <SiX size={12} /> },
-                  { href: "https://www.threads.com/@onspotglobal",          label: "Threads",   icon: <SiThreads size={12} /> },
-                  { href: "https://www.instagram.com/onspotglobal",         label: "Instagram", icon: <Instagram size={13} /> },
-                  { href: "https://www.tiktok.com/@onspottribe",            label: "TikTok",    icon: <SiTiktok size={12} /> },
-                  { href: "https://www.youtube.com/@OnSpotGlobal",          label: "YouTube",   icon: <SiYoutube size={13} /> },
-                ].map(({ href, label, icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.14s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
-                  >
-                    {icon}
-                  </a>
-                ))}
-              </div>
-            </div>
+            {/* Left: copyright */}
+            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
+              Work Without Limits · © {new Date().getFullYear()} OnSpot
+            </p>
 
             {/* Right: nav + legal */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", justifyContent: "flex-end" }}>
