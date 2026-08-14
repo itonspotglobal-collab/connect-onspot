@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X } from "lucide-react";
+import { Footer } from "@/components/Footer";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
 
@@ -681,6 +682,8 @@ export default function WhyOnSpotAbout() {
           </div>
         </div>
       </section>
+
+      <Footer />
 
       {/* ── Responsive grid helpers (injected as a style tag) ─────────────────── */}
       <style>{`
