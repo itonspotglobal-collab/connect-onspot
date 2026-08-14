@@ -431,7 +431,7 @@ export default function WhyOnSpotAbout() {
                 </div>
                 <div>
                   <p style={{ fontSize: 14.5, fontWeight: 700, color: "#fff", margin: "0 0 2px" }}>Nur Laminero</p>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 500 }}>Co-Founder & CEO</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", margin: 0, letterSpacing: "0.04em", fontWeight: 500 }}>Co-Founder & CEO</p>
                 </div>
               </div>
             </div>
