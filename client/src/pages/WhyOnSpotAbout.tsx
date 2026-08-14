@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X } from "lucide-react";
-import onspotLogo from "@assets/onspot-logo-white.png";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
 
 const nurPhoto = "/nur-ceo.jpeg";
@@ -215,28 +215,31 @@ export default function WhyOnSpotAbout() {
         style={{
           position: "fixed",
           inset: "0 0 auto 0",
-          zIndex: 60,
-          background: P,
+          zIndex: 1000,
+          background: "linear-gradient(90deg,#4B55BD 0%,#3A47A8 45%,#2F327F 100%)",
           transform: navVisible ? "translateY(0)" : "translateY(-100%)",
-          transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
-          boxShadow: "0 1px 0 rgba(0,0,0,0.12)",
+          transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
+          height: 80,
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+        <div style={{ width: "100%", padding: "0 clamp(24px,2.5vw,40px)", display: "flex", alignItems: "center", gap: 0 }}>
+
           {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <img src={onspotLogo} alt="OnSpot" style={{ height: 26, width: "auto" }} />
+          <Link to="/" style={{ display: "flex", alignItems: "center", flexShrink: 0, marginRight: "auto" }}>
+            <img src={onspotLogo} alt="OnSpot" style={{ height: 80, width: "auto", objectFit: "contain" }} />
           </Link>
 
-          {/* Desktop nav links */}
-          <nav style={{ display: "flex", gap: 2, alignItems: "center" }} className="hidden lg:flex">
+          {/* Desktop nav links — hidden on mobile */}
+          <nav style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 32 }} className="hidden md:flex">
             {NAV_LINKS.map((l) => (
               <button
                 key={l.label}
                 onClick={() => scrollTo(l.href)}
-                style={{ fontSize: 13.5, fontWeight: 500, color: "rgba(255,255,255,0.76)", padding: "7px 13px", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", transition: "color 0.14s, background 0.14s", whiteSpace: "nowrap" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.76)"; e.currentTarget.style.background = "transparent"; }}
+                className="nav-glow-item"
+                style={{ fontSize: 14, fontWeight: 500, color: "#fff", padding: "8px clamp(10px,1.2vw,16px)", borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
               >
                 {l.label}
               </button>
@@ -245,48 +248,53 @@ export default function WhyOnSpotAbout() {
 
           {/* Right CTAs */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <Link
+              to="/"
+              style={{ fontSize: 13.5, fontWeight: 600, color: "rgba(255,255,255,0.82)", border: "1px solid rgba(255,255,255,0.28)", padding: "9px 18px", borderRadius: 8, whiteSpace: "nowrap", transition: "background 0.15s" }}
+              className="hidden sm:block"
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.background = "transparent")}
+            >
+              Log In
+            </Link>
             <a
               href="https://calendly.com/hello-onspotglobal/lead-intake-schedule"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "9px 18px", borderRadius: 8, border: "none", cursor: "pointer", transition: "opacity 0.14s", whiteSpace: "nowrap" }}
+              style={{ fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "9px 18px", borderRadius: 8, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
               className="hidden sm:block"
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.opacity = "0.9")}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => (e.currentTarget.style.opacity = "1")}
             >
-              Book a call
+              Sign Up
             </a>
-            <Link
-              to="/hire-talent"
-              style={{ fontSize: 13.5, fontWeight: 600, color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.1)", padding: "9px 18px", borderRadius: 8, whiteSpace: "nowrap" }}
-              className="hidden sm:block"
-            >
-              Hire talent →
-            </Link>
-            {/* Mobile hamburger */}
+
+            {/* Mobile hamburger — only on small screens */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 8, padding: 8, cursor: "pointer", color: "#fff", display: "flex" }}
-              className="lg:hidden"
+              style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 8, padding: 8, cursor: "pointer", color: "#fff" }}
+              className="md:hidden"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile drawer */}
+        {/* Mobile drawer — slides in below header on small screens */}
         {mobileOpen && (
-          <div style={{ background: "#383E8C", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "12px 24px 20px" }}>
+          <div style={{ position: "absolute", top: 80, left: 0, right: 0, background: "#2F327F", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "12px 24px 20px", zIndex: 999 }}>
             {NAV_LINKS.map((l) => (
               <button
                 key={l.label}
                 onClick={() => scrollTo(l.href)}
-                style={{ display: "block", width: "100%", textAlign: "left", fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.84)", padding: "10px 0", background: "transparent", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+                style={{ display: "block", width: "100%", textAlign: "left", fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.84)", padding: "11px 0", background: "transparent", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
               >
                 {l.label}
               </button>
             ))}
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-              <a href="https://calendly.com/hello-onspotglobal/lead-intake-schedule" target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "10px 0", borderRadius: 8 }}>Book a call</a>
-              <Link to="/hire-talent" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: "#fff", background: "rgba(255,255,255,0.12)", padding: "10px 0", borderRadius: 8 }}>Hire talent</Link>
+              <Link to="/" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: "rgba(255,255,255,0.82)", border: "1px solid rgba(255,255,255,0.25)", padding: "10px 0", borderRadius: 8 }} onClick={() => setMobileOpen(false)}>Log In</Link>
+              <a href="https://calendly.com/hello-onspotglobal/lead-intake-schedule" target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "10px 0", borderRadius: 8 }}>Sign Up</a>
             </div>
           </div>
         )}
