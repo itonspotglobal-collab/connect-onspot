@@ -959,7 +959,12 @@ export default function JobApplyPage() {
           </Label>
         )}
         <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
-          <p>Grab your camera and record a brief 2-minute video telling us your story.</p>
+          <p>
+            Grab your camera and record a brief 2-minute video telling us your story.{" "}
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+              Required for this role
+            </span>
+          </p>
           <ol className="list-decimal list-inside space-y-0.5">
             <li>A quick snapshot of your relevant experience</li>
             <li>Your biggest wins and top contributions.</li>
