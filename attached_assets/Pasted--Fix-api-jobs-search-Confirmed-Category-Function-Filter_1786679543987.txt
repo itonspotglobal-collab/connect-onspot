@@ -1,0 +1,569 @@
+# Fix `/api/jobs/search` — Confirmed Category/Function Filter Bug
+
+We have now confirmed that the `/find-work/jobs` category filter is still broken.
+
+## Reproduction
+
+A test job was created/edited with:
+
+```text
+Job title: Test
+Function: Engineering
+Status: Open
+```
+
+The Admin Job Form shows:
+
+```text
+Function = Engineering
+```
+
+The public Find Work filter contains:
+
+```text
+Engineering
+```
+
+When clicking the Engineering filter, the page still shows:
+
+```text
+0 roles found
+```
+
+This proves this is no longer just a naming mismatch between Function and Category.
+
+The backend search/filter query needs to be investigated.
+
+---
+
+# Important Existing Behavior
+
+In:
+
+`client/src/pages/JobFormPage.tsx`
+
+the current payload saves:
+
+```ts
+jobFunction: formData.jobFunction.trim(),
+category: formData.jobFunction.trim(),
+```
+
+Therefore, for this test job, the expected stored values are:
+
+```text
+jobFunction = Engineering
+category = Engineering
+```
+
+Do not add another Category field to Admin.
+
+---
+
+# Step 1 — Inspect the Actual Saved Test Job
+
+Before changing code, inspect the actual database/API record for the new test job.
+
+Verify:
+
+```text
+id
+title
+professionalRoleName
+jobFunction
+category
+status
+approvalStatus / approved
+isPublished if applicable
+clientId
+```
+
+Expected:
+
+```text
+title: Test
+jobFunction: Engineering
+category: Engineering
+status: open
+```
+
+If either `jobFunction` or `category` is missing, trace why the Admin Create/Edit endpoint is dropping it.
+
+Do not assume the frontend payload reached the database.
+
+---
+
+# Step 2 — Inspect `/api/jobs/search`
+
+Find the route handling:
+
+```text
+GET /api/jobs/search
+```
+
+Search the entire server codebase for:
+
+```text
+/api/jobs/search
+```
+
+Then inspect exactly how these parameters are handled:
+
+```text
+status
+q
+category
+categories
+contractType
+location
+page
+pageSize
+```
+
+The frontend already sends:
+
+```text
+category=Engineering
+```
+
+So the backend must return the Engineering job.
+
+---
+
+# Step 3 — Add Temporary Debug Logging
+
+Temporarily log:
+
+```ts
+console.log("JOB SEARCH DEBUG", {
+  requestedCategory: req.query.category,
+  requestedStatus: req.query.status,
+});
+```
+
+and for the Engineering test job log:
+
+```ts
+console.log({
+  id: job.id,
+  title: job.title,
+  jobFunction: job.jobFunction,
+  category: job.category,
+  status: job.status,
+  approvalStatus: job.approvalStatus,
+});
+```
+
+Also log the final generated search conditions.
+
+Remove these logs after fixing the issue.
+
+---
+
+# Step 4 — Category Must Match `jobFunction` OR `category`
+
+The API must treat the Find Work `category` parameter as the selected job function taxonomy.
+
+For:
+
+```text
+category=Engineering
+```
+
+match:
+
+```text
+job.jobFunction = Engineering
+```
+
+OR:
+
+```text
+job.category = Engineering
+```
+
+Conceptually:
+
+```ts
+or(
+  ilike(jobs.jobFunction, "Engineering"),
+  ilike(jobs.category, "Engineering")
+)
+```
+
+Use the actual Drizzle column names.
+
+Do not search only:
+
+```ts
+jobs.category
+```
+
+and do not search only:
+
+```ts
+jobs.jobFunction
+```
+
+Support both because of legacy data.
+
+---
+
+# Step 5 — Check for a Schema Mapping Bug
+
+Inspect `shared/schema.ts`.
+
+Verify the actual database columns for:
+
+```text
+jobFunction
+category
+```
+
+For example, confirm whether:
+
+```ts
+jobFunction: varchar("job_function")
+category: varchar("category")
+```
+
+are mapped correctly.
+
+Make sure the API is not accidentally querying:
+
+```text
+job_function_name
+function
+jobCategory
+```
+
+or another stale column.
+
+---
+
+# Step 6 — Verify Create/Edit Endpoint Persistence
+
+The frontend payload currently contains:
+
+```ts
+jobFunction: formData.jobFunction.trim(),
+category: formData.jobFunction.trim(),
+```
+
+But inspect:
+
+```text
+POST /api/admin/jobs
+PATCH /api/admin/jobs/:id
+```
+
+Ensure these fields are not removed by:
+
+* Zod parsing
+* insert schema `.pick()`
+* request sanitization
+* destructuring
+* update whitelisting
+* storage layer mapping
+
+The frontend sending the field does not guarantee the server persists it.
+
+Test this explicitly.
+
+---
+
+# Step 7 — Check Approval/Public Visibility Conditions
+
+The Engineering job may also be excluded before category filtering.
+
+Inspect all conditions applied by `/api/jobs/search`.
+
+For example:
+
+```text
+status = open
+approved = true
+approvalStatus = approved
+published = true
+deleted = false
+```
+
+The test job must satisfy whatever conditions are required to appear publicly.
+
+This is important because an Admin-created role may say:
+
+```text
+Open
+```
+
+while still being:
+
+```text
+Pending Approval
+```
+
+and therefore legitimately excluded from public search.
+
+Verify this before blaming category matching.
+
+---
+
+# Important Diagnostic
+
+Run these two searches directly:
+
+```text
+GET /api/jobs/search?status=open&page=1&pageSize=25
+```
+
+and:
+
+```text
+GET /api/jobs/search?status=open&page=1&pageSize=25&category=Engineering
+```
+
+Compare the results.
+
+### Scenario A
+
+If the Test Engineering job appears in the first request but disappears in the second:
+
+**Category filtering is definitely broken.**
+
+Fix the category condition.
+
+### Scenario B
+
+If the Test Engineering job does NOT appear even in the unfiltered request:
+
+The problem is NOT primarily the Category filter.
+
+Investigate:
+
+* approval status
+* publication status
+* status normalization
+* account ownership
+* public visibility query
+
+This diagnostic must be performed before finalizing the fix.
+
+---
+
+# Step 8 — Verify Case and Whitespace
+
+Match values case-insensitively.
+
+These should all match:
+
+```text
+Engineering
+engineering
+ ENGINEERING
+Engineering 
+```
+
+Use:
+
+```ts
+ilike(...)
+```
+
+or normalized comparison.
+
+---
+
+# Step 9 — Filter Before Pagination
+
+The query order must be:
+
+```text
+open/public jobs
+↓
+category/function filtering
+↓
+location filtering
+↓
+contract filtering
+↓
+search text
+↓
+COUNT
+↓
+LIMIT/OFFSET
+```
+
+Do not paginate before filtering.
+
+---
+
+# Step 10 — Verify Total Count Query
+
+If the API has separate queries for:
+
+```text
+items
+```
+
+and:
+
+```text
+meta.total
+```
+
+both must use exactly the same filter conditions.
+
+A common bug is:
+
+```text
+items query = correct
+count query = wrong
+```
+
+or vice versa.
+
+For Engineering:
+
+```text
+items.length > 0
+meta.total > 0
+```
+
+must agree.
+
+---
+
+# Step 11 — Fix Multi-Category Route Too
+
+The page also supports:
+
+```text
+categories=Engineering,Information Technology (IT)
+```
+
+Make sure this also checks:
+
+```text
+jobFunction OR category
+```
+
+for each selected value.
+
+Grouped categories should use OR:
+
+```text
+Engineering
+OR
+Information Technology (IT)
+```
+
+---
+
+# Step 12 — Keep Frontend Mostly Unchanged
+
+Do NOT move category filtering back into React.
+
+Current frontend behavior is correct in principle:
+
+```ts
+if (category !== "All Categories") {
+  params.set("category", category);
+}
+```
+
+Keep server-side filtering because pagination depends on it.
+
+Only update frontend code if the debug process proves the request parameter is wrong.
+
+---
+
+# Mandatory Test
+
+Create or use this exact job:
+
+```text
+Title: Test
+Function: Engineering
+Status: Open
+```
+
+Make sure it is publicly eligible/approved.
+
+Then verify:
+
+### No category filter
+
+```text
+/find-work/jobs
+```
+
+Test appears.
+
+### Engineering selected
+
+```text
+Engineering
+```
+
+Test still appears.
+
+### Operations selected
+
+Test disappears.
+
+### Engineering + Remote
+
+If Test is Remote, it appears.
+
+### Engineering + Hybrid
+
+If Test is Remote, it disappears.
+
+---
+
+# Acceptance Criteria
+
+* [ ] Test Engineering job appears with no filters
+* [ ] Test Engineering job appears under Engineering filter
+* [ ] Test Engineering job does not appear under unrelated categories
+* [ ] `jobFunction` is persisted correctly
+* [ ] `category` compatibility field is persisted correctly
+* [ ] `/api/jobs/search` checks both fields
+* [ ] public approval/status filters are verified
+* [ ] filter happens before pagination
+* [ ] `meta.total` uses the same filter conditions
+* [ ] all other category chips work
+* [ ] location filters still work
+* [ ] contract filters still work
+* [ ] sorting still works
+* [ ] no duplicate Category field is added to Admin
+* [ ] temporary debug logs are removed
+* [ ] TypeScript/build passes
+
+---
+
+# Most Important Debugging Rule
+
+Do not guess.
+
+First determine whether the Engineering test job appears in:
+
+```text
+/api/jobs/search?status=open
+```
+
+without a category.
+
+That single test tells us whether the bug is:
+
+```text
+Category matching
+```
+
+or:
+
+```text
+Public job eligibility/search query in general
+```
+
+Fix the actual failing layer.

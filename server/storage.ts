@@ -3000,8 +3000,13 @@ export class DbStorage extends MemStorage {
     // We check job_function AND category as separate OR branches so that a job
     // with only one field populated (or with a value in only one column) still
     // surfaces when the other column matches.
-    const normDbJobFunction = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.jobFunction}, ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
-    const normDbCategory    = sqlOp`lower(trim(regexp_replace(replace(COALESCE(${jobsTable.category},    ''), '&', 'and'), '[^a-z0-9]+', ' ', 'g')))`;
+    // IMPORTANT: lower() must wrap the COALESCE (not the outermost expression) so that
+    // uppercase letters like 'E' in "Engineering" are lowercased BEFORE regexp_replace
+    // processes them.  The pattern [^a-z0-9]+ only keeps lowercase letters, so capital
+    // letters would be stripped if lower() runs after the regex.  This must mirror the
+    // JS normStr helper which also lowercases first.
+    const normDbJobFunction = sqlOp`trim(regexp_replace(replace(lower(COALESCE(${jobsTable.jobFunction}, '')), '&', 'and'), '[^a-z0-9]+', ' ', 'g'))`;
+    const normDbCategory    = sqlOp`trim(regexp_replace(replace(lower(COALESCE(${jobsTable.category},    '')), '&', 'and'), '[^a-z0-9]+', ' ', 'g'))`;
 
     // ── Build WHERE conditions ─────────────────────────────────────────────────
     const conditions: ReturnType<typeof sqlOp>[] = [];
