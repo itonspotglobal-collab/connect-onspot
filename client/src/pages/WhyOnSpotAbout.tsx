@@ -107,6 +107,7 @@ const leaders = [
     role: "Co-Founder & COO",
     photo: markPhoto,
     imgPos: "50% 18%",
+    photoBg: "linear-gradient(160deg, #1A1E5C 0%, #2D3496 38%, #474EAD 72%, #5C63BE 100%)",
     bio: "20+ years in the BPO industry and operating startups before running global operations for OnSpot.",
   },
 ];
@@ -575,7 +576,7 @@ export default function WhyOnSpotAbout() {
                 onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 {/* Photo */}
-                <div style={{ height: 220, background: "#f0eff4", overflow: "hidden", position: "relative" }}>
+                <div style={{ height: 220, background: (l as any).photoBg ?? "#f0eff4", overflow: "hidden", position: "relative" }}>
                   <div style={{ position: "absolute", inset: 0, transform: l.imgScale || "none", transformOrigin: "50% 42%" }}>
                     <img
                       src={l.photo}
