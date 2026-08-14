@@ -1497,7 +1497,7 @@ export default function JobApplyPage() {
       <div className="w-full space-y-2">
         <Button
           className="w-full rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
-          onClick={() => navigate("/talent-portal/applications")}
+          onClick={() => navigate(talentSession?.candidateId ? `/talent-profile/${talentSession.candidateId}#section-applications` : "/find-work/jobs")}
         >
           View My Applications
         </Button>
