@@ -25,6 +25,15 @@ const app = express();
 // correctly for rate-limiting (Replit sits behind a load-balancer / reverse proxy).
 app.set('trust proxy', 1);
 
+// ── Permanent page redirects (must be FIRST — before all other middleware) ──
+// /talent-portal/applications is the old URL; /my-applications is the correct one.
+app.get("/talent-portal/applications", (_req: Request, res: Response) => {
+  res.redirect(301, "/my-applications");
+});
+app.get("/talent-portal/applications/*", (_req: Request, res: Response) => {
+  res.redirect(301, "/my-applications");
+});
+
 // Initialize Sentry early (conditional on DSN availability)
 if (process.env.SENTRY_DSN) {
   Sentry.init({
