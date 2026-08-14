@@ -82,18 +82,43 @@ function Section({
   action?: React.ReactNode;
 }) {
   return (
-    <Card id={id} className="scroll-mt-28 rounded-2xl border-slate-200/70 bg-white dark:border-white/10 dark:bg-white/[0.03]">
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#474ead]/10">
+    <Card id={id} className="scroll-mt-28 rounded-2xl border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
             <Icon className="h-4 w-4 text-[#474ead]" />
           </div>
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
         </div>
         {action}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="px-6 pb-6">{children}</CardContent>
     </Card>
+  );
+}
+
+// ─── Long-form prose renderer ─────────────────────────────────────────────────
+// Used for About and More About Me — justified paragraphs with comfortable
+// reading typography. Never applied to editing textareas or metadata fields.
+
+function ProfileLongFormText({ value }: { value: string }) {
+  const paragraphs = value
+    .split(/\n[ \t]*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (paragraphs.length === 0) return null;
+  return (
+    <div className="max-w-prose space-y-4">
+      {paragraphs.map((paragraph, index) => (
+        <p
+          key={index}
+          className="text-left text-[15px] leading-7 text-slate-700 dark:text-slate-300 sm:text-justify"
+          style={{ textJustify: "inter-word" } as React.CSSProperties}
+        >
+          {paragraph}
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -104,6 +129,7 @@ function EditField({
   value,
   onSave,
   multiline = false,
+  longForm = false,
   placeholder,
   canEdit = true,
   nameMode = false,
@@ -113,6 +139,7 @@ function EditField({
   value: string;
   onSave: (v: string) => void;
   multiline?: boolean;
+  longForm?: boolean;
   placeholder?: string;
   canEdit?: boolean;
   nameMode?: boolean;
@@ -153,7 +180,9 @@ function EditField({
     return (
       <div className="group flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          {multiline && value ? (
+          {longForm && value ? (
+            <ProfileLongFormText value={value} />
+          ) : multiline && value ? (
             // Multi-paragraph rendering — split on blank lines, preserve intra-paragraph newlines
             <div className="space-y-3">
               {value.split(/\n[ \t]*\n/).map((para, i) => (
@@ -1075,9 +1104,9 @@ export default function TalentProfile() {
 
       {/* ── Body content ── */}
       <div className="mx-auto mt-6 max-w-4xl px-4 pb-20 md:px-8">
-        <div className="grid gap-4 md:grid-cols-[1fr_280px]">
+        <div className="grid gap-5 md:grid-cols-[1fr_280px]">
           {/* Left column — main sections */}
-          <div className="space-y-4">
+          <div className="space-y-5">
 
             {/* About */}
             <Section id="section-about" title="About" icon={User}>
@@ -1085,6 +1114,7 @@ export default function TalentProfile() {
                 label="Summary"
                 value={candidate.summary ?? ""}
                 multiline
+                longForm
                 minHeight="120px"
                 placeholder="Write a short professional summary…"
                 onSave={(v) => save("summary", v)}
@@ -1095,10 +1125,14 @@ export default function TalentProfile() {
             {/* More About Me — hidden for public visitors when empty */}
             {(canEdit || candidate.moreAboutMe?.trim()) && (
               <Section id="section-more-about" title="More About Me" icon={BookOpen}>
+                <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                  A little more about how I work, what motivates me, and what I value.
+                </p>
                 <EditField
                   label="More About Me"
                   value={candidate.moreAboutMe ?? ""}
                   multiline
+                  longForm
                   minHeight="180px"
                   placeholder="Share more about yourself, your working style, goals, interests, or what you'd like potential employers to know…"
                   onSave={(v) => save("moreAboutMe", v)}
@@ -1189,22 +1223,26 @@ export default function TalentProfile() {
               {workHistory.length === 0 ? (
                 <p className="text-sm text-slate-400">No work history added yet.</p>
               ) : (
-                <div className="space-y-5">
+                <div>
                   {workHistory.map((job, idx) => (
-                    <WorkEntryCard
+                    <div
                       key={idx}
-                      entry={job}
-                      canEdit={canEdit}
-                      onSave={(updated) => {
-                        const next = [...workHistory];
-                        next[idx] = updated;
-                        save("workHistory", next);
-                      }}
-                      onDelete={() => {
-                        const next = workHistory.filter((_, i) => i !== idx);
-                        save("workHistory", next);
-                      }}
-                    />
+                      className={idx < workHistory.length - 1 ? "border-b border-slate-100 pb-5 mb-5 dark:border-white/[0.07]" : ""}
+                    >
+                      <WorkEntryCard
+                        entry={job}
+                        canEdit={canEdit}
+                        onSave={(updated) => {
+                          const next = [...workHistory];
+                          next[idx] = updated;
+                          save("workHistory", next);
+                        }}
+                        onDelete={() => {
+                          const next = workHistory.filter((_, i) => i !== idx);
+                          save("workHistory", next);
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -1327,25 +1365,26 @@ export default function TalentProfile() {
           </div>
 
           {/* Right sidebar */}
-          <div className="space-y-4">
+          <div className="space-y-4 md:space-y-4">
 
             {/* Profile completion */}
-            <Card className="rounded-2xl border-slate-200/70 bg-white dark:border-white/10 dark:bg-white/[0.03]">
+            <Card className="rounded-2xl border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
               <CardContent className="p-5">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Profile Strength</p>
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
-                    <motion.div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ backgroundColor: completionPct >= 80 ? "#22c55e" : completionPct >= 50 ? "#f59e0b" : "#ef4444" }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${completionPct}%` }}
-                      transition={{ duration: 0.6 }}
-                    />
-                  </div>
-                  <span className="shrink-0 text-sm font-bold" style={{ color: completionPct >= 80 ? "#22c55e" : completionPct >= 50 ? "#f59e0b" : "#ef4444" }}>
+                <div className="mb-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-bold" style={{ color: completionPct >= 80 ? "#22c55e" : completionPct >= 50 ? "#f59e0b" : "#ef4444" }}>
                     {completionPct}%
                   </span>
+                  <span className="text-xs text-slate-400">complete</span>
+                </div>
+                <div className="relative mb-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                  <motion.div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{ backgroundColor: completionPct >= 80 ? "#22c55e" : completionPct >= 50 ? "#f59e0b" : "#ef4444" }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${completionPct}%` }}
+                    transition={{ duration: 0.6 }}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   {completion.map((item) => (
@@ -1553,16 +1592,19 @@ function WorkEntryCard({
   if (!editing) {
     return (
       <div className="group relative flex gap-4">
-        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#474ead]/10">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
           <Briefcase className="h-4 w-4 text-[#474ead]" />
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{entry.title}</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">{entry.company}</p>
-              <p className="mt-0.5 text-xs text-slate-400">{entry.duration}</p>
-              {entry.setup && <p className="text-xs text-slate-400">{entry.setup}</p>}
+              <p className="mt-0.5 text-sm font-medium text-slate-600 dark:text-slate-400">{entry.company}</p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                {entry.duration && <span>{entry.duration}</span>}
+                {entry.setup && entry.duration && <span>·</span>}
+                {entry.setup && <span>{entry.setup}</span>}
+              </div>
             </div>
             {canEdit && (
               <div className="invisible flex gap-1 group-hover:visible">
@@ -1576,7 +1618,7 @@ function WorkEntryCard({
             )}
           </div>
           {entry.responsibilities && (
-            <p className="mt-1.5 text-sm text-slate-500">{entry.responsibilities}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{entry.responsibilities}</p>
           )}
         </div>
       </div>
@@ -1618,14 +1660,14 @@ function EduEntryCard({ entry, onSave, onDelete, canEdit = true }: { entry: EduE
   if (!editing) {
     return (
       <div className="group flex items-start gap-4">
-        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#474ead]/10">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
           <BookOpen className="h-4 w-4 text-[#474ead]" />
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{entry.degree}</p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">{entry.school}</p>
+              <p className="mt-0.5 text-sm font-medium text-slate-600 dark:text-slate-400">{entry.school}</p>
               {(entry.yearStart || entry.yearEnd) && (
                 <p className="mt-0.5 text-xs text-slate-400">
                   {entry.yearStart ?? ""}{entry.yearStart && entry.yearEnd ? "–" : ""}{entry.yearEnd ?? ""}
@@ -1677,15 +1719,15 @@ function CertCard({ entry, onSave, onDelete, canEdit = true }: { entry: CertEntr
   if (!editing) {
     return (
       <div className="group flex items-start gap-4">
-        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-          <Award className="h-3.5 w-3.5 text-amber-600" />
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
+          <Award className="h-4 w-4 text-[#474ead]" />
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">{entry.name}</p>
-              {entry.issuer && <p className="text-xs text-slate-500">{entry.issuer}</p>}
-              {entry.date && <p className="text-xs text-slate-400">{entry.date}</p>}
+              <p className="font-semibold text-slate-900 dark:text-white">{entry.name}</p>
+              {entry.issuer && <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">{entry.issuer}</p>}
+              {entry.date && <p className="mt-0.5 text-xs text-slate-400">{entry.date}</p>}
               {entry.link && (
                 <a href={entry.link} target="_blank" rel="noopener noreferrer" className="mt-0.5 flex items-center gap-1 text-xs text-[#474ead] hover:underline">
                   <ExternalLink className="h-3 w-3" /> View certificate
@@ -1750,11 +1792,14 @@ function LinkField({
 
   if (!editing) {
     return (
-      <div className="group flex items-center gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+      <div className="group flex items-start gap-2">
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
         {value ? (
-          <a href={value} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-sm text-[#474ead] hover:underline">
-            {label}
+          <a href={value} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
+            <span className="block text-sm font-medium text-[#474ead] hover:underline">{label}</span>
+            <span className="block truncate text-xs text-slate-400">
+              {value.replace(/^https?:\/\/(www\.)?/, "")}
+            </span>
           </a>
         ) : (
           <span className="flex-1 text-sm text-slate-400">{canEdit ? `Add ${label}` : `—`}</span>
@@ -1810,9 +1855,9 @@ function PreferencesDisplay({
     { key: "environment", label: "Environment", placeholder: "e.g. Quiet office, Remote team" },
   ];
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div>
-        <p className="mb-1 text-xs text-slate-400">Availability</p>
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Availability</p>
         <EditField
           label="Availability"
           value={availability ?? ""}
@@ -1823,7 +1868,7 @@ function PreferencesDisplay({
       </div>
       {fields.map(({ key, label, placeholder }) => (
         <div key={key}>
-          <p className="mb-1 text-xs text-slate-400">{label}</p>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
           <EditField
             label={label}
             value={prefs?.[key] ?? ""}

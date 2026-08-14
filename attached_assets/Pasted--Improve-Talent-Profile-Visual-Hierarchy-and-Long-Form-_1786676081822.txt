@@ -1,0 +1,1324 @@
+# Improve Talent Profile Visual Hierarchy and Long-Form Text Presentation
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Improve the visual hierarchy and overall presentation of the existing Talent Profile so that it feels more polished, professional, readable, and visually balanced.
+
+Primary file:
+
+`client/src/pages/TalentProfile.tsx`
+
+This task should focus on visual refinement, spacing, typography, hierarchy, and content readability.
+
+Do NOT redesign the entire Talent Profile from scratch.
+
+Preserve all existing functionality, including:
+
+* Talent owner editing
+* Public View
+* Client/visitor Talent view
+* About
+* More About Me
+* Skills
+* Experience
+* Education
+* Certifications
+* Applications
+* Values Alignment
+* Portfolio
+* Preferences
+* Profile Strength
+* inline editing
+* sticky section navigation
+* profile photo
+* Talent authentication
+* responsive/mobile behavior
+
+---
+
+# Primary Goal
+
+The Talent Profile should feel like a polished professional profile rather than a collection of equally weighted cards.
+
+There should be a clear visual hierarchy:
+
+```text
+Profile identity
+↓
+Professional introduction
+↓
+Detailed background
+↓
+Qualifications and proof
+↓
+Career/application information
+↓
+Preferences / supporting information
+```
+
+The user should immediately understand:
+
+1. Who this Talent is
+2. What they do
+3. What they are good at
+4. Their professional background
+5. Additional information about them
+
+---
+
+# 1. About and More About Me — Justified Text
+
+Update the display styling of:
+
+```text
+About
+More About Me
+```
+
+so long-form text uses **justified alignment**.
+
+Use:
+
+```css
+text-align: justify;
+```
+
+or Tailwind:
+
+```text
+text-justify
+```
+
+if available in the project.
+
+If Tailwind does not include the desired utility, use:
+
+```tsx
+style={{ textAlign: "justify" }}
+```
+
+or a reusable CSS class.
+
+---
+
+# Long-Form Typography
+
+Both About and More About Me should use comfortable long-form reading styles.
+
+Recommended:
+
+```text
+text-[15px] or text-base
+leading-7
+text-slate-700
+dark:text-slate-300
+```
+
+Avoid:
+
+* tiny body text
+* compressed line-height
+* very wide text lines
+* giant blocks without paragraph spacing
+
+---
+
+# Paragraph Formatting
+
+Continue preserving paragraph breaks.
+
+Example input:
+
+```text
+To succeed and be a part of a competitive organization that provides possibilities for professional development.
+
+I am particularly interested in environments where I can contribute while continuously learning and improving.
+
+My long-term goal is to...
+```
+
+should visually render as:
+
+```text
+Paragraph 1
+
+Paragraph 2
+
+Paragraph 3
+```
+
+Each paragraph should be justified independently.
+
+Recommended structure:
+
+```tsx
+<div className="space-y-4">
+  {paragraphs.map((paragraph, index) => (
+    <p
+      key={index}
+      className="text-[15px] leading-7 text-slate-700 dark:text-slate-300"
+      style={{ textAlign: "justify" }}
+    >
+      {paragraph}
+    </p>
+  ))}
+</div>
+```
+
+Do not use `dangerouslySetInnerHTML`.
+
+---
+
+# Important Justification Detail
+
+Avoid ugly giant spaces between words.
+
+Use CSS that produces reasonable justification.
+
+If supported:
+
+```css
+text-align: justify;
+text-justify: inter-word;
+```
+
+Do not force justification on:
+
+* headings
+* skill badges
+* metadata
+* labels
+* dates
+* job titles
+
+Only use justification for long prose content.
+
+---
+
+# 2. Improve Overall Page Width and Reading Width
+
+The current profile has a main left column and a smaller right sidebar.
+
+Preserve that basic structure.
+
+However, improve readability so long-form text does not stretch too widely.
+
+For About and More About Me, use a comfortable reading width inside the card.
+
+For example:
+
+```text
+max-w-prose
+```
+
+or an equivalent width.
+
+But do not make the card itself unusually narrow.
+
+The card may remain full width while the text content has a controlled line length.
+
+---
+
+# 3. Establish Clear Section Hierarchy
+
+Currently many cards appear to have similar visual weight.
+
+Refine the profile so sections have three levels of hierarchy.
+
+## Level 1 — Profile Identity
+
+This is the strongest visual area:
+
+* profile photo
+* Talent name
+* headline
+* location
+* availability
+* work setup
+* relevant badges
+* Public View action when owner
+
+The name should remain the strongest text element.
+
+Suggested:
+
+```text
+Name: text-2xl / text-3xl, bold
+Headline: text-base / text-lg, medium
+Metadata: text-sm, muted
+```
+
+Do not make section headings visually compete with the Talent's name.
+
+---
+
+# Level 2 — Primary Profile Sections
+
+These should feel important:
+
+```text
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+```
+
+Use clear section titles and consistent card padding.
+
+Example:
+
+```text
+Section heading:
+text-base or text-lg
+font-semibold
+text-slate-900
+```
+
+Icon container:
+
+```text
+h-9 w-9
+soft indigo background
+rounded-lg
+```
+
+Do not make icons overly large.
+
+---
+
+# Level 3 — Supporting Sidebar Content
+
+These include things such as:
+
+```text
+Profile Strength
+Preferences
+Portfolio / Links
+Contact-related information
+```
+
+These should remain visually useful but slightly less dominant than the main profile content.
+
+Use:
+
+* smaller section headings
+* slightly tighter padding
+* lighter backgrounds / borders where appropriate
+
+The sidebar should support the profile, not visually overpower About or Experience.
+
+---
+
+# 4. Improve Card Design Consistency
+
+Review all Talent Profile cards.
+
+Use consistent:
+
+```text
+rounded-2xl
+border-slate-200/70
+bg-white
+```
+
+with subtle shadow.
+
+Suggested:
+
+```text
+shadow-sm
+```
+
+Avoid heavy drop shadows.
+
+A polished card hierarchy could use:
+
+```text
+border
+shadow-sm
+transition-shadow
+```
+
+but do not add hover elevation to informational sections unless it serves a purpose.
+
+---
+
+# Card Padding
+
+Use consistent internal spacing.
+
+Recommended primary cards:
+
+```text
+CardHeader:
+px-6 pt-6 pb-3
+
+CardContent:
+px-6 pb-6
+```
+
+or equivalent.
+
+Mobile:
+
+```text
+px-4 / p-4
+```
+
+Desktop:
+
+```text
+p-6
+```
+
+Avoid cards where content feels pressed against the borders.
+
+---
+
+# Section Spacing
+
+Increase vertical rhythm between main sections slightly.
+
+Recommended:
+
+```text
+space-y-5
+```
+
+or:
+
+```text
+gap-5
+```
+
+instead of sections appearing visually stacked without breathing room.
+
+Do not add excessive blank space.
+
+---
+
+# 5. Improve About Card
+
+The About card is one of the most important parts of the profile.
+
+Make it visually stronger than generic utility cards.
+
+Recommended:
+
+```text
+About
+────────────────────
+Professional summary text...
+```
+
+Do not literally add a horizontal rule if it clashes with the current design.
+
+The section should have:
+
+* clear title
+* comfortable text width
+* justified paragraph text
+* paragraph spacing
+* generous vertical spacing
+
+For owner empty state, retain existing edit behavior.
+
+---
+
+# 6. Improve More About Me
+
+Treat More About Me as a companion section to About.
+
+Use the same typography system:
+
+```text
+justified
+leading-7
+paragraph spacing
+comfortable reading width
+```
+
+But visually distinguish it subtly.
+
+Possible subtitle beneath heading:
+
+```text
+A little more about how I work, what motivates me, and what I value.
+```
+
+Only add this if it fits naturally.
+
+Keep subtitle small and muted:
+
+```text
+text-xs / text-sm
+text-slate-500
+```
+
+Do not add explanatory subtitles to every single section.
+
+---
+
+# 7. Skills Visual Hierarchy
+
+Keep Core Skills more visually prominent than Secondary Skills.
+
+Recommended:
+
+### Core Skills
+
+```text
+CORE SKILLS
+
+React
+TypeScript
+Customer Support
+Project Management
+```
+
+Use stronger indigo pills.
+
+### Secondary Skills
+
+Use neutral/slate pills.
+
+Spacing:
+
+```text
+Core Skills
+gap-2
+
+Secondary Skills
+mt-5
+gap-2
+```
+
+Make the distinction obvious without making the profile colorful or busy.
+
+---
+
+# 8. Experience
+
+Experience should be visually scannable.
+
+Each work entry should prioritize:
+
+```text
+Job Title
+Company
+
+Duration / Setup
+
+Responsibilities
+```
+
+Recommended hierarchy:
+
+```text
+Job title:
+font-semibold
+text-slate-900
+
+Company:
+text-sm
+font-medium
+text-slate-600
+
+Duration / setup:
+text-xs
+text-slate-500
+
+Responsibilities:
+text-sm
+leading-6
+text-slate-700
+```
+
+If responsibilities contain paragraphs or bullets, preserve them cleanly.
+
+Do not render every property at the same font weight.
+
+---
+
+# Experience Separation
+
+If there are multiple jobs, separate them using:
+
+```text
+border-b
+pb-5
+mb-5
+```
+
+except for the final entry.
+
+Avoid creating an entire nested Card for every work experience unless already established.
+
+The Experience card should remain one coherent section.
+
+---
+
+# 9. Education
+
+Apply the same hierarchy:
+
+```text
+Degree
+University
+Years
+```
+
+Recommended:
+
+```text
+Degree → strongest
+School → medium
+Dates → muted
+```
+
+Do not display all three with identical styling.
+
+---
+
+# 10. Certifications
+
+Certification title should be stronger than metadata.
+
+Example:
+
+```text
+AWS Certified Cloud Practitioner
+Amazon Web Services
+Issued 2025
+```
+
+Use:
+
+```text
+Certification:
+font-semibold
+
+Issuer:
+text-sm
+
+Date:
+text-xs muted
+```
+
+Keep certificates easy to scan.
+
+---
+
+# 11. Applications Section
+
+Applications is private and owner-only.
+
+Preserve its existing placement:
+
+```text
+Certifications
+↓
+Applications
+↓
+Values Alignment
+```
+
+Keep current functionality.
+
+Improve visual hierarchy within each application row:
+
+```text
+Job Title                         Status badge
+Company
+Applied Aug 12, 2026
+```
+
+Job title should be the primary item.
+
+Status badge should remain prominent but not overpower the role title.
+
+Use compact rows rather than very tall cards.
+
+---
+
+# 12. Values Alignment
+
+Values Alignment is supporting/professional insight.
+
+Keep it directly after Applications based on the current requested section order.
+
+If the section contains percentages/scores:
+
+* score → strong visual
+* description → secondary
+* labels → muted
+
+Do not make it visually louder than Experience or About.
+
+---
+
+# 13. Profile Strength Sidebar
+
+Profile Strength should remain easy to scan.
+
+Improve hierarchy:
+
+```text
+PROFILE STRENGTH
+58%
+
+[ progress bar ]
+
+✓ Photo
+✓ Name
+✓ Headline
+...
+```
+
+Recommended:
+
+```text
+Percentage:
+text-lg / text-xl
+font-bold
+
+Labels:
+text-sm
+
+Section heading:
+text-xs
+uppercase
+tracking-wide
+```
+
+Maintain the existing completion logic.
+
+Do NOT modify scoring.
+
+---
+
+# 14. Preferences
+
+Improve label/value distinction.
+
+Currently information may appear like:
+
+```text
+Availability
+Immediately available
+
+Work Setup
+Remote / Hybrid / Onsite
+```
+
+Use:
+
+```text
+Label:
+text-xs
+font-medium
+text-slate-400
+
+Value:
+mt-1
+text-sm
+font-medium
+text-slate-700
+```
+
+Add appropriate spacing between groups.
+
+Example:
+
+```text
+Availability
+Immediately available
+
+      16px–20px gap
+
+Work Setup
+Remote
+```
+
+Do not turn Preferences into a table.
+
+---
+
+# 15. Portfolio / Links
+
+Keep links compact.
+
+Use a visual structure like:
+
+```text
+LinkedIn
+linkedin.com/...
+
+GitHub
+github.com/...
+
+Portfolio
+mywebsite.com
+```
+
+Link label should be slightly stronger than URL.
+
+Use ExternalLink icon where helpful.
+
+Avoid showing long raw URLs without truncation.
+
+---
+
+# 16. Improve Section Icons
+
+Use a consistent visual container for all section icons.
+
+Existing pattern is close to:
+
+```tsx
+<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#474ead]/10">
+```
+
+Refine if needed to:
+
+```text
+h-9 w-9
+rounded-xl
+bg-[#474ead]/10
+```
+
+Icons:
+
+```text
+h-4 w-4
+text-[#474ead]
+```
+
+Use the same treatment throughout main profile sections.
+
+Do not give every icon a different color.
+
+---
+
+# 17. Improve Section Header Alignment
+
+Every main card header should follow one consistent structure:
+
+```text
+[ Icon ]  Section Title                     [ Edit/Add ]
+```
+
+Vertically align icon, heading, and action.
+
+Suggested:
+
+```text
+flex
+items-center
+justify-between
+gap-3
+```
+
+Edit/Add controls should remain visually secondary.
+
+Use:
+
+```text
+text-xs
+```
+
+or icon buttons.
+
+Do not let Edit buttons compete with the section title.
+
+---
+
+# 18. Sticky Tabs
+
+Preserve the sticky profile section navigation.
+
+Improve only subtle visual hierarchy if needed.
+
+Active tab:
+
+```text
+bg-[#474ead]/10
+text-[#474ead]
+font-semibold
+```
+
+Inactive tabs:
+
+```text
+text-slate-500
+```
+
+Avoid heavy borders around every tab.
+
+The navigation should remain light and secondary.
+
+---
+
+# 19. Page Background and Contrast
+
+Keep the existing light neutral page background.
+
+Recommended:
+
+```text
+bg-slate-50
+```
+
+Cards remain:
+
+```text
+bg-white
+```
+
+This creates natural contrast without excessive shadows.
+
+Avoid:
+
+* pure gray cards everywhere
+* gradients inside content cards
+* colored card backgrounds for every section
+* excessive borders
+
+Use indigo primarily as an accent.
+
+---
+
+# 20. Typography System
+
+Apply a consistent typography hierarchy.
+
+Recommended overall structure:
+
+```text
+Talent Name
+text-3xl
+font-bold
+
+Headline
+text-base
+font-medium
+
+Main Section Titles
+text-base / text-lg
+font-semibold
+
+Subsection Labels
+text-xs
+font-semibold
+uppercase
+tracking-wide
+
+Main Body
+text-[15px]
+leading-7
+
+Supporting Body
+text-sm
+leading-6
+
+Metadata
+text-xs / text-sm
+text-slate-500
+```
+
+Avoid random font sizes between sections.
+
+---
+
+# 21. Long Text Styling Helper
+
+To avoid duplicating About and More About Me paragraph rendering, create a small reusable component if appropriate.
+
+Example:
+
+```tsx
+function ProfileLongFormText({
+  value,
+}: {
+  value: string;
+}) {
+  const paragraphs = value
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="max-w-prose space-y-4">
+      {paragraphs.map((paragraph, index) => (
+        <p
+          key={index}
+          className="text-[15px] leading-7 text-slate-700 dark:text-slate-300"
+          style={{
+            textAlign: "justify",
+            textJustify: "inter-word",
+          }}
+        >
+          {paragraph}
+        </p>
+      ))}
+    </div>
+  );
+}
+```
+
+Use it for:
+
+```text
+About
+More About Me
+```
+
+Do not use it for short metadata fields.
+
+---
+
+# Important Owner Editing Behavior
+
+When owner is NOT editing About or More About Me:
+
+use the improved paragraph renderer.
+
+When editing:
+
+continue using the existing multiline textarea.
+
+Conceptually:
+
+```tsx
+if (editing) {
+  return <Textarea ... />;
+}
+
+return <ProfileLongFormText value={value} />;
+```
+
+Do not apply justification inside the editing textarea.
+
+A normal left-aligned textarea is easier to edit.
+
+---
+
+# 22. Visual Rhythm Between Long Sections
+
+Long About sections like the screenshot can become visually exhausting.
+
+Use paragraph spacing and controlled width instead of artificially shortening content.
+
+Do NOT:
+
+* truncate About
+* add Read More unless explicitly required
+* limit number of paragraphs
+* hide content
+
+Keep all saved content visible.
+
+---
+
+# 23. Desktop Layout
+
+Maintain the current general structure:
+
+```text
+┌───────────────────────────────┬─────────────────┐
+│ Main profile content          │ Sidebar         │
+│                               │                 │
+│ About                         │ Profile Strength│
+│ More About Me                 │ Preferences     │
+│ Skills                        │ Portfolio       │
+│ Experience                    │ etc.            │
+│ ...                           │                 │
+└───────────────────────────────┴─────────────────┘
+```
+
+Main column should remain visually dominant.
+
+Sidebar should remain narrower.
+
+Do not make them 50/50.
+
+---
+
+# 24. Mobile Layout
+
+On smaller screens:
+
+```text
+Profile header
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+Profile Strength
+Preferences
+...
+```
+
+or the existing responsive order if already intentionally configured.
+
+Use:
+
+```text
+grid-cols-1
+```
+
+Avoid cramped two-column content.
+
+Ensure justified paragraphs still look natural on mobile.
+
+If justified text produces excessive spacing on very narrow screens, it is acceptable to use:
+
+```text
+text-left on mobile
+text-justify on sm/md+
+```
+
+Recommended:
+
+```tsx
+className="text-left sm:text-justify"
+```
+
+This is preferable if mobile word spacing looks poor.
+
+---
+
+# 25. Public View and Client View
+
+All visual hierarchy improvements must apply consistently to:
+
+* Talent owner
+* Talent Public View
+* Client viewing Talent
+* logged-out/public visitor
+
+Only editing/private controls should differ.
+
+Do NOT create different styling systems for owner and visitor views.
+
+The profile should look nearly identical in structure.
+
+---
+
+# 26. Do Not Reintroduce Resume UI
+
+Previous requirements removed Resume from the Talent Profile.
+
+Do NOT reintroduce:
+
+```text
+View Resume
+```
+
+or:
+
+```text
+Resume section
+```
+
+while adjusting visual hierarchy.
+
+Resume data may still exist internally, but Talent Profile should not display it.
+
+---
+
+# 27. Preserve Applications Privacy
+
+Applications must remain:
+
+```text
+Talent owner only
+```
+
+Do not show Applications in:
+
+* Client view
+* Public View
+* logged-out visitor view
+* another Talent's view
+
+Visual hierarchy changes must not loosen the existing visibility condition.
+
+---
+
+# 28. Avoid Over-Designing
+
+The final result should feel:
+
+```text
+professional
+clean
+modern
+spacious
+credible
+easy to scan
+```
+
+not:
+
+```text
+colorful
+dashboard-heavy
+over-animated
+decorative
+busy
+```
+
+Do not introduce:
+
+* gradients inside every card
+* multiple accent colors
+* oversized section icons
+* huge headings
+* excessive shadows
+* unnecessary animations
+* decorative illustrations
+
+Use OnSpot's indigo primarily as an accent.
+
+---
+
+# Recommended Visual Direction
+
+Think:
+
+```text
+LinkedIn-style professional readability
++
+modern SaaS polish
++
+OnSpot branding
+```
+
+The profile should be visually impressive because of:
+
+* typography
+* spacing
+* hierarchy
+* consistency
+* readability
+
+not decoration.
+
+---
+
+# Acceptance Criteria
+
+## About / More About Me
+
+* [ ] About uses justified long-form text
+* [ ] More About Me uses justified long-form text
+* [ ] Paragraph breaks remain visible
+* [ ] Long text has comfortable line-height
+* [ ] Text does not appear as one dense wall
+* [ ] Editing remains normal left-aligned textarea
+* [ ] No HTML injection is introduced
+* [ ] Mobile text remains readable
+
+## Visual Hierarchy
+
+* [ ] Talent name remains strongest text element
+* [ ] Headline is clearly secondary
+* [ ] Main profile sections have consistent headings
+* [ ] Body text styles are consistent
+* [ ] Metadata is visually secondary
+* [ ] Core Skills stand out more than Secondary Skills
+* [ ] Experience titles stand out from company/date metadata
+* [ ] Education has clear degree/school/date hierarchy
+* [ ] Certification titles stand out from issuer/date
+* [ ] Preferences have clear label/value distinction
+* [ ] Applications rows prioritize job title
+* [ ] Sidebar is visually secondary to main profile content
+
+## Card/Layout
+
+* [ ] Cards use consistent border radius
+* [ ] Cards use consistent padding
+* [ ] Section spacing is consistent
+* [ ] Main column remains dominant
+* [ ] Sidebar remains compact
+* [ ] Page does not feel crowded
+* [ ] No excessive shadow/color usage
+
+## Regression
+
+* [ ] Inline editing still works
+* [ ] Public View still works
+* [ ] Client view still works
+* [ ] Applications privacy still works
+* [ ] Skills editing still works
+* [ ] Experience editing still works
+* [ ] Education editing still works
+* [ ] Certifications editing still works
+* [ ] More About Me editing still works
+* [ ] Profile Strength logic remains unchanged
+* [ ] Resume does not return to the Talent Profile
+* [ ] Sticky tabs still work
+* [ ] Mobile layout works
+* [ ] TypeScript/build checks pass
+
+---
+
+# Manual Visual Review
+
+After implementation, test with a Talent profile that contains:
+
+* a long About section with 3–5 paragraphs
+* a long More About Me section
+* 8–10 skills
+* at least 3 work experiences
+* education
+* multiple certifications
+* several applications
+* Preferences
+* Profile Strength below 100%
+
+Review at:
+
+```text
+1440px desktop
+1024px tablet
+768px
+390px mobile
+```
+
+The page should remain easy to scan at every width.
+
+Pay special attention to the screenshot scenario where About contains many repeated sentences.
+
+Even with a lot of content, the section should still look deliberate, readable, and professionally formatted.
+
+---
+
+# Final Implementation Principle
+
+Do not treat every piece of Talent Profile information as equally important.
+
+Use visual hierarchy to communicate:
+
+```text
+WHO I AM
+   ↓
+WHAT I DO
+   ↓
+WHAT I CAN DO
+   ↓
+WHAT I'VE DONE
+   ↓
+MORE CONTEXT ABOUT ME
+```
+
+The end result should feel like a professional Talent portfolio/profile rather than a database record displayed inside cards.
