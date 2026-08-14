@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "wouter";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
@@ -93,16 +93,15 @@ function HeroSection() {
     },
     staleTime: 5 * 60 * 1000,
   });
-  const liveTalents = (rawCandidates ?? [])
-    .filter((c: any) => c.availability !== "unavailable")
-    .sort((a: any, b: any) => {
-      // Featured/active first, then by experience
-      const aAvail = a.availability === "available" ? 0 : 1;
-      const bAvail = b.availability === "available" ? 0 : 1;
-      if (aAvail !== bAvail) return aAvail - bAvail;
-      return (b.experienceYears ?? 0) - (a.experienceYears ?? 0);
-    })
-    .slice(0, 4);
+  const liveTalents = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    const all = (rawCandidates ?? []).filter((c: any) => c.availability !== "unavailable");
+    // Prioritise candidates who actually have a profile photo so the card
+    // always shows faces when they exist; then fill up with the rest.
+    const withPhoto    = all.filter((c: any) => c.profilePhotoUrl);
+    const withoutPhoto = all.filter((c: any) => !c.profilePhotoUrl);
+    return [...shuffle(withPhoto), ...shuffle(withoutPhoto)].slice(0, 4);
+  }, [rawCandidates]);
 
   // Slide 5 — real job data from full search endpoint (same source as Browse Jobs)
   const { data: rawJobs, isLoading: jobsLoading } = useQuery<any[]>({
@@ -115,10 +114,14 @@ function HeroSection() {
     },
     staleTime: 5 * 60 * 1000,
   });
-  const liveJobs = (rawJobs ?? [])
-    .filter((j: any) => j.title?.toLowerCase() !== "test")
-    .sort((a: any, b: any) => Number(b.isFeatured ?? 0) - Number(a.isFeatured ?? 0))
-    .slice(0, 3);
+  const liveJobs = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    const all = (rawJobs ?? []).filter((j: any) => j.title?.toLowerCase() !== "test");
+    // Featured jobs lead; within each group the order is randomised each visit.
+    const featured = all.filter((j: any) => j.isFeatured);
+    const regular  = all.filter((j: any) => !j.isFeatured);
+    return [...shuffle(featured), ...shuffle(regular)].slice(0, 3);
+  }, [rawJobs]);
 
   const prev = useCallback(() => setSlide(s => (s - 1 + SLIDES.length) % SLIDES.length), []);
   const next = useCallback(() => setSlide(s => (s + 1) % SLIDES.length), []);
@@ -182,7 +185,7 @@ function HeroSection() {
           {active.id === "companies" && <CompaniesSlide isDark={isDark} />}
           {active.id === "talent"    && <TalentSlide    isDark={isDark} />}
           {active.id === "network"   && <NetworkSlide   isDark={isDark} liveTalents={liveTalents} isLoading={candidatesLoading} />}
-          {active.id === "jobs"      && <JobsSlide      isDark={isDark} liveJobs={liveJobs} isLoading={jobsLoading} />}
+          {active.id === "jobs"      && <JobsSlide      isDark={isDark} liveJobs={liveJobs} isLoading={jobsLoading} liveTalents={liveTalents} />}
         </div>
 
         {/* Controls row — natural bottom of flex column, always visible */}
@@ -689,25 +692,52 @@ function talentInitials(name: string): string {
 }
 
 function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoading: boolean }) {
+  const [search, setSearch] = useState("");
+  const [, navigate] = useLocation();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/hire-talent?search=${encodeURIComponent(q)}` : "/hire-talent");
+  };
+
   return (
     <div className="relative" style={{ width: "clamp(400px, 38vw, 520px)", maxWidth: "100%" }}>
-      {/* Glow */}
-      <div aria-hidden className="absolute -inset-6 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 50%, rgba(75,81,184,0.12), transparent 70%)", filter: "blur(10px)" }} />
+      {/* Glow — pointer-events-none so it never blocks clicks */}
+      <div aria-hidden className="pointer-events-none absolute -inset-6 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 50%, rgba(75,81,184,0.12), transparent 70%)", filter: "blur(10px)" }} />
       <div
         className="relative rounded-[18px] overflow-hidden"
         style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(75,81,184,0.18)", backdropFilter: "blur(14px)", boxShadow: "0 24px 56px rgba(75,81,184,0.12)" }}
       >
-        {/* Search bar (decorative — mirrors Hire Talent visual) */}
+        {/* Search bar — functional: navigates to /hire-talent?search=... */}
         <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EEEDFB" }}>
-          <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
-            <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
-            <span className="text-[11px]" style={{ color: C.grayLight }}>Customer support, bookkeeping, sales...</span>
-          </div>
+          <form onSubmit={handleSearch}>
+            <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
+              <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Customer support, bookkeeping, sales..."
+                className="flex-1 bg-transparent text-[11px] outline-none placeholder:text-gray-400"
+                style={{ color: C.charcoal }}
+              />
+              {search && (
+                <button type="submit" className="text-[10px] font-semibold hover:underline flex-shrink-0" style={{ color: C.indigo }}>
+                  Search
+                </button>
+              )}
+            </div>
+          </form>
           <div className="flex flex-wrap gap-1.5 mt-2.5">
             {["Available now", "4.5★ and up", "3+ yrs experience"].map((f) => (
-              <span key={f} className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}>
+              <button
+                key={f}
+                onClick={() => navigate(`/hire-talent?search=${encodeURIComponent(f)}`)}
+                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition hover:opacity-75"
+                style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}
+              >
                 {f}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -794,7 +824,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
 // ══════════════════════════════════════════════════════════════════════════════
 // SLIDE 5 — JOBS (dark, 2-col + roles card)
 // ══════════════════════════════════════════════════════════════════════════════
-function JobsSlide({ isDark, liveJobs, isLoading }: { isDark: boolean; liveJobs: any[]; isLoading: boolean }) {
+function JobsSlide({ isDark, liveJobs, isLoading, liveTalents }: { isDark: boolean; liveJobs: any[]; isLoading: boolean; liveTalents: any[] }) {
   return (
     <TwoCol
       left={
@@ -824,7 +854,7 @@ function JobsSlide({ isDark, liveJobs, isLoading }: { isDark: boolean; liveJobs:
           </Link>
         </>
       }
-      right={<OpenRolesCard liveJobs={liveJobs} isLoading={isLoading} />}
+      right={<OpenRolesCard liveJobs={liveJobs} isLoading={isLoading} liveTalents={liveTalents} />}
     />
   );
 }
@@ -838,16 +868,53 @@ function jobPay(j: any): string | null {
   return null;
 }
 
-function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: boolean }) {
+function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; isLoading: boolean; liveTalents: any[] }) {
+  const [search, setSearch] = useState("");
+  const [, navigate] = useLocation();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/find-work/jobs?search=${encodeURIComponent(q)}` : "/find-work/jobs");
+  };
+
+  // Avatar pool: candidates with photos first, then initials fallbacks
+  const avatarPool = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    return shuffle(liveTalents).slice(0, 6);
+  }, [liveTalents]);
+
   return (
     <div className="relative" style={{ width: "clamp(400px, 37vw, 500px)", maxWidth: "100%" }}>
-      <div aria-hidden className="absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
+      {/* Glow — pointer-events-none so it never blocks clicks */}
+      <div aria-hidden className="pointer-events-none absolute -inset-8 rounded-full" style={{ background: "radial-gradient(60% 55% at 50% 42%, rgba(255,174,33,0.2), transparent 65%), radial-gradient(70% 65% at 50% 60%, rgba(75,81,184,0.3), transparent 70%)", filter: "blur(10px)" }} />
       <div
         className="relative rounded-[18px] overflow-hidden"
         style={{ background: "rgba(255,255,255,0.84)", border: "1px solid rgba(255,255,255,0.32)", backdropFilter: "blur(16px)", boxShadow: "0 40px 80px -28px rgba(5,8,30,0.55)" }}
       >
+        {/* Search bar */}
+        <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EDEDF2" }}>
+          <form onSubmit={handleSearch}>
+            <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
+              <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Customer support, bookkeeping, sales..."
+                className="flex-1 bg-transparent text-[11px] outline-none placeholder:text-gray-400"
+                style={{ color: C.charcoal }}
+              />
+              {search && (
+                <button type="submit" className="text-[10px] font-semibold hover:underline flex-shrink-0" style={{ color: C.indigo }}>
+                  Search
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "#EDEDF2" }}>
+        <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "#EDEDF2" }}>
           <div>
             <p className="text-[13px] font-bold" style={{ color: C.charcoal }}>Open roles</p>
             <p className="text-[10px]" style={{ color: C.grayLight }}>Updated this week</p>
@@ -873,29 +940,52 @@ function OpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: bo
               <Link href="/find-work/jobs" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse all jobs →</Link>
             </div>
           ) : (
-            liveJobs.map((j: any) => {
+            liveJobs.map((j: any, idx: number) => {
               const location = j.location || j.contractType || "Remote";
               const pay = jobPay(j);
+              // Rotate avatars from the pool so each row shows different faces
+              const rowAvatars = avatarPool.slice((idx * 2) % Math.max(avatarPool.length, 1), (idx * 2) % Math.max(avatarPool.length, 1) + 2);
               return (
                 <Link
                   key={j.id}
                   href={`/find-work/job/${j.id}`}
-                  className="px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
-                  style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "center" }}
+                  className="block px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
                 >
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold leading-snug" style={{ color: C.charcoal, overflowWrap: "anywhere" }}>{j.title}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: C.gray }}>
-                      {location}{pay ? ` · ${pay}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                    {j.isFeatured && (
-                      <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(255,174,33,0.18)", color: C.orangeDeep }}>Featured</span>
-                    )}
-                    <span className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(46,186,107,0.12)", color: "#1a7d42" }}>
-                      Hiring now
-                    </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "start" }}>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold leading-snug" style={{ color: C.charcoal, overflowWrap: "anywhere" }}>{j.title}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: C.gray }}>
+                        {location}{pay ? ` · ${pay}` : ""}
+                      </p>
+                      {/* Avatar stack */}
+                      {rowAvatars.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <div className="flex -space-x-1.5">
+                            {rowAvatars.map((c: any, i: number) => (
+                              c.profilePhotoUrl ? (
+                                <img key={i} src={c.profilePhotoUrl} alt="" className="h-5 w-5 rounded-full object-cover ring-[1.5px] ring-white flex-shrink-0" />
+                              ) : (
+                                <div key={i} className="h-5 w-5 rounded-full flex items-center justify-center ring-[1.5px] ring-white flex-shrink-0" style={{ background: C.indigo, fontSize: "7px", color: "white", fontWeight: 700 }}>
+                                  {talentInitials((c.displayName || c.fullName || "?"))}
+                                </div>
+                              )
+                            ))}
+                          </div>
+                          <span className="text-[9px]" style={{ color: C.grayLight }}>talents ready</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      {j.isFeatured && (
+                        <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(255,174,33,0.18)", color: C.orangeDeep }}>Featured</span>
+                      )}
+                      <span className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold" style={{ background: "rgba(46,186,107,0.12)", color: "#1a7d42" }}>
+                        Hiring now
+                      </span>
+                      <span className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold border transition-colors hover:bg-[#4B51B8] hover:text-white" style={{ borderColor: C.indigo, color: C.indigo }}>
+                        Apply →
+                      </span>
+                    </div>
                   </div>
                 </Link>
               );
@@ -1639,10 +1729,25 @@ function OpenJobsSection() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const liveJobs: typeof STATIC_JOBS = (rawJobs ?? [])
-    .filter((j: any) => j.title?.toLowerCase() !== "test")
-    .slice(0, 4)
-    .map((j: any) => ({
+  // Reuse the already-cached candidates response — no extra network request
+  const { data: rawCandidates } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],
+    queryFn: async () => {
+      const r = await fetch("/api/candidates");
+      if (!r.ok) return [];
+      const d = await r.json();
+      return Array.isArray(d) ? d : (d.items ?? []);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Randomly shuffle each time rawJobs changes; featured jobs lead
+  const liveJobs: typeof STATIC_JOBS = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    const all = (rawJobs ?? []).filter((j: any) => j.title?.toLowerCase() !== "test");
+    const featured = all.filter((j: any) => j.isFeatured);
+    const regular  = all.filter((j: any) => !j.isFeatured);
+    return [...shuffle(featured), ...shuffle(regular)].slice(0, 4).map((j: any) => ({
       title: j.title,
       type:  j.contractType || "Full-time",
       loc:   j.location || "Remote",
@@ -1652,9 +1757,20 @@ function OpenJobsSection() {
           ? `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`
           : "",
       id: j.id ?? null,
+      isFeatured: j.isFeatured ?? false,
     }));
+  }, [rawJobs]);
 
   const jobs = liveJobs.length >= 3 ? liveJobs : STATIC_JOBS;
+
+  // Avatar pool for job cards — candidates with photos first
+  const avatarPool: any[] = useMemo(() => {
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+    const all = rawCandidates ?? [];
+    const withPhoto    = all.filter((c: any) => c.profilePhotoUrl);
+    const withoutPhoto = all.filter((c: any) => !c.profilePhotoUrl);
+    return [...shuffle(withPhoto), ...shuffle(withoutPhoto)].slice(0, 12);
+  }, [rawCandidates]);
 
   return (
     <section
@@ -1687,63 +1803,88 @@ function OpenJobsSection() {
 
         {/* 4 job cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {jobs.map((job, i) => (
-            <div
-              key={i}
-              className="rounded-[18px] flex flex-col cursor-pointer"
-              style={{
-                background: "rgba(255,255,255,0.055)",
-                border: "1px solid rgba(255,255,255,0.16)",
-                padding: "22px 22px 20px",
-                minHeight: 220,
-                transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 280ms ease, border-color 280ms ease, background 280ms ease",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = "translateY(-8px)";
-                el.style.boxShadow = "0 24px 48px rgba(58,58,248,0.28), 0 8px 20px rgba(0,0,0,0.35)";
-                el.style.borderColor = "rgba(255,255,255,0.34)";
-                el.style.background = "rgba(255,255,255,0.085)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.transform = "translateY(0)";
-                el.style.boxShadow = "";
-                el.style.borderColor = "rgba(255,255,255,0.16)";
-                el.style.background = "rgba(255,255,255,0.055)";
-              }}
-            >
-              {/* HIRING NOW badge */}
-              <span
-                className="self-start rounded-full px-2.5 py-[3px] font-bold uppercase tracking-wide mb-4"
-                style={{ fontSize: "9.5px", background: "rgba(255,174,33,0.15)", color: "#FFBF4A" }}
-              >
-                Hiring Now
-              </span>
-              {/* Title */}
-              <p className="font-bold text-white leading-snug mb-2 flex-1" style={{ fontSize: "clamp(1rem, 1.5vw, 1.15rem)" }}>
-                {job.title}
-              </p>
-              {/* Meta */}
-              <p className="mb-2.5" style={{ color: "rgba(200,205,255,0.55)", fontSize: "0.81rem" }}>
-                {job.type} · {job.loc}
-              </p>
-              {/* Pay */}
-              {job.pay && (
-                <p className="font-bold mb-4" style={{ color: C.orangeLight, fontSize: "0.92rem" }}>
-                  {job.pay}
-                </p>
-              )}
-              {/* Link */}
+          {jobs.map((job, i) => {
+            // Give each card a distinct 2-avatar slice from the pool
+            const sliceStart = (i * 2) % Math.max(avatarPool.length, 1);
+            const cardAvatars = avatarPool.slice(sliceStart, sliceStart + 2);
+            return (
               <Link
+                key={i}
                 href={job.id ? `/jobs/${job.id}` : "/find-work/jobs"}
-                className="inline-flex items-center gap-1 font-semibold mt-auto transition hover:opacity-80"
-                style={{ fontSize: "0.8rem", color: "rgba(220,224,255,0.75)" }}
+                className="rounded-[18px] flex flex-col"
+                style={{
+                  background: "rgba(255,255,255,0.055)",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  padding: "22px 22px 20px",
+                  minHeight: 220,
+                  transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 280ms ease, border-color 280ms ease, background 280ms ease",
+                  display: "flex",
+                }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  const el = e.currentTarget as HTMLAnchorElement;
+                  el.style.transform = "translateY(-8px)";
+                  el.style.boxShadow = "0 24px 48px rgba(58,58,248,0.28), 0 8px 20px rgba(0,0,0,0.35)";
+                  el.style.borderColor = "rgba(255,255,255,0.34)";
+                  el.style.background = "rgba(255,255,255,0.085)";
+                }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  const el = e.currentTarget as HTMLAnchorElement;
+                  el.style.transform = "translateY(0)";
+                  el.style.boxShadow = "";
+                  el.style.borderColor = "rgba(255,255,255,0.16)";
+                  el.style.background = "rgba(255,255,255,0.055)";
+                }}
               >
-                View role <ArrowRight className="h-3 w-3" />
+                {/* HIRING NOW badge */}
+                <span
+                  className="self-start rounded-full px-2.5 py-[3px] font-bold uppercase tracking-wide mb-4"
+                  style={{ fontSize: "9.5px", background: "rgba(255,174,33,0.15)", color: "#FFBF4A" }}
+                >
+                  Hiring Now
+                </span>
+                {/* Title */}
+                <p className="font-bold text-white leading-snug mb-2 flex-1" style={{ fontSize: "clamp(1rem, 1.5vw, 1.15rem)" }}>
+                  {job.title}
+                </p>
+                {/* Meta */}
+                <p className="mb-2.5" style={{ color: "rgba(200,205,255,0.55)", fontSize: "0.81rem" }}>
+                  {job.type} · {job.loc}
+                </p>
+                {/* Pay */}
+                {job.pay && (
+                  <p className="font-bold mb-3" style={{ color: C.orangeLight, fontSize: "0.92rem" }}>
+                    {job.pay}
+                  </p>
+                )}
+                {/* Avatar stack — candidates ready for this role */}
+                {cardAvatars.length > 0 && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex -space-x-2">
+                      {cardAvatars.map((c: any, ci: number) => (
+                        c.profilePhotoUrl ? (
+                          <img key={ci} src={c.profilePhotoUrl} alt="" className="h-6 w-6 rounded-full object-cover flex-shrink-0" style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }} />
+                        ) : (
+                          <div key={ci} className="h-6 w-6 rounded-full flex items-center justify-center ring-2 flex-shrink-0" style={{ background: "rgba(75,81,184,0.7)", fontSize: "7px", color: "white", fontWeight: 700, outlineColor: "transparent", boxShadow: "0 0 0 2px rgba(255,255,255,0.15)" }}>
+                            {talentInitials(c.displayName || c.fullName || "?")}
+                          </div>
+                        )
+                      ))}
+                    </div>
+                    <span style={{ color: "rgba(200,205,255,0.5)", fontSize: "0.72rem" }}>
+                      {cardAvatars.length}+ talents ready
+                    </span>
+                  </div>
+                )}
+                {/* CTA */}
+                <span
+                  className="inline-flex items-center gap-1 font-semibold mt-auto transition hover:opacity-80"
+                  style={{ fontSize: "0.8rem", color: "rgba(220,224,255,0.75)" }}
+                >
+                  View role <ArrowRight className="h-3 w-3" />
+                </span>
               </Link>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* CTA */}
