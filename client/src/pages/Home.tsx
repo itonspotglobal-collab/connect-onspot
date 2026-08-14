@@ -698,7 +698,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = search.trim();
-    navigate(q ? `/hire-talent?search=${encodeURIComponent(q)}` : "/hire-talent");
+    navigate(q ? `/hire-talent?search=${encodeURIComponent(q)}#top-matches` : "/hire-talent#top-matches");
   };
 
   return (
@@ -732,7 +732,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
             {["Available now", "4.5★ and up", "3+ yrs experience"].map((f) => (
               <button
                 key={f}
-                onClick={() => navigate(`/hire-talent?search=${encodeURIComponent(f)}`)}
+                onClick={() => navigate(`/hire-talent?search=${encodeURIComponent(f)}#top-matches`)}
                 className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition hover:opacity-75"
                 style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}
               >
@@ -761,7 +761,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
           ) : candidates.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-[12px] mb-2" style={{ color: C.gray }}>No available talent right now.</p>
-              <Link href="/hire-talent" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse talent →</Link>
+              <Link href="/hire-talent#top-matches" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse talent →</Link>
             </div>
           ) : (
             candidates.map((c: any) => {
@@ -811,10 +811,9 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
 
         {/* Footer */}
         <div className="px-4 py-3 border-t" style={{ borderColor: "#EEEDFB", background: "#F8F7FD" }}>
-          <p className="text-[10px]" style={{ color: C.gray }}>
-            <Check className="inline h-3 w-3 mr-1" style={{ color: C.indigo }} />
-            Every profile is pre-vetted for skills, experience, and reliability.
-          </p>
+          <Link href="/hire-talent#top-matches" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>
+            Browse all talent →
+          </Link>
         </div>
       </div>
     </div>
