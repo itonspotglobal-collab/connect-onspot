@@ -1,0 +1,693 @@
+# Talent Profile Mini Navigation — Remove Contact and Add Section Highlight Animation
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Make two focused UX improvements to the Talent Profile mini navigation:
+
+1. Remove **Contact** from the sticky mini navigation bar.
+2. Add a brief blue highlight animation to the destination section whenever a mini-navigation item is clicked.
+
+Primary file:
+
+`client/src/pages/TalentProfile.tsx`
+
+Do not redesign the entire Talent Profile or replace the existing navigation system.
+
+Preserve the existing:
+
+* sticky mini navigation
+* section IDs
+* smooth scrolling
+* active tab detection
+* IntersectionObserver
+* Talent owner view
+* Public View
+* Client/visitor view
+* responsive/mobile behavior
+
+---
+
+# 1. Remove “Contact” From Mini Navigation
+
+The current mini navigation contains items such as:
+
+```text
+Overview
+About
+Skills
+Experience
+Education
+Certifications
+Portfolio
+Preferences
+Contact
+```
+
+Remove:
+
+```text
+Contact
+```
+
+from the mini-navigation bar.
+
+The Contact profile section itself may remain elsewhere in the Talent Profile if it is still needed.
+
+This change is specifically about removing the **Contact navigation item**.
+
+---
+
+# Do Not Remove Contact Data
+
+Do NOT:
+
+* remove contact information from the database
+* delete email
+* delete phone
+* remove Client contact permissions
+* break mailto/contact actions
+* remove Contact section content unless already requested elsewhere
+
+Only remove:
+
+```ts
+{ id: "section-contact", label: "Contact" }
+```
+
+from the mini-navigation tab configuration.
+
+---
+
+# 2. Add Brief Destination Highlight Animation
+
+When a user clicks any item in the Talent Profile mini-navigation, the page already scrolls to the corresponding section.
+
+Improve this interaction by temporarily highlighting the destination section's **outer card/container**.
+
+Example:
+
+User clicks:
+
+```text
+Skills
+```
+
+The page scrolls to:
+
+```text
+Skills
+```
+
+Then the outer Skills card briefly receives a soft blue glow/border effect.
+
+After approximately:
+
+```text
+1–1.5 seconds
+```
+
+the highlight smoothly fades back to the normal card appearance.
+
+---
+
+# Branding
+
+Use OnSpot's existing blue/indigo branding.
+
+Recommended accent:
+
+```text
+#474ead
+```
+
+or the existing blue/indigo value already used throughout the Talent Profile.
+
+The highlight should feel polished and subtle.
+
+Do NOT use:
+
+* bright neon blue
+* aggressive flashing
+* large pulsing animations
+* strong dark outlines
+* repeated infinite animation
+
+---
+
+# Desired Visual Effect
+
+Normal section:
+
+```text
+┌─────────────────────────────┐
+│ Skills                      │
+│                             │
+│ content...                  │
+└─────────────────────────────┘
+```
+
+Immediately after clicking `Skills`:
+
+```text
+╔═════════════════════════════╗
+║ Skills                      ║
+║                             ║
+║ content...                  ║
+╚═════════════════════════════╝
+   soft OnSpot-blue glow
+```
+
+Then smoothly return to normal.
+
+---
+
+# Recommended Styling
+
+Possible temporary highlighted style:
+
+```text
+ring-2
+ring-[#474ead]/50
+border-[#474ead]/40
+shadow-[0_0_0_4px_rgba(71,78,173,0.08)]
+```
+
+or an equivalent subtle blue effect.
+
+Transition:
+
+```text
+transition-all
+duration-300
+```
+
+Do not permanently modify card styling.
+
+---
+
+# 3. Reuse Existing Section Component
+
+The profile already uses a reusable `Section` wrapper.
+
+Extend it so it can receive a temporary highlight state.
+
+Conceptually:
+
+```tsx
+function Section({
+  id,
+  title,
+  icon: Icon,
+  children,
+  action,
+  highlighted = false,
+}: {
+  id?: string;
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  highlighted?: boolean;
+}) {
+```
+
+Then apply conditional classes:
+
+```tsx
+<Card
+  id={id}
+  className={cn(
+    "scroll-mt-28 rounded-2xl border bg-white transition-all duration-300",
+    highlighted
+      ? "border-[#474ead]/50 ring-2 ring-[#474ead]/30 shadow-md"
+      : "border-slate-200/70 shadow-sm"
+  )}
+>
+```
+
+Use the project's existing `cn()` utility if available.
+
+If not, use normal conditional string classes.
+
+---
+
+# 4. Add Highlighted Section State
+
+In the main Talent Profile component, create:
+
+```ts
+const [highlightedSectionId, setHighlightedSectionId] =
+  useState<string | null>(null);
+```
+
+When a mini-nav item is clicked:
+
+```ts
+setHighlightedSectionId(id);
+```
+
+Then automatically clear it.
+
+Recommended timing:
+
+```ts
+1200–1500ms
+```
+
+Example:
+
+```ts
+window.setTimeout(() => {
+  setHighlightedSectionId(null);
+}, 1400);
+```
+
+---
+
+# Important Timer Cleanup
+
+Avoid stacking timers if the user clicks several navigation items quickly.
+
+Use a ref:
+
+```ts
+const highlightTimerRef =
+  useRef<ReturnType<typeof setTimeout> | null>(null);
+```
+
+Before starting another timer:
+
+```ts
+if (highlightTimerRef.current) {
+  clearTimeout(highlightTimerRef.current);
+}
+```
+
+Then create a new timer.
+
+Also clear it on unmount.
+
+---
+
+# 5. Update `SectionTabs` Click Behavior
+
+The current mini-navigation has a function similar to:
+
+```ts
+scrollTo(id)
+```
+
+Extend this so clicking a tab does:
+
+```text
+1. Set active tab
+2. Scroll smoothly to section
+3. Trigger destination highlight
+4. Fade highlight after a short delay
+```
+
+Possible architecture:
+
+```tsx
+<SectionTabs
+  visibleIds={visibleSectionIds}
+  onSectionNavigate={handleSectionNavigate}
+/>
+```
+
+Then:
+
+```ts
+function handleSectionNavigate(id: string) {
+  setHighlightedSectionId(id);
+
+  if (highlightTimerRef.current) {
+    clearTimeout(highlightTimerRef.current);
+  }
+
+  highlightTimerRef.current = window.setTimeout(() => {
+    setHighlightedSectionId(null);
+  }, 1400);
+}
+```
+
+Keep the actual scrolling logic in one place.
+
+Do not duplicate scrolling code.
+
+---
+
+# 6. Highlight Only On Click
+
+Important:
+
+The blue glow should happen when the user **actively clicks a mini-navigation item**.
+
+Do NOT trigger the animation merely because:
+
+* the user manually scrolls
+* IntersectionObserver changes the active tab
+* the section becomes visible naturally
+
+Manual scrolling should only update the active mini-nav tab.
+
+The highlight animation is click feedback.
+
+---
+
+# 7. Apply Highlight to All Navigable Sections
+
+The effect should work for every visible mini-navigation item.
+
+Examples:
+
+```text
+Overview
+About
+More About Me
+Skills
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+Portfolio
+Preferences
+```
+
+Use the actual current visible tab list.
+
+Do not hardcode the behavior only for Skills.
+
+---
+
+# Overview Special Case
+
+`Overview` may not use the same `Section` card wrapper as other sections.
+
+If `section-overview` points to the profile header/cover area, use a subtle highlight on the appropriate outer profile/header container instead.
+
+If implementing an Overview highlight would require excessive complexity, it is acceptable to:
+
+* scroll normally for Overview
+* omit the card glow for Overview
+
+But all actual card sections should support the effect.
+
+Do not create an awkward blue box around the entire cover banner.
+
+---
+
+# 8. Public View
+
+The animation should also work in Public View.
+
+Example:
+
+```text
+Public View
+→ click Skills
+→ scroll
+→ Skills card briefly glows blue
+```
+
+This effect is navigation feedback, not an editing feature.
+
+It is safe to show for:
+
+* Talent owner
+* Public View
+* Client viewing Talent
+* logged-out visitor
+
+---
+
+# 9. Applications Privacy
+
+Applications remains owner-only.
+
+If Applications is hidden from Public View or Client view:
+
+* its nav tab must remain hidden
+* its section must remain hidden
+* no highlight should be possible for it
+
+Do not change the existing visibility logic.
+
+---
+
+# 10. More About Me
+
+If the previously added:
+
+```text
+More About Me
+```
+
+section exists in the mini-navigation, include it in the same animation behavior.
+
+Do not create separate highlight logic for it.
+
+---
+
+# 11. Values Alignment
+
+If Values Alignment appears in the mini navigation, it should also support the same brief section highlight.
+
+Keep its existing positioning and functionality.
+
+---
+
+# 12. Accessibility
+
+This animation is supplemental feedback.
+
+Do not rely on the glow alone to identify the active section.
+
+Keep the existing active mini-nav styling.
+
+Respect reduced-motion preferences.
+
+Recommended:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  transition-duration: 0ms;
+}
+```
+
+or Tailwind:
+
+```text
+motion-reduce:transition-none
+```
+
+If reduced motion is enabled, the section can receive the temporary border/ring without an animated fade.
+
+---
+
+# 13. Avoid Layout Shift
+
+The highlight must not change the section's dimensions.
+
+Do NOT use:
+
+```text
+border-4
+```
+
+if it changes card size.
+
+Prefer:
+
+```text
+ring
+box-shadow
+outline
+```
+
+or a border color change using the existing border width.
+
+There should be no page jumping when the highlight activates.
+
+---
+
+# 14. Smooth Scroll Offset
+
+Preserve the current sticky-header offset.
+
+The current logic already accounts for the profile navigation plus mini-nav height.
+
+Do not break this.
+
+When a user clicks:
+
+```text
+Skills
+```
+
+the Skills card heading should remain visible below the sticky mini navigation.
+
+The glow should not be hidden behind the sticky bar.
+
+---
+
+# 15. Suggested Animation
+
+Recommended duration:
+
+```text
+Scroll: browser smooth scroll
+Highlight fade in: 150–250ms
+Visible glow: ~800ms
+Fade out: 250–350ms
+
+Total:
+~1.2–1.5 seconds
+```
+
+Keep it understated.
+
+---
+
+# Recommended Implementation Example
+
+Conceptually:
+
+```tsx
+const [highlightedSectionId, setHighlightedSectionId] =
+  useState<string | null>(null);
+
+const highlightTimerRef = useRef<number | null>(null);
+
+function highlightSection(id: string) {
+  setHighlightedSectionId(id);
+
+  if (highlightTimerRef.current) {
+    window.clearTimeout(highlightTimerRef.current);
+  }
+
+  highlightTimerRef.current = window.setTimeout(() => {
+    setHighlightedSectionId(null);
+  }, 1400);
+}
+```
+
+Then:
+
+```tsx
+<Section
+  id="section-skills"
+  title="Skills"
+  icon={Star}
+  highlighted={highlightedSectionId === "section-skills"}
+>
+```
+
+Do the same for each reusable `Section`.
+
+---
+
+# Section Class Example
+
+A good subtle effect:
+
+```tsx
+className={[
+  "scroll-mt-28 rounded-2xl border bg-white",
+  "transition-[border-color,box-shadow] duration-300",
+  "motion-reduce:transition-none",
+  highlighted
+    ? "border-[#474ead]/60 ring-2 ring-[#474ead]/20 shadow-[0_0_22px_rgba(71,78,173,0.14)]"
+    : "border-slate-200/70 shadow-sm",
+].join(" ")}
+```
+
+Adjust according to existing dark-mode styles.
+
+---
+
+# Dark Mode
+
+Preserve dark-mode compatibility.
+
+For highlighted dark cards use something like:
+
+```text
+dark:border-indigo-400/50
+dark:ring-indigo-400/20
+```
+
+Do not create a bright white glow in dark mode.
+
+---
+
+# Acceptance Criteria
+
+## Contact Mini Navigation
+
+* [ ] Contact no longer appears in Talent Profile mini-navigation
+* [ ] Contact data itself is not deleted
+* [ ] Existing contact functionality remains intact
+* [ ] No empty gap remains where Contact tab was
+
+## Navigation Highlight
+
+* [ ] Clicking About scrolls to About and briefly highlights the About card
+* [ ] Clicking Skills scrolls to Skills and briefly highlights Skills
+* [ ] Experience works
+* [ ] Education works
+* [ ] Certifications works
+* [ ] Portfolio works
+* [ ] Preferences works
+* [ ] More About Me works if visible
+* [ ] Applications works when owner-visible
+* [ ] Values Alignment works if navigable
+* [ ] Highlight uses OnSpot blue/indigo
+* [ ] Highlight lasts roughly 1–1.5 seconds
+* [ ] Highlight fades smoothly
+* [ ] Highlight does not cause layout shift
+* [ ] Rapid clicking does not leave multiple cards highlighted
+* [ ] Manual scrolling does NOT trigger the glow
+* [ ] Active tab detection still works
+
+## Responsive
+
+* [ ] Works on desktop
+* [ ] Works on tablet
+* [ ] Works on mobile
+* [ ] Sticky mini-nav still works
+* [ ] Horizontal tab scrolling still works on narrow screens
+
+## Regression
+
+* [ ] Public View works
+* [ ] Client Talent view works
+* [ ] Talent owner editing works
+* [ ] Applications privacy remains correct
+* [ ] About formatting remains correct
+* [ ] More About Me remains correct
+* [ ] Resume remains removed from Talent Profile
+* [ ] No TypeScript errors
+* [ ] No console timer warnings
+
+---
+
+# Manual Test
+
+1. Open Talent Profile.
+2. Click **Skills** in the mini navigation.
+3. Verify page smoothly scrolls to Skills.
+4. Verify the entire Skills outer card gets a subtle blue border/glow.
+5. Verify glow disappears after roughly 1–1.5 seconds.
+6. Click **Experience** immediately afterward.
+7. Confirm Skills stops highlighting and Experience highlights instead.
+8. Manually scroll through the page.
+9. Confirm active mini-nav tab changes normally without triggering glow.
+10. Switch to Public View.
+11. Confirm the same navigation highlight works.
+12. Open profile as Client.
+13. Confirm navigation highlight works.
+14. Confirm Contact is absent from the mini navigation in every view.
+
+Keep this change polished, subtle, and consistent with OnSpot branding.

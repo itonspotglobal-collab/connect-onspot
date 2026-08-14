@@ -74,15 +74,27 @@ function Section({
   icon: Icon,
   children,
   action,
+  highlighted = false,
 }: {
   id?: string;
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
   action?: React.ReactNode;
+  highlighted?: boolean;
 }) {
   return (
-    <Card id={id} className="scroll-mt-28 rounded-2xl border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+    <Card
+      id={id}
+      className={[
+        "scroll-mt-28 rounded-2xl border bg-white",
+        "transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none",
+        "dark:bg-white/[0.03]",
+        highlighted
+          ? "border-[#474ead]/50 shadow-[0_0_22px_rgba(71,78,173,0.14)] ring-2 ring-[#474ead]/20 dark:border-indigo-400/50 dark:ring-indigo-400/20"
+          : "border-slate-200/70 shadow-sm dark:border-white/10",
+      ].join(" ")}
+    >
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
@@ -324,18 +336,25 @@ const SECTION_TABS = [
   { id: "section-applications", label: "Applications" },
   { id: "section-portfolio", label: "Portfolio" },
   { id: "section-preferences", label: "Preferences" },
-  { id: "section-contact",  label: "Contact" },
 ];
 
 // --nav-h is 80px (see index.css); tab bar renders at ~48px.
 const NAVBAR_H = 80;
 const TABBAR_H = 48;
 
-function SectionTabs({ visibleIds, navbarVisible }: { visibleIds: Set<string>; navbarVisible: boolean }) {
+function SectionTabs({
+  visibleIds,
+  navbarVisible,
+  onNavigate,
+}: {
+  visibleIds: Set<string>;
+  navbarVisible: boolean;
+  onNavigate?: (id: string) => void;
+}) {
   const [active, setActive] = useState("section-overview");
   const tabsRef = useRef<HTMLDivElement>(null);
 
-  // Track which section is in view
+  // Track which section is in view (scroll-driven only — no highlight triggered here)
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
     SECTION_TABS.forEach(({ id }) => {
@@ -364,6 +383,10 @@ function SectionTabs({ visibleIds, navbarVisible }: { visibleIds: Set<string>; n
     // Scroll tab button into view
     const btn = tabsRef.current?.querySelector(`[data-tab="${id}"]`);
     btn?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    // Fire highlight callback for click-only feedback
+    if (id !== "section-overview") {
+      onNavigate?.(id);
+    }
   }
 
   const tabs = SECTION_TABS.filter((t) => visibleIds.has(t.id));
@@ -663,6 +686,24 @@ export default function TalentProfile() {
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSkillsModal, setShowSkillsModal] = useState(false);
+
+  // ── Section highlight state (click-only feedback, not scroll-driven) ───────
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+
+  function handleSectionNavigate(id: string) {
+    setHighlightedSectionId(id);
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = window.setTimeout(() => {
+      setHighlightedSectionId(null);
+      highlightTimerRef.current = null;
+    }, 1400);
+  }
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => { if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     // Always restore the viewer's own auth session — do not gate it on which
@@ -1030,7 +1071,7 @@ export default function TalentProfile() {
       </div>
 
       {/* ── Section Tabs ── */}
-      <SectionTabs visibleIds={visibleSectionIds} navbarVisible={isNavbarVisible} />
+      <SectionTabs visibleIds={visibleSectionIds} navbarVisible={isNavbarVisible} onNavigate={handleSectionNavigate} />
 
       {/* ── Public View preview banner ── */}
       {isPublicPreview && (
@@ -1109,7 +1150,7 @@ export default function TalentProfile() {
           <div className="space-y-5">
 
             {/* About */}
-            <Section id="section-about" title="About" icon={User}>
+            <Section id="section-about" title="About" icon={User} highlighted={highlightedSectionId === "section-about"}>
               <EditField
                 label="Summary"
                 value={candidate.summary ?? ""}
@@ -1124,7 +1165,7 @@ export default function TalentProfile() {
 
             {/* More About Me — hidden for public visitors when empty */}
             {(canEdit || candidate.moreAboutMe?.trim()) && (
-              <Section id="section-more-about" title="More About Me" icon={BookOpen}>
+              <Section id="section-more-about" title="More About Me" icon={BookOpen} highlighted={highlightedSectionId === "section-more-about"}>
                 <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
                   A little more about how I work, what motivates me, and what I value.
                 </p>
@@ -1146,6 +1187,7 @@ export default function TalentProfile() {
               id="section-skills"
               title="Skills"
               icon={Star}
+              highlighted={highlightedSectionId === "section-skills"}
               action={canEdit ? (
                 <Button
                   size="sm"
@@ -1206,6 +1248,7 @@ export default function TalentProfile() {
               id="section-experience"
               title="Experience"
               icon={Briefcase}
+              highlighted={highlightedSectionId === "section-experience"}
               action={canEdit ? (
                 <Button
                   size="sm"
@@ -1253,6 +1296,7 @@ export default function TalentProfile() {
               id="section-education"
               title="Education"
               icon={BookOpen}
+              highlighted={highlightedSectionId === "section-education"}
               action={canEdit ? (
                 <Button
                   size="sm"
@@ -1296,6 +1340,7 @@ export default function TalentProfile() {
               id="section-certifications"
               title="Certifications"
               icon={Award}
+              highlighted={highlightedSectionId === "section-certifications"}
               action={canEdit ? (
                 <Button
                   size="sm"
@@ -1335,7 +1380,13 @@ export default function TalentProfile() {
             </Section>
 
             {/* Applications — private, only visible to authenticated owner (hidden in public preview) */}
-            {showPrivateOwnerSections && <ApplicationsSection candidateId={candidate.id} talentToken={talentAuth?.token} />}
+            {showPrivateOwnerSections && (
+              <ApplicationsSection
+                candidateId={candidate.id}
+                talentToken={talentAuth?.token}
+                highlighted={highlightedSectionId === "section-applications"}
+              />
+            )}
 
             {/* Culture alignment */}
             {culture && (
@@ -1400,7 +1451,7 @@ export default function TalentProfile() {
             </Card>
 
             {/* Preferences */}
-            <Section id="section-preferences" title="Preferences" icon={Globe2}>
+            <Section id="section-preferences" title="Preferences" icon={Globe2} highlighted={highlightedSectionId === "section-preferences"}>
               <PreferencesDisplay
                 prefs={prefs}
                 availability={candidate.availability ?? null}
@@ -1416,7 +1467,7 @@ export default function TalentProfile() {
             </Section>
 
             {/* Portfolio & Links */}
-            <Section id="section-portfolio" title="Portfolio & Links" icon={Link2}>
+            <Section id="section-portfolio" title="Portfolio & Links" icon={Link2} highlighted={highlightedSectionId === "section-portfolio"}>
               <div className="space-y-2">
                 <LinkField
                   icon={Linkedin}
@@ -1498,14 +1549,14 @@ export default function TalentProfile() {
 
 // ─── Applications Section (profile owner only) ────────────────────────────────
 
-function ApplicationsSection({ candidateId, talentToken }: { candidateId: string; talentToken?: string }) {
+function ApplicationsSection({ candidateId, talentToken, highlighted }: { candidateId: string; talentToken?: string; highlighted?: boolean }) {
   const [, navigate] = useLocation();
   const { data: applications, isLoading } = useTalentApplications();
 
   const apps = (applications ?? []).slice(0, 5);
 
   return (
-    <Section id="section-applications" title="Applications" icon={Briefcase}>
+    <Section id="section-applications" title="Applications" icon={Briefcase} highlighted={highlighted}>
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
