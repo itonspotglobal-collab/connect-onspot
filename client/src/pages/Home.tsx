@@ -1937,16 +1937,60 @@ const STEPS = [
 ];
 
 function ProcessSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       style={{
         background: "radial-gradient(55% 40% at 50% 0%, rgba(75,81,184,0.07), transparent 55%), #FCFCFB",
       }}
       className="px-6 sm:px-10 lg:px-16 xl:px-20 py-20 lg:py-28"
     >
+      {/* Keyframes injected once */}
+      <style>{`
+        @keyframes _card-in {
+          from { opacity: 0; transform: translateY(36px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+        @keyframes _icon-float {
+          0%, 100% { transform: translateY(0px);  }
+          50%       { transform: translateY(-7px); }
+        }
+        @keyframes _arrow-beat {
+          0%, 100% { transform: translateY(-50%) scale(1);    box-shadow: 0 4px 14px rgba(255,174,33,0.45); }
+          50%       { transform: translateY(-50%) scale(1.18); box-shadow: 0 8px 26px rgba(255,174,33,0.70); }
+        }
+        @keyframes _tagline-in {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        @keyframes _shimmer-sweep {
+          0%   { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        @keyframes _num-pop {
+          0%   { transform: scale(0.6); opacity: 0; }
+          70%  { transform: scale(1.08); }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+      `}</style>
+
       {/* ── Centered header ── */}
       <div className="mx-auto max-w-[680px] text-center mb-16">
-        {/* Eyebrow */}
         <div className="inline-flex items-center gap-2 mb-5">
           <span style={{ width: 20, height: 2, background: C.orange, display: "inline-block", flexShrink: 0 }} />
           <span className="font-bold uppercase tracking-[0.09em]" style={{ fontSize: "0.69rem", color: C.indigo }}>
@@ -1964,39 +2008,56 @@ function ProcessSection() {
         </p>
       </div>
 
-      {/* ── 3 step cards — centered grid ── */}
+      {/* ── 3 step cards ── */}
       <div className="mx-auto" style={{ maxWidth: 1160 }}>
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-7 mb-14">
           {STEPS.map((step, i) => {
             const Icon = step.icon;
+            const isHov = hovered === i;
             return (
-              <div key={i} className="relative">
-                {/* Orange circular arrow connector — between cards on desktop */}
+              <div
+                key={i}
+                className="relative"
+                style={{
+                  opacity: visible ? 1 : 0,
+                  animation: visible ? `_card-in 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 160}ms both` : "none",
+                }}
+              >
+                {/* Orange connector arrow */}
                 {i < 2 && (
                   <div
                     aria-hidden
                     className="hidden md:flex absolute z-10 items-center justify-center rounded-full"
                     style={{
-                      width: 38,
-                      height: 38,
-                      right: -19,
-                      top: "50%",
-                      transform: "translateY(-50%)",
+                      width: 38, height: 38,
+                      right: -19, top: "50%",
                       background: C.orange,
-                      boxShadow: "0 4px 14px rgba(255,174,33,0.45)",
+                      animation: visible ? `_arrow-beat 2s ease-in-out ${i * 160 + 700}ms infinite` : "none",
+                      transform: "translateY(-50%)",
                     }}
                   >
                     <ArrowRight className="h-4 w-4" style={{ color: C.indigoDeep }} />
                   </div>
                 )}
+
+                {/* Card */}
                 <div
                   className="rounded-[20px] h-full flex flex-col"
+                  onMouseEnter={() => setHovered(i)}
+                  onMouseLeave={() => setHovered(null)}
                   style={{
                     padding: "30px 30px 28px",
-                    background: "white",
-                    border: "1px solid #E2E6F0",
-                    boxShadow: "0 4px 22px rgba(75,81,184,0.07)",
+                    background: isHov
+                      ? "linear-gradient(160deg, #fafbff 0%, #f4f5ff 100%)"
+                      : "white",
+                    border: isHov ? "1px solid #c4c8f0" : "1px solid #E2E6F0",
+                    boxShadow: isHov
+                      ? "0 16px 48px rgba(75,81,184,0.16), 0 2px 8px rgba(75,81,184,0.08)"
+                      : "0 4px 22px rgba(75,81,184,0.07)",
+                    transform: isHov ? "translateY(-6px) scale(1.012)" : "translateY(0) scale(1)",
+                    transition: "transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease",
                     minHeight: 260,
+                    cursor: "default",
                   }}
                 >
                   {/* Icon + step number */}
@@ -2004,18 +2065,30 @@ function ProcessSection() {
                     <div
                       className="flex items-center justify-center flex-shrink-0"
                       style={{
-                        width: 50,
-                        height: 50,
+                        width: 50, height: 50,
                         borderRadius: 13,
-                        background: "linear-gradient(145deg, #5560CC 0%, #3B45A8 100%)",
-                        boxShadow: "0 6px 18px rgba(75,81,184,0.3)",
+                        background: isHov
+                          ? "linear-gradient(145deg, #6672e0 0%, #4752c4 100%)"
+                          : "linear-gradient(145deg, #5560CC 0%, #3B45A8 100%)",
+                        boxShadow: isHov
+                          ? "0 8px 28px rgba(75,81,184,0.45)"
+                          : "0 6px 18px rgba(75,81,184,0.3)",
+                        transition: "box-shadow 0.3s ease, background 0.3s ease",
+                        animation: visible ? `_icon-float ${2.2 + i * 0.4}s ease-in-out ${i * 200}ms infinite` : "none",
                       }}
                     >
                       <Icon className="h-[22px] w-[22px] text-white" />
                     </div>
                     <span
                       className="font-bold tabular-nums"
-                      style={{ fontSize: "3.6rem", color: "#E8EAF5", letterSpacing: "-0.04em", lineHeight: 1 }}
+                      style={{
+                        fontSize: "3.6rem",
+                        color: isHov ? "#d0d4f5" : "#E8EAF5",
+                        letterSpacing: "-0.04em",
+                        lineHeight: 1,
+                        transition: "color 0.3s ease",
+                        animation: visible ? `_num-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i * 160 + 200}ms both` : "none",
+                      }}
                     >
                       {step.num}
                     </span>
@@ -2046,9 +2119,30 @@ function ProcessSection() {
         </div>
 
         {/* ── Bottom statement ── */}
-        <p className="text-center font-bold" style={{ fontSize: "clamp(1rem, 1.4vw, 1.08rem)", color: C.charcoal }}>
+        <p
+          className="text-center font-bold"
+          style={{
+            fontSize: "clamp(1rem, 1.4vw, 1.08rem)",
+            color: C.charcoal,
+            opacity: visible ? 1 : 0,
+            animation: visible ? "_tagline-in 0.7s ease 640ms both" : "none",
+          }}
+        >
           That's it.{" "}
-          <span className="font-bold" style={{ color: C.indigo }}>
+          <span
+            style={{
+              fontWeight: 800,
+              background: visible
+                ? "linear-gradient(90deg, #3F4698 0%, #7b82d4 30%, #FFAE21 60%, #3F4698 100%)"
+                : "none",
+              backgroundSize: "300% auto",
+              WebkitBackgroundClip: visible ? "text" : "unset",
+              WebkitTextFillColor: visible ? "transparent" : C.indigo,
+              backgroundClip: visible ? "text" : "unset",
+              animation: visible ? "_shimmer-sweep 3.5s linear 1.2s infinite" : "none",
+              display: "inline",
+            }}
+          >
             Most roles are filled in days, not months.
           </span>
         </p>
