@@ -252,6 +252,13 @@ export default function PortalLogin() {
       return;
     }
 
+    // If the user arrived here from a protected page (e.g. the job apply gate),
+    // honour the returnTo param so they land back where they started.
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+
     navigate(result.redirectTo);
   }
 
@@ -276,7 +283,7 @@ export default function PortalLogin() {
         return;
       }
       toast({ title: "Password created!", description: `Welcome, ${result.auth.fullName}!` });
-      navigate(result.redirectTo);
+      navigate(returnTo || result.redirectTo);
     } finally {
       setSetupLoading(false);
     }
