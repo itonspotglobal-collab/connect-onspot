@@ -1,0 +1,1300 @@
+# Update Job Application Flow — Make Resume Attachment Configurable Per Job
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Implement a job-level setting that allows Admin to decide whether applicants are required to attach a Resume/CV.
+
+The current application form always includes CV / Resume in Step 2 and currently treats it as required.
+
+Change this behavior so Resume is controlled by the individual job posting.
+
+There are two main requirements:
+
+1. For now, new jobs should **NOT require a resume by default**.
+2. In Admin Create/Edit Job, provide a toggle allowing Admin to enable or disable Resume attachment for each role.
+
+Do not remove resume infrastructure globally.
+
+---
+
+# Existing Architecture to Reuse
+
+Before coding, inspect:
+
+```text
+client/src/pages/JobApplyPage.tsx
+client/src/pages/JobFormPage.tsx
+client/src/components/JobFormModal.tsx
+shared/schema.ts
+server/storage.ts
+server routes for:
+  /api/admin/jobs
+  /api/jobs/:jobId/apply
+```
+
+Also search for:
+
+```text
+requiresVideoIntro
+resume
+resumeUrl
+cvFile
+cv_upload_failed
+multer
+jobApplications
+```
+
+The project already has a very similar job-level option:
+
+```ts
+requiresVideoIntro
+```
+
+Use that implementation as the pattern for the new Resume requirement.
+
+Do not build a separate configuration system.
+
+---
+
+# FEATURE 1 — Add `requiresResume` to Job Posting
+
+Add a new boolean field to Jobs.
+
+Preferred field name:
+
+```ts
+requiresResume
+```
+
+Database naming should follow the project's existing conventions.
+
+Example:
+
+```ts
+requiresResume: boolean("requires_resume").default(false)
+```
+
+Adapt to the actual Drizzle/schema syntax already used.
+
+---
+
+# Default Behavior
+
+The default must be:
+
+```ts
+requiresResume = false
+```
+
+This is important.
+
+For new job postings, Resume should NOT be required unless Admin explicitly enables it.
+
+Existing jobs should also safely behave as:
+
+```ts
+false
+```
+
+when the field is null/missing from legacy records.
+
+Use defensive code such as:
+
+```ts
+job.requiresResume ?? false
+```
+
+where appropriate.
+
+---
+
+# Database Migration
+
+If the Jobs table needs a schema migration:
+
+Add the boolean column safely.
+
+Suggested behavior:
+
+```sql
+requires_resume BOOLEAN NOT NULL DEFAULT FALSE
+```
+
+Do not recreate or drop the jobs table.
+
+Do not affect existing job data.
+
+---
+
+# FEATURE 2 — Admin Create/Edit Job Toggle
+
+Update the Admin job creation/edit page:
+
+```text
+/admin/find-work/jobs/new
+```
+
+and the corresponding Edit Job flow.
+
+The screenshot shows Step 3:
+
+```text
+Requirements
+```
+
+Add the Resume requirement control in this step.
+
+There is already a Video Introduction requirement control in this area.
+
+Place the new Resume toggle near that control.
+
+---
+
+# Recommended UI
+
+Use the same visual pattern as:
+
+```text
+Require video introduction
+```
+
+Add:
+
+```text
+Require resume / CV
+```
+
+Supporting copy:
+
+```text
+Applicants must attach a resume or CV before they can submit this application.
+```
+
+When OFF:
+
+```text
+Resume attachment will not be requested for this role.
+```
+
+Use a checkbox/toggle consistent with the existing Requirements page.
+
+Do not introduce a visually unrelated component.
+
+---
+
+# Suggested Order
+
+Near the bottom of Requirements:
+
+```text
+Application Requirements
+
+[ ] Require resume / CV
+    Applicants must attach a resume or CV to apply.
+
+[ ] Require video introduction
+    Applicants must upload a short video introduction.
+```
+
+If the existing Video Introduction control already has a card-style layout, reuse that exact layout.
+
+---
+
+# Job Form State
+
+Update:
+
+```text
+client/src/components/JobFormModal.tsx
+```
+
+The current `defaultFormData` contains:
+
+```ts
+requiresVideoIntro: false
+```
+
+Add:
+
+```ts
+requiresResume: false
+```
+
+Example:
+
+```ts
+// Require resume/CV from applicants
+requiresResume: false,
+
+// Require video introduction from applicants
+requiresVideoIntro: false,
+```
+
+---
+
+# Edit Job Population
+
+Update:
+
+```ts
+jobToFormData(job)
+```
+
+so existing/editing jobs populate the Resume toggle.
+
+Example:
+
+```ts
+requiresResume: (job as any).requiresResume ?? false,
+```
+
+This ensures legacy jobs without the field do not accidentally require resumes.
+
+---
+
+# Create / Update Payload
+
+Ensure `requiresResume` is included when:
+
+* creating a new job
+* updating an existing job
+
+Do not only store it in frontend state.
+
+It must persist to the Jobs database.
+
+Test:
+
+```text
+Create Job → Resume OFF
+Save
+Edit Job
+Resume remains OFF
+```
+
+and:
+
+```text
+Create Job → Resume ON
+Save
+Edit Job
+Resume remains ON
+```
+
+---
+
+# FEATURE 3 — Update Talent Application Step 2
+
+Current application Step 2 appears similar to:
+
+```text
+Your CV & documents
+
+CV / Resume *
+[ saved resume / upload ]
+
+Video Introduction *
+[ upload ]
+```
+
+Update this dynamically based on the job configuration.
+
+---
+
+# Resume OFF Behavior
+
+When:
+
+```ts
+job.requiresResume === false
+```
+
+the application should NOT ask the applicant for a Resume.
+
+Completely remove/hide the Resume upload UI from Step 2.
+
+Do not show:
+
+```text
+CV / Resume
+```
+
+Do not show:
+
+```text
+Your saved resume will be submitted
+```
+
+Do not show:
+
+```text
+Replace
+```
+
+Do not show:
+
+```text
+Upload Resume
+```
+
+Do not show a required indicator.
+
+The applicant should not need a resume to continue or submit.
+
+---
+
+# Resume ON Behavior
+
+When:
+
+```ts
+job.requiresResume === true
+```
+
+preserve the current Resume behavior.
+
+Show:
+
+```text
+CV / Resume *
+```
+
+If the authenticated Talent already has a saved resume:
+
+```text
+legaspi_resume.pdf
+From your Talent profile
+
+Replace
+```
+
+Continue supporting the existing saved-resume behavior.
+
+Also allow the applicant to replace it with another file if that is already supported.
+
+---
+
+# Step 2 Title
+
+The current heading may say:
+
+```text
+Your CV & documents
+```
+
+That becomes inaccurate when Resume is disabled.
+
+Make the Step 2 heading dynamic.
+
+Recommended logic:
+
+### Resume + Video required
+
+```text
+Your documents
+```
+
+or:
+
+```text
+Resume & Video Introduction
+```
+
+### Resume only
+
+```text
+Your CV & Resume
+```
+
+### Video only
+
+```text
+Video Introduction
+```
+
+### Neither required
+
+Do not show an empty Step 2.
+
+See the next requirement.
+
+---
+
+# FEATURE 4 — Skip Step 2 When Nothing Is Required
+
+If:
+
+```ts
+requiresResume === false
+&&
+requiresVideoIntro === false
+```
+
+there is no reason to show an empty Resume/Documents step.
+
+Skip Step 2 entirely.
+
+Recommended application flow:
+
+```text
+1 Review
+2 Confirm
+```
+
+instead of:
+
+```text
+1 Review
+2 Resume
+3 Confirm
+```
+
+---
+
+# Dynamic Application Steps
+
+Build the steps based on job requirements.
+
+Conceptually:
+
+```ts
+const requiresResume = !!job.requiresResume;
+const requiresVideoIntro = !!job.requiresVideoIntro;
+
+const requiresDocuments =
+  requiresResume || requiresVideoIntro;
+```
+
+Then:
+
+```text
+If requiresDocuments:
+Review → Documents → Confirm
+
+If not:
+Review → Confirm
+```
+
+Do not leave a blank Step 2 in the process.
+
+---
+
+# If Only Video Is Required
+
+Example:
+
+```ts
+requiresResume = false
+requiresVideoIntro = true
+```
+
+Step 2 should show only:
+
+```text
+Video Introduction *
+
+This position requires a short video introduction.
+
+[ Upload your video introduction ]
+```
+
+No resume-related text should appear.
+
+---
+
+# If Only Resume Is Required
+
+Example:
+
+```ts
+requiresResume = true
+requiresVideoIntro = false
+```
+
+Step 2 should show only:
+
+```text
+CV / Resume *
+
+[ saved resume / upload ]
+```
+
+No video upload UI should appear.
+
+---
+
+# If Both Are Required
+
+Show both:
+
+```text
+CV / Resume *
+
+Video Introduction *
+```
+
+Preserve the existing validation/file behavior.
+
+---
+
+# FEATURE 5 — Update Resume Validation
+
+Current application validation appears to require:
+
+```ts
+!!cvFile
+```
+
+globally.
+
+Change it so Resume validation is conditional.
+
+Conceptually:
+
+```ts
+if (requiresResume && !resolvedResume) {
+  setCvError("CV / Resume is required");
+}
+```
+
+Successful validation should be:
+
+```ts
+const resumeValid =
+  !requiresResume || hasResume;
+
+const videoValid =
+  !requiresVideoIntro || !!videoFile;
+
+return fieldsValid && resumeValid && videoValid;
+```
+
+Use the actual current application implementation.
+
+---
+
+# Important: Saved Talent Resume Counts
+
+For authenticated Talent accounts, there may already be a Resume stored in the Talent profile.
+
+If Resume is required and the application UI shows:
+
+```text
+legaspi_resume.pdf
+From your Talent profile
+```
+
+then that saved Resume counts as satisfying the Resume requirement.
+
+Do not force the Talent to re-upload the same Resume.
+
+The existing saved-resume logic should continue working.
+
+---
+
+# Resume Resolution
+
+Conceptually, Resume requirement can be satisfied by either:
+
+```text
+newly uploaded resume
+OR
+existing valid Talent profile resume
+```
+
+Depending on how the current application page stores this state.
+
+Do not simply check:
+
+```ts
+!!cvFile
+```
+
+if the app already supports using the Talent's saved Resume without a new `File`.
+
+Instead derive something like:
+
+```ts
+const hasResume =
+  !!cvFile || !!existingTalentResume;
+```
+
+Use the actual current state implementation.
+
+---
+
+# FEATURE 6 — Update Submission Payload
+
+When Resume is NOT required and no Resume is selected:
+
+Do NOT append a fake or empty Resume field.
+
+Example:
+
+```ts
+if (resumeFile) {
+  formData.append("resume", resumeFile);
+}
+```
+
+not:
+
+```ts
+formData.append("resume", undefined);
+```
+
+Do not generate placeholder files.
+
+---
+
+# Backend Application Endpoint
+
+Update:
+
+```text
+POST /api/jobs/:jobId/apply
+```
+
+The server must enforce the job configuration.
+
+This is critical.
+
+Do not rely only on frontend validation.
+
+---
+
+# Backend Validation Rule
+
+First fetch/resolve the job.
+
+Then determine:
+
+```ts
+const requiresResume = job.requiresResume ?? false;
+```
+
+If:
+
+```ts
+requiresResume === true
+```
+
+the application must have a valid Resume source.
+
+If:
+
+```ts
+requiresResume === false
+```
+
+the application must be accepted without a Resume.
+
+---
+
+# Existing Talent Saved Resume
+
+If the backend already supports copying/linking the authenticated Talent's saved Resume into an application, preserve that behavior.
+
+If the job requires Resume:
+
+```text
+uploaded application resume
+OR
+existing Talent profile resume
+```
+
+should satisfy the requirement, according to the existing application architecture.
+
+Do not break currently working profile-resume reuse.
+
+---
+
+# Anonymous Applicant Behavior
+
+For signed-out applicants, there is no Talent profile resume available.
+
+Therefore:
+
+### Resume required
+
+Anonymous applicant must upload a Resume.
+
+### Resume not required
+
+Anonymous applicant can submit without a Resume.
+
+Preserve existing:
+
+* Talent account creation flow
+* continuation tokens
+* email detection
+* sign-in-required behavior
+* account-conflict behavior
+
+---
+
+# Multer / Upload Middleware
+
+Inspect how the application endpoint currently handles:
+
+```text
+resume
+video
+```
+
+If `resume` is configured as a mandatory Multer file before the route handler executes, change it so the upload field itself is technically optional.
+
+Then enforce requirement **after loading the Job**, based on:
+
+```ts
+job.requiresResume
+```
+
+For example, middleware may accept:
+
+```ts
+resume: maxCount 1
+video: maxCount 1
+```
+
+without requiring either.
+
+Business validation belongs in the route.
+
+---
+
+# Error Response
+
+If Resume is required but missing, return a clean validation error.
+
+Example:
+
+```json
+{
+  "error": "resume_required",
+  "message": "A resume or CV is required for this position."
+}
+```
+
+Frontend should display the error under the Resume upload field.
+
+Do not return a generic 500 error.
+
+---
+
+# Existing `cv_upload_failed`
+
+Preserve existing:
+
+```text
+cv_upload_failed
+```
+
+handling for actual upload failures.
+
+Differentiate:
+
+```text
+resume_required
+```
+
+from:
+
+```text
+cv_upload_failed
+```
+
+One means no required file/source exists.
+
+The other means the upload process failed.
+
+---
+
+# FEATURE 7 — Admin Edit Job
+
+The Resume requirement toggle must work on both:
+
+```text
+/admin/find-work/jobs/new
+```
+
+and:
+
+```text
+/admin/find-work/jobs/:id/edit
+```
+
+or whatever current edit route is used.
+
+When editing:
+
+```text
+Require resume / CV: ON
+```
+
+must reflect the saved job value.
+
+Admin can switch:
+
+```text
+ON → OFF
+```
+
+or:
+
+```text
+OFF → ON
+```
+
+and save.
+
+Future applications should immediately follow the updated requirement.
+
+Do not modify already-submitted applications.
+
+---
+
+# Existing Applications
+
+Changing the job requirement later must NOT delete Resume data from old applications.
+
+Example:
+
+1. Job requires Resume.
+2. Applicant submits Resume.
+3. Admin disables Resume requirement.
+4. Existing application Resume remains available to Admin.
+
+The toggle affects what is required for **new submissions**, not historical application data.
+
+---
+
+# FEATURE 8 — Review Step in Admin Job Form
+
+In the Admin job creation Review step, show the application requirements if the current Review UI lists job settings.
+
+Recommended:
+
+```text
+Application requirements
+
+Resume / CV: Required
+Video introduction: Not required
+```
+
+or use badges:
+
+```text
+Resume Required
+Video Optional
+```
+
+Only add this if the Review step already has a natural configuration summary area.
+
+Do not clutter or redesign the Review step solely for this.
+
+---
+
+# Public Job Details
+
+Optional but recommended:
+
+If the public job details page currently indicates application requirements, show:
+
+```text
+Resume required
+```
+
+only when:
+
+```ts
+requiresResume === true
+```
+
+Do not show:
+
+```text
+Resume not required
+```
+
+unless the current design already lists application requirements.
+
+This is secondary to the application behavior itself.
+
+---
+
+# IMPORTANT DEFAULT FOR CURRENT PRODUCT REQUIREMENT
+
+Because the immediate goal is:
+
+> remove Resume from the application form for the meantime
+
+the new default must be:
+
+```ts
+requiresResume: false
+```
+
+Once this implementation is deployed, new jobs should not ask for Resume unless Admin turns it on.
+
+For legacy jobs without a stored value, interpret them as:
+
+```ts
+false
+```
+
+Do not automatically treat old jobs as Resume-required.
+
+---
+
+# Do Not Remove Resume Infrastructure
+
+Even though Resume will normally be OFF for now, do NOT remove:
+
+* Talent profile resume upload/setup
+* candidate resume storage
+* application Resume columns
+* Admin Resume view/download
+* file upload services
+* object storage
+* resume APIs
+* resume filename fields
+* historical application attachments
+
+We are making Resume **optional per job**, not deleting the feature.
+
+---
+
+# Recommended Schema / Form Pattern
+
+Follow the existing `requiresVideoIntro` architecture.
+
+Conceptually:
+
+```ts
+// Job
+requiresResume: boolean(...).default(false)
+requiresVideoIntro: boolean(...).default(false)
+```
+
+Frontend form state:
+
+```ts
+requiresResume: false,
+requiresVideoIntro: false,
+```
+
+Edit mapping:
+
+```ts
+requiresResume: job.requiresResume ?? false,
+requiresVideoIntro: job.requiresVideoIntro ?? false,
+```
+
+Application:
+
+```ts
+const requiresResume = job.requiresResume ?? false;
+const requiresVideoIntro = job.requiresVideoIntro ?? false;
+```
+
+Keep both features parallel and easy to understand.
+
+---
+
+# Suggested Admin UI
+
+In Step 3 — Requirements, create an **Application Requirements** group near the existing Video Introduction toggle.
+
+Example:
+
+```text
+APPLICATION REQUIREMENTS
+
+□ Require resume / CV
+
+  Applicants must attach a resume or CV before
+  submitting their application.
+
+□ Require video introduction
+
+  Applicants must upload a short video introduction
+  for this position.
+```
+
+Use the project's existing purple/violet active-state styling.
+
+---
+
+# Application UI Examples
+
+## Scenario A — Neither Required
+
+Job:
+
+```text
+Resume: OFF
+Video: OFF
+```
+
+Application:
+
+```text
+Review
+   ↓
+Confirm
+```
+
+No Step 2.
+
+---
+
+## Scenario B — Video Only
+
+Job:
+
+```text
+Resume: OFF
+Video: ON
+```
+
+Application:
+
+```text
+Review
+   ↓
+Documents
+
+Video Introduction *
+[ Upload ]
+
+   ↓
+Confirm
+```
+
+---
+
+## Scenario C — Resume Only
+
+Job:
+
+```text
+Resume: ON
+Video: OFF
+```
+
+Application:
+
+```text
+Review
+   ↓
+Documents
+
+CV / Resume *
+[ Saved resume / Upload ]
+
+   ↓
+Confirm
+```
+
+---
+
+## Scenario D — Both
+
+Job:
+
+```text
+Resume: ON
+Video: ON
+```
+
+Application:
+
+```text
+Review
+   ↓
+Documents
+
+CV / Resume *
+[ Saved resume / Upload ]
+
+Video Introduction *
+[ Upload ]
+
+   ↓
+Confirm
+```
+
+---
+
+# Files Likely Requiring Changes
+
+At minimum inspect/update:
+
+```text
+shared/schema.ts
+
+client/src/components/JobFormModal.tsx
+client/src/pages/JobFormPage.tsx
+client/src/pages/JobApplyPage.tsx
+
+server/storage.ts
+server routes handling Admin jobs
+server routes handling POST /api/jobs/:jobId/apply
+
+database migration files
+```
+
+There may also be:
+
+```text
+client/src/pages/AdminFindWork.tsx
+client/src/pages/AdminJobs.tsx
+client/src/pages/JobDetailsPage.tsx
+```
+
+Only modify these if they actually participate in the current job form/data flow.
+
+---
+
+# Acceptance Criteria
+
+## Admin Job Create/Edit
+
+* [ ] Admin sees `Require resume / CV` option
+* [ ] Toggle defaults OFF for new jobs
+* [ ] Toggle is available during Create Job
+* [ ] Toggle is available during Edit Job
+* [ ] Saved OFF value persists
+* [ ] Saved ON value persists
+* [ ] Edit mode reflects the existing value
+* [ ] Legacy jobs default safely to OFF
+* [ ] Video Introduction toggle continues working
+
+## Application — Resume OFF
+
+* [ ] Resume field does not appear
+* [ ] Saved Talent resume card does not appear
+* [ ] Replace Resume action does not appear
+* [ ] Resume validation does not run
+* [ ] Applicant can continue without Resume
+* [ ] Applicant can submit without Resume
+* [ ] Backend accepts submission without Resume
+
+## Application — Resume ON
+
+* [ ] Resume field appears
+* [ ] Resume is marked required
+* [ ] Saved Talent Resume can satisfy requirement
+* [ ] Applicant can replace saved Resume
+* [ ] Anonymous applicant must upload Resume
+* [ ] Frontend blocks missing Resume
+* [ ] Backend also blocks missing Resume
+
+## Dynamic Steps
+
+* [ ] Resume OFF + Video OFF skips documents step
+* [ ] Resume OFF + Video ON shows only Video
+* [ ] Resume ON + Video OFF shows only Resume
+* [ ] Resume ON + Video ON shows both
+* [ ] Step numbers remain correct
+* [ ] Back/Continue navigation remains correct
+* [ ] Confirm page remains correct
+
+## Regression
+
+* [ ] Existing application submission still works
+* [ ] Talent application ownership still works
+* [ ] Talent Application List still works
+* [ ] Admin Job Applications still works
+* [ ] Historical Resume attachments remain accessible
+* [ ] Video Introduction upload still works
+* [ ] Account signup/sign-in continuation still works
+* [ ] Client/Admin application guards still work
+* [ ] Job Create/Edit still works
+* [ ] TypeScript/build checks pass
+
+---
+
+# Manual Test Plan
+
+### Test 1 — New job, Resume OFF
+
+1. Go to `/admin/find-work/jobs/new`.
+2. Create a job.
+3. Leave `Require resume / CV` OFF.
+4. Leave Video Introduction OFF.
+5. Publish/save.
+6. Open the job as Talent.
+7. Click Apply.
+8. Confirm there is no Resume/Documents step.
+9. Complete application.
+10. Confirm submission succeeds.
+
+### Test 2 — Resume ON
+
+1. Create another job.
+2. Turn `Require resume / CV` ON.
+3. Leave Video OFF.
+4. Apply as Talent with an existing saved Resume.
+5. Confirm Step 2 shows the saved Resume.
+6. Submit without uploading another Resume.
+7. Confirm success.
+
+### Test 3 — Missing required Resume
+
+1. Open Resume-required job as applicant without a saved Resume.
+2. Attempt to continue/submit without Resume.
+3. Confirm frontend validation blocks submission.
+4. Confirm direct API submission without Resume is also rejected.
+
+### Test 4 — Video only
+
+1. Set Resume OFF.
+2. Set Video ON.
+3. Apply.
+4. Confirm Step 2 contains only Video Introduction.
+5. Confirm there is no Resume UI.
+6. Upload Video and submit successfully.
+
+### Test 5 — Both required
+
+1. Set Resume ON.
+2. Set Video ON.
+3. Apply.
+4. Confirm Step 2 contains both fields.
+5. Confirm both are required.
+
+### Test 6 — Edit existing job
+
+1. Edit a Resume-OFF job.
+2. Turn Resume ON.
+3. Save.
+4. Reopen Edit.
+5. Confirm it remains ON.
+6. Start a new application and confirm Resume is now required.
+
+---
+
+# Final Implementation Rule
+
+The desired model is:
+
+```text
+Job Configuration
+      ↓
+requiresResume
+requiresVideoIntro
+      ↓
+Application Form
+      ↓
+Show only required documents
+      ↓
+Backend validates the same rules
+```
+
+Do not make Resume globally required anymore.
+
+Do not make Resume globally unavailable either.
+
+Resume must now be a **per-job application requirement controlled by Admin**.

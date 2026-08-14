@@ -1008,6 +1008,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  budget/salary migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: requires_resume field ──────────────────────────
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_resume boolean NOT NULL DEFAULT false`);
+    console.log("✅ Migration: requires_resume column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  requires_resume migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: video introduction fields ──────────────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_video_intro boolean NOT NULL DEFAULT false`);
@@ -9300,10 +9308,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (_) { /* token absent or invalid — continue as public applicant */ }
 
-      // ── CV validation (required for new submissions; optional when reusing profile resume) ──
+      // ── CV validation (required only when job.requiresResume === true) ──────────
       const cvFile = files?.["resume"]?.[0];
-      if (!cvFile && !useProfileResume) {
-        return res.status(400).json({ error: "CV / Resume is required. Please upload a PDF, DOC, or DOCX file." });
+      const requiresResume = !!(job as any).requiresResume;
+      if (requiresResume && !cvFile && !useProfileResume) {
+        return res.status(400).json({ error: "resume_required", message: "A resume or CV is required for this position." });
       }
       if (cvFile) {
         const allowedCvMimes = [

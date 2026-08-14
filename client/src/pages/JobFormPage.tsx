@@ -762,32 +762,63 @@ function RequirementsStep({
 
       <FieldDivider />
 
-      {/* Video introduction toggle */}
-      <label
-        className={`flex cursor-pointer items-start gap-3 p-4 rounded-xl border-[1.5px] transition-colors ${
-          formData.requiresVideoIntro
-            ? "border-violet-400 bg-violet-50/50 dark:bg-violet-950/20"
-            : "border-border hover:border-violet-300"
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={formData.requiresVideoIntro}
-          onChange={e => updateField("requiresVideoIntro", e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-violet-600 flex-none"
-        />
-        <span>
-          <span className="flex items-center gap-1.5 text-sm font-semibold">
-            <Video className="w-4 h-4 text-violet-600" />
-            Video introduction
+      {/* Application requirements group */}
+      <div className="space-y-3">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Application Requirements</p>
+
+        {/* Resume / CV toggle */}
+        <label
+          className={`flex cursor-pointer items-start gap-3 p-4 rounded-xl border-[1.5px] transition-colors ${
+            formData.requiresResume
+              ? "border-violet-400 bg-violet-50/50 dark:bg-violet-950/20"
+              : "border-border hover:border-violet-300"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={formData.requiresResume}
+            onChange={e => updateField("requiresResume", e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-violet-600 flex-none"
+          />
+          <span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              Require resume / CV
+            </span>
+            <span className="text-xs text-muted-foreground mt-0.5 block">
+              {formData.requiresResume
+                ? "Applicants must attach a resume or CV before they can submit this application."
+                : "Resume attachment will not be requested for this role."}
+            </span>
           </span>
-          <span className="text-xs text-muted-foreground mt-0.5 block">
-            {formData.requiresVideoIntro
-              ? "Applicants must upload a short video introduction (MP4, MOV, or WebM · max 200 MB) to submit their application."
-              : "Require applicants to submit a video introduction when applying for this role."}
+        </label>
+
+        {/* Video introduction toggle */}
+        <label
+          className={`flex cursor-pointer items-start gap-3 p-4 rounded-xl border-[1.5px] transition-colors ${
+            formData.requiresVideoIntro
+              ? "border-violet-400 bg-violet-50/50 dark:bg-violet-950/20"
+              : "border-border hover:border-violet-300"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={formData.requiresVideoIntro}
+            onChange={e => updateField("requiresVideoIntro", e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-violet-600 flex-none"
+          />
+          <span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <Video className="w-4 h-4 text-violet-600" />
+              Video introduction
+            </span>
+            <span className="text-xs text-muted-foreground mt-0.5 block">
+              {formData.requiresVideoIntro
+                ? "Applicants must upload a short video introduction (MP4, MOV, or WebM · max 200 MB) to submit their application."
+                : "Require applicants to submit a video introduction when applying for this role."}
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+      </div>
     </div>
   );
 }
@@ -1206,6 +1237,7 @@ export default function JobFormPage() {
       jobLevel: formData.jobLevel.trim() || null,
       isFeatured: formData.isFeatured,
       urgentlyHiring: formData.urgentlyHiring,
+      requiresResume: formData.requiresResume,
       requiresVideoIntro: formData.requiresVideoIntro,
 
       compensationType: formData.compensationType || null,

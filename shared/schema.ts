@@ -194,6 +194,7 @@ export const jobs = pgTable("jobs", {
   hasEquity: boolean("has_equity").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),
   isCompanyConfidential: boolean("is_company_confidential").notNull().default(false),
+  requiresResume: boolean("requires_resume").notNull().default(false),
   requiresVideoIntro: boolean("requires_video_intro").notNull().default(false),
   applicationQuestions: jsonb("application_questions"), // [{ id, label, type, required, options? }]
   confidentialClientOverview: text("confidential_client_overview"), // public-safe description shown when isCompanyConfidential = true

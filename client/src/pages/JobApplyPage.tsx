@@ -243,6 +243,7 @@ export default function JobApplyPage() {
     enabled: !!jobId,
   });
 
+  const requiresResume = !!(job as any)?.requiresResume;
   const requiresVideoIntro = !!(job as any)?.requiresVideoIntro;
 
   // ── Mount: detect talent portal session ───────────────────────────────────
@@ -369,14 +370,15 @@ export default function JobApplyPage() {
   /** True when this application is via a Talent Portal session. */
   const hasTalentSession = !!talentSession && !!candidateData;
 
-  /** Wizard steps (computed, excluding "questions" when there are none) */
+  /** Wizard steps (computed, excluding "questions" when there are none, and "resume" when neither doc is required) */
+  const requiresDocuments = requiresResume || requiresVideoIntro;
   const wizardSteps = (() => {
     const steps: { key: WizardStep; label: string }[] = [
       { key: "review", label: "Review" },
     ];
     const questions: ApplicationQuestion[] = prefillData?.job?.questions ?? [];
     if (questions.length > 0) steps.push({ key: "questions", label: "Questions" });
-    steps.push({ key: "resume", label: "Resume" });
+    if (requiresDocuments) steps.push({ key: "resume", label: "Documents" });
     steps.push({ key: "confirm", label: "Confirm" });
     return steps;
   })();
@@ -460,7 +462,7 @@ export default function JobApplyPage() {
     setErrors(next);
 
     const hasResume = useExistingResume || (cvFile && cvState === "ready");
-    if (!hasResume) setCvError("CV / Resume is required");
+    if (requiresResume && !hasResume) setCvError("CV / Resume is required");
     else setCvError(null);
 
     const hasVideo = useExistingVideo || (videoFile && videoState === "ready");
@@ -492,7 +494,7 @@ export default function JobApplyPage() {
 
     return (
       Object.keys(next).length === 0 &&
-      !!hasResume &&
+      (!requiresResume || !!hasResume) &&
       (!requiresVideoIntro || !!(useExistingVideo || (videoFile && videoState === "ready")))
     );
   };
@@ -510,7 +512,7 @@ export default function JobApplyPage() {
 
   const validateResume = () => {
     const hasResume = useExistingResume || (cvFile && cvState === "ready");
-    if (!hasResume) {
+    if (requiresResume && !hasResume) {
       setCvError("CV / Resume is required");
       return false;
     }
@@ -534,10 +536,12 @@ export default function JobApplyPage() {
   const advanceWizard = () => {
     if (wizardStep === "review") {
       if (jobQuestions.length > 0) setWizardStep("questions");
-      else setWizardStep("resume");
+      else if (requiresDocuments) setWizardStep("resume");
+      else setWizardStep("confirm");
     } else if (wizardStep === "questions") {
       if (!validateQuestions()) return;
-      setWizardStep("resume");
+      if (requiresDocuments) setWizardStep("resume");
+      else setWizardStep("confirm");
     } else if (wizardStep === "resume") {
       if (!validateResume()) return;
       setWizardStep("confirm");
@@ -549,7 +553,11 @@ export default function JobApplyPage() {
     else if (wizardStep === "resume") {
       if (jobQuestions.length > 0) setWizardStep("questions");
       else setWizardStep("review");
-    } else if (wizardStep === "confirm") setWizardStep("resume");
+    } else if (wizardStep === "confirm") {
+      if (requiresDocuments) setWizardStep("resume");
+      else if (jobQuestions.length > 0) setWizardStep("questions");
+      else setWizardStep("review");
+    }
   };
 
   const jumpToStep = (step: WizardStep) => {
@@ -1105,7 +1113,7 @@ export default function JobApplyPage() {
           <div className="text-xs text-slate-600 dark:text-slate-400">
             <p className="font-medium">You can add these in the next steps:</p>
             <ul className="mt-1 list-disc pl-4 space-y-0.5">
-              {readinessMissing.includes("resume") && <li>CV / Resume</li>}
+              {requiresResume && readinessMissing.includes("resume") && <li>CV / Resume</li>}
               {readinessMissing.includes("video_intro") && <li>Video introduction</li>}
             </ul>
           </div>
@@ -1295,21 +1303,31 @@ export default function JobApplyPage() {
   const renderWizardResume = () => (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Your CV &amp; documents</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          {requiresResume && requiresVideoIntro
+            ? "Your documents"
+            : requiresResume
+            ? "Your CV & Resume"
+            : "Video Introduction"}
+        </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          {useExistingResume
+          {requiresResume && useExistingResume
             ? "Your saved resume will be submitted. You can replace it with a different file if you'd like."
-            : "Upload your CV to include with this application."}
+            : requiresResume
+            ? "Upload your CV to include with this application."
+            : ""}
         </p>
       </div>
 
       <div className="space-y-3">
-        <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-            CV / Resume <span className="text-red-500">*</span>
-          </p>
-          {renderResumeSection()}
-        </div>
+        {requiresResume && (
+          <div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              CV / Resume <span className="text-red-500">*</span>
+            </p>
+            {renderResumeSection()}
+          </div>
+        )}
 
         {requiresVideoIntro && (
           <div>
