@@ -1,0 +1,376 @@
+# Fix Featured Job Card Text Contrast on `/find-work/jobs`
+
+You are working inside the existing **OnSpot Global / connect-onspot** codebase.
+
+Fix the text visibility issue on **Featured Job cards** in:
+
+`client/src/pages/FindWorkAllJobs.tsx`
+
+The current Featured Job card has a dark/indigo premium header, but its lower content/body area uses text colors intended for a dark background even though the body background is light.
+
+This causes:
+
+* job summary text to appear too light / almost invisible
+* skill tags to have poor contrast
+* `View details` text to look washed out
+* body content to feel inconsistent with regular job cards
+
+Do not redesign the Featured Job card.
+
+Keep the Featured header visually distinct.
+
+Only fix the body text/readability so it matches the normal job cards.
+
+---
+
+# Current Problem
+
+The Featured Job body currently has conditional styles similar to:
+
+```tsx
+featured
+  ? "text-amber-100/70"
+  : "text-slate-600 dark:text-slate-300"
+```
+
+and skill tags like:
+
+```tsx
+featured
+  ? "text-amber-200/80"
+  : "text-slate-600 ..."
+```
+
+However, the Featured card body itself is light-colored.
+
+This creates low contrast.
+
+---
+
+# Desired Behavior
+
+For the **lower body area** of Featured Job cards, use the same text colors as regular job cards.
+
+The header can remain premium/dark.
+
+The body should visually match normal cards.
+
+Conceptually:
+
+```text
+FEATURED HEADER
+dark indigo / premium styling
+white/light text
+badges
+salary
+posted date
+
+────────────────────
+
+FEATURED BODY
+light background
+dark slate summary text
+normal slate skill chips
+normal secondary action button
+```
+
+---
+
+# 1. Job Summary Text
+
+Update the Featured body summary so it uses readable dark text.
+
+Current logic is approximately:
+
+```tsx
+<p
+  className={`line-clamp-2 text-sm leading-6 ${
+    featured
+      ? "text-amber-100/70"
+      : "text-slate-600 dark:text-slate-300"
+  }`}
+>
+```
+
+Change it so Featured uses the same body color as regular cards.
+
+Preferred:
+
+```tsx
+<p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+```
+
+There is no need for a different Featured text color in the light body.
+
+---
+
+# 2. Skill Tags
+
+The Featured skill tags currently use amber text/background styling.
+
+Change Featured body skill tags so they visually match the regular job card tags.
+
+Preferred style:
+
+```text
+border-slate-200
+bg-slate-50
+text-slate-600
+```
+
+Dark mode:
+
+```text
+dark:border-white/[0.08]
+dark:bg-white/[0.05]
+dark:text-slate-300
+```
+
+Use the same styling for both Featured and normal cards if practical.
+
+Example:
+
+```tsx
+className="
+  rounded-full
+  border border-slate-200
+  bg-slate-50
+  px-2.5 py-1
+  text-xs
+  text-slate-600
+  dark:border-white/[0.08]
+  dark:bg-white/[0.05]
+  dark:text-slate-300
+"
+```
+
+---
+
+# 3. `+N more` Skill Tag
+
+Also fix the overflow tag.
+
+Instead of amber/light text on Featured cards, use the same styling as normal cards:
+
+```text
+text-slate-400
+border-slate-200
+bg-slate-50
+```
+
+Dark mode may stay:
+
+```text
+dark:text-slate-500
+dark:border-white/[0.08]
+dark:bg-white/[0.05]
+```
+
+---
+
+# 4. `View details` Button
+
+The Featured card currently uses an amber-styled secondary button:
+
+```text
+text-amber-200/80
+border-amber-400/25
+bg-amber-400/10
+```
+
+Because the body is light, change this button to match the normal cards.
+
+Preferred:
+
+```text
+border-slate-200
+bg-white
+text-slate-600
+hover:border-indigo-200
+hover:text-indigo-600
+```
+
+Dark mode:
+
+```text
+dark:border-white/10
+dark:bg-white/[0.03]
+dark:text-slate-300
+dark:hover:border-indigo-500/40
+dark:hover:text-indigo-400
+```
+
+Featured cards should still feel special because of the header, not because every body element is amber.
+
+---
+
+# 5. Apply Now Button
+
+Keep the Featured `Apply Now` button special if desired.
+
+The current Featured button:
+
+```text
+amber → orange gradient
+white text
+```
+
+is acceptable because it has good contrast.
+
+Do not change it unless necessary.
+
+The main issue is body readability.
+
+---
+
+# 6. Benefits Chips
+
+Inspect `BenefitsDisplay`.
+
+If the benefit pills already render with readable text on light backgrounds, leave them alone.
+
+Do not restyle them unnecessarily.
+
+Only change them if they also inherit Featured-specific low-contrast colors.
+
+---
+
+# 7. Featured Header Must Stay Distinct
+
+Do NOT remove the Featured visual treatment from the top section.
+
+Keep:
+
+* Featured badge
+* featured header background
+* white/light title
+* light company text
+* salary text
+* posted date
+* header badges
+* premium look
+
+The fix should affect only the lower/light body.
+
+---
+
+# 8. Avoid Unnecessary Conditional Classes
+
+If Featured and normal cards now share the same body styles, simplify the code.
+
+Instead of:
+
+```tsx
+featured ? "..." : "..."
+```
+
+use one common class where possible.
+
+Example:
+
+```tsx
+<p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+```
+
+This reduces future styling drift.
+
+Do the same for:
+
+* summary
+* skill tags
+* overflow tag
+* View details button
+
+---
+
+# 9. Body Background
+
+Make sure Featured card body is intentionally light.
+
+If the parent Featured article itself still applies a dark background beneath the body, explicitly give the body:
+
+```text
+bg-white
+```
+
+or the same light surface as normal job cards.
+
+For example:
+
+```tsx
+<div className="bg-white px-5 py-4 dark:bg-white/[0.03]">
+```
+
+Only do this if needed based on the actual current component structure.
+
+The screenshot shows that the body is already light, so the primary issue is text color.
+
+---
+
+# Expected Result
+
+Featured card:
+
+```text
+┌────────────────────────────────────┐
+│ FEATURED ROLE                      │
+│                                    │
+│ Virtual Assistant        PHP 8–12 │
+│ OnSpot                             │
+│ Remote  Full Time                 │
+│                                    │
+├────────────────────────────────────┤
+│ Provide administrative support... │
+│                                    │
+│ Customer Support   CRM   Excel     │
+│                                    │
+│ [Apply Now]  [View details →]      │
+└────────────────────────────────────┘
+```
+
+The lower body should have the same readability as:
+
+```text
+Accounting Manager
+Customer Service Representative
+```
+
+regular cards.
+
+---
+
+# Acceptance Criteria
+
+* [ ] Featured job summary is clearly readable
+* [ ] Featured summary uses dark slate text on light body
+* [ ] Featured skill tags are clearly readable
+* [ ] Featured skill tags visually match normal job cards
+* [ ] `+N more` tag is readable
+* [ ] Featured `View details` button is readable
+* [ ] Featured body styling matches normal job cards
+* [ ] Featured header remains visually distinct
+* [ ] Featured badge remains intact
+* [ ] Salary/header text remains readable
+* [ ] Apply Now button remains functional
+* [ ] Dark mode still works
+* [ ] Regular job cards are unchanged
+* [ ] No TypeScript/build errors
+
+---
+
+# Manual Test
+
+1. Open `/find-work/jobs`.
+2. Locate a Featured Job with:
+
+   * description/summary
+   * skill tags
+   * View details button
+3. Confirm all lower-body text is readable without selecting/highlighting the text.
+4. Compare it directly with a regular job card.
+5. Verify typography/colors feel consistent.
+6. Verify the Featured header still looks special.
+7. Test at mobile width.
+8. Test dark mode if supported.
+
+Keep this fix focused on contrast and readability. Do not redesign the job cards.

@@ -388,7 +388,7 @@ function JobCard({
           {(() => {
             const preview = (job as any).jobSummary?.trim() || job.description?.trim();
             return preview ? (
-              <p className={`line-clamp-2 text-sm leading-6 ${featured ? "text-white/60" : "text-slate-600 dark:text-slate-300"}`}>
+              <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {preview}
               </p>
             ) : null;
@@ -407,21 +407,13 @@ function JobCard({
               {visibleTags.map((tag) => (
                 <span
                   key={tag}
-                  className={
-                    featured
-                      ? "rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/75 ring-1 ring-white/15"
-                      : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
-                  }
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-300"
                 >
                   {tag}
                 </span>
               ))}
               {extraTags > 0 && (
-                <span className={
-                  featured
-                    ? "rounded-full bg-white/[0.07] px-2.5 py-1 text-xs text-white/40"
-                    : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500"
-                }>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-400 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-slate-500">
                   +{extraTags} more
                 </span>
               )}
@@ -449,11 +441,7 @@ function JobCard({
             </Button>
             <button
               onClick={() => onNavigate(job.id)}
-              className={
-                featured
-                  ? "inline-flex items-center gap-1.5 rounded-full border border-[#3A47A8]/30 bg-[#3A47A8]/10 px-4 py-1.5 text-sm font-medium text-[#3A47A8] transition-all hover:bg-[#3A47A8]/20 hover:text-[#2F327F]"
-                  : "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
-              }
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"
             >
               View details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
