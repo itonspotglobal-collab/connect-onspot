@@ -3,8 +3,6 @@ import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X } from "lucide-react";
 import onspotLogo from "@assets/onspot-logo-white.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
-import alonPhoto from "@assets/Alon_1775058113450.png";
-import shanePhoto from "@assets/Shane_1775038610216.png";
 
 const nurPhoto = "/nur-ceo.jpeg";
 const markPhoto = "/mark-apostol.png";
@@ -103,21 +101,6 @@ const leaders = [
     photo: jakePhoto,
     imgPos: "50% 22%",
     bio: "20 years building startups in New York before leading growth and business development globally for OnSpot.",
-  },
-  {
-    name: "Alon Ben Eli",
-    role: "Co-Founder",
-    photo: alonPhoto,
-    imgPos: "50% 38%",
-    imgScale: "scale(1.28) translateY(-9%)",
-    bio: "Helps shape long-range strategy, positioning, and global growth.",
-  },
-  {
-    name: "Shane Limiac",
-    role: "Head of Delivery",
-    photo: shanePhoto,
-    imgPos: "50% 20%",
-    bio: "Leads execution and ensures the client experience translates into measurable results.",
   },
   {
     name: "Mark Apostol",
