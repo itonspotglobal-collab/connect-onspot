@@ -6137,6 +6137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // GET /api/admin/jobs/options — lightweight job list for filter dropdowns.
   // Returns ALL jobs (no pagination) so the filter is never truncated.
+  // MUST be registered before /api/admin/jobs/:id to avoid "options" being treated as an id.
   app.get("/api/admin/jobs/options", async (req: Request, res: Response) => {
     try {
       const search = (req.query.search as string | undefined)?.trim();
@@ -6155,9 +6156,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+  // GET /api/admin/jobs/:id — fetch a single job for the edit page.
+  app.get("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const job = await storage.getJob(req.params.id);
+      const { id } = req.params;
+      const job = await storage.getJob(id);
       if (!job) return res.status(404).json({ error: "Job not found" });
       res.json(job);
     } catch (err: any) {
