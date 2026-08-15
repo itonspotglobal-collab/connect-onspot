@@ -1,0 +1,41 @@
+Correction to my earlier answer — there's a legitimate reason hourly figures exist,
+I was wrong to say retire the concept entirely. Here's the actual distinction:
+
+The FLAT rate (Half-Day/Full-Time) is what Client agrees to pay and Talent expects
+to receive. Nobody chooses "hourly billing" as an option — that part of my earlier
+answer stands. BUT when actual attendance falls short in a billing period (Talent
+absent 2 days of the month), the invoice needs to deduct for time not worked, and
+that requires an hourly-equivalent figure derived from the flat rate.
+
+This is invoicing math, not a rate anyone sets. It should be:
+- Computed as (flat_rate ÷ standard_period_hours) at invoicing time
+- Applied only to calculate attendance-based deductions on an Engagement's invoice
+- Never exposed as a field Client or Talent enters directly
+
+Revised answers:
+
+1. contract_type → engagement_type: Same as before — rename the column, migrate to
+   Half-Day/Full-Time only. This still stands; "hourly" is not a valid engagement
+   type, it's a proration calculation.
+
+2. hourly_rate_min / hourly_rate_max on jobs: These represented a Client-chosen
+   negotiable range, which shouldn't exist at the Job-posting stage under this model
+   (the Client sets a flat rate, period). Report non-null counts as I asked before.
+   If it's seed data, drop these columns from the Job form/schema — but flag for me
+   whether the codebase has ANY attendance/deduction/proration logic already, even
+   partial, that reads from these columns. If deduction logic already exists and
+   depends on them, don't drop yet — tell me what it does first.
+
+3. candidates.preferences.hourlyRate: Same reporting rule. This should become
+   Talent's flat rate expectation (per Engagement Type), not an hourly figure they
+   set. Any hourly equivalent is computed later, at invoicing, not stored as a
+   Talent preference.
+
+4. contract_type values hourly/fixed: Confirmed — retire this field and its values.
+   It conflated "how you calculate billing" with "how much coverage is engaged,"
+   which are different things. Report any live jobs rows with contract_type='hourly'
+   before migrating, as before.
+
+New question: does an Engagement/attendance-tracking table exist yet anywhere in
+the codebase (even a stub)? If proration/deduction logic needs to live somewhere,
+I want to know if there's already a home for it before we invent a new one.
