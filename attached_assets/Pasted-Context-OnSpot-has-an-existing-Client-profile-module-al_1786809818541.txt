@@ -1,0 +1,59 @@
+Context: OnSpot has an existing Client profile module already built in this project.
+Do NOT rebuild or refactor it. Your first task is to inspect it and tell me:
+1. What fields/schema the Client profile currently has
+2. What's stored where (database table/model name)
+3. Whether a Talent profile module exists yet, and if so, its schema
+
+Once you've reported that back, we'll do the following in order. Do not skip ahead —
+confirm each step works before moving to the next.
+
+TERMINOLOGY RULES (apply everywhere, including field names, UI labels, and code comments):
+- Use "Talent" — never "candidate," "worker," or "staff"
+- Use "Client" — never "company" or "business"
+- Use "Engagement Type" with exactly two values: "Half-Day" and "Full-Time" —
+  never "Employment Type," never hourly billing, never a rate-per-hour field anywhere
+
+STEP 1 — Talent Profile module (build only if it doesn't exist yet)
+Minimum fields: name, location, timezone, skills (multi-select/tags), experience
+(structured: title/employer/dates), availability (Half-Day/Full-Time), rate expectation
+(flat, per Engagement Type — not hourly). Resume upload is fine as a simple file field
+for now; don't build AI parsing yet.
+
+STEP 2 — Job entity, owned by Client
+Fields: title, Engagement Type (Half-Day/Full-Time only), rate (flat, per Engagement
+Type), location/timezone requirement, description, status (draft/published).
+This should link to the existing Client profile as the owner.
+Do NOT add a paid-visibility/boost field. Do NOT add an hourly rate field anywhere.
+
+STEP 3 — Minimal Job posting flow (Client side)
+A logged-in Client can create a Job (draft), edit it, and publish it. Keep the form
+simple — title, Engagement Type, rate, description, location. No screening questions,
+no templates, no AI drafting yet. Just get a real Job record created and published.
+
+STEP 4 — Minimal Job browse + Application (Talent side)
+A logged-in Talent can see a list of published Jobs and submit an Application to one.
+An Application record links Talent + Job + Client, with a status field defaulting to
+"Applied." No AI matching yet, no scoring — just a working list and a working apply
+button that creates a real Application record.
+
+STEP 5 — Minimal Client-side visibility into Applications
+On the Client's Job page, show a simple list of Talent who've applied (name, headline,
+applied date). No pipeline stages yet, no messaging, no interview scheduling — just
+confirm the Client can see who applied to their Job.
+
+ACCEPTANCE CRITERIA — tell me when each of these is true and demonstrable:
+- A Client can create and publish a Job with the correct Engagement Type field
+- A Talent can view that Job and submit an Application
+- The Client can see that Application appear on their Job
+
+OUT OF SCOPE for this pass — do not build these yet even if they seem related:
+- AI matching/scoring
+- Screening questions
+- Interview scheduling or messaging
+- Payments, invoicing, or commission logic
+- Multi-seat Client teams / workspace admin
+- Job templates or AI-generated descriptions
+
+If anything about the existing Client profile module conflicts with this plan (e.g., a
+field already named "Employment Type" or an hourly rate field already exists), stop and
+report it to me before changing it — don't silently rename or migrate data.
