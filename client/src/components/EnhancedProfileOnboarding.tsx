@@ -730,7 +730,7 @@ export default function EnhancedProfileOnboarding({
                       name="hourlyRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Hourly Rate (USD) *</FormLabel>
+                          <FormLabel>Rate Expectation (USD) *</FormLabel>
                           <FormControl>
                             <Input 
                               type="number"

@@ -133,8 +133,11 @@ function normaliseExperience(raw: string | undefined): string {
 }
 
 function normaliseContractType(raw: string | undefined): string {
-  if (!raw) return "fixed";
-  return raw.toLowerCase().includes("hourly") ? "hourly" : "fixed";
+  if (!raw) return "Full-Time";
+  const key = raw.trim().toLowerCase();
+  return (key.includes("hourly") || key.includes("half") || key.includes("part"))
+    ? "Half-Day"
+    : "Full-Time";
 }
 
 function textToArray(text: string | undefined): string[] {

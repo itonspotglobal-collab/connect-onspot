@@ -524,11 +524,11 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 name="hourlyRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hourly Rate (USD)</FormLabel>
+                    <FormLabel>Rate Expectation (USD)</FormLabel>
                     <FormControl>
                       <Input 
                         id="hourlyRate"
-                        placeholder="Your hourly rate (e.g., 25)" 
+                        placeholder="Your rate expectation (e.g., 25)" 
                         type="number"
                         min="1"
                         max="1000"

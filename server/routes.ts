@@ -3606,6 +3606,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profile = insertedProfiles[0];
         }
 
+        // Dual-write: mirror rateAmount into candidates.preferences so the
+        // match scorer (which reads candidates.preferences.rateAmount) sees
+        // rates entered through the onboarding forms, not just Settings.
+        if (validated.hourlyRate) {
+          await query(
+            `UPDATE candidates
+             SET preferences = COALESCE(preferences, '{}'::jsonb)
+               || jsonb_build_object('rateAmount', $1::text)
+             WHERE user_id = $2`,
+            [validated.hourlyRate, userId],
+          );
+        }
+
         console.log(
           `✅ Current user profile updated successfully [${requestId}]:`,
           { profileId: profile.id },
