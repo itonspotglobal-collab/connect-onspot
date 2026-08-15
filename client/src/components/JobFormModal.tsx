@@ -1340,26 +1340,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             <div className="flex items-start gap-3 rounded-md border border-violet-200/60 bg-violet-50/40 p-3 dark:border-violet-800/30 dark:bg-violet-950/20">
               <input
-                id="modal-requires-resume"
-                type="checkbox"
-                checked={formData.requiresResume}
-                onChange={(e) => updateField("requiresResume", e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-input accent-violet-600 cursor-pointer"
-              />
-              <div>
-                <label htmlFor="modal-requires-resume" className="text-sm font-medium cursor-pointer select-none">
-                  Require Resume / CV
-                </label>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {formData.requiresResume
-                    ? "Applicants must attach a resume or CV before they can submit this application."
-                    : "Resume attachment will not be requested for this role."}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded-md border border-violet-200/60 bg-violet-50/40 p-3 dark:border-violet-800/30 dark:bg-violet-950/20">
-              <input
                 id="modal-requires-video-intro"
                 type="checkbox"
                 checked={formData.requiresVideoIntro}

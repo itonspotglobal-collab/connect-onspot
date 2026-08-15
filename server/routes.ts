@@ -1011,7 +1011,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── One-time safe migration: requires_resume field ──────────────────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_resume boolean NOT NULL DEFAULT false`);
-    console.log("✅ Migration: requires_resume column ready");
+    // CV is no longer required for any role — talent profile serves as the resume.
+    // Reset any jobs that had requires_resume = true so they don't block applicants.
+    await query(`UPDATE jobs SET requires_resume = false WHERE requires_resume = true`);
+    console.log("✅ Migration: requires_resume column ready; all roles reset to not require CV");
   } catch (migErr: any) {
     console.warn("⚠️  requires_resume migration skipped:", migErr.message);
   }
@@ -9515,7 +9518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         job: {
           id: job.id,
           title: job.title,
-          requiresResume: true,
+          requiresResume: false,
           requiresVideoIntro: !!(job as any).requiresVideoIntro,
           questions,
         },
@@ -9610,12 +9613,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (_) { /* token absent or invalid — continue as public applicant */ }
 
-      // ── CV validation (required only when job.requiresResume === true) ──────────
+      // CV / resume is never required — the talent's profile serves as their resume.
+      // A file is accepted if the applicant voluntarily attaches one, but never blocked.
       const cvFile = files?.["resume"]?.[0];
-      const requiresResume = !!(job as any).requiresResume;
-      if (requiresResume && !cvFile && !useProfileResume) {
-        return res.status(400).json({ error: "resume_required", message: "A resume or CV is required for this position." });
-      }
       if (cvFile) {
         const allowedCvMimes = [
           "application/pdf",

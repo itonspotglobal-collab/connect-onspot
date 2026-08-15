@@ -462,9 +462,7 @@ export default function JobApplyPage() {
     }
     setErrors(next);
 
-    const hasResume = useExistingResume || (cvFile && cvState === "ready");
-    if (requiresResume && !hasResume) setCvError("CV / Resume is required");
-    else setCvError(null);
+    setCvError(null);
 
     const hasVideo = useExistingVideo || (videoFile && videoState === "ready");
     if (requiresVideoIntro && !hasVideo) setVideoError("A video introduction is required for this position");
@@ -495,7 +493,6 @@ export default function JobApplyPage() {
 
     return (
       Object.keys(next).length === 0 &&
-      (!requiresResume || !!hasResume) &&
       (!requiresVideoIntro || !!(useExistingVideo || (videoFile && videoState === "ready")))
     );
   };
@@ -1733,7 +1730,6 @@ export default function JobApplyPage() {
                   </div>
                 </div>
 
-                {renderResumeSection()}
                 {renderVideoSection()}
 
                 {/* Cover Letter */}
