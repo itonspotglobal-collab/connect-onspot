@@ -1014,10 +1014,10 @@ export default function ProfileSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <FormField control={form.control} name="rateEngagementType" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>Engagement Type</FormLabel>
+                          <FormLabel className={labelCls}>Preferred Engagement Type</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
-                              <StyledSelectTrigger>
+                              <StyledSelectTrigger data-testid="select-engagement-type">
                                 <SelectValue placeholder="Select…" />
                               </StyledSelectTrigger>
                             </FormControl>
@@ -1026,6 +1026,9 @@ export default function ProfileSettings() {
                               <SelectItem value="Half-Day">Half-Day</SelectItem>
                             </SelectContent>
                           </Select>
+                          <p className="text-[12px] mt-1" style={{ color: MUTED }}>
+                            Used to boost your match score on jobs that fit your preferred schedule.
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )} />
