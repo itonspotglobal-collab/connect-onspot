@@ -308,6 +308,7 @@ export interface IStorage {
   createCandidate(data: InsertCandidate): Promise<Candidate>;
   getCandidate(id: string): Promise<Candidate | undefined>;
   getCandidateByEmail(email: string): Promise<Candidate | undefined>;
+  getCandidateByUserId(userId: string): Promise<Candidate | undefined>;
   getCandidates(): Promise<Candidate[]>;
   updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined>;
 
@@ -966,8 +967,9 @@ export class MemStorage implements IStorage {
       talentSkills = userSkills.map(us => us.skill?.name || '').filter(Boolean);
     }
 
-    // Get talent's profile for rate and timezone matching
+    // Get talent's profile for timezone matching, and candidate record for rate/engagement prefs
     const talentProfile = await this.getProfileByUserId(talentId);
+    const talentCandidate = await this.getCandidateByUserId(talentId);
     
     // Search for all available jobs with enhanced skills
     const allJobs = await this.searchJobsWithSkills({
@@ -1005,16 +1007,36 @@ export class MemStorage implements IStorage {
 
       let totalScore = jaccardScore * 100; // Base score from skills similarity (0-100)
 
-      // Rate overlap bonus
-      if (talentProfile?.hourlyRate && job.hourlyRateMin && job.hourlyRateMax) {
-        const talentRate = parseFloat(talentProfile.hourlyRate);
-        const jobMinRate = parseFloat(job.hourlyRateMin);
-        const jobMaxRate = parseFloat(job.hourlyRateMax);
-        
-        if (talentRate >= jobMinRate && talentRate <= jobMaxRate) {
-          totalScore += 20; // Perfect rate match bonus
-        } else if (Math.abs(talentRate - jobMinRate) <= 10 || Math.abs(talentRate - jobMaxRate) <= 10) {
-          totalScore += 10; // Close rate match bonus
+      // Engagement type + rate compatibility bonus
+      // Only scores when the job has an engagementType set (legacy NULL jobs are skipped — no regression)
+      if (job.engagementType) {
+        const candidatePrefs = (talentCandidate?.preferences ?? {}) as Record<string, unknown>;
+        const candidateEngagement = candidatePrefs.rateEngagementType as string | undefined;
+        const candidateRateRaw = candidatePrefs.rateAmount;
+        const candidateRate = candidateRateRaw != null ? parseFloat(String(candidateRateRaw)) : null;
+
+        // +20 when the candidate's preferred engagement type matches the job's type
+        if (candidateEngagement && candidateEngagement.toLowerCase() === job.engagementType.toLowerCase()) {
+          totalScore += 20;
+        }
+
+        // +10 when the candidate's expected flat rate is within ±20% of the job budget,
+        // but only when both sides use the same currency to avoid cross-currency false matches
+        const candidateCurrency = (candidatePrefs.rateCurrency as string | undefined)?.toUpperCase() ?? "USD";
+        const jobCurrency = (job.budgetCurrency ?? "PHP").toUpperCase();
+        if (
+          candidateRate != null &&
+          candidateRate > 0 &&
+          job.budget != null &&
+          candidateCurrency === jobCurrency
+        ) {
+          const jobBudget = parseFloat(String(job.budget));
+          if (jobBudget > 0) {
+            const ratio = candidateRate / jobBudget;
+            if (ratio >= 0.8 && ratio <= 1.2) {
+              totalScore += 10;
+            }
+          }
         }
       }
 
@@ -2365,6 +2387,7 @@ export class MemStorage implements IStorage {
   }
   async getCandidate(_id: string): Promise<Candidate | undefined> { return undefined; }
   async getCandidateByEmail(_email: string): Promise<Candidate | undefined> { return undefined; }
+  async getCandidateByUserId(_userId: string): Promise<Candidate | undefined> { return undefined; }
   async getCandidates(): Promise<Candidate[]> { return []; }
   async updateCandidate(_id: string, _updates: Partial<InsertCandidate>): Promise<Candidate | undefined> { return undefined; }
   async upsertCultureEvaluation(_candidateId: string, _data: Omit<InsertCultureEvaluation, "candidateId">): Promise<CultureEvaluation> {
@@ -2882,6 +2905,12 @@ export class DbStorage extends MemStorage {
   async getCandidateByEmail(email: string): Promise<Candidate | undefined> {
     const [candidate] = await db.select().from(candidatesTable)
       .where(sqlOp`lower(${candidatesTable.email}) = lower(${email})`);
+    return candidate;
+  }
+
+  async getCandidateByUserId(userId: string): Promise<Candidate | undefined> {
+    const [candidate] = await db.select().from(candidatesTable)
+      .where(eq(candidatesTable.userId, userId));
     return candidate;
   }
 
