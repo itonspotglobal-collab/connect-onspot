@@ -742,7 +742,7 @@ export default function TalentProfile() {
   const showPrivateOwnerSections = isOwner && !isPublicPreview;
   // Contact info (email, phone) visible only to admin, talent acquisition, or the profile owner.
   // Client-role users and unauthenticated public visitors do NOT see personal contact details.
-  const canSeeContact = isAdminUser || isTalentAcquisition || isOwner;
+  const canSeeContact = isAdminUser || isTalentAcquisition || (isOwner && !isPublicPreview);
 
   // Local state for optimistic photo update
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
