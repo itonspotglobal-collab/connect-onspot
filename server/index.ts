@@ -329,10 +329,29 @@ app.use((req, res, next) => {
         AND  c.profile_photo_url IS NULL
     `);
     const updated = backfillResult.rowCount ?? 0;
+    if (updated > 0) {
+      console.log(`✅ Backfill: synced profile photos for ${updated} candidate(s)`);
+    } else {
+      console.log('✅ Backfill: no candidates needed profile photo sync');
+    }
+  } catch (err: any) {
+    // Non-fatal — don't block startup if the backfill fails
+    console.error('⚠️  Backfill: profile photo sync failed (non-fatal):', err.message);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
-    const cleanupResult = await query(
-      `DELETE FROM documents WHERE type IN ('resume', 'video_intro')`
-    );
+  // Setup authentication first before routes
+  await setupAuth(app);
+
+  // ─── Health & readiness endpoints ────────────────────────────────────────
+  // /api/health — lightweight liveness check (no DB)
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // /api/ready — verifies required dependencies are reachable
+  app.get('/api/ready', async (_req, res) => {
+    try {
       const { pool } = await import('./db');
       await pool.query('SELECT 1');
       res.json({ status: 'ready', db: 'ok', timestamp: new Date().toISOString() });
@@ -357,7 +376,7 @@ app.use((req, res, next) => {
     const { siteCrawlerService } = await import('./services/siteCrawlerService');
 
     try {
-    const { query: dbQuery } = await import('./db');
+      const { query: dbQuery } = await import('./db');
       const autoApproveResult = await dbQuery(
         `UPDATE jobs
            SET approval_status = 'approved',
