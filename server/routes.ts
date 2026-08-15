@@ -3609,13 +3609,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Dual-write: mirror rateAmount into candidates.preferences so the
         // match scorer (which reads candidates.preferences.rateAmount) sees
         // rates entered through the onboarding forms, not just Settings.
-        if (validated.hourlyRate) {
+        // Use profileData.hourlyRate (the pre-parse string) — insertProfileSchema
+        // may return a Decimal/undefined for this field, making validated.hourlyRate falsy.
+        const rawHourlyRate = profileData.hourlyRate;
+        if (rawHourlyRate) {
           await query(
             `UPDATE candidates
              SET preferences = COALESCE(preferences, '{}'::jsonb)
                || jsonb_build_object('rateAmount', $1::text)
              WHERE user_id = $2`,
-            [validated.hourlyRate, userId],
+            [rawHourlyRate, userId],
           );
         }
 
@@ -6960,7 +6963,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "title",
           "bio",
           "location",
-          "hourlyRate",
           "rateCurrency",
           "availability",
           "phoneNumber",
@@ -6976,7 +6978,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: "Senior Software Engineer",
             bio: "Experienced full-stack developer with expertise in React, Node.js, and cloud technologies. Passionate about building scalable applications.",
             location: "Manila, Philippines",
-            hourlyRate: "25.00",
             rateCurrency: "USD",
             availability: "available",
             phoneNumber: "+63 9123456789",
@@ -6991,7 +6992,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: "Digital Marketing Specialist",
             bio: "Creative marketing professional with 5+ years of experience in social media marketing, content creation, and campaign management.",
             location: "Cebu, Philippines",
-            hourlyRate: "20.00",
             rateCurrency: "USD",
             availability: "available",
             phoneNumber: "+63 9876543210",
@@ -7009,7 +7009,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "Required. Professional title or job position (max 200 characters)",
           bio: "Required. Professional biography or summary (minimum 10 characters, max 2000)",
           location: 'Optional. Geographic location (default: "Global")',
-          hourlyRate: 'Optional. Numeric hourly rate (e.g., "25.00")',
           rateCurrency:
             'Optional. Currency code: "USD" or "PHP" (default: "USD")',
           availability:
@@ -7022,7 +7021,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requiredFields: ["firstName", "lastName", "email", "title", "bio"],
         optionalFields: [
           "location",
-          "hourlyRate",
           "rateCurrency",
           "availability",
           "phoneNumber",
@@ -7067,7 +7065,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "title",
         "bio",
         "location",
-        "hourlyRate",
         "rateCurrency",
         "availability",
         "phoneNumber",
@@ -7083,7 +7080,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Senior Software Engineer",
         "Experienced full-stack developer with expertise in React and Node.js",
         "Manila, Philippines",
-        "25.00",
         "USD",
         "available",
         "+63 9123456789",

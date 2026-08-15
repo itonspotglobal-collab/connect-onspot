@@ -104,7 +104,6 @@ export default function AdminCSVImport() {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Write clear, professional biographies</li>
                 <li>• Use standard timezone identifiers</li>
-                <li>• Include accurate hourly rates</li>
                 <li>• Validate phone number formats</li>
                 <li>• Ensure consistent data formatting</li>
               </ul>
@@ -114,9 +113,9 @@ export default function AdminCSVImport() {
           <div className="bg-background border rounded-lg p-4">
             <h4 className="font-semibold text-sm mb-2">Sample CSV Data Format</h4>
             <code className="text-xs bg-muted p-2 rounded block whitespace-pre-wrap">
-{`firstName,lastName,email,title,bio,location,hourlyRate,skills
-John,Doe,john.doe@example.com,Senior Developer,"Full-stack developer with 5+ years experience",Manila,25.00,"JavaScript,React,Node.js"
-Maria,Santos,maria@example.com,Digital Marketer,"Social media and content marketing specialist",Cebu,20.00,"Social Media,Content Writing,SEO"`}
+{`firstName,lastName,email,title,bio,location,skills
+John,Doe,john.doe@example.com,Senior Developer,"Full-stack developer with 5+ years experience",Manila,"JavaScript,React,Node.js"
+Maria,Santos,maria@example.com,Digital Marketer,"Social media and content marketing specialist",Cebu,"Social Media,Content Writing,SEO"`}
             </code>
           </div>
         </CardContent>

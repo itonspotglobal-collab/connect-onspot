@@ -1,0 +1,37 @@
+Two items need to go back before I can sign off.
+
+1. AdminCSVImport — this was already decided, not deferred. I said explicitly:
+   "Decision on AdminCSVImport: Option C. Strip hourlyRate from the import
+   template and field descriptions for now." That instruction should have been
+   implemented, not turned into an open task with three options again. Please
+   implement Option C now: remove hourlyRate from the CSV template and its
+   field descriptions. If something specifically blocked implementing this
+   (not just "it's a product decision"), tell me what blocked it — otherwise
+   proceed.
+
+2. End-to-end proof still missing: I asked whether anyone has actually tested
+   that a Talent completing onboarding today shows up with a correct
+   rate-matched score against a real job — using the real onboarding flow and
+   the real scorer, not code inspection. Please run this for real: create a
+   test Talent through actual onboarding, set a rate, then check whether that
+   Talent scores the rate-match bonus against a job with a compatible rate
+   range. Report the actual before/after score, not just "the dual-write looks
+   correct."
+
+3. Quick question on the BulkUploadModal fix: does the CSV import template
+   itself still ask admins to enter "hourly"/"fixed" style values, which
+   normaliseContractType then translates? Or does the template already collect
+   Half-Day/Full-Time directly and the function is just handling old/malformed
+   input? If it's the former, that means admins using this tool are still
+   working with retired terminology even though it's silently converted before
+   hitting the DB — worth knowing whether the template itself should be updated
+   to ask for Half-Day/Full-Time directly, rather than maintaining a
+   translation layer. Not asking you to fix this now, just tell me which case
+   it is.
+
+4. On my earlier follow-up — does anything besides the onboarding write path
+   and the pre-#133 scorer read profiles.hourly_rate? You didn't report back
+   on this. If nothing does, log the follow-up ticket to eventually stop
+   dual-writing to the legacy field, as discussed.
+
+Once these four are answered/resolved, we're actually done.
