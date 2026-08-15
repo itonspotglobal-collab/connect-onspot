@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import fs from "fs";
 import path from "path";
@@ -5500,240 +5501,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/candidates/:id/resume — Upload or replace resume
-  // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches the candidate
-  app.post("/api/candidates/:id/resume", upload.single("resume"), async (req: any, res) => {
-    try {
-      const { id } = req.params;
-
-      // ── Flexible auth: candidate JWT or matching talent user JWT ──────────────
-      const authHeader = req.headers["authorization"];
-      const token = authHeader?.split(" ")[1];
-      if (!token) return res.status(401).json({ error: "Authentication required" });
-
-      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
-      let decodedResume: any;
-      try { decodedResume = jwt.verify(token, jwtSecret); }
-      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
-
-      if (decodedResume.type === "candidate") {
-        // Candidate JWT — must own the profile
-        if (decodedResume.candidateId !== id) {
-          return res.status(403).json({ error: "You are not authorized to upload to this profile" });
-        }
-      } else if (decodedResume.role === "talent" && decodedResume.email) {
-        // Standard talent user JWT — email must match the candidate record
-        const check = await query(
-          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
-          [id, decodedResume.email],
-        );
-        if (check.rows.length === 0) {
-          return res.status(403).json({ error: "You are not authorized to upload to this profile" });
-        }
-      } else {
-        return res.status(403).json({ error: "Insufficient permissions" });
-      }
-
-      const file = req.file;
-      if (!file) return res.status(400).json({ error: "No file uploaded" });
-
-      const allowedMimes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      if (!allowedMimes.includes(file.mimetype)) {
-        return res.status(400).json({ error: "Only PDF or Word documents are allowed" });
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        return res.status(400).json({ error: "File too large — max 10 MB" });
-      }
-
+  // ── Candidate resume & video upload/delete ────────────────────────────────
+  // Registered via candidateMedia.ts module (injectable deps for testability).
+  registerCandidateMediaRoutes(app, upload, {
+    jwtSecret: process.env.JWT_SECRET || "dev-fallback-secret",
+    dbQuery: query,
+    updateCandidate: (id, updates) => storage.updateCandidate(id, updates as any) as any,
+    saveToStorage: async (subdir, buffer, mimetype, originalName) => {
       const objectStorageService = new ObjectStorageService();
       const objectId = randomUUID();
       const privateObjectDir = objectStorageService.getPrivateObjectDir();
-      const fullPath = `${privateObjectDir}/candidate-resumes/${objectId}`;
+      const fullPath = `${privateObjectDir}/${subdir}/${objectId}`;
       const parts = fullPath.split("/").filter((p: string) => p);
       const bucketName = parts[0];
       const objectName = parts.slice(1).join("/");
-
       const bucket = objectStorageClient.bucket(bucketName);
       const objectFile = bucket.file(objectName);
-      await objectFile.save(file.buffer, {
-        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
+      await objectFile.save(buffer, {
+        metadata: { contentType: mimetype, metadata: { originalName } },
       });
       await setObjectAclPolicy(objectFile, { visibility: "private" });
-
-      const resumeUrl = `/objects/candidate-resumes/${objectId}`;
-      await storage.updateCandidate(id, { resumeUrl, resumeFileName: file.originalname } as any);
-
-      res.json({ success: true, resumeUrl, resumeFileName: file.originalname });
-    } catch (error: any) {
-      console.error("POST /api/candidates/:id/resume error:", error);
-      res.status(500).json({ error: "Failed to upload resume" });
-    }
-  });
-
-  // DELETE /api/candidates/:id/resume — Remove resume from candidate profile
-  app.delete("/api/candidates/:id/resume", async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const authHeader = req.headers["authorization"];
-      const token = authHeader?.split(" ")[1];
-      if (!token) return res.status(401).json({ error: "Authentication required" });
-      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
-      let decoded: any;
-      try { decoded = jwt.verify(token, jwtSecret); }
-      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
-      if (decoded.type === "candidate") {
-        if (decoded.candidateId !== id) return res.status(403).json({ error: "Not authorized" });
-      } else if (decoded.role === "talent" && decoded.email) {
-        const check = await query(
-          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
-          [id, decoded.email],
-        );
-        if (check.rows.length === 0) return res.status(403).json({ error: "Not authorized" });
-      } else {
-        return res.status(403).json({ error: "Insufficient permissions" });
-      }
-      const row = await query(`SELECT resume_url AS "resumeUrl" FROM candidates WHERE id = $1 LIMIT 1`, [id]);
-      if (!row.rows.length) return res.status(404).json({ error: "Candidate not found" });
-      const { resumeUrl } = row.rows[0];
-      if (resumeUrl) {
-        try {
-          const objectStorageService = new ObjectStorageService();
-          const objectFile = await objectStorageService.getObjectEntityFile(resumeUrl);
-          await objectFile.delete({ ignoreNotFound: true });
-        } catch (delErr) {
-          console.warn("DELETE /api/candidates/:id/resume — could not delete object:", delErr);
-        }
-      }
-      await storage.updateCandidate(id, { resumeUrl: null, resumeFileName: null } as any);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("DELETE /api/candidates/:id/resume error:", error);
-      res.status(500).json({ error: "Failed to delete resume" });
-    }
-  });
-
-  // POST /api/candidates/:id/video — Upload or replace profile video introduction
-  // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches
-  app.post("/api/candidates/:id/video", upload.single("video"), async (req: any, res) => {
-    try {
-      const { id } = req.params;
-
-      const authHeader = req.headers["authorization"];
-      const token = authHeader?.split(" ")[1];
-      if (!token) return res.status(401).json({ error: "Authentication required" });
-
-      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
-      let decoded: any;
-      try { decoded = jwt.verify(token, jwtSecret); }
-      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
-
-      if (decoded.type === "candidate") {
-        if (decoded.candidateId !== id) {
-          return res.status(403).json({ error: "Not authorized to upload to this profile" });
-        }
-      } else if (decoded.role === "talent" && decoded.email) {
-        const check = await query(
-          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
-          [id, decoded.email],
-        );
-        if (check.rows.length === 0) {
-          return res.status(403).json({ error: "Not authorized to upload to this profile" });
-        }
-      } else {
-        return res.status(403).json({ error: "Insufficient permissions" });
-      }
-
-      const file = req.file;
-      if (!file) return res.status(400).json({ error: "No file uploaded" });
-
-      const allowedMimes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo", "video/mpeg"];
-      if (!allowedMimes.includes(file.mimetype)) {
-        return res.status(400).json({ error: "Only MP4, WebM, MOV, AVI or MPEG video files are allowed" });
-      }
-      if (file.size > 200 * 1024 * 1024) {
-        return res.status(400).json({ error: "File too large — max 200 MB" });
-      }
-
+      return `/objects/${subdir}/${objectId}`;
+    },
+    deleteFromStorage: async (url) => {
       const objectStorageService = new ObjectStorageService();
-      const objectId = randomUUID();
-      const privateObjectDir = objectStorageService.getPrivateObjectDir();
-      const fullPath = `${privateObjectDir}/candidate-videos/${objectId}`;
-      const parts = fullPath.split("/").filter((p: string) => p);
-      const bucketName = parts[0];
-      const objectName = parts.slice(1).join("/");
-
-      const bucket = objectStorageClient.bucket(bucketName);
-      const objectFile = bucket.file(objectName);
-      await objectFile.save(file.buffer, {
-        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
-      });
-      await setObjectAclPolicy(objectFile, { visibility: "private" });
-
-      const videoIntroUrl = `/objects/candidate-videos/${objectId}`;
-      await storage.updateCandidate(id, { videoIntroUrl, videoIntroFileName: file.originalname } as any);
-
-      res.json({ success: true, videoIntroUrl, videoIntroFileName: file.originalname });
-    } catch (error: any) {
-      console.error("POST /api/candidates/:id/video error:", error);
-      res.status(500).json({ error: "Failed to upload video" });
-    }
-  });
-
-  // DELETE /api/candidates/:id/video — Remove profile video introduction
-  app.delete("/api/candidates/:id/video", async (req: any, res) => {
-    try {
-      const { id } = req.params;
-
-      const authHeader = req.headers["authorization"];
-      const token = authHeader?.split(" ")[1];
-      if (!token) return res.status(401).json({ error: "Authentication required" });
-
-      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
-      let decoded: any;
-      try { decoded = jwt.verify(token, jwtSecret); }
-      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
-
-      if (decoded.type === "candidate") {
-        if (decoded.candidateId !== id) return res.status(403).json({ error: "Not authorized" });
-      } else if (decoded.role === "talent" && decoded.email) {
-        const check = await query(
-          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
-          [id, decoded.email],
-        );
-        if (check.rows.length === 0) return res.status(403).json({ error: "Not authorized" });
-      } else {
-        return res.status(403).json({ error: "Insufficient permissions" });
-      }
-
-      // Fetch current video URL so we can delete the object
-      const candRow = await query(
-        `SELECT video_intro_url AS "videoIntroUrl" FROM candidates WHERE id = $1 LIMIT 1`,
-        [id],
-      );
-      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
-      const { videoIntroUrl } = candRow.rows[0];
-
-      if (videoIntroUrl) {
-        try {
-          const objectStorageService = new ObjectStorageService();
-          const objectFile = await objectStorageService.getObjectEntityFile(videoIntroUrl);
-          await objectFile.delete({ ignoreNotFound: true });
-        } catch (delErr) {
-          console.warn("DELETE /api/candidates/:id/video — could not delete object:", delErr);
-          // Non-fatal: clear the DB record regardless
-        }
-      }
-
-      await storage.updateCandidate(id, { videoIntroUrl: null, videoIntroFileName: null } as any);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("DELETE /api/candidates/:id/video error:", error);
-      res.status(500).json({ error: "Failed to delete video" });
-    }
+      const objectFile = await objectStorageService.getObjectEntityFile(url);
+      await objectFile.delete({ ignoreNotFound: true });
+    },
   });
 
   // GET /api/candidates/:id/video — Stream profile video to the authenticated owner
