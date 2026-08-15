@@ -810,7 +810,7 @@ function DbJobCard({
                 <Layers className="h-3 w-3" /> Type
               </div>
               <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
-                {job.contractType?.replace(/-/g, " ") ?? "Full-time"}
+                {job.engagementType ?? "Full-Time"}
               </div>
             </div>
           </div>
@@ -984,10 +984,10 @@ export default function OnSpotFindWorkRedesign() {
         if (earning === "₱85,000+") return max >= 85000;
         return true;
       })();
-      // Map shift-style schedule to contractType for live DB jobs
+      // Map shift-style schedule to engagementType for live DB jobs
       const schedulePass = (() => {
         if (schedule === "All schedules") return true;
-        const ct = ((job as any).contractType ?? "").toLowerCase();
+        const ct = ((job as any).engagementType ?? "").toLowerCase();
         if (schedule === "Day shift") return ct.includes("full") || ct.includes("part");
         if (schedule === "Night shift") return ct.includes("full") || ct.includes("contract");
         if (schedule === "Flexible") return ct.includes("freelance") || ct.includes("part") || ct.includes("flexible");
@@ -1122,7 +1122,7 @@ export default function OnSpotFindWorkRedesign() {
                       const title = isDbJob ? job.title : role.title;
                       const pay = isDbJob ? buildRateDisplayWithCode(job) : role.pay;
                       const shift = isDbJob
-                        ? (job.contractType?.replace(/-/g, " ") ?? "Full-time")
+                        ? (job.engagementType ?? "Full-Time")
                         : role.shift;
                       const market = isDbJob
                         ? (job.location ?? "Remote")

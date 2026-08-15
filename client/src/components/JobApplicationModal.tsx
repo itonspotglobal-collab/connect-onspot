@@ -87,10 +87,10 @@ export default function JobApplicationModal({
         jobId: job.id,
         coverLetter: data.coverLetter.trim(),
         // Keep numeric fields as numbers (not strings)
-        ...(job.contractType === 'hourly' && data.proposedRate !== undefined && {
+        ...(job.engagementType === 'Half-Day' && data.proposedRate !== undefined && {
           proposedRate: data.proposedRate
         }),
-        ...(job.contractType === 'fixed' && data.proposedBudget !== undefined && {
+        ...(job.engagementType === 'Full-Time' && data.proposedBudget !== undefined && {
           proposedBudget: data.proposedBudget
         }),
         ...(data.estimatedDuration && {
@@ -161,7 +161,7 @@ export default function JobApplicationModal({
     }
 
     // Validate contract-specific fields
-    if (job.contractType === 'hourly' && (data.proposedRate === undefined || data.proposedRate === null)) {
+    if (job.engagementType === 'Half-Day' && (data.proposedRate === undefined || data.proposedRate === null)) {
       form.setError('proposedRate', {
         type: 'required',
         message: 'Hourly rate is required for hourly jobs'
@@ -169,7 +169,7 @@ export default function JobApplicationModal({
       return;
     }
 
-    if (job.contractType === 'fixed' && (data.proposedBudget === undefined || data.proposedBudget === null)) {
+    if (job.engagementType === 'Full-Time' && (data.proposedBudget === undefined || data.proposedBudget === null)) {
       form.setError('proposedBudget', {
         type: 'required', 
         message: 'Proposed budget is required for fixed-price jobs'
@@ -182,7 +182,7 @@ export default function JobApplicationModal({
   };
 
   const formatBudgetRange = (job: Job) => {
-    if (job.contractType === 'hourly') {
+    if (job.engagementType === 'Half-Day') {
       const min = job.hourlyRateMin ? parseFloat(job.hourlyRateMin.toString()) : 0;
       const max = job.hourlyRateMax ? parseFloat(job.hourlyRateMax.toString()) : 0;
       if (min && max) {
@@ -222,7 +222,7 @@ export default function JobApplicationModal({
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="capitalize">{job.contractType}</span>
+              <span>{job.engagementType}</span>
             </div>
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -271,7 +271,7 @@ export default function JobApplicationModal({
 
           {/* Rate/Budget Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {job.contractType === 'hourly' ? (
+            {job.engagementType === 'Half-Day' ? (
               <div className="space-y-2">
                 <Label htmlFor="proposedRate">Your Hourly Rate * (USD)</Label>
                 <div className="relative">

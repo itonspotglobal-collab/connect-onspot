@@ -34,7 +34,7 @@ import {
 } from "@/lib/jobUtils";
 import {
   JOB_FUNCTIONS,
-  CONTRACT_TYPE_OPTIONS,
+  ENGAGEMENT_TYPE_OPTIONS,
   WORK_SETUPS,
   COMPENSATION_TYPE,
 } from "@/lib/jobConstants";
@@ -179,7 +179,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     if (!formData.company.trim()) next.company = "Company name is required";
     if (!formData.description.trim()) next.description = "Role overview is required";
     if (!formData.jobFunction.trim()) next.jobFunction = "Function is required";
-    if (!formData.contractType.trim()) next.contractType = "Contract type is required";
+    if (!formData.engagementType?.trim()) next.engagementType = "Engagement type is required";
     if (!formData.experienceLevel) next.experienceLevel = "Experience level is required";
     // Salary is required for NEW jobs only; editing an existing job without salary is allowed
     // (admin can leave the salary field blank on an existing record and fill it in later).
@@ -210,7 +210,7 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       company: formData.company.trim() || "OnSpot",
       location: formData.location,
       category: formData.jobFunction.trim(),
-      contractType: formData.contractType.trim(),
+      engagementType: formData.engagementType?.trim() || "",
       experienceLevel: formData.experienceLevel,
       description: formData.description.trim(),
       jobSummary: formData.jobSummary.trim() || null,
@@ -458,24 +458,24 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="modal-contract-type">
-                  Contract Type <span className="text-red-500">*</span>
+                <Label htmlFor="modal-engagement-type">
+                  Engagement Type <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  value={formData.contractType}
-                  onValueChange={(v) => updateField("contractType", v)}
+                  value={formData.engagementType || ""}
+                  onValueChange={(v) => updateField("engagementType", v)}
                 >
-                  <SelectTrigger id="modal-contract-type">
+                  <SelectTrigger id="modal-engagement-type">
                     <SelectValue placeholder="Select type…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CONTRACT_TYPE_OPTIONS.map((o) => (
+                    {ENGAGEMENT_TYPE_OPTIONS.map((o) => (
                       <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.contractType && (
-                  <p className="text-xs text-red-500">{errors.contractType}</p>
+                {errors.engagementType && (
+                  <p className="text-xs text-red-500">{errors.engagementType}</p>
                 )}
               </div>
 

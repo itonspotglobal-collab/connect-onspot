@@ -21,7 +21,6 @@ import { JobDetailModal } from "@/components/JobDetailModal";
 import {
   getTimeAgo,
   getJobBadges,
-  formatContractType,
   getPublicCompanyName,
 } from "@/lib/jobUtils";
 
@@ -60,7 +59,7 @@ export interface JobShape {
   company?: string | null;
   location?: string | null;
   category: string;
-  contractType: string;
+  engagementType?: string;
   experienceLevel: string;
   description: string;
   budget?: string | null;
@@ -140,9 +139,9 @@ export function ExpandableJobCard({
                   </div>
                   <Badge
                     variant="secondary"
-                    className={`text-[10px] ${getJobTypeColor(job.contractType)}`}
+                    className={`text-[10px] ${getJobTypeColor(job.engagementType ?? "")}`}
                   >
-                    {formatContractType(job.contractType)}
+                    {job.engagementType ?? "Full-Time"}
                   </Badge>
                 </div>
               </div>
@@ -160,7 +159,7 @@ export function ExpandableJobCard({
                   Contract
                 </div>
                 <div className="text-sm font-semibold truncate">
-                  {formatContractType(job.contractType)}
+                  {job.engagementType ?? "Full-Time"}
                 </div>
               </div>
             </div>

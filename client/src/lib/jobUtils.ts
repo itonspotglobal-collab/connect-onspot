@@ -393,7 +393,7 @@ export function buildRateDisplay(job: {
   hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
-  contractType?: string;
+  engagementType?: string;
   compensationType?: string | null;
 }): string {
   return buildRateDisplayWithCode(job);
@@ -413,7 +413,7 @@ export function buildRateDisplayWithCode(job: {
   hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
-  contractType?: string;
+  engagementType?: string;
   compensationType?: string | null;
 }): string {
   const sym = getCurrencySymbol(job.budgetCurrency, job.customCurrencyCode);

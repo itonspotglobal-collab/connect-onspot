@@ -26,7 +26,7 @@ export interface ParsedJobRecord {
   jobFunction?: string;
   category: string;
   description: string;
-  contractType: string;
+  engagementType: string;
   experienceLevel: string;
   location: string;
   reportingTo?: string;
@@ -92,7 +92,7 @@ const HEADER_ALIASES: Record<string, keyof ParsedJobRecord> = {
     "alternative role": "originalRoleName", "original title": "originalRoleName",
   "function": "jobFunction", "job function": "jobFunction",
   department: "category", division: "category", team: "category",
-  "employment type": "contractType", "job type": "contractType", type: "contractType",
+  "employment type": "engagementType", "job type": "engagementType", type: "engagementType",
   "work setup": "location", "work arrangement": "location",
   location: "location", "work location": "location",
   "job description": "description", description: "description",
@@ -164,7 +164,7 @@ function validateRecord(
     jobFunction: rec.jobFunction?.trim() || rec.category?.trim() || "",
     category: normaliseCategory(rec.jobFunction || rec.category),
     description: rec.description?.trim() ?? "",
-    contractType: normaliseContractType(rec.contractType),
+    engagementType: normaliseContractType(rec.engagementType),
     experienceLevel: normaliseExperience(rec.experienceLevel),
     location: rec.location?.trim() || "Remote",
     reportingTo: rec.reportingTo?.trim(),
@@ -211,7 +211,7 @@ function rowsToRecords(
         jobFunction:          get("jobFunction"),
         category:             get("category") ?? get("jobFunction"),
         description:     get("description"),
-        contractType:    get("contractType"),
+        engagementType:    get("engagementType"),
         experienceLevel: get("experienceLevel"),
         location:        get("location"),
         reportingTo:     get("reportingTo"),
@@ -608,7 +608,7 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
     requirements,
     culturalFit,
     skillTags:        [],
-    contractType:     "fixed",
+    engagementType:     "Full-Time",
     experienceLevel:  sec["jobLevel"]?.trim(),
   };
 
@@ -638,7 +638,7 @@ async function submitJob(record: ParsedJobRecord): Promise<void> {
     jobFunction:          record.jobFunction || record.category,
     description:          record.description,
     category:             record.jobFunction || record.category,
-    contractType:    record.contractType,
+    engagementType:    record.engagementType,
     experienceLevel: record.experienceLevel,
     location:        record.location || "Remote",
     status:          "open",

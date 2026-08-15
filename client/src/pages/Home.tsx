@@ -945,7 +945,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
             </div>
           ) : (
             liveJobs.map((j: any, idx: number) => {
-              const location = j.location || j.contractType || "Remote";
+              const location = j.location || j.engagementType || "Remote";
               const pay = jobPay(j);
               // Rotate avatars from the pool so each row shows different faces
               const rowAvatars = avatarPool.slice((idx * 2) % Math.max(avatarPool.length, 1), (idx * 2) % Math.max(avatarPool.length, 1) + 2);
@@ -1758,7 +1758,7 @@ function OpenJobsSection() {
     const regular  = all.filter((j: any) => !j.isFeatured);
     return [...shuffle(featured), ...shuffle(regular)].slice(0, 4).map((j: any) => ({
       title: j.title,
-      type:  j.contractType || "Full-time",
+      type:  j.engagementType || "Full-Time",
       loc:   j.location || "Remote",
       pay:   j.budget
         ? `${j.budgetCurrency ?? "PHP"} ${j.budget}`

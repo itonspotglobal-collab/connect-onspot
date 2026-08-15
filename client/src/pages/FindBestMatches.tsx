@@ -1246,7 +1246,7 @@ function scoreJobMatch(job: Job, profile: CandidateProfile): PostedJobMatch {
     prefReasons.push("Remote setup");
   } else if (profile.preferredSetup === "Remote" && !isRemote) prefScore -= 2;
 
-  const isFixedFull = job.contractType === "fixed";
+  const isFixedFull = job.engagementType === "Full-Time";
   if (profile.preferredJobType === "Full-time" && isFixedFull) prefScore += 3;
   else if (profile.preferredJobType === "Part-time" && !isFixedFull)
     prefScore += 3;
@@ -1725,8 +1725,8 @@ function PostedJobMatchCard({
               <p className="mt-0.5 text-sm capitalize text-slate-500">
                 {job.category ?? "General"}
                 {job.location ? ` · ${job.location}` : ""}
-                {job.contractType
-                  ? ` · ${job.contractType.replace(/-/g, " ")}`
+                {job.engagementType
+                  ? ` · ${job.engagementType}`
                   : ""}
                 {job.experienceLevel
                   ? ` · ${JOB_LEVEL_LABEL[job.experienceLevel] ?? job.experienceLevel}`

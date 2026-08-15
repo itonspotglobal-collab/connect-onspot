@@ -80,27 +80,23 @@ export function resolveJobFunction(raw: string | null | undefined): string {
 export const WORK_SETUPS = ["Remote", "Hybrid", "Onsite"] as const;
 export type WorkSetup = (typeof WORK_SETUPS)[number];
 
-// ── Contract Types ────────────────────────────────────────────────────────────
-// Values stored in the DB (and used in the form dropdown going forward).
-export const CONTRACT_TYPE_OPTIONS = [
-  { value: "full-time",  label: "Full Time"  },
-  { value: "part-time",  label: "Part Time"  },
-  { value: "contract",   label: "Contract"   },
+// ── Engagement Types ──────────────────────────────────────────────────────────
+// The two canonical engagement types. "Hourly", "fixed", "part-time", etc. are
+// retired — all jobs use Half-Day or Full-Time going forward.
+export const ENGAGEMENT_TYPE_OPTIONS = [
+  { value: "Full-Time", label: "Full-Time" },
+  { value: "Half-Day",  label: "Half-Day"  },
 ] as const;
 
-export type ContractTypeValue = (typeof CONTRACT_TYPE_OPTIONS)[number]["value"];
+export type EngagementTypeValue = (typeof ENGAGEMENT_TYPE_OPTIONS)[number]["value"];
 
 // ── Compensation ──────────────────────────────────────────────────────────────
 // All new/edited jobs must use Monthly compensation.
 export const COMPENSATION_TYPE = "monthly" as const;
 
-// ── Filter contract-type options (public FindWork page) ───────────────────────
-// Includes legacy values (hourly, fixed) for backward compat with old DB records.
+// ── Filter engagement-type options (public FindWork page) ─────────────────────
 export const FILTER_CONTRACT_TYPES = [
-  { value: "All Types",  label: "All Types"  },
-  { value: "full-time",  label: "Full Time"  },
-  { value: "part-time",  label: "Part Time"  },
-  { value: "contract",   label: "Contract"   },
-  { value: "hourly",     label: "Hourly"     },
-  { value: "fixed",      label: "Fixed"      },
+  { value: "All Types", label: "All Types" },
+  { value: "Full-Time", label: "Full-Time" },
+  { value: "Half-Day",  label: "Half-Day"  },
 ] as const;

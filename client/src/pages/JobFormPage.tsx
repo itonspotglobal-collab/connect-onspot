@@ -130,7 +130,7 @@ export default function JobFormPage() {
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
       // Switching to Full Time: duration is irrelevant — clear it.
-      if (field === "contractType" && value === "full-time") {
+      if (field === "engagementType" && value === "Half-Day") {
         next.duration = "";
       }
       return next;
@@ -498,7 +498,7 @@ function validateStep(
       errors.professionalRoleName = "Job title is required";
     if (!formData.company.trim()) errors.company = "Company name is required";
     if (!formData.jobFunction.trim()) errors.jobFunction = "Function is required";
-    if (!formData.contractType.trim()) errors.contractType = "Engagement type is required";
+    if (!formData.engagementType?.trim()) errors.engagementType = "Engagement type is required";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
   }
 
@@ -544,7 +544,7 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
     company: formData.company.trim() || "OnSpot",
     location: formData.location,
     category: formData.jobFunction.trim(),
-    contractType: formData.contractType.trim(),
+    engagementType: formData.engagementType?.trim() || "",
     experienceLevel: formData.experienceLevel,
     description: formData.description.trim(),
     jobSummary: formData.jobSummary.trim() || null,

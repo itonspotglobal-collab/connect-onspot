@@ -104,7 +104,7 @@ export interface IStorage {
   updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined>;
   searchJobs(filters: {
     category?: string;
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -198,7 +198,7 @@ export interface IStorage {
   getJobWithSkills(jobId: string): Promise<(Job & { skills: string[] }) | undefined>;
   searchJobsWithSkills(filters: {
     category?: string;
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -213,7 +213,7 @@ export interface IStorage {
     minRate?: number;
     maxRate?: number;
     timezone?: string;
-    contractType?: string;
+    engagementType?: string;
     category?: string;
     experienceLevel?: string;
   }): Promise<Array<{
@@ -821,7 +821,7 @@ export class MemStorage implements IStorage {
   // Enhanced search with computed skills arrays
   async searchJobsWithSkills(filters: {
     category?: string;
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -835,8 +835,8 @@ export class MemStorage implements IStorage {
       jobs = jobs.filter(j => j.category === filters.category);
     }
 
-    if (filters.contractType) {
-      jobs = jobs.filter(j => j.contractType === filters.contractType);
+    if (filters.engagementType) {
+      jobs = jobs.filter(j => j.engagementType === filters.engagementType);
     }
 
     if (filters.experienceLevel) {
@@ -904,7 +904,7 @@ export class MemStorage implements IStorage {
   // Keep original method for backward compatibility but delegate to enhanced version
   async searchJobs(filters: {
     category?: string;
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -949,7 +949,7 @@ export class MemStorage implements IStorage {
     minRate?: number;
     maxRate?: number;
     timezone?: string;
-    contractType?: string;
+    engagementType?: string;
     category?: string;
     experienceLevel?: string;
   }): Promise<Array<{
@@ -972,7 +972,7 @@ export class MemStorage implements IStorage {
     // Search for all available jobs with enhanced skills
     const allJobs = await this.searchJobsWithSkills({
       status: 'open',
-      ...(filters?.contractType && { contractType: filters.contractType }),
+      ...(filters?.engagementType && { engagementType: filters.engagementType }),
       ...(filters?.category && { category: filters.category }),
       ...(filters?.experienceLevel && { experienceLevel: filters.experienceLevel }),
       ...(filters?.minRate && { minBudget: filters.minRate }),
@@ -2738,7 +2738,7 @@ export class DbStorage extends MemStorage {
   async searchJobsWithSkills(filters: {
     category?: string;
     categories?: string[];  // multi-category filter (OR logic); takes precedence over category
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -2787,8 +2787,8 @@ export class DbStorage extends MemStorage {
       });
     }
 
-    if (filters.contractType) {
-      jobs = jobs.filter(j => j.contractType === filters.contractType);
+    if (filters.engagementType) {
+      jobs = jobs.filter(j => j.engagementType === filters.engagementType);
     }
     if (filters.experienceLevel) {
       jobs = jobs.filter(j => j.experienceLevel === filters.experienceLevel);
@@ -2836,7 +2836,7 @@ export class DbStorage extends MemStorage {
 
   async searchJobs(filters: {
     category?: string;
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -2931,7 +2931,7 @@ export class DbStorage extends MemStorage {
   async searchJobsPaginated(filters: {
     category?: string;
     categories?: string[];
-    contractType?: string;
+    engagementType?: string;
     experienceLevel?: string;
     minBudget?: number;
     maxBudget?: number;
@@ -2989,11 +2989,11 @@ export class DbStorage extends MemStorage {
       conditions.push(sqlOp`(${normDbJobFunction} = ${cat} OR ${normDbCategory} = ${cat})`);
     }
 
-    // Contract type — normalized comparison: strips hyphens/spaces/underscores so
-    // "full-time", "Full Time", "fulltime", and "full_time" all resolve to "fulltime".
-    if (filters.contractType) {
-      const normContract = filters.contractType.toLowerCase().replace(/[^a-z0-9]/g, "");
-      conditions.push(sqlOp`regexp_replace(lower(COALESCE(${jobsTable.contractType}, '')), '[^a-z0-9]', '', 'g') = ${normContract}`);
+    // Engagement type — normalized comparison: strips hyphens/spaces/underscores so
+    // "Half-Day", "halfday", and "half-day" all resolve to "halfday".
+    if (filters.engagementType) {
+      const normEngagement = filters.engagementType.toLowerCase().replace(/[^a-z0-9]/g, "");
+      conditions.push(sqlOp`regexp_replace(lower(COALESCE(${jobsTable.engagementType}, '')), '[^a-z0-9]', '', 'g') = ${normEngagement}`);
     }
 
     // Experience level — exact match

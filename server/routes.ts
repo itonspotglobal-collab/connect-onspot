@@ -5648,7 +5648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categories: req.query.categories
           ? (req.query.categories as string).split(",").map(s => s.trim()).filter(Boolean)
           : undefined,
-        contractType: req.query.contractType as string | undefined,
+        engagementType: req.query.engagementType as string | undefined,
         experienceLevel: req.query.experienceLevel as string | undefined,
         minBudget: req.query.minBudget ? Number(req.query.minBudget) : undefined,
         maxBudget: req.query.maxBudget ? Number(req.query.maxBudget) : undefined,
@@ -6188,7 +6188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         minRate: req.query.minRate ? Number(req.query.minRate) : undefined,
         maxRate: req.query.maxRate ? Number(req.query.maxRate) : undefined,
         timezone: req.query.timezone as string,
-        contractType: req.query.contractType as string,
+        engagementType: req.query.engagementType as string,
         category: req.query.category as string,
         experienceLevel: req.query.experienceLevel as string,
       };

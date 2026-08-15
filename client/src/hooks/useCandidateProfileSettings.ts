@@ -12,7 +12,7 @@
  *   coreSkills, profilePhotoUrl
  *
  * Fields stored inside the `preferences` JSONB column (no migration needed):
- *   timezone, languages, hourlyRate, rateCurrency
+ *   timezone, languages, rateAmount, rateEngagementType, rateCurrency
  *   (merged with existing preferences so workSetup/shift/etc. are preserved)
  */
 
@@ -40,8 +40,9 @@ export const candidateSettingsSchema = z.object({
   // Professional Details
   title:        z.string().optional().default(""),
   bio:          z.string().optional().default(""),
-  hourlyRate:   z.string().optional().default(""),
-  rateCurrency: z.string().default("USD"),
+  rateAmount:          z.string().optional().default(""),
+  rateEngagementType:  z.string().optional().default(""),
+  rateCurrency:        z.string().default("USD"),
   availability: z.string().default("available"),
   // Skills — stored in candidates.coreSkills (string[])
   coreSkills:   z.array(z.string()).default([]),
@@ -120,8 +121,9 @@ function candidateToFormValues(candidate: any): CandidateSettingsFormData {
     languages:    Array.isArray(prefs.languages) ? prefs.languages : [],
     title:        candidate.targetPosition || "",
     bio:          candidate.summary        || "",
-    hourlyRate:   prefs.hourlyRate   ? String(prefs.hourlyRate) : "",
-    rateCurrency: prefs.rateCurrency || "USD",
+    rateAmount:         prefs.rateAmount         ? String(prefs.rateAmount) : "",
+    rateEngagementType: prefs.rateEngagementType ? String(prefs.rateEngagementType) : "",
+    rateCurrency:       prefs.rateCurrency       || "USD",
     availability: candidate.availability   || "available",
     coreSkills:   Array.isArray(candidate.coreSkills) ? candidate.coreSkills : [],
   };
@@ -195,7 +197,7 @@ export function useCandidateProfileSettings() {
       firstName, lastName,
       phoneNumber: "", location: "", timezone: detectTimezone(),
       languages: [], title: "", bio: "",
-      hourlyRate: "", rateCurrency: "USD", availability: "available",
+      rateAmount: "", rateEngagementType: "", rateCurrency: "USD", availability: "available",
       coreSkills: [],
     };
   }, [candidate, talentAuth]);
@@ -230,8 +232,9 @@ export function useCandidateProfileSettings() {
           ...existingPrefs,
           timezone:     data.timezone,
           languages:    data.languages,
-          hourlyRate:   data.hourlyRate   || null,
-          rateCurrency: data.rateCurrency || "USD",
+          rateAmount:         data.rateAmount         || null,
+          rateEngagementType: data.rateEngagementType || null,
+          rateCurrency:       data.rateCurrency       || "USD",
         },
       };
 

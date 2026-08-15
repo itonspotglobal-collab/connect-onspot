@@ -219,7 +219,7 @@ function JobCard({
   if      (locLower.includes("remote"))                                  cardBadges.push({ key: "remote",    label: "Remote"    });
   else if (locLower.includes("hybrid"))                                  cardBadges.push({ key: "hybrid",    label: "Hybrid"    });
   else if (locLower.includes("on-site") || locLower.includes("onsite")) cardBadges.push({ key: "onsite",    label: "Onsite"    });
-  const ctNorm = (job.contractType ?? "").toLowerCase().replace(/-/g, "");
+  const ctNorm = (job.engagementType ?? "").toLowerCase().replace(/-/g, "");
   if      (ctNorm === "fulltime") cardBadges.push({ key: "full-time", label: "Full Time" });
   else if (ctNorm === "parttime") cardBadges.push({ key: "part-time", label: "Part Time" });
   else if (ctNorm === "contract") cardBadges.push({ key: "contract",  label: "Contract"  });
@@ -486,7 +486,7 @@ export default function FindWorkAllJobs() {
   });
   const [category, setCategory] = useState("All Categories");
   const [location, setLocation] = useState("All Locations");
-  const [contractType, setContractType] = useState("All Types");
+  const [engagementType, setEngagementType] = useState("All Types");
   const [salary, setSalary] = useState("Any pay");
   const [sort, setSort] = useState<SortOption>("recently-posted");
   const [showFilters, setShowFilters] = useState(() => {
@@ -535,7 +535,7 @@ export default function FindWorkAllJobs() {
   const { data: jobsData, isLoading } = useQuery<PaginatedJobsResponse>({
     queryKey: [
       "/api/jobs/search",
-      { status: "open", page: currentPage, pageSize: PAGE_SIZE, q: search, category, contractType, location, salary, navSlug },
+      { status: "open", page: currentPage, pageSize: PAGE_SIZE, q: search, category, engagementType, location, salary, navSlug },
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -544,7 +544,7 @@ export default function FindWorkAllJobs() {
       params.set("pageSize", String(PAGE_SIZE));
       if (search.trim()) params.set("q", search.trim());
       if (category !== "All Categories") params.set("category", category);
-      if (contractType !== "All Types") params.set("contractType", contractType);
+      if (engagementType !== "All Types") params.set("engagementType", engagementType);
       if (location !== "All Locations") params.set("location", location);
       if (salary !== "Any pay") {
         const minSalary = parseInt(salary.replace(/[^0-9]/g, ""), 10);
@@ -712,7 +712,7 @@ export default function FindWorkAllJobs() {
   const hasActiveFilters =
     category !== "All Categories" ||
     location !== "All Locations" ||
-    contractType !== "All Types" ||
+    engagementType !== "All Types" ||
     salary !== "Any pay" ||
     (!!navGroup && navGroup.cats.length > 0);
 
@@ -740,18 +740,18 @@ export default function FindWorkAllJobs() {
   }, [rawSearch, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When any filter/sort/navSlug changes, reset to page 1
-  const prevFiltersRef = useRef({ search, category, location, contractType, salary, sort, navSlug });
+  const prevFiltersRef = useRef({ search, category, location, engagementType, salary, sort, navSlug });
   useEffect(() => {
     const prev = prevFiltersRef.current;
     const changed =
       prev.search !== search ||
       prev.category !== category ||
       prev.location !== location ||
-      prev.contractType !== contractType ||
+      prev.engagementType !== engagementType ||
       prev.salary !== salary ||
       prev.sort !== sort ||
       prev.navSlug !== navSlug;
-    prevFiltersRef.current = { search, category, location, contractType, salary, sort, navSlug };
+    prevFiltersRef.current = { search, category, location, engagementType, salary, sort, navSlug };
     if (changed && currentPage !== 1) {
       try {
         const params = new URLSearchParams(rawSearch);
@@ -759,7 +759,7 @@ export default function FindWorkAllJobs() {
         navigate(`/find-work/jobs?${params.toString()}`);
       } catch { /* noop */ }
     }
-  }, [search, category, location, contractType, salary, sort, navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [search, category, location, engagementType, salary, sort, navSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to #job-openings when navigated here with that hash (e.g. "Back to All Jobs" from a job detail page).
   // Runs once on mount; a small delay lets the page finish painting before scrolling.
@@ -1033,7 +1033,7 @@ export default function FindWorkAllJobs() {
                         key={t}
                         onClick={() => setContractType(t)}
                         className={`rounded-full px-3 py-1.5 text-xs capitalize transition ${
-                          contractType === t
+                          engagementType === t
                             ? "bg-[#474ead] text-white"
                             : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/[0.06] dark:text-slate-300"
                         }`}

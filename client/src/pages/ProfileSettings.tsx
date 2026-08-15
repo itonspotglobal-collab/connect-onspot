@@ -1012,14 +1012,31 @@ export default function ProfileSettings() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      <FormField control={form.control} name="hourlyRate" render={({ field }) => (
+                      <FormField control={form.control} name="rateEngagementType" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className={labelCls}>Engagement Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <FormControl>
+                              <StyledSelectTrigger>
+                                <SelectValue placeholder="Select…" />
+                              </StyledSelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Full-Time">Full-Time</SelectItem>
+                              <SelectItem value="Half-Day">Half-Day</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="rateAmount" render={({ field }) => (
                         <FormItem>
                           <FormLabel className={labelCls}>
                             <DollarSign style={{ width: 15, height: 15, color: I }} />
-                            Hourly Rate
+                            Rate Expectation
                           </FormLabel>
                           <FormControl>
-                            <StyledInput type="number" placeholder="25" {...field} data-testid="input-hourly-rate" />
+                            <StyledInput type="number" placeholder="3000" {...field} data-testid="input-rate-amount" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

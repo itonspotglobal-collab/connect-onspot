@@ -3,7 +3,6 @@ import { Pencil } from "lucide-react";
 import type { JobFormData } from "@/lib/jobFormUtils";
 import { isEmptyQuill } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
-import { CONTRACT_TYPE_OPTIONS } from "@/lib/jobConstants";
 
 interface Props {
   formData: JobFormData;
@@ -61,9 +60,7 @@ export function JobReviewStep({
   isPending,
   onSubmit,
 }: Props) {
-  const contractLabel =
-    CONTRACT_TYPE_OPTIONS.find((o) => o.value === formData.contractType)?.label ||
-    formData.contractType;
+  const contractLabel = formData.engagementType || "—";
 
   const expLabel =
     formData.experienceLevel === "entry"

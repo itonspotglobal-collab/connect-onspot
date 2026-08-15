@@ -536,7 +536,7 @@ function PendingApprovalCard({
               )}
               <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
               <span className="text-slate-300 dark:text-white/20">·</span>
-              <span>{job.contractType}</span>
+              <span>{job.engagementType}</span>
               {job.location && (
                 <>
                   <span className="text-slate-300 dark:text-white/20">·</span>
@@ -1549,7 +1549,7 @@ export default function AdminFindWork() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Contract Type</p>
-                    <p className="font-medium text-slate-800 dark:text-white capitalize">{dj.contractType}</p>
+                    <p className="font-medium text-slate-800 dark:text-white">{dj.engagementType}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Location</p>

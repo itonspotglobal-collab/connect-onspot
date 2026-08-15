@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { JOB_FUNCTIONS, CONTRACT_TYPE_OPTIONS, WORK_SETUPS } from "@/lib/jobConstants";
+import { JOB_FUNCTIONS, WORK_SETUPS } from "@/lib/jobConstants";
 import type { JobFormData } from "@/lib/jobFormUtils";
 
 interface Props {
@@ -142,22 +142,19 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
             Engagement Type <span className="text-red-500">*</span>
           </Label>
           <Select
-            value={formData.contractType}
-            onValueChange={(v) => updateField("contractType", v)}
+            value={formData.engagementType || ""}
+            onValueChange={(v) => updateField("engagementType", v)}
           >
             <SelectTrigger id="basics-contract" className="mt-1.5">
               <SelectValue placeholder="Select type…" />
             </SelectTrigger>
             <SelectContent>
-              {CONTRACT_TYPE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="Full-Time">Full-Time</SelectItem>
+              <SelectItem value="Half-Day">Half-Day</SelectItem>
             </SelectContent>
           </Select>
-          {errors.contractType && (
-            <p className="mt-1 text-xs text-red-500">{errors.contractType}</p>
+          {errors.engagementType && (
+            <p className="mt-1 text-xs text-red-500">{errors.engagementType}</p>
           )}
         </div>
 

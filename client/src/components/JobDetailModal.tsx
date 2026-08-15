@@ -81,7 +81,7 @@ export interface JobDetailModalProps {
     company?: string | null;
     location?: string | null;
     category: string;
-    contractType: string;
+    engagementType?: string;
     experienceLevel: string;
     description: string;
     budget?: string | null;
@@ -122,7 +122,7 @@ export function JobDetailModal({
         ? `₱${job.hourlyRateMin}–${job.hourlyRateMax}/month`
         : job.budget ? `₱${job.budget}` : "Rate TBD");
 
-  const rateLabel = job.contractType === "fixed" ? "Fixed price" : "Monthly rate";
+  const rateLabel = "Monthly rate";
   const skills = job.skillTags || [];
   const responsibilities = job.responsibilities || [];
   const requirements = job.requirements || [];
@@ -187,8 +187,8 @@ export function JobDetailModal({
                     <Star className="w-3 h-3 text-yellow-300 fill-current" />
                     <span className="text-blue-100 text-xs">4.9</span>
                   </div>
-                  <Badge variant="secondary" className={`text-[10px] ${getJobTypeColor(job.contractType)}`}>
-                    {formatContractType(job.contractType)}
+                  <Badge variant="secondary" className={`text-[10px] ${getJobTypeColor(job.engagementType ?? "")}`}>
+                    {job.engagementType ?? "Full-Time"}
                   </Badge>
                 </div>
               </div>
@@ -215,14 +215,14 @@ export function JobDetailModal({
             <Briefcase className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contract</div>
-              <div className="text-sm font-semibold truncate">{formatContractType(job.contractType)}</div>
+              <div className="text-sm font-semibold truncate">{job.engagementType ?? "Full-Time"}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-3">
             <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">₱</span>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                {job.contractType === "fixed" ? "Budget" : "Salary"}
+                Salary
               </div>
               <div className="text-sm font-semibold truncate">{rateDisplay}</div>
             </div>

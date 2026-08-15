@@ -524,7 +524,7 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
   )
     .toLowerCase()
     .trim();
-  const currentContract = (currentJob.contractType ?? "").toLowerCase().trim();
+  const currentContract = (currentJob.engagementType ?? "").toLowerCase().trim();
   const currentLocation = (currentJob.location ?? "").toLowerCase().trim();
   const currentTags = new Set(
     (currentJob.skillTags ?? []).map((t) => t.toLowerCase()),
@@ -542,7 +542,7 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
       // Priority 2 — same contract type
       if (
         currentContract &&
-        (j.contractType ?? "").toLowerCase().trim() === currentContract
+        (j.engagementType ?? "").toLowerCase().trim() === currentContract
       )
         score += 2;
       // Priority 3 — same work setup / location
@@ -807,7 +807,7 @@ function DbJobDetail({
               {
                 icon: Layers,
                 label: "Engagement",
-                value: (job.contractType ?? "Full-time").replace(/-/g, " "),
+                value: job.engagementType ?? "Full-Time",
               },
             ].map(({ icon: Icon, label, value }) => (
               <div
