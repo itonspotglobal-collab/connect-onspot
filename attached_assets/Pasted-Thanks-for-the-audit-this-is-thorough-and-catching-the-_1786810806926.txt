@@ -1,0 +1,41 @@
+Thanks for the audit — this is thorough, and catching the match-scorer dependency
+before anything got dropped was the right call.
+
+Note: your summary lists fixed(3) + hourly(2) + part-time(2) = 7 rows needing a
+decision, not 5 as you asked at the end — going with 7 below.
+
+DECISIONS:
+
+1. Casing fix: "Full-time" → "Full-Time" (normalize immediately, zero ambiguity)
+
+2. "full-time" (7 rows) → "Full-Time". Proceed.
+
+3. "fixed" (3 rows) → default to "Full-Time". Fixed-price commitments are the
+   closest conceptual match to a full commitment under this model. Log which
+   specific rows got this default (job id + title) so it's easy to find and
+   correct later if wrong.
+
+4. "part-time" (2 rows) → default to "Half-Day". Closest conceptual match to a
+   less-than-full-time coverage tier. Same logging requirement as above.
+
+5. "hourly" (2 rows) → DO NOT auto-map these. Pull and report back: job title,
+   associated client (company_name from client_profiles), both rate fields
+   (hourly_rate_min/max), and created_at for these 2 specific rows. I need to
+   look at the actual rate numbers before deciding whether each becomes
+   Half-Day or Full-Time — these are the rows that represent the real
+   business-model mismatch, not a naming difference.
+
+6. hourly_rate_min / hourly_rate_max: Hide from the Job form UI now — approved.
+   Do NOT drop the columns yet. The match scorer in server/storage.ts:1019–1028
+   depends on them. Migrating the scorer to read engagement_type + flat rate
+   instead is real, separate work — scope that as its own follow-up task once
+   Step 1 is live, not bundled into this schema pass. For now: columns stay,
+   hidden from the form, scorer keeps working exactly as it does today.
+
+7. candidates.preferences.hourlyRate → migrate to the flat-rate structure I
+   specified before ({ engagementType, rateAmount, rateCurrency }). Confirmed
+   safe — approved, proceed.
+
+Once you've sent back the details on the 2 "hourly" rows, I'll give you the final
+call on those and you're clear to move into Step 1 (Talent Profile module, Job
+entity, minimal posting/application flow) using engagement_type from the start.
