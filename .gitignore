@@ -6,3 +6,4 @@ vite.config.ts.*
 *.tar.gz
 resources/rag_index.jsonresources/rag_index.json
 resources/rag_index.json
+rag_index.json
