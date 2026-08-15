@@ -729,33 +729,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  is_repeat_application migration skipped:", migErr.message);
   }
 
-  // ── One-time safe migration: create job_application_status_history table and
-  // map legacy 'new' status -> 'submitted' for consistency with the new status model.
-  try {
-    await query(`
-      CREATE TABLE IF NOT EXISTS job_application_status_history (
-        id              uuid      PRIMARY KEY DEFAULT gen_random_uuid(),
-        application_id  varchar   NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
-        previous_status text,
-        new_status      text      NOT NULL,
-        note            text,
-        changed_by      varchar   REFERENCES users(id),
-        created_at      timestamp NOT NULL DEFAULT now()
-      )
-    `);
-    await query(`CREATE INDEX IF NOT EXISTS idx_jash_application_id ON job_application_status_history(application_id)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_jash_changed_by     ON job_application_status_history(changed_by)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_jash_created_at     ON job_application_status_history(created_at)`);
-    const legacyResult = await query(`UPDATE job_submissions SET status = 'submitted' WHERE status = 'new'`);
-    if (legacyResult.rowCount && legacyResult.rowCount > 0) {
-      console.log(`✅ Migration: mapped ${legacyResult.rowCount} legacy 'new' submission(s) to 'submitted'`);
-    }
-    // Update column default so future inserts use 'submitted'
-    await query(`ALTER TABLE job_submissions ALTER COLUMN status SET DEFAULT 'submitted'`);
-  } catch (migErr: any) {
-    console.warn("⚠️  status history migration skipped:", migErr.message);
-  }
-
   // ── One-time safe migration: create applicant_email_templates and job_application_emails tables ──
   try {
     await query(`

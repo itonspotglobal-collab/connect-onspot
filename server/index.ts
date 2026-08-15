@@ -237,7 +237,7 @@ const logJWTConfiguration = () => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  const requestId = req.requestId;
+    const requestId = req.requestId;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -374,63 +374,8 @@ app.use((req, res, next) => {
     
     // Start site crawler service (automatic crawl daily at 3:00 AM)
     const { siteCrawlerService } = await import('./services/siteCrawlerService');
-    siteCrawlerService.startCronJob();
-  } else {
-    console.log('⏸  Background cron jobs disabled (RUN_BACKGROUND_JOBS=false)');
-  }
 
-  // Pre-warm the RAG index into memory so the first chat request is instant.
-  // This just loads the existing rag_index.json; it does NOT crawl or embed.
-  if (process.env.OPENAI_API_KEY) {
-    import('./services/ragService')
-      .then(({ loadRagIndex }) => loadRagIndex())
-      .then((idx) => {
-        if (idx) {
-          console.log(`🧠 RAG index pre-warmed: ${idx.totalChunks} chunks across ${new Set(idx.chunks.map((c: any) => c.url)).size} pages`);
-        } else {
-          console.log(`ℹ️  No RAG index found — run POST /api/rag/reindex to build one`);
-        }
-      })
-      .catch((err: any) => console.warn(`⚠️ RAG pre-warm skipped: ${err.message}`));
-
-    // Auto-generate platform knowledge if AUTO_UPDATE_VANESSA_KNOWLEDGE=true
-    if (process.env.AUTO_UPDATE_VANESSA_KNOWLEDGE === 'true') {
-      import('./services/knowledgeBaseUpdater')
-        .then(({ savePlatformKnowledge }) => savePlatformKnowledge())
-        .then((result) => {
-          if (result.success) {
-            console.log(`📚 Platform knowledge auto-updated at startup → ${result.filePath}`);
-          } else {
-            console.warn(`⚠️ Platform knowledge auto-update failed: ${result.error}`);
-          }
-        })
-        .catch((err: any) => console.warn(`⚠️ Platform knowledge auto-update skipped: ${err.message}`));
-    }
-
-    if (runBgJobs) {
-      // Index website content (testimonials, people, magazine, team, case studies).
-      import('./services/ragService')
-        .then(({ indexWebsiteContent }) => indexWebsiteContent())
-        .then((result) => {
-          console.log(`📄 Website content indexed at startup: ${result.chunksAdded} chunk(s)`);
-        })
-        .catch((err: any) => console.warn(`⚠️ Startup content indexing skipped: ${err.message}`));
-
-      // Index live job listings from the database so Vanessa can answer job questions.
-      import('./services/ragService')
-        .then(({ indexJobListings }) => indexJobListings())
-        .then((result) => {
-          console.log(`💼 Job listings indexed at startup: ${result.jobsIndexed} job(s), ${result.chunksAdded} chunk(s)`);
-        })
-        .catch((err: any) => console.warn(`⚠️ Startup job indexing skipped: ${err.message}`));
-    }
-  }
-  
-  // Auto-approve all admin-created (non-client-submitted) jobs that are still
-  // in the default "pending" state. These were created before the approval
-  // workflow existed and should be publicly visible immediately.
-  // Idempotent: only updates rows that are genuinely still pending.
-  try {
+    const { query: migrateQuery } = await import('./db');
     const { query: dbQuery } = await import('./db');
     const autoApproveResult = await dbQuery(
       `UPDATE jobs
@@ -602,3 +547,5 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 })();
+
+    const legacyFix = await migrateQuery(`UPDATE job_submissions SET status = 'submitted' WHERE status = 'new'`);
