@@ -3604,19 +3604,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profile = insertedProfiles[0];
         }
 
-        // Dual-write: mirror rateAmount into candidates.preferences so the
-        // match scorer (which reads candidates.preferences.rateAmount) sees
-        // rates entered through the onboarding forms, not just Settings.
-        // Use profileData.hourlyRate (the pre-parse string) — insertProfileSchema
-        // may return a Decimal/undefined for this field, making validated.hourlyRate falsy.
+        // Dual-write: mirror rateAmount + rateEngagementType into candidates.preferences
+        // so the match scorer sees data entered through onboarding forms, not just Settings.
+        // Use profileData.hourlyRate (pre-parse string) — insertProfileSchema may return
+        // Decimal/undefined for this field, making validated.hourlyRate falsy.
         const rawHourlyRate = profileData.hourlyRate;
-        if (rawHourlyRate) {
+        const rawRateEngagementType = req.body.rateEngagementType
+          ? String(req.body.rateEngagementType)
+          : null;
+        if (rawHourlyRate || rawRateEngagementType) {
+          const prefPatch: Record<string, string> = {};
+          if (rawHourlyRate) prefPatch.rateAmount = rawHourlyRate;
+          if (rawRateEngagementType) prefPatch.rateEngagementType = rawRateEngagementType;
           await query(
             `UPDATE candidates
              SET preferences = COALESCE(preferences, '{}'::jsonb)
-               || jsonb_build_object('rateAmount', $1::text)
+               || $1::jsonb
              WHERE user_id = $2`,
-            [rawHourlyRate, userId],
+            [JSON.stringify(prefPatch), userId],
           );
         }
 

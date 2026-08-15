@@ -545,6 +545,28 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
             <div className="grid md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
+                name="rateEngagementType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Availability</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <SelectTrigger id="rateEngagementType" data-testid="select-engagement-type">
+                        <SelectValue placeholder="Half-Day or Full-Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Full-Time">Full-Time</SelectItem>
+                        <SelectItem value="Half-Day">Half-Day</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
                 name="timezone"
                 render={({ field }) => (
                   <FormItem>
@@ -575,11 +597,11 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 name="availability"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Availability Status</FormLabel>
+                    <FormLabel>Work Status</FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger id="availability" data-testid="select-availability">
-                          <SelectValue placeholder="Select availability" />
+                        <SelectTrigger id="availability" data-testid="select-work-status">
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="available">Available for work</SelectItem>

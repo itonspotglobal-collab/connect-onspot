@@ -724,7 +724,27 @@ export default function EnhancedProfileOnboarding({
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="rateEngagementType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Availability *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <SelectTrigger data-testid="select-engagement-type">
+                              <SelectValue placeholder="Half-Day or Full-Time" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Full-Time">Full-Time</SelectItem>
+                              <SelectItem value="Half-Day">Half-Day</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={form.control}
                       name="hourlyRate"
@@ -749,10 +769,10 @@ export default function EnhancedProfileOnboarding({
                       name="availability"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Availability *</FormLabel>
+                          <FormLabel>Work Status *</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger data-testid="select-availability">
-                              <SelectValue placeholder="Select availability" />
+                            <SelectTrigger data-testid="select-work-status">
+                              <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="available">Available now</SelectItem>

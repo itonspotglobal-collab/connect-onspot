@@ -576,6 +576,28 @@ export default function GetHired() {
                       />
                     </div>
 
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="rateEngagementType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Availability</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <SelectTrigger data-testid="select-engagement-type">
+                                <SelectValue placeholder="Half-Day or Full-Time" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Full-Time">Full-Time</SelectItem>
+                                <SelectItem value="Half-Day">Half-Day</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     {/* Skills Selection */}
                     <div>
                       <Label className="text-base font-medium">Skills ({selectedSkills?.length || 0} selected)</Label>

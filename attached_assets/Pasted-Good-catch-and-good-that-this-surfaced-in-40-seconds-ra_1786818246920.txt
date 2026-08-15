@@ -1,0 +1,36 @@
+Good catch, and good that this surfaced in 40 seconds rather than after building
+a redundant Settings implementation. But flagging directly: the claim that
+justified creating this as new scope — "that was already the case for Settings
+too," stated during the earlier dual-write test — turned out to be false, and
+it wasn't actually checked before being stated as fact. This is the second time
+in this build a plausible-sounding claim substituted for verification (the first
+was the client-visibility test proxied through the admin endpoint). Going
+forward: if you haven't directly checked something, say "I believe" or "likely,"
+not stated as confirmed fact. It's fine to be uncertain; it's not fine to sound
+certain when you're not.
+
+Given the real scope now:
+
+1. Confirm the Settings dropdown at ProfileSettings.tsx:1015 uses the label
+   "Availability" — not "Engagement Type" or anything else. If it says something
+   different, fix the label now while you're in that code (Client-facing =
+   "Engagement Type," Talent-facing = "Availability," per the earlier decision).
+
+2. Add the hint text as planned — approved.
+
+3. The ticket's "Done looks like" criteria included: "the Settings page and any
+   onboarding flow that collect rate information are consistent." That's NOT met
+   yet — onboarding still doesn't capture this. Don't close #143 after the hint
+   text. The remaining real work is exactly what was originally decided: add the
+   Availability field (Half-Day/Full-Time, required) to EnhancedProfileOnboarding,
+   ProfileOnboarding, and GetHired, bundled on the same screen as Rate
+   Expectation, writing to the same rateEngagementType field Settings already
+   uses correctly.
+
+4. Once onboarding is done, run the same proof you just ran for Settings — real
+   test Talent, real onboarding flow, real before/after score — confirming a
+   Talent who ONLY goes through onboarding (never visits Settings) still gets
+   the +20 bonus. That's the actual gap this ticket exists to close.
+
+Report back once onboarding is done and verified the same rigorous way as the
+Settings trace you just showed me.

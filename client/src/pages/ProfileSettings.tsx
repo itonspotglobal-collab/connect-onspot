@@ -1014,7 +1014,7 @@ export default function ProfileSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       <FormField control={form.control} name="rateEngagementType" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>Preferred Engagement Type</FormLabel>
+                          <FormLabel className={labelCls}>Availability</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <StyledSelectTrigger data-testid="select-engagement-type">
@@ -1065,10 +1065,10 @@ export default function ProfileSettings() {
                       )} />
                       <FormField control={form.control} name="availability" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className={labelCls}>Availability</FormLabel>
+                          <FormLabel className={labelCls}>Work Status</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <StyledSelectTrigger data-testid="select-availability">
+                              <StyledSelectTrigger data-testid="select-work-status">
                                 <SelectValue />
                               </StyledSelectTrigger>
                             </FormControl>
