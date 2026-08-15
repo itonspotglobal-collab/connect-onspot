@@ -692,6 +692,17 @@ export default function FindWorkAllJobs() {
     return [...featuredOnes, ...regularOnes];
   }, [openJobs, sort]);
 
+  // Special sort modes filter the already-fetched result set (they return a subset of openJobs),
+  // so use filtered.length for the visible count in those cases.
+  // If these modes later move server-side, meta.total should become authoritative again.
+  const isFilteringSort =
+    sort === "in-demand" ||
+    sort === "urgently-hiring" ||
+    sort === "top-remote" ||
+    sort === "featured";
+
+  const displayedTotal = isFilteringSort ? filtered.length : totalJobs;
+
   function applyHotSearch(term: string) {
     setSearch(term);
     setCategory("All Categories");
@@ -1078,9 +1089,9 @@ export default function FindWorkAllJobs() {
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {totalJobs.toLocaleString()}
+                  {displayedTotal.toLocaleString()}
                 </span>{" "}
-                role{totalJobs !== 1 ? "s" : ""} found
+                role{displayedTotal !== 1 ? "s" : ""} found
                 {search && (
                   <>
                     {" "}
@@ -1089,7 +1100,7 @@ export default function FindWorkAllJobs() {
                     "
                   </>
                 )}
-                {totalPages > 1 && (
+                {!isFilteringSort && totalPages > 1 && (
                   <span className="ml-2 text-slate-400">
                     · page {currentPage} of {totalPages}
                   </span>
