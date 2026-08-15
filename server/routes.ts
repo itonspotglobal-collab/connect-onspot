@@ -5913,6 +5913,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = { ...req.body, clientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
+      // Engagement type is required for any job that is published (status=open)
+      if (body.status === "open" && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+        return res.status(400).json({
+          error: "Engagement Type is required",
+          message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+        });
+      }
+
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       res.status(201).json(job);
@@ -5936,6 +5944,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/jobs/:id", async (req: Request, res: Response) => {
     try {
       const { clientId, ...rest } = req.body;
+
+      // If this patch sets the job to open, confirm engagement_type is valid — either
+      // supplied in the body, or already set on the existing row.
+      if (rest.status === "open") {
+        let engType: string | null = rest.engagementType ?? null;
+        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+          const existing = await query(
+            "SELECT engagement_type FROM jobs WHERE id = $1",
+            [req.params.id],
+          );
+          engType = existing.rows[0]?.engagement_type ?? null;
+        }
+        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+          return res.status(400).json({
+            error: "Engagement Type is required",
+            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          });
+        }
+      }
+
       const updates = insertJobSchema.partial().parse(rest);
       const job = await storage.updateJob(req.params.id, updates);
       if (!job) {
@@ -5960,6 +5988,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.body;
       if (!status || !["open", "closed", "cancelled"].includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be 'open', 'closed', or 'cancelled'" });
+      }
+      // Publishing requires a valid engagement_type on the existing row
+      if (status === "open") {
+        const existing = await query(
+          "SELECT engagement_type FROM jobs WHERE id = $1",
+          [req.params.id],
+        );
+        const engType: string | null = existing.rows[0]?.engagement_type ?? null;
+        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+          return res.status(400).json({
+            error: "Engagement Type is required",
+            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          });
+        }
       }
       const job = await storage.updateJob(req.params.id, { status });
       if (!job) {
@@ -9088,6 +9130,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       // Client-created jobs always start as pending approval
       const body = { ...req.body, clientId: userId, approvalStatus: "pending", isClientSubmitted: true };
+
+      // Engagement type is required for published jobs
+      if (body.status === "open" && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+        return res.status(400).json({
+          error: "Engagement Type is required",
+          message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+        });
+      }
+
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       return res.status(201).json(job);
@@ -9105,9 +9156,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { jobId } = req.params;
       // Ownership check
-      const check = await query("SELECT id, approval_status FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
+      const check = await query("SELECT id, approval_status, engagement_type FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
       if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
       const { clientId: _strip, ...rest } = req.body;
+
+      // If this patch sets the job to open, confirm engagement_type is valid
+      if (rest.status === "open") {
+        const engType: string | null = rest.engagementType ?? check.rows[0].engagement_type ?? null;
+        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+          return res.status(400).json({
+            error: "Engagement Type is required",
+            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          });
+        }
+      }
+
       const updates = insertJobSchema.partial().parse(rest);
       // Editing an approved job resets it to pending — must be re-reviewed
       const currentApproval = check.rows[0].approval_status;
@@ -9135,6 +9198,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.body;
       if (!["open", "closed", "cancelled"].includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be open, closed, or cancelled" });
+      }
+      // Publishing requires a valid engagement_type
+      if (status === "open") {
+        const engRow = await query(
+          "SELECT engagement_type FROM jobs WHERE id = $1 AND client_id = $2",
+          [jobId, userId],
+        );
+        if (engRow.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+        const engType: string | null = engRow.rows[0].engagement_type ?? null;
+        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+          return res.status(400).json({
+            error: "Engagement Type is required",
+            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          });
+        }
       }
       const r = await query(
         "UPDATE jobs SET status = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3 RETURNING *",
