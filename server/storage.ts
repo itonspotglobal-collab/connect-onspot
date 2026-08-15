@@ -41,7 +41,7 @@ import {
   candidateCultureEvaluations as cultureEvaluationsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { db } from "./db";
+import { db, query as dbQuery } from "./db";
 import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
 
 // Type for creating user with password
@@ -3118,6 +3118,100 @@ export class DbStorage extends MemStorage {
       items: items.map(job => ({ ...job, skills: [] })),
       total,
     };
+  }
+
+  /**
+   * Override searchProfiles to query PostgreSQL and coalesce rate from both
+   * profiles.hourly_rate (legacy JWT onboarding path) and
+   * candidates.preferences->>'rateAmount' (Talent Portal Settings path).
+   * This ensures talent who set their rate only via Settings appear in
+   * admin rate-range searches.
+   */
+  async searchProfiles(filters: {
+    location?: string;
+    skills?: string[];
+    availability?: string;
+    minRate?: number;
+    maxRate?: number;
+    rating?: number;
+  }): Promise<Profile[]> {
+    const conditions: string[] = [];
+    const params: (string | number)[] = [];
+    let idx = 1;
+
+    if (filters.location) {
+      conditions.push(`p.location ILIKE $${idx}`);
+      params.push(`%${filters.location}%`);
+      idx++;
+    }
+
+    if (filters.availability) {
+      conditions.push(`p.availability = $${idx}`);
+      params.push(filters.availability);
+      idx++;
+    }
+
+    if (filters.rating !== undefined) {
+      conditions.push(`p.rating::numeric >= $${idx}`);
+      params.push(filters.rating);
+      idx++;
+    }
+
+    // Coalesce rate: prefer profiles.hourly_rate; fall back to
+    // candidates.preferences->>'rateAmount' set via Talent Portal Settings.
+    const rateExpr = `COALESCE(
+      NULLIF(p.hourly_rate, '')::numeric,
+      NULLIF(NULLIF(c.preferences->>'rateAmount', ''), 'null')::numeric
+    )`;
+
+    if (filters.minRate !== undefined) {
+      conditions.push(`${rateExpr} >= $${idx}`);
+      params.push(filters.minRate);
+      idx++;
+    }
+
+    if (filters.maxRate !== undefined) {
+      conditions.push(`${rateExpr} <= $${idx}`);
+      params.push(filters.maxRate);
+      idx++;
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
+
+    const sql = `
+      SELECT p.*
+      FROM profiles p
+      LEFT JOIN candidates c ON p.user_id = c.user_id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+      LIMIT 500
+    `;
+
+    const result = await dbQuery(sql, params);
+    // Map snake_case DB columns to camelCase Profile fields
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      userId: row.user_id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      title: row.title,
+      bio: row.bio,
+      location: row.location,
+      hourlyRate: row.hourly_rate,
+      rateCurrency: row.rate_currency,
+      availability: row.availability,
+      profilePicture: row.profile_picture,
+      phoneNumber: row.phone_number,
+      languages: row.languages,
+      timezone: row.timezone,
+      rating: row.rating,
+      totalEarnings: row.total_earnings,
+      jobSuccessScore: row.job_success_score,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
   }
 }
 
