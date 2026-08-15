@@ -236,6 +236,16 @@ export function TopNavigation() {
   const resolvedTalentCandidateId =
     talentAuth?.candidateId ?? generalTalentCandidateData?.id ?? null;
 
+  // Hide "Hire Talent" when a talent is logged in; hide "Find Work" when a client is logged in.
+  // Both items are visible to unauthenticated visitors and admins.
+  const isTalentLoggedIn = !!(talentAuth || user?.role === "talent");
+  const isClientLoggedIn = !!(user?.role === "client");
+  const visibleNavItems = navigationItems.filter((item) => {
+    if (isTalentLoggedIn && item.path === "/hire-talent") return false;
+    if (isClientLoggedIn && item.path === "/find-work/jobs") return false;
+    return true;
+  });
+
   const getProfileRoute = () => {
     if (user?.role === "client") return "/client-profile";
     if (user?.role === "admin") return "/admin/dashboard";
@@ -597,7 +607,7 @@ export function TopNavigation() {
               zIndex: 101,
             }}
           >
-            {navigationItems.slice(0, visibleItems).map((item, index) => {
+            {visibleNavItems.slice(0, visibleItems).map((item, index) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
               const isActive =
                 location === item.path ||
@@ -665,7 +675,7 @@ export function TopNavigation() {
             })}
 
             {/* "More ▾" button for tablet Priority+ pattern */}
-            {visibleItems < navigationItems.length && window.innerWidth > 768 && window.innerWidth <= 1024 && (
+            {visibleItems < visibleNavItems.length && window.innerWidth > 768 && window.innerWidth <= 1024 && (
               <div className="relative">
                 <button
                   onClick={() => setMoreMenuOpen(!moreMenuOpen)}
@@ -709,7 +719,7 @@ export function TopNavigation() {
                     role="menu"
                   >
                     <div className="py-3 px-2">
-                      {navigationItems.slice(visibleItems).map((item) => (
+                      {visibleNavItems.slice(visibleItems).map((item) => (
                         <Link
                           key={item.path}
                           href={item.path}
@@ -1219,7 +1229,7 @@ export function TopNavigation() {
               <div className="mx-auto max-w-7xl" style={{ padding: "28px 32px" }}>
                 <div className="grid grid-cols-3 gap-8" style={{ gap: "32px" }}>
                   {(() => {
-                    const activeItem = navigationItems.find(item => item.title === activeDropdown);
+                    const activeItem = visibleNavItems.find(item => item.title === activeDropdown);
                     if (!activeItem) return null;
 
                     const columns: JSX.Element[] = [];
@@ -1346,7 +1356,7 @@ export function TopNavigation() {
       >
         <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-6">
           <div className="space-y-2">
-            {navigationItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
               const isExpanded = mobileAccordionOpen === item.title;
 
