@@ -61,10 +61,6 @@ function getJobTypeColor(type: string) {
   }
 }
 
-function formatContractType(type: string) {
-  return type.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-");
-}
-
 function formatExperienceLevel(level: string) {
   switch (level) {
     case "entry": return "Entry Level (0–2 years)";

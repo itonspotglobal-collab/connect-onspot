@@ -362,13 +362,6 @@ export function getTimeAgo(
 
 // ── Formatting Helpers ────────────────────────────────────────────────────────
 
-export function formatContractType(type: string): string {
-  return type
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join("-");
-}
-
 export function formatExperienceLevel(level: string): string {
   switch (level) {
     case "entry":
