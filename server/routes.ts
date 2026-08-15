@@ -5665,6 +5665,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/candidates/:id/video — Remove profile video introduction
+  app.delete("/api/candidates/:id/video", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try { decoded = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+
+      if (decoded.type === "candidate") {
+        if (decoded.candidateId !== id) return res.status(403).json({ error: "Not authorized" });
+      } else if (decoded.role === "talent" && decoded.email) {
+        const check = await query(
+          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
+          [id, decoded.email],
+        );
+        if (check.rows.length === 0) return res.status(403).json({ error: "Not authorized" });
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      // Fetch current video URL so we can delete the object
+      const candRow = await query(
+        `SELECT video_intro_url AS "videoIntroUrl" FROM candidates WHERE id = $1 LIMIT 1`,
+        [id],
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { videoIntroUrl } = candRow.rows[0];
+
+      if (videoIntroUrl) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          const objectFile = await objectStorageService.getObjectEntityFile(videoIntroUrl);
+          await objectFile.delete({ ignoreNotFound: true });
+        } catch (delErr) {
+          console.warn("DELETE /api/candidates/:id/video — could not delete object:", delErr);
+          // Non-fatal: clear the DB record regardless
+        }
+      }
+
+      await storage.updateCandidate(id, { videoIntroUrl: null, videoIntroFileName: null } as any);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("DELETE /api/candidates/:id/video error:", error);
+      res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+
   // GET /api/candidates/:id/video — Stream profile video to the authenticated owner
   app.get("/api/candidates/:id/video", async (req: any, res) => {
     try {

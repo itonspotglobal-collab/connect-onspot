@@ -692,6 +692,7 @@ export default function TalentProfile() {
   // ── Resume & video upload state ───────────────────────────────────────────
   const [resumeUploading, setResumeUploading] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
+  const [videoDeleting, setVideoDeleting] = useState(false);
   // 'idle' | 'camera' | 'recording' | 'recorded'
   const [videoRecordingState, setVideoRecordingState] = useState<'idle' | 'camera' | 'recording' | 'recorded'>('idle');
   const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
@@ -932,6 +933,31 @@ export default function TalentProfile() {
     if (!recordedVideoBlob) return;
     const file = new File([recordedVideoBlob], 'video-intro.webm', { type: 'video/webm' });
     await uploadVideo(file);
+  }
+
+  async function deleteVideo() {
+    if (!window.confirm("Delete your video introduction? This cannot be undone.")) return;
+    setVideoDeleting(true);
+    try {
+      const authHeader = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const res = await fetch(`/api/candidates/${id}/video`, {
+        method: "DELETE",
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete video");
+      }
+      // Clear videoIntroUrl in local candidate state so the preview disappears
+      setCandidate((prev: any) => prev ? { ...prev, videoIntroUrl: null, videoIntroFileName: null } : prev);
+      toast({ title: "Video deleted", description: "Your video introduction has been removed." });
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err.message || "Could not delete video.", variant: "destructive" });
+    } finally {
+      setVideoDeleting(false);
+    }
   }
 
   function formatRecordingTime(secs: number) {
@@ -1747,7 +1773,19 @@ export default function TalentProfile() {
                         />
                         <div className="flex items-center justify-between bg-slate-50 px-3 py-2 dark:bg-white/[0.03]">
                           <span className="text-xs text-slate-500">{(candidate as any).videoIntroFileName || "video-intro"}</span>
-                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">Saved</span>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">Saved</span>
+                            <button
+                              onClick={deleteVideo}
+                              disabled={videoDeleting}
+                              title="Delete video"
+                              className="flex items-center justify-center rounded-full p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                            >
+                              {videoDeleting
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : <Trash2 className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
