@@ -383,8 +383,8 @@ export function formatExperienceLevel(level: string): string {
 }
 
 /**
- * Primary rate display — uses salaryDisplay first, falls back to
- * legacy numeric fields for backward compatibility.
+ * Primary rate display — delegates to buildRateDisplayWithCode so all
+ * talent-facing salary strings use the same symbol-based, suffix-free format.
  */
 export function buildRateDisplay(job: {
   salaryDisplay?: string | null;
@@ -396,14 +396,15 @@ export function buildRateDisplay(job: {
   contractType?: string;
   compensationType?: string | null;
 }): string {
-  return formatJobSalary(job);
+  return buildRateDisplayWithCode(job);
 }
 
 /**
- * Same as buildRateDisplay but guarantees the ISO currency code is always
- * prefixed to numeric amounts — e.g. "USD 3,100 – 3,300/month" or
- * "PHP 50,000/month". Descriptive phrases ("Competitive") pass through unchanged.
- * Use this everywhere salary is displayed to applicants or admins.
+ * Talent-facing rate display — uses the currency symbol (not the ISO code)
+ * before each numeric amount and omits any period suffix (/month, /year, etc.).
+ * Ranges get the symbol on both values: "$3,100 - $3,300", "₱50,000".
+ * Descriptive phrases ("Competitive", "Rate TBD") pass through unchanged.
+ * Use this everywhere salary is displayed to candidates.
  */
 export function buildRateDisplayWithCode(job: {
   salaryDisplay?: string | null;
@@ -415,13 +416,7 @@ export function buildRateDisplayWithCode(job: {
   contractType?: string;
   compensationType?: string | null;
 }): string {
-  const code = getEffectiveCurrencyCode(job.budgetCurrency, job.customCurrencyCode);
-
-  const ct = job.compensationType;
-  const suffix =
-    ct === "monthly"  ? "/month"   :
-    ct === "annual"   ? "/year"    :
-    ct === "project"  ? "/project" : "";
+  const sym = getCurrencySymbol(job.budgetCurrency, job.customCurrencyCode);
 
   // ── 1. Free-text salaryDisplay ─────────────────────────────────────────────
   if (job.salaryDisplay?.trim()) {
@@ -430,30 +425,34 @@ export function buildRateDisplayWithCode(job: {
     // No digits → descriptive phrase ("Competitive", "Rate TBD") — return as-is
     if (!/\d/.test(display)) return display;
 
-    // Strip any existing currency prefix (ISO code or symbol) and any trailing
-    // period suffix so we can re-attach the correct code and suffix cleanly.
-    const stripped = display
-      .replace(/^[A-Z]{2,4}\s+/, "")               // "USD 3,100" → "3,100"
-      .replace(/^[₱$€£¥＄]\s?/, "")                // "₱50,000" → "50,000"
-      .replace(/\/(month|year|project|mo)\s*$/i, "") // strip existing suffix
+    // Strip any trailing period suffix, then normalise each range part by
+    // removing any leading currency prefix (ISO code or symbol) before the
+    // first digit — handles "USD 3,100", "₱50,000", "A$3,100", "$3,100", etc.
+    const withoutSuffix = display
+      .replace(/\/(month|year|project|mo)\s*$/i, "")
       .trim();
 
-    const result = `${code} ${stripped}`;
-    return suffix ? `${result}${suffix}` : result;
+    const stripPrefix = (s: string) => s.replace(/^[^0-9]*/, "").trim();
+
+    const rangeParts = withoutSuffix.split(/\s*[-–—]\s*/);
+    if (rangeParts.length >= 2) {
+      return `${sym}${stripPrefix(rangeParts[0])} - ${sym}${stripPrefix(rangeParts[1])}`;
+    }
+    return `${sym}${stripPrefix(withoutSuffix)}`;
   }
 
-  // ── 2. Legacy numeric fallback — format as "CODE amount" ───────────────────
+  // ── 2. Legacy numeric fallback ─────────────────────────────────────────────
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
   if (job.hourlyRateMin && job.hourlyRateMax) {
-    return `${code} ${fmt(Number(job.hourlyRateMin))} – ${fmt(Number(job.hourlyRateMax))}/mo`;
+    return `${sym}${fmt(Number(job.hourlyRateMin))} - ${sym}${fmt(Number(job.hourlyRateMax))}`;
   }
   if (job.hourlyRateMin) {
-    return `${code} ${fmt(Number(job.hourlyRateMin))}+/mo`;
+    return `${sym}${fmt(Number(job.hourlyRateMin))}`;
   }
   if (job.budget) {
-    return `${code} ${fmt(Number(job.budget))}/mo`;
+    return `${sym}${fmt(Number(job.budget))}`;
   }
   return "Salary not set";
 }

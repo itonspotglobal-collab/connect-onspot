@@ -203,10 +203,11 @@ function JobCard({
   // so the card can render salary and compensation type independently.
   const payClean = pay.replace(/\/(year|month|project|mo)\b/g, "").trim();
 
-  // Small badge label rendered below the salary figure (not as plain text)
+  // Small badge label rendered below the salary figure (not as plain text).
+  // "Monthly" is intentionally omitted — the $ format is self-evident and the
+  // period badge was redundant. Annual / Hourly / Project still add useful context.
   const compensationBadgeLabel: string | null =
     compensationType === "annual"  ? "Annual"        :
-    compensationType === "monthly" ? "Monthly"       :
     compensationType === "project" ? "Project Based" :
     compensationType === "hourly"  ? "Hourly"        :
     null;
