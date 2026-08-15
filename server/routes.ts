@@ -5601,6 +5601,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/candidates/:id/resume — Remove resume from candidate profile
+  app.delete("/api/candidates/:id/resume", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try { decoded = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+      if (decoded.type === "candidate") {
+        if (decoded.candidateId !== id) return res.status(403).json({ error: "Not authorized" });
+      } else if (decoded.role === "talent" && decoded.email) {
+        const check = await query(
+          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
+          [id, decoded.email],
+        );
+        if (check.rows.length === 0) return res.status(403).json({ error: "Not authorized" });
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      const row = await query(`SELECT resume_url AS "resumeUrl" FROM candidates WHERE id = $1 LIMIT 1`, [id]);
+      if (!row.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { resumeUrl } = row.rows[0];
+      if (resumeUrl) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          const objectFile = await objectStorageService.getObjectEntityFile(resumeUrl);
+          await objectFile.delete({ ignoreNotFound: true });
+        } catch (delErr) {
+          console.warn("DELETE /api/candidates/:id/resume — could not delete object:", delErr);
+        }
+      }
+      await storage.updateCandidate(id, { resumeUrl: null, resumeFileName: null } as any);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("DELETE /api/candidates/:id/resume error:", error);
+      res.status(500).json({ error: "Failed to delete resume" });
+    }
+  });
+
   // POST /api/candidates/:id/video — Upload or replace profile video introduction
   // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches
   app.post("/api/candidates/:id/video", upload.single("video"), async (req: any, res) => {

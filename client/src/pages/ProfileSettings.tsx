@@ -20,6 +20,10 @@ import {
   Eye,
   Settings2,
   ArrowLeft,
+  Loader2,
+  Trash2,
+  Video,
+  Download,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -270,6 +274,114 @@ export default function ProfileSettings() {
   // Reset to undefined when the candidate query refetches with the persisted URL.
   const [localPhotoUrl, setLocalPhotoUrl]   = useState<string | undefined>(undefined);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Resume & video (synced with Talent Profile via candidates table) ─────
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeDeleting,  setResumeDeleting]  = useState(false);
+  const [videoUploading,  setVideoUploading]  = useState(false);
+  const [videoDeleting,   setVideoDeleting]   = useState(false);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const videoFileInputRef  = useRef<HTMLInputElement>(null);
+
+  /** Auth header used by resume/video fetch calls — mirrors TalentProfile pattern. */
+  const getAuthHeader = () =>
+    talentAuth?.token
+      ? `Bearer ${talentAuth.token}`
+      : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+
+  /** Invalidate the candidate query so both Settings and TalentProfile reflect the change. */
+  const invalidateCandidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+
+  const uploadResume = async (file: File) => {
+    if (!candidateId) return;
+    setResumeUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("resume", file);
+      const res = await fetch(`/api/candidates/${candidateId}/resume`, {
+        method: "POST",
+        headers: { Authorization: getAuthHeader() },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+      await invalidateCandidate();
+      toast({ title: "Resume saved", description: "Your resume has been updated." });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResumeUploading(false);
+    }
+  };
+
+  const deleteResume = async () => {
+    if (!candidateId || !window.confirm("Remove your resume? This cannot be undone.")) return;
+    setResumeDeleting(true);
+    try {
+      const res = await fetch(`/api/candidates/${candidateId}/resume`, {
+        method: "DELETE",
+        headers: { Authorization: getAuthHeader() },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Delete failed");
+      }
+      await invalidateCandidate();
+      toast({ title: "Resume removed." });
+    } catch (err: any) {
+      toast({ title: "Removal failed", description: err.message, variant: "destructive" });
+    } finally {
+      setResumeDeleting(false);
+    }
+  };
+
+  const uploadVideo = async (file: File) => {
+    if (!candidateId) return;
+    setVideoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("video", file);
+      const res = await fetch(`/api/candidates/${candidateId}/video`, {
+        method: "POST",
+        headers: { Authorization: getAuthHeader() },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+      await invalidateCandidate();
+      toast({ title: "Video saved", description: "Your video introduction has been updated." });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setVideoUploading(false);
+    }
+  };
+
+  const deleteVideo = async () => {
+    if (!candidateId || !window.confirm("Delete your video introduction? This cannot be undone.")) return;
+    setVideoDeleting(true);
+    try {
+      const res = await fetch(`/api/candidates/${candidateId}/video`, {
+        method: "DELETE",
+        headers: { Authorization: getAuthHeader() },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Delete failed");
+      }
+      await invalidateCandidate();
+      toast({ title: "Video deleted." });
+    } catch (err: any) {
+      toast({ title: "Deletion failed", description: err.message, variant: "destructive" });
+    } finally {
+      setVideoDeleting(false);
+    }
+  };
 
   // `documents` is now managed by the hook (useQuery) so completion recalculates
   // automatically after upload/remove without a separate local state + useEffect.
@@ -927,73 +1039,191 @@ export default function ProfileSettings() {
 
                 {/* ─ Documents ─ */}
                 {activeSection === "documents" && (
-                  <SectionCard icon={Upload} title="Documents" subtitle="Upload your resume and video introduction to showcase your qualifications.">
+                  <SectionCard icon={Upload} title="Documents" subtitle="Your resume and video introduction — synced with your Talent Profile.">
 
-                    {/* Resume / CV */}
+                    {/* ── Resume / CV ── */}
                     <div className="space-y-3 mb-7">
                       <Label className="text-[14px] font-semibold" style={{ color: TEXT }}>
                         Resume / CV
                       </Label>
-                      {resumeDocs.length > 0 ? (
-                        <div className="space-y-2">
-                          {resumeDocs.map((doc) => (
-                            <DocRow key={doc.id} doc={doc} onRemove={removeDocument} />
-                          ))}
+
+                      {/* Existing resume row */}
+                      {(candidate as any)?.resumeFileName ? (
+                        <div
+                          className="flex items-center justify-between p-4 rounded-xl"
+                          style={{ border: `1.5px solid ${BORDER}`, background: BG }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div style={{ width: 36, height: 36, borderRadius: 8, background: "#EEEDFB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <FileText style={{ width: 16, height: 16, color: I }} />
+                            </div>
+                            <p className="font-medium text-[14px] truncate" style={{ color: TEXT }}>
+                              {(candidate as any).resumeFileName}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 shrink-0 ml-3">
+                            {/* Download */}
+                            <button
+                              type="button"
+                              title="Download resume"
+                              onClick={() => {
+                                fetch(`/api/candidates/${candidateId}/resume`, { headers: { Authorization: getAuthHeader() } })
+                                  .then(r => r.blob())
+                                  .then(blob => {
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = (candidate as any).resumeFileName || "resume";
+                                    a.click();
+                                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                                  })
+                                  .catch(() => toast({ title: "Download failed", variant: "destructive" }));
+                              }}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg transition-colors"
+                              style={{ border: `1.5px solid ${BORDER}`, background: "#fff", color: MUTED }}
+                            >
+                              <Download style={{ width: 14, height: 14 }} />
+                            </button>
+                            {/* Delete */}
+                            <button
+                              type="button"
+                              title="Remove resume"
+                              disabled={resumeDeleting}
+                              onClick={deleteResume}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg disabled:opacity-50"
+                              style={{ border: "1.5px solid #FCA5A5", background: "#FFF5F5", color: "#DC2626", cursor: resumeDeleting ? "not-allowed" : "pointer" }}
+                            >
+                              {resumeDeleting
+                                ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" />
+                                : <Trash2 style={{ width: 14, height: 14 }} />}
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={10485760}
-                          enableTalentImport={true}
-                          importType="resume"
-                          onGetUploadParameters={async () => ({ method: "POST" as const, url: "/api/object-storage/upload-url" })}
-                          onComplete={async (result: any) => {
-                            if (result.successful && result.successful.length > 0) {
-                              const file = result.successful[0];
-                              try {
-                                await authAPI.post("/api/documents", {
-                                  type: "resume", fileName: file.name, fileUrl: file.uploadURL,
-                                  fileSize: file.size || null, mimeType: file.type || null,
-                                  isPublic: false, isPrimary: false,
-                                });
-                                invalidateDocuments();
-                              } catch {
-                                toast({ title: "Metadata save failed", description: "Resume uploaded but failed to save.", variant: "destructive" });
-                              }
-                            }
-                          }}
-                          buttonClassName="w-full"
-                        >
-                          Upload Resume (PDF, DOC, DOCX — max 10MB)
-                        </ObjectUploader>
+                        <p className="text-[13px]" style={{ color: MUTED }}>No resume uploaded yet.</p>
                       )}
+
+                      {/* Upload / Replace */}
+                      <input
+                        ref={resumeFileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadResume(file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={resumeUploading}
+                        onClick={() => resumeFileInputRef.current?.click()}
+                        className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-60"
+                        style={{
+                          height: 44, borderRadius: 11, fontSize: 14,
+                          border: `1.5px solid ${I}`, background: "transparent", color: I,
+                          cursor: resumeUploading ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {resumeUploading
+                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
+                          : <><Upload style={{ width: 15, height: 15 }} /> {(candidate as any)?.resumeFileName ? "Replace Resume" : "Upload Resume (PDF, DOC, DOCX — max 10 MB)"}</>}
+                      </button>
                     </div>
 
                     <Separator style={{ borderColor: BORDER }} />
 
-                    {/* Video Introduction */}
+                    {/* ── Video Introduction ── */}
                     <div className="space-y-3 mt-7">
                       <Label className="text-[14px] font-semibold" style={{ color: TEXT }}>
                         Video Introduction{" "}
                         <span className="font-normal text-[13px]" style={{ color: MUTED }}>(Optional)</span>
                       </Label>
-                      {videoDocs.length > 0 ? (
-                        <div className="space-y-2">
-                          {videoDocs.map((doc) => (
-                            <DocRow key={doc.id} doc={doc} onRemove={removeDocument} />
-                          ))}
+
+                      {/* Existing video preview */}
+                      {(candidate as any)?.videoIntroUrl && (
+                        <div className="overflow-hidden rounded-xl" style={{ border: `1.5px solid ${BORDER}` }}>
+                          <video
+                            controls
+                            className="w-full"
+                            onError={(e) => {
+                              const vid = e.currentTarget;
+                              if (vid.dataset.blobLoaded) return;
+                              vid.dataset.blobLoaded = "1";
+                              fetch(`/api/candidates/${candidateId}/video`, { headers: { Authorization: getAuthHeader() } })
+                                .then(r => r.blob())
+                                .then(blob => { vid.src = URL.createObjectURL(blob); })
+                                .catch(() => {});
+                            }}
+                            src={`/api/candidates/${candidateId}/video`}
+                          />
+                          <div className="flex items-center justify-between px-3 py-2" style={{ background: BG }}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Video style={{ width: 14, height: 14, color: V, flexShrink: 0 }} />
+                              <span className="text-[13px] truncate" style={{ color: MUTED }}>
+                                {(candidate as any).videoIntroFileName || "video-intro"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              <span
+                                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                style={{ background: "#EDE9FE", color: V }}
+                              >
+                                Saved
+                              </span>
+                              <button
+                                type="button"
+                                title="Delete video"
+                                disabled={videoDeleting}
+                                onClick={deleteVideo}
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-full disabled:opacity-50 transition-colors"
+                                style={{ color: MUTED, cursor: videoDeleting ? "not-allowed" : "pointer" }}
+                              >
+                                {videoDeleting
+                                  ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" />
+                                  : <Trash2 style={{ width: 14, height: 14 }} />}
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      ) : (
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={52428800}
-                          onGetUploadParameters={async () => ({ method: "POST" as const, url: "/api/object-storage/upload-url" })}
-                          onComplete={(result: any) => handleUploadComplete(result, "video_intro")}
-                          buttonClassName="w-full"
-                        >
-                          Upload Video Introduction (MP4, MOV, AVI, WEBM — max 50MB)
-                        </ObjectUploader>
                       )}
+
+                      {/* Upload / Replace */}
+                      <input
+                        ref={videoFileInputRef}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadVideo(file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={videoUploading}
+                        onClick={() => videoFileInputRef.current?.click()}
+                        className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-60"
+                        style={{
+                          height: 44, borderRadius: 11, fontSize: 14,
+                          border: `1.5px solid ${V}`, background: "transparent", color: V,
+                          cursor: videoUploading ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {videoUploading
+                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
+                          : <><Video style={{ width: 15, height: 15 }} /> {(candidate as any)?.videoIntroUrl ? "Replace Video" : "Upload Video Introduction (MP4, WebM or MOV — max 200 MB)"}</>}
+                      </button>
+                      <p className="text-center text-[11px]" style={{ color: MUTED }}>
+                        MP4, WebM or MOV · max 200 MB · {" "}
+                        {candidateId && (
+                          <a href={`/talent-profile/${candidateId}`} className="underline" style={{ color: I }}>
+                            View on your profile →
+                          </a>
+                        )}
+                      </p>
                     </div>
                   </SectionCard>
                 )}
