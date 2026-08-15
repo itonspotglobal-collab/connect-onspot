@@ -1,0 +1,349 @@
+Update the compensation/rate display across the **Find Work job listings and job detail pages**.
+
+The requested formatting change is:
+
+### Current Format
+
+Examples:
+
+`USD 3,100 - 3,300/month`
+
+or
+
+`USD 5,500 - 5,800/month`
+
+### New Format
+
+Replace `USD` with the `$` symbol and remove `/month`.
+
+Examples:
+
+`$3,100 - $3,300`
+
+`$5,500 - $5,800`
+
+The currency symbol should appear before **each amount** in a range.
+
+---
+
+## Pages / Features to Update
+
+Please inspect all related components used by the `/find-work/jobs` feature and update the compensation formatting consistently.
+
+At minimum, check:
+
+* `FindWorkAllJobs.tsx`
+* `FindWorkJob.tsx`
+* Job cards/components used by `/find-work/jobs`
+* Job detail page opened when clicking **View details**
+* Any reusable compensation/rate component
+* Any mobile-specific rendering of the job cards or job details
+* Featured job cards, if they use a separate component
+* Any search/filter results that render the same compensation information
+
+Do not update only one hardcoded instance. Find the common formatting logic if one exists and make the smallest reusable change possible.
+
+---
+
+## 1. Job Listing Cards
+
+On:
+
+`/find-work/jobs`
+
+Update the compensation/rate displayed on each job opening card.
+
+For example:
+
+Before:
+
+```text
+USD 3,100 - 3,300
+Monthly
+```
+
+or:
+
+```text
+USD 3,100 - 3,300/month
+```
+
+After:
+
+```text
+$3,100 - $3,300
+```
+
+Remove:
+
+* `USD`
+* `/month`
+* `Monthly`, if it is being displayed as a separate badge/label specifically for this compensation value
+
+Do not leave unnecessary spacing where the removed text used to be.
+
+---
+
+## 2. Job Detail Page
+
+When the user clicks:
+
+**View details**
+
+and opens the individual job detail page, update the **Monthly Rate / Monthly Compensation** display there as well.
+
+For example:
+
+Before:
+
+```text
+MONTHLY RATE
+USD 3,100 - 3,300/month
+```
+
+After:
+
+```text
+MONTHLY RATE
+$3,100 - $3,300
+```
+
+If the current heading says:
+
+`Monthly Compensation`
+
+or:
+
+`Monthly Rate`
+
+keep the heading unchanged unless the heading itself is generated from the `/month` suffix.
+
+Only change the displayed monetary value.
+
+---
+
+## 3. Currency Formatting
+
+Use the `$` symbol before each amount.
+
+Correct:
+
+```text
+$3,100 - $3,300
+```
+
+Incorrect:
+
+```text
+$3,100 - 3,300
+```
+
+Incorrect:
+
+```text
+USD 3,100 - 3,300
+```
+
+Incorrect:
+
+```text
+$3,100 - $3,300/month
+```
+
+If there is only one compensation value, display:
+
+```text
+$3,100
+```
+
+If there is a minimum and maximum value:
+
+```text
+$3,100 - $3,300
+```
+
+Preserve the existing number formatting with commas.
+
+---
+
+## 4. Prefer Shared Formatting Logic
+
+Inspect how compensation is currently generated.
+
+If multiple pages currently build compensation strings separately, create or update a reusable formatter/helper rather than duplicating logic.
+
+For example, conceptually:
+
+```tsx
+const formatCompensation = (
+  min?: number,
+  max?: number
+) => {
+  if (min && max) {
+    return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+  }
+
+  if (min) {
+    return `$${min.toLocaleString()}`;
+  }
+
+  return "";
+};
+```
+
+Use the project's existing utilities and conventions if a compensation formatter already exists.
+
+Do not introduce a duplicate formatter if the project already has one.
+
+---
+
+## 5. Important: Do Not Change the Stored Data
+
+This request is primarily a **display-format change**.
+
+Do not modify API payloads, database values, job salary fields, or backend currency values unless necessary.
+
+For example, if the backend returns:
+
+```tsx
+currency: "USD"
+minRate: 3100
+maxRate: 3300
+period: "month"
+```
+
+the frontend can continue receiving those values.
+
+Only render them as:
+
+```text
+$3,100 - $3,300
+```
+
+Do not remove the underlying `currency` or `period` information from the data model because other functionality may depend on it.
+
+---
+
+## 6. Remove the Monthly Badge Where Applicable
+
+In the job listing screenshot, the compensation area may currently show a separate:
+
+`Monthly`
+
+badge beneath the salary.
+
+If that badge exists only to represent `/month`, remove it as part of this change.
+
+The compensation area should visually show only:
+
+```text
+$3,100 - $3,300
+```
+
+If the `Monthly` badge is used elsewhere for actual filtering/business logic, preserve the underlying data and remove only its visual rendering from the job compensation display.
+
+---
+
+## 7. Preserve Existing Design
+
+Do not redesign the job cards or job detail page.
+
+Keep existing:
+
+* Font sizes
+* Font weights
+* Card dimensions
+* Compensation positioning
+* Borders
+* Colors
+* Backgrounds
+* Featured styles
+* Responsive layouts
+* Buttons
+* Apply Now behavior
+* View details behavior
+* Filters and sorting
+* Routing
+* Job data
+
+Only adjust spacing if necessary after removing `USD`, `/month`, or the `Monthly` badge.
+
+The compensation should remain properly aligned after the text becomes shorter.
+
+---
+
+## 8. Check All Responsive Views
+
+Verify the change at:
+
+* Desktop
+* Tablet
+* Mobile
+
+Make sure the shorter compensation text does not leave odd gaps or misalignment.
+
+---
+
+## 9. Expected Results
+
+### Job Listing
+
+Before:
+
+```text
+USD 3,100 - 3,300
+Monthly
+```
+
+After:
+
+```text
+$3,100 - $3,300
+```
+
+### Job Detail
+
+Before:
+
+```text
+MONTHLY RATE
+USD 3,100 - 3,300/month
+```
+
+After:
+
+```text
+MONTHLY RATE
+$3,100 - $3,300
+```
+
+### Single Rate
+
+Before:
+
+```text
+USD 3,100/month
+```
+
+After:
+
+```text
+$3,100
+```
+
+---
+
+## Acceptance Criteria
+
+After implementation:
+
+1. No compensation amount in the Find Work job listing UI should display `USD`.
+2. No compensation amount should display `/month`.
+3. No redundant `Monthly` compensation badge should remain where it is only describing the salary period.
+4. Every salary amount should use `$`.
+5. Salary ranges should use `$` on both values.
+6. The same formatting must appear on both `/find-work/jobs` and the individual job detail page opened through **View details**.
+7. Existing job application, View details, navigation, search, filtering, and sorting functionality must continue working.
+8. Do not make unrelated visual or functional changes.
+
+Please inspect the existing implementation first and update the shared compensation display logic wherever possible instead of applying isolated hardcoded fixes.
