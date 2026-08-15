@@ -529,7 +529,3 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 })();
-
-    const legacyFix = await migrateQuery(`UPDATE job_submissions SET status = 'submitted' WHERE status = 'new'`);
-
-    const removed = cleanupResult.rowCount ?? 0;
