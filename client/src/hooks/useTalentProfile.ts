@@ -25,9 +25,7 @@ export const profileFormSchema = z.object({
   location: z.string().optional(),
   hourlyRate: z.string().optional(),
   rateCurrency: z.string().default("USD"),
-  // Half-Day or Full-Time — written to candidates.preferences.rateEngagementType
-  // and used by the scorer's +20 engagement-match bonus.
-  rateEngagementType: z.string().optional(),
+  rateEngagementType: z.string().optional().default(""),
   availability: z.string().default("available"),
   phoneNumber: z.string().optional(),
   // Allow empty array so users can clear all languages
@@ -311,8 +309,6 @@ export function useTalentProfile() {
       location: profile?.location || "Manila, Philippines",
       hourlyRate: profile?.hourlyRate?.toString() || "",
       rateCurrency: profile?.rateCurrency || "USD",
-      // rateEngagementType lives in candidates.preferences, not profiles.
-      // Pre-filling from there is tracked separately; default to empty here.
       rateEngagementType: "",
       availability: profile?.availability || "available",
       phoneNumber: profile?.phoneNumber || "",

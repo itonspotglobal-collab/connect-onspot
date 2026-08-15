@@ -105,7 +105,7 @@ export default function GetHired() {
   } = useTalentProfile();
 
   // Form setup using consolidated profile system - stabilized to avoid hooks order issues
-  const form = useForm({
+  const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       firstName: '',
@@ -115,6 +115,7 @@ export default function GetHired() {
       location: 'Manila, Philippines',
       hourlyRate: '',
       rateCurrency: 'USD',
+      rateEngagementType: '',
       availability: 'available',
       phoneNumber: '',
       languages: ['English'],
@@ -139,6 +140,7 @@ export default function GetHired() {
         location: profile.location || 'Manila, Philippines',
         hourlyRate: profile.hourlyRate || '',
         rateCurrency: profile.rateCurrency || 'USD',
+        rateEngagementType: '',
         availability: profile.availability || 'available',
         phoneNumber: profile.phoneNumber || '',
         languages: profile.languages || ['English'],
@@ -566,7 +568,7 @@ export default function GetHired() {
                         name="hourlyRate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Rate Expectation</FormLabel>
+                            <FormLabel>Rate Expectation (USD)</FormLabel>
                             <FormControl>
                               <Input placeholder="25" type="number" {...field} data-testid="input-hourly-rate" />
                             </FormControl>
@@ -582,16 +584,19 @@ export default function GetHired() {
                         name="rateEngagementType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Availability</FormLabel>
+                            <FormLabel>Preferred Engagement Type</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
                               <SelectTrigger data-testid="select-engagement-type">
-                                <SelectValue placeholder="Half-Day or Full-Time" />
+                                <SelectValue placeholder="Select…" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Full-Time">Full-Time</SelectItem>
                                 <SelectItem value="Half-Day">Half-Day</SelectItem>
                               </SelectContent>
                             </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Boosts your match score on jobs that fit your preferred schedule.
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}

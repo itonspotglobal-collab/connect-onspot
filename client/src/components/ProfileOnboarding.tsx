@@ -548,16 +548,21 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 name="rateEngagementType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Availability</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <SelectTrigger id="rateEngagementType" data-testid="select-engagement-type">
-                        <SelectValue placeholder="Half-Day or Full-Time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Full-Time">Full-Time</SelectItem>
-                        <SelectItem value="Half-Day">Half-Day</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Preferred Engagement Type</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <SelectTrigger id="rateEngagementType" data-testid="select-engagement-type">
+                          <SelectValue placeholder="Select…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Full-Time">Full-Time</SelectItem>
+                          <SelectItem value="Half-Day">Half-Day</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Boosts your match score on jobs that fit your preferred schedule.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -597,11 +602,11 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                 name="availability"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Work Status</FormLabel>
+                    <FormLabel>Availability Status</FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger id="availability" data-testid="select-work-status">
-                          <SelectValue placeholder="Select status" />
+                        <SelectTrigger id="availability" data-testid="select-availability">
+                          <SelectValue placeholder="Select availability" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="available">Available for work</SelectItem>

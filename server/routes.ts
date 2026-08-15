@@ -3612,10 +3612,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const rawRateEngagementType = req.body.rateEngagementType
           ? String(req.body.rateEngagementType)
           : null;
+        const rawRateCurrency = profileData.rateCurrency
+          ? String(profileData.rateCurrency)
+          : null;
         if (rawHourlyRate || rawRateEngagementType) {
           const prefPatch: Record<string, string> = {};
           if (rawHourlyRate) prefPatch.rateAmount = rawHourlyRate;
           if (rawRateEngagementType) prefPatch.rateEngagementType = rawRateEngagementType;
+          if (rawRateCurrency) prefPatch.rateCurrency = rawRateCurrency;
           await query(
             `UPDATE candidates
              SET preferences = COALESCE(preferences, '{}'::jsonb)
