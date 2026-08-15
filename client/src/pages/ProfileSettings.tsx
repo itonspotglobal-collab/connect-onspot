@@ -45,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { TimezoneSelect } from "@/components/TimezoneSelect";
 import {
   useCandidateProfileSettings,
@@ -55,7 +54,6 @@ import {
 } from "@/hooks/useCandidateProfileSettings";
 import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
-import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -262,8 +260,6 @@ export default function ProfileSettings() {
     isSaving,
     profileCompletion,
     completionItems,
-    documents,
-    invalidateDocuments,
     getDefaultFormValues,
     saveSettings,
     uploadPhoto,
@@ -671,36 +667,6 @@ export default function ProfileSettings() {
     });
   };
 
-  // ── Document handlers (via authAPI — works with talent token fallback) ─────
-  const removeDocument = async (documentId: string) => {
-    try {
-      await authAPI.delete(`/api/documents/${documentId}`);
-      // Invalidate hook's document query → completion recalculates automatically.
-      invalidateDocuments();
-      toast({ title: "Document removed." });
-    } catch {
-      toast({ title: "Removal failed", description: "Please try again.", variant: "destructive" });
-    }
-  };
-
-  const handleUploadComplete = async (result: any, type: string) => {
-    if (result.successful && result.successful.length > 0) {
-      const file = result.successful[0];
-      try {
-        await authAPI.post("/api/documents", {
-          type, fileName: file.name, fileUrl: file.uploadURL,
-          fileSize: file.size || null, mimeType: file.type || null,
-          isPublic: false, isPrimary: false,
-        });
-        // Invalidate hook's document query → completion recalculates automatically.
-        invalidateDocuments();
-        toast({ title: "Document uploaded", description: `Your ${type === "resume" ? "resume" : "video introduction"} was saved.` });
-      } catch {
-        toast({ title: "Upload error", description: "File uploaded but metadata failed to save.", variant: "destructive" });
-      }
-    }
-  };
-
   // ── No talent session ─────────────────────────────────────────────────────
   if (!talentAuth) {
     return (
@@ -727,9 +693,6 @@ export default function ProfileSettings() {
       </div>
     );
   }
-
-  const resumeDocs = documents.filter((d) => d.type === "resume");
-  const videoDocs  = documents.filter((d) => d.type === "video_intro");
 
   return (
     <div className="min-h-screen" style={{ background: BG, paddingBottom: 60 }}>

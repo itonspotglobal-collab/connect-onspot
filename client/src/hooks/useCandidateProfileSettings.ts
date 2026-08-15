@@ -166,33 +166,9 @@ export function useCandidateProfileSettings() {
     },
   });
 
-  // ── Documents (resume + video_intro stored in documents table) ────────────
-  // Fetched with the talent Bearer token so `/api/documents` (authenticateJWT)
-  // accepts it via the same fallback the Axios interceptor uses.
-  const { data: documents = [] } = useQuery<any[]>({
-    queryKey: ["candidate-documents", candidateId],
-    queryFn: async () => {
-      const auth = loadTalentAuth();
-      if (!auth?.token) return [];
-      const res = await fetch("/api/documents", {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!candidateId,
-    staleTime: 30_000,
-  });
-
-  // Expose a refetch trigger so the Settings page can call it after upload/remove.
-  const invalidateDocuments = () =>
-    queryClient.invalidateQueries({ queryKey: ["candidate-documents", candidateId] });
-
   // ── Profile completion (shared module — single source of truth) ────────────
-  // hasResume: true when a document of type "resume" is in the documents table
-  // OR when the candidate row itself has a resumeUrl (legacy / direct upload path).
-  const hasResume =
-    documents.some((d: any) => d.type === "resume") || !!candidate?.resumeUrl;
+  // hasResume: true when the candidate row has a resumeUrl (single source of truth).
+  const hasResume = !!candidate?.resumeUrl;
 
   const completionItems: CompletionItem[] = useMemo(() => {
     if (!candidate) return [];
@@ -363,10 +339,6 @@ export function useCandidateProfileSettings() {
     profileCompletion,
     /** Labelled checklist used to show which items are complete/missing. */
     completionItems,
-    /** Documents from the `documents` table (resume + video_intro). */
-    documents,
-    /** Call after a document is uploaded or removed to trigger completion recalculation. */
-    invalidateDocuments,
     getDefaultFormValues,
     /** PATCH /api/candidates/:id with talent Bearer token. */
     saveSettings: (data: CandidateSettingsFormData) => saveMutation.mutateAsync(data),
