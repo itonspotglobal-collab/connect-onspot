@@ -17,7 +17,6 @@ import {
   Save,
   Plus,
   X,
-  Eye,
   Settings2,
   ArrowLeft,
   Loader2,
@@ -197,46 +196,6 @@ function NavItem({ id, title, icon: Icon, active, onClick }: NavItemProps) {
       <Icon style={{ width: 18, height: 18, opacity: active ? 1 : 0.55, flexShrink: 0 }} />
       {title}
     </button>
-  );
-}
-
-// ─── Document row ──────────────────────────────────────────────────────────────
-function DocRow({ doc, onRemove }: { doc: any; onRemove: (id: string) => void }) {
-  const sizeMb = doc.fileSize ? (doc.fileSize / 1024 / 1024).toFixed(1) : null;
-  const sizeKb = doc.fileSize ? Math.round(doc.fileSize / 1024) : null;
-  const sizeLabel = sizeMb && parseFloat(sizeMb) >= 1 ? `${sizeMb} MB` : sizeKb ? `${sizeKb} KB` : "Unknown size";
-
-  return (
-    <div
-      className="flex items-center justify-between p-4 rounded-xl"
-      style={{ border: `1.5px solid ${BORDER}`, background: BG }}
-    >
-      <div className="flex items-center gap-3">
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: "#EEEDFB", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <FileText style={{ width: 16, height: 16, color: I }} />
-        </div>
-        <div>
-          <p className="font-medium text-[14px]" style={{ color: TEXT }}>{doc.fileName}</p>
-          <p className="text-[12px]" style={{ color: MUTED }}>{sizeLabel}</p>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <a
-          href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center justify-center h-8 w-8 rounded-lg transition-colors"
-          style={{ border: `1.5px solid ${BORDER}`, background: "#fff", color: MUTED }}
-        >
-          <Eye style={{ width: 14, height: 14 }} />
-        </a>
-        <button
-          type="button" onClick={() => onRemove(doc.id)}
-          className="inline-flex items-center justify-center h-8 w-8 rounded-lg"
-          style={{ border: "1.5px solid #FCA5A5", background: "#FFF5F5", color: "#DC2626", cursor: "pointer" }}
-        >
-          <X style={{ width: 14, height: 14 }} />
-        </button>
-      </div>
-    </div>
   );
 }
 
