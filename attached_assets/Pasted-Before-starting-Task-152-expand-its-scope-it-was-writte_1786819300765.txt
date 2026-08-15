@@ -1,0 +1,44 @@
+Before starting Task #152, expand its scope — it was written as a follow-on
+discovery ("surface scored job matches"), but this feature was already fully
+specified before this project started, in Part 1, Phase 6 of the build
+checklist ("AI Job Matching"). Build to that spec, not just the ticket's own
+title. Here's the full scope, verbatim:
+
+MATCHING ENGINE (must-have):
+- Match inputs: Talent skills, experience, salary expectations, timezone,
+  language, industry history
+- Match outputs: ranked job list, compatibility score (numeric or banded,
+  e.g. High/Medium/Low)
+- Matching completes within a 10-second performance target
+- "Why this match" explainability — surface which criteria drove the score
+  (should-have, but build it if reasonably scoped in — it's what makes a raw
+  number trustworthy rather than arbitrary)
+
+RECOMMENDED-FOR-YOU FEED (must-have):
+- A dedicated "Recommended" tab/section, distinct from the general browse/
+  search feed — not scores bolted onto the existing job list
+- Sorted by compatibility score by default
+
+MATCH NOTIFICATIONS (must-have):
+- New high-compatibility match triggers a notification (in-app + email)
+
+DATA MODEL:
+- A job_matches table: talent_id, job_id, compatibility_score, computed_at,
+  match_reasons (structured — store WHY it matched, not just the number, so
+  the explainability feature above has something real to read from)
+- Recompute strategy must be explicitly decided and documented — does the
+  score recompute on profile update, on new job post, or on a scheduled
+  batch? Pick one, document why, don't leave it implicit in whatever the
+  first implementation happens to do.
+
+Before writing any code: report back on the recompute strategy decision and
+your reasoning, since that affects the job_matches schema and how "new
+high-compatibility match" notifications get triggered. Don't default silently
+to whichever is easiest to implement — tell me the tradeoff and what you're
+picking.
+
+Everything else proceeds as usual: audit what already exists (the scorer
+itself, plus anything TalentCard or FindBestMatches.tsx might already do)
+before building new, and give me a real end-to-end proof once it's done —
+logged in as an actual test Talent, hitting whatever endpoint the real UI
+calls, not a parallel test harness.
