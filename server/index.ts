@@ -371,25 +371,26 @@ app.use((req, res, next) => {
     // Start GHL sync service (automatic sync every 15 minutes)
     const { ghlSyncService } = await import('./services/ghlSyncService');
     ghlSyncService.startCronJob();
-    
+
     // Start site crawler service (automatic crawl daily at 3:00 AM)
     const { siteCrawlerService } = await import('./services/siteCrawlerService');
 
-    const { query: migrateQuery } = await import('./db');
-    const { query: dbQuery } = await import('./db');
-    const autoApproveResult = await dbQuery(
-      `UPDATE jobs
-         SET approval_status = 'approved',
-             status          = 'open',
-             updated_at      = NOW()
-       WHERE is_client_submitted = false
-         AND approval_status    = 'pending'`
-    );
-    if ((autoApproveResult.rowCount ?? 0) > 0) {
-      console.log(`✅ Auto-approved ${autoApproveResult.rowCount} admin-created job(s) that were pending`);
+    try {
+      const { query: dbQuery } = await import('./db');
+      const autoApproveResult = await dbQuery(
+        `UPDATE jobs
+           SET approval_status = 'approved',
+               status          = 'open',
+               updated_at      = NOW()
+         WHERE is_client_submitted = false
+           AND approval_status    = 'pending'`
+      );
+      if ((autoApproveResult.rowCount ?? 0) > 0) {
+        console.log(`✅ Auto-approved ${autoApproveResult.rowCount} admin-created job(s) that were pending`);
+      }
+    } catch (autoApproveErr: any) {
+      console.warn('⚠️  Auto-approve migration skipped:', autoApproveErr.message);
     }
-  } catch (autoApproveErr: any) {
-    console.warn('⚠️  Auto-approve migration skipped:', autoApproveErr.message);
   }
 
   // Seed posts from legacy static content to database
