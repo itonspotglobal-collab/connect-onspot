@@ -1548,7 +1548,7 @@ export default function AdminFindWork() {
                     <p className="font-medium text-slate-800 dark:text-white capitalize">{dj.category?.replace(/-/g, " ")}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Contract Type</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Engagement Type</p>
                     <p className="font-medium text-slate-800 dark:text-white">{dj.engagementType}</p>
                   </div>
                   <div>

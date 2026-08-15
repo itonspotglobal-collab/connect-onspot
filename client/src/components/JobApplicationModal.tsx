@@ -164,7 +164,7 @@ export default function JobApplicationModal({
     if (job.engagementType === 'Half-Day' && (data.proposedRate === undefined || data.proposedRate === null)) {
       form.setError('proposedRate', {
         type: 'required',
-        message: 'Hourly rate is required for hourly jobs'
+        message: 'Rate expectation is required for Half-Day roles'
       });
       return;
     }
@@ -172,7 +172,7 @@ export default function JobApplicationModal({
     if (job.engagementType === 'Full-Time' && (data.proposedBudget === undefined || data.proposedBudget === null)) {
       form.setError('proposedBudget', {
         type: 'required', 
-        message: 'Proposed budget is required for fixed-price jobs'
+        message: 'Proposed budget is required for Full-Time roles'
       });
       return;
     }
@@ -190,7 +190,7 @@ export default function JobApplicationModal({
       } else if (min) {
         return `$${min}+/hr`;
       }
-      return 'Hourly rate negotiable';
+      return 'Rate negotiable';
     } else {
       const budget = job.budget ? parseFloat(job.budget.toString()) : 0;
       return budget ? `$${budget.toLocaleString()} ${job.budgetCurrency || 'USD'}` : 'Budget negotiable';
@@ -273,7 +273,7 @@ export default function JobApplicationModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {job.engagementType === 'Half-Day' ? (
               <div className="space-y-2">
-                <Label htmlFor="proposedRate">Your Hourly Rate * (USD)</Label>
+                <Label htmlFor="proposedRate">Your Rate Expectation *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input

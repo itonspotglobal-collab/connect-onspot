@@ -1022,10 +1022,10 @@ export default function FindWorkAllJobs() {
                   </div>
                 </div>
 
-                {/* Contract type */}
+                {/* Engagement type */}
                 <div>
                   <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                    <Layers className="h-3 w-3" /> Contract type
+                    <Layers className="h-3 w-3" /> Engagement type
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {CONTRACT_TYPES.map((t) => (
