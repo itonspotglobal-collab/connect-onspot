@@ -1,0 +1,737 @@
+# Fix Result Count for `In Demand` / Special Sort Modes — Do Not Touch Working Filters
+
+The main filters on `/find-work/jobs` are now working correctly.
+
+Do NOT change or refactor the working:
+
+* Category
+* Location
+* Contract Type
+* Minimum Salary
+* search filtering
+* `/api/jobs/search` filter behavior
+
+There is one remaining issue:
+
+When selecting special Sort options such as:
+
+* In Demand
+* Urgently Hiring
+* Top Remote
+* Featured
+
+the number shown as:
+
+```text
+5 roles found
+```
+
+does not update to match the actual number of cards visible.
+
+Example from current test:
+
+```text
+5 roles returned by API
+
+Select:
+In Demand
+
+Visible results:
+3 jobs total
+
+UI still says:
+5 roles found
+```
+
+Expected:
+
+```text
+3 roles found
+```
+
+---
+
+## Confirmed Root Cause
+
+In:
+
+`client/src/pages/FindWorkAllJobs.tsx`
+
+the server response is:
+
+```ts
+const openJobs: Job[] = jobsData?.items ?? [];
+const totalJobs = jobsData?.meta?.total ?? 0;
+```
+
+The main filters are already server-side.
+
+This part is working and must remain unchanged.
+
+Then the component calculates:
+
+```ts
+const filtered = useMemo(() => {
+  const sorted = sortJobs(openJobs, sort);
+
+  ...
+  return [...featuredOnes, ...regularOnes];
+}, [openJobs, sort]);
+```
+
+The issue is that:
+
+```ts
+sortJobs()
+```
+
+does more than sorting.
+
+Some modes actually remove jobs.
+
+For example:
+
+```text
+In Demand
+Urgently Hiring
+Top Remote
+Featured
+```
+
+return only a subset of `openJobs`.
+
+But the UI still displays:
+
+```ts
+totalJobs
+```
+
+from the API.
+
+That is why the visible list and role count disagree.
+
+---
+
+# Important Scope Rule
+
+Do NOT modify the working first filters.
+
+Specifically, leave this existing request behavior intact:
+
+```ts
+if (category !== "All Categories")
+  params.set("category", category);
+
+if (contractType !== "All Types")
+  params.set("contractType", contractType);
+
+if (location !== "All Locations")
+  params.set("location", location);
+
+if (salary !== "Any pay")
+  params.set("minSalary", ...);
+```
+
+Do NOT move these back to client-side filtering.
+
+Do NOT change their query parameter names.
+
+Do NOT change Category/Function matching again.
+
+Only fix the count/special sort behavior.
+
+---
+
+# Required Fix
+
+Create a separate count representing the final displayed result set.
+
+For the current page:
+
+```ts
+const displayedJobsCount = filtered.length;
+```
+
+However, use it only for sort modes that actually filter the results.
+
+Define:
+
+```ts
+const FILTERING_SORTS: SortOption[] = [
+  "in-demand",
+  "urgently-hiring",
+  "top-remote",
+  "featured",
+];
+```
+
+Then derive:
+
+```ts
+const isFilteringSort = FILTERING_SORTS.includes(sort);
+
+const displayedTotal =
+  isFilteringSort
+    ? filtered.length
+    : totalJobs;
+```
+
+Use the actual project TypeScript style.
+
+---
+
+# Update the Count UI
+
+Current:
+
+```tsx
+<span className="font-bold text-slate-900 dark:text-white">
+  {totalJobs.toLocaleString()}
+</span>{" "}
+role{totalJobs !== 1 ? "s" : ""} found
+```
+
+Change it to use:
+
+```ts
+displayedTotal
+```
+
+Example:
+
+```tsx
+<span className="font-bold text-slate-900 dark:text-white">
+  {displayedTotal.toLocaleString()}
+</span>{" "}
+role{displayedTotal !== 1 ? "s" : ""} found
+```
+
+---
+
+# Expected Behavior
+
+## Recently Posted
+
+If API returns:
+
+```text
+5 jobs
+```
+
+Display:
+
+```text
+5 roles found
+```
+
+No change.
+
+---
+
+## Most Applied
+
+Most Applied only reorders jobs.
+
+If API returns 5:
+
+```text
+5 roles found
+```
+
+No change.
+
+---
+
+## In Demand
+
+If `sortJobs()` reduces 5 jobs to 3:
+
+```text
+3 roles found
+```
+
+This is the current bug shown in the screenshot.
+
+---
+
+## Urgently Hiring
+
+If only 2 jobs are urgent:
+
+```text
+2 roles found
+```
+
+---
+
+## Featured
+
+If only 2 jobs are featured:
+
+```text
+2 roles found
+```
+
+---
+
+## Top Remote
+
+If 4 jobs qualify:
+
+```text
+4 roles found
+```
+
+---
+
+# Featured Jobs Must Count Individually
+
+Important:
+
+Do not count sections.
+
+Count actual job records/cards.
+
+Example:
+
+```text
+Featured:
+IT Administrator
+Virtual Assistant
+
+Regular:
+Customer Service Representative
+```
+
+Total:
+
+```text
+3 roles found
+```
+
+not:
+
+```text
+2 roles found
+```
+
+The `filtered` array already contains the actual job records, so use its length.
+
+---
+
+# Keep Featured Cards at Top
+
+Do not change the existing behavior that separates:
+
+```ts
+featuredOnes
+regularOnes
+```
+
+and renders Featured cards first.
+
+This task is only about the count.
+
+---
+
+# Pagination Safety
+
+The current dataset shown in testing fits on one page.
+
+For now, use the displayed result count for the special client-side filtering modes.
+
+However, add a clear code comment:
+
+```ts
+// Special sort modes currently filter the already fetched result set,
+// so use filtered.length for the visible count.
+// If these modes later move server-side, meta.total should become authoritative again.
+```
+
+Do not perform a large backend sort migration in this task.
+
+We specifically want a small safe fix without risking the first filters.
+
+---
+
+# Do Not Use `openJobs.length`
+
+Do not implement:
+
+```ts
+const displayedTotal = openJobs.length;
+```
+
+That would still be wrong for:
+
+```text
+In Demand
+Urgently Hiring
+Top Remote
+Featured
+```
+
+because those modes reduce `openJobs`.
+
+Use:
+
+```ts
+filtered.length
+```
+
+for filtering sort modes.
+
+---
+
+# Sort Modes Classification
+
+Use this distinction:
+
+### True sorting only
+
+```text
+Recently Posted
+Most Applied
+```
+
+These keep the server total.
+
+### Filtering + sorting
+
+```text
+In Demand
+Urgently Hiring
+Top Remote
+Featured
+```
+
+These use the final visible array count.
+
+---
+
+# Do Not Change `sortJobs()` Logic Yet
+
+Do not rewrite:
+
+`client/src/lib/jobUtils.ts`
+
+for this fix unless absolutely necessary.
+
+Its current filtering behavior should remain.
+
+The only requirement here is that the count reflects what `sortJobs()` returns.
+
+---
+
+# Search + Sort
+
+If the server returns:
+
+```text
+4 jobs matching search "administrator"
+```
+
+and:
+
+```text
+In Demand
+```
+
+reduces that to 2:
+
+show:
+
+```text
+2 roles found for "administrator"
+```
+
+not 4.
+
+---
+
+# Category + Sort
+
+Example:
+
+```text
+Category = Engineering
+API total = 4
+
+In Demand result = 3
+```
+
+Show:
+
+```text
+3 roles found
+```
+
+This must NOT break the Engineering filter.
+
+---
+
+# Location + Sort
+
+Example:
+
+```text
+Remote
+API total = 3
+
+Urgently Hiring = 2
+```
+
+Show:
+
+```text
+2 roles found
+```
+
+---
+
+# Empty Result
+
+If:
+
+```text
+In Demand
+```
+
+returns no jobs:
+
+```text
+0 roles found
+```
+
+and keep the existing empty state.
+
+---
+
+# Singular Grammar
+
+Preserve:
+
+```text
+1 role found
+```
+
+not:
+
+```text
+1 roles found
+```
+
+Use `displayedTotal` for this condition too.
+
+---
+
+# Loading State
+
+While the API request is loading, preserve the existing loading skeleton.
+
+Do not temporarily show incorrect counts.
+
+---
+
+# Suggested Implementation
+
+Near:
+
+```ts
+const filtered = useMemo(...)
+```
+
+add:
+
+```ts
+const filteringSorts: SortOption[] = [
+  "in-demand",
+  "urgently-hiring",
+  "top-remote",
+  "featured",
+];
+
+const isFilteringSort = filteringSorts.includes(sort);
+
+const displayedTotal = isFilteringSort
+  ? filtered.length
+  : totalJobs;
+```
+
+If preferred:
+
+```ts
+const isFilteringSort =
+  sort === "in-demand" ||
+  sort === "urgently-hiring" ||
+  sort === "top-remote" ||
+  sort === "featured";
+```
+
+Either is fine.
+
+---
+
+# Then Update Only the Display
+
+Replace:
+
+```tsx
+{totalJobs.toLocaleString()}
+```
+
+with:
+
+```tsx
+{displayedTotal.toLocaleString()}
+```
+
+and replace:
+
+```tsx
+role{totalJobs !== 1 ? "s" : ""} found
+```
+
+with:
+
+```tsx
+role{displayedTotal !== 1 ? "s" : ""} found
+```
+
+---
+
+# Do Not Change Pagination Display for Normal Filters
+
+The existing:
+
+```tsx
+{totalPages > 1 && (
+  <span>
+    · page {currentPage} of {totalPages}
+  </span>
+)}
+```
+
+should remain unchanged for:
+
+```text
+Recently Posted
+Most Applied
+normal Category/Location/etc.
+```
+
+For special filtering sort modes, if pagination text becomes misleading because `filtered.length` is local to the loaded page, hide the page indicator while that special mode is active:
+
+```tsx
+{!isFilteringSort && totalPages > 1 && (...)}
+```
+
+This avoids showing contradictory values such as:
+
+```text
+2 roles found · page 1 of 4
+```
+
+Do not alter server pagination itself in this small fix.
+
+---
+
+# Acceptance Criteria
+
+* [ ] Category filter still works exactly as before
+* [ ] Location filter still works exactly as before
+* [ ] Contract Type still works
+* [ ] Salary still works
+* [ ] Search still works
+* [ ] Recently Posted count uses API total
+* [ ] Most Applied count uses API total
+* [ ] In Demand count equals visible job cards
+* [ ] Urgently Hiring count equals visible job cards
+* [ ] Top Remote count equals visible job cards
+* [ ] Featured count equals visible job cards
+* [ ] `1 role found` grammar works
+* [ ] `0 roles found` works
+* [ ] Featured + regular jobs are all counted
+* [ ] Empty state still works
+* [ ] No duplicate filtering added
+* [ ] No backend filter regression
+* [ ] No TypeScript errors
+
+---
+
+# Mandatory Test With Current Dataset
+
+Current expected dataset:
+
+```text
+All jobs:
+5
+```
+
+Test:
+
+### Recently Posted
+
+Expected:
+
+```text
+5 roles found
+```
+
+### In Demand
+
+There are currently 3 visible matching cards.
+
+Expected:
+
+```text
+3 roles found
+```
+
+### Urgently Hiring
+
+Count visible cards.
+
+If 2:
+
+```text
+2 roles found
+```
+
+### Featured
+
+Count visible Featured jobs.
+
+If 2:
+
+```text
+2 roles found
+```
+
+### Return to Recently Posted
+
+Expected:
+
+```text
+5 roles found
+```
+
+This last check is important to confirm the first/default behavior has not been affected.
+
+---
+
+# Final Rule
+
+Keep the existing server-side filters untouched.
+
+Only change the displayed total depending on whether the selected Sort mode itself removes jobs:
+
+```text
+Normal filters
+→ API total
+
+Filtering sort
+→ final visible array length
+```
+
+This is a targeted UI correctness fix, not another filter refactor.
