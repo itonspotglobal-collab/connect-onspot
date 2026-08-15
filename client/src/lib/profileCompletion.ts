@@ -144,8 +144,8 @@ export function profileStrengthFromCandidate(c: {
  * experience, education, preferences, and links are left `undefined` so they
  * are excluded from the denominator and a talent CAN reach 100% from Settings alone.
  *
- * `hasResume` must be supplied explicitly because resume documents are stored
- * in the `documents` table (not in `candidate.resumeUrl`) for Settings page uploads.
+ * `hasResume` must be supplied explicitly — the caller resolves it from
+ * `candidate.resumeUrl` (candidates table) or from a legacy documents query.
  */
 export function profileStrengthFromCandidateSettings(c: {
   profilePhotoUrl?: string | null;

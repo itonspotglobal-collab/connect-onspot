@@ -308,7 +308,12 @@ export default function ProfileSettings() {
 
   /** Invalidate the candidate query so both Settings and TalentProfile reflect the change. */
   const invalidateCandidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] }),
+      // TalentProfile uses a different query key — invalidate it too so the profile
+      // page reflects the change immediately without a hard refresh.
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] }),
+    ]);
 
   const uploadResume = async (file: File) => {
     if (!candidateId) return;
