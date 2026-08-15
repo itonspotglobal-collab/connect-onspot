@@ -24,6 +24,9 @@ import {
   Trash2,
   Video,
   Download,
+  Camera,
+  Square,
+  RotateCcw,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -283,6 +286,20 @@ export default function ProfileSettings() {
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef  = useRef<HTMLInputElement>(null);
 
+  // ── Camera recording state ──────────────────────────────────────────────
+  const [videoRecordingState, setVideoRecordingState] = useState<'idle' | 'camera' | 'recording' | 'recorded'>('idle');
+  const [recordedVideoBlob,   setRecordedVideoBlob]   = useState<Blob | null>(null);
+  const [recordedVideoUrl,    setRecordedVideoUrl]    = useState<string | null>(null);
+  const [recordingTime,       setRecordingTime]       = useState(0);
+  const videoStreamRef      = useRef<MediaStream | null>(null);
+  const videoPreviewRef     = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef    = useRef<MediaRecorder | null>(null);
+  const videoChunksRef      = useRef<Blob[]>([]);
+  const recordingTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const formatRecordingTime = (s: number) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
   /** Auth header used by resume/video fetch calls — mirrors TalentProfile pattern. */
   const getAuthHeader = () =>
     talentAuth?.token
@@ -382,6 +399,99 @@ export default function ProfileSettings() {
       setVideoDeleting(false);
     }
   };
+
+  // ── Camera recording handlers ───────────────────────────────────────────
+  async function startVideoCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true,
+      });
+      videoStreamRef.current = stream;
+      setVideoRecordingState("camera");
+      setTimeout(() => {
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = stream;
+          videoPreviewRef.current.play().catch(() => {});
+        }
+      }, 50);
+    } catch {
+      toast({ title: "Camera access denied", description: "Allow camera/microphone access to record.", variant: "destructive" });
+    }
+  }
+
+  function stopVideoCamera() {
+    videoStreamRef.current?.getTracks().forEach((t) => t.stop());
+    videoStreamRef.current = null;
+    if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+  }
+
+  function startVideoRecording() {
+    if (!videoStreamRef.current) return;
+    videoChunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : "video/webm";
+    const recorder = new MediaRecorder(videoStreamRef.current, { mimeType });
+    mediaRecorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) videoChunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(videoChunksRef.current, { type: "video/webm" });
+      setRecordedVideoBlob(blob);
+      setRecordedVideoUrl(URL.createObjectURL(blob));
+      setVideoRecordingState("recorded");
+      stopVideoCamera();
+    };
+    recorder.start();
+    setVideoRecordingState("recording");
+    setRecordingTime(0);
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime((prev) => {
+        if (prev >= 120) { stopVideoRecording(); return prev; }
+        return prev + 1;
+      });
+    }, 1000);
+  }
+
+  function stopVideoRecording() {
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+  }
+
+  function discardVideoRecording() {
+    if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+    setRecordedVideoBlob(null);
+    setRecordedVideoUrl(null);
+    setVideoRecordingState("idle");
+    setRecordingTime(0);
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  }
+
+  async function uploadRecordedVideo() {
+    if (!recordedVideoBlob) return;
+    const file = new File([recordedVideoBlob], "video-intro.webm", { type: "video/webm" });
+    setVideoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("video", file);
+      const res = await fetch(`/api/candidates/${candidateId}/video`, {
+        method: "POST",
+        headers: { Authorization: getAuthHeader() },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+      await invalidateCandidate();
+      toast({ title: "Video saved! 🎉", description: "Your video introduction has been saved." });
+      discardVideoRecording();
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setVideoUploading(false);
+    }
+  }
 
   // `documents` is now managed by the hook (useQuery) so completion recalculates
   // automatically after upload/remove without a separate local state + useEffect.
@@ -1141,12 +1251,43 @@ export default function ProfileSettings() {
                         <span className="font-normal text-[13px]" style={{ color: MUTED }}>(Optional)</span>
                       </Label>
 
-                      {/* Existing video preview */}
-                      {(candidate as any)?.videoIntroUrl && (
+                      {/* ── Prompt / instructions ── */}
+                      <div className="rounded-xl p-4" style={{ background: "linear-gradient(135deg,#F5F3FF,#EEF2FF)" }}>
+                        <p className="mb-1 text-[13px] font-bold" style={{ color: V }}>
+                          We Want to Meet the Person Behind the Resume!
+                        </p>
+                        <p className="mb-3 text-[12px] leading-relaxed" style={{ color: "#4B5563" }}>
+                          Grab your camera and record a brief 2-minute video telling us your story.
+                        </p>
+                        <ul className="space-y-1.5">
+                          {[
+                            "A quick snapshot of your relevant experience",
+                            "Your biggest wins and top contributions",
+                            "1–2 projects you spearheaded, including the final outcomes",
+                          ].map((tip, i) => (
+                            <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: "#4B5563" }}>
+                              <span
+                                className="shrink-0 flex items-center justify-center text-[9px] font-bold"
+                                style={{
+                                  marginTop: 1, width: 16, height: 16, borderRadius: "50%",
+                                  background: "#DDD6FE", color: V,
+                                }}
+                              >
+                                {i + 1}
+                              </span>
+                              {tip}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Existing saved video — shown only when not recording */}
+                      {(candidate as any)?.videoIntroUrl && videoRecordingState === "idle" && (
                         <div className="overflow-hidden rounded-xl" style={{ border: `1.5px solid ${BORDER}` }}>
                           <video
                             controls
                             className="w-full"
+                            src={`/api/candidates/${candidateId}/video`}
                             onError={(e) => {
                               const vid = e.currentTarget;
                               if (vid.dataset.blobLoaded) return;
@@ -1156,7 +1297,6 @@ export default function ProfileSettings() {
                                 .then(blob => { vid.src = URL.createObjectURL(blob); })
                                 .catch(() => {});
                             }}
-                            src={`/api/candidates/${candidateId}/video`}
                           />
                           <div className="flex items-center justify-between px-3 py-2" style={{ background: BG }}>
                             <div className="flex items-center gap-2 min-w-0">
@@ -1189,41 +1329,146 @@ export default function ProfileSettings() {
                         </div>
                       )}
 
-                      {/* Upload / Replace */}
-                      <input
-                        ref={videoFileInputRef}
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) uploadVideo(file);
-                          e.target.value = "";
-                        }}
-                      />
-                      <button
-                        type="button"
-                        disabled={videoUploading}
-                        onClick={() => videoFileInputRef.current?.click()}
-                        className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-60"
-                        style={{
-                          height: 44, borderRadius: 11, fontSize: 14,
-                          border: `1.5px solid ${V}`, background: "transparent", color: V,
-                          cursor: videoUploading ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        {videoUploading
-                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
-                          : <><Video style={{ width: 15, height: 15 }} /> {(candidate as any)?.videoIntroUrl ? "Replace Video" : "Upload Video Introduction (MP4, WebM or MOV — max 200 MB)"}</>}
-                      </button>
-                      <p className="text-center text-[11px]" style={{ color: MUTED }}>
-                        MP4, WebM or MOV · max 200 MB · {" "}
-                        {candidateId && (
-                          <a href={`/talent-profile/${candidateId}`} className="underline" style={{ color: I }}>
-                            View on your profile →
-                          </a>
-                        )}
-                      </p>
+                      {/* ── Idle: record + upload buttons ── */}
+                      {videoRecordingState === "idle" && (
+                        <div className="space-y-2">
+                          {/* Record button */}
+                          <button
+                            type="button"
+                            onClick={startVideoCamera}
+                            className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150"
+                            style={{
+                              height: 44, borderRadius: 11, fontSize: 14,
+                              background: V, color: "#fff", border: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <Camera style={{ width: 16, height: 16 }} />
+                            {(candidate as any)?.videoIntroUrl ? "Re-record Video" : "Record a Video"}
+                          </button>
+
+                          {/* Upload file */}
+                          <input
+                            ref={videoFileInputRef}
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadVideo(file);
+                              e.target.value = "";
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={videoUploading}
+                            onClick={() => videoFileInputRef.current?.click()}
+                            className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-60"
+                            style={{
+                              height: 44, borderRadius: 11, fontSize: 14,
+                              border: `1.5px solid ${V}`, background: "transparent", color: V,
+                              cursor: videoUploading ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {videoUploading
+                              ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
+                              : <><Upload style={{ width: 15, height: 15 }} /> Upload a Video File</>}
+                          </button>
+                          <p className="text-center text-[11px]" style={{ color: MUTED }}>
+                            MP4, WebM or MOV · max 200 MB
+                            {candidateId && (
+                              <> · <a href={`/talent-profile/${candidateId}`} className="underline" style={{ color: I }}>View on your profile →</a></>
+                            )}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ── Camera preview (before/during recording) ── */}
+                      {(videoRecordingState === "camera" || videoRecordingState === "recording") && (
+                        <div className="space-y-3">
+                          <div className="relative overflow-hidden rounded-xl bg-black" style={{ aspectRatio: "16/9" }}>
+                            <video
+                              ref={videoPreviewRef}
+                              autoPlay
+                              muted
+                              playsInline
+                              className="h-full w-full object-cover"
+                            />
+                            {videoRecordingState === "recording" && (
+                              <div
+                                className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+                                style={{ background: "#DC2626" }}
+                              >
+                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                                REC {formatRecordingTime(recordingTime)} / 2:00
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            {videoRecordingState === "camera" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={startVideoRecording}
+                                  className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-full text-[13px] text-white"
+                                  style={{ height: 38, background: "#DC2626", border: "none", cursor: "pointer" }}
+                                >
+                                  <Camera style={{ width: 14, height: 14 }} /> Start Recording
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { stopVideoCamera(); setVideoRecordingState("idle"); }}
+                                  className="inline-flex items-center justify-center rounded-full text-[13px] font-semibold px-4"
+                                  style={{ height: 38, border: `1.5px solid ${BORDER}`, background: "#fff", color: TEXT, cursor: "pointer" }}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {videoRecordingState === "recording" && (
+                              <button
+                                type="button"
+                                onClick={stopVideoRecording}
+                                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-full text-[13px] text-white"
+                                style={{ height: 38, background: "#DC2626", border: "none", cursor: "pointer" }}
+                              >
+                                <Square style={{ width: 14, height: 14 }} /> Stop Recording
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Recorded preview (review before saving) ── */}
+                      {videoRecordingState === "recorded" && recordedVideoUrl && (
+                        <div className="space-y-3">
+                          <div className="overflow-hidden rounded-xl bg-black">
+                            <video src={recordedVideoUrl} controls className="h-full w-full" />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={videoUploading}
+                              onClick={uploadRecordedVideo}
+                              className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-full text-[13px] text-white disabled:opacity-60"
+                              style={{ height: 38, background: "#059669", border: "none", cursor: videoUploading ? "not-allowed" : "pointer" }}
+                            >
+                              {videoUploading
+                                ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Uploading…</>
+                                : <><Upload style={{ width: 14, height: 14 }} /> Save to Profile</>}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={videoUploading}
+                              onClick={discardVideoRecording}
+                              className="inline-flex items-center justify-center gap-2 rounded-full text-[13px] font-semibold px-4 disabled:opacity-60"
+                              style={{ height: 38, border: `1.5px solid ${BORDER}`, background: "#fff", color: TEXT, cursor: videoUploading ? "not-allowed" : "pointer" }}
+                            >
+                              <RotateCcw style={{ width: 14, height: 14 }} /> Retake
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </SectionCard>
                 )}
