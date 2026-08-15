@@ -566,7 +566,7 @@ export default function GetHired() {
                         name="hourlyRate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Hourly Rate (USD)</FormLabel>
+                            <FormLabel>Rate Expectation</FormLabel>
                             <FormControl>
                               <Input placeholder="25" type="number" {...field} data-testid="input-hourly-rate" />
                             </FormControl>
