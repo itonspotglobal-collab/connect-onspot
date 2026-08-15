@@ -383,7 +383,8 @@ app.use((req, res, next) => {
                status          = 'open',
                updated_at      = NOW()
          WHERE is_client_submitted = false
-           AND approval_status    = 'pending'`
+           AND approval_status    = 'pending'
+           AND engagement_type IN ('Half-Day', 'Full-Time')`
       );
       if ((autoApproveResult.rowCount ?? 0) > 0) {
         console.log(`✅ Auto-approved ${autoApproveResult.rowCount} admin-created job(s) that were pending`);

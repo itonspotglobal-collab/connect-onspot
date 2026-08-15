@@ -5737,6 +5737,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireClient,
     async (req: Request, res: Response) => {
       try {
+        // Guard: published jobs must have a valid engagement type
+        const effectiveStatus = req.body.status ?? "open";
+        if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(req.body.engagementType)) {
+          return res.status(400).json({
+            error: "Engagement Type required",
+            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          });
+        }
+
         const validated = insertJobSchema.parse(req.body);
         const job = await storage.createJob(validated);
         res.status(201).json(job);
@@ -5754,6 +5763,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/jobs/:id", async (req, res) => {
     try {
       const updates = insertJobSchema.partial().parse(req.body);
+
+      // Guard: published jobs must have a valid engagement type
+      const existingJob = await storage.getJob(req.params.id);
+      const effectiveStatus = updates.status ?? existingJob?.status;
+      const effectiveEngagementType =
+        "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
+      if (
+        ["open", "published"].includes(effectiveStatus as string) &&
+        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+      ) {
+        return res.status(400).json({
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+        });
+      }
+
       const job = await storage.updateJob(req.params.id, updates);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
@@ -5913,11 +5938,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = { ...req.body, clientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
-      // Engagement type is required for any job that is published (status=open)
-      if (body.status === "open" && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+      // Guard: published jobs must have a valid engagement type
+      const effectiveStatus = body.status ?? "open";
+      if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
         return res.status(400).json({
-          error: "Engagement Type is required",
-          message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
         });
       }
 
@@ -5944,27 +5970,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/jobs/:id", async (req: Request, res: Response) => {
     try {
       const { clientId, ...rest } = req.body;
+      const updates = insertJobSchema.partial().parse(rest);
 
-      // If this patch sets the job to open, confirm engagement_type is valid — either
-      // supplied in the body, or already set on the existing row.
-      if (rest.status === "open") {
-        let engType: string | null = rest.engagementType ?? null;
-        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
-          const existing = await query(
-            "SELECT engagement_type FROM jobs WHERE id = $1",
-            [req.params.id],
-          );
-          engType = existing.rows[0]?.engagement_type ?? null;
-        }
-        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
-          return res.status(400).json({
-            error: "Engagement Type is required",
-            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
-          });
-        }
+      // Guard: published jobs must have a valid engagement type
+      const existingJob = await storage.getJob(req.params.id);
+      const effectiveStatus = updates.status ?? existingJob?.status;
+      const effectiveEngagementType =
+        "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
+      if (
+        ["open", "published"].includes(effectiveStatus as string) &&
+        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+      ) {
+        return res.status(400).json({
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+        });
       }
 
-      const updates = insertJobSchema.partial().parse(rest);
       const job = await storage.updateJob(req.params.id, updates);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
@@ -5989,17 +6011,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!status || !["open", "closed", "cancelled"].includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be 'open', 'closed', or 'cancelled'" });
       }
-      // Publishing requires a valid engagement_type on the existing row
-      if (status === "open") {
-        const existing = await query(
-          "SELECT engagement_type FROM jobs WHERE id = $1",
-          [req.params.id],
-        );
-        const engType: string | null = existing.rows[0]?.engagement_type ?? null;
-        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+      // Guard: published jobs must have a valid engagement type
+      if (["open", "published"].includes(status)) {
+        const existingJob = await storage.getJob(req.params.id);
+        if (!existingJob || !["Half-Day", "Full-Time"].includes(existingJob.engagementType as string)) {
           return res.status(400).json({
-            error: "Engagement Type is required",
-            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+            error: "Engagement Type required",
+            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
           });
         }
       }
@@ -6059,6 +6077,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/jobs/:id/approve", async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
+      // Guard: published jobs must have a valid engagement type
+      const jobToApprove = await storage.getJob(req.params.id);
+      if (!jobToApprove) return res.status(404).json({ error: "Job not found" });
+      if (!["Half-Day", "Full-Time"].includes(jobToApprove.engagementType as string)) {
+        return res.status(400).json({
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before approving a job.",
+        });
+      }
       const result = await query(
         `UPDATE jobs SET
           approval_status = 'approved',
@@ -9131,11 +9158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Client-created jobs always start as pending approval
       const body = { ...req.body, clientId: userId, approvalStatus: "pending", isClientSubmitted: true };
 
-      // Engagement type is required for published jobs
-      if (body.status === "open" && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+      // Guard: published jobs must have a valid engagement type
+      const effectiveStatus = body.status ?? "open";
+      if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
         return res.status(400).json({
-          error: "Engagement Type is required",
-          message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
         });
       }
 
@@ -9156,22 +9184,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { jobId } = req.params;
       // Ownership check
-      const check = await query("SELECT id, approval_status, engagement_type FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
+      const check = await query("SELECT id, approval_status FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
       if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
       const { clientId: _strip, ...rest } = req.body;
+      const updates = insertJobSchema.partial().parse(rest);
 
-      // If this patch sets the job to open, confirm engagement_type is valid
-      if (rest.status === "open") {
-        const engType: string | null = rest.engagementType ?? check.rows[0].engagement_type ?? null;
-        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
-          return res.status(400).json({
-            error: "Engagement Type is required",
-            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
-          });
-        }
+      // Guard: published jobs must have a valid engagement type
+      const existingJob = await storage.getJob(jobId);
+      const effectiveStatus = updates.status ?? existingJob?.status;
+      const effectiveEngagementType =
+        "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
+      if (
+        ["open", "published"].includes(effectiveStatus as string) &&
+        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+      ) {
+        return res.status(400).json({
+          error: "Engagement Type required",
+          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+        });
       }
 
-      const updates = insertJobSchema.partial().parse(rest);
       // Editing an approved job resets it to pending — must be re-reviewed
       const currentApproval = check.rows[0].approval_status;
       if (currentApproval === "approved") {
@@ -9199,18 +9231,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!["open", "closed", "cancelled"].includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be open, closed, or cancelled" });
       }
-      // Publishing requires a valid engagement_type
-      if (status === "open") {
-        const engRow = await query(
-          "SELECT engagement_type FROM jobs WHERE id = $1 AND client_id = $2",
-          [jobId, userId],
-        );
-        if (engRow.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
-        const engType: string | null = engRow.rows[0].engagement_type ?? null;
-        if (!["Half-Day", "Full-Time"].includes(engType as string)) {
+      // Guard: published jobs must have a valid engagement type
+      if (["open", "published"].includes(status)) {
+        const existingJob = await storage.getJob(jobId);
+        if (!existingJob || !["Half-Day", "Full-Time"].includes(existingJob.engagementType as string)) {
           return res.status(400).json({
-            error: "Engagement Type is required",
-            message: "Set Engagement Type to 'Half-Day' or 'Full-Time' before publishing a job.",
+            error: "Engagement Type required",
+            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
           });
         }
       }
