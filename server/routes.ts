@@ -52,7 +52,6 @@ import {
   csvBulkImportSchema,
   csvImportResultSchema,
   csvTemplateSchema,
-  insertDocumentSchema,
   waitlist,
   users as usersTable,
   clientProfiles,
@@ -3247,121 +3246,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PHASE 1 PRIORITY ROUTES
 
   // ====== DOCUMENTS ======
-  // GET /api/documents - Get user's documents
-  app.get("/api/documents", authenticateJWT, async (req: any, res) => {
+  // GET /api/talent/me/resume-status - Check if authenticated talent has a resume and/or video intro
+  // Replaces the legacy /api/documents fetch used only for the hasResume/hasVideoIntro profile-completion checks.
+  app.get("/api/talent/me/resume-status", authenticateJWT, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
+      const email = req.user?.email;
+      if (!email) return res.status(401).json({ error: "Authentication required" });
 
-      console.log(`🔍 Fetching documents [${req.requestId}]:`, { userId });
-      const documents = await storage.getUserDocuments(userId);
-      res.json(documents);
+      const row = await query(
+        `SELECT resume_url AS "resumeUrl", video_intro_url AS "videoIntroUrl"
+         FROM candidates WHERE lower(email) = lower($1) LIMIT 1`,
+        [email],
+      );
+      const resumeUrl: string | null = row.rows[0]?.resumeUrl ?? null;
+      const videoIntroUrl: string | null = row.rows[0]?.videoIntroUrl ?? null;
+      res.json({ hasResume: !!resumeUrl, resumeUrl, hasVideoIntro: !!videoIntroUrl, videoIntroUrl });
     } catch (error) {
-      handleRouteError(error, req, res, "Get user documents", 500);
+      handleRouteError(error, req, res, "Get talent resume status", 500);
     }
   });
 
-  // POST /api/documents - Create new document
-  app.post(
-    "/api/documents",
-    authenticateJWT,
-    validateRequest(insertDocumentSchema.omit({ userId: true }), "body"),
-    async (req: any, res) => {
-      try {
-        const userId = req.user?.id;
-        if (!userId) {
-          return res.status(401).json({ error: "Authentication required" });
-        }
-
-        console.log(`📄 Creating document [${req.requestId}]:`, {
-          userId,
-          type: req.body.type,
-        });
-        const document = await storage.createDocument({
-          ...req.body,
-          userId,
-        });
-        res.status(201).json(document);
-      } catch (error) {
-        handleRouteError(error, req, res, "Create document", 500);
+  // PATCH /api/talent/me/resume-url - Persist a resume URL (from presigned-URL upload) to the candidate profile
+  app.patch("/api/talent/me/resume-url", authenticateJWT, async (req: any, res) => {
+    try {
+      const email = req.user?.email;
+      if (!email) return res.status(401).json({ error: "Authentication required" });
+      const { fileUrl, fileName } = req.body;
+      if (!fileUrl) return res.status(400).json({ error: "fileUrl is required" });
+      const result = await query(
+        `UPDATE candidates SET resume_url = $1, resume_file_name = $2, updated_at = NOW()
+         WHERE lower(email) = lower($3)`,
+        [fileUrl, fileName ?? null, email],
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        return res.status(404).json({ error: "Candidate profile not found — please complete your profile setup first." });
       }
-    },
-  );
+      res.json({ success: true, resumeUrl: fileUrl, resumeFileName: fileName ?? null });
+    } catch (error) {
+      handleRouteError(error, req, res, "Update talent resume URL", 500);
+    }
+  });
 
-  // PUT /api/documents/:id - Update document
-  app.put(
-    "/api/documents/:id",
-    authenticateJWT,
-    validateRequest(z.object({ id: z.string().min(1) }), "params"),
-    validateRequest(
-      insertDocumentSchema.omit({ userId: true }).partial(),
-      "body",
-    ),
-    async (req: any, res) => {
-      try {
-        const userId = req.user?.id;
-        const { id } = req.params;
-
-        // Check if document exists and belongs to user
-        const existingDoc = await storage.getDocument(id);
-        if (!existingDoc) {
-          return res.status(404).json({ error: "Document not found" });
-        }
-        if (existingDoc.userId !== userId) {
-          return res.status(403).json({ error: "Access denied" });
-        }
-
-        // Security: Remove userId from update data to prevent reassignment
-        const { userId: _, ...updateData } = req.body;
-
-        console.log(`📝 Updating document [${req.requestId}]:`, {
-          userId,
-          documentId: id,
-        });
-        const document = await storage.updateDocument(id, updateData);
-        res.json(document);
-      } catch (error) {
-        handleRouteError(error, req, res, "Update document", 500);
+  // PATCH /api/talent/me/video-intro-url - Persist a video intro URL (from presigned-URL upload) to the candidate profile
+  app.patch("/api/talent/me/video-intro-url", authenticateJWT, async (req: any, res) => {
+    try {
+      const email = req.user?.email;
+      if (!email) return res.status(401).json({ error: "Authentication required" });
+      const { fileUrl, fileName } = req.body;
+      if (!fileUrl) return res.status(400).json({ error: "fileUrl is required" });
+      const result = await query(
+        `UPDATE candidates SET video_intro_url = $1, video_intro_file_name = $2, updated_at = NOW()
+         WHERE lower(email) = lower($3)`,
+        [fileUrl, fileName ?? null, email],
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        return res.status(404).json({ error: "Candidate profile not found — please complete your profile setup first." });
       }
-    },
-  );
-
-  // DELETE /api/documents/:id - Delete document
-  app.delete(
-    "/api/documents/:id",
-    authenticateJWT,
-    validateRequest(z.object({ id: z.string().min(1) }), "params"),
-    async (req: any, res) => {
-      try {
-        const userId = req.user?.id;
-        const { id } = req.params;
-
-        // Check if document exists and belongs to user
-        const existingDoc = await storage.getDocument(id);
-        if (!existingDoc) {
-          return res.status(404).json({ error: "Document not found" });
-        }
-        if (existingDoc.userId !== userId) {
-          return res.status(403).json({ error: "Access denied" });
-        }
-
-        console.log(`🗑️ Deleting document [${req.requestId}]:`, {
-          userId,
-          documentId: id,
-        });
-        const deleted = await storage.deleteDocument(id);
-        if (deleted) {
-          res.json({ success: true, message: "Document deleted successfully" });
-        } else {
-          res.status(500).json({ error: "Failed to delete document" });
-        }
-      } catch (error) {
-        handleRouteError(error, req, res, "Delete document", 500);
-      }
-    },
-  );
+      res.json({ success: true, videoIntroUrl: fileUrl, videoIntroFileName: fileName ?? null });
+    } catch (error) {
+      handleRouteError(error, req, res, "Update talent video intro URL", 500);
+    }
+  });
 
   // ====== USERS ======
   app.get(
@@ -9253,41 +9198,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (candidate.fullName || "").split(" ").slice(-1)[0] ||
         "";
 
-      // Load documents: first try to find linked user account, then query documents
+      // Load resume and video — candidates table is preferred (source of truth);
+      // legacy documents table is consulted only when the candidates columns are absent.
       let resumes: any[] = [];
       let videos: any[] = [];
-      try {
-        const userRow = await query(
-          `SELECT id FROM users WHERE LOWER(email) = $1 LIMIT 1`,
-          [candidate.email?.toLowerCase() || ""],
-        );
-        if (userRow.rows.length > 0) {
-          const userId = userRow.rows[0].id;
-          const docsRow = await query(
-            `SELECT id, type, file_name, file_url, file_size, mime_type, is_primary, created_at
-             FROM documents
-             WHERE user_id = $1 AND type IN ('resume', 'video_intro')
-             ORDER BY is_primary DESC, created_at DESC`,
-            [userId],
-          );
-          for (const d of docsRow.rows) {
-            const doc = {
-              id: d.id,
-              fileName: d.file_name,
-              fileUrl: d.file_url,
-              fileSize: d.file_size,
-              mimeType: d.mime_type,
-              isPrimary: d.is_primary,
-              createdAt: d.created_at,
-            };
-            if (d.type === "resume") resumes.push(doc);
-            else videos.push(doc);
-          }
-        }
-      } catch (_) { /* non-fatal — continue without documents */ }
 
-      // Fallback: check candidates.resume_url if no documents found
-      if (resumes.length === 0 && candidate.resumeUrl) {
+      // Primary source: candidates.resume_url / candidates.video_intro_url
+      if (candidate.resumeUrl) {
         resumes.push({
           id: "profile-resume",
           fileName: (candidate as any).resumeFileName || "resume",
@@ -9295,6 +9212,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isPrimary: true,
           createdAt: null,
         });
+      }
+      if ((candidate as any).videoIntroUrl) {
+        videos.push({
+          id: "profile-video",
+          fileName: (candidate as any).videoIntroFileName || "video-intro",
+          fileUrl: (candidate as any).videoIntroUrl,
+          isPrimary: true,
+          createdAt: null,
+        });
+      }
+
+      // Fallback: query legacy documents table for types still missing
+      if (resumes.length === 0 || videos.length === 0) {
+        try {
+          const userRow = await query(
+            `SELECT id FROM users WHERE LOWER(email) = $1 LIMIT 1`,
+            [candidate.email?.toLowerCase() || ""],
+          );
+          if (userRow.rows.length > 0) {
+            const userId = userRow.rows[0].id;
+            const typesNeeded: string[] = [];
+            if (resumes.length === 0) typesNeeded.push("'resume'");
+            if (videos.length === 0) typesNeeded.push("'video_intro'");
+            const docsRow = await query(
+              `SELECT id, type, file_name, file_url, file_size, mime_type, is_primary, created_at
+               FROM documents
+               WHERE user_id = $1 AND type IN (${typesNeeded.join(",")})
+               ORDER BY is_primary DESC, created_at DESC`,
+              [userId],
+            );
+            for (const d of docsRow.rows) {
+              const doc = {
+                id: d.id,
+                fileName: d.file_name,
+                fileUrl: d.file_url,
+                fileSize: d.file_size,
+                mimeType: d.mime_type,
+                isPrimary: d.is_primary,
+                createdAt: d.created_at,
+              };
+              if (d.type === "resume") resumes.push(doc);
+              else videos.push(doc);
+            }
+          }
+        } catch (_) { /* non-fatal — continue without legacy documents */ }
       }
 
       const selectedResumeId = resumes.length > 0 ? resumes[0].id : null;
@@ -9559,13 +9521,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ── Profile-video reuse: resolve existing video intro URL ─────────────────
       if (useProfileVideo && !videoIntroUrl && authedUser) {
-        const vidRow = await query(
-          `SELECT file_url, file_name FROM documents WHERE user_id = $1 AND type = 'video_intro' ORDER BY created_at DESC LIMIT 1`,
-          [authedUser.id],
+        // Prefer candidates.video_intro_url (the new source of truth)
+        const candVidRow = await query(
+          `SELECT video_intro_url, video_intro_file_name FROM candidates WHERE lower(email) = lower($1) LIMIT 1`,
+          [normalizedEmail],
         );
-        if (vidRow.rows.length > 0) {
-          videoIntroUrl = vidRow.rows[0].file_url;
-          videoIntroFileName = vidRow.rows[0].file_name || null;
+        if (candVidRow.rows[0]?.video_intro_url) {
+          videoIntroUrl = candVidRow.rows[0].video_intro_url;
+          videoIntroFileName = candVidRow.rows[0].video_intro_file_name || null;
+        } else {
+          // Fallback: legacy documents table
+          const vidRow = await query(
+            `SELECT file_url, file_name FROM documents WHERE user_id = $1 AND type = 'video_intro' ORDER BY created_at DESC LIMIT 1`,
+            [authedUser.id],
+          );
+          if (vidRow.rows.length > 0) {
+            videoIntroUrl = vidRow.rows[0].file_url;
+            videoIntroFileName = vidRow.rows[0].file_name || null;
+          }
         }
       }
 

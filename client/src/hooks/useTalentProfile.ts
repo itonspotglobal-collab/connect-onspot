@@ -11,6 +11,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { Profile, PortfolioItem } from "@shared/schema";
+// Note: Document type kept for the exported interface; no longer fetched from /api/documents
 
 // ---------------------
 // Schema + Types
@@ -72,7 +73,8 @@ export function useTalentProfile() {
   // Local skill selection state — used for the toggle UI in ProfileOnboarding.
   // Initialised from server data via useEffect below.
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>([]);
+  // Local documents added optimistically (e.g. immediately after upload before server re-fetch)
+  const [localDocuments, setLocalDocuments] = useState<Document[]>([]);
 
   // ---- Fetch profile ----
   const {
@@ -110,17 +112,15 @@ export function useTalentProfile() {
     enabled: !!user?.id,
   });
 
-  // ---- Fetch documents ----
-  const { data: documentsData } = useQuery({
-    queryKey: ["/api/documents"],
+  // ---- Fetch resume status (replaces legacy /api/documents) ----
+  const { data: resumeStatusData } = useQuery<{ hasResume: boolean; resumeUrl: string | null; hasVideoIntro: boolean; videoIntroUrl: string | null } | null>({
+    queryKey: ["/api/talent/me/resume-status"],
     queryFn: async () => {
-      if (!user || user.role !== "talent") return [];
+      if (!user || user.role !== "talent") return null;
       try {
-        const data = await authAPI.get("/api/documents");
-        return data;
-      } catch (error: any) {
-        if (error.response?.status === 404) return [];
-        throw error;
+        return await authAPI.get("/api/talent/me/resume-status");
+      } catch {
+        return null;
       }
     },
     enabled: !!user && user.role === "talent",
@@ -161,15 +161,27 @@ export function useTalentProfile() {
     return (userSkillsData as any[]).map((us) => us.skill?.name).filter(Boolean);
   }, [userSkillsData]);
 
-  const persistedDocuments = useMemo<Document[]>(() => {
-    if (!Array.isArray(documentsData)) return [];
-    return documentsData as Document[];
-  }, [documentsData]);
-
   const portfolioItems = useMemo<PortfolioItem[]>(() => {
     if (!Array.isArray(portfolioData)) return [];
     return portfolioData as PortfolioItem[];
   }, [portfolioData]);
+
+  // ---- Synthetic documents derived from candidates table (resume_url / video_intro_url) ----
+  // Merges server-confirmed docs with any optimistically added local docs so the UI
+  // stays responsive immediately after an upload without waiting for a refetch.
+  const documents = useMemo<Document[]>(() => {
+    const serverDocs: Document[] = [];
+    if (resumeStatusData?.hasResume && resumeStatusData.resumeUrl) {
+      serverDocs.push({ id: "resume", type: "resume", fileName: "resume", fileUrl: resumeStatusData.resumeUrl, createdAt: "" });
+    }
+    if (resumeStatusData?.hasVideoIntro && resumeStatusData.videoIntroUrl) {
+      serverDocs.push({ id: "video_intro", type: "video_intro", fileName: "video-intro", fileUrl: resumeStatusData.videoIntroUrl, createdAt: "" });
+    }
+    // Optimistic local additions — keep only types not yet confirmed by the server
+    const serverTypes = new Set(serverDocs.map((d) => d.type));
+    const pendingLocal = localDocuments.filter((d) => !serverTypes.has(d.type));
+    return [...serverDocs, ...pendingLocal];
+  }, [resumeStatusData, localDocuments]);
 
   // ---- Profile completion — computed ONLY from persisted server data ----
   // Uses the shared profileCompletion module (single source of truth).
@@ -183,11 +195,11 @@ export function useTalentProfile() {
       location:       profile?.location ?? null,
       profilePicture: profile?.profilePicture ?? null,
       hasSkills:      persistedSkills.length > 0,
-      hasResume:      persistedDocuments.some((d) => d.type === "resume"),
+      hasResume:      !!resumeStatusData?.hasResume,
       hasLinks:       portfolioItems.length > 0,
     });
     return calcCompletionPct(buildCompletionItems(input));
-  }, [profile, persistedSkills, persistedDocuments, portfolioItems]);
+  }, [profile, persistedSkills, resumeStatusData, portfolioItems]);
 
   const isNewUser = !profile || profileCompletion < 30;
   const hasCompletedOnboarding = profileCompletion >= 70;
@@ -204,12 +216,6 @@ export function useTalentProfile() {
       setSelectedSkills(skillNames);
     }
   }, [userSkillsData]);
-
-  useEffect(() => {
-    if (Array.isArray(documentsData)) {
-      setUploadedDocuments(documentsData as Document[]);
-    }
-  }, [documentsData]);
 
   // ---- Mutations ----
   const profileMutation = useMutation({
@@ -275,6 +281,19 @@ export function useTalentProfile() {
     },
   });
 
+  // ---- Document helpers (backed by candidates table, with optimistic local state) ----
+  const addDocument = (doc: Document) => {
+    setLocalDocuments((prev) => [...prev, doc]);
+    queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] });
+  };
+  const removeDocument = (id: string) => {
+    setLocalDocuments((prev) => prev.filter((d) => d.id !== id));
+    queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] });
+  };
+  // uploadDocument is an alias for addDocument — callers use it to signal the upload
+  // is done and the local state should reflect the new document immediately.
+  const uploadDocument = addDocument;
+
   // ---- Exposed helpers ----
   const updateProfile = async (data: ProfileFormData) =>
     profileMutation.mutateAsync(data);
@@ -309,7 +328,7 @@ export function useTalentProfile() {
   return {
     profile,
     skills: selectedSkills,
-    documents: uploadedDocuments,
+    documents,
     availableSkills,
     profileCompletion,
     isNewUser,
@@ -319,6 +338,9 @@ export function useTalentProfile() {
     error: profileError,
     updateProfile,
     updateSkills,
+    addDocument,
+    removeDocument,
+    uploadDocument,
     getDefaultFormValues,
     toggleSkill: (skill: string) =>
       setSelectedSkills((prev) =>

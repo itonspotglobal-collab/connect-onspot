@@ -246,27 +246,6 @@ export default function AdminDashboard() {
     }
   });
 
-  // Resume deletion mutation
-  const resumeDeleteMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      return await authAPI.delete(`/api/documents/${documentId}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Resume Deleted',
-        description: 'Resume has been deleted successfully.'
-      });
-      refetchResumes();
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Delete Failed',
-        description: error.response?.data?.message || 'Failed to delete resume',
-        variant: 'destructive'
-      });
-    }
-  });
-
   // Update application status mutation
   const updateAppStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -610,15 +589,11 @@ export default function AdminDashboard() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => resumeDeleteMutation.mutate(resume.id)}
-                          disabled={resumeDeleteMutation.isPending}
+                          disabled
+                          title="Resume deletion not available"
                           data-testid={`button-delete-resume-${resume.id}`}
                         >
-                          {resumeDeleteMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>

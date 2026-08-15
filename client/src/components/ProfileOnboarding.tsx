@@ -125,61 +125,40 @@ export default function ProfileOnboarding({
   const handleUploadComplete = async (result: any, type: string) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
-      
-      try {
-        // Create document record in backend
-        const documentData = {
-          type: type,
-          fileName: file.name,
-          fileUrl: file.uploadURL,
-          fileSize: file.size || null,
-          mimeType: file.type || null,
-          isPublic: false,
-          isPrimary: false
-        };
+      const fileUrl: string = file.uploadURL || file.response?.uploadURL;
+      const fileName: string = file.name;
 
-        const newDocument = await authAPI.post("/api/documents", documentData);
-        
-        // Update local state by invalidating queries
-        queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-        
-        toast({
-          title: "File Uploaded Successfully!",
-          description: `${file.name} has been added to your profile.`,
-        });
-      } catch (error: any) {
-        console.error("Failed to save document:", error);
+      try {
+        // Persist the uploaded URL directly to candidates.resume_url / candidates.video_intro_url
+        const endpoint = type === "video_intro"
+          ? "/api/talent/me/video-intro-url"
+          : "/api/talent/me/resume-url";
+        await authAPI.patch(endpoint, { fileUrl, fileName });
+      } catch (saveErr: any) {
+        console.error("Failed to persist uploaded file to candidate profile:", saveErr);
         toast({
           title: "Upload Error",
-          description: "File uploaded but failed to save to your profile. Please try again.",
+          description: "File uploaded but could not be saved to your profile. Please try again.",
           variant: "destructive",
         });
+        return;
       }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({
+        title: "File Uploaded Successfully!",
+        description: `${fileName} has been added to your profile.`,
+      });
     }
   };
 
-  const removeDocument = async (documentId: string) => {
-    try {
-      // Remove document from backend
-      await authAPI.delete(`/api/documents/${documentId}`);
-      
-      // Update local state by invalidating queries
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      
-      toast({
-        title: "Document Removed",
-        description: "The document has been removed from your profile.",
-      });
-    } catch (error: any) {
-      console.error("Failed to remove document:", error);
-      toast({
-        title: "Removal Error",
-        description: "Failed to remove the document. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const removeDocument = async (_documentId: string) => {
+    // Document deletion is now handled via the candidate profile settings page
+    toast({
+      title: "Use Settings",
+      description: "To remove documents, please use the Settings page.",
+    });
   };
 
   // Profile form submission with enhanced status feedback

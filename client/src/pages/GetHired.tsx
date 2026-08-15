@@ -168,12 +168,6 @@ export default function GetHired() {
     enabled: !!user
   });
 
-  // Fetch documents
-  const { data: documents = [] } = useQuery({
-    queryKey: ["/api/documents"],
-    enabled: !!user
-  });
-
   // Removed duplicate profile mutation - using consolidated system
 
   // LinkedIn Connect Mutation
@@ -208,18 +202,37 @@ export default function GetHired() {
     };
   };
 
-  const handleUploadComplete = (result: any, type: string) => {
+  const handleUploadComplete = async (result: any, type: string) => {
     if (result.successful && result.successful.length > 0) {
       const file = result.successful[0];
+      const fileUrl: string = file.uploadURL || file.response?.uploadURL;
+      const fileName: string = file.name;
+
+      // Optimistically update local state so the UI responds immediately
       const newDocument = {
         id: Math.random().toString(),
         type: type as any,
-        fileName: file.name,
-        fileUrl: file.uploadURL,
-        createdAt: new Date().toISOString()
+        fileName,
+        fileUrl,
+        createdAt: new Date().toISOString(),
       };
       addDocument(newDocument);
-      uploadDocument(newDocument);
+
+      try {
+        // Persist to candidates table (source of truth)
+        const endpoint = type === "video_intro"
+          ? "/api/talent/me/video-intro-url"
+          : "/api/talent/me/resume-url";
+        await authAPI.patch(endpoint, { fileUrl, fileName });
+        queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] });
+      } catch (saveErr: any) {
+        console.error("Failed to persist uploaded file to candidate profile:", saveErr);
+        toast({
+          title: "Upload Error",
+          description: "File uploaded but could not be saved to your profile. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

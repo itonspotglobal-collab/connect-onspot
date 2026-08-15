@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { authAPI } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -144,12 +145,10 @@ export default function EnhancedVideoIntroduction({
 
         if (!uploadResponse.ok) throw new Error('Failed to upload video');
 
-        // Save to documents
-        await apiRequest('POST', '/api/documents', {
-          type: 'video_intro',
+        // Persist to candidates.video_intro_url (source of truth)
+        await authAPI.patch('/api/talent/me/video-intro-url', {
+          fileUrl: objectUrl,
           fileName: `video-intro-${Date.now()}.webm`,
-          url: objectUrl,
-          size: videoFile.size
         });
 
         clearInterval(progressInterval);
@@ -164,7 +163,7 @@ export default function EnhancedVideoIntroduction({
       }
     },
     onSuccess: (videoUrl) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/talent/me/resume-status'] });
       onVideoUpload?.(videoUrl);
       toast({
         title: "Video Uploaded Successfully! 🎉",

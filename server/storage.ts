@@ -19,7 +19,6 @@ import {
   type Notification, type InsertNotification,
   type LeadIntake, type InsertLeadIntake,
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
-  type Document, type InsertDocument,
   type VanessaLog, type InsertVanessaLog,
   type Feedback, type InsertFeedback,
   type Correction, type InsertCorrection,
@@ -254,13 +253,6 @@ export interface IStorage {
   ensureSkillsExist(skillNames: string[]): Promise<Skill[]>;
   getUserByEmail(email: string): Promise<User | undefined>;
 
-  // Documents
-  getDocument(id: string): Promise<Document | undefined>;
-  getUserDocuments(userId: string): Promise<Document[]>;
-  createDocument(document: InsertDocument): Promise<Document>;
-  updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined>;
-  deleteDocument(id: string): Promise<boolean>;
-
   // Vanessa AI Conversation Logs
   createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog>;
   getVanessaLogsByThread(threadId: string): Promise<VanessaLog[]>;
@@ -345,7 +337,6 @@ export class MemStorage implements IStorage {
   private notifications: Map<string, Notification>;
   private linkedinProfiles: Map<string, any>;
   private leadIntakes: Map<string, LeadIntake>;
-  private documents: Map<string, Document>;
   private vanessaLogs: Map<number, VanessaLog>;
 
   // Counter for auto-incrementing IDs
@@ -375,7 +366,6 @@ export class MemStorage implements IStorage {
     this.notifications = new Map();
     this.linkedinProfiles = new Map();
     this.leadIntakes = new Map();
-    this.documents = new Map();
     this.vanessaLogs = new Map();
 
     // Seed default skills for OnSpot marketplace
@@ -2033,43 +2023,6 @@ export class MemStorage implements IStorage {
   }
 
   // Document Methods
-  async getDocument(id: string): Promise<Document | undefined> {
-    return this.documents.get(id);
-  }
-
-  async getUserDocuments(userId: string): Promise<Document[]> {
-    return Array.from(this.documents.values()).filter(doc => doc.userId === userId);
-  }
-
-  async createDocument(insertDocument: InsertDocument): Promise<Document> {
-    const id = randomUUID();
-    const document: Document = {
-      id,
-      ...insertDocument,
-      isPublic: insertDocument.isPublic ?? false,
-      isPrimary: insertDocument.isPrimary ?? false,
-      fileSize: insertDocument.fileSize ?? null,
-      mimeType: insertDocument.mimeType ?? null,
-      extractedText: insertDocument.extractedText ?? null,
-      createdAt: new Date(),
-    };
-    this.documents.set(id, document);
-    return document;
-  }
-
-  async updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined> {
-    const document = this.documents.get(id);
-    if (!document) return undefined;
-
-    const updatedDocument: Document = { ...document, ...updates };
-    this.documents.set(id, updatedDocument);
-    return updatedDocument;
-  }
-
-  async deleteDocument(id: string): Promise<boolean> {
-    return this.documents.delete(id);
-  }
-
   // Vanessa AI Conversation Logs
   async createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog> {
     const id = this.vanessaLogIdCounter++;
