@@ -772,8 +772,6 @@ export class MemStorage implements IStorage {
       location: insertJob.location ?? "Remote",
       budget: insertJob.budget ?? null,
       budgetCurrency: insertJob.budgetCurrency ?? "USD",
-      hourlyRateMin: insertJob.hourlyRateMin ?? null,
-      hourlyRateMax: insertJob.hourlyRateMax ?? null,
       duration: insertJob.duration ?? null,
       status: insertJob.status ?? "open",
       proposalCount: 0,

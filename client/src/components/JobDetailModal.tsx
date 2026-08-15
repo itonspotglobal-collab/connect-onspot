@@ -81,8 +81,6 @@ export interface JobDetailModalProps {
     experienceLevel: string;
     description: string;
     budget?: string | null;
-    hourlyRateMin?: string | null;
-    hourlyRateMax?: string | null;
     salaryDisplay?: string | null;
     responsibilities?: string[] | null;
     requirements?: string[] | null;
@@ -114,9 +112,7 @@ export function JobDetailModal({
   const postedAgo = getTimeAgo(job.createdAt);
 
   const rateDisplay = (job as any).salaryDisplay?.trim()
-    || (job.hourlyRateMin && job.hourlyRateMax
-        ? `₱${job.hourlyRateMin}–${job.hourlyRateMax}/month`
-        : job.budget ? `₱${job.budget}` : "Rate TBD");
+    || (job.budget ? `₱${job.budget}` : "Rate TBD");
 
   const rateLabel = "Monthly rate";
   const skills = job.skillTags || [];

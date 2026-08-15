@@ -182,19 +182,8 @@ export default function JobApplicationModal({
   };
 
   const formatBudgetRange = (job: Job) => {
-    if (job.engagementType === 'Half-Day') {
-      const min = job.hourlyRateMin ? parseFloat(job.hourlyRateMin.toString()) : 0;
-      const max = job.hourlyRateMax ? parseFloat(job.hourlyRateMax.toString()) : 0;
-      if (min && max) {
-        return `$${min}-${max}/hr`;
-      } else if (min) {
-        return `$${min}+/hr`;
-      }
-      return 'Rate negotiable';
-    } else {
-      const budget = job.budget ? parseFloat(job.budget.toString()) : 0;
-      return budget ? `$${budget.toLocaleString()} ${job.budgetCurrency || 'USD'}` : 'Budget negotiable';
-    }
+    const budget = job.budget ? parseFloat(job.budget.toString()) : 0;
+    return budget ? `$${budget.toLocaleString()} ${job.budgetCurrency || 'USD'}` : 'Budget negotiable';
   };
 
   if (!job) return null;

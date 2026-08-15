@@ -865,8 +865,6 @@ function JobsSlide({ isDark, liveJobs, isLoading, liveTalents }: { isDark: boole
 
 function jobPay(j: any): string | null {
   if (j.salaryDisplay) return j.salaryDisplay;
-  if (j.hourlyRateMin)
-    return `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`;
   if (j.budget)
     return `${j.budgetCurrency ?? "PHP"} ${j.budget}`;
   return null;
@@ -1762,9 +1760,7 @@ function OpenJobsSection() {
       loc:   j.location || "Remote",
       pay:   j.budget
         ? `${j.budgetCurrency ?? "PHP"} ${j.budget}`
-        : j.hourlyRateMin
-          ? `USD ${j.hourlyRateMin}${j.hourlyRateMax ? ` – ${j.hourlyRateMax}` : ""}/hr`
-          : "",
+        : "",
       id: j.id ?? null,
       isFeatured: j.isFeatured ?? false,
     }));

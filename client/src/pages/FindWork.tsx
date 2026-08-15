@@ -978,7 +978,7 @@ export default function OnSpotFindWorkRedesign() {
         (job.category ?? "").toLowerCase() === kind.toLowerCase();
       const earningPass = (() => {
         if (earning === "Any pay") return true;
-        const max = parseFloat(job.hourlyRateMax ?? job.budget ?? "0");
+        const max = parseFloat(job.budget ?? "0");
         if (earning === "₱45,000+") return max >= 45000;
         if (earning === "₱60,000+") return max >= 60000;
         if (earning === "₱85,000+") return max >= 85000;

@@ -108,8 +108,6 @@ function salaryHasNumericContent(text: string): boolean {
 export function formatJobSalary(job: {
   salaryDisplay?: string | null;
   budget?: string | null;
-  hourlyRateMin?: string | null;
-  hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
   compensationType?: string | null;
@@ -126,16 +124,10 @@ export function formatJobSalary(job: {
     return display;
   }
 
-  // 2. Legacy numeric fallback (old jobs before salaryDisplay was added)
+  // 2. Numeric budget fallback
   const currency = job.budgetCurrency || "PHP";
   const customCode = job.customCurrencyCode;
 
-  if (job.hourlyRateMin && job.hourlyRateMax) {
-    return `${formatJobCurrency(Number(job.hourlyRateMin), currency, customCode)}–${formatJobCurrency(Number(job.hourlyRateMax), currency, customCode)}/mo`;
-  }
-  if (job.hourlyRateMin) {
-    return `${formatJobCurrency(Number(job.hourlyRateMin), currency, customCode)}+/mo`;
-  }
   if (job.budget) {
     return `${formatJobCurrency(Number(job.budget), currency, customCode)}/mo`;
   }
@@ -154,8 +146,6 @@ export type JobBadge = {
 export function getJobBadges(job: {
   salaryDisplay?: string | null;
   budget?: string | null;
-  hourlyRateMin?: string | null;
-  hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   proposalCount?: number | null;
   title?: string | null;
@@ -168,13 +158,13 @@ export function getJobBadges(job: {
   // Top Paying: only meaningful for PHP jobs (₱50,000+)
   const currency = (job.budgetCurrency || "PHP").toUpperCase();
   if (currency === "PHP") {
-    // Try salaryDisplay first (extract first numeric run), then fall back to legacy fields
+    // Try salaryDisplay first (extract first numeric run), then fall back to budget
     let budget = 0;
     if (job.salaryDisplay) {
       const match = job.salaryDisplay.replace(/[,_]/g, "").match(/[\d]+/);
       budget = match ? parseFloat(match[0]) : 0;
     } else {
-      budget = parseFloat(job.budget || job.hourlyRateMax || job.hourlyRateMin || "0");
+      budget = parseFloat(job.budget || "0");
     }
     if (budget >= 50000) {
       badges.push({
@@ -382,8 +372,6 @@ export function formatExperienceLevel(level: string): string {
 export function buildRateDisplay(job: {
   salaryDisplay?: string | null;
   budget?: string | null;
-  hourlyRateMin?: string | null;
-  hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
   engagementType?: string;
@@ -402,8 +390,6 @@ export function buildRateDisplay(job: {
 export function buildRateDisplayWithCode(job: {
   salaryDisplay?: string | null;
   budget?: string | null;
-  hourlyRateMin?: string | null;
-  hourlyRateMax?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
   engagementType?: string;
@@ -434,16 +420,10 @@ export function buildRateDisplayWithCode(job: {
     return `${sym}${stripPrefix(withoutSuffix)}`;
   }
 
-  // ── 2. Legacy numeric fallback ─────────────────────────────────────────────
+  // ── 2. Numeric budget fallback ─────────────────────────────────────────────
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
-  if (job.hourlyRateMin && job.hourlyRateMax) {
-    return `${sym}${fmt(Number(job.hourlyRateMin))} - ${sym}${fmt(Number(job.hourlyRateMax))}`;
-  }
-  if (job.hourlyRateMin) {
-    return `${sym}${fmt(Number(job.hourlyRateMin))}`;
-  }
   if (job.budget) {
     return `${sym}${fmt(Number(job.budget))}`;
   }

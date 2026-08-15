@@ -576,13 +576,6 @@ function formatJobAsText(job: any): string {
   if (job.budget) {
     parts.push(`Budget / Salary: ${currency} ${job.budget}`);
   }
-  if (job.hourlyRateMin || job.hourlyRateMax) {
-    const min = job.hourlyRateMin ? `${currency} ${job.hourlyRateMin}` : null;
-    const max = job.hourlyRateMax ? `${currency} ${job.hourlyRateMax}` : null;
-    if (min && max) parts.push(`Hourly Rate: ${min} – ${max}`);
-    else parts.push(`Hourly Rate: ${min || max}`);
-  }
-
   // Descriptions
   if (job.jobSummary) parts.push(`Summary: ${job.jobSummary}`);
   if (job.description) parts.push(`Description: ${job.description}`);

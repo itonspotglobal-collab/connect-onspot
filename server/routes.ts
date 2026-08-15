@@ -973,8 +973,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS budget_currency text DEFAULT 'PHP'`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS custom_currency_code text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_display text`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS hourly_rate_min decimal(8,2)`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS hourly_rate_max decimal(8,2)`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS duration text`);
     console.log("✅ Migration: jobs budget/salary extended columns ready");
   } catch (migErr: any) {
