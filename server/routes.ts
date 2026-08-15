@@ -5486,6 +5486,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/candidates/:id/resume — Download/view the candidate's own resume
+  // Accepts: candidate JWT or matching talent user JWT (or admin)
+  app.get("/api/candidates/:id/resume", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try { decoded = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+      if (decoded.type === "candidate") {
+        if (decoded.candidateId !== id) return res.status(403).json({ error: "Forbidden" });
+      } else if (decoded.role === "talent" && decoded.email) {
+        const check = await query(`SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`, [id, decoded.email]);
+        if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      } else if (decoded.role === "admin" || decoded.role === "talent_acquisition") {
+        // admins can access any resume
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      const row = await query(`SELECT resume_url AS "resumeUrl", resume_file_name AS "resumeFileName" FROM candidates WHERE id = $1 LIMIT 1`, [id]);
+      if (!row.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { resumeUrl, resumeFileName } = row.rows[0];
+      if (!resumeUrl) return res.status(404).json({ error: "No resume on this profile" });
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(resumeUrl);
+      const disposition = req.query.download === "1" ? "attachment" : "inline";
+      const fileName = (resumeFileName || "resume").replace(/"/g, "");
+      res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+      await objectStorageService.downloadObject(objectFile, res, 0);
+    } catch (error: any) {
+      console.error("GET /api/candidates/:id/resume error:", error);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve resume" });
+    }
+  });
+
   // POST /api/candidates/:id/resume — Upload or replace resume
   // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches the candidate
   app.post("/api/candidates/:id/resume", upload.single("resume"), async (req: any, res) => {
@@ -5557,6 +5595,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("POST /api/candidates/:id/resume error:", error);
       res.status(500).json({ error: "Failed to upload resume" });
+    }
+  });
+
+  // POST /api/candidates/:id/video — Upload or replace profile video introduction
+  // Accepts: (a) candidate JWT (type:"candidate"), OR (b) standard talent user JWT whose email matches
+  app.post("/api/candidates/:id/video", upload.single("video"), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try { decoded = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+
+      if (decoded.type === "candidate") {
+        if (decoded.candidateId !== id) {
+          return res.status(403).json({ error: "Not authorized to upload to this profile" });
+        }
+      } else if (decoded.role === "talent" && decoded.email) {
+        const check = await query(
+          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
+          [id, decoded.email],
+        );
+        if (check.rows.length === 0) {
+          return res.status(403).json({ error: "Not authorized to upload to this profile" });
+        }
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+      const allowedMimes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo", "video/mpeg"];
+      if (!allowedMimes.includes(file.mimetype)) {
+        return res.status(400).json({ error: "Only MP4, WebM, MOV, AVI or MPEG video files are allowed" });
+      }
+      if (file.size > 200 * 1024 * 1024) {
+        return res.status(400).json({ error: "File too large — max 200 MB" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectId = randomUUID();
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      const fullPath = `${privateObjectDir}/candidate-videos/${objectId}`;
+      const parts = fullPath.split("/").filter((p: string) => p);
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const objectFile = bucket.file(objectName);
+      await objectFile.save(file.buffer, {
+        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
+      });
+      await setObjectAclPolicy(objectFile, { visibility: "private" });
+
+      const videoIntroUrl = `/objects/candidate-videos/${objectId}`;
+      await storage.updateCandidate(id, { videoIntroUrl, videoIntroFileName: file.originalname } as any);
+
+      res.json({ success: true, videoIntroUrl, videoIntroFileName: file.originalname });
+    } catch (error: any) {
+      console.error("POST /api/candidates/:id/video error:", error);
+      res.status(500).json({ error: "Failed to upload video" });
+    }
+  });
+
+  // GET /api/candidates/:id/video — Stream profile video to the authenticated owner
+  app.get("/api/candidates/:id/video", async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      // Flexible auth: candidate JWT or talent user JWT
+      const authHeader = req.headers["authorization"];
+      const token = authHeader?.split(" ")[1];
+      if (!token) return res.status(401).json({ error: "Authentication required" });
+
+      const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
+      let decoded: any;
+      try { decoded = jwt.verify(token, jwtSecret); }
+      catch { return res.status(401).json({ error: "Invalid or expired token" }); }
+
+      if (decoded.type === "candidate") {
+        if (decoded.candidateId !== id) return res.status(403).json({ error: "Forbidden" });
+      } else if (decoded.role === "talent" && decoded.email) {
+        const check = await query(
+          `SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`,
+          [id, decoded.email],
+        );
+        if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      } else if (decoded.role === "admin" || decoded.role === "talent_acquisition") {
+        // Admins/talent_acquisition can view any candidate video
+      } else {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+
+      const candRow = await query(
+        `SELECT video_intro_url AS "videoIntroUrl", video_intro_file_name AS "videoIntroFileName" FROM candidates WHERE id = $1 LIMIT 1`,
+        [id],
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { videoIntroUrl, videoIntroFileName } = candRow.rows[0];
+      if (!videoIntroUrl) return res.status(404).json({ error: "No video on this profile" });
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(videoIntroUrl);
+
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = (metadata.contentType as string) || "video/mp4";
+      const fileSize = Number(metadata.size) || 0;
+      const fileName = (videoIntroFileName || "video-intro").replace(/"/g, "");
+
+      // Support Range requests so the browser video player can seek
+      const rangeHeader = req.headers.range;
+      if (rangeHeader && fileSize > 0) {
+        const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+        const start = match?.[1] ? parseInt(match[1], 10) : 0;
+        const end   = match?.[2] ? parseInt(match[2], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        res.status(206);
+        res.set({
+          "Content-Range":  `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges":  "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type":   contentType,
+          "Content-Disposition": `inline; filename="${fileName}"`,
+        });
+        objectFile.createReadStream({ start, end }).pipe(res);
+      } else {
+        res.set({
+          "Content-Type":        contentType,
+          "Accept-Ranges":       "bytes",
+          "Content-Length":      fileSize || undefined,
+          "Content-Disposition": `inline; filename="${fileName}"`,
+          "Cache-Control":       "no-store",
+        });
+        objectFile.createReadStream().pipe(res);
+      }
+    } catch (error: any) {
+      console.error("GET /api/candidates/:id/video error:", error);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve video" });
     }
   });
 

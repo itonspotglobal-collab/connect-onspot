@@ -9,6 +9,7 @@ import {
   Github, Link2, Star, ChevronRight, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Eye, EyeOff,
+  FileText, Video, Upload, Square, RotateCcw, Loader2, Play,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -688,6 +689,22 @@ export default function TalentProfile() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSkillsModal, setShowSkillsModal] = useState(false);
 
+  // ── Resume & video upload state ───────────────────────────────────────────
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  // 'idle' | 'camera' | 'recording' | 'recorded'
+  const [videoRecordingState, setVideoRecordingState] = useState<'idle' | 'camera' | 'recording' | 'recorded'>('idle');
+  const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
+
   // ── Section highlight state (click-only feedback, not scroll-driven) ───────
   const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
   const highlightTimerRef = useRef<number | null>(null);
@@ -790,6 +807,135 @@ export default function TalentProfile() {
       return;
     }
     patchMutation.mutate({ [field]: value } as any);
+  }
+
+  // ── Resume upload handler ────────────────────────────────────────────────
+  async function handleResumeUpload(file: File) {
+    if (!id) return;
+    setResumeUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+      const authHeader = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const res = await fetch(`/api/candidates/${id}/resume`, {
+        method: "POST",
+        headers: { Authorization: authHeader },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(err.error || "Upload failed");
+      }
+      await qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
+      toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message || "Could not upload resume.", variant: "destructive" });
+    } finally {
+      setResumeUploading(false);
+    }
+  }
+
+  // ── Video recording / upload handlers ────────────────────────────────────
+  async function startVideoCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+      videoStreamRef.current = stream;
+      setVideoRecordingState('camera');
+      // Attach to preview element on next tick after state update
+      setTimeout(() => {
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = stream;
+          videoPreviewRef.current.play().catch(() => {});
+        }
+      }, 50);
+    } catch {
+      toast({ title: "Camera access denied", description: "Allow camera/microphone access to record.", variant: "destructive" });
+    }
+  }
+
+  function stopVideoCamera() {
+    videoStreamRef.current?.getTracks().forEach(t => t.stop());
+    videoStreamRef.current = null;
+    if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+  }
+
+  function startVideoRecording() {
+    if (!videoStreamRef.current) return;
+    videoChunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+    const recorder = new MediaRecorder(videoStreamRef.current, { mimeType });
+    mediaRecorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) videoChunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+      setRecordedVideoBlob(blob);
+      setRecordedVideoUrl(URL.createObjectURL(blob));
+      setVideoRecordingState('recorded');
+      stopVideoCamera();
+    };
+    recorder.start();
+    setVideoRecordingState('recording');
+    setRecordingTime(0);
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime(prev => {
+        if (prev >= 120) { stopVideoRecording(); return prev; }
+        return prev + 1;
+      });
+    }, 1000);
+  }
+
+  function stopVideoRecording() {
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+  }
+
+  function discardVideoRecording() {
+    if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+    setRecordedVideoBlob(null);
+    setRecordedVideoUrl(null);
+    setVideoRecordingState('idle');
+    setRecordingTime(0);
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+  }
+
+  async function uploadVideo(file: File) {
+    if (!id) return;
+    setVideoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const authHeader = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const res = await fetch(`/api/candidates/${id}/video`, {
+        method: "POST",
+        headers: { Authorization: authHeader },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(err.error || "Upload failed");
+      }
+      await qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
+      toast({ title: "Video uploaded! 🎉", description: "Your video introduction has been saved to your profile." });
+      discardVideoRecording();
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message || "Could not upload video.", variant: "destructive" });
+    } finally {
+      setVideoUploading(false);
+    }
+  }
+
+  async function uploadRecordedVideo() {
+    if (!recordedVideoBlob) return;
+    const file = new File([recordedVideoBlob], 'video-intro.webm', { type: 'video/webm' });
+    await uploadVideo(file);
+  }
+
+  function formatRecordingTime(secs: number) {
+    return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   }
 
   function handleSaveSkills(core: string[], secondary: string[]) {
@@ -1454,6 +1600,267 @@ export default function TalentProfile() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Resume & Video Introduction (owner only) ── */}
+            {showPrivateOwnerSections && (
+              <Card className="rounded-2xl border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+                <CardContent className="p-5">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Resume & Video</p>
+
+                  {/* ─ Resume ─ */}
+                  <div className="mb-5">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#474ead]/10">
+                        <FileText className="h-3.5 w-3.5 text-[#474ead]" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Resume</span>
+                    </div>
+
+                    {(candidate as any).resumeFileName ? (
+                      <div className="mb-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                        <FileText className="h-4 w-4 shrink-0 text-[#474ead]" />
+                        <span className="min-w-0 flex-1 truncate text-xs text-slate-700 dark:text-slate-300">
+                          {(candidate as any).resumeFileName}
+                        </span>
+                        <a
+                          href={`/api/candidates/${id}/resume`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0"
+                          onClick={(e) => {
+                            // Attach auth header via fetch-blob pattern isn't possible for anchors;
+                            // use the talent resume proxy which verifies via cookie/session instead.
+                            // For now open in new tab — the endpoint checks the header sent by fetch.
+                            // We'll do a JS fetch + blob URL to add the auth header.
+                            e.preventDefault();
+                            const authHeader = talentAuth?.token
+                              ? `Bearer ${talentAuth.token}`
+                              : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+                            fetch(`/api/candidates/${id}/resume`, { headers: { Authorization: authHeader } })
+                              .then(r => r.blob())
+                              .then(blob => {
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = (candidate as any).resumeFileName || "resume";
+                                a.click();
+                                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                              })
+                              .catch(() => toast({ title: "Download failed", variant: "destructive" }));
+                          }}
+                        >
+                          <Download className="h-4 w-4 text-slate-400 hover:text-[#474ead]" />
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="mb-3 text-xs text-slate-400">No resume uploaded yet.</p>
+                    )}
+
+                    <input
+                      ref={resumeInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleResumeUpload(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={resumeUploading}
+                      onClick={() => resumeInputRef.current?.click()}
+                      className="h-8 w-full rounded-full border-[#474ead]/40 text-xs text-[#474ead] hover:bg-[#474ead]/5"
+                    >
+                      {resumeUploading ? (
+                        <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                      ) : (
+                        <><Upload className="mr-1.5 h-3.5 w-3.5" />{(candidate as any).resumeFileName ? "Replace Resume" : "Upload Resume"}</>
+                      )}
+                    </Button>
+                    <p className="mt-1.5 text-center text-[10px] text-slate-400">PDF, DOC or DOCX · max 10 MB</p>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="my-4 h-px bg-slate-100 dark:bg-white/10" />
+
+                  {/* ─ Video Introduction ─ */}
+                  <div>
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10">
+                        <Video className="h-3.5 w-3.5 text-violet-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Video Introduction</span>
+                    </div>
+
+                    {/* Prompt */}
+                    <div className="mb-4 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 p-4 dark:from-violet-950/20 dark:to-indigo-950/20">
+                      <p className="mb-1 text-xs font-bold text-violet-700 dark:text-violet-300">
+                        We Want to Meet the Person Behind the Resume!
+                      </p>
+                      <p className="mb-2.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+                        Grab your camera and record a brief 2-minute video telling us your story.
+                      </p>
+                      <ul className="space-y-1">
+                        {[
+                          "A quick snapshot of your relevant experience",
+                          "Your biggest wins and top contributions",
+                          "1–2 projects you spearheaded, including the final outcomes",
+                        ].map((tip, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                            <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-violet-200 text-center text-[9px] font-bold leading-3.5 text-violet-700 dark:bg-violet-800 dark:text-violet-200">{i + 1}</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Existing video preview */}
+                    {(candidate as any).videoIntroUrl && videoRecordingState === 'idle' && (
+                      <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+                        <video
+                          controls
+                          className="w-full"
+                          src={(() => {
+                            const authHeader = talentAuth?.token
+                              ? `Bearer ${talentAuth.token}`
+                              : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+                            // We can't set headers on <video src>, so we use a blob URL approach.
+                            // The fetch is triggered once on mount via a side-effect ref trick.
+                            return `/api/candidates/${id}/video`;
+                          })()}
+                          onError={(e) => {
+                            // If the video element can't load (auth required), fall back to fetch+blob
+                            const vid = e.currentTarget;
+                            if (vid.dataset.blobLoaded) return;
+                            vid.dataset.blobLoaded = "1";
+                            const authHeader = talentAuth?.token
+                              ? `Bearer ${talentAuth.token}`
+                              : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+                            fetch(`/api/candidates/${id}/video`, { headers: { Authorization: authHeader } })
+                              .then(r => r.blob())
+                              .then(blob => { vid.src = URL.createObjectURL(blob); })
+                              .catch(() => {});
+                          }}
+                        />
+                        <div className="flex items-center justify-between bg-slate-50 px-3 py-2 dark:bg-white/[0.03]">
+                          <span className="text-xs text-slate-500">{(candidate as any).videoIntroFileName || "video-intro"}</span>
+                          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">Saved</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Recording UI ── */}
+                    {videoRecordingState === 'idle' && (
+                      <div className="space-y-2">
+                        {/* Record button */}
+                        <Button
+                          size="sm"
+                          onClick={startVideoCamera}
+                          className="h-8 w-full rounded-full bg-violet-600 text-xs text-white hover:bg-violet-700"
+                        >
+                          <Camera className="mr-1.5 h-3.5 w-3.5" />
+                          {(candidate as any).videoIntroUrl ? "Re-record Video" : "Record a Video"}
+                        </Button>
+
+                        {/* Upload file */}
+                        <input
+                          ref={videoFileInputRef}
+                          type="file"
+                          accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/mpeg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadVideo(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={videoUploading}
+                          onClick={() => videoFileInputRef.current?.click()}
+                          className="h-8 w-full rounded-full border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300"
+                        >
+                          {videoUploading ? (
+                            <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                          ) : (
+                            <><Upload className="mr-1.5 h-3.5 w-3.5" />Upload a Video File</>
+                          )}
+                        </Button>
+                        <p className="text-center text-[10px] text-slate-400">MP4, WebM or MOV · max 200 MB</p>
+                      </div>
+                    )}
+
+                    {/* Camera preview */}
+                    {(videoRecordingState === 'camera' || videoRecordingState === 'recording') && (
+                      <div className="space-y-3">
+                        <div className="relative overflow-hidden rounded-xl bg-black aspect-video">
+                          <video
+                            ref={videoPreviewRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="h-full w-full object-cover"
+                          />
+                          {videoRecordingState === 'recording' && (
+                            <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                              REC {formatRecordingTime(recordingTime)} / 2:00
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {videoRecordingState === 'camera' && (
+                            <>
+                              <Button size="sm" onClick={startVideoRecording} className="h-8 flex-1 rounded-full bg-red-600 text-xs text-white hover:bg-red-700">
+                                <Camera className="mr-1.5 h-3.5 w-3.5" />Start Recording
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => { stopVideoCamera(); setVideoRecordingState('idle'); }} className="h-8 rounded-full text-xs">
+                                Cancel
+                              </Button>
+                            </>
+                          )}
+                          {videoRecordingState === 'recording' && (
+                            <Button size="sm" onClick={stopVideoRecording} variant="destructive" className="h-8 flex-1 rounded-full text-xs">
+                              <Square className="mr-1.5 h-3.5 w-3.5" />Stop Recording
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recorded preview */}
+                    {videoRecordingState === 'recorded' && recordedVideoUrl && (
+                      <div className="space-y-3">
+                        <div className="overflow-hidden rounded-xl bg-black">
+                          <video src={recordedVideoUrl} controls className="h-full w-full" />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={videoUploading}
+                            onClick={uploadRecordedVideo}
+                            className="h-8 flex-1 rounded-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+                          >
+                            {videoUploading ? (
+                              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                            ) : (
+                              <><Upload className="mr-1.5 h-3.5 w-3.5" />Save to Profile</>
+                            )}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={discardVideoRecording} disabled={videoUploading} className="h-8 rounded-full text-xs">
+                            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />Retake
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Preferences */}
             <Section id="section-preferences" title="Preferences" icon={Globe2} highlighted={highlightedSectionId === "section-preferences"}>

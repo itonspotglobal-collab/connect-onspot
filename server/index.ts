@@ -303,6 +303,9 @@ app.use((req, res, next) => {
   try {
     // Ensure the FK column exists (added in task-77; no-op if already present)
     await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS user_id varchar REFERENCES users(id)`);
+    // Video intro columns — no-op once present
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS video_intro_url text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS video_intro_file_name text`);
 
     // Backfill user_id on legacy rows that were created before this column
     await query(`

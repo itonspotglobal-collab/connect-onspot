@@ -1213,6 +1213,9 @@ export const candidates = pgTable("candidates", {
   // Resume
   resumeUrl: text("resume_url"),
   resumeFileName: text("resume_file_name"),
+  // Video introduction
+  videoIntroUrl: text("video_intro_url"),
+  videoIntroFileName: text("video_intro_file_name"),
   // Professional headline
   headline: text("headline"),
   // Portfolio / Social links
