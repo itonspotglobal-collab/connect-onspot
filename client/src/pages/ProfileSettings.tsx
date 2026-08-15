@@ -296,6 +296,10 @@ export default function ProfileSettings() {
   const mediaRecorderRef    = useRef<MediaRecorder | null>(null);
   const videoChunksRef      = useRef<Blob[]>([]);
   const recordingTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tracks in-flight getUserMedia requests so stale resolutions can be discarded.
+  const cameraRequestRef    = useRef<number>(0);
+  // Mirrors recordedVideoUrl in a ref so cleanup effects can revoke it without stale closures.
+  const recordedVideoUrlRef = useRef<string | null>(null);
 
   const formatRecordingTime = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -402,11 +406,18 @@ export default function ProfileSettings() {
 
   // ── Camera recording handlers ───────────────────────────────────────────
   async function startVideoCamera() {
+    // Stamp this request so we can detect if the user navigated away before getUserMedia resolved.
+    const requestId = ++cameraRequestRef.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
+      // If the section changed or component unmounted while awaiting permission, release immediately.
+      if (cameraRequestRef.current !== requestId) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       videoStreamRef.current = stream;
       setVideoRecordingState("camera");
       setTimeout(() => {
@@ -421,6 +432,8 @@ export default function ProfileSettings() {
   }
 
   function stopVideoCamera() {
+    // Incrementing cancels any getUserMedia still in-flight for this component.
+    cameraRequestRef.current++;
     videoStreamRef.current?.getTracks().forEach((t) => t.stop());
     videoStreamRef.current = null;
     if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
@@ -437,8 +450,10 @@ export default function ProfileSettings() {
     recorder.ondataavailable = (e) => { if (e.data.size > 0) videoChunksRef.current.push(e.data); };
     recorder.onstop = () => {
       const blob = new Blob(videoChunksRef.current, { type: "video/webm" });
+      const objectUrl = URL.createObjectURL(blob);
+      recordedVideoUrlRef.current = objectUrl;
       setRecordedVideoBlob(blob);
-      setRecordedVideoUrl(URL.createObjectURL(blob));
+      setRecordedVideoUrl(objectUrl);
       setVideoRecordingState("recorded");
       stopVideoCamera();
     };
@@ -459,12 +474,24 @@ export default function ProfileSettings() {
   }
 
   function discardVideoRecording() {
-    if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+    // Stop the timer first.
+    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+    // Neutralize MediaRecorder callbacks BEFORE stopping so that onstop cannot
+    // fire and restore blob/url/state after we've already cleared them.
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.ondataavailable = null;
+      mediaRecorderRef.current.onstop = null;
+      if (mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    // Revoke the object URL via ref so this works even from a stale closure.
+    const url = recordedVideoUrlRef.current;
+    if (url) URL.revokeObjectURL(url);
+    recordedVideoUrlRef.current = null;
     setRecordedVideoBlob(null);
     setRecordedVideoUrl(null);
     setVideoRecordingState("idle");
     setRecordingTime(0);
-    if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
   }
 
   async function uploadRecordedVideo() {
@@ -495,6 +522,35 @@ export default function ProfileSettings() {
 
   // `documents` is now managed by the hook (useQuery) so completion recalculates
   // automatically after upload/remove without a separate local state + useEffect.
+
+  // ── Camera cleanup when navigating away from Documents section ──────────────
+  useEffect(() => {
+    if (activeSection !== "documents") {
+      stopVideoCamera();
+      discardVideoRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
+  // ── Camera cleanup on unmount ────────────────────────────────────────────────
+  // Uses refs directly to avoid stale closures captured by the [] dep array.
+  useEffect(() => {
+    return () => {
+      cameraRequestRef.current++; // cancel any pending getUserMedia
+      if (recordingTimerRef.current) { clearInterval(recordingTimerRef.current); recordingTimerRef.current = null; }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        if (mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+      }
+      const url = recordedVideoUrlRef.current;
+      if (url) URL.revokeObjectURL(url);
+      recordedVideoUrlRef.current = null;
+      videoStreamRef.current?.getTracks().forEach((t) => t.stop());
+      videoStreamRef.current = null;
+    };
+  }, []);
 
   const form = useForm<CandidateSettingsFormData>({
     resolver: zodResolver(candidateSettingsSchema),
