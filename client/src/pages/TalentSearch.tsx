@@ -183,6 +183,19 @@ export default function TalentSearch() {
   // Fetch profiles based on current filters  
   const { data: profiles = [], isLoading, error } = useQuery<Profile[]>({
     queryKey: ["/api/profiles/search", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.location && filters.location !== "all") params.set("location", filters.location);
+      if (filters.skills && filters.skills.length > 0) params.set("skills", filters.skills.join(","));
+      if (filters.availability && filters.availability !== "all") params.set("availability", filters.availability);
+      if (filters.minRate !== undefined) params.set("minRate", String(filters.minRate));
+      if (filters.maxRate !== undefined) params.set("maxRate", String(filters.maxRate));
+      if (filters.rating) params.set("rating", String(filters.rating));
+      const url = `/api/profiles/search?${params.toString()}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json();
+    },
     enabled: true
   });
 
