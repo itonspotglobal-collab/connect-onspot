@@ -959,9 +959,9 @@ export default function AdminJobApplications() {
   const [jobFilter, setJobFilter] = useState(() => new URLSearchParams(rawSearch).get("jobId") ?? "");
   const [statusFilter, setStatusFilter] = useState(() => new URLSearchParams(rawSearch).get("status") ?? "");
   const [regFilter, setRegFilter] = useState(() => new URLSearchParams(rawSearch).get("registrationStatus") ?? "");
-  const [initiatedByFilter, setInitiatedByFilter] = useState(() => new URLSearchParams(rawSearch).get("initiatedBy") ?? "");
   const [dateFrom, setDateFrom] = useState(() => new URLSearchParams(rawSearch).get("dateFrom") ?? "");
   const [dateTo, setDateTo] = useState(() => new URLSearchParams(rawSearch).get("dateTo") ?? "");
+  const [initiatedByFilter, setInitiatedByFilter] = useState(() => new URLSearchParams(rawSearch).get("initiatedBy") ?? "");
   const [page, setPage] = useState(() => parseInt(new URLSearchParams(rawSearch).get("page") ?? "1", 10));
   const LIMIT = 20;
 

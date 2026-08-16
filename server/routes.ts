@@ -669,7 +669,15 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
   }
 }
 
-// ── Role-invitation email (non-blocking helper) ────────────────────────────
+/** Escape a string for safe interpolation into HTML content. */
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 async function fireInvitationEmail(opts: {
   talentEmail: string;
   talentName: string;
@@ -681,29 +689,43 @@ async function fireInvitationEmail(opts: {
     if (!opts.talentEmail) return;
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
 
+    const rawBase =
+      process.env.PUBLIC_APP_URL ??
+      process.env.PUBLIC_BASE_URL ??
+      (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : null);
+    if (!rawBase) {
+      console.warn("fireInvitationEmail: no absolute base URL configured (PUBLIC_APP_URL / PUBLIC_BASE_URL / REPLIT_DOMAINS) — skipping email to avoid broken links");
+      return;
+    }
+    const baseUrl = rawBase.replace(/\/$/, "");
+    const appsUrl = `${baseUrl}/my-applications`;
+
+    const safeName  = escHtml(opts.talentName);
+    const safeTitle = escHtml(opts.jobTitle);
+
     const descriptionHtml = opts.jobDescription
-      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${opts.jobDescription.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${escHtml(opts.jobDescription)}</p>`
       : "";
 
     const subject = `You've been invited to a role: ${opts.jobTitle}`;
     const bodyHtml = `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
   <h2 style="color:#1a1a2e;margin-bottom:8px;">You've been invited to a role</h2>
-  <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${opts.talentName},</p>
+  <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${safeName},</p>
   <p style="color:#444;font-size:15px;margin:12px 0;">
     A client has invited you to apply for the following role:
   </p>
-  <h3 style="color:#1a1a2e;margin:8px 0;">${opts.jobTitle}</h3>
+  <h3 style="color:#1a1a2e;margin:8px 0;">${safeTitle}</h3>
   ${descriptionHtml}
   <p style="margin:24px 0;">
-    <a href="/my-applications"
+    <a href="${escHtml(appsUrl)}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       View Invitation
     </a>
   </p>
   <p style="color:#888;font-size:13px;">
     You can accept or decline the invitation from your
-    <a href="/my-applications" style="color:#4f46e5;">My Applications</a> page.
+    <a href="${escHtml(appsUrl)}" style="color:#4f46e5;">My Applications</a> page.
   </p>
 </div>`.trim();
 
@@ -10578,6 +10600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchRaw              = req.query.search             as string | undefined;
       const dateFrom               = req.query.dateFrom           as string | undefined;
       const dateTo                 = req.query.dateTo             as string | undefined;
+      const initiatedBy            = req.query.initiatedBy        as string | undefined;
       const sortBy                 = (req.query.sortBy as string) ?? "submittedAt";
       const sortOrder              = (req.query.sortOrder as string)?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
@@ -10605,6 +10628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (jobId)              { params.push(jobId);              conditions.push(`js.job_id              = $${params.length}`); }
       if (registrationStatus) { params.push(registrationStatus); conditions.push(`js.registration_status = $${params.length}`); }
+      if (initiatedBy)        { params.push(initiatedBy);        conditions.push(`js.initiated_by        = $${params.length}`); }
       if (dateFrom)           { params.push(dateFrom);           conditions.push(`js.submitted_at        >= $${params.length}::date`); }
       if (dateTo)             { params.push(dateTo);             conditions.push(`js.submitted_at        <  ($${params.length}::date + INTERVAL '1 day')`); }
       if (searchRaw?.trim()) {
