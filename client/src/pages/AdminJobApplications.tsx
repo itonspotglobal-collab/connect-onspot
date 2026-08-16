@@ -92,6 +92,7 @@ interface Application {
   status: string;
   registrationStatus: string;
   isRepeatApplication?: boolean;
+  initiatedBy?: string;
   talentId?: string;
   talentFirstName?: string;
   talentLastName?: string;
@@ -519,6 +520,11 @@ function DetailDialog({
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={detail.status} />
                 <RegBadge status={detail.registrationStatus} />
+                {detail.initiatedBy === "client" && (
+                  <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                    Client invited
+                  </span>
+                )}
               </div>
               {detail.talentId && (
                 detail.candidateId ? (

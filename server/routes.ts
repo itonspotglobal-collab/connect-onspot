@@ -10519,6 +10519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.status, js.registration_status AS "registrationStatus",
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
+                  js.initiated_by AS "initiatedBy",
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
            FROM job_submissions js
@@ -10555,6 +10556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   js.status, js.registration_status AS "registrationStatus",
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
+                  js.initiated_by AS "initiatedBy",
                   js.resume_url AS "appResumeUrl", js.resume_file_name AS "appResumeFileName",
                   js.video_introduction_url AS "videoIntroductionUrl",
                   js.video_introduction_file_name AS "videoIntroductionFileName",
