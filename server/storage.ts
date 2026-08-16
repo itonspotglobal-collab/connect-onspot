@@ -1691,6 +1691,7 @@ export class MemStorage implements IStorage {
       attachments: insertMessage.attachments ?? null,
       messageType: insertMessage.messageType ?? "text",
       readBy: [],
+      flaggedForReview: false,
       createdAt: new Date()
     };
     this.messages.set(id, message);
@@ -3740,6 +3741,13 @@ export class DbStorage extends MemStorage {
       .set({ lastMessageAt: new Date() })
       .where(eq(messageThreadsTable.id, msg.threadId));
     return msg;
+  }
+
+  async flagMessage(messageId: string): Promise<void> {
+    await db
+      .update(messagesTable)
+      .set({ flaggedForReview: true })
+      .where(eq(messagesTable.id, messageId));
   }
 
   async listMessagesByThread(threadId: string): Promise<Message[]> {

@@ -779,6 +779,7 @@ export const insertMessageThreadSchema = createInsertSchema(messageThreads).omit
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   readBy: true,
+  flaggedForReview: true,
   createdAt: true,
 });
 
