@@ -247,8 +247,8 @@ export function TopNavigation() {
       if (isClientLoggedIn && item.path === "/find-work/jobs") return false;
       return true;
     }),
-    // Append client-only "Find Talent" link
-    ...(isClientLoggedIn ? [{ title: "Find Talent", path: "/client-search" }] : []),
+    // "Find Talent" (/client-search) was removed here — it is a redirect to /hire-talent
+    // (already visible in the nav), so showing both was redundant for logged-in clients.
   ];
 
   const getProfileRoute = () => {
@@ -273,7 +273,6 @@ export function TopNavigation() {
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
-      { label: "Find Talent",    route: "/client-search",  icon: Zap },
       { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
       { label: "Settings",       route: "/settings",       icon: Settings },
     ];
