@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
+import { sanitizeSearchCandidate } from "./lib/clientSearchSanitize.js";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -9494,54 +9495,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── Search result sanitization ───────────────────────────────────────────────
-  //
-  // Applied to every result in POST /api/client/talent-search and
-  // PATCH /api/client/talent-search/:jobId before the response leaves the server.
-  //
-  // Rule: contact information (email, phone, all external/social links, resume
-  // URLs, video links) is NEVER returned to the Client through this flow at any
-  // stage. Name masking also happens server-side here (not just in the browser)
-  // so inspecting the raw API response reveals nothing useful.
-  //
-  // Allowed fields are an explicit allowlist — anything not listed is dropped.
-  const sanitizeSearchCandidate = (candidate: Record<string, any>): Record<string, any> => {
-    const rawName: string = candidate.fullName ?? candidate.full_name ?? "";
-    // Mask name server-side using the same algorithm as maskInviteName (defined
-    // later in this file, so we inline it here to avoid a forward-reference issue).
-    const parts = rawName.trim().split(" ").filter(Boolean);
-    const maskedName =
-      !rawName.trim() ? "Talent Profile"
-      : parts.length === 1 ? parts[0][0] + "•".repeat(4)
-      : parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
-
-    return {
-      // Identity — always masked at this stage; unmask path is in submissions view
-      fullName:  maskedName,
-      full_name: maskedName,
-
-      // Professional profile — safe to share (no contact info)
-      targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
-      location:        candidate.location        ?? null,
-      seniority:       candidate.seniority        ?? null,
-      category:        candidate.category         ?? null,
-      availability:    candidate.availability     ?? null,
-      headline:        candidate.headline          ?? null,
-      summary:         candidate.summary           ?? null,
-      moreAboutMe:     candidate.moreAboutMe       ?? null,
-      coreSkills:      candidate.coreSkills        ?? candidate.core_skills      ?? [],
-      secondarySkills: candidate.secondarySkills   ?? candidate.secondary_skills ?? [],
-      profilePhotoUrl: candidate.profilePhotoUrl   ?? null,
-      workHistory:     candidate.workHistory       ?? [],
-      preferences:     candidate.preferences       ?? {},
-      experienceYears: candidate.experienceYears   ?? null,
-
-      // Explicitly omitted (never returned):
-      // email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl,
-      // portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName, passwordHash,
-      // displayName (may differ from fullName and contain real identity)
-    };
-  };
+  // sanitizeSearchCandidate is imported from server/lib/clientSearchSanitize.ts.
+  // Keeping it in a shared module (rather than inline) means the regression test
+  // suite imports the real function — if a future merge overwrites this call to
+  // return raw results, the HTTP-level integration test catches it independently.
 
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
   app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {

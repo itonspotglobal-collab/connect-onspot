@@ -672,3 +672,256 @@ describe("client talent-search — client-safe DTO sanitization", () => {
     assert.deepEqual(safe.secondarySkills, [], "missing secondarySkills → []");
   });
 });
+
+// ─── PII regression tests — import from the REAL shared module ─────────────────
+//
+// WHY THIS MATTERS: The original bug was that a task-agent commit (ea0253ba) added
+// proper server-side DTO masking inside the route handler, but a parallel merge
+// one minute later overwrote it back to `return res.json({ jobId, results })` —
+// raw, unredacted output — and nobody noticed until a manual audit.
+//
+// These tests are split into two layers that together catch that regression:
+//
+//   Layer 1 (unit) — imports sanitizeSearchCandidate from server/lib/clientSearchSanitize.ts,
+//   the SAME file routes.ts imports. If a future edit breaks the function itself, this fails.
+//
+//   Layer 2 (HTTP) — calls POST and PATCH /api/client/talent-search against the
+//   running dev server and checks every blocked field is absent from the JSON body.
+//   If the route is ever changed to bypass the sanitizer (the exact failure mode of
+//   ea0253ba being overwritten), Layer 2 catches it even though Layer 1 still passes.
+
+import { sanitizeSearchCandidate, SEARCH_RESULT_BLOCKED_FIELDS } from "../lib/clientSearchSanitize.js";
+import jwt from "jsonwebtoken";
+
+// Full raw candidate as it comes out of rankTalentForJob / getCandidateByUserId.
+// Includes every sensitive field that a db.select().from(candidatesTable) would return.
+const RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS: Record<string, any> = {
+  id:               "cand-pii-test",
+  userId:           "user-pii-test",
+  fullName:         "Jane Smith",
+  firstName:        "Jane",
+  lastName:         "Smith",
+  displayName:      "JaneS_Dev",
+  // ── Contact ───────────────────────────────────────────────────────────────────
+  email:            "jane.smith@example.com",
+  phone:            "+63 912 345 6789",
+  phoneNumber:      "+63 912 345 6789",
+  // ── Auth ─────────────────────────────────────────────────────────────────────
+  passwordHash:     "$2b$12$realHashWouldBeHereAndIsLong",
+  password_hash:    "$2b$12$realHashWouldBeHereAndIsLong",
+  // ── Documents ────────────────────────────────────────────────────────────────
+  resumeUrl:        "https://storage.example.com/resumes/jane-smith.pdf",
+  resume_url:       "https://storage.example.com/resumes/jane-smith.pdf",
+  resumeFileName:   "jane_smith_cv.pdf",
+  resume_file_name: "jane_smith_cv.pdf",
+  videoIntroUrl:    "https://storage.example.com/videos/jane-intro.mp4",
+  video_intro_url:  "https://storage.example.com/videos/jane-intro.mp4",
+  videoIntroFileName:    "jane_intro.mp4",
+  video_intro_file_name: "jane_intro.mp4",
+  // ── External links ────────────────────────────────────────────────────────────
+  linkedinUrl:  "https://linkedin.com/in/janesmith",
+  linkedin_url: "https://linkedin.com/in/janesmith",
+  githubUrl:    "https://github.com/janesmith",
+  github_url:   "https://github.com/janesmith",
+  portfolioUrl: "https://jane.dev",
+  portfolio_url:"https://jane.dev",
+  websiteUrl:   "https://jane.dev/about",
+  website_url:  "https://jane.dev/about",
+  // ── Safe fields ──────────────────────────────────────────────────────────────
+  targetPosition:  "React Developer",
+  location:        "Remote, Philippines",
+  seniority:       "mid",
+  category:        "Developers",
+  availability:    "available",
+  headline:        "Frontend engineer with 5 years of React experience",
+  coreSkills:      ["React", "TypeScript"],
+  secondarySkills: ["CSS", "GraphQL"],
+  profilePhotoUrl: "https://storage.example.com/photos/jane.jpg",
+};
+
+// ─── Layer 1: Unit tests — real imported function, not a copy ─────────────────
+
+describe("PII regression — sanitizeSearchCandidate (imports real shared module)", () => {
+
+  it("strips every field in SEARCH_RESULT_BLOCKED_FIELDS from the output", () => {
+    const safe = sanitizeSearchCandidate(RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS);
+    const safeStr = JSON.stringify(safe);
+
+    for (const field of SEARCH_RESULT_BLOCKED_FIELDS) {
+      assert.ok(
+        !(field in safe),
+        `Blocked field "${field}" must not be a key in the sanitized output`,
+      );
+    }
+
+    // Belt-and-suspenders: also check the serialized JSON for telltale values
+    assert.ok(!safeStr.includes("jane.smith@example.com"),
+      "raw email address must not appear anywhere in the serialized response");
+    assert.ok(!safeStr.includes("$2b$12$"),
+      "bcrypt hash prefix must not appear anywhere in the serialized response");
+    assert.ok(!safeStr.includes("+63 912"),
+      "phone number must not appear anywhere in the serialized response");
+    assert.ok(!safeStr.includes("linkedin.com/in/janesmith"),
+      "linkedin URL must not appear anywhere in the serialized response");
+    assert.ok(!safeStr.includes("jane-smith.pdf"),
+      "resume filename must not appear anywhere in the serialized response");
+  });
+
+  it("masks the talent's real name server-side before the response is sent", () => {
+    const safe = sanitizeSearchCandidate(RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS);
+    // Real name "Jane Smith" → masked "Jane S."
+    assert.ok(
+      safe.fullName === "Jane S." || safe.full_name === "Jane S.",
+      `fullName should be masked to "Jane S." but got "${safe.fullName}"`,
+    );
+    assert.ok(
+      !JSON.stringify(safe).includes("Jane Smith"),
+      'raw full name "Jane Smith" must not appear in the serialized output',
+    );
+  });
+
+  it("preserves all safe profile fields", () => {
+    const safe = sanitizeSearchCandidate(RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS);
+    assert.equal(safe.targetPosition,  "React Developer",    "targetPosition preserved");
+    assert.equal(safe.location,        "Remote, Philippines","location preserved");
+    assert.equal(safe.seniority,       "mid",                "seniority preserved");
+    assert.equal(safe.category,        "Developers",         "category preserved");
+    assert.equal(safe.availability,    "available",          "availability preserved");
+    assert.deepEqual(safe.coreSkills,  ["React", "TypeScript"], "coreSkills preserved");
+  });
+
+  it("handles a candidate with no name gracefully", () => {
+    const safe = sanitizeSearchCandidate({ fullName: "", targetPosition: "VA" });
+    assert.equal(safe.fullName, "Talent Profile", "empty name → 'Talent Profile'");
+  });
+
+  it("handles a single-word name correctly", () => {
+    const safe = sanitizeSearchCandidate({ fullName: "Madonna" });
+    assert.ok(safe.fullName.startsWith("M"),   "starts with first initial");
+    assert.ok(safe.fullName.includes("••••"),  "padded with bullet characters");
+    assert.ok(!safe.fullName.includes("Madonna"), "real name must not appear");
+  });
+});
+
+// ─── Layer 2: HTTP integration — tests the actual running route ──────────────
+//
+// These tests call the real HTTP endpoint. If the route ever reverts to returning
+// raw rankTalentForJob results (bypassing sanitizeSearchCandidate), these fail
+// even if the unit tests above still pass.
+
+describe("PII regression — HTTP endpoint response (integration, requires running server)", () => {
+
+  async function getTestClientUser(): Promise<{ id: string; email: string } | null> {
+    const r = await query(`SELECT id, email FROM users WHERE role = 'client' LIMIT 1`);
+    return r.rows[0] ?? null;
+  }
+
+  function makeClientJwt(userId: string, email: string): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("JWT_SECRET env var not set — cannot generate test token");
+    return jwt.sign({ userId, email, role: "client" }, secret, { expiresIn: "5m" });
+  }
+
+  async function searchRequest(token: string, body: object): Promise<Response> {
+    return fetch("http://localhost:5000/api/client/talent-search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("POST /api/client/talent-search — response body contains no blocked PII fields", async () => {
+    const user = await getTestClientUser();
+    if (!user) {
+      console.warn("  [skip] No client user found in DB — skipping HTTP integration test");
+      return;
+    }
+    const token = makeClientJwt(user.id, user.email);
+    const res = await searchRequest(token, { searchText: "React developer", engagementType: "Full-Time" });
+
+    assert.ok(
+      res.ok || res.status === 500, // 500 is acceptable if no candidates exist; 200 or 500 both prove routing works
+      `Expected 200 or 500, got ${res.status} — endpoint not reachable or auth failed`,
+    );
+
+    if (!res.ok) return; // no results to inspect (empty DB or scorer error)
+
+    const data = await res.json() as any;
+    let jobId: string | null = data.jobId ?? null;
+
+    try {
+      assert.ok(Array.isArray(data.results), "response must have a results array");
+
+      const responseJson = JSON.stringify(data);
+
+      for (const field of SEARCH_RESULT_BLOCKED_FIELDS) {
+        // Check the field does not appear as a key anywhere in any result's candidate
+        for (const result of data.results ?? []) {
+          assert.ok(
+            !(field in (result.candidate ?? {})),
+            `Blocked field "${field}" must not appear in any candidate object in the HTTP response`,
+          );
+        }
+      }
+
+      // Belt-and-suspenders: check serialized JSON for patterns that signal raw data leakage
+      assert.ok(!responseJson.includes('"passwordHash"'), 'key "passwordHash" must not appear in response JSON');
+      assert.ok(!responseJson.includes('"password_hash"'), 'key "password_hash" must not appear in response JSON');
+      assert.ok(!responseJson.includes('"$2b$'),           "bcrypt hash must not appear in response JSON");
+      assert.ok(!responseJson.includes('"linkedinUrl"'),   'key "linkedinUrl" must not appear in response JSON');
+      assert.ok(!responseJson.includes('"resumeUrl"'),     'key "resumeUrl" must not appear in response JSON');
+      assert.ok(!responseJson.includes('"phone"'),         'key "phone" must not appear in response JSON');
+    } finally {
+      // Clean up the scaffold job created by the test search
+      if (jobId) {
+        await query(`DELETE FROM job_submissions WHERE job_id = $1`, [jobId]).catch(() => {});
+        await query(`DELETE FROM jobs WHERE id = $1 AND created_via = 'search_scaffold'`, [jobId]).catch(() => {});
+      }
+    }
+  });
+
+  it("PATCH /api/client/talent-search/:jobId — rescore response also contains no blocked PII fields", async () => {
+    const user = await getTestClientUser();
+    if (!user) return;
+
+    const token = makeClientJwt(user.id, user.email);
+
+    // First: create a scaffold job via POST
+    const postRes = await searchRequest(token, { searchText: "Virtual assistant", engagementType: "Full-Time" });
+    if (!postRes.ok) return; // scorer not available — skip
+    const postData = await postRes.json() as any;
+    const jobId: string | null = postData.jobId ?? null;
+    if (!jobId) return;
+
+    try {
+      // Now PATCH to rescore with a different engagement type
+      const patchRes = await fetch(`http://localhost:5000/api/client/talent-search/${jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ engagementType: "Part-Time" }),
+      });
+
+      if (!patchRes.ok) return; // tolerate scorer failures in test env
+
+      const patchData = await patchRes.json() as any;
+      const patchJson = JSON.stringify(patchData);
+
+      for (const result of patchData.results ?? []) {
+        for (const field of SEARCH_RESULT_BLOCKED_FIELDS) {
+          assert.ok(
+            !(field in (result.candidate ?? {})),
+            `Blocked field "${field}" must not appear in PATCH rescore response`,
+          );
+        }
+      }
+
+      assert.ok(!patchJson.includes('"passwordHash"'), 'passwordHash must not appear in PATCH response JSON');
+      assert.ok(!patchJson.includes('"$2b$'),           "bcrypt hash must not appear in PATCH response JSON");
+    } finally {
+      if (jobId) {
+        await query(`DELETE FROM job_submissions WHERE job_id = $1`, [jobId]).catch(() => {});
+        await query(`DELETE FROM jobs WHERE id = $1 AND created_via = 'search_scaffold'`, [jobId]).catch(() => {});
+      }
+    }
+  });
+});

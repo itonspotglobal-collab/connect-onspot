@@ -31,6 +31,16 @@ Response now passes through `sanitizeClientSubmissionRow`.
 
 `message_threads` table exists (participants: text[], jobId FK). Endpoints at /api/message-threads + /api/messages have **no auth middleware** and are not wired to the post-acceptance flow. When talent accepts an invitation, no thread is created. Client has no in-platform communication path with accepted talent. Needs scoping before implementation.
 
+## Regression test location
+
+`server/tests/client-talent-search.test.ts` — two describe blocks at the bottom:
+- **"PII regression — sanitizeSearchCandidate (imports real shared module)"** — unit tests that import from `server/lib/clientSearchSanitize.ts` (not a copy)
+- **"PII regression — HTTP endpoint response (integration)"** — makes real fetch calls to `POST` and `PATCH /api/client/talent-search`, checks every SEARCH_RESULT_BLOCKED_FIELDS key is absent from response JSON
+
+Both layers are needed together: unit tests catch function-level regressions; HTTP tests catch route-level bypasses.
+
+Run with: `npm test`
+
 ## How to apply
 
 Any new client-facing endpoint that touches the candidates table or job_submissions must:
