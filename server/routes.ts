@@ -669,6 +669,51 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
   }
 }
 
+// ── Role-invitation email (non-blocking helper) ────────────────────────────
+async function fireInvitationEmail(opts: {
+  talentEmail: string;
+  talentName: string;
+  jobTitle: string;
+  jobDescription: string | null;
+  submissionId: string;
+}): Promise<void> {
+  try {
+    if (!opts.talentEmail) return;
+    const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
+
+    const descriptionHtml = opts.jobDescription
+      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${opts.jobDescription.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+      : "";
+
+    const subject = `You've been invited to a role: ${opts.jobTitle}`;
+    const bodyHtml = `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1a1a2e;margin-bottom:8px;">You've been invited to a role</h2>
+  <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${opts.talentName},</p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    A client has invited you to apply for the following role:
+  </p>
+  <h3 style="color:#1a1a2e;margin:8px 0;">${opts.jobTitle}</h3>
+  ${descriptionHtml}
+  <p style="margin:24px 0;">
+    <a href="/my-applications"
+       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
+      View Invitation
+    </a>
+  </p>
+  <p style="color:#888;font-size:13px;">
+    You can accept or decline the invitation from your
+    <a href="/my-applications" style="color:#4f46e5;">My Applications</a> page.
+  </p>
+</div>`.trim();
+
+    await sendApplicantEmail({ to: opts.talentEmail, subject, bodyHtml });
+    console.log(`✅ Invitation email sent to ${opts.talentEmail} for submission ${opts.submissionId}`);
+  } catch (e: any) {
+    console.warn("fireInvitationEmail (non-fatal):", e?.message);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
@@ -9501,6 +9546,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Invited Talent";
       const email = talent?.email ?? "";
 
+      // Fetch job title & description for the invitation email
+      const jobRow = await query(
+        `SELECT title, description FROM jobs WHERE id = $1 LIMIT 1`,
+        [jobId],
+      );
+      const jobTitle = jobRow.rows[0]?.title ?? "a new role";
+      const jobDescription = jobRow.rows[0]?.description ?? null;
+
       const result = await query(
         `INSERT INTO job_submissions
            (id, job_id, client_id, applicant_name, first_name, last_name, email,
@@ -9509,6 +9562,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
          RETURNING id`,
         [jobId, clientId, name, talent?.first_name ?? name, talent?.last_name ?? "", email, talentUserId],
       );
+
+      // Fire invitation email non-blockingly
+      fireInvitationEmail({
+        talentEmail: email,
+        talentName: name,
+        jobTitle,
+        jobDescription,
+        submissionId: result.rows[0].id,
+      });
 
       return res.status(201).json({ id: result.rows[0].id });
     } catch (err: any) {
