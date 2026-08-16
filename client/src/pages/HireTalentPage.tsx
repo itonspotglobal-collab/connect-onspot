@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X } from "lucide-react";
+import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X, Link } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
@@ -572,6 +572,7 @@ export default function HireTalentPage() {
     query: string;
   } | null>(null);
   const [isConfirmingInvite, setIsConfirmingInvite] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // ── Suggestion chips ──────────────────────────────────────────────────────────
   // Suggestions endpoint is public — no auth required.
@@ -954,7 +955,7 @@ export default function HireTalentPage() {
             )}
 
             {/* Results header — heading + Refine toggle */}
-            <div className="flex items-baseline justify-between mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
               <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900 dark:text-white">
                 {searchMutation.isPending
                   ? "Searching…"
@@ -962,12 +963,44 @@ export default function HireTalentPage() {
                     ? `Matches for "${searchText}"`
                     : "Matches"}
               </h1>
-              <button
-                onClick={() => setRefineOpen((o) => !o)}
-                className="text-[13.5px] font-semibold text-slate-500 hover:text-[#474ead] transition-colors duration-150 py-1"
-              >
-                {refineOpen ? "Refine ▴" : "Refine ▾"}
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Copy link button — only shown once results are present */}
+                {searchResults && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href).then(() => {
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      });
+                    }}
+                    title="Copy link to this search"
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors duration-150",
+                      copiedLink
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                        : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-[#474ead] hover:text-[#474ead]",
+                    )}
+                  >
+                    {copiedLink ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Link className="h-3.5 w-3.5" />
+                        Copy link
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => setRefineOpen((o) => !o)}
+                  className="text-[13.5px] font-semibold text-slate-500 hover:text-[#474ead] transition-colors duration-150 py-1"
+                >
+                  {refineOpen ? "Refine ▴" : "Refine ▾"}
+                </button>
+              </div>
             </div>
 
             {/* Collapsible filter row */}
