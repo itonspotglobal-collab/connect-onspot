@@ -85,6 +85,8 @@ interface JobSubmission {
   submittedAt: string;
   jobTitle: string;
   jobCompany: string | null;
+  /** 'client' when the client invited this talent via Search & Shortlist; 'talent' for self-applied */
+  initiated_by: string | null;
 }
 
 const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -152,6 +154,16 @@ function ViewSubmissionModal({
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusInfo.color}`}>
               {statusInfo.label}
             </span>
+            {submission.initiated_by === "client" && (
+              <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                You invited
+              </span>
+            )}
+            {submission.status === "invited" && (
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                Pending response
+              </span>
+            )}
             <Select
               value={submission.status}
               onValueChange={(v) => statusMutation.mutate({ id: submission.id, status: v })}
@@ -893,10 +905,26 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06]">
               {submissions.map((sub) => {
                 const statusInfo = SUBMISSION_STATUS_LABELS[sub.status] ?? SUBMISSION_STATUS_LABELS.new;
+                const clientInvited = sub.initiated_by === "client";
+                const pendingInvite = sub.status === "invited";
                 return (
-                  <tr key={sub.id} className="bg-white hover:bg-slate-50/60 dark:bg-transparent dark:hover:bg-white/[0.02] transition-colors">
+                  <tr
+                    key={sub.id}
+                    className={`transition-colors ${
+                      pendingInvite
+                        ? "bg-indigo-50/60 hover:bg-indigo-50 dark:bg-indigo-900/[0.08] dark:hover:bg-indigo-900/[0.14]"
+                        : "bg-white hover:bg-slate-50/60 dark:bg-transparent dark:hover:bg-white/[0.02]"
+                    }`}
+                  >
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900 dark:text-white">{sub.applicantName}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-medium text-slate-900 dark:text-white">{sub.applicantName}</p>
+                        {clientInvited && (
+                          <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                            You invited
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500">{sub.email}</p>
                     </td>
                     <td className="hidden px-4 py-3 sm:table-cell">
@@ -908,9 +936,16 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
                         : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                        {pendingInvite && (
+                          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                            Pending response
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Button
