@@ -1,0 +1,46 @@
+Enhancing the /client-search page (built in the last session) to match a
+reference mockup's UX more closely. This is a frontend refinement on top of
+what's already built — no new backend scope beyond what's noted below.
+
+1. IGNORE the navigation bar treatment in the reference mockup entirely — keep
+   the production nav exactly as it is today. Only the search box and results
+   behavior below are in scope.
+
+2. Before changing anything, report back: what does /client-search currently
+   render results as — cards or a list? I want to know what's actually there
+   before assuming what needs to change.
+
+3. GOOGLE-STYLE PROGRESSIVE REVEAL — the page must load in a minimal state:
+   - On load: only a centered search input + suggestion chips are visible,
+     vertically centered in the viewport, nothing else on the page (no
+     results, no category filters, no engagement type selector visible yet)
+   - On action (search submitted, Enter pressed, or a suggestion chip
+     clicked): the search bar transitions to a compact bar at the top, and
+     results reveal below it
+   - This should feel like one deliberate transition, not multiple separate
+     animations firing at once
+   - "Progressive" here means this reveal-on-search behavior specifically —
+     NOT incremental loading/pagination of results as someone scrolls. If you
+     think incremental loading is also worth adding, flag it back as a
+     separate question rather than assuming either way.
+
+4. RESULTS MUST RENDER AS TALENT CARDS IN A GRID, NOT A LIST. Reference for
+   the card design: the reference mockup's result-card pattern — avatar/
+   initials, name or masked identifier, role + category, engagement type, a
+   short description, skill tags, an AI-match indicator, and a Shortlist/
+   Invite action in the card footer. Match that structure and layout using
+   the real ranked data /client-search already returns from
+   rankTalentForJob — same data, just rendered as cards consistent with the
+   reference mockup rather than however it renders today.
+
+5. SUGGESTION CHIPS MUST BE DATA-DRIVEN, NOT HARDCODED. Report back: what's
+   the best available real signal for "most common roles" today — job
+   posting volume per category (the 10-category taxonomy), most-invited
+   categories, or something else? Don't hardcode placeholder chip text
+   again. Once you report what's feasible, I'll confirm which signal to use,
+   then build the chips to reflect real top categories (e.g., top 4-5 by
+   volume), updating as real data changes rather than being fixed at build
+   time.
+
+Report back on items 2, 3's incremental-loading question, and 5's data-source
+question before writing any reveal/animation/card code.
