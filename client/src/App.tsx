@@ -84,6 +84,7 @@ import InquiryReview from "@/pages/InquiryReview";
 import InquiryPayment from "@/pages/InquiryPayment";
 import InquirySuccess from "@/pages/InquirySuccess";
 import AdminInquiries from "@/pages/AdminInquiries";
+import AdminScaffoldJobs from "@/pages/AdminScaffoldJobs";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -223,6 +224,7 @@ function PublicRouter() {
           <Route path="/admin/email-templates/:id/edit" component={() => bypassAdminAuth ? <AdminEmailTemplateEditor /> : <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
           <Route path="/admin/image-uploader" component={() => bypassAdminAuth ? <AdminImageUploader /> : <AdminProtectedRoute><AdminImageUploader /></AdminProtectedRoute>} />
           <Route path="/admin/inquiries" component={() => bypassAdminAuth ? <AdminInquiries /> : <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
+          <Route path="/admin/scaffold-jobs" component={() => bypassAdminAuth ? <AdminScaffoldJobs /> : <AdminProtectedRoute><AdminScaffoldJobs /></AdminProtectedRoute>} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

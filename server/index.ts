@@ -376,7 +376,7 @@ app.use((req, res, next) => {
     const { siteCrawlerService } = await import('./services/siteCrawlerService');
 
     try {
-      const { query: dbQuery } = await import('./db');
+    const { query: dbQuery } = await import('./db');
       const autoApproveResult = await dbQuery(
         `UPDATE jobs
            SET approval_status = 'approved',
@@ -499,7 +499,13 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  // Periodically remove orphaned search_scaffold jobs (older than 7 days, no invitations)
+  // ── Scaffold-job TTL cleanup ────────────────────────────────────────────────
+  // Removes search_scaffold rows older than 7 days that have no job_submissions
+  // (i.e. the client searched but never invited anyone). Scaffold rows that have
+  // at least one invitation are kept for audit. Runs once 5 s after startup so
+  // any rows that aged out while the server was offline are swept immediately,
+  // then repeats hourly. Admin can also trigger an on-demand pass via
+  // POST /api/admin/scaffold-jobs/cleanup.
   const SCAFFOLD_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   // Alert threshold: if this many orphaned scaffold jobs remain after a cleanup pass,
   // something is likely broken (DB errors, missed deletes, etc.).
@@ -520,6 +526,8 @@ app.use((req, res, next) => {
       const deleted = await st.cleanupOrphanedScaffoldJobs();
       if (deleted > 0) {
         console.log(`🧹 Scaffold cleanup: removed ${deleted} orphaned search_scaffold job(s)`);
+      } else {
+        console.log('🧹 Scaffold cleanup: no orphaned jobs to remove');
       }
 
       // Post-cleanup health check: alert if too many orphans remain
@@ -535,12 +543,13 @@ app.use((req, res, next) => {
         }
       }
     } catch (err: any) {
-      console.warn('⚠️  Scaffold cleanup error:', err.message);
+      console.warn('⚠️  Scaffold cleanup error (non-fatal):', err.message);
     }
   };
   // Run once shortly after startup, then on the hourly interval
   setTimeout(runScaffoldCleanup, 5000);
   setInterval(runScaffoldCleanup, SCAFFOLD_CLEANUP_INTERVAL_MS);
+  console.log('⏰ Scaffold cleanup scheduled: startup pass in 5 s, then every 1 h');
 
   // Enhanced global error handler with Sentry integration
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

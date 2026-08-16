@@ -180,8 +180,12 @@ function ViewSubmissionModal({
                   <SelectValue placeholder="Update status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(SUBMISSION_STATUS_LABELS).map(([val, { label }]) => (
-                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  {/* Only include statuses the PATCH /api/client/job-submissions/:id/status
+                      endpoint accepts: new | reviewed | shortlisted | rejected | hired */}
+                  {(["new", "reviewed", "shortlisted", "rejected", "hired"] as const).map((val) => (
+                    <SelectItem key={val} value={val}>
+                      {SUBMISSION_STATUS_LABELS[val]?.label ?? val}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

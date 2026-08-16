@@ -3591,6 +3591,7 @@ export class DbStorage extends MemStorage {
       updatedAt: row.updated_at,
     }));
   }
+
   /**
    * Delete search_scaffold jobs older than 7 days that have no associated
    * job_submissions rows (i.e. the client searched but never invited anyone).
@@ -3623,6 +3624,79 @@ export class DbStorage extends MemStorage {
          )`,
     );
     return result.rows[0]?.cnt ?? 0;
+  }
+
+  /**
+   * List all search_scaffold jobs for admin visibility, including age and
+   * whether they have any associated job_submissions (invitations).
+   */
+  async listScaffoldJobs(): Promise<Array<{
+    id: string;
+    title: string;
+    clientId: string;
+    clientEmail: string | null;
+    companyName: string | null;
+    createdAt: Date;
+    ageHours: number;
+    invitationCount: number;
+    skillTags: string[];
+    engagementType: string | null;
+  }>> {
+    const result = await dbQuery(
+      `SELECT
+         j.id,
+         j.title,
+         j.client_id       AS "clientId",
+         u.email           AS "clientEmail",
+         cp.company_name   AS "companyName",
+         j.created_at      AS "createdAt",
+         EXTRACT(EPOCH FROM (NOW() - j.created_at)) / 3600 AS "ageHours",
+         COUNT(js.id)      AS "invitationCount",
+         j.skill_tags      AS "skillTags",
+         j.engagement_type AS "engagementType"
+       FROM jobs j
+       LEFT JOIN users u  ON u.id = j.client_id
+       LEFT JOIN client_profiles cp ON cp.user_id = j.client_id
+       LEFT JOIN job_submissions js ON js.job_id = j.id
+       WHERE j.created_via = 'search_scaffold'
+       GROUP BY j.id, u.email, cp.company_name
+       ORDER BY j.created_at DESC`,
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      clientId: row.clientId,
+      clientEmail: row.clientEmail,
+      companyName: row.companyName,
+      createdAt: new Date(row.createdAt),
+      ageHours: parseFloat(row.ageHours ?? "0"),
+      invitationCount: parseInt(row.invitationCount ?? "0", 10),
+      skillTags: Array.isArray(row.skillTags) ? row.skillTags : [],
+      engagementType: row.engagementType,
+    }));
+  }
+
+  /**
+   * Delete scaffold jobs by explicit ID list.
+   * Only deletes rows that are:
+   *   - created_via = 'search_scaffold' (safety guard against deleting real jobs)
+   *   - have NO associated job_submissions rows (avoids FK violation and protects
+   *     talent who already received an invitation)
+   * Returns the number of rows deleted.
+   */
+  async deleteScaffoldJobsByIds(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const placeholders = ids.map((_: any, i: number) => `$${i + 1}`).join(", ");
+    const result = await dbQuery(
+      `DELETE FROM jobs
+       WHERE id IN (${placeholders})
+         AND created_via = 'search_scaffold'
+         AND id NOT IN (
+           SELECT DISTINCT job_id FROM job_submissions WHERE job_id IS NOT NULL
+         )`,
+      ids,
+    );
+    return result.rowCount ?? 0;
   }
 }
 

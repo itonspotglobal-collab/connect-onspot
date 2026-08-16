@@ -691,10 +691,11 @@ async function fireInvitationEmail(opts: {
 
     const rawBase =
       process.env.PUBLIC_APP_URL ??
+      process.env.APP_URL ??
       process.env.PUBLIC_BASE_URL ??
       (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : null);
     if (!rawBase) {
-      console.warn("fireInvitationEmail: no absolute base URL configured (PUBLIC_APP_URL / PUBLIC_BASE_URL / REPLIT_DOMAINS) — skipping email to avoid broken links");
+      console.warn("fireInvitationEmail: no absolute base URL configured (PUBLIC_APP_URL / APP_URL / PUBLIC_BASE_URL / REPLIT_DOMAINS) — skipping email to avoid broken links");
       return;
     }
     const baseUrl = rawBase.replace(/\/$/, "");
@@ -6423,6 +6424,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Admin: Scaffold-job management ──────────────────────────────────────
+
+  // GET /api/admin/scaffold-jobs — list all search_scaffold rows with metadata
+  app.get("/api/admin/scaffold-jobs", authenticateAdminFlexible, async (req: Request, res: Response) => {
+    try {
+      const rows = await storage.listScaffoldJobs();
+      res.json(rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/scaffold-jobs error:", err);
+      res.status(500).json({ error: "Failed to fetch scaffold jobs" });
+    }
+  });
+
+  // DELETE /api/admin/scaffold-jobs — bulk delete by IDs
+  // Body: { ids: string[] }
+  app.delete("/api/admin/scaffold-jobs", authenticateAdminFlexible, async (req: Request, res: Response) => {
+    try {
+      const { ids } = req.body as { ids?: string[] };
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "ids must be a non-empty array" });
+      }
+      const deleted = await storage.deleteScaffoldJobsByIds(ids);
+      res.json({ deleted });
+    } catch (err: any) {
+      console.error("DELETE /api/admin/scaffold-jobs error:", err);
+      res.status(500).json({ error: "Failed to delete scaffold jobs" });
+    }
+  });
+
+  // POST /api/admin/scaffold-jobs/cleanup — run the 7-day TTL cleanup immediately
+  app.post("/api/admin/scaffold-jobs/cleanup", authenticateAdminFlexible, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.cleanupOrphanedScaffoldJobs();
+      res.json({ deleted });
+    } catch (err: any) {
+      console.error("POST /api/admin/scaffold-jobs/cleanup error:", err);
+      res.status(500).json({ error: "Failed to run cleanup" });
+    }
+  });
+
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
   // No auth guard yet — consistent with approve/reject policy above.
   app.post("/api/admin/jobs/:id/pending", async (req: Request, res: Response) => {
@@ -9684,13 +9725,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "jobId and talentUserId are required" });
       }
 
-      // Verify the job belongs to this client
+      // Verify the job belongs to this client AND is a search_scaffold (not a real posting)
       const jobCheck = await query(
-        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2`,
+        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
         [jobId, clientId],
       );
       if (!jobCheck.rows.length) {
-        return res.status(403).json({ error: "Job not found or not owned by you" });
+        return res.status(403).json({ error: "Job not found, not owned by you, or not a search scaffold" });
+      }
+
+      // Verify the target user is actually a talent-role account
+      const targetUser = await query(
+        `SELECT id, role FROM users WHERE id = $1 LIMIT 1`,
+        [talentUserId],
+      );
+      if (!targetUser.rows.length || targetUser.rows[0].role !== "talent") {
+        return res.status(400).json({ error: "Target account is not a talent user" });
       }
 
       // Idempotency — return 409 if already invited (prevents duplicate rows)

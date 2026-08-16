@@ -1,35 +1,14 @@
 ---
-name: Search-to-Shortlist PII audit
-description: Contact-information exposure findings and fixes across the client search/invite/accept flow.
+name: Client search/shortlist PII invariants
+description: Durable privacy rules for the client talent-search and invitation flow — what client-facing endpoints may and may never expose.
 ---
 
-## Rule
-Contact fields (email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl, portfolioUrl, websiteUrl, videoIntroUrl, passwordHash) are **never** returned through any client-facing endpoint at any stage — including after acceptance. Name and contact are independent axes: name reveals on acceptance, contact never does.
 
-**Why:** User's explicit product requirement: "name unmask ≠ contact unmask. Email, phone, external links must never be exposed to the client at any stage."
+## Invariant
 
-## What was fixed (server/routes.ts)
+Contact fields (email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl, portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName, passwordHash) are **never** returned through any client-facing endpoint at any stage — including after the talent accepts an invitation. Name masking and contact redaction are independent axes.
 
-### 1. Search results (pre-invite) — sanitizeSearchCandidate()
-Defined near line 9508 (before POST /api/client/talent-search).
-- Applied to both `POST /api/client/talent-search` and `PATCH /api/client/talent-search/:jobId`.
-- Allowlists safe non-contact fields; masks name server-side (not just in the browser).
-- Explicitly strips: email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl, portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName, passwordHash, displayName.
-- **Previously**: returned the full raw Candidate object from `db.select().from(candidatesTable)` including all contact fields and passwordHash. Masking only happened in the frontend.
-
-### 2. Post-accept submissions (GET /api/client/job-submissions, :id)
-`sanitizeClientSubmissionRow` was rewritten to always strip email/phone regardless of status.
-- Pre-accept (invited/declined): name masked + all contact null ✅
-- Post-accept (submitted+): name reveals, contact still null ✅
-- **Previously**: the accepted-row branch returned the full row including email and phone.
-
-### 3. PATCH /api/client/job-submissions/:id/status
-Response now passes through `sanitizeClientSubmissionRow`.
-- **Previously**: returned raw `RETURNING *` with no sanitization — exposed email, phone on every status update.
-
-## Gap — messaging (not yet implemented)
-
-`message_threads` table exists (participants: text[], jobId FK). Endpoints at /api/message-threads + /api/messages have **no auth middleware** and are not wired to the post-acceptance flow. When talent accepts an invitation, no thread is created. Client has no in-platform communication path with accepted talent. Needs scoping before implementation.
+**Why:** Product requirement: "name unmask ≠ contact unmask. Email, phone, external links must never be exposed to the client."
 
 ## Regression test location
 
@@ -43,7 +22,7 @@ Run with: `npm test`
 
 ## How to apply
 
-Any new client-facing endpoint that touches the candidates table or job_submissions must:
-1. Call `sanitizeSearchCandidate(candidate)` before returning candidate objects.
-2. Call `sanitizeClientSubmissionRow(row)` before returning submission rows.
-3. Never include a bare `SELECT *` or `RETURNING *` in a client response without sanitization.
+1. Any endpoint serving candidate objects to clients **must** pass through `sanitizeSearchCandidate(candidate)` (defined in server/routes.ts near `POST /api/client/talent-search`). It allowlists safe non-contact fields and masks name server-side.
+2. Any endpoint serving submission rows to clients **must** pass through `sanitizeClientSubmissionRow(row)` before responding — including `PATCH` responses.
+3. Never return a bare `SELECT *` or `RETURNING *` to a client route without explicit sanitization.
+4. Client status selector options must match the API's `validStatuses` (`new | reviewed | shortlisted | rejected | hired`). Invitation-only states (`invited`, `declined`, `submitted`) must never appear as selectable options.
