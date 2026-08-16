@@ -1337,6 +1337,7 @@ export class MemStorage implements IStorage {
       JOIN jobs j ON j.id = jm.job_id
       WHERE jm.talent_id = $1
         AND j.status = 'open'
+        AND j.created_via != 'search_scaffold'
       ORDER BY jm.compatibility_score DESC
       LIMIT 20
     `, [candidateId]);
@@ -3511,6 +3512,12 @@ export class DbStorage extends MemStorage {
     // Approval: only approved (or legacy null-value) jobs are shown publicly
     conditions.push(
       sqlOp`(${jobsTable.approvalStatus} = 'approved' OR ${jobsTable.approvalStatus} IS NULL)`,
+    );
+
+    // Structural guard: scaffold jobs are auto-generated scoring artifacts and must never
+    // appear in any public or talent-facing listing regardless of their status.
+    conditions.push(
+      sqlOp`(${jobsTable.createdVia} IS NULL OR ${jobsTable.createdVia} != 'search_scaffold')`,
     );
 
     // Category filter — checks job_function OR category independently so that

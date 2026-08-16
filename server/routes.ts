@@ -5946,7 +5946,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await query(
         `SELECT id, title, professional_role_name
          FROM jobs
-         WHERE status = 'open' AND approval_status = 'approved'
+         WHERE status = 'open'
+           AND approval_status = 'approved'
+           AND (created_via IS NULL OR created_via != 'search_scaffold')
          ORDER BY COALESCE(view_count, 0) DESC, created_at DESC
          LIMIT 5`
       );
@@ -5977,11 +5979,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!jobWithSkills) {
         return res.status(404).json({ error: "Job not found" });
       }
-      // Only publicly expose approved + open/published jobs
+      // Only publicly expose approved + open/published jobs; never expose scaffold jobs
       const approval = (jobWithSkills as any).approvalStatus;
       const isApproved = approval === "approved" || approval == null;
       const isOpen = jobWithSkills.status === "open" || jobWithSkills.status === "published";
-      if (!isApproved || !isOpen) {
+      const isScaffold = (jobWithSkills as any).createdVia === "search_scaffold";
+      if (!isApproved || !isOpen || isScaffold) {
         return res.status(404).json({ error: "Job not found" });
       }
       // Mask company data for confidential jobs before sending to public callers
@@ -9936,6 +9939,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Guard: published jobs must have a valid engagement type
       if (["open", "published"].includes(status)) {
         const existingJob = await storage.getJob(jobId);
+        // Scaffold jobs are internal scoring artifacts — they must never be published publicly
+        if ((existingJob as any)?.createdVia === "search_scaffold") {
+          return res.status(400).json({
+            error: "Cannot publish",
+            message: "Search result jobs are internal records and cannot be published as job postings.",
+          });
+        }
         if (!existingJob || !["Half-Day", "Full-Time"].includes(existingJob.engagementType as string)) {
           return res.status(400).json({
             error: "Engagement Type required",

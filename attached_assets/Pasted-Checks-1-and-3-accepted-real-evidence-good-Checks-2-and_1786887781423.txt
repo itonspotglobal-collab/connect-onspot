@@ -1,0 +1,37 @@
+Checks 1 and 3 accepted — real evidence, good.
+
+Checks 2 and 4 failing due to a partial deploy is concerning on its own:
+if a redeploy can silently skip in-place edits to existing files while
+picking up new endpoints, that's a structural deploy risk, not just an
+explanation for these two checks. Before the next redeploy, confirm directly
+how you know "the code on disk is correct" — grep the actual file for the
+created_via filter and the dedup query RIGHT NOW, and report the exact lines,
+so there's real confirmation of what's about to be deployed, not an
+assumption based on where the edits were originally made.
+
+Separately, and this has still not been addressed at all: my previous
+message asked five specific things about scaffold jobs appearing on the
+TALENT-FACING Find Work page — a different, more urgent issue than the
+client dashboard leak. None of those five were covered in this report. I
+need them answered now, before or alongside the redeploy:
+
+1. Query production right now for any job with created_via='search_scaffold'
+   AND status='open'. The Check 2 data shows the 5 current scaffolds are
+   closed/draft, not open — but confirm this explicitly and directly,
+   don't infer it from an unrelated check.
+2. If any are found open, revert to draft immediately.
+3. Hit whatever endpoint actually powers the Find Work page, live, right
+   now, and confirm no scaffold jobs are currently returned to Talent.
+4. Add "AND created_via != 'search_scaffold'" to EVERY talent-facing
+   endpoint — search, popular, matches, job detail, and specifically Find
+   Work's actual query — regardless of status. Report the exact endpoint(s)
+   Find Work uses and confirm this filter is added to each one. This is a
+   structural fix, separate from the client dashboard fix in Check 2.
+5. Decide and report: should "Reopen" remain exposed on the client
+   dashboard for search_scaffold jobs at all, given they were never meant
+   to be client-manageable postings in the first place?
+
+Redeploy once all of this — Checks 2/4's real fixes AND the Find Work items
+above — are confirmed correct in the actual deployed bundle. Then re-verify
+all six items (2, 4, and the five above) against live production with real
+hits, not log inference.
