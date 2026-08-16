@@ -9494,6 +9494,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Search result sanitization ───────────────────────────────────────────────
+  //
+  // Applied to every result in POST /api/client/talent-search and
+  // PATCH /api/client/talent-search/:jobId before the response leaves the server.
+  //
+  // Rule: contact information (email, phone, all external/social links, resume
+  // URLs, video links) is NEVER returned to the Client through this flow at any
+  // stage. Name masking also happens server-side here (not just in the browser)
+  // so inspecting the raw API response reveals nothing useful.
+  //
+  // Allowed fields are an explicit allowlist — anything not listed is dropped.
+  const sanitizeSearchCandidate = (candidate: Record<string, any>): Record<string, any> => {
+    const rawName: string = candidate.fullName ?? candidate.full_name ?? "";
+    // Mask name server-side using the same algorithm as maskInviteName (defined
+    // later in this file, so we inline it here to avoid a forward-reference issue).
+    const parts = rawName.trim().split(" ").filter(Boolean);
+    const maskedName =
+      !rawName.trim() ? "Talent Profile"
+      : parts.length === 1 ? parts[0][0] + "•".repeat(4)
+      : parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+
+    return {
+      // Identity — always masked at this stage; unmask path is in submissions view
+      fullName:  maskedName,
+      full_name: maskedName,
+
+      // Professional profile — safe to share (no contact info)
+      targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
+      location:        candidate.location        ?? null,
+      seniority:       candidate.seniority        ?? null,
+      category:        candidate.category         ?? null,
+      availability:    candidate.availability     ?? null,
+      headline:        candidate.headline          ?? null,
+      summary:         candidate.summary           ?? null,
+      moreAboutMe:     candidate.moreAboutMe       ?? null,
+      coreSkills:      candidate.coreSkills        ?? candidate.core_skills      ?? [],
+      secondarySkills: candidate.secondarySkills   ?? candidate.secondary_skills ?? [],
+      profilePhotoUrl: candidate.profilePhotoUrl   ?? null,
+      workHistory:     candidate.workHistory       ?? [],
+      preferences:     candidate.preferences       ?? {},
+      experienceYears: candidate.experienceYears   ?? null,
+
+      // Explicitly omitted (never returned):
+      // email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl,
+      // portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName, passwordHash,
+      // displayName (may differ from fullName and contain real identity)
+    };
+  };
+
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
   app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
     try {
@@ -9543,7 +9592,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobId = jobResult.rows[0].id as string;
 
       const results = await storage.rankTalentForJob(jobId, 30);
-      return res.json({ jobId, results });
+      return res.json({
+        jobId,
+        results: results.map((r) => ({ ...r, candidate: sanitizeSearchCandidate(r.candidate) })),
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -9571,7 +9623,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
 
       const results = await storage.rankTalentForJob(jobId, 30);
-      return res.json({ jobId, results });
+      return res.json({
+        jobId,
+        results: results.map((r) => ({ ...r, candidate: sanitizeSearchCandidate(r.candidate) })),
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -11032,39 +11087,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Self-applied submissions (initiated_by !== "client") are returned as-is.
    */
   const sanitizeClientSubmissionRow = (row: any): any => {
-    if (row.initiated_by !== "client" || CLIENT_INVITE_REVEALED_STATUSES.has(row.status)) {
-      // Return full row; ensure applicantName (camelCase) is always present.
-      return {
-        ...row,
-        applicantName: row.applicantName ?? row.applicant_name ?? null,
-      };
-    }
-    // Pending or declined client invitation — return allowlist shape only.
-    const maskedName = maskInviteName(row.applicantName ?? row.applicant_name ?? null);
+    // Name reveals once talent accepts (status = submitted / reviewed / shortlisted / hired).
+    // Contact fields (email, phone, all links) are permanently withheld at every stage —
+    // name and contact are independent axes; platform messaging is the only channel.
+    const isRevealed =
+      row.initiated_by !== "client" || CLIENT_INVITE_REVEALED_STATUSES.has(row.status);
+
+    const rawName  = row.applicantName ?? row.applicant_name ?? null;
+    const displayName = isRevealed ? rawName : maskInviteName(rawName);
+
     return {
-      id: row.id,
-      jobId: row.jobId ?? row.job_id,
-      clientId: row.clientId ?? row.client_id,
-      talentId: row.talentId ?? row.talent_id,
-      status: row.status,
+      id:           row.id,
+      jobId:        row.jobId        ?? row.job_id,
+      clientId:     row.clientId     ?? row.client_id,
+      talentId:     row.talentId     ?? row.talent_id,
+      status:       row.status,
       initiated_by: row.initiated_by,
-      submittedAt: row.submittedAt ?? row.submitted_at,
-      updatedAt: row.updatedAt ?? row.updated_at,
-      createdAt: row.createdAt ?? row.created_at,
-      jobTitle: row.jobTitle,
-      jobCompany: row.jobCompany,
-      // Masked identity — no real name, contact, or document fields returned.
-      applicantName: maskedName,
-      applicant_name: maskedName,
+      submittedAt:  row.submittedAt  ?? row.submitted_at,
+      updatedAt:    row.updatedAt    ?? row.updated_at,
+      createdAt:    row.createdAt    ?? row.created_at,
+      jobTitle:     row.jobTitle,
+      jobCompany:   row.jobCompany,
+      registrationStatus: row.registrationStatus ?? row.registration_status ?? null,
+
+      // Identity — revealed on acceptance, masked while pending/declined
+      applicantName:  displayName,
+      applicant_name: displayName,
+      firstName: isRevealed ? (row.firstName ?? row.first_name ?? null) : null,
+      lastName:  isRevealed ? (row.lastName  ?? row.last_name  ?? null) : null,
+      location:  isRevealed ? (row.location  ?? null)                   : null,
+
+      // Contact — always null; never exposed through this flow at any stage
       email: null,
       phone: null,
-      location: null,
-      resumeUrl: null,
+
+      // Documents & external links — always null through client API
+      resumeUrl:      null,
       resumeFileName: null,
-      portfolioUrl: null,
-      coverLetter: null,
-      expectedSalary: null,
-      availability: null,
+      portfolioUrl:   null,
+      coverLetter:    null,
+
+      // Non-contact revealed fields
+      expectedSalary: isRevealed ? (row.expectedSalary ?? row.expected_salary ?? null) : null,
+      availability:   isRevealed ? (row.availability ?? null)                           : null,
     };
   }
 
@@ -11176,7 +11241,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [status, id, userId],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
-      return res.json(result.rows[0]);
+      // Apply the same sanitization as the GET endpoints — contact fields are
+      // never returned to the client, regardless of status.
+      return res.json(sanitizeClientSubmissionRow(result.rows[0]));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
