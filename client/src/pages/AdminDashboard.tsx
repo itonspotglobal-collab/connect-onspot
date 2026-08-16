@@ -372,6 +372,9 @@ export default function AdminDashboard() {
       queryFn: () => authAPI.get('/api/admin/search-query-stats'),
     });
 
+  const [pendingChipThreshold, setPendingChipThreshold] = useState<string | null>(null);
+  const effectiveChipThreshold = pendingChipThreshold ?? platformSettings?.search_suggestion_threshold ?? '100';
+
   const [seedInput, setSeedInput] = useState('');
   const seedMutation = useMutation({
     mutationFn: (queries: Array<{ query: string; count: number }>) =>
@@ -1054,6 +1057,54 @@ export default function AdminDashboard() {
                   ) : (
                     <p className="text-sm text-muted-foreground italic">No queries recorded yet.</p>
                   )}
+
+                  {/* Threshold editor */}
+                  <div className="space-y-2 border-t pt-4">
+                    <p className="text-sm font-medium">Activation threshold</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      Minimum total recorded searches before real query chips replace the category fallback.
+                      Raise once organic volume arrives (recommended: 50–200).
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100000}
+                        className="w-32"
+                        value={effectiveChipThreshold}
+                        onChange={(e) => setPendingChipThreshold(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        disabled={updateSettingsMutation.isPending || pendingChipThreshold === null}
+                        onClick={() => {
+                          if (pendingChipThreshold !== null) {
+                            const n = parseInt(pendingChipThreshold, 10);
+                            if (isNaN(n) || n < 1) return;
+                            updateSettingsMutation.mutate(
+                              { search_suggestion_threshold: String(n) },
+                              {
+                                onSuccess: () => {
+                                  setPendingChipThreshold(null);
+                                  refetchSearchStats();
+                                },
+                              }
+                            );
+                          }
+                        }}
+                      >
+                        {updateSettingsMutation.isPending ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+                        ) : 'Save threshold'}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Current saved value:{' '}
+                      <span className="font-mono font-semibold">
+                        {platformSettings?.search_suggestion_threshold ?? '100'}
+                      </span>
+                    </p>
+                  </div>
 
                   {/* Seed form */}
                   <div className="space-y-2 border-t pt-4">

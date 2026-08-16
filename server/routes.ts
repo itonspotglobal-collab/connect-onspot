@@ -1130,6 +1130,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       VALUES ('name_reveal_threshold', 'submitted')
       ON CONFLICT (key) DO NOTHING
     `);
+    // Seed default: search chip activation threshold = 100 (raised from launch-window 10)
+    await query(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('search_suggestion_threshold', '100')
+      ON CONFLICT (key) DO NOTHING
+    `);
     console.log("✅ Migration: platform_settings table ready");
 
   // ── search_query_frequency — aggregate real search query volume for chips ──
@@ -6127,7 +6133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const ALLOWED_KEYS = new Set(['name_reveal_threshold']);
+      const ALLOWED_KEYS = new Set(['name_reveal_threshold', 'search_suggestion_threshold']);
       const VALID_THRESHOLDS = new Set(['submitted', 'reviewed', 'shortlisted', 'hired']);
       const updates: Array<{ key: string; value: string }> = [];
 
@@ -6140,6 +6146,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         if (key === 'name_reveal_threshold' && !VALID_THRESHOLDS.has(value)) {
           return res.status(400).json({ error: `Invalid name_reveal_threshold: ${value}` });
+        }
+        if (key === 'search_suggestion_threshold') {
+          const num = parseInt(value, 10);
+          if (isNaN(num) || num < 1 || num > 100000) {
+            return res.status(400).json({ error: `search_suggestion_threshold must be a positive integer (1–100000)` });
+          }
         }
         updates.push({ key, value });
       }
@@ -9918,31 +9930,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET  /api/admin/search-query-stats — total count, top queries, threshold status
   // POST /api/admin/search-query-stats/seed — pre-populate high-value chips
 
-  // The threshold constant is shared here and in the suggestions endpoint below.
-  // SEARCH_SUGGESTION_FREQUENCY_THRESHOLD — minimum total recorded searches before
-  // real query chips replace the category-volume fallback.
-  // Current value = 10 (low, for easy activation during initial launch).
-  // Raise to 50–200 once organic volume accrues to filter out tester noise.
-  const SEARCH_SUGGESTION_FREQUENCY_THRESHOLD = 10;
+  // Helper: read the chip-activation threshold from platform_settings.
+  // Falls back to 100 if the row is missing (e.g. fresh DB without migration).
+  async function getSearchSuggestionThreshold(): Promise<number> {
+    try {
+      const row = await query(
+        `SELECT value FROM platform_settings WHERE key = 'search_suggestion_threshold' LIMIT 1`,
+      );
+      if (row.rows.length > 0) {
+        const n = parseInt(row.rows[0].value, 10);
+        if (!isNaN(n) && n > 0) return n;
+      }
+    } catch (_) {
+      // ignore — fall through to default
+    }
+    return 100;
+  }
 
   app.get("/api/admin/search-query-stats", authenticateAdminFlexible, async (_req: Request, res: Response) => {
     try {
-      const totalRow = await query(
-        `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
-      );
+      const [totalRow, topRows, threshold] = await Promise.all([
+        query(`SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`),
+        query(
+          `SELECT normalized_query, count, last_searched_at
+           FROM search_query_frequency
+           ORDER BY count DESC, last_searched_at DESC
+           LIMIT 20`,
+        ),
+        getSearchSuggestionThreshold(),
+      ]);
       const total = Number(totalRow.rows[0]?.total ?? 0);
-
-      const topRows = await query(
-        `SELECT normalized_query, count, last_searched_at
-         FROM search_query_frequency
-         ORDER BY count DESC, last_searched_at DESC
-         LIMIT 20`,
-      );
 
       return res.json({
         total_recorded_searches: total,
-        threshold: SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
-        chips_active: total >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
+        threshold,
+        chips_active: total >= threshold,
         top_queries: topRows.rows.map((r: any) => ({
           query: r.normalized_query,
           count: Number(r.count),
@@ -9991,10 +10013,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const total = Number(totalRow.rows[0]?.total ?? 0);
 
+      const threshold = await getSearchSuggestionThreshold();
       return res.json({
         seeded_count: seeded,
         total_recorded_searches: total,
-        chips_active: total >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
+        chips_active: total >= threshold,
       });
     } catch (err: any) {
       console.error("POST /api/admin/search-query-stats/seed error:", err);
@@ -10050,16 +10073,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ── Primary: real search query frequency ─────────────────────────────────
-      // Uses SEARCH_SUGGESTION_FREQUENCY_THRESHOLD defined above (currently 10).
-      // Admins can check the current total and tune this via:
-      //   GET  /api/admin/search-query-stats
-      //   POST /api/admin/search-query-stats/seed
-      const totalRow = await query(
-        `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
-      );
+      // Threshold is stored in platform_settings (key: search_suggestion_threshold).
+      // Admins can adjust it from the Platform Settings tab in AdminDashboard
+      // without a redeploy. Default = 100.
+      const [totalRow, chipThreshold] = await Promise.all([
+        query(`SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`),
+        getSearchSuggestionThreshold(),
+      ]);
       const totalSearches = Number(totalRow.rows[0]?.total ?? 0);
 
-      if (totalSearches >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD) {
+      if (totalSearches >= chipThreshold) {
         const freqRows = await query(
           `SELECT normalized_query, count
            FROM search_query_frequency
