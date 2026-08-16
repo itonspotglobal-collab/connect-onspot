@@ -3750,6 +3750,13 @@ export class DbStorage extends MemStorage {
       .orderBy(asc(messagesTable.createdAt));
   }
 
+  async flagMessageForReview(messageId: string): Promise<void> {
+    await db
+      .update(messagesTable)
+      .set({ flaggedForReview: true })
+      .where(eq(messagesTable.id, messageId));
+  }
+
   async markMessagesAsRead(threadId: string, userId: string): Promise<void> {
     // Append userId to readBy array only where it isn't already present
     await dbQuery(

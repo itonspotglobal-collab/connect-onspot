@@ -3,6 +3,7 @@ import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
+import { containsPii } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -6903,7 +6904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
       const messages = await storage.listMessagesByThread(req.params.threadId);
-      res.json(messages);
+      // Strip admin-only field before returning to participants
+      res.json(messages.map(({ flaggedForReview: _omit, ...m }) => m));
     } catch (error) {
       res.status(500).json({ error: "Failed to get thread messages" });
     }
@@ -6923,7 +6925,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
       const message = await storage.createMessage(validated);
-      res.status(201).json(message);
+
+      // PII detection: runs post-save so it never blocks delivery.
+      // Errors are caught and logged; sender receives no indication either way.
+      try {
+        if (containsPii(validated.content)) {
+          await storage.flagMessageForReview(message.id);
+        }
+      } catch (piiErr) {
+        console.error("[pii-flag] Failed to evaluate/flag message", message.id, piiErr);
+      }
+
+      // Strip admin-only field before returning to sender
+      const { flaggedForReview: _omit, ...safeMessage } = message;
+      res.status(201).json(safeMessage);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res

@@ -410,6 +410,7 @@ export const messages = pgTable("messages", {
   attachments: text("attachments").array(), // File URLs
   messageType: text("message_type").default("text"), // text, file, system
   readBy: text("read_by").array().default([]), // Array of user IDs who read
+  flaggedForReview: boolean("flagged_for_review").default(false), // Admin-only; set when content matches PII patterns
   createdAt: timestamp("created_at").defaultNow(),
 });
 
