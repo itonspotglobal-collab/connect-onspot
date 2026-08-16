@@ -42,6 +42,7 @@ import {
   candidateCultureEvaluations as cultureEvaluationsTable,
   messageThreads as messageThreadsTable,
   messages as messagesTable,
+  certifications as certificationsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, query as dbQuery } from "./db";
@@ -178,6 +179,7 @@ export interface IStorage {
   getCertification(id: string): Promise<Certification | undefined>;
   createCertification(cert: InsertCertification): Promise<Certification>;
   listCertificationsByTalent(talentId: string): Promise<Certification[]>;
+  updateCertification(id: string, updates: Partial<InsertCertification>): Promise<Certification | undefined>;
   deleteCertification(id: string): Promise<boolean>;
 
   // Payments
@@ -1958,6 +1960,14 @@ export class MemStorage implements IStorage {
     return Array.from(this.certifications.values())
       .filter(cert => cert.talentId === talentId)
       .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+  }
+
+  async updateCertification(id: string, updates: Partial<InsertCertification>): Promise<Certification | undefined> {
+    const existing = this.certifications.get(id);
+    if (!existing) return undefined;
+    const updated: Certification = { ...existing, ...updates };
+    this.certifications.set(id, updated);
+    return updated;
   }
 
   async deleteCertification(id: string): Promise<boolean> {
@@ -3931,6 +3941,49 @@ export class DbStorage extends MemStorage {
       .update(messagesTable)
       .set({ flaggedForReview: false })
       .where(eq(messagesTable.id, messageId));
+  }
+
+  // ── Certifications (DB-backed) ────────────────────────────────────────────
+
+  async getCertification(id: string): Promise<Certification | undefined> {
+    const [cert] = await db
+      .select()
+      .from(certificationsTable)
+      .where(eq(certificationsTable.id, id))
+      .limit(1);
+    return cert ?? undefined;
+  }
+
+  async createCertification(insertCert: InsertCertification): Promise<Certification> {
+    const [cert] = await db
+      .insert(certificationsTable)
+      .values({ ...insertCert, verified: false })
+      .returning();
+    return cert;
+  }
+
+  async listCertificationsByTalent(talentId: string): Promise<Certification[]> {
+    return db
+      .select()
+      .from(certificationsTable)
+      .where(eq(certificationsTable.talentId, talentId))
+      .orderBy(desc(certificationsTable.createdAt));
+  }
+
+  async updateCertification(id: string, updates: Partial<InsertCertification>): Promise<Certification | undefined> {
+    const [cert] = await db
+      .update(certificationsTable)
+      .set(updates)
+      .where(eq(certificationsTable.id, id))
+      .returning();
+    return cert ?? undefined;
+  }
+
+  async deleteCertification(id: string): Promise<boolean> {
+    const result = await db
+      .delete(certificationsTable)
+      .where(eq(certificationsTable.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

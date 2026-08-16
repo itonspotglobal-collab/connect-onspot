@@ -14,11 +14,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,7 +35,6 @@ import {
   Verified,
   AlertCircle,
   Eye,
-  EyeOff,
   Link as LinkIcon,
   Building,
   FileText,
@@ -45,8 +42,7 @@ import {
   Crown,
   Medal,
   Trophy,
-  Sparkles,
-  Globe
+  Sparkles
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -54,15 +50,13 @@ import { type Certification, type InsertCertification } from "@shared/schema";
 
 // Certification form validation schema
 const certificationFormSchema = z.object({
-  name: z.string().min(3, "Certification name must be at least 3 characters"),
-  issuer: z.string().min(2, "Issuer name is required"),
+  title: z.string().min(3, "Certification name must be at least 3 characters"),
+  issuingOrganization: z.string().min(2, "Issuer name is required"),
   credentialId: z.string().optional(),
   credentialUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  description: z.string().optional(),
-  dateIssued: z.date(),
-  dateExpires: z.date().optional(),
-  isVerified: z.boolean().default(false),
-  isPublic: z.boolean().default(true),
+  issueDate: z.date(),
+  expiryDate: z.date().optional(),
+  verified: z.boolean().default(false),
   skills: z.array(z.string()).optional()
 });
 
@@ -109,15 +103,11 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
 
   const userId = talentId || user?.id;
 
-  // Fetch certifications
+  // Fetch certifications — uses the default queryFn from queryClient which
+  // attaches the bearer token (main JWT or talent candidate JWT) automatically.
+  // Query key joins to /api/talents/${userId}/certifications.
   const { data: certifications = [], isLoading, error } = useQuery<Certification[]>({
     queryKey: ['/api/talents', userId, 'certifications'],
-    queryFn: async () => {
-      if (!userId) throw new Error('User ID required');
-      const response = await fetch(`/api/talents/${userId}/certifications`);
-      if (!response.ok) throw new Error('Failed to fetch certifications');
-      return response.json();
-    },
     enabled: !!userId
   });
 
@@ -125,15 +115,13 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
   const form = useForm<CertificationFormData>({
     resolver: zodResolver(certificationFormSchema),
     defaultValues: {
-      name: "",
-      issuer: "",
+      title: "",
+      issuingOrganization: "",
       credentialId: "",
       credentialUrl: "",
-      description: "",
-      dateIssued: new Date(),
-      dateExpires: undefined,
-      isVerified: false,
-      isPublic: true,
+      issueDate: new Date(),
+      expiryDate: undefined,
+      verified: false,
       skills: []
     }
   });
@@ -141,12 +129,13 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
   // Create certification mutation
   const createMutation = useMutation({
     mutationFn: async (data: CertificationFormData) => {
-      return apiRequest('POST', '/api/certifications', {
+      const res = await apiRequest('POST', '/api/certifications', {
         ...data,
         talentId: userId,
-        dateIssued: data.dateIssued.toISOString(),
-        dateExpires: data.dateExpires?.toISOString() || null
+        issueDate: data.issueDate.toISOString(),
+        expiryDate: data.expiryDate?.toISOString() || null
       });
+      return res.json() as Promise<Certification>;
     },
     onSuccess: (newCertification) => {
       queryClient.invalidateQueries({ queryKey: ['/api/talents', userId, 'certifications'] });
@@ -173,8 +162,8 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
     mutationFn: async ({ id, data }: { id: string; data: Partial<CertificationFormData> }) => {
       return apiRequest('PUT', `/api/certifications/${id}`, {
         ...data,
-        dateIssued: data.dateIssued?.toISOString(),
-        dateExpires: data.dateExpires?.toISOString() || null
+        issueDate: data.issueDate?.toISOString(),
+        expiryDate: data.expiryDate?.toISOString() || null
       });
     },
     onSuccess: () => {
@@ -228,15 +217,13 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
   const handleEdit = (certification: Certification) => {
     setEditingCertification(certification);
     form.reset({
-      name: certification.name,
-      issuer: certification.issuer,
+      title: certification.title,
+      issuingOrganization: certification.issuingOrganization,
       credentialId: certification.credentialId || "",
       credentialUrl: certification.credentialUrl || "",
-      description: certification.description || "",
-      dateIssued: new Date(certification.dateIssued),
-      dateExpires: certification.dateExpires ? new Date(certification.dateExpires) : undefined,
-      isVerified: certification.isVerified,
-      isPublic: certification.isPublic,
+      issueDate: certification.issueDate ? new Date(certification.issueDate) : new Date(),
+      expiryDate: certification.expiryDate ? new Date(certification.expiryDate) : undefined,
+      verified: certification.verified ?? false,
       skills: certification.skills || []
     });
     setIsCreateDialogOpen(true);
@@ -244,25 +231,24 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
 
   const handleQuickAdd = (popularCert: typeof POPULAR_CERTIFICATIONS[0]) => {
     form.reset({
-      name: popularCert.name,
-      issuer: popularCert.issuer,
-      dateIssued: new Date(),
-      isPublic: true,
-      isVerified: false
+      title: popularCert.name,
+      issuingOrganization: popularCert.issuer,
+      issueDate: new Date(),
+      verified: false
     });
     setIsQuickAddOpen(false);
     setIsCreateDialogOpen(true);
   };
 
   const getCertificationIcon = (certification: Certification) => {
-    if (certification.isVerified) return <Verified className="w-4 h-4 text-blue-500" />;
+    if (certification.verified) return <Verified className="w-4 h-4 text-blue-500" />;
     if (certification.credentialUrl) return <LinkIcon className="w-4 h-4 text-green-500" />;
     return <Award className="w-4 h-4 text-muted-foreground" />;
   };
 
   const filteredCertifications = certifications.filter(cert => 
     selectedCategory === "all" || 
-    CERTIFICATION_CATEGORIES.find(cat => cat.id === selectedCategory)?.name.toLowerCase().includes(cert.issuer.toLowerCase())
+    CERTIFICATION_CATEGORIES.find(cat => cat.id === selectedCategory)?.name.toLowerCase().includes(cert.issuingOrganization.toLowerCase())
   );
 
   if (isLoading) {
@@ -377,7 +363,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="name"
+                          name="title"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Certification Name *</FormLabel>
@@ -395,7 +381,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
 
                         <FormField
                           control={form.control}
-                          name="issuer"
+                          name="issuingOrganization"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Issuing Organization *</FormLabel>
@@ -454,28 +440,10 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
                         />
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Describe what this certification covers and its significance..." 
-                                className="min-h-20"
-                                {...field} 
-                                data-testid="textarea-cert-description"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="dateIssued"
+                          name="issueDate"
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
                               <FormLabel>Date Issued *</FormLabel>
@@ -518,7 +486,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
 
                         <FormField
                           control={form.control}
-                          name="dateExpires"
+                          name="expiryDate"
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
                               <FormLabel>Expiration Date</FormLabel>
@@ -560,57 +528,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="isVerified"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                              <div className="space-y-0.5">
-                                <FormLabel className="text-base flex items-center gap-2">
-                                  <Verified className="w-4 h-4 text-blue-500" />
-                                  Verified Credential
-                                </FormLabel>
-                                <FormDescription>
-                                  Mark as verified if you have official documentation
-                                </FormDescription>
-                              </div>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  data-testid="switch-verified"
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="isPublic"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                              <div className="space-y-0.5">
-                                <FormLabel className="text-base flex items-center gap-2">
-                                  <Globe className="w-4 h-4 text-green-500" />
-                                  Public Visibility
-                                </FormLabel>
-                                <FormDescription>
-                                  Show this certification on your public profile
-                                </FormDescription>
-                              </div>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  data-testid="switch-public"
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      {/* verified is set by admins only — not shown in the talent form */}
 
                       <div className="flex justify-between pt-4">
                         <Button 
@@ -660,7 +578,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
               </div>
               <div className="flex items-center gap-1">
                 <Verified className="w-4 h-4" />
-                <span>{certifications.filter(c => c.isVerified).length} verified</span>
+                <span>{certifications.filter(c => c.verified).length} verified</span>
               </div>
               <div className="flex items-center gap-1">
                 <LinkIcon className="w-4 h-4" />
@@ -685,7 +603,7 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
           </Button>
           {CERTIFICATION_CATEGORIES.map(category => {
             const count = certifications.filter(cert => 
-              cert.issuer.toLowerCase().includes(category.name.toLowerCase())
+              cert.issuingOrganization.toLowerCase().includes(category.name.toLowerCase())
             ).length;
             
             if (count === 0) return null;
@@ -727,44 +645,34 @@ export default function CertificationsManagement({ talentId, mode = "full", onCe
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <h3 className="font-semibold text-lg leading-tight">
-                              {certification.name}
+                              {certification.title}
                             </h3>
                             <p className="text-muted-foreground flex items-center gap-2 mt-1">
                               <Building className="w-4 h-4" />
-                              {certification.issuer}
+                              {certification.issuingOrganization}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {certification.isVerified && (
+                            {certification.verified && (
                               <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
                                 <Verified className="w-3 h-3 mr-1" />
                                 Verified
                               </Badge>
                             )}
-                            {!certification.isPublic && (
-                              <Badge variant="outline" className="bg-gray-50">
-                                <EyeOff className="w-3 h-3 mr-1" />
-                                Private
-                              </Badge>
-                            )}
                           </div>
                         </div>
 
-                        {certification.description && (
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {certification.description}
-                          </p>
-                        )}
-
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <CalendarIcon className="w-4 h-4" />
-                            <span>Issued {format(new Date(certification.dateIssued), "MMM yyyy")}</span>
-                          </div>
-                          {certification.dateExpires && (
+                          {certification.issueDate && (
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="w-4 h-4" />
+                              <span>Issued {format(new Date(certification.issueDate), "MMM yyyy")}</span>
+                            </div>
+                          )}
+                          {certification.expiryDate && (
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
-                              <span>Expires {format(new Date(certification.dateExpires), "MMM yyyy")}</span>
+                              <span>Expires {format(new Date(certification.expiryDate), "MMM yyyy")}</span>
                             </div>
                           )}
                           {certification.credentialId && (

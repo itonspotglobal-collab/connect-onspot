@@ -26,7 +26,9 @@ import {
   Camera,
   Square,
   RotateCcw,
+  Award,
 } from "lucide-react";
+import CertificationsManagement from "@/components/CertificationsManagement";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -201,10 +203,11 @@ function NavItem({ id, title, icon: Icon, active, onClick }: NavItemProps) {
 
 // ─── Sections ──────────────────────────────────────────────────────────────────
 const sections = [
-  { id: "basic",        title: "Basic Information",    icon: User     },
-  { id: "professional", title: "Professional Details",  icon: Brain    },
-  { id: "skills",       title: "Skills & Expertise",   icon: FileText },
-  { id: "documents",    title: "Documents",             icon: Upload   },
+  { id: "basic",           title: "Basic Information",    icon: User     },
+  { id: "professional",    title: "Professional Details",  icon: Brain    },
+  { id: "skills",          title: "Skills & Expertise",   icon: FileText },
+  { id: "documents",       title: "Documents",             icon: Upload   },
+  { id: "certifications",  title: "Certifications",        icon: Award    },
 ];
 
 // ─── Main component ────────────────────────────────────────────────────────────
@@ -1476,7 +1479,12 @@ export default function ProfileSettings() {
                   </SectionCard>
                 )}
 
-                {/* ── Save button ── */}
+                {activeSection === "certifications" && (
+                  <CertificationsManagement />
+                )}
+
+                {/* ── Save button — hidden for certifications which has its own CRUD ── */}
+                {activeSection !== "certifications" && (
                 <div className="flex justify-end pt-2 pb-4">
                   <button
                     type="submit"
@@ -1507,6 +1515,7 @@ export default function ProfileSettings() {
                     )}
                   </button>
                 </div>
+                )}
               </form>
             </Form>
           </div>

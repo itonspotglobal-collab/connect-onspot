@@ -7163,6 +7163,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Certification Routes
+  /**
+   * Resolve the canonical users.id for certification writes.
+   * authenticateJWT resolves candidate JWTs via email→users lookup, but falls
+   * back to candidateId when no users row exists. The certifications.talent_id
+   * FK requires a real users.id, so we verify the resolved ID and fall back to
+   * candidates.user_id when necessary.
+   */
+  async function resolveCertUserId(req: any): Promise<string | null> {
+    const resolvedId: string = req.user?.id;
+    if (!resolvedId) return null;
+    // Fast check: is this already a valid users.id?
+    const userCheck = await query("SELECT id FROM users WHERE id = $1 LIMIT 1", [resolvedId]);
+    if (userCheck.rows.length > 0) return resolvedId;
+    // Fallback: resolvedId is actually the candidateId — try candidates.user_id
+    const candCheck = await query(
+      "SELECT user_id FROM candidates WHERE id = $1 AND user_id IS NOT NULL LIMIT 1",
+      [resolvedId]
+    );
+    if (candCheck.rows.length > 0) return candCheck.rows[0].user_id as string;
+    return null; // No linked user account
+  }
+
+  app.get("/api/talents/:talentId/certifications", authenticateJWT, async (req: any, res) => {
+    try {
+      // Admins may view any talent's certifications; all others must request their own.
+      const isAdmin = req.user?.role === "admin" || req.user?.role === "talent_acquisition";
+      if (!isAdmin) {
+        const userId = await resolveCertUserId(req);
+        if (!userId || userId !== req.params.talentId) {
+          return res.status(403).json({ error: "You may only view your own certifications." });
+        }
+      }
+      const certs = await storage.listCertificationsByTalent(req.params.talentId);
+      res.json(certs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get certifications" });
+    }
+  });
+
+  app.post("/api/certifications", authenticateJWT, async (req: any, res) => {
+    try {
+      if (req.user?.role !== "talent") {
+        return res.status(403).json({ error: "Only talent users may create certifications." });
+      }
+      const userId = await resolveCertUserId(req);
+      if (!userId) {
+        return res.status(422).json({ error: "Your account is not linked to a user profile. Please complete account setup to manage certifications." });
+      }
+      const raw = req.body;
+      const body = {
+        ...raw,
+        talentId: userId,
+        issueDate: raw.issueDate ? new Date(raw.issueDate) : undefined,
+        expiryDate: raw.expiryDate ? new Date(raw.expiryDate) : undefined,
+      };
+      const validated = insertCertificationSchema.parse(body);
+      const cert = await storage.createCertification(validated);
+      res.status(201).json(cert);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create certification" });
+    }
+  });
+
+  app.put("/api/certifications/:id", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = await resolveCertUserId(req);
+      if (!userId) {
+        return res.status(422).json({ error: "Your account is not linked to a user profile. Please complete account setup to manage certifications." });
+      }
+      const existing = await storage.getCertification(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Certification not found" });
+      }
+      if (existing.talentId !== userId) {
+        return res.status(403).json({ error: "You are not authorized to edit this certification" });
+      }
+      // Only allow fields present in insertCertificationSchema (excludes verified)
+      const raw = req.body;
+      const updates = insertCertificationSchema.partial().parse({
+        ...raw,
+        talentId: existing.talentId,
+        issueDate: raw.issueDate ? new Date(raw.issueDate) : undefined,
+        expiryDate: 'expiryDate' in raw
+          ? (raw.expiryDate ? new Date(raw.expiryDate) : null)
+          : undefined,
+      });
+      const updated = await storage.updateCertification(req.params.id, updates);
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update certification" });
+    }
+  });
+
+  app.delete("/api/certifications/:id", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = await resolveCertUserId(req);
+      if (!userId) {
+        return res.status(422).json({ error: "Your account is not linked to a user profile. Please complete account setup to manage certifications." });
+      }
+      const existing = await storage.getCertification(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Certification not found" });
+      }
+      if (existing.talentId !== userId) {
+        return res.status(403).json({ error: "You are not authorized to delete this certification" });
+      }
+      await storage.deleteCertification(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete certification" });
+    }
+  });
+
   // Notifications
   app.get("/api/users/:userId/notifications", async (req, res) => {
     try {
