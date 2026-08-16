@@ -37,6 +37,7 @@ import {
   insertUserSkillSchema,
   profiles,
   insertJobSchema,
+  type InsertJob,
   insertJobSkillSchema,
   insertProposalSchema,
   insertContractSchema,
@@ -9795,18 +9796,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create an internal scaffold job (draft, approved) purely for scoring purposes.
       // These are never shown on the public job board (status='draft', created_via='search_scaffold').
-      // All NOT NULL columns without useful defaults must be provided explicitly.
-      const jobResult = await query(
-        `INSERT INTO jobs
-           (id, title, professional_role_name, category, job_function, engagement_type,
-            experience_level, status, approval_status, is_client_submitted, client_id,
-            created_via, description)
-         VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'Mid-level',
-                 'draft', 'approved', true, $4, 'search_scaffold', $5)
-         RETURNING id`,
-        [title, resolvedCategory, engagementType, userId, title],
-      );
-      const jobId = jobResult.rows[0].id as string;
+      // Using storage.createJob + InsertJob type so TypeScript catches any missing NOT NULL
+      // column at compile time — raw SQL strings cannot do that.
+      const scaffoldJob = await storage.createJob({
+        clientId: userId,
+        title,
+        professionalRoleName: title,
+        description: title,       // NOT NULL in schema; scaffold description is hidden from talent
+        category: resolvedCategory,
+        jobFunction: resolvedCategory,
+        engagementType,
+        experienceLevel: "Mid-level",
+        status: "draft",
+        approvalStatus: "approved",
+        isClientSubmitted: true,
+        createdVia: "search_scaffold",
+      } satisfies InsertJob);
+      const jobId = scaffoldJob.id;
 
       const results = await storage.rankTalentForJob(jobId, 30);
       return res.json({ jobId, results });
