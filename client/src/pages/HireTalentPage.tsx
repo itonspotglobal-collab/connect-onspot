@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X, Link } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
+import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clock3, Globe2, Sparkles, Star, X, DollarSign } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,12 @@ interface TalentResult {
     secondary_skills?: string[];
     category?: string;
     availability?: string;
-    preferences?: Record<string, string> | null;
+    preferences?: {
+      rateAmount?: string | null;
+      rateEngagementType?: string | null;
+      rateCurrency?: string | null;
+      [key: string]: string | null | undefined;
+    } | null;
     workHistory?: Array<{
       company?: string;
       role?: string;
@@ -57,7 +63,7 @@ interface TalentResult {
       duration?: string;
       description?: string;
       responsibilities?: string;
-    }>;
+    }> | null;
   };
 }
 
@@ -83,8 +89,6 @@ interface PendingSearchState {
 }
 
 const STORAGE_KEY = "onspot_pending_search";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getInitials(name?: string | null): string {
   if (!name || name.toLowerCase() === "talent profile") return "TA";
