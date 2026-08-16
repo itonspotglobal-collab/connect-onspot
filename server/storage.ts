@@ -157,6 +157,9 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   listMessagesByThread(threadId: string): Promise<Message[]>;
   markMessagesAsRead(threadId: string, userId: string): Promise<void>;
+  flagMessageForReview(messageId: string): Promise<void>;
+  listFlaggedMessages(): Promise<Array<Message & { thread: MessageThread | null }>>;
+  clearMessageFlag(messageId: string): Promise<void>;
 
   // Reviews
   getReview(id: string): Promise<Review | undefined>;
@@ -1722,6 +1725,22 @@ export class MemStorage implements IStorage {
         this.messages.set(message.id, message);
       }
     }
+  }
+
+  async flagMessageForReview(messageId: string): Promise<void> {
+    const msg = this.messages.get(messageId);
+    if (msg) this.messages.set(messageId, { ...msg, flaggedForReview: true });
+  }
+
+  async listFlaggedMessages(): Promise<Array<Message & { thread: MessageThread | null }>> {
+    return Array.from(this.messages.values())
+      .filter((m) => m.flaggedForReview)
+      .map((m) => ({ ...m, thread: this.messageThreads.get(m.threadId) ?? null }));
+  }
+
+  async clearMessageFlag(messageId: string): Promise<void> {
+    const msg = this.messages.get(messageId);
+    if (msg) this.messages.set(messageId, { ...msg, flaggedForReview: false });
   }
 
   // Review Methods
@@ -3774,6 +3793,33 @@ export class DbStorage extends MemStorage {
          AND NOT ($1 = ANY(COALESCE(read_by, '{}'::text[])))`,
       [userId, threadId],
     );
+  }
+
+  async listFlaggedMessages(): Promise<Array<Message & { thread: MessageThread | null }>> {
+    const flagged = await db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.flaggedForReview, true))
+      .orderBy(desc(messagesTable.createdAt));
+
+    // Fetch threads for context
+    const threadIds = [...new Set(flagged.map((m) => m.threadId))];
+    const threads: MessageThread[] = threadIds.length
+      ? await db
+          .select()
+          .from(messageThreadsTable)
+          .where(sqlOp`${messageThreadsTable.id} = ANY(${threadIds})`)
+      : [];
+    const threadMap = new Map(threads.map((t) => [t.id, t]));
+
+    return flagged.map((m) => ({ ...m, thread: threadMap.get(m.threadId) ?? null }));
+  }
+
+  async clearMessageFlag(messageId: string): Promise<void> {
+    await db
+      .update(messagesTable)
+      .set({ flaggedForReview: false })
+      .where(eq(messagesTable.id, messageId));
   }
 }
 

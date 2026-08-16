@@ -6739,6 +6739,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ====== ADMIN FLAGGED MESSAGES ======
+
+  // GET /api/admin/flagged-messages — list all messages with flaggedForReview = true
+  app.get("/api/admin/flagged-messages", authenticateAdminFlexible, async (req, res) => {
+    try {
+      const flagged = await storage.listFlaggedMessages();
+      res.json(flagged);
+    } catch (error) {
+      console.error("Failed to list flagged messages:", error);
+      res.status(500).json({ error: "Failed to list flagged messages" });
+    }
+  });
+
+  // PATCH /api/admin/messages/:id/clear-flag — mark a flagged message as reviewed (clears flag)
+  app.patch("/api/admin/messages/:id/clear-flag", authenticateAdminFlexible, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const msg = await storage.getMessage(id);
+      if (!msg) return res.status(404).json({ error: "Message not found" });
+      await storage.clearMessageFlag(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to clear message flag:", error);
+      res.status(500).json({ error: "Failed to clear message flag" });
+    }
+  });
+
   // ====== MESSAGES (Phase 1 Priority) ======
   // All messaging endpoints require authentication; access is limited to thread participants.
   const getAuthedUserId = (req: Request): string | undefined =>

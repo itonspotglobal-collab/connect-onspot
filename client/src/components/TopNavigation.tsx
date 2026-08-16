@@ -27,6 +27,7 @@ import {
   EyeOff,
   CheckCircle2,
   ClipboardList,
+  Flag,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -282,6 +283,7 @@ export function TopNavigation() {
       { label: "Job Applications",  route: "/admin/job-applications",   icon: Users },
       { label: "Email Templates",   route: "/admin/email-templates",    icon: Mail },
       { label: "Insights",          route: "/admin/insights",           icon: Eye },
+      { label: "Flagged Messages",  route: "/admin/flagged-messages",   icon: Flag },
       { label: "Settings",          route: "/settings",                 icon: Settings },
     ];
     // TODO: Remove these public admin links before production launch.
