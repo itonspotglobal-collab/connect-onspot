@@ -8,3 +8,4 @@
 - [Job matches system](job-matches-system.md) — persisted job_matches table, server scorer, event-driven triggers, race condition fix (persistMatchResults must be awaited), notification threshold=70.
 - [Search-to-Shortlist feature](search-to-shortlist.md) — scaffold job pattern, rankTalentForJob, invited/declined statuses, TALENT_BROWSE_CATEGORIES canonical list, two known mistagged jobs.
 - [Search-to-Shortlist PII audit](search-to-shortlist-pii-audit.md) — contact fields never returned to client at any stage; name/contact are independent axes; three endpoints fixed; messaging gap flagged.
+- [Messaging system](messaging-system.md) — client↔talent threads auto-created on invitation accept; all endpoints auth-gated; senderId forced server-side; contact PII warning in UI.

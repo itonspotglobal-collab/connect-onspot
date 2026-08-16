@@ -1,3 +1,4 @@
+import { applySearchFilter } from "./lib/jobSearchFilter.js";
 import {
   type User, type InsertUser, type UpsertUser,
   type Profile, type InsertProfile,
@@ -39,6 +40,8 @@ import {
   jobs as jobsTable,
   candidates as candidatesTable,
   candidateCultureEvaluations as cultureEvaluationsTable,
+  messageThreads as messageThreadsTable,
+  messages as messagesTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, query as dbQuery } from "./db";
@@ -894,18 +897,9 @@ export class MemStorage implements IStorage {
       );
     }
 
-    // Add text search support
+    // Add text search support — applySearchFilter imported from ./lib/jobSearchFilter
     if (filters.q) {
-      const searchQuery = filters.q.toLowerCase();
-      jobs = jobs.filter(job => 
-        job.title.toLowerCase().includes(searchQuery) ||
-        job.description.toLowerCase().includes(searchQuery) ||
-        job.category.toLowerCase().includes(searchQuery) ||
-        // SECURITY: Do NOT match company name for confidential jobs — prevents leaking the
-        // real employer identity when a candidate searches by company name.
-        // Any future change to this search block MUST preserve this guard.
-        (!(job as any).isCompanyConfidential && job.company && job.company.toLowerCase().includes(searchQuery))
-      );
+      jobs = applySearchFilter(jobs as any[], filters.q) as typeof jobs;
     }
 
     // Enhance jobs with skills arrays
@@ -3697,6 +3691,74 @@ export class DbStorage extends MemStorage {
       ids,
     );
     return result.rowCount ?? 0;
+  }
+
+  // ── Messaging ────────────────────────────────────────────────────────────────
+
+  async getMessageThread(id: string): Promise<MessageThread | undefined> {
+    const [thread] = await db
+      .select()
+      .from(messageThreadsTable)
+      .where(eq(messageThreadsTable.id, id))
+      .limit(1);
+    return thread ?? undefined;
+  }
+
+  async createMessageThread(insertThread: InsertMessageThread): Promise<MessageThread> {
+    const [thread] = await db
+      .insert(messageThreadsTable)
+      .values(insertThread)
+      .returning();
+    return thread;
+  }
+
+  async listMessageThreadsByUser(userId: string): Promise<MessageThread[]> {
+    return db
+      .select()
+      .from(messageThreadsTable)
+      .where(sqlOp`${messageThreadsTable.participants} @> ARRAY[${userId}]::text[]`)
+      .orderBy(desc(messageThreadsTable.lastMessageAt));
+  }
+
+  async getMessage(id: string): Promise<Message | undefined> {
+    const [msg] = await db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.id, id))
+      .limit(1);
+    return msg ?? undefined;
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [msg] = await db
+      .insert(messagesTable)
+      .values(insertMessage)
+      .returning();
+    // Update thread lastMessageAt in-place
+    await db
+      .update(messageThreadsTable)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(messageThreadsTable.id, msg.threadId));
+    return msg;
+  }
+
+  async listMessagesByThread(threadId: string): Promise<Message[]> {
+    return db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.threadId, threadId))
+      .orderBy(asc(messagesTable.createdAt));
+  }
+
+  async markMessagesAsRead(threadId: string, userId: string): Promise<void> {
+    // Append userId to readBy array only where it isn't already present
+    await dbQuery(
+      `UPDATE messages
+       SET read_by = array_append(read_by, $1)
+       WHERE thread_id = $2
+         AND NOT ($1 = ANY(COALESCE(read_by, '{}'::text[])))`,
+      [userId, threadId],
+    );
   }
 }
 

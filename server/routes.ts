@@ -669,15 +669,7 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
   }
 }
 
-/** Escape a string for safe interpolation into HTML content. */
-function escHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// escHtml imported from ./lib/escHtml.js
 async function fireInvitationEmail(opts: {
   talentEmail: string;
   talentName: string;
@@ -6744,72 +6736,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ====== MESSAGES (Phase 1 Priority) ======
-  app.get("/api/message-threads/:id", async (req, res) => {
+  // ── Messaging endpoints — all require authentication + participant membership ──
+
+  app.get("/api/message-threads/:id", authenticateJWT, async (req: Request, res: Response) => {
     try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const thread = await storage.getMessageThread(req.params.id);
-      if (!thread) {
-        return res.status(404).json({ error: "Thread not found" });
-      }
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
       res.json(thread);
     } catch (error) {
       res.status(500).json({ error: "Failed to get message thread" });
     }
   });
 
-  app.post("/api/message-threads", async (req, res) => {
+  app.post("/api/message-threads", authenticateJWT, async (req: Request, res: Response) => {
     try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const validated = insertMessageThreadSchema.parse(req.body);
+      if (!validated.participants.includes(userId)) {
+        return res.status(403).json({ error: "You must be a participant in the thread" });
+      }
       const thread = await storage.createMessageThread(validated);
       res.status(201).json(thread);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res
-          .status(400)
-          .json({ error: "Validation failed", details: error.errors });
+        return res.status(400).json({ error: "Validation failed", details: (error as z.ZodError).errors });
       }
       res.status(500).json({ error: "Failed to create message thread" });
     }
   });
 
-  app.get("/api/users/:userId/message-threads", async (req, res) => {
+  app.get("/api/users/:userId/message-threads", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const threads = await storage.listMessageThreadsByUser(req.params.userId);
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (req.params.userId !== userId) return res.status(403).json({ error: "Forbidden" });
+      const threads = await storage.listMessageThreadsByUser(userId);
       res.json(threads);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user message threads" });
     }
   });
 
-  app.get("/api/message-threads/:threadId/messages", async (req, res) => {
+  app.get("/api/message-threads/:threadId/messages", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const messages = await storage.listMessagesByThread(req.params.threadId);
-      res.json(messages);
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const thread = await storage.getMessageThread(req.params.threadId);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
+      const msgs = await storage.listMessagesByThread(req.params.threadId);
+      res.json(msgs);
     } catch (error) {
       res.status(500).json({ error: "Failed to get thread messages" });
     }
   });
 
-  app.post("/api/messages", async (req, res) => {
+  app.post("/api/messages", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const validated = insertMessageSchema.parse(req.body);
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      // Force senderId to the authenticated user — never trust client-supplied senderId
+      const body = { ...req.body, senderId: userId };
+      const validated = insertMessageSchema.parse(body);
+      const thread = await storage.getMessageThread(validated.threadId);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
       const message = await storage.createMessage(validated);
       res.status(201).json(message);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res
-          .status(400)
-          .json({ error: "Validation failed", details: error.errors });
+        return res.status(400).json({ error: "Validation failed", details: (error as z.ZodError).errors });
       }
-      res.status(500).json({ error: "Failed to create message" });
+      res.status(500).json({ error: "Failed to send message" });
     }
   });
 
-  app.post("/api/message-threads/:threadId/mark-read", async (req, res) => {
+  app.post("/api/message-threads/:threadId/mark-read", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.body;
-      if (!userId) {
-        return res.status(400).json({ error: "userId required" });
-      }
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const thread = await storage.getMessageThread(req.params.threadId);
+      if (!thread) return res.status(404).json({ error: "Thread not found" });
+      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
       await storage.markMessagesAsRead(req.params.threadId, userId);
       res.status(204).send();
     } catch (error) {
@@ -9642,26 +9654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const title = String(searchText).trim().slice(0, 120);
 
-      // Infer a non-null category from searchText (jobs.category is NOT NULL).
-      // Tries keyword matching; falls back to 'Customer Support' so the INSERT always succeeds.
-      function inferCategory(text: string): string {
-        const t = text.toLowerCase();
-        const MAP: [string, string][] = [
-          ["customer support", "Customer Support"], ["support", "Customer Support"],
-          ["inbox", "Virtual Assistants"], ["calendar", "Virtual Assistants"], ["virtual assistant", "Virtual Assistants"], ["admin", "Virtual Assistants"],
-          ["website", "Developers"], ["developer", "Developers"], ["engineer", "Developers"], ["software", "Developers"],
-          ["design", "Designers"], ["graphic", "Designers"], ["ui", "Designers"], ["ux", "Designers"],
-          ["social media", "Marketing Specialists"], ["campaign", "Marketing Specialists"], ["marketing", "Marketing Specialists"],
-          ["bookkeeping", "Accountants"], ["accounting", "Accountants"], ["finance", "Accountants"], ["books", "Accountants"],
-          ["patient", "Healthcare Professionals"], ["healthcare", "Healthcare Professionals"], ["medical", "Healthcare Professionals"],
-          ["sales", "Sales Representatives"], ["outbound", "Sales Representatives"], ["leads", "Sales Representatives"],
-          ["operations", "Operations Specialists"], ["day-to-day", "Operations Specialists"], ["ops", "Operations Specialists"],
-          ["it support", "IT & Technical Support"], ["tech support", "IT & Technical Support"], ["helpdesk", "IT & Technical Support"],
-        ];
-        for (const [kw, cat] of MAP) { if (t.includes(kw)) return cat; }
-        return "Customer Support";
-      }
-
+      // inferCategory imported from ./lib/searchScaffold.js
       const resolvedCategory = category?.trim() || inferCategory(title);
 
       // Create an internal scaffold job (draft, approved) purely for scoring purposes.
@@ -9848,7 +9841,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify ownership and that the invitation is still pending
       const check = await query(
-        `SELECT id, status FROM job_submissions WHERE id = $1 AND talent_id = $2`,
+        `SELECT js.id, js.status, js.client_id, js.job_id, j.title AS job_title
+         FROM job_submissions js
+         LEFT JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND js.talent_id = $2`,
         [id, userId],
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
@@ -9861,6 +9857,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
         [newStatus, id],
       );
+
+      // On accept, ensure a message thread exists between talent and client so they
+      // can coordinate (schedule interviews etc.) without exchanging contact details.
+      if (action === "accept") {
+        const clientId: string | null = check.rows[0].client_id ?? null;
+        const jobId: string | null = check.rows[0].job_id ?? null;
+        const jobTitle: string = check.rows[0].job_title ?? "Invitation";
+
+        if (clientId && jobId) {
+          // Idempotent — don't create a second thread if one already exists for this job+pair
+          const existing = await query(
+            `SELECT id FROM message_threads
+             WHERE job_id = $1 AND $2 = ANY(participants) AND $3 = ANY(participants)
+             LIMIT 1`,
+            [jobId, userId, clientId],
+          );
+          if (existing.rows.length === 0) {
+            await storage.createMessageThread({
+              jobId,
+              participants: [userId, clientId],
+              subject: jobTitle,
+            });
+          }
+          const threadRow = existing.rows[0]
+            ?? (await query(
+              `SELECT id FROM message_threads
+               WHERE job_id = $1 AND $2 = ANY(participants) AND $3 = ANY(participants)
+               LIMIT 1`,
+              [jobId, userId, clientId],
+            )).rows[0];
+          return res.json({ status: newStatus, threadId: threadRow?.id ?? null });
+        }
+      }
 
       return res.json({ status: newStatus });
     } catch (err: any) {

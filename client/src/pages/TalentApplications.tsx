@@ -669,11 +669,20 @@ export default function TalentApplications() {
 
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-8 md:px-6">
         {/* Page header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Applications</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Track your applications and discover roles that match your profile.
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Applications</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Track your applications and discover roles that match your profile.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/inbox")}
+            className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Messages
+          </button>
         </div>
 
         {/* Stats banner */}

@@ -16,6 +16,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { applySearchFilter } from "../lib/jobSearchFilter.js";
 
 // ---------------------------------------------------------------------------
 // Minimal Job shape needed by the filter
@@ -34,23 +35,8 @@ interface MinimalJob {
   budget: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// The exact filter extracted from DatabaseStorage.searchJobsWithSkills
-// (server/storage.ts). Keep this in sync with the production implementation.
-// ---------------------------------------------------------------------------
-function applySearchFilter(jobs: MinimalJob[], q: string): MinimalJob[] {
-  const query = q.toLowerCase();
-  return jobs.filter(j =>
-    j.title.toLowerCase().includes(query) ||
-    j.description.toLowerCase().includes(query) ||
-    j.category.toLowerCase().includes(query) ||
-    // SECURITY: Do NOT match company name for confidential jobs — prevents leaking the
-    // real employer identity when a candidate searches by company name.
-    // Any future change to this search block (e.g. raw SQL / full-text index) MUST
-    // preserve this guard.
-    (!j.isCompanyConfidential && j.company && j.company.toLowerCase().includes(query))
-  );
-}
+// applySearchFilter imported from the real production module — not a copy.
+// If the production filter ever changes, this test will exercise the updated logic automatically.
 
 // ---------------------------------------------------------------------------
 // Test data

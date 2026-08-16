@@ -64,6 +64,7 @@ import {
   ChevronRight,
   Inbox,
   Search,
+  MessageSquare,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 
@@ -602,6 +603,12 @@ export default function ClientProfile() {
             <span className="rounded-full bg-[#474ead]/20 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#7c82d4]">
               Client
             </span>
+            <Link href="/inbox">
+              <button className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Messages
+              </button>
+            </Link>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">

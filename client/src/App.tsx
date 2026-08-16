@@ -78,6 +78,7 @@ import TalentPool from "@/pages/TalentPool";
 import SearchToShortlist from "@/pages/SearchToShortlist";
 import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
+import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
 import InquiryPage from "@/pages/InquiryPage";
 import InquiryReview from "@/pages/InquiryReview";
@@ -178,6 +179,7 @@ function PublicRouter() {
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
           <Route path="/my-applications" component={TalentApplications} />
+          <Route path="/inbox" component={Inbox} />
           <Route path="/talent/signup" component={TalentSignupFromApplication} />
           {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
           {/* Previously authenticated talent users were routed to TalentPortal here. */}
@@ -411,6 +413,7 @@ function AppContent() {
       <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
       <Route path="/jobs/:jobId" component={PublicRouter} />
       <Route path="/my-applications" component={TalentApplications} />
+      <Route path="/inbox" component={Inbox} />
       <Route path="/talent/signup" component={TalentSignupFromApplication} />
       <Route path="/get-hired" component={PublicRouter} />
       <Route path="/why-onspot" component={PublicRouter} />

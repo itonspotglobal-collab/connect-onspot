@@ -2,12 +2,12 @@
  * client-talent-search.test.ts
  *
  * Tests for the client talent-search scaffold-job logic:
- *  (a) Skill tags are extracted from free-text search input
- *  (b) Stop words and very short tokens are excluded from skill tags
- *  (c) Category falls back to "other" when omitted, preserving NOT NULL constraint
- *  (d) Category-selected search uses the supplied category as-is
- *  (e) Integration: scaffold-job INSERT succeeds with array skill_tags in PostgreSQL
- *  (f) Client-safe DTO strips all sensitive candidate fields
+ *  (a) inferCategory maps free-text search input to a known jobs.category value
+ *  (b) inferCategory falls back to "Customer Support" (not "other") when no keyword matches
+ *  (c) Integration: scaffold-job INSERT and lifecycle queries against PostgreSQL
+ *  (d) Email HTML is correctly escaped — escHtml imported from the real shared module
+ *  (e) Client-safe DTO strips all sensitive candidate fields
+ *  (f) PII regression: HTTP endpoints never leak contact data or password hashes
  *
  * Run with:  npm test
  */
@@ -15,6 +15,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { query } from "../db.js";
+import { escHtml } from "../lib/escHtml.js";
+import { inferCategory } from "../lib/searchScaffold.js";
 
 // ─── PostgreSQL integration test — scaffold job INSERT ────────────────────────
 
@@ -253,16 +255,7 @@ describe("client talent-search — invitation state transition guard", () => {
 });
 
 // ─── Email HTML escaping tests ─────────────────────────────────────────────────
-// Mirrors the escHtml helper in routes.ts
-
-function escHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
-}
+// escHtml imported from ../lib/escHtml.js — the real production function.
 
 describe("client talent-search — invitation email HTML escaping", () => {
 
@@ -289,7 +282,9 @@ describe("client talent-search — invitation email HTML escaping", () => {
   it("escapes single quotes", () => {
     const title = `O'Reilly Press`;
     const escaped = escHtml(title);
-    assert.ok(escaped.includes("&#x27;"), "single quotes must be escaped");
+    // Production uses &#39; (decimal numeric entity) — both &#39; and &#x27; are
+    // valid HTML for a single quote, but this assertion must match the real output.
+    assert.ok(escaped.includes("&#39;"), "single quotes must be escaped to &#39;");
     assert.ok(!escaped.includes("'"), "raw single quotes must not remain");
   });
 
@@ -441,102 +436,73 @@ describe("client talent-search — scaffold job lifecycle (PostgreSQL integratio
   });
 });
 
-// ─── Inline the same skill-extraction logic as routes.ts so tests are self-contained ──
-// If the implementation moves to a shared util, import from there instead.
+// ─── inferCategory tests ──────────────────────────────────────────────────────
+// inferCategory is imported from ../lib/searchScaffold.js — the real production
+// function used by POST /api/client/talent-search to resolve jobs.category (NOT NULL).
+//
+// NOTE: The previous version of this block tested a local `safeCategory` helper
+// that fell back to "other" and a local `extractSkillTags` function that had no
+// production equivalent — the server route never called extractSkillTags. Both
+// were phantom tests. They are replaced here with tests of the real function.
 
-const STOP_WORDS = new Set([
-  "a","an","the","and","or","of","in","for","with","to","on","at","is","are",
-  "be","as","by","i","we","you","they","it","this","that","looking","need",
-  "experience","who","has","have","their","our","your","role","position","job",
-  "senior","junior","mid","level","developer","engineer","manager","specialist",
-  "consultant","lead","team","strong","good","great","excellent","proficient",
-]);
+describe("client talent-search — inferCategory (scaffold job field population)", () => {
 
-function extractSkillTags(searchText: string): string[] {
-  const title = String(searchText).trim().slice(0, 120);
-  return Array.from(
-    new Set(
-      title
-        .split(/[\s,/+|&()\-]+/)
-        .map((t) => t.replace(/[^a-zA-Z0-9#+.]/g, "").trim())
-        .filter((t) => t.length >= 2 && !STOP_WORDS.has(t.toLowerCase()))
-        .slice(0, 10),
-    ),
-  );
-}
-
-function safeCategory(category: unknown): string {
-  return typeof category === "string" && category.trim() ? category.trim() : "other";
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tests
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe("client talent-search — scaffold job field population", () => {
-
-  // ── (a) Skill tags extracted from meaningful search text ─────────────────────
-  it("(a) extracts skill tags from a typical search phrase", () => {
-    const tags = extractSkillTags("React TypeScript frontend developer");
-    assert.ok(tags.includes("React"),      "Expected 'React' in tags");
-    assert.ok(tags.includes("TypeScript"), "Expected 'TypeScript' in tags");
-    assert.ok(tags.includes("frontend"),   "Expected 'frontend' in tags");
-    // Stop words filtered out
-    assert.ok(!tags.includes("developer"), "Expected 'developer' (stop word) to be excluded");
+  // ── Keyword matching ─────────────────────────────────────────────────────────
+  it("maps 'developer' text to Developers", () => {
+    assert.equal(inferCategory("React developer"), "Developers");
   });
 
-  // ── (b) Stop words and short tokens are excluded ─────────────────────────────
-  it("(b) excludes stop words and single-character tokens", () => {
-    const tags = extractSkillTags("looking for a great Python engineer with AWS experience");
-    assert.ok(tags.includes("Python"), "Expected 'Python' to be included");
-    assert.ok(tags.includes("AWS"),    "Expected 'AWS' to be included");
-    // Stop words
-    assert.ok(!tags.includes("looking"),    "Expected 'looking' to be excluded");
-    assert.ok(!tags.includes("great"),      "Expected 'great' to be excluded");
-    assert.ok(!tags.includes("engineer"),   "Expected 'engineer' to be excluded");
-    assert.ok(!tags.includes("experience"), "Expected 'experience' to be excluded");
-    assert.ok(!tags.includes("with"),       "Expected 'with' to be excluded");
-    assert.ok(!tags.includes("for"),        "Expected 'for' to be excluded");
-    assert.ok(!tags.includes("a"),          "Expected 'a' to be excluded");
+  it("maps 'engineer' text to Developers", () => {
+    assert.equal(inferCategory("software engineer"), "Developers");
   });
 
-  // ── (c) Category omitted → safe default keeps NOT NULL constraint ─────────────
-  it("(c) category-omitted search falls back to 'other'", () => {
-    assert.equal(safeCategory(undefined), "other");
-    assert.equal(safeCategory(null),      "other");
-    assert.equal(safeCategory(""),        "other");
-    assert.equal(safeCategory("   "),     "other");
+  it("maps 'marketing' text to Marketing Specialists", () => {
+    assert.equal(inferCategory("social media marketing manager"), "Marketing Specialists");
   });
 
-  // ── (d) Category provided → used verbatim ────────────────────────────────────
-  it("(d) category-selected search preserves the supplied category", () => {
-    assert.equal(safeCategory("Technical"),  "Technical");
-    assert.equal(safeCategory("Creative"),   "Creative");
-    assert.equal(safeCategory("  Finance "), "Finance");
+  it("maps 'virtual assistant' text to Virtual Assistants", () => {
+    assert.equal(inferCategory("virtual assistant for calendaring"), "Virtual Assistants");
   });
 
-  // ── Additional: skill tags are deduplicated ────────────────────────────────────
-  it("deduplicates repeated terms in search text", () => {
-    const tags = extractSkillTags("React React TypeScript React");
-    const reactCount = tags.filter((t) => t === "React").length;
-    assert.equal(reactCount, 1, "Duplicate 'React' entries should be collapsed to one");
+  it("maps 'sales' text to Sales Representatives", () => {
+    assert.equal(inferCategory("outbound sales rep"), "Sales Representatives");
   });
 
-  // ── Additional: at most 10 skill tags returned ───────────────────────────────
-  it("returns at most 10 skill tags for very long input", () => {
-    const longInput = "Java Python Ruby Go PHP Rust Swift Kotlin Scala Haskell Elixir Clojure";
-    const tags = extractSkillTags(longInput);
-    assert.ok(tags.length <= 10, `Expected ≤10 tags; got ${tags.length}`);
+  it("maps 'accounting' text to Accountants", () => {
+    assert.equal(inferCategory("bookkeeping and accounting"), "Accountants");
   });
 
-  // ── Additional: special characters stripped from tokens ──────────────────────
-  it("strips punctuation from token boundaries", () => {
-    const tags = extractSkillTags("Node.js, GraphQL + REST; APIs");
-    assert.ok(tags.includes("Node.js") || tags.some(t => t.toLowerCase().includes("node")),
-      "Expected Node.js or similar in tags");
-    assert.ok(tags.includes("GraphQL"), "Expected 'GraphQL' in tags");
-    assert.ok(tags.includes("REST") || tags.includes("APIs"),
-      "Expected REST or APIs in tags");
+  it("maps 'ops' text to Operations Specialists", () => {
+    assert.equal(inferCategory("ops lead"), "Operations Specialists");
+  });
+
+  // ── Fallback ─────────────────────────────────────────────────────────────────
+  it("falls back to 'Customer Support' when no keyword matches", () => {
+    // Matches no keyword in the MAP — default bucket is Customer Support, not 'other'.
+    assert.equal(inferCategory(""), "Customer Support");
+    assert.equal(inferCategory("   "), "Customer Support");
+    assert.equal(inferCategory("unicorn wrangler"), "Customer Support");
+  });
+
+  // ── Case-insensitivity ────────────────────────────────────────────────────────
+  it("matches keywords case-insensitively", () => {
+    assert.equal(inferCategory("DEVELOPER"), "Developers");
+    assert.equal(inferCategory("Marketing"), "Marketing Specialists");
+  });
+
+  // ── Category provided by caller — route uses it verbatim ────────────────────
+  // The route resolves via: const cat = category?.trim() || inferCategory(title);
+  // So when a non-empty category IS provided, inferCategory is never called.
+  // This test documents the caller-side contract, not the function itself.
+  it("non-empty caller-supplied category is used as-is (route contract)", () => {
+    const resolveCategory = (cat: string | undefined, text: string) =>
+      cat?.trim() || inferCategory(text);
+    assert.equal(resolveCategory("Technical",  "anything"), "Technical");
+    assert.equal(resolveCategory("Creative",   "anything"), "Creative");
+    assert.equal(resolveCategory("  Finance ", "anything"), "Finance");
+    // blank/absent → falls through to inferCategory
+    assert.equal(resolveCategory("",        "developer"), "Developers");
+    assert.equal(resolveCategory(undefined, "developer"), "Developers");
   });
 });
 
