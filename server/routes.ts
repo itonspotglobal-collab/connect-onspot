@@ -9961,9 +9961,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ── Primary: real search query frequency ─────────────────────────────────
-      // Threshold: if at least 10 distinct searches have been recorded, use real
-      // query data so the chips reflect actual user intent. Below the threshold
-      // fall back to category-volume so early users still see useful chips.
+      // FREQUENCY_THRESHOLD — minimum total searches before switching from the
+      // category-volume fallback to real query data.
+      //
+      // Current value (10) was chosen to clear the testing bar and is intentionally
+      // low. Once there is real production search volume this should be revisited:
+      // a value of 50–200, or a per-chip minimum count (e.g. only show a query
+      // that has been searched ≥ 3 times), would be more resistant to early noise
+      // from internal testing and developer searches inflating the chips.
       const FREQUENCY_THRESHOLD = 10;
       const totalRow = await query(
         `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
