@@ -58,6 +58,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  Search,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -349,6 +353,41 @@ export default function AdminDashboard() {
       toast({
         title: 'Save failed',
         description: error.response?.data?.error || 'Failed to update settings',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // ── Search query frequency stats ────────────────────────────────────────
+  interface SearchQueryStats {
+    total_recorded_searches: number;
+    threshold: number;
+    chips_active: boolean;
+    top_queries: Array<{ query: string; count: number; last_searched_at: string }>;
+  }
+
+  const { data: searchStats, isLoading: searchStatsLoading, refetch: refetchSearchStats } =
+    useQuery<SearchQueryStats>({
+      queryKey: ['/api/admin/search-query-stats'],
+      queryFn: () => authAPI.get('/api/admin/search-query-stats'),
+    });
+
+  const [seedInput, setSeedInput] = useState('');
+  const seedMutation = useMutation({
+    mutationFn: (queries: Array<{ query: string; count: number }>) =>
+      authAPI.post('/api/admin/search-query-stats/seed', { queries }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/search-query-stats'] });
+      setSeedInput('');
+      toast({
+        title: 'Queries seeded',
+        description: `${data.seeded_count} quer${data.seeded_count === 1 ? 'y' : 'ies'} added. Total: ${data.total_recorded_searches}. Chips ${data.chips_active ? 'are now active ✓' : 'not yet active'}.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Seed failed',
+        description: error.response?.data?.error || 'Failed to seed queries',
         variant: 'destructive',
       });
     },
@@ -940,6 +979,129 @@ export default function AdminDashboard() {
                     )}
                   </Button>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Search Suggestion Chips */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                Search Suggestion Chips
+              </CardTitle>
+              <CardDescription>
+                Talent-search suggestion chips switch from category fallback to real recorded queries
+                once the total recorded search count reaches the threshold below. Monitor progress here
+                and seed high-value queries to activate chips before organic volume accrues.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {searchStatsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading search stats…</p>
+              ) : searchStats ? (
+                <>
+                  {/* Status banner */}
+                  <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${searchStats.chips_active ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950'}`}>
+                    {searchStats.chips_active
+                      ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                      : <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />}
+                    <div className="text-sm">
+                      {searchStats.chips_active ? (
+                        <span className="font-medium text-green-800 dark:text-green-200">
+                          Real query chips are active.
+                        </span>
+                      ) : (
+                        <span className="font-medium text-amber-800 dark:text-amber-200">
+                          Still on category fallback.{' '}
+                          <span className="font-normal">
+                            Need {searchStats.threshold - searchStats.total_recorded_searches} more
+                            search{searchStats.threshold - searchStats.total_recorded_searches === 1 ? '' : 'es'} to activate real chips.
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Counters */}
+                  <div className="flex gap-6 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Recorded searches</p>
+                      <p className="text-2xl font-bold tabular-nums">{searchStats.total_recorded_searches.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Activation threshold</p>
+                      <p className="text-2xl font-bold tabular-nums">{searchStats.threshold.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Top queries table */}
+                  {searchStats.top_queries.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-1">
+                        <TrendingUp className="w-4 h-4" />
+                        Top recorded queries
+                      </p>
+                      <div className="rounded-md border divide-y text-sm">
+                        {searchStats.top_queries.map((q) => (
+                          <div key={q.query} className="flex items-center justify-between px-3 py-2">
+                            <span className="font-mono text-xs">{q.query}</span>
+                            <span className="tabular-nums text-muted-foreground">{q.count.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No queries recorded yet.</p>
+                  )}
+
+                  {/* Seed form */}
+                  <div className="space-y-2 border-t pt-4">
+                    <p className="text-sm font-medium">Seed high-value queries</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      Enter one query per line, optionally with a count: <code className="text-xs bg-muted rounded px-1">customer support:5</code>.
+                      Seeding adds to existing counts — existing entries are not overwritten.
+                    </p>
+                    <textarea
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm font-mono min-h-[80px] resize-y"
+                      placeholder={"customer support:5\nvirtual assistant:3\naccountant"}
+                      value={seedInput}
+                      onChange={(e) => setSeedInput(e.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={seedMutation.isPending || !seedInput.trim()}
+                      onClick={() => {
+                        const lines = seedInput.split('\n').map(l => l.trim()).filter(Boolean);
+                        const queries = lines.map(line => {
+                          const colonIdx = line.lastIndexOf(':');
+                          if (colonIdx > 0) {
+                            const q = line.slice(0, colonIdx).trim();
+                            const c = parseInt(line.slice(colonIdx + 1).trim(), 10);
+                            return { query: q, count: isNaN(c) ? 1 : c };
+                          }
+                          return { query: line, count: 1 };
+                        }).filter(item => item.query.length > 0);
+                        if (queries.length > 0) seedMutation.mutate(queries);
+                      }}
+                    >
+                      {seedMutation.isPending ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Seeding…</>
+                      ) : 'Seed queries'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-2"
+                      onClick={() => refetchSearchStats()}
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Refresh
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-destructive">Failed to load search query stats.</p>
               )}
             </CardContent>
           </Card>

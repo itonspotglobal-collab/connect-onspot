@@ -9913,6 +9913,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     );
   }
 
+  // ── Search query frequency admin endpoints ───────────────────────────────
+  //
+  // GET  /api/admin/search-query-stats — total count, top queries, threshold status
+  // POST /api/admin/search-query-stats/seed — pre-populate high-value chips
+
+  // The threshold constant is shared here and in the suggestions endpoint below.
+  // SEARCH_SUGGESTION_FREQUENCY_THRESHOLD — minimum total recorded searches before
+  // real query chips replace the category-volume fallback.
+  // Current value = 10 (low, for easy activation during initial launch).
+  // Raise to 50–200 once organic volume accrues to filter out tester noise.
+  const SEARCH_SUGGESTION_FREQUENCY_THRESHOLD = 10;
+
+  app.get("/api/admin/search-query-stats", authenticateAdminFlexible, async (_req: Request, res: Response) => {
+    try {
+      const totalRow = await query(
+        `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
+      );
+      const total = Number(totalRow.rows[0]?.total ?? 0);
+
+      const topRows = await query(
+        `SELECT normalized_query, count, last_searched_at
+         FROM search_query_frequency
+         ORDER BY count DESC, last_searched_at DESC
+         LIMIT 20`,
+      );
+
+      return res.json({
+        total_recorded_searches: total,
+        threshold: SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
+        chips_active: total >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
+        top_queries: topRows.rows.map((r: any) => ({
+          query: r.normalized_query,
+          count: Number(r.count),
+          last_searched_at: r.last_searched_at,
+        })),
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/search-query-stats error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/search-query-stats/seed", authenticateAdminFlexible, async (req: Request, res: Response) => {
+    try {
+      // Body: { queries: Array<{ query: string; count?: number }> }
+      // Seeds or bumps entries so admins can prime high-value chips before organic volume accrues.
+      const body = req.body as { queries?: unknown };
+      if (!Array.isArray(body.queries) || body.queries.length === 0) {
+        return res.status(400).json({ error: "Provide a non-empty queries array: [{ query, count? }]" });
+      }
+      if (body.queries.length > 50) {
+        return res.status(400).json({ error: "Maximum 50 queries per seed call" });
+      }
+
+      let seeded = 0;
+      for (const item of body.queries) {
+        if (typeof (item as any).query !== "string") continue;
+        const raw = String((item as any).query).trim();
+        const normalized = raw.toLowerCase().replace(/\s+/g, " ").trim();
+        if (!normalized || normalized.length < 2 || normalized.length > 200) continue;
+        const seedCount = Math.min(Math.max(Number((item as any).count ?? 1), 1), 1000);
+        await query(
+          `INSERT INTO search_query_frequency (normalized_query, count, last_searched_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (normalized_query)
+           DO UPDATE SET
+             count            = search_query_frequency.count + EXCLUDED.count,
+             last_searched_at = NOW()`,
+          [normalized, seedCount],
+        );
+        seeded++;
+      }
+
+      const totalRow = await query(
+        `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
+      );
+      const total = Number(totalRow.rows[0]?.total ?? 0);
+
+      return res.json({
+        seeded_count: seeded,
+        total_recorded_searches: total,
+        chips_active: total >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD,
+      });
+    } catch (err: any) {
+      console.error("POST /api/admin/search-query-stats/seed error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/client/talent-search/suggestions — top-volume categories as suggestion chips
   // Returns [{ category, phrase }] for the top 5 categories by approved-job count.
   // The phrase mapping lives in the frontend (jobConstants.TALENT_CATEGORY_PHRASES);
@@ -9961,21 +10050,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ── Primary: real search query frequency ─────────────────────────────────
-      // FREQUENCY_THRESHOLD — minimum total searches before switching from the
-      // category-volume fallback to real query data.
-      //
-      // Current value (10) was chosen to clear the testing bar and is intentionally
-      // low. Once there is real production search volume this should be revisited:
-      // a value of 50–200, or a per-chip minimum count (e.g. only show a query
-      // that has been searched ≥ 3 times), would be more resistant to early noise
-      // from internal testing and developer searches inflating the chips.
-      const FREQUENCY_THRESHOLD = 10;
+      // Uses SEARCH_SUGGESTION_FREQUENCY_THRESHOLD defined above (currently 10).
+      // Admins can check the current total and tune this via:
+      //   GET  /api/admin/search-query-stats
+      //   POST /api/admin/search-query-stats/seed
       const totalRow = await query(
         `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
       );
       const totalSearches = Number(totalRow.rows[0]?.total ?? 0);
 
-      if (totalSearches >= FREQUENCY_THRESHOLD) {
+      if (totalSearches >= SEARCH_SUGGESTION_FREQUENCY_THRESHOLD) {
         const freqRows = await query(
           `SELECT normalized_query, count
            FROM search_query_frequency
