@@ -9907,9 +9907,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .slice(0, 200);
   }
 
+  // Optionally resolve the caller's role from a Bearer JWT without requiring auth.
+  // Used by unauthenticated routes that still want to skip admin-originated traffic.
+  // Never throws — returns undefined when no token is present or the token is invalid.
+  function peekCallerRole(req: Request): string | undefined {
+    try {
+      const bearer = req.headers["authorization"]?.split(" ")[1];
+      if (!bearer) return undefined;
+      const jwtSecret = process.env.JWT_SECRET || "development-fallback-secret-not-for-production";
+      const decoded = jwt.verify(bearer, jwtSecret) as any;
+      // Standard user JWT carries role directly; talent JWTs carry type:"candidate"
+      return decoded?.role ?? (decoded?.type === "candidate" ? "talent" : undefined);
+    } catch {
+      return undefined;
+    }
+  }
+
   // Fire-and-forget search query frequency UPSERT.
   // Never throws — a failed write must never break the search response.
-  function recordSearchQuery(raw: string): void {
+  // Skips recording when the caller is an admin so internal/test searches do
+  // not pollute the suggestion chips shown to real clients.
+  function recordSearchQuery(raw: string, userRole?: string): void {
+    if (userRole === "admin") return;
     const normalized = normalizeSearchQuery(raw);
     if (!normalized) return;
     query(
@@ -10086,6 +10105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const freqRows = await query(
           `SELECT normalized_query, count
            FROM search_query_frequency
+           WHERE count >= 3
            ORDER BY count DESC, last_searched_at DESC
            LIMIT 6`,
         );
@@ -10146,8 +10166,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...r,
         candidate: sanitizeSearchCandidate(r.candidate),
       }));
-      // Record query frequency (fire-and-forget — never blocks the response)
-      recordSearchQuery(title);
+      // Record query frequency (fire-and-forget — never blocks the response).
+      // peekCallerRole decodes the JWT token without requiring auth so that
+      // admin searches on the public endpoint are also excluded.
+      recordSearchQuery(title, peekCallerRole(req));
       return res.json({ results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -10196,7 +10218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         candidate: sanitizeSearchCandidate(r.candidate),
       }));
       // Record query frequency (fire-and-forget — never blocks the response)
-      recordSearchQuery(title);
+      recordSearchQuery(title, (req as any).user?.role);
       return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
