@@ -5069,17 +5069,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public-safe candidate: strips contact fields and masks the name.
   // Used whenever the requester is NOT the owner or an admin/TA.
   function publicSanitizeCandidate(c: any) {
-    const { passwordHash: _ph, email: _e, phone: _ph2, userId: _uid, ...safe } = c;
-    const rawName = (c.displayName?.trim() || c.fullName?.trim() || "");
+    // Explicit allowlist — NOT a spread-minus-few.
+    // Anything not named here is dropped. URL fields (resumeUrl, linkedinUrl,
+    // portfolioUrl, githubUrl, websiteUrl, videoIntroUrl, resumeFileName,
+    // videoIntroFileName) are intentionally absent: they must never be returned
+    // to non-privileged callers (anonymous visitors, client users).
+    const rawName = (c.displayName?.trim() || c.fullName?.trim() || "").trim();
     const maskedName = maskPublicName(rawName);
     return {
-      ...safe,
-      fullName: maskedName,
-      displayName: maskedName,
-      firstName: maskedName ? maskedName.split(" ")[0] : "",
-      lastName: "",   // never expose surname to non-privileged viewers
-      email: null,    // explicitly null so UI never tries to render it
-      phone: null,
+      // Identity — masked; real name surfaces only after an accepted invitation
+      id:             c.id             ?? null,
+      fullName:       maskedName,
+      displayName:    maskedName,
+      firstName:      maskedName ? maskedName.split(" ")[0] : "",
+      lastName:       "",   // never expose surname to non-privileged viewers
+      email:          null, // explicitly null so UI never renders it
+      phone:          null,
+
+      // Professional profile — safe to expose
+      location:        c.location        ?? null,
+      targetPosition:  c.targetPosition  ?? c.target_position  ?? null,
+      category:        c.category        ?? null,
+      experienceYears: c.experienceYears ?? c.experience_years ?? null,
+      seniority:       c.seniority       ?? null,
+      headline:        c.headline        ?? null,
+      summary:         c.summary         ?? null,
+      moreAboutMe:     c.moreAboutMe     ?? c.more_about_me    ?? null,
+      availability:    c.availability    ?? null,
+      profilePhotoUrl: c.profilePhotoUrl ?? c.profile_photo_url ?? null,
+
+      // Skills, history, structured fields
+      coreSkills:      c.coreSkills      ?? c.core_skills      ?? [],
+      secondarySkills: c.secondarySkills ?? c.secondary_skills ?? [],
+      workHistory:     c.workHistory     ?? c.work_history     ?? [],
+      preferences:     c.preferences     ?? {},
+      education:       c.education       ?? [],
+      certifications:  c.certifications  ?? [],
+
+      // Status flags
+      profileCompleted: c.profileCompleted ?? c.profile_completed ?? false,
+      accountCreated:   c.accountCreated   ?? c.account_created   ?? false,
+      cultureScore:     c.cultureScore     ?? c.culture_score     ?? null,
+
+      // Timestamps
+      createdAt: c.createdAt ?? c.created_at ?? null,
+      updatedAt: c.updatedAt ?? c.updated_at ?? null,
+
+      // Intentionally omitted — never returned to non-privileged callers:
+      // resumeUrl, resumeFileName, videoIntroUrl, videoIntroFileName,
+      // linkedinUrl, githubUrl, portfolioUrl, websiteUrl,
+      // passwordHash, userId/user_id
     };
   }
 
