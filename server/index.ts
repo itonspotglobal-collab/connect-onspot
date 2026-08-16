@@ -499,6 +499,23 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
+  // Periodically remove orphaned search_scaffold jobs (older than 7 days, no invitations)
+  const SCAFFOLD_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const runScaffoldCleanup = async () => {
+    try {
+      const { storage: st } = await import('./storage');
+      const deleted = await (st as any).cleanupOrphanedScaffoldJobs();
+      if (deleted > 0) {
+        console.log(`🧹 Scaffold cleanup: removed ${deleted} orphaned search_scaffold job(s)`);
+      }
+    } catch (err: any) {
+      console.warn('⚠️  Scaffold cleanup error:', err.message);
+    }
+  };
+  // Run once shortly after startup, then on the hourly interval
+  setTimeout(runScaffoldCleanup, 5000);
+  setInterval(runScaffoldCleanup, SCAFFOLD_CLEANUP_INTERVAL_MS);
+
   // Enhanced global error handler with Sentry integration
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

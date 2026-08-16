@@ -3575,6 +3575,22 @@ export class DbStorage extends MemStorage {
       updatedAt: row.updated_at,
     }));
   }
+  /**
+   * Delete search_scaffold jobs older than 7 days that have no associated
+   * job_submissions rows (i.e. the client searched but never invited anyone).
+   * Scaffold jobs that have at least one invitation are kept for audit purposes.
+   */
+  async cleanupOrphanedScaffoldJobs(): Promise<number> {
+    const result = await dbQuery(
+      `DELETE FROM jobs
+       WHERE created_via = 'search_scaffold'
+         AND created_at < NOW() - INTERVAL '7 days'
+         AND id NOT IN (
+           SELECT DISTINCT job_id FROM job_submissions WHERE job_id IS NOT NULL
+         )`,
+    );
+    return result.rowCount ?? 0;
+  }
 }
 
 export const storage = new DbStorage();
