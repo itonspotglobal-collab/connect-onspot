@@ -57,6 +57,24 @@ import {
   scoreTalentForClient,
 } from "@/lib/clientRecommendations";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  PHP: "₱",
+  EUR: "€",
+  GBP: "£",
+};
+
+function formatRateDisplay(
+  amount: string,
+  currency: string,
+  engagementType: string | null | undefined,
+): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+  const base = `${symbol}${amount}`;
+  if (engagementType) return `${base} / ${engagementType}`;
+  return base;
+}
+
 function candidatePhotoSrc(url: string | null | undefined): string {
   if (!url) return "";
   if (url.startsWith("/objects/candidate-photos/")) {
@@ -221,6 +239,12 @@ function ProfileModal({
 }) {
   const { candidate } = result;
   const prefs = candidate.preferences as Record<string, string> | null;
+  const modalRateAmount = prefs?.rateAmount ?? null;
+  const modalRateCurrency = prefs?.rateCurrency || "USD";
+  const modalRateEngagementType = prefs?.rateEngagementType ?? null;
+  const modalRateDisplay = modalRateAmount
+    ? formatRateDisplay(modalRateAmount, modalRateCurrency, modalRateEngagementType)
+    : null;
   const workHistory = (candidate.workHistory as Array<{
     jobTitle?: string;
     company?: string;
@@ -286,6 +310,7 @@ function ProfileModal({
               { Icon: Briefcase, label: "Category", value: candidate.category || "—" },
               { Icon: Clock3, label: "Experience", value: candidate.experienceYears ? `${candidate.experienceYears} yrs` : "—" },
               { Icon: Globe2, label: "Location", value: candidate.location || "Philippines" },
+              ...(modalRateDisplay ? [{ Icon: Star, label: "Rate", value: modalRateDisplay }] : []),
             ].map(({ Icon, label, value }) => (
               <div key={label} className="rounded-xl bg-white/[0.06] p-2.5 md:flex-1">
                 <div className="flex items-center gap-1 text-[10px] text-white/40">
@@ -516,6 +541,12 @@ function TalentCard({
   const displaySkills = allSkills.slice(0, 4);
   const prefs = candidate.preferences as Record<string, string> | null;
   const workSetup = prefs?.workSetup ?? prefs?.setup ?? null;
+  const rateAmount = prefs?.rateAmount ?? null;
+  const rateCurrency = prefs?.rateCurrency || "USD";
+  const rateEngagementType = prefs?.rateEngagementType ?? null;
+  const rateDisplay = rateAmount
+    ? formatRateDisplay(rateAmount, rateCurrency, rateEngagementType)
+    : null;
   const displayName = getTalentDisplayName(candidate);
   const photoUrl = candidatePhotoSrc(candidate.profilePhotoUrl);
 
@@ -608,6 +639,16 @@ function TalentCard({
                 {workSetup || "Remote"}
               </div>
             </div>
+            {rateDisplay && (
+              <div className="col-span-2 rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <Briefcase className="h-3 w-3" /> Rate
+                </div>
+                <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
+                  {rateDisplay}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Summary snippet */}
