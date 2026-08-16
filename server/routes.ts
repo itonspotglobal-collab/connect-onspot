@@ -10979,20 +10979,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Shared helpers for client submission endpoints ───────────────────────────
+
+  /** Statuses at which a client-invited talent's identity is revealed (talent accepted). */
+  const CLIENT_INVITE_REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
+
+  /**
+   * Mask a name string for a pending/declined client invitation.
+   * Returns "Talent Profile" for empty names, "J•••" for single words,
+   * or "Jane D." for multi-word names.
+   */
+  const maskInviteName = (raw: string | null): string => {
+    const name = (raw ?? "").trim();
+    if (!name) return "Talent Profile";
+    const parts = name.split(" ").filter(Boolean);
+    if (parts.length === 1) return parts[0][0] + "•".repeat(4);
+    return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+  };
+
+  /**
+   * Apply server-side PII masking to a client submission row.
+   *
+   * For client-invited talent whose status is "invited" (pending) or "declined",
+   * this returns a minimal allowlist shape — no real name, no contact info, no
+   * documents/links/free-text. Identity reveals only once the talent accepts
+   * (status becomes "submitted" or later).
+   *
+   * Self-applied submissions (initiated_by !== "client") are returned as-is.
+   */
+  const sanitizeClientSubmissionRow = (row: any): any => {
+    if (row.initiated_by !== "client" || CLIENT_INVITE_REVEALED_STATUSES.has(row.status)) {
+      // Return full row; ensure applicantName (camelCase) is always present.
+      return {
+        ...row,
+        applicantName: row.applicantName ?? row.applicant_name ?? null,
+      };
+    }
+    // Pending or declined client invitation — return allowlist shape only.
+    const maskedName = maskInviteName(row.applicantName ?? row.applicant_name ?? null);
+    return {
+      id: row.id,
+      jobId: row.jobId ?? row.job_id,
+      clientId: row.clientId ?? row.client_id,
+      talentId: row.talentId ?? row.talent_id,
+      status: row.status,
+      initiated_by: row.initiated_by,
+      submittedAt: row.submittedAt ?? row.submitted_at,
+      updatedAt: row.updatedAt ?? row.updated_at,
+      createdAt: row.createdAt ?? row.created_at,
+      jobTitle: row.jobTitle,
+      jobCompany: row.jobCompany,
+      // Masked identity — no real name, contact, or document fields returned.
+      applicantName: maskedName,
+      applicant_name: maskedName,
+      email: null,
+      phone: null,
+      location: null,
+      resumeUrl: null,
+      resumeFileName: null,
+      portfolioUrl: null,
+      coverLetter: null,
+      expectedSalary: null,
+      availability: null,
+    };
+  }
+
+  // Explicit camelCase projection shared by both submission GET endpoints.
+  const CLIENT_SUBMISSION_SELECT = `
+    SELECT
+      js.id,
+      js.job_id                   AS "jobId",
+      js.client_id                AS "clientId",
+      js.talent_id                AS "talentId",
+      js.applicant_name           AS "applicantName",
+      js.first_name               AS "firstName",
+      js.last_name                AS "lastName",
+      js.email,
+      js.phone,
+      js.location,
+      js.resume_url               AS "resumeUrl",
+      js.resume_file_name         AS "resumeFileName",
+      js.portfolio_url            AS "portfolioUrl",
+      js.cover_letter             AS "coverLetter",
+      js.expected_salary          AS "expectedSalary",
+      js.availability,
+      js.status,
+      js.submitted_at             AS "submittedAt",
+      js.updated_at               AS "updatedAt",
+      js.created_at               AS "createdAt",
+      js.initiated_by,
+      js.registration_status      AS "registrationStatus",
+      j.title                     AS "jobTitle",
+      j.company                   AS "jobCompany"
+    FROM job_submissions js
+    JOIN jobs j ON j.id = js.job_id
+  `;
+
   // GET /api/client/job-submissions — list submissions for all jobs posted by the authenticated client
   app.get("/api/client/job-submissions", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const result = await query(
-        `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany"
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
+        `${CLIENT_SUBMISSION_SELECT}
          WHERE js.client_id = $1
          ORDER BY js.submitted_at DESC`,
         [userId],
       );
-      return res.json(result.rows);
+      return res.json(result.rows.map(sanitizeClientSubmissionRow));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -11005,14 +11099,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
       const result = await query(
-        `SELECT js.*, j.title AS "jobTitle", j.company AS "jobCompany"
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
+        `${CLIENT_SUBMISSION_SELECT}
          WHERE js.id = $1 AND js.client_id = $2`,
         [id, userId],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found" });
-      return res.json(result.rows[0]);
+      return res.json(sanitizeClientSubmissionRow(result.rows[0]));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -11029,6 +11121,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be: new, reviewed, shortlisted, rejected, hired" });
       }
+
+      // Fetch current row to check current status.
+      // Client-invited talent in "invited" or "declined" state must not have their
+      // status changed by the client — only the talent's own respond endpoint may
+      // transition those rows (invited → submitted / declined).
+      const current = await query(
+        `SELECT status, initiated_by FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        [id, userId],
+      );
+      if (current.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+      const currentStatus: string = current.rows[0].status;
+      const initiatedBy: string | null = current.rows[0].initiated_by;
+      if (initiatedBy === "client" && (currentStatus === "invited" || currentStatus === "declined")) {
+        return res.status(409).json({
+          error: "cannot_update_pending_invitation",
+          message:
+            currentStatus === "invited"
+              ? "This invitation is awaiting the talent's response. Status can only change once the talent accepts or declines."
+              : "This invitation was declined by the talent and its status cannot be changed.",
+        });
+      }
+
       const result = await query(
         `UPDATE job_submissions SET status = $1, updated_at = NOW()
          WHERE id = $2 AND client_id = $3

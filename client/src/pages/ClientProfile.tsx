@@ -67,7 +67,7 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 
-// ─── Submission Types ─────────────────────────────────────────────────────────
+// ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
   id: string;
   jobId: string;
@@ -165,10 +165,10 @@ function ViewSubmissionModal({
                 Pending response
               </span>
             )}
-            {/* Only show the status selector for submissions the client can act on.
-                Pending invitations (invited) and declined invitations are immutable
-                by the client — the talent controls those transitions. */}
-            {!["invited", "declined"].includes(submission.status) && (
+            {/* Only allow status changes once the talent has accepted (submitted or later).
+                Pending and declined invitations are locked — only the talent's respond
+                endpoint may transition those rows. */}
+            {!isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
               <Select
                 value={submission.status}
                 onValueChange={(v) => statusMutation.mutate({ id: submission.id, status: v })}
@@ -178,10 +178,8 @@ function ViewSubmissionModal({
                   <SelectValue placeholder="Update status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["new", "reviewed", "shortlisted", "rejected", "hired"] as const).map((val) => (
-                    <SelectItem key={val} value={val}>
-                      {SUBMISSION_STATUS_LABELS[val]?.label ?? val}
-                    </SelectItem>
+                  {Object.entries(SUBMISSION_STATUS_LABELS).map(([val, { label }]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -189,11 +187,31 @@ function ViewSubmissionModal({
           </div>
 
           {/* Applicant details */}
+          {isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 dark:bg-amber-900/20 dark:border-amber-700/40">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                {submission.status === "declined"
+                  ? "This talent declined the invitation — their identity remains private."
+                  : "Awaiting talent response — full identity reveals once they accept."}
+              </p>
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              { label: "Full Name", value: submission.applicantName },
-              { label: "Email", value: submission.email },
-              { label: "Phone", value: submission.phone },
+              {
+                label: "Full Name",
+                value: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status),
+              },
+              {
+                label: "Email",
+                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status)
+                  ? null
+                  : submission.email,
+              },
+              {
+                label: "Phone",
+                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status) ? null : submission.phone,
+              },
               { label: "Location", value: submission.location },
               { label: "Expected Salary", value: submission.expectedSalary },
               { label: "Availability", value: submission.availability },
@@ -972,14 +990,22 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
                   >
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="font-medium text-slate-900 dark:text-white">{sub.applicantName}</p>
+                        <p className="font-medium text-slate-900 dark:text-white">
+                          {maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status)}
+                        </p>
                         {clientInvited && (
                           <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
                             You invited
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500">{sub.email}</p>
+                      {isPendingOrDeclinedInvite(sub.initiated_by, sub.status) ? (
+                        <p className="text-[10px] text-slate-400 italic">
+                          {sub.status === "declined" ? "Invitation declined" : "Name reveals when talent accepts"}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500">{sub.email}</p>
+                      )}
                     </td>
                     <td className="hidden px-4 py-3 sm:table-cell">
                       <p className="text-slate-700 dark:text-slate-300">{sub.jobTitle}</p>
@@ -1021,4 +1047,36 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
       )}
     </div>
   );
+}
+
+/**
+ * Mask a talent's name until they accept a client invitation.
+ *
+ * Rule: reveal once talent actively accepts (status → "submitted" or any
+ * downstream status such as "reviewed", "shortlisted", "hired").
+ * Keep masked for BOTH "invited" (pending) and "declined" (rejected) — a
+ * talent who declined should not have their identity exposed to the client.
+ * Self-applied candidates always show their real name.
+ */
+function maskSubmissionName(
+  name: string,
+  initiatedBy: string | null,
+  status: string,
+): string {
+  if (initiatedBy !== "client") return name;
+  // Reveal only once talent has explicitly accepted (submitted or later stage)
+  const REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
+  if (REVEALED_STATUSES.has(status)) return name;
+  // Mask for "invited" (pending) and "declined" (rejected)
+  if (!name || name.toLowerCase().startsWith("invited ")) return "Talent Profile";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0] + "•".repeat(4);
+  return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+}
+
+/** Returns true when a client-invited submission's identity should be hidden. */
+function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string): boolean {
+  if (initiatedBy !== "client") return false;
+  const REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
+  return !REVEALED_STATUSES.has(status);
 }
