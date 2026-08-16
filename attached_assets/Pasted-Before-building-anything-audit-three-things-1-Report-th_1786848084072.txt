@@ -1,0 +1,56 @@
+Before building anything, audit three things:
+
+1. Report the actual `category` enum/values used in the jobs and candidates
+   tables in production. Don't assume — I need the real list before this page's
+   filter chips can be built correctly (currently placeholder labels: Executive
+   Assistants, Customer Support, Sales Development, Bookkeeping).
+
+2. Confirm the current `job_submissions` (or equivalent) status enum — I need
+   to know exactly what values exist today (e.g. "Applied") before adding a new
+   one.
+
+3. Confirm the scorer (calculateJobMatches / scoreJobForCandidate in
+   storage.ts) can be queried in reverse — given ONE job, rank ALL Talent by
+   compatibility score — not just its current direction (given one Talent,
+   rank all jobs). Same underlying scoring math, different query direction.
+   Report whether this requires new logic or just a different query against
+   existing functions.
+
+Once reported, here's the feature this unlocks — a Client-facing "browse and
+shortlist Talent directly" page, without requiring a full job posting first:
+
+FEATURE: Search-to-Shortlist
+
+1. When a Client submits a search on this page (free text, e.g. "customer
+   support for my e-commerce store"), auto-create a lightweight Job record
+   behind the scenes — title derived from the search text, category inferred
+   or left for the Client to confirm via the filter chips, engagement_type
+   defaulted to Full-Time unless changed, status = draft or a new "internal"
+   status that doesn't appear in Talent-facing browse/search (this Job is a
+   scaffold for matching, not a real public posting yet).
+
+2. Query the scorer in reverse (per audit item 3) against that Job to rank
+   real Talent profiles by fit. Display them as the results grid.
+
+3. Add a new pipeline status: "Invited" — distinct from "Applied". This maps
+   to the "Invite Candidate" action already scoped in the build checklist
+   (Part 3, Phase 2.1) as Client-initiated outreach to a matched Talent who
+   hasn't applied. Clicking "Shortlist" on a Talent card creates a record in
+   job_submissions (or equivalent) with status = "Invited", linking that
+   Talent to the auto-created Job.
+
+4. The Client's existing applicant-review view needs to display "Invited"
+   records distinctly from "Applied" ones — don't let an invited-but-not-yet-
+   responded Talent look identical to someone who actively applied.
+
+5. Talent-side: an "Invited" status should notify the Talent and let them
+   accept (which converts to "Applied") or decline — don't leave Invited as a
+   dead-end state with no Talent-facing action.
+
+This reuses existing schema (jobs, job_submissions, the real scorer) rather
+than inventing a parallel system — confirm that's actually true once you've
+done the audit, and flag anything that doesn't hold up.
+
+Do NOT build the "Pre-vetted by OnSpot" badge — OnSpot Screening doesn't exist
+yet. The mockup now says "AI-matched profile" instead, which is real and
+provable today.
