@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +18,8 @@ import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } f
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
   CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
-  FileText, X, Download, MessageSquare, BookOpen,
+  FileText, X, Download, MessageSquare, BookOpen, Mail,
+  Check, XCircle,
 } from "lucide-react";
 
 function MatchedJobsSection() {
@@ -486,6 +487,141 @@ function RecommendedJobs({ appliedJobIds }: { appliedJobIds: Set<string> }) {
   );
 }
 
+// ─── Role Invitations Section ─────────────────────────────────────────────────
+
+interface TalentInvitation {
+  id: string;
+  jobId: string;
+  status: string;
+  createdAt: string;
+  jobTitle: string;
+  jobCategory: string | null;
+  engagementType: string | null;
+  salaryDisplay: string | null;
+  budgetCurrency: string | null;
+  description: string | null;
+}
+
+function InvitationsSection({ refetchApplications }: { refetchApplications: () => void }) {
+  const auth = loadTalentAuth();
+
+  const { data: invitations = [], refetch: refetchInvitations, isLoading } = useQuery<TalentInvitation[]>({
+    queryKey: ["talent-invitations"],
+    queryFn: async () => {
+      if (!auth) return [];
+      const res = await fetch("/api/talent/invitations", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+
+  const respondMutation = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: "accept" | "decline" }) => {
+      const res = await fetch(`/api/talent/invitations/${id}/respond`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth?.token ?? ""}`,
+        },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to respond");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchInvitations();
+      refetchApplications(); // accepted invite becomes a regular application
+    },
+  });
+
+  if (isLoading || invitations.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <Mail className="h-4 w-4 text-indigo-500" />
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Role Invitations
+        </h2>
+        <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+          {invitations.length}
+        </span>
+      </div>
+      <p className="text-xs text-slate-400 mb-3">
+        A client has matched you with a role and would like to connect. Accept to start the process.
+      </p>
+
+      <div className="space-y-3">
+        {invitations.map((invite) => (
+          <div
+            key={invite.id}
+            className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {invite.jobTitle}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                  {invite.jobCategory && (
+                    <span className="rounded-full bg-white/70 px-2 py-0.5 dark:bg-slate-800">
+                      {invite.jobCategory}
+                    </span>
+                  )}
+                  {invite.engagementType && (
+                    <span className="rounded-full bg-white/70 px-2 py-0.5 dark:bg-slate-800">
+                      {invite.engagementType}
+                    </span>
+                  )}
+                </div>
+                {invite.description && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                    {invite.description}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                className="rounded-full bg-[#474ead] text-white hover:bg-[#3d439c] h-8 text-xs"
+                disabled={respondMutation.isPending}
+                onClick={() => respondMutation.mutate({ id: invite.id, action: "accept" })}
+              >
+                {respondMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="mr-1 h-3 w-3" />
+                    Accept
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full h-8 text-xs text-slate-500"
+                disabled={respondMutation.isPending}
+                onClick={() => respondMutation.mutate({ id: invite.id, action: "decline" })}
+              >
+                <XCircle className="mr-1 h-3 w-3" />
+                Decline
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function TalentApplications() {
@@ -653,6 +789,9 @@ export default function TalentApplications() {
             </div>
           )}
         </div>
+
+        {/* Role Invitations — client-initiated invites the talent can accept/decline */}
+        <InvitationsSection refetchApplications={refetch} />
 
         {/* Matched Jobs — scored matches for this talent */}
         <div className="mb-8" id="matched-jobs">

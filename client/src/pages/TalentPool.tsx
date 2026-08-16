@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TALENT_BROWSE_CATEGORIES, resolveBrowseCategory } from "@/lib/jobConstants";
 import { createPortal } from "react-dom";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -167,11 +168,13 @@ function computeMatch(
     score += 50;
   }
 
-  // Category filter
+  // Category filter — alias-aware: "support" → "Customer Support" etc.
   if (category !== "All") {
-    if (
-      (candidate.category ?? "").toLowerCase() === category.toLowerCase()
-    ) {
+    const resolvedCandCat = resolveBrowseCategory(candidate.category);
+    const catMatch =
+      resolvedCandCat?.toLowerCase() === category.toLowerCase() ||
+      (candidate.category ?? "").toLowerCase() === category.toLowerCase();
+    if (catMatch) {
       score += 25;
     } else {
       score -= 40; // hard penalty for category mismatch
@@ -859,7 +862,7 @@ function TalentAccountPrompt() {
   return createPortal(prompt, document.body);
 }
 
-const CATEGORIES = ["All", "Admin", "Support", "Finance", "Sales", "Marketing", "Technical", "Operations", "Design", "Writing"];
+const CATEGORIES = ["All", ...TALENT_BROWSE_CATEGORIES] as const;
 const EXPERIENCE_LEVELS = ["Any", "Entry", "Mid", "Senior"];
 const WORK_SETUPS = ["Any", "Remote", "Hybrid", "Onsite"];
 

@@ -6,3 +6,4 @@
 - [Talent job matching surface](job-matching-talent.md) — jobs.skillTags is the real skill source (job_skills is empty); legacy candidates need candidateOverride; redact confidential company fields.
 - [TalentProfile public view pattern](talent-profile-public-view.md) — canEdit, isPublicPreview, showPrivateOwnerSections derivation; startup migration pattern for candidates table; EditField multiline paragraph rendering.
 - [Job matches system](job-matches-system.md) — persisted job_matches table, server scorer, event-driven triggers, race condition fix (persistMatchResults must be awaited), notification threshold=70.
+- [Search-to-Shortlist feature](search-to-shortlist.md) — scaffold job pattern, rankTalentForJob, invited/declined statuses, TALENT_BROWSE_CATEGORIES canonical list, two known mistagged jobs.

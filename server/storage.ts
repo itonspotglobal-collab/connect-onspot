@@ -222,6 +222,15 @@ export interface IStorage {
     overlapSkills: string[];
   }>>;
 
+  rankTalentForJob(jobId: string, limit?: number): Promise<Array<{
+    candidateId: string;
+    userId: string;
+    score: number;
+    overlapSkills: string[];
+    matchReasons: Record<string, any>;
+    candidate: Record<string, any>;
+  }>>;
+
   // LinkedIn Integration
   getLinkedinProfile(id: string): Promise<any | undefined>;
   getLinkedinProfileByUserId(userId: string): Promise<any | undefined>;
@@ -1363,6 +1372,75 @@ export class MemStorage implements IStorage {
       }
     }
     console.log(`✅ recomputeMatchesForJob complete: job=${jobId} candidates=${candidatesRes.rows.length}`);
+  }
+
+  /**
+   * Reverse-match: given a job (including draft/scaffold jobs), rank all talent
+   * by how well they fit the role. Used by the client Search-to-Shortlist feature.
+   * Includes the same coreSkills/secondarySkills fallback as calculateJobMatches
+   * for parity with talent-facing match scores.
+   */
+  async rankTalentForJob(jobId: string, limit = 50): Promise<Array<{
+    candidateId: string;
+    userId: string;
+    score: number;
+    overlapSkills: string[];
+    matchReasons: Record<string, any>;
+    candidate: Record<string, any>;
+  }>> {
+    // Works with any job status (including 'draft' scaffold jobs)
+    const job = await this.getJobWithSkills(jobId);
+    if (!job) {
+      console.warn(`⚠️  rankTalentForJob: job ${jobId} not found`);
+      return [];
+    }
+
+    const candidatesRes = await dbQuery(
+      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+    );
+
+    const results: Array<{
+      candidateId: string;
+      userId: string;
+      score: number;
+      overlapSkills: string[];
+      matchReasons: Record<string, any>;
+      candidate: Record<string, any>;
+    }> = [];
+
+    for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
+      try {
+        const [userSkills, profile, candidate] = await Promise.all([
+          this.getUserSkillsWithNames(row.user_id),
+          this.getProfileByUserId(row.user_id),
+          this.getCandidateByUserId(row.user_id),
+        ]);
+        // Parity fix: fall back to candidate.coreSkills/secondarySkills when user_skills is empty
+        let talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
+        if (talentSkills.length === 0 && candidate) {
+          talentSkills = [
+            ...((candidate.coreSkills as string[]) ?? []),
+            ...((candidate.secondarySkills as string[]) ?? []),
+          ].filter(Boolean);
+        }
+        const { score, overlapSkills, matchReasons } = this.scoreJobForCandidate(talentSkills, profile, candidate, job);
+        results.push({
+          candidateId: row.id,
+          userId: row.user_id,
+          score,
+          overlapSkills,
+          matchReasons,
+          candidate: (candidate ?? {}) as Record<string, any>,
+        });
+      } catch (err) {
+        console.error(`❌ rankTalentForJob failed for candidate ${row.id}:`, err);
+      }
+    }
+
+    console.log(`✅ rankTalentForJob: job=${jobId} scored ${results.length} candidates`);
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
   }
 
   // Proposal Methods

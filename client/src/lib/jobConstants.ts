@@ -94,6 +94,85 @@ export type EngagementTypeValue = (typeof ENGAGEMENT_TYPE_OPTIONS)[number]["valu
 // All new/edited jobs must use Monthly compensation.
 export const COMPENSATION_TYPE = "monthly" as const;
 
+// ── Talent Browse Categories ──────────────────────────────────────────────────
+// The canonical 10 categories for the Client "Search & Shortlist" page and the
+// talent-browse filter chips. Source of truth — never duplicate in components.
+export const TALENT_BROWSE_CATEGORIES = [
+  "Customer Support",
+  "Virtual Assistants",
+  "Developers",
+  "Designers",
+  "Marketing Specialists",
+  "Accountants",
+  "Healthcare Professionals",
+  "Sales Representatives",
+  "Operations Specialists",
+  "IT & Technical Support",
+] as const;
+
+export type TalentBrowseCategory = (typeof TALENT_BROWSE_CATEGORIES)[number];
+
+/**
+ * Aliases from raw DB category / job_function values → canonical browse chip label.
+ * NOTE: Two known mistagged jobs (CSR tagged "Operations", Accounting Manager tagged "Executive")
+ * are intentionally NOT mapped here — they require manual admin correction.
+ */
+const BROWSE_CATEGORY_ALIASES: Record<string, TalentBrowseCategory> = {
+  // Customer Support
+  "customer support":             "Customer Support",
+  "support":                      "Customer Support",
+  "customer success":             "Customer Support",
+  // Virtual Assistants
+  "virtual assistant":            "Virtual Assistants",
+  "virtual assistants":           "Virtual Assistants",
+  "admin":                        "Virtual Assistants",
+  // Developers
+  "engineering":                  "Developers",
+  "development":                  "Developers",
+  "software":                     "Developers",
+  "software engineering":         "Developers",
+  // Designers
+  "design (ui/ux)":               "Designers",
+  "design":                       "Designers",
+  "ui/ux":                        "Designers",
+  // Marketing Specialists
+  "marketing":                    "Marketing Specialists",
+  // Accountants
+  "finance & accounting":         "Accountants",
+  "finance":                      "Accountants",
+  "accounting":                   "Accountants",
+  "bookkeeping":                  "Accountants",
+  // Healthcare Professionals
+  "healthcare":                   "Healthcare Professionals",
+  "health":                       "Healthcare Professionals",
+  // Sales Representatives
+  "sales":                        "Sales Representatives",
+  "sales development":            "Sales Representatives",
+  // Operations Specialists
+  "operations":                   "Operations Specialists",
+  "project & program management": "Operations Specialists",
+  "project management":           "Operations Specialists",
+  // IT & Technical Support
+  "information technology (it)":  "IT & Technical Support",
+  "it":                           "IT & Technical Support",
+  "tech support":                 "IT & Technical Support",
+  "technical support":            "IT & Technical Support",
+};
+
+/**
+ * Returns the canonical browse category for a raw DB value, or null if unrecognized.
+ * Case-insensitive. Does NOT guess — unlisted values return null so mistagged jobs
+ * are surfaced as unrecognized rather than silently mis-filed.
+ */
+export function resolveBrowseCategory(raw: string | null | undefined): TalentBrowseCategory | null {
+  if (!raw) return null;
+  const key = raw.trim().toLowerCase();
+  for (const cat of TALENT_BROWSE_CATEGORIES) {
+    if (cat.toLowerCase() === key) return cat;
+  }
+  return BROWSE_CATEGORY_ALIASES[key] ?? null;
+}
+
 // ── Filter engagement-type options (public FindWork page) ─────────────────────
 export const FILTER_CONTRACT_TYPES = [
   { value: "All Types", label: "All Types" },

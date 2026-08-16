@@ -9351,6 +9351,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ====== SEARCH-TO-SHORTLIST (Client-initiated talent discovery) ======
+
+  // POST /api/client/talent-search — create a scaffold job and return ranked talent
+  app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { searchText, category, engagementType = "Full-Time" } = req.body;
+      if (!searchText?.trim()) return res.status(400).json({ error: "searchText is required" });
+
+      const title = String(searchText).trim().slice(0, 120);
+
+      // Create an internal scaffold job (draft, approved) purely for scoring purposes.
+      // These are never shown on the public job board (status='draft', created_via='search_scaffold').
+      const jobResult = await query(
+        `INSERT INTO jobs
+           (id, title, professional_role_name, category, job_function, engagement_type,
+            status, approval_status, is_client_submitted, client_id, created_via, description)
+         VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'draft', 'approved', true, $4, 'search_scaffold', $5)
+         RETURNING id`,
+        [title, category ?? null, engagementType, userId, `Search scaffold: "${title}"`],
+      );
+      const jobId = jobResult.rows[0].id as string;
+
+      const results = await storage.rankTalentForJob(jobId, 30);
+      return res.json({ jobId, results });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/client/invitations — invite a specific talent to a scaffold job
+  app.post("/api/client/invitations", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { jobId, talentUserId } = req.body;
+      if (!jobId || !talentUserId) {
+        return res.status(400).json({ error: "jobId and talentUserId are required" });
+      }
+
+      // Verify the job belongs to this client
+      const jobCheck = await query(
+        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2`,
+        [jobId, clientId],
+      );
+      if (!jobCheck.rows.length) {
+        return res.status(403).json({ error: "Job not found or not owned by you" });
+      }
+
+      // Idempotency — return 409 if already invited (prevents duplicate rows)
+      const existing = await query(
+        `SELECT id FROM job_submissions WHERE job_id = $1 AND talent_id = $2 AND status = 'invited'`,
+        [jobId, talentUserId],
+      );
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: "already_invited", message: "This talent has already been invited" });
+      }
+
+      // Resolve talent identity from their linked candidate row
+      const talentRow = await query(
+        `SELECT c.first_name, c.last_name, c.full_name, u.email
+         FROM candidates c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.user_id = $1
+         LIMIT 1`,
+        [talentUserId],
+      );
+      const talent = talentRow.rows[0];
+      const name = talent?.full_name ||
+        [talent?.first_name, talent?.last_name].filter(Boolean).join(" ") ||
+        "Invited Talent";
+      const email = talent?.email ?? "";
+
+      const result = await query(
+        `INSERT INTO job_submissions
+           (id, job_id, client_id, applicant_name, first_name, last_name, email,
+            status, initiated_by, talent_id, registration_status)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'invited', 'client', $7, 'linked')
+         RETURNING id`,
+        [jobId, clientId, name, talent?.first_name ?? name, talent?.last_name ?? "", email, talentUserId],
+      );
+
+      return res.status(201).json({ id: result.rows[0].id });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/talent/invitations — talent sees their pending role invitations
+  app.get("/api/talent/invitations", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const result = await query(
+        `SELECT js.id,
+                js.job_id        AS "jobId",
+                js.status,
+                js.created_at    AS "createdAt",
+                j.title          AS "jobTitle",
+                j.category       AS "jobCategory",
+                j.engagement_type AS "engagementType",
+                j.salary_display AS "salaryDisplay",
+                j.budget_currency AS "budgetCurrency",
+                j.description    AS "description"
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.talent_id = $1
+           AND js.status = 'invited'
+         ORDER BY js.created_at DESC`,
+        [userId],
+      );
+
+      return res.json(result.rows);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/talent/invitations/:id/respond — accept (→ submitted) or decline an invitation
+  app.post("/api/talent/invitations/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      const { action } = req.body;
+      if (!["accept", "decline"].includes(action)) {
+        return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
+      }
+
+      // Verify ownership and that the invitation is still pending
+      const check = await query(
+        `SELECT id, status FROM job_submissions WHERE id = $1 AND talent_id = $2`,
+        [id, userId],
+      );
+      if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
+      if (check.rows[0].status !== "invited") {
+        return res.status(409).json({ error: "This invitation is no longer pending" });
+      }
+
+      const newStatus = action === "accept" ? "submitted" : "declined";
+      await query(
+        `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+        [newStatus, id],
+      );
+
+      return res.json({ status: newStatus });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // ====== JOB SUBMISSIONS (Built-in Application Form) ======
 
   // GET /api/jobs/:jobId/application-prefill — returns prefilled candidate data for 1-Click Apply

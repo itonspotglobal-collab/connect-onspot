@@ -88,11 +88,14 @@ interface JobSubmission {
 }
 
 const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  new: { label: "New", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
-  reviewed: { label: "Reviewed", color: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
-  shortlisted: { label: "Shortlisted", color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
-  rejected: { label: "Rejected", color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
-  hired: { label: "Hired", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
+  new:        { label: "New",        color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
+  submitted:  { label: "Applied",    color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
+  reviewed:   { label: "Reviewed",   color: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
+  shortlisted:{ label: "Shortlisted",color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
+  rejected:   { label: "Rejected",   color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
+  hired:      { label: "Hired",      color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
+  invited:    { label: "Invited",    color: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" },
+  declined:   { label: "Declined",   color: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" },
 };
 
 // ─── View Submission Modal ─────────────────────────────────────────────────────

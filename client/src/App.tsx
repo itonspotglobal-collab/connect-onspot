@@ -75,6 +75,7 @@ import HireTalentPage from "@/pages/HireTalentPage";
 import PilotDashboard from "@/pages/PilotDashboard";
 import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
+import SearchToShortlist from "@/pages/SearchToShortlist";
 import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import ClientProfile from "@/pages/ClientProfile";
@@ -163,6 +164,7 @@ function PublicRouter() {
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
+          <Route path="/client-search" component={SearchToShortlist} />
           <Route path="/pilot/:pilotId" component={PilotDashboard} />
           <Route path="/pilot" component={PilotDashboard} />
           <Route path="/find-work" component={FindWorkRedirect} />
@@ -262,6 +264,7 @@ function ClientRouter() {
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/talent-pool" component={TalentPool} />
+          <Route path="/client-search" component={SearchToShortlist} />
           <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
