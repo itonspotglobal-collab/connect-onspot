@@ -1,0 +1,41 @@
+STOP. Do not redeploy the scaffold-cleanup DDL as written. There is a real
+data-loss risk in it.
+
+The claim "scaffold rows in practice have no submissions" is false — the
+entire Search-to-Shortlist invitation feature works BY creating
+job_submissions rows attached to scaffold jobs (status='invited' on invite,
+status='submitted' on accept, initiated_by='client'). A scaffold job with
+status='draft' can be the real parent record of an actual accepted
+invitation with a real message thread attached to it — it is not
+automatically safe to delete just because it's a scaffold.
+
+Before anything else:
+
+1. Report exactly what the 2 "orphaned" job_submissions rows deleted in dev
+   actually were — their status, initiated_by, talent_id, client_id, and
+   whether a message_threads row referenced the same job_id. If either one
+   was a real invitation (status='invited' or 'submitted'), that's a real
+   loss that just happened in dev, and needs to be acknowledged as such,
+   not glossed over as cleanup.
+
+2. Fix the DDL before it ever runs against production: a scaffold job
+   should only be deleted if it has ZERO job_submissions rows attached —
+   full stop. Do not delete submissions to force the parent delete through.
+   Change the predicate to include something like
+   "AND NOT EXISTS (SELECT 1 FROM job_submissions WHERE job_id = jobs.id)"
+   and remove the submission-deleting step entirely. If a scaffold has ANY
+   submissions — invited, submitted, whatever status — leave both the job
+   and the submissions alone, regardless of how old it is.
+
+3. Check message_threads for the same risk — does it have a jobId
+   reference to these scaffold jobs? If a real message thread exists tied
+   to a scaffold job that the (fixed) DDL would still leave alone because
+   it has submissions, confirm the thread stays intact. If the DDL's
+   current version would have hit a message_threads FK too, report that.
+
+4. Re-run the corrected DDL in dev only, and this time report the full
+   content of every row it deletes before deleting it — not a count, the
+   actual rows — so this can be visually confirmed as genuinely inert
+   before it's trusted against production.
+
+Do not redeploy anything until this is resolved and confirmed safe.

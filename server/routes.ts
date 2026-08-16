@@ -1171,27 +1171,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  Scaffold approval_status reset skipped:", scaffoldResetErr.message);
   }
 
-  // Cleanup pass 2: delete stale draft scaffold jobs. They are auto-generated, never
-  // shown to talent (status='draft'), never applied to, and now fully filtered from all
-  // client-facing queries. Keeping them just grows the table indefinitely.
-  // The status='draft' guard preserves any scaffold that was somehow manually promoted.
-  // We first remove any orphaned job_submissions rows (FK constraint) before the job delete.
+  // Cleanup pass 2: delete stale draft scaffold jobs that have NO attached submissions.
+  // IMPORTANT: scaffold jobs with status='draft' CAN have real job_submissions rows —
+  // the Search-to-Shortlist invitation flow creates submissions (status='invited'/'submitted',
+  // initiated_by='client') on scaffold jobs. A scaffold with ANY submission — regardless
+  // of its own status — must never be deleted. Only scaffolds with zero submissions are inert.
   try {
-    await query(`
-      DELETE FROM job_submissions
-      WHERE job_id IN (
-        SELECT id FROM jobs
-        WHERE created_via = 'search_scaffold'
-          AND status = 'draft'
-      )
-    `);
     const scaffoldDelete = await query(`
       DELETE FROM jobs
       WHERE created_via = 'search_scaffold'
         AND status = 'draft'
+        AND NOT EXISTS (
+          SELECT 1 FROM job_submissions WHERE job_id = jobs.id
+        )
     `);
     if (scaffoldDelete.rowCount && scaffoldDelete.rowCount > 0) {
-      console.log(`✅ Migration: deleted ${scaffoldDelete.rowCount} stale draft scaffold job(s)`);
+      console.log(`✅ Migration: deleted ${scaffoldDelete.rowCount} stale draft scaffold job(s) with no submissions`);
     }
   } catch (scaffoldDeleteErr: any) {
     console.warn("⚠️  Scaffold draft cleanup skipped:", scaffoldDeleteErr.message);
