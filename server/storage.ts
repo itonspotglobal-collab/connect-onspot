@@ -237,6 +237,23 @@ export interface IStorage {
     candidate: Record<string, any>;
   }>>;
 
+  /**
+   * Score all candidates against a set of search parameters WITHOUT writing
+   * any row to the database. Used for the public anonymous search endpoint.
+   */
+  rankTalentByParams(params: {
+    title: string;
+    category: string;
+    engagementType: string;
+  }, limit?: number): Promise<Array<{
+    candidateId: string;
+    userId: string;
+    score: number;
+    overlapSkills: string[];
+    matchReasons: Record<string, any>;
+    candidate: Record<string, any>;
+  }>>;
+
   // LinkedIn Integration
   getLinkedinProfile(id: string): Promise<any | undefined>;
   getLinkedinProfileByUserId(userId: string): Promise<any | undefined>;
@@ -1451,6 +1468,100 @@ export class MemStorage implements IStorage {
     return results
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
+  }
+
+  /**
+   * Score all candidates against search parameters without persisting any DB row.
+   * Used by the public anonymous search endpoint — no writes, no auth required.
+   */
+  async rankTalentByParams(
+    params: { title: string; category: string; engagementType: string },
+    limit = 30,
+  ): Promise<Array<{
+    candidateId: string;
+    userId: string;
+    score: number;
+    overlapSkills: string[];
+    matchReasons: Record<string, any>;
+    candidate: Record<string, any>;
+  }>> {
+    // Derive skill keywords from title — same stop-word extraction used by the route.
+    const STOP_WORDS = new Set([
+      'a','an','the','and','or','of','in','for','with','to','on','at','is','are',
+      'be','as','by','i','we','you','they','it','this','that','looking','need',
+      'experience','who','has','have','their','our','your','role','position','job',
+      'senior','junior','mid','level','developer','engineer','manager','specialist',
+      'consultant','lead','team','strong','good','great','excellent','proficient',
+    ]);
+    const skillTags = Array.from(new Set(
+      params.title
+        .split(/[\s,/+|&()\-]+/)
+        .map((t) => t.replace(/[^a-zA-Z0-9#+.]/g, '').trim())
+        .filter((t) => t.length >= 2 && !STOP_WORDS.has(t.toLowerCase()))
+        .slice(0, 10),
+    ));
+
+    // Virtual job object — same shape expected by scoreJobForCandidate.
+    // No id, no DB row: scoring is pure in-memory.
+    const virtualJob: any = {
+      id: `virtual-${Date.now()}`,
+      title: params.title,
+      category: params.category,
+      engagementType: params.engagementType,
+      experienceLevel: 'Mid-level',
+      skills: skillTags,
+      budget: null,
+      budgetCurrency: 'PHP',
+      timeZone: null,
+      createdAt: new Date(),
+      status: 'draft',
+    };
+
+    const candidatesRes = await dbQuery(
+      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+    );
+
+    const results: Array<{
+      candidateId: string;
+      userId: string;
+      score: number;
+      overlapSkills: string[];
+      matchReasons: Record<string, any>;
+      candidate: Record<string, any>;
+    }> = [];
+
+    for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
+      try {
+        const [userSkills, profile, candidate] = await Promise.all([
+          this.getUserSkillsWithNames(row.user_id),
+          this.getProfileByUserId(row.user_id),
+          this.getCandidateByUserId(row.user_id),
+        ]);
+        let talentSkills = (userSkills as any[]).map((us) => us.skill?.name || '').filter(Boolean);
+        if (talentSkills.length === 0 && candidate) {
+          talentSkills = [
+            ...((candidate.coreSkills as string[]) ?? []),
+            ...((candidate.secondarySkills as string[]) ?? []),
+          ].filter(Boolean);
+        }
+        const { score, overlapSkills, matchReasons } = this.scoreJobForCandidate(
+          talentSkills, profile, candidate, virtualJob,
+        );
+        results.push({
+          candidateId: row.id,
+          userId: row.user_id,
+          score,
+          overlapSkills,
+          matchReasons,
+          candidate: (candidate ?? {}) as Record<string, any>,
+        });
+      } catch (err) {
+        console.error(`❌ rankTalentByParams failed for candidate ${row.id}:`, err);
+      }
+    }
+
+    console.log(`✅ rankTalentByParams: scored ${results.length} candidates for "${params.title}"`);
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   // Proposal Methods

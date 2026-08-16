@@ -75,7 +75,6 @@ import HireTalentPage from "@/pages/HireTalentPage";
 import PilotDashboard from "@/pages/PilotDashboard";
 import FAQ from "@/pages/FAQ";
 import TalentPool from "@/pages/TalentPool";
-import SearchToShortlist from "@/pages/SearchToShortlist";
 import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
@@ -112,6 +111,14 @@ function FindWorkRedirect() {
 function RedirectToHome() {
   const [, navigate] = useLocation();
   useEffect(() => { navigate("/"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
+// /client-search is replaced by /hire-talent (merged, single page).
+// This redirect keeps any bookmarked or linked URLs working.
+function ClientSearchRedirect() {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate("/hire-talent", { replace: true }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -168,7 +175,7 @@ function PublicRouter() {
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
-          <Route path="/client-search" component={SearchToShortlist} />
+          <Route path="/client-search" component={ClientSearchRedirect} />
           <Route path="/pilot/:pilotId" component={PilotDashboard} />
           <Route path="/pilot" component={PilotDashboard} />
           <Route path="/find-work" component={FindWorkRedirect} />
@@ -289,7 +296,7 @@ function ClientRouter() {
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/talent-pool" component={TalentPool} />
-          <Route path="/client-search" component={SearchToShortlist} />
+          <Route path="/client-search" component={ClientSearchRedirect} />
           <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />

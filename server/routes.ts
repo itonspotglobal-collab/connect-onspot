@@ -3,6 +3,7 @@ import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
+import { sanitizeSearchCandidate } from "./lib/clientSearchSanitize";
 import { containsPii } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
@@ -617,6 +618,21 @@ const applyLimiter = rateLimit({
       error: "RATE_LIMITED",
       message: "Too many applications submitted. Please wait a minute and try again.",
       retryAfter: secs,
+    });
+  },
+});
+
+// PUBLIC TALENT-SEARCH limiter — keyed by IP, 10 requests per minute.
+// The public endpoint does no DB writes; this rate limit guards scoring CPU cost.
+const publicSearchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 100 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `pubsearch:${ipKeyGenerator(req)}`,
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      error: "Too many search requests. Please wait a moment and try again.",
     });
   },
 });
@@ -9807,6 +9823,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/talent-search — public anonymous search. No DB write, no auth.
+  // Rate-limited by IP (10/min). Results pass through sanitizeSearchCandidate.
+  // Response shape: { results: [...] }  — no jobId since no scaffold row is created.
+  // The jobId (needed for invitations) only exists after the visitor authenticates
+  // and re-runs via the authenticated endpoint below.
+  app.post("/api/talent-search", publicSearchLimiter, async (req: Request, res: Response) => {
+    try {
+      const { searchText, category, engagementType = "Full-Time" } = req.body;
+      if (!searchText?.trim()) return res.status(400).json({ error: "searchText is required" });
+
+      const title = String(searchText).trim().slice(0, 120);
+      const resolvedCategory = category?.trim() || inferCategory(title);
+
+      const raw = await storage.rankTalentByParams(
+        { title, category: resolvedCategory, engagementType },
+        30,
+      );
+      const results = raw.map((r) => ({
+        ...r,
+        candidate: sanitizeSearchCandidate(r.candidate),
+      }));
+      return res.json({ results });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
   app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
     try {
@@ -9841,7 +9884,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } satisfies InsertJob);
       const jobId = scaffoldJob.id;
 
-      const results = await storage.rankTalentForJob(jobId, 30);
+      const raw = await storage.rankTalentForJob(jobId, 30);
+      // Sanitize every result through the shared allowlist — no raw candidate
+      // fields (email, phone, resumeUrl, etc.) must reach the client.
+      const results = raw.map((r) => ({
+        ...r,
+        candidate: sanitizeSearchCandidate(r.candidate),
+      }));
       return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
