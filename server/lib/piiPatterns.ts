@@ -41,12 +41,30 @@ const PHONE_PH_RE = /\b0[89]\d{2}[-.\s]?\d{3}[-.\s]?\d{4}\b/;
 // strings; excludes long numeric IDs embedded in words/URLs).
 const PHONE_DIGITS_RE = /(?<![a-zA-Z0-9])\d{10,}(?![a-zA-Z0-9])/;
 
+// Obfuscated email: "john at example dot com" / "jane AT gmail DOT org"
+// Matches: local-part (no spaces) + "at" + domain-word + "dot" + tld-word.
+// Local part: 1–64 chars (mirrors the standard EMAIL_RE minimum of 1 char).
+// TLD: 2–24 chars to cover modern long TLDs (.technology, .international, etc.).
+// Domain: at least 2 chars total (anchor char + 1–62 more).
+const EMAIL_WORDS_RE = /\b[a-zA-Z0-9_%+\-.]{1,64}\s+at\s+[a-zA-Z0-9][a-zA-Z0-9\-]{1,62}\s+dot\s+[a-zA-Z]{2,24}\b/i;
+
+// Obfuscated phone: digit-words in sequence — at least 7 consecutive digit-words
+// (space / dash / comma separated) to match a phone number length.
+// e.g. "zero nine one two three four five six seven"
+const DIGIT_WORD = "(?:zero|one|two|three|four|five|six|seven|eight|nine)";
+const PHONE_DIGIT_WORDS_RE = new RegExp(
+  `(?:${DIGIT_WORD}[\\s,\\-]*){6,}${DIGIT_WORD}`,
+  "i",
+);
+
 const PATTERNS: ReadonlyArray<RegExp> = [
   EMAIL_RE,
   PHONE_INTL_RE,
   PHONE_US_RE,
   PHONE_PH_RE,
   PHONE_DIGITS_RE,
+  EMAIL_WORDS_RE,
+  PHONE_DIGIT_WORDS_RE,
 ];
 
 // Also exported as PII_PATTERNS so test files can import by either name.

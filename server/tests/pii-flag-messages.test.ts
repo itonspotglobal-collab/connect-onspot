@@ -62,6 +62,60 @@ describe("containsPii — email addresses", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// (b2) Obfuscated contact details
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("containsPii — obfuscated emails (word substitution)", () => {
+  const cases = [
+    { label: "at/dot lowercase", text: "Reach me at john at example dot com please" },
+    { label: "at/dot uppercase", text: "My address is JOHN AT GMAIL DOT COM" },
+    { label: "at/dot mixed case", text: "Contact: jane.doe At company Dot org" },
+    { label: "at/dot with plus-style local", text: "Use alice+work at mail dot co" },
+    { label: "at/dot short tld", text: "Send to bob at mycompany dot io" },
+    { label: "single-char local part", text: "My address: a at example dot com" },
+    { label: "long modern TLD (.technology)", text: "Reach me at info at mycompany dot technology" },
+    { label: "long modern TLD (.international)", text: "Email is jane at acme dot international" },
+  ];
+
+  for (const { label, text } of cases) {
+    it(`flags: ${label}`, () => {
+      assert.strictEqual(containsPii(text), true, `Expected PII in: "${text}"`);
+    });
+  }
+});
+
+describe("containsPii — obfuscated phone numbers (digit words)", () => {
+  const cases = [
+    {
+      label: "nine digit-words spaced",
+      text: "Call me: zero nine one two three four five six seven",
+    },
+    {
+      label: "ten digit-words no spaces between some",
+      text: "My number is zero nine one two three four five six seven eight",
+    },
+    {
+      label: "digit-words comma-separated",
+      text: "zero, nine, one, two, three, four, five, six, seven",
+    },
+    {
+      label: "digit-words dash-separated",
+      text: "zero-nine-one-two-three-four-five-six-seven",
+    },
+    {
+      label: "digit-words mixed case",
+      text: "Zero Nine One Two Three Four Five Six Seven",
+    },
+  ];
+
+  for (const { label, text } of cases) {
+    it(`flags: ${label}`, () => {
+      assert.strictEqual(containsPii(text), true, `Expected PII in: "${text}"`);
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // (c) Clean messages — no false positives on normal chat
 // ─────────────────────────────────────────────────────────────────────────────
 
