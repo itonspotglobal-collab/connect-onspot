@@ -9293,6 +9293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           j.proposal_count AS "proposalCount"
          FROM jobs j
          WHERE j.client_id = $1
+           AND (j.created_via IS DISTINCT FROM 'search_scaffold')
          ORDER BY j.created_at DESC`,
         [userId],
       );
@@ -9501,7 +9502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // return raw results, the HTTP-level integration test catches it independently.
 
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
-  app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -9560,7 +9561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
   // engagement type. Avoids creating a duplicate scaffold job per filter change.
-  app.patch("/api/client/talent-search/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/client/talent-search/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -9590,7 +9591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/client/invitations — invite a specific talent to a scaffold job
-  app.post("/api/client/invitations", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });
@@ -9669,10 +9670,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/talent/invitations — talent sees their pending role invitations
-  app.get("/api/talent/invitations", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/talent/invitations", authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const candidateId = (req as any).talentAuth?.candidateId;
+      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
 
       const result = await query(
         `SELECT js.id,
@@ -9691,7 +9692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
          WHERE js.talent_id = $1
            AND js.status = 'invited'
          ORDER BY js.created_at DESC`,
-        [userId],
+        [candidateId],
       );
 
       return res.json(result.rows);
@@ -9701,10 +9702,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/talent/invitations/:id/respond — accept (→ submitted) or decline an invitation
-  app.post("/api/talent/invitations/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/talent/invitations/:id/respond", authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const candidateId = (req as any).talentAuth?.candidateId;
+      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
       const { action } = req.body;
@@ -9715,7 +9716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify ownership and that the invitation is still pending
       const check = await query(
         `SELECT id, status FROM job_submissions WHERE id = $1 AND talent_id = $2`,
-        [id, userId],
+        [id, candidateId],
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
       if (check.rows[0].status !== "invited") {

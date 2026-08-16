@@ -501,12 +501,38 @@ app.use((req, res, next) => {
 
   // Periodically remove orphaned search_scaffold jobs (older than 7 days, no invitations)
   const SCAFFOLD_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  // Alert threshold: if this many orphaned scaffold jobs remain after a cleanup pass,
+  // something is likely broken (DB errors, missed deletes, etc.).
+  const DEFAULT_SCAFFOLD_ORPHAN_ALERT_THRESHOLD = 50;
+  const parsedThreshold = parseInt(process.env.SCAFFOLD_ORPHAN_ALERT_THRESHOLD || '', 10);
+  const SCAFFOLD_ORPHAN_ALERT_THRESHOLD =
+    Number.isFinite(parsedThreshold) && parsedThreshold >= 0
+      ? parsedThreshold
+      : DEFAULT_SCAFFOLD_ORPHAN_ALERT_THRESHOLD;
+  if (process.env.SCAFFOLD_ORPHAN_ALERT_THRESHOLD && !Number.isFinite(parsedThreshold)) {
+    console.warn(
+      `⚠️  SCAFFOLD_ORPHAN_ALERT_THRESHOLD env var is not a valid integer ("${process.env.SCAFFOLD_ORPHAN_ALERT_THRESHOLD}"); using default of ${DEFAULT_SCAFFOLD_ORPHAN_ALERT_THRESHOLD}`,
+    );
+  }
   const runScaffoldCleanup = async () => {
     try {
       const { storage: st } = await import('./storage');
-      const deleted = await (st as any).cleanupOrphanedScaffoldJobs();
+      const deleted = await st.cleanupOrphanedScaffoldJobs();
       if (deleted > 0) {
         console.log(`🧹 Scaffold cleanup: removed ${deleted} orphaned search_scaffold job(s)`);
+      }
+
+      // Post-cleanup health check: alert if too many orphans remain
+      const remaining = await st.countOrphanedScaffoldJobs();
+      if (remaining > SCAFFOLD_ORPHAN_ALERT_THRESHOLD) {
+        const msg = `Scaffold job accumulation detected: ${remaining} orphaned search_scaffold jobs older than 7 days remain after cleanup (threshold: ${SCAFFOLD_ORPHAN_ALERT_THRESHOLD}). Cleanup may be failing silently.`;
+        console.error(`🚨 ${msg}`);
+        if (process.env.SENTRY_DSN) {
+          Sentry.captureMessage(msg, {
+            level: 'error',
+            tags: { subsystem: 'scaffold-cleanup', remainingCount: remaining },
+          });
+        }
       }
     } catch (err: any) {
       console.warn('⚠️  Scaffold cleanup error:', err.message);

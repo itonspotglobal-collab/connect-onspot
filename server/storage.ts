@@ -324,6 +324,10 @@ export interface IStorage {
   // Culture Evaluations
   upsertCultureEvaluation(candidateId: string, data: Omit<InsertCultureEvaluation, "candidateId">): Promise<CultureEvaluation>;
   getCultureEvaluationByCandidate(candidateId: string): Promise<CultureEvaluation | undefined>;
+
+  // Scaffold job maintenance
+  cleanupOrphanedScaffoldJobs(): Promise<number>;
+  countOrphanedScaffoldJobs(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -2748,6 +2752,9 @@ export class MemStorage implements IStorage {
   }
 
   async getCultureEvaluationByCandidate(_candidateId: string): Promise<CultureEvaluation | undefined> { return undefined; }
+
+  async cleanupOrphanedScaffoldJobs(): Promise<number> { return 0; }
+  async countOrphanedScaffoldJobs(): Promise<number> { return 0; }
 }
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
@@ -3599,6 +3606,23 @@ export class DbStorage extends MemStorage {
          )`,
     );
     return result.rowCount ?? 0;
+  }
+
+  /**
+   * Count search_scaffold jobs older than 7 days that have no associated
+   * job_submissions rows. Called after cleanup to detect stuck/accumulating rows.
+   */
+  async countOrphanedScaffoldJobs(): Promise<number> {
+    const result = await dbQuery(
+      `SELECT COUNT(*)::int AS cnt
+       FROM jobs
+       WHERE created_via = 'search_scaffold'
+         AND created_at < NOW() - INTERVAL '7 days'
+         AND id NOT IN (
+           SELECT DISTINCT job_id FROM job_submissions WHERE job_id IS NOT NULL
+         )`,
+    );
+    return result.rows[0]?.cnt ?? 0;
   }
 }
 
