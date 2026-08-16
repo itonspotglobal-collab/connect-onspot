@@ -1,0 +1,66 @@
+PART 3 — Stale logo/branding in the preview popup and sign-up flow
+
+The Preview popup and the "Create account to shortlist" flow it triggers for
+anonymous visitors are both showing an old logo/old design — not the current
+brand.
+
+1. Identify exactly where the old logo is coming from — is it a hardcoded
+   image reference in the reused popup component (inherited from
+   TalentPool's ProfileModal, which may have its own stale asset), in
+   whatever sign-up/login dialog "Create account to shortlist" opens, or
+   something else entirely? Report the specific file(s) and asset path(s).
+
+2. Find what the CURRENT, correct logo reference is — check how the main
+   nav bar or another known-current part of the app references the logo —
+   and make the popup and sign-up flow use that same reference, not a
+   separate/stale copy of the asset.
+
+3. Confirm there isn't a broader pattern here: search for any other
+   hardcoded/duplicate logo references across the app that might be equally
+   stale, rather than everything pointing to one canonical asset. Report
+   what you find — don't fix silently if it's a larger pattern, same
+   discipline as the inline-copy test audit earlier in this build.
+
+Report back with what you found and what you fixed before moving to the next
+part.
+
+PART 4 — Most-common-searches suggestion chips
+
+Change the suggestion chips under the search bar on /hire-talent to reflect
+the MOST COMMON ACTUAL SEARCHES users have typed, not job-posting volume by
+category (the current data source).
+
+Design constraint, given the anonymous-search security decision already
+made: do NOT log one row per individual search request, especially for the
+unauthenticated /api/talent-search endpoint — that recreates the exact
+DB-flooding risk that endpoint was specifically designed to avoid by not
+writing a row per anonymous request. Instead:
+
+1. Add a lightweight aggregation table (e.g. search_query_frequency:
+   normalized_query text, count integer, last_searched_at timestamp) —
+   normalize the query text (lowercase, trim, strip punctuation) before
+   matching, so "Manage my inbox!" and "manage my inbox" count as the same
+   entry. UPSERT with an incrementing count, not an INSERT per search.
+
+2. This applies to BOTH /api/talent-search (anonymous) and
+   /api/client/talent-search (authenticated) — every real search increments
+   the matching normalized-query count, regardless of which endpoint.
+
+3. Update GET /api/client/talent-search/suggestions (or create a variant
+   used by /hire-talent specifically) to return the top 4-6 normalized
+   queries by count, instead of top categories by job volume. Decide and
+   confirm whether category-volume should stay as a fallback for when
+   there's insufficient search history yet (e.g., fewer than some threshold
+   of total searches logged) — don't show an empty or single chip if real
+   search data is still thin.
+
+4. Keep the existing static phrase-mapping approach as the fallback source
+   if real query volume is too thin, but the primary source is now real
+   user query text, lightly cleaned up for display (e.g., capitalize first
+   letter) rather than a hand-written phrase per category.
+
+Report back with real data: after some test searches, show the actual
+aggregation table contents and confirm the chips reflect real frequency, not
+a static list.
+
+Work Part 3 first, report back, then proceed to Part 4.

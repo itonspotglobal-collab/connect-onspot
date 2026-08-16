@@ -1131,6 +1131,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ON CONFLICT (key) DO NOTHING
     `);
     console.log("✅ Migration: platform_settings table ready");
+
+  // ── search_query_frequency — aggregate real search query volume for chips ──
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS search_query_frequency (
+        normalized_query text PRIMARY KEY,
+        count            integer NOT NULL DEFAULT 1,
+        last_searched_at timestamptz NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log("✅ Migration: search_query_frequency table ready");
+  } catch (sqfErr: any) {
+    console.warn("⚠️  search_query_frequency migration skipped:", sqfErr.message);
+  }
   } catch (migErr: any) {
     console.warn("⚠️  platform_settings migration skipped:", migErr.message);
   }
@@ -9869,6 +9883,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== SEARCH-TO-SHORTLIST (Client-initiated talent discovery) ======
 
+  // Normalize a raw search query for aggregation — lowercase, trim, collapse whitespace,
+  // strip punctuation — so "Manage my inbox!" and "manage my inbox" count as one entry.
+  function normalizeSearchQuery(raw: string): string {
+    return raw
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
+  }
+
+  // Fire-and-forget search query frequency UPSERT.
+  // Never throws — a failed write must never break the search response.
+  function recordSearchQuery(raw: string): void {
+    const normalized = normalizeSearchQuery(raw);
+    if (!normalized) return;
+    query(
+      `INSERT INTO search_query_frequency (normalized_query, count, last_searched_at)
+       VALUES ($1, 1, NOW())
+       ON CONFLICT (normalized_query)
+       DO UPDATE SET
+         count            = search_query_frequency.count + 1,
+         last_searched_at = NOW()`,
+      [normalized],
+    ).catch((err: any) =>
+      console.warn("⚠️  search_query_frequency upsert failed:", err.message),
+    );
+  }
+
   // GET /api/client/talent-search/suggestions — top-volume categories as suggestion chips
   // Returns [{ category, phrase }] for the top 5 categories by approved-job count.
   // The phrase mapping lives in the frontend (jobConstants.TALENT_CATEGORY_PHRASES);
@@ -9916,6 +9960,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return SERVER_BROWSE_ALIASES[key] ?? null;
       }
 
+      // ── Primary: real search query frequency ─────────────────────────────────
+      // Threshold: if at least 10 distinct searches have been recorded, use real
+      // query data so the chips reflect actual user intent. Below the threshold
+      // fall back to category-volume so early users still see useful chips.
+      const FREQUENCY_THRESHOLD = 10;
+      const totalRow = await query(
+        `SELECT COALESCE(SUM(count),0)::int AS total FROM search_query_frequency`,
+      );
+      const totalSearches = Number(totalRow.rows[0]?.total ?? 0);
+
+      if (totalSearches >= FREQUENCY_THRESHOLD) {
+        const freqRows = await query(
+          `SELECT normalized_query, count
+           FROM search_query_frequency
+           ORDER BY count DESC, last_searched_at DESC
+           LIMIT 6`,
+        );
+        const chips = freqRows.rows.map((r: any) => ({
+          // Capitalize first letter for display; keep rest as-is (already lowercase)
+          query: r.normalized_query.charAt(0).toUpperCase() + r.normalized_query.slice(1),
+          count: Number(r.count),
+        }));
+        return res.json(chips);
+      }
+
+      // ── Fallback: category job-posting volume ─────────────────────────────────
       const rows = await query(
         `SELECT COALESCE(NULLIF(job_function,''), category) AS raw_cat, COUNT(*) AS cnt
          FROM jobs
@@ -9964,6 +10034,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...r,
         candidate: sanitizeSearchCandidate(r.candidate),
       }));
+      // Record query frequency (fire-and-forget — never blocks the response)
+      recordSearchQuery(title);
       return res.json({ results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -10011,6 +10083,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...r,
         candidate: sanitizeSearchCandidate(r.candidate),
       }));
+      // Record query frequency (fire-and-forget — never blocks the response)
+      recordSearchQuery(title);
       return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authAPI } from "@/lib/api";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 // Legacy dev-session keys — kept for backward compat with any code that reads them,
 // but no longer written to by this component.

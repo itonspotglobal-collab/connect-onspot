@@ -12,7 +12,7 @@ import { Building, User, Shield, Zap, Mail, CheckCircle, AlertCircle, ArrowRight
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 interface PortalSelectionDialogProps {
   open: boolean;

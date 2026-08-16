@@ -18,7 +18,7 @@ import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";

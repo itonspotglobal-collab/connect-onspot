@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { AlertTriangle, RefreshCw, Mail, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import onspotLogo from "@assets/OnSpot Log Full Purple Blue_1757942805752.png";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 interface OAuthErrorProps {
   error?: string;

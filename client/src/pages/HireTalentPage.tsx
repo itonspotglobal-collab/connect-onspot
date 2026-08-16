@@ -47,8 +47,13 @@ interface SearchResults {
   results: TalentResult[];
 }
 
+// Server returns one of two shapes depending on how much real data exists:
+//   real-query mode  → { query: string; count: number }
+//   fallback mode    → { category: string }
 interface Suggestion {
-  category: string;
+  query?: string;     // real-query mode
+  count?: number;
+  category?: string;  // fallback mode
 }
 
 interface PendingSearchState {
@@ -566,10 +571,16 @@ export default function HireTalentPage() {
 
   const suggestionChips = useMemo(
     () =>
-      suggestions.map((s) => ({
-        category: s.category,
-        phrase: TALENT_CATEGORY_PHRASES[s.category as TalentBrowseCategory] ?? s.category,
-      })),
+      suggestions.map((s) => {
+        // real-query mode: server sends { query, count }
+        if (s.query) return { key: s.query, phrase: s.query };
+        // fallback mode: server sends { category }
+        const cat = s.category ?? "";
+        return {
+          key: cat,
+          phrase: TALENT_CATEGORY_PHRASES[cat as TalentBrowseCategory] ?? cat,
+        };
+      }),
     [suggestions],
   );
 
@@ -796,12 +807,12 @@ export default function HireTalentPage() {
             </button>
           </div>
 
-          {/* Suggestion chips — dynamic from real job volume */}
+          {/* Suggestion chips — real query frequency when enough data, else category volume */}
           {suggestionChips.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
-              {suggestionChips.map(({ category, phrase }) => (
+              {suggestionChips.map(({ key, phrase }) => (
                 <button
-                  key={category}
+                  key={key}
                   type="button"
                   onClick={() => runSearch(phrase)}
                   className="text-[13px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-[13px] py-[6px] hover:border-[#474ead] hover:text-[#474ead] transition-[border-color,color] duration-150 cursor-pointer"
