@@ -1,6 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
+import { escHtml } from "./lib/escHtml";
+import { inferCategory } from "./lib/searchScaffold";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
