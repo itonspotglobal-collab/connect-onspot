@@ -1,0 +1,55 @@
+Firm product decision: the Hire Talent search bar must NEVER create a row
+in the jobs table, for any account type, logged in or not. Jobs may ONLY be
+created through the explicit "Post a Job" flow on the Client Profile.
+
+This is an architecture change, not a patch. Audit first:
+
+1. Confirm current state: POST /api/client/talent-search still creates/
+   reuses a search_scaffold job via storage.createJob, per the earlier
+   incident's fixes. This must stop entirely.
+
+2. Report every place that currently depends on this scaffold jobId:
+   POST /api/client/invitations (attaches job_submissions.job_id), the
+   PATCH rescore-on-filter-change endpoint, and anything else that reads or
+   writes against it.
+
+CHANGES REQUIRED:
+
+A. Convert POST /api/client/talent-search to the SAME non-persisting
+   approach already built for the anonymous endpoint (rankTalentByParams /
+   virtual in-memory job object) — no DB write, ever, for a logged-in
+   client's search either. Response shape should match the anonymous
+   endpoint's (no jobId returned, since there's nothing to return).
+
+B. The engagement-type rescore-on-filter-change should also become
+   non-persisting — recompute in-memory against the updated params, same
+   pattern as an anonymous re-search, not a PATCH against a stored row.
+
+C. Redesign the Invite/Shortlist flow: since there is no scaffold jobId
+   anymore, inviting a Talent requires the Client to select one of their
+   own EXISTING, real, open job postings (created via Post a Job) to
+   attach the invitation to.
+   - If the Client has one or more open jobs: show a job picker (dropdown
+     or similar) when they click Invite/Shortlist — "Invite [Talent] to
+     which role?"
+   - If the Client has ZERO open jobs: block the invite and prompt them to
+     post a job first, with a direct link/CTA into the Post a Job flow.
+     Do not silently create a job on their behalf to unblock this.
+
+D. Update the anonymous sign-up/sign-in pending-invite flow (sessionStorage
+   restore) to account for this: after a new Client signs up with a pending
+   invite intent, if they have no jobs yet, the flow should guide them to
+   post one first, then complete the invite against it — not silently
+   create a scaffold to bypass this.
+
+E. BACKWARD COMPATIBILITY — do not touch existing data: the current 5 real
+   production scaffold jobs that have real job_submissions/invitations
+   attached must be left alone. This change only stops NEW scaffolds from
+   being created going forward; it does not need to migrate or clean up
+   historical ones (they already have their own cleanup/exclusion rules
+   from the prior incident).
+
+Report back the audit findings first, then confirm your implementation plan
+for C and D specifically (the UX for "no jobs yet" is a real design
+decision — describe what you're building before writing it) before shipping
+this.
