@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useInvalidateUnreadMessages } from "@/hooks/useUnreadMessagesCount";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageSquare, Send, ArrowLeft } from "lucide-react";
@@ -54,6 +55,7 @@ function ThreadView({
   onBack: () => void;
 }) {
   const queryClient = useQueryClient();
+  const invalidateUnreadMessages = useInvalidateUnreadMessages();
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -66,9 +68,11 @@ function ThreadView({
     refetchInterval: 10_000,
   });
 
-  // Mark thread as read when opened
+  // Mark thread as read when opened — also clears the unread-messages nav badge
   useEffect(() => {
-    apiRequest("POST", `/api/message-threads/${thread.id}/mark-read`, {}).catch(() => {});
+    apiRequest("POST", `/api/message-threads/${thread.id}/mark-read`, {})
+      .then(() => invalidateUnreadMessages())
+      .catch(() => {});
   }, [thread.id]);
 
   useEffect(() => {

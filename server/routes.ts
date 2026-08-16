@@ -7239,6 +7239,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
       await storage.markMessagesAsRead(req.params.threadId, userId);
+      // Also mark any new_message notification for this thread as read so the
+      // unread badge in the talent nav clears when the thread is opened.
+      try {
+        const notifs = await storage.listNotificationsByUser(userId, true);
+        const threadNotifs = notifs.filter(
+          (n) => n.relatedId === req.params.threadId && n.type === "new_message",
+        );
+        await Promise.all(threadNotifs.map((n) => storage.markNotificationAsRead(n.id)));
+      } catch {
+        // Non-critical — badge will self-correct on next poll
+      }
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to mark messages as read" });

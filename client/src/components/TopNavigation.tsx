@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Flag,
+  MessageSquare,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -70,6 +71,7 @@ import {
   type TalentAuthState,
 } from "@/components/TalentLoginModal";
 import { useUnreadApplicationsCount } from "@/hooks/useTalentApplications";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
@@ -228,6 +230,8 @@ export function TopNavigation() {
 
   // ── Unread application status changes badge (talent) ──────────────────────
   const unreadAppsCount = useUnreadApplicationsCount();
+  // ── Unread message notifications badge (talent) ───────────────────────────
+  const unreadMsgsCount = useUnreadMessagesCount();
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   // Resolve candidate ID for talent users regardless of which auth path was used:
@@ -309,6 +313,7 @@ export function TopNavigation() {
     return [
       { label: "Talent Profile",       route: talentProfileRoute,   icon: User },
       { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
+      { label: "Messages",             route: "/messages",          icon: MessageSquare },
       { label: "Finish Profile Setup", route: finishSetupRoute,     icon: CheckCircle2 },
       { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
       { label: "Settings",             route: "/settings",          icon: Settings },
@@ -1119,6 +1124,26 @@ export function TopNavigation() {
                       </button>
                     </RadixDropdown.Item>
 
+                    {/* Messages */}
+                    <RadixDropdown.Item asChild>
+                      <button
+                        onClick={() => navigate("/messages")}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                        onFocus={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                        onBlur={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                      >
+                        <MessageSquare style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>Messages</span>
+                        {unreadMsgsCount > 0 && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18, borderRadius: 99, background: '#E5484D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '0 5px', flexShrink: 0 }}>
+                            {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
+                          </span>
+                        )}
+                      </button>
+                    </RadixDropdown.Item>
+
                     {/* Find Work */}
                     <RadixDropdown.Item asChild>
                       <button
@@ -1483,7 +1508,17 @@ export function TopNavigation() {
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
                 >
                   <Icon className="w-4 h-4 shrink-0 text-white/50" />
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  {label === "Messages" && unreadMsgsCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
+                      {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
+                    </span>
+                  )}
+                  {label === "My Applications" && unreadAppsCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
+                      {unreadAppsCount > 99 ? '99+' : unreadAppsCount}
+                    </span>
+                  )}
                 </button>
               ))}
               {/* Sign Out */}
@@ -1511,6 +1546,18 @@ export function TopNavigation() {
               >
                 <User className="w-4 h-4 shrink-0 text-white/50" />
                 Talent Profile
+              </button>
+              <button
+                onClick={() => { navigate("/messages"); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
+              >
+                <MessageSquare className="w-4 h-4 shrink-0 text-white/50" />
+                <span className="flex-1">Messages</span>
+                {unreadMsgsCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
+                    {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => { navigate("/find-work/jobs"); setIsMobileMenuOpen(false); }}
