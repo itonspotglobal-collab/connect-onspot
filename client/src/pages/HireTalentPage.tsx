@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2, AlertCircle } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
@@ -73,6 +74,321 @@ function getInitials(name?: string | null): string {
   );
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$", PHP: "\u20b1", EUR: "\u20ac", GBP: "\u00a3", AUD: "A$", CAD: "C$",
+};
+
+function formatRateDisplay(
+  amount: string,
+  currency: string,
+  engagementType?: string | null,
+): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+  const base = `${symbol}${amount}`;
+  return engagementType ? `${base} / ${engagementType}` : base;
+}
+
+// ─── Profile Preview Modal ─────────────────────────────────────────────────────
+// Same popup design as TalentPool ProfileModal — dark header, motion popup,
+// scrollable body, sticky footer CTA. Uses sanitized candidate data.
+
+function ProfilePreviewModal({
+  result,
+  open,
+  onClose,
+  isInvited,
+  isInviting,
+  isAnonymous,
+  onShortlist,
+}: {
+  result: TalentResult | null;
+  open: boolean;
+  onClose: () => void;
+  isInvited: boolean;
+  isInviting: boolean;
+  isAnonymous: boolean;
+  onShortlist: () => void;
+}) {
+  if (!result) return null;
+
+  const { candidate } = result;
+  const name = candidate.fullName ?? (candidate as any).full_name ?? "Talent Profile";
+
+  const prefs = candidate.preferences as Record<string, string> | null | undefined;
+  const rateAmount  = prefs?.rateAmount  ?? null;
+  const rateCurrency = prefs?.rateCurrency ?? "USD";
+  const rateET = prefs?.rateEngagementType ?? null;
+  const rateDisplay = rateAmount ? formatRateDisplay(rateAmount, rateCurrency, rateET) : null;
+  const workHistory = (candidate.workHistory as Array<Record<string, string>> | null) ?? [];
+
+  const portal = (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4 md:p-6"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 24, scale: 0.98 }}
+        transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+        className="relative z-10 flex w-[95vw] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_32px_80px_rgba(0,0,0,0.32)] dark:bg-[#0f172a] sm:w-[92vw] sm:rounded-[28px] lg:w-[820px] xl:w-[920px]"
+        style={{ maxHeight: "92vh" }}
+      >
+        {/* ── Dark header ── */}
+        <div className="relative shrink-0 overflow-hidden bg-[#0f172a] px-6 pb-6 pt-5 md:px-10">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[#474ead]/30 blur-[70px]" />
+
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/50 transition hover:bg-white/20 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          {/* Badges */}
+          <div className="relative mb-4 flex flex-wrap items-center gap-2">
+            {candidate.seniority && (
+              <span className="rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] text-white/60">
+                {candidate.seniority}
+              </span>
+            )}
+            {result.score > 0 && (
+              <span className="ml-auto rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400">
+                {result.score}% match
+              </span>
+            )}
+          </div>
+
+          <h2 className="relative text-2xl font-bold leading-tight text-white md:text-[28px]">
+            {name}
+          </h2>
+          {(candidate.targetPosition ?? (candidate as any).target_position) && (
+            <p className="mt-1.5 text-sm text-slate-400">
+              {candidate.targetPosition ?? (candidate as any).target_position}
+            </p>
+          )}
+
+          {/* Stat cards */}
+          <div className="relative mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:gap-3">
+            {[
+              {
+                Icon: Briefcase,
+                label: "Category",
+                value: candidate.category
+                  ? (resolveBrowseCategory(candidate.category) ?? candidate.category)
+                  : "—",
+              },
+              {
+                Icon: Clock3,
+                label: "Experience",
+                value: candidate.experienceYears ? `${candidate.experienceYears} yrs` : "—",
+              },
+              {
+                Icon: Globe2,
+                label: "Location",
+                value: candidate.location ?? "Philippines",
+              },
+              ...(rateDisplay ? [{ Icon: Star, label: "Rate", value: rateDisplay }] : []),
+            ].map(({ Icon, label, value }) => (
+              <div key={label} className="rounded-xl bg-white/[0.06] p-2.5 md:flex-1">
+                <div className="flex items-center gap-1 text-[10px] text-white/40">
+                  <Icon className="h-2.5 w-2.5" />
+                  {label}
+                </div>
+                <div className="mt-1 text-xs font-bold text-white/90">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 divide-y divide-slate-100 overflow-y-auto dark:divide-white/10">
+
+          {/* Summary */}
+          {(candidate.headline || candidate.summary) && (
+            <div className="bg-[#474ead]/[0.04] px-6 py-5 md:px-10">
+              <div className="flex items-start gap-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#474ead]" />
+                <div>
+                  <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#474ead]">
+                    Profile Summary
+                  </p>
+                  {candidate.headline && (
+                    <p className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {candidate.headline}
+                    </p>
+                  )}
+                  {candidate.summary && (
+                    <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
+                      {candidate.summary}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Matched skills */}
+          {result.overlapSkills.length > 0 && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Matched Skills
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {result.overlapSkills.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full bg-[#474ead]/10 px-3 py-1 text-xs font-medium text-[#474ead]"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All skills */}
+          {((candidate.coreSkills ?? []).length > 0 || (candidate.secondarySkills ?? []).length > 0) && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Skills
+              </p>
+              <div className="space-y-3">
+                {(candidate.coreSkills ?? []).length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs text-slate-500">Core Skills</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(candidate.coreSkills ?? []).map((sk) => (
+                        <span key={sk} className="rounded-full bg-[#474ead]/10 px-3 py-1 text-xs font-medium text-[#474ead]">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(candidate.secondarySkills ?? []).length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs text-slate-500">Secondary Skills</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(candidate.secondarySkills ?? []).map((sk) => (
+                        <span key={sk} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Work History */}
+          {workHistory.length > 0 && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Work History
+              </p>
+              <div className="space-y-4">
+                {workHistory.map((wh, i) => {
+                  const role = wh.role ?? wh.jobTitle ?? "Role";
+                  const duration = wh.duration
+                    ?? (wh.startDate ? `${wh.startDate} – ${wh.endDate ?? "Present"}` : null);
+                  const desc = wh.description ?? wh.responsibilities ?? null;
+                  return (
+                    <div key={i} className="rounded-xl border border-slate-100 p-4 dark:border-white/[0.06]">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">{role}</p>
+                          {wh.company && <p className="text-sm text-slate-500">{wh.company}</p>}
+                        </div>
+                        {duration && (
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500 dark:bg-white/[0.06]">
+                            {duration}
+                          </span>
+                        )}
+                      </div>
+                      {desc && (
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{desc}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Preferences */}
+          {prefs && Object.keys(prefs).length > 0 && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Preferences
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(prefs).map(([k, v]) =>
+                  v ? (
+                    <span key={k} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700 dark:bg-white/[0.06] dark:text-slate-300">
+                      {v}
+                    </span>
+                  ) : null,
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer CTA ── */}
+        <div className="shrink-0 border-t border-slate-100 px-6 py-4 dark:border-white/10 md:px-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              disabled={isInvited || isInviting}
+              onClick={() => { onShortlist(); onClose(); }}
+              className={cn(
+                "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
+                isInvited
+                  ? "border border-emerald-400 text-emerald-600 cursor-default"
+                  : "bg-[#474ead] hover:bg-[#3d439c] text-white",
+              )}
+            >
+              {isInviting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing…
+                </span>
+              ) : isInvited ? (
+                <span className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5" /> Invited
+                </span>
+              ) : isAnonymous ? (
+                "Create account to shortlist"
+              ) : (
+                "Shortlist this talent"
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors dark:border-white/10 dark:text-slate-400"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  return open ? createPortal(portal, document.body) : null;
+}
+
 // ─── Result Row ───────────────────────────────────────────────────────────────
 
 function ResultRow({
@@ -81,12 +397,14 @@ function ResultRow({
   isInviting,
   isAnonymous,
   onShortlist,
+  onPreview,
 }: {
   result: TalentResult;
   isInvited: boolean;
   isInviting: boolean;
   isAnonymous: boolean;
   onShortlist: () => void;
+  onPreview: () => void;
 }) {
   const { candidate } = result;
 
@@ -145,12 +463,23 @@ function ResultRow({
         </p>
       </div>
 
-      {/* Shortlist button */}
+      {/* Action buttons */}
+      <div className="shrink-0 flex items-center gap-2">
+        {/* Preview */}
+        <button
+          onClick={onPreview}
+          className="rounded-[10px] px-3.5 py-[7px] text-[13.5px] font-semibold border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-[#474ead] hover:text-[#474ead] transition-colors duration-150 flex items-center gap-1.5"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          Preview
+        </button>
+
+        {/* Shortlist */}
       <button
         disabled={isInvited || isInviting}
         onClick={onShortlist}
         className={cn(
-          "shrink-0 rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
+          "rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
           isInvited
             ? "border-emerald-400 text-emerald-600 cursor-default"
             : isAnonymous
@@ -169,6 +498,7 @@ function ResultRow({
           "Shortlist"
         )}
       </button>
+      </div>
     </div>
   );
 }
@@ -210,6 +540,9 @@ export default function HireTalentPage() {
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
+
+  // ── Profile preview sheet ──────────────────────────────────────────────────────
+  const [previewResult, setPreviewResult] = useState<TalentResult | null>(null);
 
   // ── Pending invite confirmation (restored after sign-up) ──────────────────────
   const [pendingInvite, setPendingInvite] = useState<{
@@ -622,6 +955,7 @@ export default function HireTalentPage() {
                     isAnonymous={isAnonymous}
                     isInvited={invitedIds.has(r.userId)}
                     isInviting={invitingId === r.userId}
+                    onPreview={() => setPreviewResult(r)}
                     onShortlist={() =>
                       handleShortlist(
                         r.userId,
@@ -706,6 +1040,27 @@ export default function HireTalentPage() {
         hideTrigger
         onSignInInstead={() => { setShowSignUp(false); }}
       />
+
+      {/* ── Profile preview modal ── */}
+      <AnimatePresence>
+        {previewResult && (
+          <ProfilePreviewModal
+            result={previewResult}
+            open={true}
+            onClose={() => setPreviewResult(null)}
+            isAnonymous={isAnonymous}
+            isInvited={invitedIds.has(previewResult.userId)}
+            isInviting={invitingId === previewResult.userId}
+            onShortlist={() => {
+              if (!previewResult) return;
+              handleShortlist(
+                previewResult.userId,
+                previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+              );
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
