@@ -1303,7 +1303,16 @@ export default function AdminJobApplications() {
                       <p className="text-slate-700">{app.email}</p>
                       {app.phone && <p className="text-xs text-slate-400">{app.phone}</p>}
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={app.status} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        <StatusBadge status={app.status} />
+                        {app.initiatedBy === "client" && (
+                          <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                            Client invited
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3"><RegBadge status={app.registrationStatus} /></td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmtDate(app.submittedAt)}</td>
                     <td className="px-4 py-3">
@@ -1362,6 +1371,11 @@ export default function AdminJobApplications() {
                 <div className="flex flex-wrap gap-1.5">
                   <StatusBadge status={app.status} />
                   <RegBadge status={app.registrationStatus} />
+                  {app.initiatedBy === "client" && (
+                    <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                      Client invited
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => setDetailId(app.id)}>
