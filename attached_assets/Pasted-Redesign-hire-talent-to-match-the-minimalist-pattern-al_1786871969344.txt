@@ -1,0 +1,58 @@
+Redesign /hire-talent to match the minimalist pattern already built and
+proven on /client-search. Before implementing anything, audit first:
+
+1. What does /hire-talent currently render — a distinct route/component, or
+   is it effectively an alias pointing at the same SearchToShortlist feature?
+   Report the actual route registration and component file.
+
+2. Does /hire-talent currently require an authenticated Client JWT to run a
+   search (like /client-search does — 401 on unauthenticated requests), or
+   is it reachable by anonymous/logged-out visitors?
+
+3. If it's a SEPARATE page from /client-search: does it duplicate the search/
+   results logic, or does it need that logic built from scratch? I don't
+   want two independently-maintained copies of the same search+results code
+   if this can reuse what's already built and traced.
+
+STOP after the audit and report back before proceeding if answer to #2 is
+that /hire-talent is (or should be) reachable by logged-out visitors. That is
+a real authentication-model change, not a visual one — if search currently
+requires auth and this page needs to work for anonymous visitors, the right
+pattern is: let search run without a Client JWT, but gate the Shortlist/
+Invite action behind login (prompt sign-up/sign-in only at that point, not
+before). Do NOT implement that auth change without my explicit confirmation
+first — just tell me if it's needed and I'll confirm.
+
+DESIGN — apply once the above is resolved:
+
+Reference the already-built minimalist design directly (same file used for
+/client-search): Google-style progressive reveal — page loads with ONLY a
+centered search input + suggestion chips, vertically centered, nothing else
+visible. On search action (submit, Enter, or chip click): search bar lifts
+to a compact top bar, results reveal below as a single-column list of rows
+(not cards) — avatar, name, one inline status/match signal, one-line
+description, single Shortlist/Invite button per row. Filters (10 category
+chips + engagement type) collapse behind a single "Refine ▾" toggle, hidden
+by default. No skill-tag chips in the row view. No colored banner boxes —
+plain text for secondary messaging.
+
+TERMINOLOGY — enforce throughout, consistent with the rest of this build:
+- "Engagement Type" (Half-Day / Full-Time only) — never hourly, never
+  "Employment Type"
+- "Talent" / "Client" — never "candidate" / "company"
+- The 10 canonical categories already established: Customer Support,
+  Virtual Assistants, Developers, Designers, Marketing Specialists,
+  Accountants, Healthcare Professionals, Sales Representatives, Operations
+  Specialists, IT & Technical Support
+- No "Pre-vetted by OnSpot" claim anywhere (OnSpot Screening isn't built
+  yet) — use "AI-matched profile" instead, same as /client-search
+- Suggestion chips must be the same dynamic, data-driven list already built
+  (GET /api/client/talent-search/suggestions, top categories by real job
+  volume, mapped through the static phrase list already in jobConstants.ts)
+  — do not hardcode placeholder chip text
+
+After implementing, provide real evidence, not a code description: a real
+end-to-end trace (or reused trace if this is the same underlying feature)
+showing the empty state, the active state with results, the Refine toggle
+expanded, and a successful Shortlist/Invite action — screenshots plus actual
+API/DB confirmation, the same standard as every other feature in this build.
