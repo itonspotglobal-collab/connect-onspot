@@ -192,7 +192,7 @@ function ViewSubmissionModal({
               <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                 {submission.status === "declined"
                   ? "This talent declined the invitation — their identity remains private."
-                  : "Awaiting talent response — full identity reveals once they accept."}
+                  : "Awaiting talent response — name and email reveal once they accept."}
               </p>
             </div>
           )}
@@ -1001,7 +1001,7 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
                       </div>
                       {isPendingOrDeclinedInvite(sub.initiated_by, sub.status) ? (
                         <p className="text-[10px] text-slate-400 italic">
-                          {sub.status === "declined" ? "Invitation declined" : "Name reveals when talent accepts"}
+                          {sub.status === "declined" ? "Invitation declined" : "Name and email reveal when talent accepts"}
                         </p>
                       ) : (
                         <p className="text-xs text-slate-500">{sub.email}</p>
