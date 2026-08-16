@@ -1,0 +1,39 @@
+I want Admin's job-posting UI to be the same form as the Client's — same fields,
+same layout, same validation, same component. Before merging anything, audit
+first:
+
+1. Compare the Admin job-creation form/component against the Client job-creation
+   form/component, field by field. Report:
+   - Any fields present in one but not the other
+   - Any field that exists in both but is implemented differently (different
+     validation, different default, different underlying column)
+   - Whether the Admin form has any legacy references left over from the
+     contract_type/hourly migration that the Client form doesn't (given the
+     admin routes needed separate #134 guards earlier, I want to know if the
+     UI similarly diverged and was never fully migrated)
+
+2. Report whether Admin's form has any fields that serve a real purpose the
+   Client's form doesn't need — e.g. internal notes, priority/SLA flags for
+   managed-service requests, anything tied to the Path B "Request Recruitment
+   Support" workflow. Don't silently drop these — list them so we can decide
+   whether they become an Admin-only additional section appended to the shared
+   form, or whether they're not actually needed.
+
+Once you report the diff, here's the direction — confirm and implement:
+
+- The Client-side form/fields are canonical. Rebuild Admin's job creation to
+  use the exact same shared component, not a parallel implementation.
+- The ONE addition for the Admin context: a Client selector (required, since
+  Admin isn't the implicit owner the way a self-serve Client is). Everything
+  else — Engagement Type, rate, description, requirements, all of it —
+  identical fields, identical validation, identical layout.
+- Confirm what gets set on the underlying jobs row when Admin creates it:
+  which client_id, and whether there's a way to mark this job as
+  admin-created-on-behalf-of vs. self-serve (a source_path or similar column)
+  — report whether that distinction already exists in the schema or needs
+  adding. Don't guess; tell me what's actually there.
+
+After the merge, run a real end-to-end test: log in as Admin, select a real
+Client, create and publish a job through the unified form, then confirm it
+appears correctly on that Client's own job list when logged in as that Client.
+Report the actual result, not just that the code path looks right.

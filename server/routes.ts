@@ -5964,36 +5964,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/clients — list all users with role='client' for the admin job-creation selector
+  app.get("/api/admin/clients", async (req: Request, res: Response) => {
+    try {
+      const { query: dbQuery } = await import('./db');
+      const result = await dbQuery(`
+        SELECT u.id, u.email, cp.company_name
+        FROM users u
+        LEFT JOIN client_profiles cp ON cp.user_id = u.id
+        WHERE u.role = 'client'
+        ORDER BY u.email
+      `);
+      res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/clients error:", err);
+      res.status(500).json({ error: "Failed to fetch clients" });
+    }
+  });
+
   app.post("/api/admin/jobs", async (req: Request, res: Response) => {
     try {
-      // Find an admin user to use as the clientId (avoids FK constraint violation)
-      const adminUsers = await db
-        .select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.role, "admin"))
-        .limit(1);
+      const { clientId: rawClientId } = req.body;
 
-      let clientId: string | undefined =
-        adminUsers.length > 0 ? adminUsers[0].id : undefined;
-
-      // Fall back to any existing user if no admin user found
-      if (!clientId) {
-        const anyUser = await db
-          .select({ id: usersTable.id })
-          .from(usersTable)
-          .limit(1);
-        clientId = anyUser.length > 0 ? anyUser[0].id : undefined;
-      }
-
-      if (!clientId) {
-        return res.status(500).json({
-          error: "Job creation failed",
-          message: "No users found in database. At least one user is required to create a job.",
+      if (!rawClientId || rawClientId === "admin-system") {
+        return res.status(400).json({
+          error: "Client required",
+          message: "A client must be selected when creating a job as admin.",
         });
       }
 
-      // Admin-created jobs start as pending and require approval before going public
-      const body = { ...req.body, clientId, approvalStatus: "pending" };
+      // Validate the clientId is a real user
+      const clientUser = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.id, rawClientId))
+        .limit(1);
+
+      if (clientUser.length === 0) {
+        return res.status(400).json({
+          error: "Invalid client",
+          message: "The selected client does not exist.",
+        });
+      }
+
+      // Admin-created jobs: isClientSubmitted stays false (distinguishes from self-serve)
+      const body = { ...req.body, clientId: rawClientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       // Guard: published jobs must have a valid engagement type

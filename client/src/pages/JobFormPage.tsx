@@ -636,6 +636,7 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
   // Flags
   payload.isFeatured = formData.isFeatured;
   payload.urgentlyHiring = formData.urgentlyHiring;
+  payload.requiresResume = formData.requiresResume;
   payload.requiresVideoIntro = formData.requiresVideoIntro;
   payload.isCompanyConfidential = formData.isCompanyConfidential;
   payload.confidentialClientOverview =

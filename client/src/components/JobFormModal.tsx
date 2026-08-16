@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -68,6 +68,12 @@ const BADGE_ICONS: Record<string, React.ElementType> = {
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
+interface ClientOption {
+  id: string;
+  email: string;
+  company_name: string | null;
+}
+
 interface JobFormModalProps {
   open: boolean;
   onClose: () => void;
@@ -78,10 +84,16 @@ interface JobFormModalProps {
   clientMode?: boolean;
   /** Pre-fill the company name (used in client mode) */
   defaultCompany?: string;
+  /**
+   * When true, renders a required Client selector at the top and posts
+   * to /api/admin/jobs with the chosen client's user ID as clientId.
+   * Mutually exclusive with clientMode.
+   */
+  adminMode?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false, defaultCompany }: JobFormModalProps) {
+export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false, defaultCompany, adminMode = false }: JobFormModalProps) {
   const { toast } = useToast();
   const isEditing = job !== null;
 
@@ -91,6 +103,16 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
   const [formData, setFormData] = useState<JobFormData>(baseDefault);
   const [errors, setErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [clientError, setClientError] = useState<string>("");
+
+  // Fetch client list for the admin job-creation selector
+  const { data: clientList } = useQuery<ClientOption[]>({
+    queryKey: ["/api/admin/clients"],
+    queryFn: () => apiRequest("GET", "/api/admin/clients").then((r) => r.json()),
+    enabled: adminMode,
+    staleTime: 60_000,
+  });
 
   // Only seed/reset the form when the modal transitions from closed → open.
   const prevOpenRef = useRef(false);
@@ -99,6 +121,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       const base = clientMode && defaultCompany ? { ...defaultFormData, company: defaultCompany } : defaultFormData;
       setFormData(job ? jobToFormData(job) : base);
       setErrors({});
+      setSelectedClientId("");
+      setClientError("");
     }
     prevOpenRef.current = open;
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,6 +197,12 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
   };
 
   const validate = (): boolean => {
+    // Admin mode: client selector is required on create
+    if (adminMode && !isEditing && !selectedClientId) {
+      setClientError("Please select a client");
+      return false;
+    }
+    setClientError("");
     const next: Partial<Record<keyof JobFormData, string>> = {};
     if (!formData.professionalRoleName.trim()) next.professionalRoleName = "Professional role name is required";
     // Note: "Confidential" is a valid company name for admin-posted jobs — do not block it.
@@ -223,7 +253,10 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
         : null,
     };
 
-    if (!isEditing) payload.clientId = "admin-system";
+    // Admin mode: use the selected client's user ID.
+    // Client mode: server sets clientId from auth — don't send it.
+    // Legacy fallback removed; admin-system was never a real user.
+    if (!isEditing && !clientMode) payload.clientId = selectedClientId;
     payload.salaryDisplay = formData.salaryDisplay.trim() || null;
     if (formData.duration) payload.duration = formData.duration;
 
@@ -353,6 +386,36 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
         {/* Scrollable form body */}
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
+
+          {/* ── ADMIN: Client selector (create only) ───────────────────────── */}
+          {adminMode && !isEditing && (
+            <div className="rounded-lg border border-border bg-muted/40 px-5 py-4">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                Post on behalf of
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-client-select">
+                  Client <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={selectedClientId}
+                  onValueChange={(v) => { setSelectedClientId(v); setClientError(""); }}
+                >
+                  <SelectTrigger id="admin-client-select" className={clientError ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Select a client…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(clientList ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.company_name ? `${c.company_name} — ${c.email}` : c.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {clientError && <p className="text-xs text-red-500 mt-1">{clientError}</p>}
+              </div>
+            </div>
+          )}
 
           {/* ── 1. BASIC ROLE INFORMATION ──────────────────────────────────── */}
           <div>

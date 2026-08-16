@@ -59,7 +59,7 @@ import {
   ListFilter,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
-// JobFormModal replaced by dedicated /admin/find-work/jobs/new and /admin/find-work/jobs/:jobId/edit pages
+import { JobFormModal } from "@/components/JobFormModal";
 import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
 
 // ─── Badge icon map ───────────────────────────────────────────────────────────
@@ -775,8 +775,9 @@ export default function AdminFindWork() {
   const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
   const [approveConfirmJobId, setApproveConfirmJobId] = useState<string | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const openCreate = () => navigate("/admin/find-work/jobs/new");
+  const openCreate = () => setCreateModalOpen(true);
   const openEdit = (job: Job) => navigate(`/admin/find-work/jobs/${job.id}/edit`);
 
   const handleTabChange = (tab: TabKey) => {
@@ -1615,6 +1616,18 @@ export default function AdminFindWork() {
           </Dialog>
         );
       })()}
+
+      {/* ── Admin job-creation modal (shared with client form, admin mode) ── */}
+      <JobFormModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        job={null}
+        adminMode={true}
+        onSuccess={() => {
+          setCreateModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+        }}
+      />
     </>
   );
 }
