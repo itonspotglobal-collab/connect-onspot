@@ -473,6 +473,26 @@ app.use((req, res, next) => {
     console.warn("⚠️  job_matches migration skipped:", jmErr.message);
   }
 
+  // jobs.created_via — distinguishes auto-created search-scaffold jobs from real postings
+  try {
+    const { query: migrateQuery } = await import('./db');
+    await migrateQuery(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS created_via text NOT NULL DEFAULT 'manual'`);
+    console.log("✅ Migration: jobs.created_via column ready");
+  } catch (err: any) {
+    console.warn("⚠️  jobs.created_via migration skipped:", err.message);
+  }
+
+  // job_submissions.initiated_by — durable record of who originated the submission
+  // Survives status changes (e.g. invited → submitted) so client-initiated invites
+  // are never confused with talent-initiated applications after status flips.
+  try {
+    const { query: migrateQuery } = await import('./db');
+    await migrateQuery(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS initiated_by text NOT NULL DEFAULT 'talent'`);
+    console.log("✅ Migration: job_submissions.initiated_by column ready");
+  } catch (err: any) {
+    console.warn("⚠️  job_submissions.initiated_by migration skipped:", err.message);
+  }
+
   // Seed default applicant email templates (idempotent — name-based deduplication)
   const { seedEmailTemplates } = await import('./seeds/seedEmailTemplates');
   await seedEmailTemplates();

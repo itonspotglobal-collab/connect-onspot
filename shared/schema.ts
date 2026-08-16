@@ -203,6 +203,10 @@ export const jobs = pgTable("jobs", {
   postedAt: timestamp("posted_at"),
   originalPostedAt: timestamp("original_posted_at"),
   lastRefreshedAt: timestamp("last_refreshed_at"),
+  // Distinguishes auto-created search-scaffold jobs from real postings.
+  // 'manual' = intentionally created by admin or client
+  // 'search_scaffold' = auto-created to back a Client search-to-shortlist session
+  createdVia: text("created_via").notNull().default("manual"), // manual | search_scaffold
 }, (table) => [
   index("idx_jobs_client_id").on(table.clientId),
   index("idx_jobs_status").on(table.status),
@@ -691,7 +695,10 @@ export const jobSubmissions = pgTable("job_submissions", {
   coverLetter: text("cover_letter"),
   expectedSalary: text("expected_salary"),
   availability: text("availability"),
-  status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired
+  status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired, invited
+  // Who initiated this submission. Survives status changes (e.g. invited→submitted).
+  // 'talent' = talent applied themselves; 'client' = client invited the talent
+  initiatedBy: text("initiated_by").notNull().default("talent"), // talent | client
   talentId: varchar("talent_id").references(() => users.id),
   registrationStatus: text("registration_status").notNull().default("pending_account"),
   isRepeatApplication: boolean("is_repeat_application").notNull().default(false),
