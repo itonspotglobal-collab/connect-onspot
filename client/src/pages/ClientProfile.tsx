@@ -865,11 +865,31 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
             </span>
           )}
         </h2>
-        {submissions.filter((s) => s.status === "new").length > 0 && (
-          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
-            {submissions.filter((s) => s.status === "new").length} new
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {submissions.length > 0 && (() => {
+            const invitedCount = submissions.filter((s) => s.initiated_by === "client").length;
+            const appliedCount = submissions.filter((s) => s.initiated_by !== "client").length;
+            return (
+              <>
+                {invitedCount > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-900/20 dark:text-violet-400">
+                    {invitedCount} invited
+                  </span>
+                )}
+                {appliedCount > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                    {appliedCount} applied
+                  </span>
+                )}
+              </>
+            );
+          })()}
+          {submissions.filter((s) => s.status === "new").length > 0 && (
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+              {submissions.filter((s) => s.status === "new").length} new
+            </span>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
