@@ -151,5 +151,8 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "overrides": {
+    "websocket-driver": "0.7.5"
   }
 }
