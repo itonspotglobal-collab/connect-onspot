@@ -445,6 +445,34 @@ app.use((req, res, next) => {
     console.warn("⚠️  Email tables early migration skipped:", migErr.message);
   }
 
+  // job_matches — persisted AI match scores (Option C event-driven scorer).
+  // Created here because the table was bootstrapped via raw SQL rather than
+  // drizzle-kit push (db:push hung on an unrelated interactive prompt).
+  // This block is the authoritative idempotent creation path so the table
+  // always exists on a clean DB and any future `drizzle-kit push` run will
+  // see an already-matching schema and produce no diff.
+  try {
+    const { query: jmQuery } = await import('./db');
+    await jmQuery(`
+      CREATE TABLE IF NOT EXISTS job_matches (
+        id                  VARCHAR   PRIMARY KEY DEFAULT gen_random_uuid(),
+        talent_id           VARCHAR   NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+        job_id              VARCHAR   NOT NULL REFERENCES jobs(id)       ON DELETE CASCADE,
+        compatibility_score INTEGER   NOT NULL DEFAULT 0,
+        match_reasons       JSONB     NOT NULL DEFAULT '{}',
+        computed_at         TIMESTAMP DEFAULT NOW(),
+        notified_at         TIMESTAMP
+      )
+    `);
+    await jmQuery(`CREATE INDEX  IF NOT EXISTS idx_job_matches_talent_id ON job_matches(talent_id)`);
+    await jmQuery(`CREATE INDEX  IF NOT EXISTS idx_job_matches_job_id    ON job_matches(job_id)`);
+    await jmQuery(`CREATE INDEX  IF NOT EXISTS idx_job_matches_score      ON job_matches(compatibility_score)`);
+    await jmQuery(`CREATE UNIQUE INDEX IF NOT EXISTS uq_job_matches_talent_job ON job_matches(talent_id, job_id)`);
+    console.log("✅ Migration: job_matches table ready");
+  } catch (jmErr: any) {
+    console.warn("⚠️  job_matches migration skipped:", jmErr.message);
+  }
+
   // Seed default applicant email templates (idempotent — name-based deduplication)
   const { seedEmailTemplates } = await import('./seeds/seedEmailTemplates');
   await seedEmailTemplates();

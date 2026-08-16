@@ -1,0 +1,46 @@
+Two things before this workstream is closed.
+
+NAMING: Rename the new feature ("Recommended for You") to "Suggested for You"
+everywhere it appears — section header, tab label, related copy. Before making
+the change, report back what FindBestMatches currently calls its own match
+percentage/ranking in the UI, if anything — I want to confirm it doesn't also
+say "Recommended" or "Suggested" anywhere. Two features already compute
+different numbers for the same job; they can't also share a name.
+
+VERIFICATION — five things before this is fully closed:
+
+1. NEON_DATABASE_URL near-miss: confirm directly — was anything created,
+   altered, or written to that database before you caught the mistake and
+   switched to DATABASE_URL? If yes, what, and has it been cleaned up?
+
+2. job_matches was created via raw SQL after db:push hung on a prompt. This
+   means Drizzle's migration history doesn't reflect this table the normal
+   way. Reconcile this now: either generate a proper migration file that
+   matches the current DB state, or confirm explicitly how you're preventing
+   schema drift the next time a real migration runs. Don't leave this as an
+   untracked gap.
+
+3. The E2E proof only exercised 2 of the scorer's 7 signals (engagement +
+   rate) — the same two already proven in the prior session. Run at least one
+   additional real test case where a DIFFERENT signal fires — category match,
+   experience tier, timezone, or recency — using real candidate/job data, and
+   show the actual score contribution. Confirming the rewrite works means
+   proving the NEW logic, not re-confirming what wasn't touched.
+
+4. Trigger A and Trigger B are fire-and-forget, the same pattern that caused
+   the persistMatchResults race condition you just fixed. Confirm: does
+   GET /api/talent/matches always recompute fresh, or does it read the
+   persisted job_matches rows? If the latter, a Talent who just saved their
+   profile could briefly see stale scores before the fire-and-forget recompute
+   finishes. If that's an acceptable, deliberate tradeoff, say so explicitly —
+   don't let it sit as an unexamined leftover of the same bug class.
+
+5. Confirm sort order in the Suggested-for-You feed uses the raw
+   compatibility_score, not the capped displayScore — two jobs scoring 100+
+   and 175 raw should still rank correctly relative to each other even though
+   both display as "100%."
+
+Also: you mentioned proposing follow-up tasks alongside the memory update —
+list them out, don't just reference that they exist.
+
+Answer all of this, then this workstream is done.
