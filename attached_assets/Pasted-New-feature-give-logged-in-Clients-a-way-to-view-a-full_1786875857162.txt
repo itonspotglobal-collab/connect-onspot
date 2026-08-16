@@ -1,0 +1,50 @@
+New feature: give logged-in Clients a way to view a fuller Talent profile —
+more detail than the Preview popup, but the SAME masking and no-contact-info
+rules, no exceptions.
+
+BEFORE BUILDING — audit first:
+
+1. Does a full profile view/page already exist anywhere that could be
+   reused or adapted (CandidateProfile.tsx, TalentProfile.tsx, or anything
+   else)? Report what exists and whether it's currently Admin-only,
+   Talent-only (self-view), or reachable in a Client context at all.
+
+2. What data does the candidate/talent record actually have available for:
+   full skills list (beyond the top 3 shown in the row/preview), complete
+   work history entries, education, certifications, languages? Report the
+   actual fields/shape — don't assume they're all populated or structured
+   the same way across profiles.
+
+WHAT TO BUILD:
+
+Add a "View Full Profile" action alongside the existing Preview and
+Shortlist actions on each result row (both /hire-talent contexts —
+authenticated client only; anonymous visitors keep Preview + Shortlist as
+the only options, no full-profile view for them).
+
+This can be either an expanded version of the existing modal or a dedicated
+page — your call based on what's more consistent with the rest of the app's
+patterns, but report which you chose and why.
+
+Content to add beyond what Preview already shows: full skills list (not
+truncated to 3), complete work history (all entries, not summarized),
+education, certifications, languages.
+
+HARD CONSTRAINT — same sanitization discipline as everything else in this
+build: this full profile view must use the SAME sanitizer/allowlist
+approach as sanitizeSearchCandidate (extend it with an explicit allowlist of
+the additional fields above, or build a sibling sanitizer that's equally
+strict) — do NOT build a new unreviewed data path, and do NOT reuse any
+Admin-only endpoint or query that might carry contact fields. Name stays
+masked exactly as it is in Preview today. The following must NEVER appear
+in this view under any circumstance: email, phone, resumeUrl,
+resumeFileName, linkedinUrl, githubUrl, portfolioUrl, websiteUrl,
+videoIntroUrl, passwordHash, or real first/last/display name.
+
+PROOF REQUIRED — same standard as every other feature in this build: show
+the actual API response/data shape for a real full-profile request, confirm
+every field above is absent, and confirm the masked name matches what's
+shown in Preview/the row view for the same Talent (no identity leak from
+inconsistent masking across the three views).
+
+Report back the audit findings first before implementing.
