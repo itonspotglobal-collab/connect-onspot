@@ -106,10 +106,12 @@ function ViewSubmissionModal({
   submission,
   onClose,
   onStatusChange,
+  nameRevealThreshold = "submitted",
 }: {
   submission: JobSubmission;
   onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
+  nameRevealThreshold?: string;
 }) {
   const { toast } = useToast();
   const statusInfo = SUBMISSION_STATUS_LABELS[submission.status] ?? SUBMISSION_STATUS_LABELS.new;
@@ -200,7 +202,7 @@ function ViewSubmissionModal({
             {[
               {
                 label: "Full Name",
-                value: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status),
+                value: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold),
               },
               {
                 label: "Email",
@@ -487,6 +489,17 @@ export default function ClientProfile() {
       </div>
     );
   }
+
+  // ─── Platform settings (name-reveal threshold) ────────────────────────────
+  const { data: platformSettings } = useQuery<{ nameRevealThreshold: string }>({
+    queryKey: ["/api/platform-settings/public"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/platform-settings/public");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // cache for 5 minutes
+  });
+  const nameRevealThreshold = platformSettings?.nameRevealThreshold ?? "submitted";
 
   // ─── Data queries ─────────────────────────────────────────────────────────
   const { data: profile, isLoading: profileLoading } = useQuery<ClientProfile>({
@@ -852,6 +865,7 @@ export default function ClientProfile() {
         {/* ── Job Submissions ───────────────────────────────────────────────── */}
         <JobSubmissionsSection
           onView={(sub) => setViewingSubmission(sub)}
+          nameRevealThreshold={nameRevealThreshold}
         />
 
         {/* ── Footer info ──────────────────────────────────────────────────── */}
@@ -881,6 +895,7 @@ export default function ClientProfile() {
           onStatusChange={(id, status) =>
             setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status } : prev)
           }
+          nameRevealThreshold={nameRevealThreshold}
         />
       )}
     </div>
@@ -888,7 +903,13 @@ export default function ClientProfile() {
 }
 
 // ─── Job Submissions Section ──────────────────────────────────────────────────
-function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => void }) {
+function JobSubmissionsSection({
+  onView,
+  nameRevealThreshold = "submitted",
+}: {
+  onView: (sub: JobSubmission) => void;
+  nameRevealThreshold?: string;
+}) {
   const { data: submissions = [], isLoading } = useQuery<JobSubmission[]>({
     queryKey: ["/api/client/job-submissions"],
     queryFn: async () => {
@@ -991,7 +1012,7 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <p className="font-medium text-slate-900 dark:text-white">
-                          {maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status)}
+                          {maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold)}
                         </p>
                         {clientInvited && (
                           <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
@@ -1049,34 +1070,37 @@ function JobSubmissionsSection({ onView }: { onView: (sub: JobSubmission) => voi
   );
 }
 
-/**
- * Mask a talent's name until they accept a client invitation.
- *
- * Rule: reveal once talent actively accepts (status → "submitted" or any
- * downstream status such as "reviewed", "shortlisted", "hired").
- * Keep masked for BOTH "invited" (pending) and "declined" (rejected) — a
- * talent who declined should not have their identity exposed to the client.
- * Self-applied candidates always show their real name.
- */
+const STATUS_ORDER = ["submitted", "reviewed", "shortlisted", "hired"] as const;
 function maskSubmissionName(
   name: string,
   initiatedBy: string | null,
   status: string,
+  threshold = "submitted",
 ): string {
   if (initiatedBy !== "client") return name;
-  // Reveal only once talent has explicitly accepted (submitted or later stage)
-  const REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
-  if (REVEALED_STATUSES.has(status)) return name;
-  // Mask for "invited" (pending) and "declined" (rejected)
+  // Reveal only once talent's status meets or exceeds the configured threshold
+  if (revealedStatuses(threshold).has(status)) return name;
+  // Mask for "invited" (pending), "declined" (rejected), or pre-threshold statuses
   if (!name || name.toLowerCase().startsWith("invited ")) return "Talent Profile";
   const parts = name.trim().split(" ").filter(Boolean);
   if (parts.length === 1) return parts[0][0] + "•".repeat(4);
   return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
 }
 
-/** Returns true when a client-invited submission's identity should be hidden. */
+/**
+ * Returns true when a client-invited submission is still pending or was declined.
+ * Used to gate status-transition UI and identity field visibility — always based
+ * on the actual invite state, never on the name-reveal threshold.
+ */
 function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string): boolean {
   if (initiatedBy !== "client") return false;
-  const REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
-  return !REVEALED_STATUSES.has(status);
+  // Only "invited" (pending) and "declined" are locked — all other statuses
+  // mean the talent has actively accepted and the client may advance them.
+  return status === "invited" || status === "declined";
+}
+
+function revealedStatuses(threshold: string): Set<string> {
+  const idx = STATUS_ORDER.indexOf(threshold as (typeof STATUS_ORDER)[number]);
+  const startAt = idx === -1 ? 0 : idx;
+  return new Set(STATUS_ORDER.slice(startAt));
 }

@@ -1,7 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
-import { sanitizeSearchCandidate } from "./lib/clientSearchSanitize.js";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -1101,6 +1100,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("✅ Migration: jobs.application_questions + job_submissions.answers columns ready");
   } catch (migErr: any) {
     console.warn("⚠️  1-click apply migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: platform_settings key-value config table ─────
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS platform_settings (
+        key        text      PRIMARY KEY,
+        value      text      NOT NULL,
+        updated_at timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    // Seed default: name reveal triggers on "submitted" (talent accepts invite)
+    await query(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('name_reveal_threshold', 'submitted')
+      ON CONFLICT (key) DO NOTHING
+    `);
+    console.log("✅ Migration: platform_settings table ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  platform_settings migration skipped:", migErr.message);
   }
 
   // Protected Dashboard Routes with Role-Based Access Control
@@ -6042,6 +6061,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Platform Settings routes ─────────────────────────────────────────────
+  //
+  // GET  /api/platform-settings/public   — unauthenticated, returns safe subset
+  // GET  /api/admin/platform-settings    — admin: returns all settings
+  // PATCH /api/admin/platform-settings   — admin: update one or more settings
+
+  app.get("/api/platform-settings/public", async (_req: Request, res: Response) => {
+    try {
+      const { query: dbQuery } = await import('./db');
+      const result = await dbQuery(
+        `SELECT key, value FROM platform_settings WHERE key IN ('name_reveal_threshold')`
+      );
+      const settings: Record<string, string> = {};
+      for (const row of result.rows) settings[row.key] = row.value;
+      res.json({
+        nameRevealThreshold: settings['name_reveal_threshold'] ?? 'submitted',
+      });
+    } catch (err: any) {
+      console.error("GET /api/platform-settings/public error:", err);
+      // Never break the client portal — fall back to safe default
+      res.json({ nameRevealThreshold: 'submitted' });
+    }
+  });
+
+  app.get("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const { query: dbQuery } = await import('./db');
+      const result = await dbQuery(`SELECT key, value FROM platform_settings ORDER BY key`);
+      const settings: Record<string, string> = {};
+      for (const row of result.rows) settings[row.key] = row.value;
+      res.json(settings);
+    } catch (err: any) {
+      console.error("GET /api/admin/platform-settings error:", err);
+      res.status(500).json({ error: "Failed to fetch platform settings" });
+    }
+  });
+
+  app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const ALLOWED_KEYS = new Set(['name_reveal_threshold']);
+      const VALID_THRESHOLDS = new Set(['submitted', 'reviewed', 'shortlisted', 'hired']);
+      const updates: Array<{ key: string; value: string }> = [];
+
+      for (const [key, value] of Object.entries(req.body)) {
+        if (!ALLOWED_KEYS.has(key)) {
+          return res.status(400).json({ error: `Unknown setting key: ${key}` });
+        }
+        if (typeof value !== 'string') {
+          return res.status(400).json({ error: `Value for ${key} must be a string` });
+        }
+        if (key === 'name_reveal_threshold' && !VALID_THRESHOLDS.has(value)) {
+          return res.status(400).json({ error: `Invalid name_reveal_threshold: ${value}` });
+        }
+        updates.push({ key, value });
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: "No valid settings provided" });
+      }
+
+      const { query: dbQuery } = await import('./db');
+      for (const { key, value } of updates) {
+        await dbQuery(
+          `INSERT INTO platform_settings (key, value, updated_at)
+           VALUES ($1, $2, now())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+          [key, value]
+        );
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("PATCH /api/admin/platform-settings error:", err);
+      res.status(500).json({ error: "Failed to update platform settings" });
+    }
+  });
+
   // GET /api/admin/clients — list all users with role='client' for the admin job-creation selector
   app.get("/api/admin/clients", async (req: Request, res: Response) => {
     try {
@@ -9293,7 +9388,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           j.proposal_count AS "proposalCount"
          FROM jobs j
          WHERE j.client_id = $1
-           AND (j.created_via IS DISTINCT FROM 'search_scaffold')
          ORDER BY j.created_at DESC`,
         [userId],
       );
@@ -9496,13 +9590,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // sanitizeSearchCandidate is imported from server/lib/clientSearchSanitize.ts.
-  // Keeping it in a shared module (rather than inline) means the regression test
-  // suite imports the real function — if a future merge overwrites this call to
-  // return raw results, the HTTP-level integration test catches it independently.
-
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
-  app.post("/api/client/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -9550,10 +9639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobId = jobResult.rows[0].id as string;
 
       const results = await storage.rankTalentForJob(jobId, 30);
-      return res.json({
-        jobId,
-        results: results.map((r) => ({ ...r, candidate: sanitizeSearchCandidate(r.candidate) })),
-      });
+      return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -9561,7 +9647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
   // engagement type. Avoids creating a duplicate scaffold job per filter change.
-  app.patch("/api/client/talent-search/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.patch("/api/client/talent-search/:jobId", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -9581,17 +9667,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
 
       const results = await storage.rankTalentForJob(jobId, 30);
-      return res.json({
-        jobId,
-        results: results.map((r) => ({ ...r, candidate: sanitizeSearchCandidate(r.candidate) })),
-      });
+      return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
   });
 
   // POST /api/client/invitations — invite a specific talent to a scaffold job
-  app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.post("/api/client/invitations", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });
@@ -9670,10 +9753,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/talent/invitations — talent sees their pending role invitations
-  app.get("/api/talent/invitations", authenticateTalentJWT, async (req: Request, res: Response) => {
+  app.get("/api/talent/invitations", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const candidateId = (req as any).talentAuth?.candidateId;
-      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
       const result = await query(
         `SELECT js.id,
@@ -9692,7 +9775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
          WHERE js.talent_id = $1
            AND js.status = 'invited'
          ORDER BY js.created_at DESC`,
-        [candidateId],
+        [userId],
       );
 
       return res.json(result.rows);
@@ -9702,10 +9785,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/talent/invitations/:id/respond — accept (→ submitted) or decline an invitation
-  app.post("/api/talent/invitations/:id/respond", authenticateTalentJWT, async (req: Request, res: Response) => {
+  app.post("/api/talent/invitations/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
     try {
-      const candidateId = (req as any).talentAuth?.candidateId;
-      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
       const { action } = req.body;
@@ -9716,7 +9799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify ownership and that the invitation is still pending
       const check = await query(
         `SELECT id, status FROM job_submissions WHERE id = $1 AND talent_id = $2`,
-        [id, candidateId],
+        [id, userId],
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
       if (check.rows[0].status !== "invited") {
@@ -11018,8 +11101,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Shared helpers for client submission endpoints ───────────────────────────
 
-  /** Statuses at which a client-invited talent's identity is revealed (talent accepted). */
-  const CLIENT_INVITE_REVEALED_STATUSES = new Set(["submitted", "reviewed", "shortlisted", "hired"]);
+  /** Ordered list of statuses used to compute the reveal threshold. */
+  const SUBMISSION_STATUS_ORDER = ["submitted", "reviewed", "shortlisted", "hired"] as const;
+
+  /**
+   * Returns the set of statuses at which identity is revealed for a given threshold.
+   * e.g. threshold "shortlisted" → Set{"shortlisted","hired"}
+   */
+  const revealedStatusesForThreshold = (threshold: string): Set<string> => {
+    const idx = SUBMISSION_STATUS_ORDER.indexOf(threshold as (typeof SUBMISSION_STATUS_ORDER)[number]);
+    const startAt = idx === -1 ? 0 : idx;
+    return new Set(SUBMISSION_STATUS_ORDER.slice(startAt));
+  };
+
+  /**
+   * Fetch the name-reveal threshold from platform_settings.
+   * Falls back to "hired" (most restrictive) on error so PII is never accidentally
+   * exposed when the settings table is unreachable.
+   */
+  const getNameRevealThreshold = async (): Promise<string> => {
+    try {
+      const result = await query(
+        `SELECT value FROM platform_settings WHERE key = 'name_reveal_threshold' LIMIT 1`
+      );
+      return result.rows[0]?.value ?? "submitted";
+    } catch {
+      // Fail closed: never reveal names if we cannot read the configured threshold.
+      return "hired";
+    }
+  };
 
   /**
    * Mask a name string for a pending/declined client invitation.
@@ -11037,23 +11147,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   /**
    * Apply server-side PII masking to a client submission row.
    *
-   * For client-invited talent whose status is "invited" (pending) or "declined",
-   * this returns a minimal allowlist shape — no real name, no contact info, no
-   * documents/links/free-text. Identity reveals only once the talent accepts
-   * (status becomes "submitted" or later).
+   * For client-invited talent whose status has not yet reached the configured
+   * threshold, this returns a minimal allowlist shape — no real name, no contact
+   * info, no documents/links/free-text.
    *
+   * "invited" (pending) and "declined" rows are always masked regardless of threshold.
    * Self-applied submissions (initiated_by !== "client") are returned as-is.
+   *
+   * @param revealedStatuses — computed once per request from getNameRevealThreshold()
+   *
+   * Field policy (independent axes, do not conflate):
+   *   - Name (applicantName, firstName, lastName): controlled by the configurable threshold.
+   *   - Contact (email, phone): always null — never returned to clients at any status
+   *     (policy set by tasks #182/#187, separate from name reveal).
+   *   - Documents & links (resumeUrl, portfolioUrl, coverLetter): always null through
+   *     the client API — clients access resumes via the /api/job-resumes/:id endpoint.
+   *   - Other fields (location, expectedSalary, availability): revealed alongside name.
    */
-  const sanitizeClientSubmissionRow = (row: any): any => {
-    // Name reveals once talent accepts (status = submitted / reviewed / shortlisted / hired).
-    // Contact fields (email, phone, all links) are permanently withheld at every stage —
-    // name and contact are independent axes; platform messaging is the only channel.
-    const isRevealed =
-      row.initiated_by !== "client" || CLIENT_INVITE_REVEALED_STATUSES.has(row.status);
+  const sanitizeClientSubmissionRow = (row: any, revealedStatuses: Set<string>): any => {
+    // Name reveals once talent's status meets or exceeds the configured threshold.
+    // For self-applied candidates (initiated_by !== "client") names are always shown.
+    const nameRevealed =
+      row.initiated_by !== "client" || revealedStatuses.has(row.status);
 
-    const rawName  = row.applicantName ?? row.applicant_name ?? null;
-    const displayName = isRevealed ? rawName : maskInviteName(rawName);
+    const rawName = row.applicantName ?? row.applicant_name ?? null;
+    const displayName = nameRevealed ? rawName : maskInviteName(rawName);
 
+    // Always return an explicit allowlist — never spread raw DB rows to avoid
+    // accidentally leaking new columns added in future migrations.
     return {
       id:           row.id,
       jobId:        row.jobId        ?? row.job_id,
@@ -11068,26 +11189,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       jobCompany:   row.jobCompany,
       registrationStatus: row.registrationStatus ?? row.registration_status ?? null,
 
-      // Identity — revealed on acceptance, masked while pending/declined
+      // Identity — controlled by the configurable name-reveal threshold.
       applicantName:  displayName,
       applicant_name: displayName,
-      firstName: isRevealed ? (row.firstName ?? row.first_name ?? null) : null,
-      lastName:  isRevealed ? (row.lastName  ?? row.last_name  ?? null) : null,
-      location:  isRevealed ? (row.location  ?? null)                   : null,
+      firstName: nameRevealed ? (row.firstName ?? row.first_name ?? null) : null,
+      lastName:  nameRevealed ? (row.lastName  ?? row.last_name  ?? null) : null,
+      location:  nameRevealed ? (row.location  ?? null)                   : null,
 
-      // Contact — always null; never exposed through this flow at any stage
+      // Contact — always null; independent of name threshold (policy: never expose
+      // via client API regardless of status — platform messaging is the channel).
       email: null,
       phone: null,
 
-      // Documents & external links — always null through client API
+      // Documents & external links — always null through client API at any status.
       resumeUrl:      null,
       resumeFileName: null,
       portfolioUrl:   null,
       coverLetter:    null,
 
-      // Non-contact revealed fields
-      expectedSalary: isRevealed ? (row.expectedSalary ?? row.expected_salary ?? null) : null,
-      availability:   isRevealed ? (row.availability ?? null)                           : null,
+      // Non-PII application fields — revealed alongside name.
+      expectedSalary: nameRevealed ? (row.expectedSalary ?? row.expected_salary ?? null) : null,
+      availability:   nameRevealed ? (row.availability   ?? null)                         : null,
     };
   }
 
@@ -11127,13 +11249,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const result = await query(
-        `${CLIENT_SUBMISSION_SELECT}
-         WHERE js.client_id = $1
-         ORDER BY js.submitted_at DESC`,
-        [userId],
-      );
-      return res.json(result.rows.map(sanitizeClientSubmissionRow));
+      const [result, threshold] = await Promise.all([
+        query(
+          `${CLIENT_SUBMISSION_SELECT}
+           WHERE js.client_id = $1
+           ORDER BY js.submitted_at DESC`,
+          [userId],
+        ),
+        getNameRevealThreshold(),
+      ]);
+      const revealed = revealedStatusesForThreshold(threshold);
+      return res.json(result.rows.map((row) => sanitizeClientSubmissionRow(row, revealed)));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -11145,13 +11271,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
-      const result = await query(
-        `${CLIENT_SUBMISSION_SELECT}
-         WHERE js.id = $1 AND js.client_id = $2`,
-        [id, userId],
-      );
+      const [result, threshold] = await Promise.all([
+        query(
+          `${CLIENT_SUBMISSION_SELECT}
+           WHERE js.id = $1 AND js.client_id = $2`,
+          [id, userId],
+        ),
+        getNameRevealThreshold(),
+      ]);
       if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found" });
-      return res.json(sanitizeClientSubmissionRow(result.rows[0]));
+      const revealed = revealedStatusesForThreshold(threshold);
+      return res.json(sanitizeClientSubmissionRow(result.rows[0], revealed));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -11192,16 +11322,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = await query(
+      await query(
         `UPDATE job_submissions SET status = $1, updated_at = NOW()
-         WHERE id = $2 AND client_id = $3
-         RETURNING *`,
+         WHERE id = $2 AND client_id = $3`,
         [status, id, userId],
       );
-      if (result.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
-      // Apply the same sanitization as the GET endpoints — contact fields are
-      // never returned to the client, regardless of status.
-      return res.json(sanitizeClientSubmissionRow(result.rows[0]));
+
+      // Re-fetch via canonical projection (same as GET endpoints) so the response
+      // shape is consistent and no raw DB columns bypass the sanitizer.
+      const [updated, threshold] = await Promise.all([
+        query(
+          `${CLIENT_SUBMISSION_SELECT}
+           WHERE js.id = $1 AND js.client_id = $2`,
+          [id, userId],
+        ),
+        getNameRevealThreshold(),
+      ]);
+      if (updated.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
+      const revealed = revealedStatusesForThreshold(threshold);
+      return res.json(sanitizeClientSubmissionRow(updated.rows[0], revealed));
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

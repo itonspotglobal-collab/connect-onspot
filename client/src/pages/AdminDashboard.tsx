@@ -57,6 +57,7 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -326,6 +327,33 @@ export default function AdminDashboard() {
     passwordMutation.mutate(data);
   };
 
+  // ── Platform Settings ─────────────────────────────────────────────────────
+  const { data: platformSettings, isLoading: settingsLoading } = useQuery<Record<string, string>>({
+    queryKey: ['/api/admin/platform-settings'],
+    queryFn: () => authAPI.get('/api/admin/platform-settings'),
+  });
+
+  const [pendingThreshold, setPendingThreshold] = useState<string | null>(null);
+  const effectiveThreshold = pendingThreshold ?? platformSettings?.name_reveal_threshold ?? 'submitted';
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: (settings: Record<string, string>) =>
+      authAPI.patch('/api/admin/platform-settings', settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-settings/public'] });
+      setPendingThreshold(null);
+      toast({ title: 'Settings saved', description: 'Platform settings updated successfully.' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Save failed',
+        description: error.response?.data?.error || 'Failed to update settings',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-8" data-testid="admin-dashboard-page">
       {/* Page Header */}
@@ -349,7 +377,7 @@ export default function AdminDashboard() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="passwords" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Users & Passwords
@@ -365,6 +393,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="applications" className="flex items-center gap-2" data-testid="tab-job-applications">
             <Briefcase className="w-4 h-4" />
             Job Applications
+          </TabsTrigger>
+          <TabsTrigger value="platform-settings" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Platform Settings
           </TabsTrigger>
         </TabsList>
 
@@ -825,6 +857,88 @@ export default function AdminDashboard() {
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Platform Settings Tab */}
+        <TabsContent value="platform-settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Platform Settings
+              </CardTitle>
+              <CardDescription>
+                Configure platform-wide behaviour without a code deploy.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {settingsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading settings…</p>
+              ) : (
+                <div className="space-y-6 max-w-lg">
+                  {/* Name-reveal threshold */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Name Reveal Threshold
+                    </label>
+                    <p className="text-[13px] text-muted-foreground">
+                      The earliest application status at which a talent's full name becomes
+                      visible to the client on client-invited submissions. All statuses at or
+                      after this point will show the real name.
+                    </p>
+                    <Select
+                      value={effectiveThreshold}
+                      onValueChange={(v) => setPendingThreshold(v)}
+                    >
+                      <SelectTrigger className="w-56">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="submitted">
+                          Applied — reveal when talent accepts invite
+                        </SelectItem>
+                        <SelectItem value="reviewed">
+                          Reviewed — reveal after admin reviews
+                        </SelectItem>
+                        <SelectItem value="shortlisted">
+                          Shortlisted — reveal only once shortlisted
+                        </SelectItem>
+                        <SelectItem value="hired">
+                          Hired — reveal only once hired
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">
+                      Current saved value:{' '}
+                      <span className="font-mono font-semibold">
+                        {platformSettings?.name_reveal_threshold ?? 'submitted'}
+                      </span>
+                    </p>
+                  </div>
+
+                  <Button
+                    disabled={
+                      updateSettingsMutation.isPending ||
+                      pendingThreshold === null
+                    }
+                    onClick={() => {
+                      if (pendingThreshold !== null) {
+                        updateSettingsMutation.mutate({
+                          name_reveal_threshold: pendingThreshold,
+                        });
+                      }
+                    }}
+                  >
+                    {updateSettingsMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+                    ) : (
+                      'Save Settings'
+                    )}
+                  </Button>
                 </div>
               )}
             </CardContent>
