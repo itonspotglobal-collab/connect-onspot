@@ -9804,7 +9804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
          VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'Mid-level',
                  'draft', 'approved', true, $4, 'search_scaffold', $5)
          RETURNING id`,
-        [title, resolvedCategory, engagementType, userId, null],
+        [title, resolvedCategory, engagementType, userId, title],
       );
       const jobId = jobResult.rows[0].id as string;
 
