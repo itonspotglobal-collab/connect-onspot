@@ -228,6 +228,28 @@ const logDatabaseConnection = () => {
     /helium|localhost|127\.0\.0\.1/.test(host) ? 'LOCAL DEV' :
     'UNKNOWN HOST — verify before running migrations';
   console.log(`🔗 DB: ${host} [${tier}]`);
+
+  // NEON mismatch guard — log the secondary Neon connection so it is never
+  // silently assumed to be production when it isn't.
+  // In production: set NEON_DB_LABEL=production in Replit Secrets.
+  // In dev: leave NEON_DB_LABEL unset — the warning below fires as a reminder.
+  const neonUrl   = process.env.NEON_DATABASE_URL;
+  const neonLabel = process.env.NEON_DB_LABEL ?? '';
+  if (neonUrl) {
+    let neonHost = '(unknown)';
+    try { const u = new URL(neonUrl); neonHost = `${u.hostname}${u.pathname}`; }
+    catch { const m = neonUrl.match(/@([^/?]+)/); if (m) neonHost = m[1]; }
+
+    if (neonLabel.toLowerCase() === 'production') {
+      console.log(`🔗 NEON DB: ${neonHost} [PRODUCTION — NEON_DB_LABEL confirmed]`);
+    } else {
+      console.warn(
+        `⚠️  NEON DB: ${neonHost} [NEON_DB_LABEL="${neonLabel || 'unset'}"] ` +
+        `— NOT confirmed as production. Set NEON_DB_LABEL=production in ` +
+        `Replit Secrets (production env) to silence this warning.`
+      );
+    }
+  }
 };
 
 // Log JWT configuration on startup for debugging  
