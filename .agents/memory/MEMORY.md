@@ -13,3 +13,4 @@
 - [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
 - [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.
 - [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
+- [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.

@@ -43,6 +43,7 @@ import {
   messageThreads as messageThreadsTable,
   messages as messagesTable,
   certifications as certificationsTable,
+  notifications as notificationsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, query as dbQuery } from "./db";
@@ -3990,6 +3991,39 @@ export class DbStorage extends MemStorage {
     const result = await db
       .delete(certificationsTable)
       .where(eq(certificationsTable.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // ── Notifications (DB-backed) ─────────────────────────────────────────────
+  // These three methods override the MemStorage implementations so notifications
+  // are persisted to the database and survive server restarts.
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notificationsTable)
+      .values(insertNotification)
+      .returning();
+    return notification;
+  }
+
+  async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
+    const rows = await db
+      .select()
+      .from(notificationsTable)
+      .where(
+        unreadOnly
+          ? and(eq(notificationsTable.userId, userId), eq(notificationsTable.isRead, false))
+          : eq(notificationsTable.userId, userId),
+      )
+      .orderBy(desc(notificationsTable.createdAt));
+    return rows;
+  }
+
+  async markNotificationAsRead(id: string): Promise<boolean> {
+    const result = await db
+      .update(notificationsTable)
+      .set({ isRead: true })
+      .where(eq(notificationsTable.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clock3, Globe2, Sparkles, Star, X, Link, DollarSign } from "lucide-react";
+import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clock3, Globe2, Sparkles, Star, X, Link, DollarSign, MessageSquare } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { LoginDialog } from "@/components/LoginDialog";
@@ -133,6 +134,8 @@ function ProfilePreviewModal({
   isAnonymous,
   onShortlist,
   onSignIn,
+  onMessage,
+  isMessaging,
 }: {
   result: TalentResult | null;
   open: boolean;
@@ -142,6 +145,8 @@ function ProfilePreviewModal({
   isAnonymous: boolean;
   onShortlist: () => void;
   onSignIn?: () => void;
+  onMessage?: () => void;
+  isMessaging?: boolean;
 }) {
   // Full-profile state — populated when the client clicks "Full profile"
   const [fullProfile, setFullProfile] = useState<FullProfileData | null>(null);
@@ -513,6 +518,19 @@ function ProfilePreviewModal({
                   )}
                 </button>
               )}
+              {!isAnonymous && onMessage && (
+                <button
+                  onClick={onMessage}
+                  disabled={isMessaging}
+                  className="flex items-center gap-1.5 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors disabled:opacity-50 dark:border-white/10 dark:text-slate-400"
+                >
+                  {isMessaging ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Opening…</>
+                  ) : (
+                    <><MessageSquare className="h-3.5 w-3.5" /> Message</>
+                  )}
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors dark:border-white/10 dark:text-slate-400"
@@ -664,6 +682,7 @@ type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
 export default function HireTalentPage() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [, navigate] = useLocation();
 
   // A visitor is treated as an authenticated client only when they have a
   // client role — talent users should use the anonymous/public path.
@@ -697,6 +716,24 @@ export default function HireTalentPage() {
 
   // ── Profile preview sheet ──────────────────────────────────────────────────────
   const [previewResult, setPreviewResult] = useState<TalentResult | null>(null);
+
+  // ── Direct message from preview modal ─────────────────────────────────────────
+  const [messagingTalentId, setMessagingTalentId] = useState<string | null>(null);
+
+  const handleOpenMessage = async (talentUserId: string) => {
+    if (messagingTalentId) return;
+    setMessagingTalentId(talentUserId);
+    try {
+      const res = await apiRequest("POST", "/api/client/message-talent", { talentUserId });
+      if (!res.ok) throw new Error("Failed to open thread");
+      const data = await res.json();
+      navigate(`/messages/${data.threadId}`);
+    } catch {
+      toast({ title: "Couldn't open message thread", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setMessagingTalentId(null);
+    }
+  };
 
   // ── Pending invite confirmation (restored after sign-up) ──────────────────────
   const [pendingInvite, setPendingInvite] = useState<{
@@ -1505,6 +1542,8 @@ export default function HireTalentPage() {
           );
           setShowLogin(true);
         }}
+        onMessage={previewResult ? () => handleOpenMessage(previewResult.userId) : undefined}
+        isMessaging={previewResult ? messagingTalentId === previewResult.userId : false}
       />
     </div>
   );

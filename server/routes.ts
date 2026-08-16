@@ -7010,18 +7010,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const threads = await storage.listMessageThreadsByUser(userId);
-      // Enrich with participant display names (no contact info — names only)
+      // Enrich with participant display names.
+      // Talent participants whose identity has NOT yet been revealed (no accepted
+      // client-initiated invitation) are masked as "Jane S." — the same format used
+      // everywhere else in the search/shortlist UI.  Client names are never masked.
       const otherIds = Array.from(
         new Set(threads.flatMap((t) => t.participants).filter((p) => p !== userId)),
       );
       const names: Record<string, string> = {};
       if (otherIds.length) {
         const result = await query(
-          `SELECT id, COALESCE(NULLIF(TRIM(CONCAT(first_name, ' ', last_name)), ''), NULLIF(username, ''), 'Member') AS display_name
-           FROM users WHERE id = ANY($1::text[])`,
-          [otherIds as any],
+          `SELECT
+             u.id,
+             TRIM(CONCAT(u.first_name, ' ', u.last_name))   AS raw_name,
+             u.username,
+             -- Revealed once the talent has accepted a client-initiated invitation
+             EXISTS (
+               SELECT 1 FROM job_submissions js
+               WHERE ((js.client_id = $2 AND js.talent_id = u.id)
+                   OR (js.client_id = u.id AND js.talent_id = $2))
+                 AND js.initiated_by = 'client'
+                 AND js.status IN ('submitted','new','under_review','reviewed',
+                                   'shortlisted','interview','offered','hired')
+             ) AS name_revealed,
+             -- Clients are never masked; only talent participants need masking
+             EXISTS (SELECT 1 FROM candidates c WHERE c.user_id = u.id) AS is_talent
+           FROM users u
+           WHERE u.id = ANY($1::text[])`,
+          [otherIds as any, userId],
         );
-        for (const row of result.rows) names[row.id] = row.display_name;
+        for (const row of result.rows) {
+          const raw = (row.raw_name?.trim() || row.username || "").trim();
+          if (!row.name_revealed && row.is_talent) {
+            // "Jane S." or "T••••" — consistent with sanitizeSearchCandidate masking
+            const parts = raw.split(/\s+/).filter(Boolean);
+            names[row.id] = !parts.length
+              ? "Talent Profile"
+              : parts.length === 1
+                ? parts[0][0] + "•".repeat(4)
+                : parts[0] + " " + parts[1][0] + ".";
+          } else {
+            names[row.id] = raw || "Member";
+          }
+        }
       }
       res.json({ userId, threads, participantNames: names });
     } catch (error) {
@@ -7075,6 +7106,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const message = await storage.createMessage(validated);
 
+      // Notify every other participant (fire-and-forget; never blocks delivery).
+      // This is the platform-wide fix for message notifications — see tracked task.
+      const recipientIds = thread.participants.filter((p) => p !== userId);
+      for (const recipientId of recipientIds) {
+        storage
+          .createNotification({
+            userId: recipientId,
+            type: "new_message",
+            title: "New message",
+            message: "You have a new message.",
+            relatedId: message.threadId,
+            relatedType: "message_thread",
+          })
+          .catch((notifErr) =>
+            console.error(
+              "[notify] message notification failed for",
+              recipientId,
+              notifErr,
+            ),
+          );
+      }
+
       // PII detection: runs post-save so it never blocks delivery.
       // Errors are caught and logged; sender receives no indication either way.
       try {
@@ -7097,6 +7150,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to create message" });
     }
   });
+
+  // ── Direct client→talent messaging (no prior invite required) ──────────────
+  // Opens a pre-invite null-job_id thread from the Full Profile / Preview modal.
+  // The talent's identity stays masked in the Messages UI until a formal invitation
+  // is accepted — this endpoint carries no acceptance gate and no name exposure.
+  app.post(
+    "/api/client/message-talent",
+    authenticateJWT,
+    requireClient,
+    async (req, res) => {
+      try {
+        const clientId = getAuthedUserId(req);
+        if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+        const { talentUserId } = req.body;
+        if (!talentUserId || typeof talentUserId !== "string") {
+          return res.status(400).json({ error: "talentUserId is required" });
+        }
+
+        // Verify the target user exists as a talent (candidates row required)
+        const talentCheck = await query(
+          `SELECT id FROM candidates WHERE user_id = $1 LIMIT 1`,
+          [talentUserId],
+        );
+        if (!talentCheck.rows.length) {
+          return res.status(404).json({ error: "Talent not found" });
+        }
+
+        // Idempotent creation under advisory lock — same pattern as the
+        // existing thread endpoints so concurrent clicks converge on one thread.
+        const txClient = await pool.connect();
+        try {
+          await txClient.query("BEGIN");
+          await txClient.query(
+            `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':direct'))`,
+            [clientId, talentUserId],
+          );
+
+          // Reuse any existing null-job_id thread between this pair
+          const existing = await txClient.query(
+            `SELECT id FROM message_threads
+             WHERE participants @> ARRAY[$1, $2]::text[]
+               AND participants <@ ARRAY[$1, $2]::text[]
+               AND job_id IS NULL
+             LIMIT 1`,
+            [clientId, talentUserId],
+          );
+
+          let threadId: string;
+          let isNew = false;
+
+          if (existing.rows.length) {
+            threadId = existing.rows[0].id;
+          } else {
+            const created = await txClient.query(
+              `INSERT INTO message_threads (job_id, participants, subject)
+               VALUES (NULL, ARRAY[$1, $2]::text[], NULL)
+               RETURNING id`,
+              [clientId, talentUserId],
+            );
+            threadId = created.rows[0].id;
+            isNew = true;
+          }
+
+          await txClient.query("COMMIT");
+          return res.status(isNew ? 201 : 200).json({ threadId, isNew });
+        } catch (txErr) {
+          await txClient.query("ROLLBACK").catch(() => {});
+          throw txErr;
+        } finally {
+          txClient.release();
+        }
+      } catch (err: any) {
+        console.error("POST /api/client/message-talent error:", err);
+        res.status(500).json({ error: "Failed to open message thread" });
+      }
+    },
+  );
 
   app.post("/api/message-threads/:threadId/mark-read", authenticateJWT, async (req, res) => {
     try {
@@ -10620,41 +10751,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || COALESCE($3, '')))`,
           [clientId, userId, jobId ?? null],
         );
-        // Idempotent: reuse an existing thread for this client/talent/job
-        const existing = await txClient.query(
+        // Thread graduation: if the talent and client were already messaging
+        // via a pre-invite direct-message thread (job_id IS NULL), continue
+        // that same thread so conversation history is preserved. Job context
+        // lives on job_submissions — it doesn't need to be duplicated onto the
+        // thread row. If no pre-invite thread exists, create a new null-job_id
+        // thread now. Either way, post a system message so both sides know the
+        // invitation has been accepted.
+        const systemMsg = jobTitle
+          ? `Invitation accepted — ${jobTitle}. You can now coordinate next steps, such as scheduling an interview.`
+          : "Invitation accepted. You can use this thread to coordinate next steps, such as scheduling an interview.";
+        const preInviteThread = await txClient.query(
           `SELECT id FROM message_threads
            WHERE participants @> ARRAY[$1, $2]::text[]
              AND participants <@ ARRAY[$1, $2]::text[]
-             AND (job_id = $3 OR ($3::text IS NULL AND job_id IS NULL))
+             AND job_id IS NULL
            LIMIT 1`,
-          [clientId, userId, jobId],
+          [clientId, userId],
         );
-        if (existing.rows.length) {
-          threadId = existing.rows[0].id;
+        if (preInviteThread.rows.length) {
+          // Graduation: reuse the existing direct-message thread.
+          threadId = preInviteThread.rows[0].id;
         } else {
+          // No prior thread — create a new null-job_id thread.
           const created = await txClient.query(
             `INSERT INTO message_threads (job_id, participants, subject)
-             VALUES ($1, ARRAY[$2, $3]::text[], $4)
+             VALUES (NULL, ARRAY[$1, $2]::text[], $3)
              RETURNING id`,
             [
-              jobId ?? null,
               clientId,
               userId,
               jobTitle ? `Invitation accepted — ${jobTitle}` : "Invitation accepted",
             ],
           );
           threadId = created.rows[0].id;
-          // System message so the thread isn't empty when both sides open it
-          await txClient.query(
-            `INSERT INTO messages (thread_id, sender_id, content, message_type)
-             VALUES ($1, $2, $3, 'system')`,
-            [
-              threadId,
-              userId,
-              "Invitation accepted. You can use this thread to coordinate next steps, such as scheduling an interview.",
-            ],
-          );
         }
+        // System message so neither side opens an empty thread
+        await txClient.query(
+          `INSERT INTO messages (thread_id, sender_id, content, message_type)
+           VALUES ($1, $2, $3, 'system')`,
+          [threadId, userId, systemMsg],
+        );
         await txClient.query("COMMIT");
       } catch (threadErr: any) {
         await txClient.query("ROLLBACK").catch(() => {});

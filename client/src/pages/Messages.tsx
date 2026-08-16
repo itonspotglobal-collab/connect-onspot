@@ -241,7 +241,7 @@ export default function Messages() {
             <div className="p-6 text-center">
               <p className="text-sm text-slate-500 dark:text-slate-400">No conversations yet.</p>
               <p className="mt-1 text-xs text-slate-400">
-                A conversation opens automatically when an invitation is accepted.
+                You can start a conversation from a talent's profile, or when an invitation is accepted.
               </p>
             </div>
           ) : (
