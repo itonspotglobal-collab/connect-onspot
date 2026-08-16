@@ -1155,10 +1155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  platform_settings migration skipped:", migErr.message);
   }
 
-  // One-time cleanup: reset scaffold jobs that were created with approvalStatus='approved'
-  // (old default) to 'pending'. Without this, they pollute category-suggestion counts and
-  // any other query that filters approval_status='approved'. Safe to run on every startup
-  // because the WHERE clause is a no-op once all rows are already 'pending'.
+  // Cleanup pass 1: reset any scaffold jobs that were created with approvalStatus='approved'
+  // (old default) to 'pending'. Idempotent — no-op once all rows are already 'pending'.
   try {
     const scaffoldReset = await query(`
       UPDATE jobs
@@ -1171,6 +1169,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   } catch (scaffoldResetErr: any) {
     console.warn("⚠️  Scaffold approval_status reset skipped:", scaffoldResetErr.message);
+  }
+
+  // Cleanup pass 2: delete stale draft scaffold jobs. They are auto-generated, never
+  // shown to talent (status='draft'), never applied to, and now fully filtered from all
+  // client-facing queries. Keeping them just grows the table indefinitely.
+  // The status='draft' guard preserves any scaffold that was somehow manually promoted.
+  // We first remove any orphaned job_submissions rows (FK constraint) before the job delete.
+  try {
+    await query(`
+      DELETE FROM job_submissions
+      WHERE job_id IN (
+        SELECT id FROM jobs
+        WHERE created_via = 'search_scaffold'
+          AND status = 'draft'
+      )
+    `);
+    const scaffoldDelete = await query(`
+      DELETE FROM jobs
+      WHERE created_via = 'search_scaffold'
+        AND status = 'draft'
+    `);
+    if (scaffoldDelete.rowCount && scaffoldDelete.rowCount > 0) {
+      console.log(`✅ Migration: deleted ${scaffoldDelete.rowCount} stale draft scaffold job(s)`);
+    }
+  } catch (scaffoldDeleteErr: any) {
+    console.warn("⚠️  Scaffold draft cleanup skipped:", scaffoldDeleteErr.message);
   }
 
   // Protected Dashboard Routes with Role-Based Access Control
