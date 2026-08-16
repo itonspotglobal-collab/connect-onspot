@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X, Link } from "lucide-react";
+import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clock3, Globe2, Sparkles, Star, X, Link, DollarSign } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
-import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clock3, Globe2, Sparkles, Star, X, DollarSign } from "lucide-react";
+import { LoginDialog } from "@/components/LoginDialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +127,7 @@ function ProfilePreviewModal({
   isInviting,
   isAnonymous,
   onShortlist,
+  onSignIn,
 }: {
   result: TalentResult | null;
   open: boolean;
@@ -135,6 +136,7 @@ function ProfilePreviewModal({
   isInviting: boolean;
   isAnonymous: boolean;
   onShortlist: () => void;
+  onSignIn?: () => void;
 }) {
   if (!result) return null;
 
@@ -406,6 +408,19 @@ function ProfilePreviewModal({
               Close
             </button>
           </div>
+          {/* Sign-in nudge for anonymous visitors — shown below the action row */}
+          {isAnonymous && (
+            <p className="mt-2 text-center text-[12px] text-slate-400">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => { onSignIn?.(); onClose(); }}
+                className="text-[#474ead] font-semibold hover:underline"
+              >
+                Sign in
+              </button>
+            </p>
+          )}
         </div>
       </motion.div>
     </div>
@@ -544,6 +559,7 @@ export default function HireTalentPage() {
 
   // ── Auth modals ───────────────────────────────────────────────────────────────
   const [showSignUp, setShowSignUp] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   // ── Stage ─────────────────────────────────────────────────────────────────────
   const [stage, setStage] = useState<"initial" | "active">("initial");
@@ -808,6 +824,7 @@ export default function HireTalentPage() {
       return;
     }
     // Authenticated client — send invitation immediately.
+
     sendInvite(talentUserId);
   }
 
@@ -1170,8 +1187,10 @@ export default function HireTalentPage() {
         open={showSignUp}
         onOpenChange={setShowSignUp}
         hideTrigger
-        onSignInInstead={() => { setShowSignUp(false); }}
+        onSignInInstead={() => { setShowSignUp(false); setShowLogin(true); }}
       />
+
+      <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
 
       {/* ── Profile preview modal ── */}
       <ProfilePreviewModal
@@ -1185,8 +1204,22 @@ export default function HireTalentPage() {
           if (!previewResult) return;
           handleShortlist(
             previewResult.userId,
-            previewResult.candidate.fullName ?? previewResult.candidate.full_name ?? "Talent Profile",
+            previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
           );
+        }}
+        onSignIn={() => {
+          if (!previewResult) return;
+          // Save pending invite state so after login the shortlist flow resumes.
+          sessionStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              query: searchText,
+              engagementType,
+              pendingTalentId: previewResult.userId,
+              pendingTalentName: previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+            } satisfies PendingSearchState),
+          );
+          setShowLogin(true);
         }}
       />
     </div>

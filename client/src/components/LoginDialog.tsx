@@ -22,8 +22,21 @@ import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 type UserType = "client" | "talent" | "admin" | null;
 type LoginStep = "user-type" | "login";
 
-export function LoginDialog() {
-  const [open, setOpen] = useState(false);
+interface LoginDialogProps {
+  /** Pass open+onOpenChange to control the dialog externally (e.g. from a page).
+   *  Omit both to use the built-in "Log In" trigger button (TopNavigation usage). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOpenChange }: LoginDialogProps = {}) {
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen! : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (isControlled) controlledOnOpenChange?.(v);
+    else setInternalOpen(v);
+  };
   const [currentStep, setCurrentStep] = useState<LoginStep>("user-type");
   const [userType, setUserType] = useState<UserType>(null);
   const [email, setEmail] = useState("");
@@ -235,16 +248,18 @@ export function LoginDialog() {
       setOpen(isOpen);
       if (!isOpen) resetDialog();
     }}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-40 md:w-48 h-11 text-white border-white/60 bg-black/20 font-medium hover:scale-[1.02] transition-transform"
-          data-testid="button-login"
-        >
-          <LogIn className="w-4 h-4 mr-2" />
-          Log In
-        </Button>
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button 
+            variant="outline" 
+            className="w-40 md:w-48 h-11 text-white border-white/60 bg-black/20 font-medium hover:scale-[1.02] transition-transform"
+            data-testid="button-login"
+          >
+            <LogIn className="w-4 h-4 mr-2" />
+            Log In
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">

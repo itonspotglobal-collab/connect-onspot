@@ -1,0 +1,34 @@
+Two bugs to fix on the /hire-talent preview/sign-up flow — separate from the
+OAuth work, which stays queued for later.
+
+BUG 1 — No sign-in option in the Preview popup
+ProfilePreviewModal currently shows only "Create account to shortlist" and
+"Close" for an anonymous visitor. This is wrong for anyone who already has a
+Client account but is simply logged out — they shouldn't be forced through
+sign-up again. Add a "Sign in" option alongside/near "Create account to
+shortlist" (e.g., a smaller text link like "Already have an account? Sign
+in"). Clicking it should open the existing LoginDialog, and — same as the
+sign-up path already does — preserve the pending search/invite state
+(sessionStorage) through the login, so after signing in the visitor lands
+back on their search with the same "confirm this invite?" flow already
+built for sign-up.
+
+BUG 2 — "Already have an account? Sign in" link in the sign-up modal is dead
+Audit first before fixing: find the exact element/handler for this link in
+SignUpDialog.tsx, and report what it's currently wired to do (nothing? wrong
+target? a broken state toggle?). Confirm what it SHOULD do — switch to
+LoginDialog in the same modal context, preserving whatever pending
+search/invite state was already captured before the sign-up dialog opened.
+Report the root cause before fixing, then fix it.
+
+While in this code: confirm whether the "Sign up with LinkedIn" button
+already visible in the sign-up modal is functional or purely a UI
+placeholder with no real handler. Just report this — don't build or wire
+up LinkedIn OAuth now, that's part of the larger OAuth work queued for
+later. I just want to know if there's already a partial implementation
+sitting here so it's accounted for when that work starts.
+
+Report back on both bugs with a real trace: click Preview as an anonymous
+visitor, confirm Sign In is now present and works; click "Already have an
+account? Sign in" from the sign-up modal and confirm it actually opens login
+and preserves pending state.
