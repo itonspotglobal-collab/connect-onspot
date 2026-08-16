@@ -1,36 +1,34 @@
 ---
-name: Two-database setup (local vs Neon cloud)
-description: DATABASE_URL = local helium dev DB; NEON_DATABASE_URL = Neon cloud/prod DB. Scripts must always use DATABASE_URL. Guards and log lines exist to prevent silent mismatches.
+name: Two-database / NEON setup (corrected)
+description: Which database each environment actually uses; NEON_DATABASE_URL is NOT the production DB.
 ---
 
-## The rule
+# Database environment map (confirmed from production startup logs)
 
-- `DATABASE_URL` → `helium/heliumdb` — the local dev DB the running server always connects to.
-- `NEON_DATABASE_URL` → Neon cloud — production only; only reach for it when explicitly targeting prod.
+| Environment | DATABASE_URL | NEON_DATABASE_URL |
+|---|---|---|
+| Dev (local) | `helium/heliumdb` (local Postgres) | `ep-royal-meadow-aexmdrj7…/neondb` (staging Neon, **0 candidates**) |
+| Production | `ep-empty-wildflower-ae9hsx05…/neondb` (real prod Neon, **25 candidates**) | `ep-royal-meadow-aexmdrj7…/neondb` (same staging Neon, **0 candidates**) |
 
-Scripts (migrations, traces, admin one-offs) **must use `DATABASE_URL`**. Using `NEON_DATABASE_URL` in a script while the dev server is on `DATABASE_URL` causes silent mismatch: schema changes land in the wrong database, and traces hit different data.
+## Key facts
 
-## Guards in place
+- **NEON_DATABASE_URL is NOT the production database in either environment.** It points to a staging/separate Neon project (`ep-royal-meadow`) that is empty in both dev and prod.
+- **The real production database is `DATABASE_URL` in the production environment** (`ep-empty-wildflower`). Scripts and agents querying NEON_DATABASE_URL to check production state are querying the wrong database.
+- All five prior false-conclusion incidents (hourly_rate columns, test.client password reset, inferCategory production-impact, scaffold job description, "0 candidates in Neon") traced to querying NEON_DATABASE_URL instead of the actual production DATABASE_URL.
+- The only reliable way to verify production state from outside the production environment is to **hit the live production API directly** (no auth token, real endpoint), not a database query via NEON_DATABASE_URL.
 
-### 1. Server startup log
-`server/index.ts` → `logDatabaseConnection()` emits:
+## NEON mismatch guard
+
+`server/index.ts` startup now prints both connections:
 ```
-🔗 DB: helium/heliumdb [LOCAL DEV]
-```
-(or `[NEON CLOUD]` / `[UNKNOWN]`). Visible at the very top of every `npm run dev` start. Check it before running any migration.
-
-### 2. Script preflight module
-`scripts/db-preflight.ts` → import and call at the top of any migration or admin script:
-
-```ts
-import { dbPreflight } from "../scripts/db-preflight";
-await dbPreflight();           // prints target, continues
-await dbPreflight("local");    // throws if not local dev
-await dbPreflight("cloud");    // throws if not Neon cloud
+🔗 DB: <DATABASE_URL host> [NEON CLOUD | LOCAL DEV]
+⚠️  NEON DB: ep-royal-meadow-aexmdrj7… [NEON_DB_LABEL="unset"] — NOT confirmed as production.
 ```
 
-Prints `[db-preflight] DATABASE_URL → helium/heliumdb [LOCAL DEV]` so the target is the first line of script output.
+`scripts/db-preflight.ts` exports `neonPreflight(strict?)` — call before any script that uses NEON_DATABASE_URL.
 
-**Why:** This pattern caused three real problems (hourly_rate columns, test-client password reset, PII flag migration/trace) before the guards were added. Each time the script author reached for `NEON_DATABASE_URL` without realising the server uses `DATABASE_URL`. The guards make it impossible to be silently wrong.
+`NEON_DB_LABEL` env var: set to `"production"` only if NEON_DATABASE_URL actually IS the production database (currently it is not, so the warning should stay visible).
 
-**How to apply:** Every new migration script gets `await dbPreflight("local")` as line 2 (after the import). If a script is intentionally for prod, use `await dbPreflight("cloud")` and pass `NEON_DATABASE_URL` explicitly — never silently fall through to the wrong one.
+**Why:** Makes the dev/prod boundary impossible to cross silently. Any agent checking startup logs or running db-preflight before querying NEON sees immediately that it is not the production database.
+
+**How to apply:** Before writing any conclusion about production data, always ask: "Did I get this from a live API hit to connect.onspotglobal.com, or from a database query?" Database queries via NEON_DATABASE_URL are against a staging/empty Neon and do not reflect production state.
