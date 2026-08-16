@@ -1,0 +1,46 @@
+New capability: allow a Client to message a Talent directly from the Full
+Profile/Preview view, without requiring a sent/accepted invite first. This
+changes the existing messaging design, so read carefully before building.
+
+HARD REQUIREMENT — preserved from existing design, does NOT change:
+The Talent's name stays MASKED in this conversation exactly as it is
+everywhere else. Opening messaging earlier does not mean revealing identity
+earlier. The ONLY thing that unmasks a Talent to a Client is still: Client
+sends a formal Invite (via the existing job-picker flow) AND the Talent
+accepts it (status invited → submitted). A Client messaging a masked Talent
+pre-invite must see the same masked identity throughout, with no leakage of
+real name through the messaging UI, notifications, or anywhere else.
+
+AUDIT FIRST:
+1. Read the message_threads schema — is jobId required (NOT NULL) or
+   nullable? A thread started from Full Profile has no job context at all
+   (search doesn't create jobs anymore, and no invite/job_submissions row
+   exists yet). Report whether the schema already supports a thread with
+   no job reference, or needs a migration.
+2. Confirm the existing participant-gate logic (verified earlier in this
+   build with real negative tests) generalizes cleanly to threads with no
+   job_id — a non-participant must still be rejected the same way.
+3. Confirm the existing PII-scanning-and-flag system (Task #195) applies
+   automatically to messages in these new threads, since they go through
+   the same POST /api/messages endpoint. If not automatic, wire it in.
+
+BUILD:
+4. Add a "Message" button to the Full Profile modal (and Preview, if it
+   makes sense there too — your call, report which) for a logged-in
+   Client. Clicking it creates (or reuses, if one already exists) a thread
+   between that Client and that masked Talent, with no job_id, and opens
+   the messaging UI.
+5. If a job_id-less thread later needs to "graduate" once a real Invite is
+   sent and accepted (e.g., the Client eventually formalizes it into a
+   real job Engagement) — propose whether the SAME thread continues (just
+   now also linked to a job_submissions record) or a new thread is created
+   at that point. Report your recommendation, don't build both.
+6. Talent-side: confirm they get a real notification when a Client
+   messages them directly (no prior invite), the same way they're notified
+   for any new message today.
+
+Report the audit findings and your recommendation for item 5 before
+implementing. Ship with a real end-to-end trace: real Client, real masked
+Talent, message sent and received, name confirmed masked throughout, then
+(separately) a real Invite sent and accepted on top of that to confirm
+unmask still only happens at that trigger, not before.
