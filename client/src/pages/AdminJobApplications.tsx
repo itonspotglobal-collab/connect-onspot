@@ -959,6 +959,7 @@ export default function AdminJobApplications() {
   const [jobFilter, setJobFilter] = useState(() => new URLSearchParams(rawSearch).get("jobId") ?? "");
   const [statusFilter, setStatusFilter] = useState(() => new URLSearchParams(rawSearch).get("status") ?? "");
   const [regFilter, setRegFilter] = useState(() => new URLSearchParams(rawSearch).get("registrationStatus") ?? "");
+  const [initiatedByFilter, setInitiatedByFilter] = useState(() => new URLSearchParams(rawSearch).get("initiatedBy") ?? "");
   const [dateFrom, setDateFrom] = useState(() => new URLSearchParams(rawSearch).get("dateFrom") ?? "");
   const [dateTo, setDateTo] = useState(() => new URLSearchParams(rawSearch).get("dateTo") ?? "");
   const [page, setPage] = useState(() => parseInt(new URLSearchParams(rawSearch).get("page") ?? "1", 10));
@@ -1023,10 +1024,11 @@ export default function AdminJobApplications() {
     if (jobFilter) p.set("jobId", jobFilter);
     if (statusFilter) p.set("status", statusFilter);
     if (regFilter) p.set("registrationStatus", regFilter);
+    if (initiatedByFilter) p.set("initiatedBy", initiatedByFilter);
     if (dateFrom) p.set("dateFrom", dateFrom);
     if (dateTo) p.set("dateTo", dateTo);
     return p.toString();
-  }, [page, search, jobFilter, statusFilter, regFilter, dateFrom, dateTo]);
+  }, [page, search, jobFilter, statusFilter, regFilter, initiatedByFilter, dateFrom, dateTo]);
 
   // Sync URL
   useEffect(() => {
@@ -1118,9 +1120,9 @@ export default function AdminJobApplications() {
   // ── Reset ─────────────────────────────────────────────────────────────────
   const resetFilters = () => {
     setSearch(""); setJobFilter(""); setStatusFilter(""); setRegFilter("");
-    setDateFrom(""); setDateTo(""); setPage(1); setSelected(new Set());
+    setInitiatedByFilter(""); setDateFrom(""); setDateTo(""); setPage(1); setSelected(new Set());
   };
-  const hasFilters = search || jobFilter || statusFilter || regFilter || dateFrom || dateTo;
+  const hasFilters = search || jobFilter || statusFilter || regFilter || initiatedByFilter || dateFrom || dateTo;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -1190,6 +1192,18 @@ export default function AdminJobApplications() {
                   <SelectContent>
                     <SelectItem value="_all">All account statuses</SelectItem>
                     {Object.entries(REG_CFG).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Client invited filter */}
+              <div className="w-40">
+                <Select value={initiatedByFilter || "_all"} onValueChange={v => { setInitiatedByFilter(v === "_all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All sources" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">All sources</SelectItem>
+                    <SelectItem value="client">Client invited</SelectItem>
+                    <SelectItem value="talent">Self-applied</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

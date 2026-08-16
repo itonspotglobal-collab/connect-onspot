@@ -10665,6 +10665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searchRaw              = req.query.search             as string | undefined;
       const dateFrom               = req.query.dateFrom           as string | undefined;
       const dateTo                 = req.query.dateTo             as string | undefined;
+      const initiatedBy            = req.query.initiatedBy        as string | undefined;
       const sortBy                 = (req.query.sortBy as string) ?? "submittedAt";
       const sortOrder              = (req.query.sortOrder as string)?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
@@ -10692,6 +10693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (jobId)              { params.push(jobId);              conditions.push(`js.job_id              = $${params.length}`); }
       if (registrationStatus) { params.push(registrationStatus); conditions.push(`js.registration_status = $${params.length}`); }
+      if (initiatedBy)        { params.push(initiatedBy);        conditions.push(`js.initiated_by        = $${params.length}`); }
       if (dateFrom)           { params.push(dateFrom);           conditions.push(`js.submitted_at        >= $${params.length}::date`); }
       if (dateTo)             { params.push(dateTo);             conditions.push(`js.submitted_at        <  ($${params.length}::date + INTERVAL '1 day')`); }
       if (searchRaw?.trim()) {
