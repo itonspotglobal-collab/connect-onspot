@@ -208,13 +208,26 @@ app.use(express.urlencoded({ limit: process.env.JSON_BODY_LIMIT || '1mb', extend
 // Log database connection info on startup for debugging
 const logDatabaseConnection = () => {
   const dbUrl = process.env.DATABASE_URL;
-  if (dbUrl) {
-    // Mask credentials for security
-    const maskedUrl = dbUrl.replace(/:([^:]+)@/, ':***@');
-    console.log(`🔗 Database connected: ${maskedUrl}`);
-  } else {
+  if (!dbUrl) {
     console.error('❌ DATABASE_URL not configured!');
+    return;
   }
+  // Extract host without credentials so the tier is immediately obvious.
+  // Format: "🔗 DB: helium/heliumdb [LOCAL DEV]" or "ep-xxx.neon.tech [NEON CLOUD]"
+  let host = '(unknown)';
+  try {
+    const u = new URL(dbUrl);
+    host = `${u.hostname}${u.pathname}`;
+  } catch {
+    // Non-standard URL — fall back to a safe excerpt
+    const m = dbUrl.match(/@([^/?]+)/);
+    if (m) host = m[1];
+  }
+  const tier =
+    /neon\.tech|neondb/.test(host) ? 'NEON CLOUD' :
+    /helium|localhost|127\.0\.0\.1/.test(host) ? 'LOCAL DEV' :
+    'UNKNOWN HOST — verify before running migrations';
+  console.log(`🔗 DB: ${host} [${tier}]`);
 };
 
 // Log JWT configuration on startup for debugging  
