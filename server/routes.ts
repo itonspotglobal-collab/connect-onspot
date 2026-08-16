@@ -3,7 +3,7 @@ import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
-import { sanitizeSearchCandidate } from "./lib/clientSearchSanitize";
+import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { containsPii } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
@@ -10212,6 +10212,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/talent-profile/:userId — full candidate profile for a specific talent.
+  // Returns education + certifications in addition to standard search-result fields.
+  // Requires client JWT; results pass through sanitizeFullProfileForClient (explicit allowlist).
+  app.get("/api/client/talent-profile/:userId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const candidate = await storage.getCandidateByUserId(userId);
+      if (!candidate) {
+        return res.status(404).json({ error: "Talent profile not found" });
+      }
+      res.json(sanitizeFullProfileForClient(candidate as Record<string, any>));
+    } catch (err) {
+      console.error("GET /api/client/talent-profile/:userId error:", err);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

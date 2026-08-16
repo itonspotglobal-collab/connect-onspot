@@ -61,6 +61,57 @@ export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<
   };
 }
 
+/**
+ * sanitizeFullProfileForClient — extended allowlist for the "View Full Profile"
+ * endpoint (/api/client/talent-profile/:userId). Adds education and
+ * certifications to the base search-result fields. Requires client JWT.
+ *
+ * This is a SEPARATE, EXPLICIT allowlist — not a spread of sanitizeSearchCandidate.
+ * Any field not listed here is dropped. URL fields, contact fields, and
+ * password hash are intentionally absent.
+ */
+export function sanitizeFullProfileForClient(candidate: Record<string, any>): Record<string, any> {
+  const rawName: string = (candidate.fullName ?? candidate.full_name ?? "").trim();
+  const parts = rawName.split(/\s+/).filter(Boolean);
+  const maskedName =
+    !rawName
+      ? "Talent Profile"
+      : parts.length === 1
+        ? parts[0][0] + "•".repeat(4)
+        : parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+
+  return {
+    // Identity — always masked; same pattern as sanitizeSearchCandidate
+    fullName:  maskedName,
+    full_name: maskedName,
+
+    // Professional profile fields (same set as search results)
+    targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
+    location:        candidate.location        ?? null,
+    seniority:       candidate.seniority       ?? null,
+    category:        candidate.category        ?? null,
+    availability:    candidate.availability    ?? null,
+    headline:        candidate.headline        ?? null,
+    summary:         candidate.summary         ?? null,
+    moreAboutMe:     candidate.moreAboutMe     ?? null,
+    coreSkills:      candidate.coreSkills      ?? candidate.core_skills      ?? [],
+    secondarySkills: candidate.secondarySkills ?? candidate.secondary_skills ?? [],
+    profilePhotoUrl: candidate.profilePhotoUrl ?? null,
+    workHistory:     candidate.workHistory     ?? [],
+    preferences:     candidate.preferences     ?? {},
+    experienceYears: candidate.experienceYears ?? null,
+
+    // Full-profile extras — NOT in sanitizeSearchCandidate
+    education:      candidate.education      ?? [],
+    certifications: candidate.certifications ?? [],
+
+    // Explicitly omitted (never returned through this flow):
+    // email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl,
+    // portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName,
+    // passwordHash, displayName, userId
+  };
+}
+
 /** Fields that MUST NEVER appear in a client search API response at any stage. */
 export const SEARCH_RESULT_BLOCKED_FIELDS: readonly string[] = [
   "email",

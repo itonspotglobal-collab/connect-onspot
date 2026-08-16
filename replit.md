@@ -21,7 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Layer**: Drizzle ORM, utilizing a Repository pattern.
 
 #### Data Storage
-- **Database**: PostgreSQL hosted on Neon (serverless). Dev runs against the local helium DB (`DATABASE_URL`); production runs against Neon (`NEON_DATABASE_URL`). **Before every deployment that includes schema changes**, run `bash scripts/sync-schema-to-neon.sh` (dry run — shows the diff) and then `bash scripts/sync-schema-to-neon.sh --apply` to push additive schema changes (new tables/columns/indexes) from dev to Neon. Last full sync: 2026-08-16.
+- **Database**: PostgreSQL hosted on Neon (serverless). Each environment uses its own `DATABASE_URL`: dev points to the local helium DB, production points to a Neon project (`ep-empty-wildflower`). **Schema changes are applied automatically** via startup DDL blocks in `server/routes.ts` (`ALTER TABLE … ADD COLUMN IF NOT EXISTS`) on every deploy — no manual sync needed. `NEON_DATABASE_URL` and `scripts/sync-schema-to-neon.sh` are deprecated (the script targeted the wrong Neon project) and should be removed from all environments.
 - **ORM**: Drizzle ORM with a schema-first approach, supporting entities like users, profiles, skills, jobs, and payments.
 
 #### Authentication & Authorization

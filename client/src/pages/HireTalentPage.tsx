@@ -67,6 +67,12 @@ interface TalentResult {
   };
 }
 
+/** Shape returned by GET /api/client/talent-profile/:userId (full profile extras only). */
+interface FullProfileData {
+  education: Array<Record<string, string | null | undefined>>;
+  certifications: Array<Record<string, string | null | undefined>>;
+}
+
 interface SearchResults {
   jobId?: string; // only present for authenticated client searches
   results: TalentResult[];
@@ -138,9 +144,33 @@ function ProfilePreviewModal({
   onShortlist: () => void;
   onSignIn?: () => void;
 }) {
+  // Full-profile state — populated when the client clicks "Full profile"
+  const [fullProfile, setFullProfile] = useState<FullProfileData | null>(null);
+  const [loadingFull, setLoadingFull] = useState(false);
+  useEffect(() => {
+    if (!open) { setFullProfile(null); setLoadingFull(false); }
+  }, [open]);
+
   if (!result) return null;
 
   const { candidate } = result;
+
+  const handleViewFullProfile = async () => {
+    if (loadingFull || fullProfile) return;
+    setLoadingFull(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/client/talent-profile/${result.userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to load full profile");
+      setFullProfile(await res.json());
+    } catch {
+      // silent — user can retry
+    } finally {
+      setLoadingFull(false);
+    }
+  };
   const name = candidate.fullName ?? (candidate as any).full_name ?? "Talent Profile";
 
   const prefs = candidate.preferences as Record<string, string> | null | undefined;
@@ -355,6 +385,74 @@ function ProfilePreviewModal({
             </div>
           )}
 
+          {/* Education — shown when "Full profile" is loaded */}
+          {fullProfile && fullProfile.education.length > 0 && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Education
+              </p>
+              <div className="space-y-4">
+                {fullProfile.education.map((ed, i) => {
+                  const institution = ed.institution ?? ed.school ?? "Institution";
+                  const degree = [ed.degree, ed.field].filter(Boolean).join(", ");
+                  const period = ed.endDate
+                    ? `${ed.startDate ?? ""} – ${ed.endDate}`.replace(/^\s*–\s*/, "").trim()
+                    : (ed.startDate ?? null);
+                  return (
+                    <div key={i} className="rounded-xl border border-slate-100 p-4 dark:border-white/[0.06]">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">{institution}</p>
+                          {degree && <p className="text-sm text-slate-500">{degree}</p>}
+                        </div>
+                        {period && (
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500 dark:bg-white/[0.06]">
+                            {period}
+                          </span>
+                        )}
+                      </div>
+                      {ed.description && (
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{ed.description}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Certifications — shown when "Full profile" is loaded */}
+          {fullProfile && fullProfile.certifications.length > 0 && (
+            <div className="px-6 py-5 md:px-10">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Certifications
+              </p>
+              <div className="space-y-3">
+                {fullProfile.certifications.map((cert, i) => {
+                  const name = cert.name ?? cert.title ?? "Certification";
+                  return (
+                    <div key={i} className="rounded-xl border border-slate-100 p-4 dark:border-white/[0.06]">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-slate-900 dark:text-white">{name}</p>
+                          {cert.issuer && <p className="text-sm text-slate-500">{cert.issuer}</p>}
+                        </div>
+                        {cert.date && (
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500 dark:bg-white/[0.06]">
+                            {cert.date}
+                          </span>
+                        )}
+                      </div>
+                      {cert.description && (
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{cert.description}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Preferences */}
           {prefs && Object.keys(prefs).length > 0 && (
             <div className="px-6 py-5 md:px-10">
@@ -401,12 +499,27 @@ function ProfilePreviewModal({
                 "Shortlist this talent"
               )}
             </button>
-            <button
-              onClick={onClose}
-              className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors dark:border-white/10 dark:text-slate-400"
-            >
-              Close
-            </button>
+            <div className="flex items-center gap-2">
+              {!isAnonymous && !fullProfile && (
+                <button
+                  onClick={handleViewFullProfile}
+                  disabled={loadingFull}
+                  className="flex items-center gap-1.5 rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors disabled:opacity-50 dark:border-white/10 dark:text-slate-400"
+                >
+                  {loadingFull ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…</>
+                  ) : (
+                    <><Eye className="h-3.5 w-3.5" /> Full profile</>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors dark:border-white/10 dark:text-slate-400"
+              >
+                Close
+              </button>
+            </div>
           </div>
           {/* Sign-in nudge for anonymous visitors — shown below the action row */}
           {isAnonymous && (

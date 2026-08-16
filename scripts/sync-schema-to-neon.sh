@@ -1,7 +1,24 @@
 #!/usr/bin/env bash
 # sync-schema-to-neon.sh
 #
-# Pushes ADDITIVE schema changes (missing tables, columns, indexes) from the
+# ⚠️  DEPRECATED — DO NOT USE.
+#
+# This script was written under the assumption that NEON_DATABASE_URL pointed
+# to the production Neon database.  Investigation confirmed that assumption was
+# WRONG: NEON_DATABASE_URL (ep-royal-meadow-aexmdrj7) is a separate staging
+# Neon project with 0 candidates, never the production DB.  The real production
+# database is DATABASE_URL in the production environment (ep-empty-wildflower).
+#
+# Production schema has always been maintained by startup DDL blocks in
+# server/routes.ts (ALTER TABLE … ADD COLUMN IF NOT EXISTS) running against
+# DATABASE_URL on every deploy.  This script was syncing to the wrong target
+# and had no effect on production.
+#
+# The NEON_DATABASE_URL secret should be removed from all environments.
+# Schema changes: add them as startup DDL in server/routes.ts instead.
+#
+# Original intent (preserved for reference):
+# Pushed ADDITIVE schema changes (missing tables, columns, indexes) from the
 # local dev DB (DATABASE_URL) to the production Neon DB (NEON_DATABASE_URL).
 #
 # Run this BEFORE every deployment that includes schema changes:
