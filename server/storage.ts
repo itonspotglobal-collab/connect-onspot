@@ -2622,6 +2622,19 @@ export class MemStorage implements IStorage {
 
 // DbStorage class: Extends MemStorage but uses PostgreSQL for Vanessa logs
 export class DbStorage extends MemStorage {
+  /**
+   * Injectable query function — defaults to the real `dbQuery` from ./db.
+   * Pass a stub in tests to exercise `searchProfiles` without a live database.
+   */
+  readonly _queryFn: (sql: string, params: (string | number)[]) => Promise<{ rows: any[] }>;
+
+  constructor(
+    queryFn?: (sql: string, params: (string | number)[]) => Promise<{ rows: any[] }>,
+  ) {
+    super();
+    this._queryFn = queryFn ?? dbQuery;
+  }
+
   // Override Vanessa log methods to use database instead of memory
 
   async createVanessaLog(log: InsertVanessaLog): Promise<VanessaLog> {
@@ -3415,7 +3428,7 @@ export class DbStorage extends MemStorage {
       LIMIT 500
     `;
 
-    const result = await dbQuery(sql, params);
+    const result = await this._queryFn(sql, params);
     // Map snake_case DB columns to camelCase Profile fields
     return result.rows.map((row: any) => ({
       id: row.id,
