@@ -1,5 +1,5 @@
 /**
- * TalentMatchedJobs — Recommended for You feed
+ * TalentMatchedJobs — Suggested for You feed
  *
  * Reads from GET /api/talent/matches (persisted job_matches table, server scorer).
  * Display score is capped at 100% regardless of raw score.
@@ -211,7 +211,7 @@ export default function TalentMatchedJobs({ talentToken }: TalentMatchedJobsProp
         <div>
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            Recommended for You
+            Suggested for You
           </h2>
           <p className="text-sm text-muted-foreground">
             {matches.length} job{matches.length !== 1 ? "s" : ""} ranked by compatibility
