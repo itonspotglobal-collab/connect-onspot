@@ -10281,7 +10281,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/client/talent-search — create a scaffold job and return ranked talent
+  // POST /api/client/talent-search — rank talent in-memory against search params.
+  // Architecture decision: the Hire Talent search bar NEVER writes to the jobs table.
+  // Jobs may only be created through the explicit "Post a Job" flow on the Client Profile.
+  // This endpoint is the authenticated-client counterpart of the anonymous /api/talent-search
+  // endpoint — same scorer (rankTalentByParams), same response shape, zero DB writes.
   app.post("/api/client/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -10291,100 +10295,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!searchText?.trim()) return res.status(400).json({ error: "searchText is required" });
 
       const title = String(searchText).trim().slice(0, 120);
-
-      // inferCategory imported from ./lib/searchScaffold.js
       const resolvedCategory = category?.trim() || inferCategory(title);
 
-      // Dedup: reuse an existing scaffold for the same client + title + engagementType
-      // within the last 7 days rather than creating a new row on every search hit.
-      // Without this, every distinct search creates a permanent DB row.
-      const dedupCheck = await query(
-        `SELECT id FROM jobs
-         WHERE client_id = $1
-           AND created_via = 'search_scaffold'
-           AND lower(title) = lower($2)
-           AND engagement_type = $3
-           AND created_at > NOW() - INTERVAL '7 days'
-         ORDER BY created_at DESC
-         LIMIT 1`,
-        [userId, title, engagementType],
+      // No DB write — rank talent purely in-memory against virtual params.
+      const raw = await storage.rankTalentByParams(
+        { title, category: resolvedCategory, engagementType },
+        30,
       );
-
-      let jobId: string;
-      if (dedupCheck.rows.length > 0) {
-        // Reuse the existing scaffold — just re-score against current candidates.
-        jobId = dedupCheck.rows[0].id as string;
-      } else {
-        // Create an internal scaffold job (draft, pending approval) purely for scoring.
-        // status='draft' prevents public visibility on all client/talent/public endpoints.
-        // approvalStatus='pending' (not 'approved') prevents scaffold rows from polluting
-        // category-suggestion counts or any other approval_status='approved' filtered query.
-        // The scorer (rankTalentForJob) does NOT read approvalStatus, so pending is safe.
-        const scaffoldJob = await storage.createJob({
-          clientId: userId,
-          title,
-          professionalRoleName: title,
-          description: title,     // NOT NULL in schema; scaffold description is hidden from talent
-          category: resolvedCategory,
-          jobFunction: resolvedCategory,
-          engagementType,
-          experienceLevel: "Mid-level",
-          status: "draft",
-          approvalStatus: "pending",
-          isClientSubmitted: true,
-          createdVia: "search_scaffold",
-        } satisfies InsertJob);
-        jobId = scaffoldJob.id;
-      }
-
-      const raw = await storage.rankTalentForJob(jobId, 30);
-      // Sanitize every result through the shared allowlist — no raw candidate
-      // fields (email, phone, resumeUrl, etc.) must reach the client.
       const results = raw.map((r) => ({
         ...r,
         candidate: sanitizeSearchCandidate(r.candidate),
       }));
       // Record query frequency (fire-and-forget — never blocks the response)
       recordSearchQuery(title, (req as any).user?.role);
-      return res.json({ jobId, results });
+      return res.json({ results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
   });
 
-  // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
-  // engagement type. Avoids creating a duplicate scaffold job per filter change.
-  app.patch("/api/client/talent-search/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-
-      const { jobId } = req.params;
-      const { engagementType } = req.body;
-      if (!engagementType) return res.status(400).json({ error: "engagementType is required" });
-
-      // Verify ownership and that it's a scaffold job
-      const check = await query(
-        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
-        [jobId, userId],
-      );
-      if (!check.rows.length) return res.status(404).json({ error: "Scaffold job not found" });
-
-      // Update engagement type in-place — re-use same job row, no new INSERT
-      await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
-
-      const raw = await storage.rankTalentForJob(jobId, 30);
-      // Sanitize every result through the shared allowlist — no raw candidate
-      // fields (email, phone, resumeUrl, etc.) must reach the client.
-      const results = raw.map((r) => ({
-        ...r,
-        candidate: sanitizeSearchCandidate(r.candidate),
-      }));
-      return res.json({ jobId, results });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  });
+  // PATCH /api/client/talent-search/:jobId — REMOVED.
+  // Engagement-type rescoring is now handled by re-calling POST /api/client/talent-search
+  // with the new engagementType — no stored scaffold row to update.
+  // Route intentionally omitted; any remaining client calls will receive 404.
 
   // GET /api/client/invitations/check — given a list of talentUserIds, return which are already invited by this client
   app.get("/api/client/invitations/check", authenticateJWT, requireClient, async (req: Request, res: Response) => {
@@ -10421,7 +10354,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/client/invitations — invite a specific talent to a scaffold job
+  // POST /api/client/invitations — invite a specific talent to one of the client's real job postings.
+  // jobId must reference a job that: (a) is owned by the authenticated client,
+  // (b) has status='open' and approval_status='approved', and (c) is NOT a search scaffold.
+  // Scaffold jobs were never meant to be client-manageable postings and are explicitly rejected.
   app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
@@ -10432,13 +10368,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "jobId and talentUserId are required" });
       }
 
-      // Verify the job belongs to this client AND is a search_scaffold (not a real posting)
+      // Verify ownership: the job must belong to this client, be open/approved, and not be a scaffold.
       const jobCheck = await query(
-        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
+        `SELECT id FROM jobs
+         WHERE id = $1
+           AND client_id = $2
+           AND status = 'open'
+           AND approval_status = 'approved'
+           AND (created_via IS NULL OR created_via != 'search_scaffold')`,
         [jobId, clientId],
       );
       if (!jobCheck.rows.length) {
-        return res.status(403).json({ error: "Job not found, not owned by you, or not a search scaffold" });
+        return res.status(403).json({ error: "Job not found, not owned by you, or not an open approved posting" });
       }
 
       // Verify the target user is actually a talent-role account
@@ -10475,11 +10416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const email = talent?.email ?? "";
 
       // Fetch job title & description for the invitation email.
-      // Scaffold jobs carry an internal debug description — never expose it to talent.
       const jobRow = await query(
-        `SELECT title, created_via,
-                CASE WHEN created_via = 'search_scaffold' THEN NULL ELSE description END AS description
-         FROM jobs WHERE id = $1 LIMIT 1`,
+        `SELECT title, description FROM jobs WHERE id = $1 LIMIT 1`,
         [jobId],
       );
       const jobTitle = jobRow.rows[0]?.title ?? "a new role";

@@ -74,7 +74,6 @@ interface FullProfileData {
 }
 
 interface SearchResults {
-  jobId?: string; // only present for authenticated client searches
   results: TalentResult[];
 }
 
@@ -703,7 +702,17 @@ export default function HireTalentPage() {
     talentName: string;
     query: string;
   } | null>(null);
-  const [isConfirmingInvite, setIsConfirmingInvite] = useState(false);
+  // ── Job picker (used when client clicks Invite/Shortlist) ─────────────────────
+  // pickerTarget: who is being invited; null = picker closed
+  // pickerJobs: client's open approved real postings, fetched when picker opens
+  // pickerSelectedJobId: which job the client picked (only relevant with 2+ jobs)
+  // pickerSending: invite API call in-flight
+  const [pickerTarget, setPickerTarget] = useState<{ talentUserId: string; talentName: string } | null>(null);
+  const [pickerJobs, setPickerJobs] = useState<Array<{ id: string; title: string; engagementType?: string | null }>>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerSelectedJobId, setPickerSelectedJobId] = useState<string | null>(null);
+  const [pickerSending, setPickerSending] = useState(false);
+
   const [copiedLink, setCopiedLink] = useState(false);
 
   // ── Suggestion chips ──────────────────────────────────────────────────────────
@@ -935,50 +944,68 @@ export default function HireTalentPage() {
       setShowSignUp(true);
       return;
     }
-    // Authenticated client — send invitation immediately.
-
-    sendInvite(talentUserId);
+    // Authenticated client — open the job picker.
+    openPicker(talentUserId, talentName);
   }
 
-  // ── Invite API ────────────────────────────────────────────────────────────────
-  async function sendInvite(talentUserId: string) {
-    if (!searchResults?.jobId) {
-      toast({ title: "No active job", description: "Please run a search first.", variant: "destructive" });
-      return;
+  // ── Job picker — open, confirm, close ─────────────────────────────────────────
+  // Design: the Hire Talent search bar never creates a jobs row.  Invitations
+  // must reference one of the client's own real open/approved job postings.
+  // The picker fetches those jobs on demand and branches on count (0 / 1 / 2+).
+  function closePicker() {
+    setPickerTarget(null);
+    setPickerJobs([]);
+    setPickerSelectedJobId(null);
+  }
+
+  async function openPicker(talentUserId: string, talentName: string) {
+    setPickerTarget({ talentUserId, talentName });
+    setPickerLoading(true);
+    setPickerSelectedJobId(null);
+    try {
+      const res = await apiRequest("GET", "/api/client/jobs");
+      const all = res.ok ? await res.json() : [];
+      const open = Array.isArray(all)
+        ? all.filter(
+            (j: any) =>
+              j.status === "open" &&
+              (j.approvalStatus === "approved" || j.approval_status === "approved"),
+          )
+        : [];
+      setPickerJobs(open);
+    } catch {
+      setPickerJobs([]);
+    } finally {
+      setPickerLoading(false);
     }
+  }
+
+  async function confirmInvite(jobId: string) {
+    if (!pickerTarget) return;
+    const { talentUserId } = pickerTarget;
+    setPickerSending(true);
     setInvitingId(talentUserId);
     try {
-      const res = await apiRequest("POST", "/api/client/invitations", {
-        jobId: searchResults.jobId,
-        talentUserId,
-      });
+      const res = await apiRequest("POST", "/api/client/invitations", { jobId, talentUserId });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (body.error === "already_invited") {
           setInvitedIds((p) => new Set(p).add(talentUserId));
+          closePicker();
           return;
         }
         throw new Error(body.message || "Failed to send invitation");
       }
       setInvitedIds((p) => new Set(p).add(talentUserId));
-      toast({
-        title: "Invitation sent",
-        description: "The talent will see your invitation on their dashboard.",
-      });
+      toast({ title: "Invitation sent", description: "The talent will see your invitation on their dashboard." });
+      closePicker();
     } catch (err: any) {
+      // Keep picker open on error so the client can retry or cancel.
       toast({ title: "Could not send invitation", description: err.message, variant: "destructive" });
     } finally {
+      setPickerSending(false);
       setInvitingId(null);
     }
-  }
-
-  // ── Confirm pending invite (shown after auth restores search) ─────────────────
-  async function confirmPendingInvite() {
-    if (!pendingInvite) return;
-    setIsConfirmingInvite(true);
-    await sendInvite(pendingInvite.talentUserId);
-    setPendingInvite(null);
-    setIsConfirmingInvite(false);
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -1054,28 +1081,27 @@ export default function HireTalentPage() {
             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
             className="max-w-5xl mx-auto px-5 pt-8 pb-20"
           >
-            {/* Pending invite confirmation banner — shown after auth restores search */}
-            {pendingInvite && searchResults?.jobId && (
+            {/* Pending invite banner — shown after auth restores search */}
+            {pendingInvite && (
               <div className="mb-6 flex items-start gap-3 rounded-xl border border-[#474ead]/30 bg-[#EFEFFA] px-4 py-4">
                 <AlertCircle className="h-4 w-4 text-[#474ead] shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13.5px] font-semibold text-slate-800">
                     You were about to invite{" "}
                     <span className="text-[#474ead]">{pendingInvite.talentName}</span>{" "}
-                    for &ldquo;{pendingInvite.query}&rdquo; — send now?
+                    for &ldquo;{pendingInvite.query}&rdquo; — pick a role to invite them to.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={confirmPendingInvite}
-                    disabled={isConfirmingInvite}
-                    className="rounded-[8px] bg-[#474ead] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60"
+                    onClick={() => {
+                      const inv = pendingInvite;
+                      setPendingInvite(null);
+                      openPicker(inv.talentUserId, inv.talentName);
+                    }}
+                    className="rounded-[8px] bg-[#474ead] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-[#363c87] transition-colors"
                   >
-                    {isConfirmingInvite ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      "Send invitation"
-                    )}
+                    Choose role
                   </button>
                   <button
                     onClick={() => setPendingInvite(null)}
@@ -1303,6 +1329,150 @@ export default function HireTalentPage() {
       />
 
       <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
+
+      {/* ── Job picker modal ─────────────────────────────────────────────────────
+          Shown when a client clicks Invite/Shortlist on a talent card.
+          Branches on the count of their open approved job postings:
+            0 → "Post a job first" CTA
+            1 → single-confirm (no list needed)
+            2+ → scrollable picker, confirm disabled until one is selected
+          Cancel always closes cleanly with no network call and no state residue.
+      ──────────────────────────────────────────────────────────────────────── */}
+      {pickerTarget &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={closePicker}
+          >
+            <div
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {pickerLoading ? (
+                <div className="flex flex-col items-center gap-3 py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#474ead]" />
+                  <p className="text-sm text-slate-500">Loading your job postings…</p>
+                </div>
+              ) : pickerJobs.length === 0 ? (
+                /* ── Zero open jobs ── */
+                <div className="p-6">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">
+                    No open job postings
+                  </h3>
+                  <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mb-5">
+                    You need an active, approved job posting to invite{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {pickerTarget.talentName}
+                    </span>
+                    . Post one first — then come back to send the invitation.
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={closePicker}
+                      className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <a
+                      href="/client-profile"
+                      className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors"
+                    >
+                      Post a Job →
+                    </a>
+                  </div>
+                </div>
+              ) : pickerJobs.length === 1 ? (
+                /* ── Single job — direct confirm ── */
+                <div className="p-6">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
+                    Invite {pickerTarget.talentName}?
+                  </h3>
+                  <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mb-5">
+                    They'll be invited to:{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {pickerJobs[0].title}
+                    </span>
+                    {pickerJobs[0].engagementType && (
+                      <span className="ml-1 text-slate-400">· {pickerJobs[0].engagementType}</span>
+                    )}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={closePicker}
+                      disabled={pickerSending}
+                      className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => confirmInvite(pickerJobs[0].id)}
+                      disabled={pickerSending}
+                      className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
+                    >
+                      {pickerSending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "Send invitation"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* ── Multiple jobs — scrollable picker ── */
+                <div className="p-6">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
+                    Invite {pickerTarget.talentName} to which role?
+                  </h3>
+                  <p className="text-[13.5px] text-slate-400 mb-4">
+                    Select one of your open job postings.
+                  </p>
+                  <div className="flex flex-col gap-2 max-h-64 overflow-y-auto mb-5 pr-1">
+                    {pickerJobs.map((job) => (
+                      <button
+                        key={job.id}
+                        onClick={() => setPickerSelectedJobId(job.id)}
+                        className={cn(
+                          "text-left rounded-[10px] px-4 py-3 border text-[13.5px] font-semibold transition-colors duration-150",
+                          pickerSelectedJobId === job.id
+                            ? "border-[#474ead] bg-[#EFEFFA] text-[#474ead]"
+                            : "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#474ead] hover:text-[#474ead]",
+                        )}
+                      >
+                        {job.title}
+                        {job.engagementType && (
+                          <span className="ml-2 text-[12px] font-normal text-slate-400">
+                            {job.engagementType}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={closePicker}
+                      disabled={pickerSending}
+                      className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => pickerSelectedJobId && confirmInvite(pickerSelectedJobId)}
+                      disabled={!pickerSelectedJobId || pickerSending}
+                      className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
+                    >
+                      {pickerSending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "Send invitation"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {/* ── Profile preview modal ── */}
       <ProfilePreviewModal

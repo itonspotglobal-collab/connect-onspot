@@ -12,3 +12,4 @@
 - [Client↔talent messaging gate](client-talent-messaging.md) — threads only after accepted client-initiated invitation; conditional UPDATE + advisory lock for accepts; tests need --test-concurrency=1.
 - [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
 - [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.
+- [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
