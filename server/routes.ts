@@ -1155,6 +1155,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  platform_settings migration skipped:", migErr.message);
   }
 
+  // One-time cleanup: reset scaffold jobs that were created with approvalStatus='approved'
+  // (old default) to 'pending'. Without this, they pollute category-suggestion counts and
+  // any other query that filters approval_status='approved'. Safe to run on every startup
+  // because the WHERE clause is a no-op once all rows are already 'pending'.
+  try {
+    const scaffoldReset = await query(`
+      UPDATE jobs
+      SET approval_status = 'pending'
+      WHERE created_via = 'search_scaffold'
+        AND approval_status = 'approved'
+    `);
+    if (scaffoldReset.rowCount && scaffoldReset.rowCount > 0) {
+      console.log(`✅ Migration: reset ${scaffoldReset.rowCount} scaffold job(s) approval_status approved→pending`);
+    }
+  } catch (scaffoldResetErr: any) {
+    console.warn("⚠️  Scaffold approval_status reset skipped:", scaffoldResetErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -9806,6 +9824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           j.proposal_count AS "proposalCount"
          FROM jobs j
          WHERE j.client_id = $1
+           AND j.created_via != 'search_scaffold'
          ORDER BY j.created_at DESC`,
         [userId],
       );
@@ -10161,6 +10180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `SELECT COALESCE(NULLIF(job_function,''), category) AS raw_cat, COUNT(*) AS cnt
          FROM jobs
          WHERE approval_status = 'approved'
+           AND created_via != 'search_scaffold'
          GROUP BY raw_cat
          ORDER BY cnt DESC
          LIMIT 30`,
@@ -10246,25 +10266,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // inferCategory imported from ./lib/searchScaffold.js
       const resolvedCategory = category?.trim() || inferCategory(title);
 
-      // Create an internal scaffold job (draft, approved) purely for scoring purposes.
-      // These are never shown on the public job board (status='draft', created_via='search_scaffold').
-      // Using storage.createJob + InsertJob type so TypeScript catches any missing NOT NULL
-      // column at compile time — raw SQL strings cannot do that.
-      const scaffoldJob = await storage.createJob({
-        clientId: userId,
-        title,
-        professionalRoleName: title,
-        description: title,       // NOT NULL in schema; scaffold description is hidden from talent
-        category: resolvedCategory,
-        jobFunction: resolvedCategory,
-        engagementType,
-        experienceLevel: "Mid-level",
-        status: "draft",
-        approvalStatus: "approved",
-        isClientSubmitted: true,
-        createdVia: "search_scaffold",
-      } satisfies InsertJob);
-      const jobId = scaffoldJob.id;
+      // Dedup: reuse an existing scaffold for the same client + title + engagementType
+      // within the last 7 days rather than creating a new row on every search hit.
+      // Without this, every distinct search creates a permanent DB row.
+      const dedupCheck = await query(
+        `SELECT id FROM jobs
+         WHERE client_id = $1
+           AND created_via = 'search_scaffold'
+           AND lower(title) = lower($2)
+           AND engagement_type = $3
+           AND created_at > NOW() - INTERVAL '7 days'
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [userId, title, engagementType],
+      );
+
+      let jobId: string;
+      if (dedupCheck.rows.length > 0) {
+        // Reuse the existing scaffold — just re-score against current candidates.
+        jobId = dedupCheck.rows[0].id as string;
+      } else {
+        // Create an internal scaffold job (draft, pending approval) purely for scoring.
+        // status='draft' prevents public visibility on all client/talent/public endpoints.
+        // approvalStatus='pending' (not 'approved') prevents scaffold rows from polluting
+        // category-suggestion counts or any other approval_status='approved' filtered query.
+        // The scorer (rankTalentForJob) does NOT read approvalStatus, so pending is safe.
+        const scaffoldJob = await storage.createJob({
+          clientId: userId,
+          title,
+          professionalRoleName: title,
+          description: title,     // NOT NULL in schema; scaffold description is hidden from talent
+          category: resolvedCategory,
+          jobFunction: resolvedCategory,
+          engagementType,
+          experienceLevel: "Mid-level",
+          status: "draft",
+          approvalStatus: "pending",
+          isClientSubmitted: true,
+          createdVia: "search_scaffold",
+        } satisfies InsertJob);
+        jobId = scaffoldJob.id;
+      }
 
       const raw = await storage.rankTalentForJob(jobId, 30);
       // Sanitize every result through the shared allowlist — no raw candidate
