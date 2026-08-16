@@ -10,4 +10,5 @@
 - [Search-to-Shortlist PII audit](search-to-shortlist-pii-audit.md) — contact fields never returned to client at any stage; name/contact are independent axes; three endpoints fixed; messaging gap flagged.
 - [Messaging system](messaging-system.md) — client↔talent threads auto-created on invitation accept; all endpoints auth-gated; senderId forced server-side; contact PII warning in UI.
 - [Client↔talent messaging gate](client-talent-messaging.md) — threads only after accepted client-initiated invitation; conditional UPDATE + advisory lock for accepts; tests need --test-concurrency=1.
+- [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
 - [Two-database setup](db-two-databases.md) — DATABASE_URL=local helium dev; NEON_DATABASE_URL=Neon cloud/prod. Scripts must use DATABASE_URL. Guards: startup log + scripts/db-preflight.ts.
