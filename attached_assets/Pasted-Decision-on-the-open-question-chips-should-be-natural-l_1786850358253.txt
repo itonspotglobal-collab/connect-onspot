@@ -1,0 +1,40 @@
+Decision on the open question: chips should be natural-language phrases, not
+raw category names — but the phrasing itself should be a small, static,
+hand-written mapping (one phrase per canonical category), not auto-generated
+from job titles. Job titles are unreliable free text (inconsistent casing,
+known mistagged rows) and I don't want chip copy quality riding on that.
+
+Which chips actually appear stays fully dynamic per your job-posting-volume
+recommendation (approved — build GET /api/client/talent-search/suggestions
+as you proposed, grouping approved jobs by job_function through
+resolveBrowseCategory(), top 4-5 by count).
+
+Use this phrase mapping (one entry per category, all 10 defined so any
+category can surface as volume shifts) — treat this as a first draft I'll
+likely want to tweak, not locked final copy:
+
+Customer Support        → "Handle customer support inquiries"
+Virtual Assistants       → "Manage my inbox & calendar"
+Developers               → "Build or maintain my website"
+Designers                → "Design marketing or product assets"
+Marketing Specialists    → "Run my social media & campaigns"
+Accountants              → "Keep my books and finances in order"
+Healthcare Professionals → "Support patient care & records"
+Sales Representatives    → "Handle outbound sales & leads"
+Operations Specialists   → "Keep my day-to-day operations running"
+IT & Technical Support   → "Manage my IT & tech support"
+
+Store this mapping in code (jobConstants.ts, alongside the category list) —
+the endpoint returns which categories are in the top 4-5 by volume, the
+frontend looks up the corresponding phrase from this fixed mapping.
+
+Confirmed, no changes needed:
+- Item 2 (cards): already matches the reference pattern — no rebuild needed,
+  just make sure the existing card grid is what reveals in the progressive-
+  reveal transition, not rebuilt from scratch.
+- Item 3 (pagination): deferred as you proposed, flag as a separate task if
+  the pool passes ~200 candidates.
+
+Proceed with the progressive reveal (search-first, cards reveal on action)
+using the existing card grid, wired to the dynamic top-volume + static-phrase
+chips above.

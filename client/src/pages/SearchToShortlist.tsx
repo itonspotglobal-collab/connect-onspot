@@ -1,19 +1,18 @@
-import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
-import { TALENT_BROWSE_CATEGORIES } from "@/lib/jobConstants";
+import {
+  TALENT_BROWSE_CATEGORIES,
+  TALENT_CATEGORY_PHRASES,
+  resolveBrowseCategory,
+  type TalentBrowseCategory,
+} from "@/lib/jobConstants";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Search,
-  Sparkles,
-  Users,
-  Check,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { Search, Check, Loader2 } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,6 +43,10 @@ interface SearchResults {
   results: TalentResult[];
 }
 
+interface Suggestion {
+  category: string;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getInitials(name?: string | null): string {
@@ -65,16 +68,16 @@ function maskName(name?: string | null): string {
   return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
 }
 
-function matchBadge(score: number): { label: string; className: string } | null {
+function matchLabel(score: number): { label: string; className: string } | null {
   if (score >= 85) return { label: "Best Match", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" };
   if (score >= 70) return { label: "Strong Match", className: "bg-[#474ead]/10 text-[#474ead] dark:text-indigo-400" };
   if (score >= 50) return { label: "Good Match", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" };
   return null;
 }
 
-// ─── Talent Card ──────────────────────────────────────────────────────────────
+// ─── Result Card ──────────────────────────────────────────────────────────────
 
-function TalentCard({
+function ResultCard({
   result,
   isInvited,
   isInviting,
@@ -85,59 +88,79 @@ function TalentCard({
   isInviting: boolean;
   onInvite: () => void;
 }) {
-  const badge = matchBadge(result.score);
+  const badge = matchLabel(result.score);
   const { candidate } = result;
 
-  // Resolve snake_case or camelCase candidate fields (backend may return either)
   const name = candidate.fullName ?? candidate.full_name;
   const position = candidate.targetPosition ?? candidate.target_position;
   const coreSkills = candidate.coreSkills ?? candidate.core_skills ?? [];
-  const secondarySkills = candidate.secondarySkills ?? candidate.secondary_skills ?? [];
-
-  // Highlight overlap skills; fall back to candidate core skills if scorer had none
   const overlapSet = new Set(result.overlapSkills.map((s) => s.toLowerCase()));
-  const displaySkills = result.overlapSkills.length > 0
-    ? result.overlapSkills.slice(0, 3)
-    : coreSkills.slice(0, 3);
+  const displaySkills =
+    result.overlapSkills.length > 0 ? result.overlapSkills.slice(0, 3) : coreSkills.slice(0, 3);
+
+  // Availability — treat seniority as a proxy for now; most talent is available
+  const isAvailableSoon = !candidate.seniority?.toLowerCase().includes("unavailable");
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 hover:shadow-md transition-shadow flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Avatar className="h-10 w-10 shrink-0">
-          <AvatarFallback className="bg-gradient-to-br from-[#474ead] to-indigo-400 text-white text-sm font-semibold">
+    <div className="result-card group bg-white border border-slate-200 rounded-2xl p-[22px] hover:shadow-[0_12px_28px_-16px_rgba(20,20,60,0.18)] hover:border-slate-300 transition-[box-shadow,border-color] duration-150 flex flex-col gap-3">
+      {/* Avatar row */}
+      <div className="flex items-start gap-3 mb-0.5">
+        <Avatar className="h-[42px] w-[42px] shrink-0 rounded-[11px]">
+          <AvatarFallback
+            className={cn(
+              "rounded-[11px] font-bold text-[13.5px]",
+              badge
+                ? "bg-[#EFEFFA] text-[#474ead]"
+                : "bg-slate-100 text-slate-400",
+            )}
+          >
             {getInitials(name)}
           </AvatarFallback>
         </Avatar>
+
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white leading-tight truncate">
+          <h3 className="text-[15.5px] font-bold leading-snug text-slate-900 dark:text-white truncate">
             {maskName(name)}
-          </p>
+          </h3>
           {position && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{position}</p>
-          )}
-          {candidate.location && (
-            <p className="text-[10px] text-slate-400 mt-0.5 truncate">{candidate.location}</p>
+            <p className="text-[12.5px] text-slate-400 mt-0.5 truncate">{position}</p>
           )}
         </div>
-        {badge && (
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${badge.className}`}>
-            {badge.label}
+
+        {/* Availability pill */}
+        {isAvailableSoon ? (
+          <span className="shrink-0 flex items-center gap-1.5 text-[11.5px] font-bold text-[#B8790F] bg-[#FDF1DD] px-2.5 py-1 rounded-full whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623] inline-block" />
+            Available now
+          </span>
+        ) : (
+          <span className="shrink-0 text-[11.5px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+            Soon
           </span>
         )}
       </div>
 
-      {/* Skills */}
+      {/* Description / category */}
+      <p className="text-[13.5px] text-slate-500 leading-[1.55] min-h-[56px]">
+        {candidate.category
+          ? `${resolveBrowseCategory(candidate.category) ?? candidate.category} specialist`
+          : position
+            ? `Experienced ${position.toLowerCase()}`
+            : "Experienced professional available for remote work."}
+      </p>
+
+      {/* Skill tags */}
       {displaySkills.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {displaySkills.map((s) => (
             <span
               key={s}
-              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              className={cn(
+                "rounded-full px-2.5 py-[5px] text-[11.5px] font-semibold",
                 overlapSet.has(s.toLowerCase())
                   ? "bg-[#474ead]/10 text-[#474ead] dark:text-indigo-300"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-              }`}
+                  : "bg-slate-100 text-slate-500",
+              )}
             >
               {s}
             </span>
@@ -145,42 +168,35 @@ function TalentCard({
         </div>
       )}
 
-      {/* Score bar + invite button */}
-      <div className="flex items-center justify-between gap-3 mt-auto">
-        <div className="flex-1 flex items-center gap-2">
-          <div className="h-1.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[#474ead] to-indigo-400 transition-all"
-              style={{ width: `${Math.max(result.score, 2)}%` }}
-            />
-          </div>
-          <span className="text-[10px] font-semibold text-slate-400 shrink-0 tabular-nums">
-            {result.score}%
-          </span>
-        </div>
-        <Button
-          size="sm"
-          variant={isInvited ? "outline" : "default"}
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3.5 mt-auto border-t border-slate-100">
+        {/* AI-match indicator */}
+        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-500">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          AI-matched profile
+        </span>
+
+        {/* Invite / Shortlist button */}
+        <button
           disabled={isInvited || isInviting}
           onClick={onInvite}
-          className={[
-            "rounded-full text-xs px-3 h-7 shrink-0",
+          className={cn(
+            "rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
             isInvited
-              ? "border-emerald-400 text-emerald-600 dark:text-emerald-400 cursor-default"
-              : "bg-[#474ead] text-white hover:bg-[#3d439c]",
-          ].join(" ")}
+              ? "border-emerald-400 text-emerald-600 cursor-default"
+              : "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white",
+          )}
         >
           {isInviting ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : isInvited ? (
-            <>
-              <Check className="mr-1 h-3 w-3" />
-              Invited
-            </>
+            <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" />Invited</span>
           ) : (
-            "Invite"
+            "Shortlist"
           )}
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -188,28 +204,64 @@ function TalentCard({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const ENGAGEMENT_OPTIONS = ["All", "Full-Time", "Half-Day"] as const;
+type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
+
 export default function SearchToShortlist() {
   const { toast } = useToast();
 
-  // Search inputs
+  // ── Stage ────────────────────────────────────────────────────────────────────
+  const [stage, setStage] = useState<"initial" | "active">("initial");
+  const isInitial = stage === "initial";
+
+  // ── Search inputs ────────────────────────────────────────────────────────────
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [engagementType, setEngagementType] = useState<"Full-Time" | "Half-Day">("Full-Time");
 
-  // Results
+  // ── Post-search filters (client-side) ────────────────────────────────────────
+  const [categoryFilter, setCategoryFilter] = useState<TalentBrowseCategory | null>(null);
+  const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("All");
+
+  // ── Results ──────────────────────────────────────────────────────────────────
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
 
-  const resultsRef = useRef<HTMLDivElement>(null);
+  // ── Dynamic suggestion chips ─────────────────────────────────────────────────
+  const { data: suggestions = [] } = useQuery<Suggestion[]>({
+    queryKey: ["talent-search-suggestions"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/client/talent-search/suggestions");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Map category → phrase, falling back to the category name itself
+  const suggestionChips = useMemo(
+    () =>
+      suggestions.map((s) => ({
+        category: s.category,
+        phrase:
+          TALENT_CATEGORY_PHRASES[s.category as TalentBrowseCategory] ?? s.category,
+      })),
+    [suggestions],
+  );
 
   // ── Search mutation ──────────────────────────────────────────────────────────
   const searchMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({
+      text,
+      engType,
+    }: {
+      text: string;
+      engType: "Full-Time" | "Half-Day";
+    }) => {
       const res = await apiRequest("POST", "/api/client/talent-search", {
-        searchText,
-        category: selectedCategory,
-        engagementType,
+        searchText: text,
+        category: null,
+        engagementType: engType,
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -219,15 +271,36 @@ export default function SearchToShortlist() {
     },
     onSuccess: (data) => {
       setSearchResults(data);
-      setInvitedIds(new Set());
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+      setCategoryFilter(null);
+      setEngagementFilter("All");
     },
     onError: (err: any) => {
       toast({ title: "Search failed", description: err.message, variant: "destructive" });
     },
   });
+
+  // ── Filtered results (client-side category + engagement filter) ──────────────
+  const filteredResults = useMemo(() => {
+    if (!searchResults) return [];
+    return searchResults.results.filter((r) => {
+      if (categoryFilter) {
+        const cat = resolveBrowseCategory(r.candidate.category ?? r.candidate.category);
+        if (cat !== categoryFilter && (r.candidate.category ?? "") !== categoryFilter) return false;
+      }
+      return true;
+    });
+  }, [searchResults, categoryFilter]);
+
+  // ── Trigger search ───────────────────────────────────────────────────────────
+  function runSearch(text?: string, engType?: "Full-Time" | "Half-Day") {
+    const q = (text ?? searchText).trim();
+    if (!q) { toast({ title: "Enter a search term" }); return; }
+    const et = engType ?? engagementType;
+    setSearchText(q);
+    setEngagementType(et);
+    setStage("active");
+    searchMutation.mutate({ text: q, engType: et });
+  }
 
   // ── Invite handler ───────────────────────────────────────────────────────────
   async function handleInvite(talentUserId: string) {
@@ -241,16 +314,13 @@ export default function SearchToShortlist() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (body.error === "already_invited") {
-          setInvitedIds((prev) => new Set(prev).add(talentUserId));
+          setInvitedIds((p) => new Set(p).add(talentUserId));
           return;
         }
         throw new Error(body.message || "Failed to send invitation");
       }
-      setInvitedIds((prev) => new Set(prev).add(talentUserId));
-      toast({
-        title: "Invitation sent",
-        description: "The talent will see your invitation on their dashboard.",
-      });
+      setInvitedIds((p) => new Set(p).add(talentUserId));
+      toast({ title: "Invitation sent", description: "The talent will see your invitation on their dashboard." });
     } catch (err: any) {
       toast({ title: "Could not send invitation", description: err.message, variant: "destructive" });
     } finally {
@@ -258,206 +328,224 @@ export default function SearchToShortlist() {
     }
   }
 
-  function handleSearch() {
-    if (!searchText.trim()) {
-      toast({
-        title: "Enter a search term",
-        description: "Describe the role or skills you're looking for.",
-      });
-      return;
-    }
-    searchMutation.mutate();
-  }
-
-  function handleReset() {
-    setSearchResults(null);
-    setSelectedCategory(null);
-    setSearchText("");
-    setInvitedIds(new Set());
-  }
-
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#060816]">
+    <div className="min-h-screen bg-[#F7F7FA] dark:bg-[#060816]">
       <TopNavigation />
 
-      <div className="mx-auto max-w-5xl px-4 pb-20 pt-8 md:px-6">
-        {/* ── Hero ────────────────────────────────────────────────────────── */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#474ead]/10 px-3 py-1 text-xs font-semibold text-[#474ead] mb-4">
-            <Sparkles className="h-3.5 w-3.5" />
-            AI-Powered Talent Search
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Find Your Ideal Talent
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto text-sm">
-            Describe the role or skills you need. Our AI ranks matching talent profiles by fit — then invite
-            the best ones directly from the results.
-          </p>
-        </div>
-
-        {/* ── Search form ─────────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 mb-8">
-          {/* Search bar */}
-          <div className="flex gap-2 mb-5">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-              <Input
-                className="pl-9 h-11 rounded-xl text-sm"
-                placeholder='e.g. "Customer support agent with Zendesk experience"'
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-            </div>
-            <Button
-              onClick={handleSearch}
+      {/* ── Search zone — transitions from centered to compact strip ── */}
+      <div
+        className={cn(
+          "transition-[padding,background-color,border-color,box-shadow] duration-500 ease-in-out",
+          isInitial
+            ? "flex items-center justify-center min-h-[calc(100vh-4rem)] py-10"
+            : "bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm py-5",
+        )}
+      >
+        <div
+          className={cn(
+            "w-full transition-[max-width] duration-500 ease-in-out px-5",
+            isInitial ? "max-w-2xl" : "max-w-5xl mx-auto",
+          )}
+        >
+          {/* Search input */}
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 shadow-[0_8px_24px_-12px_rgba(20,20,60,0.12)]">
+            <Search className="h-[18px] w-[18px] text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+              placeholder="Tell us what you need"
+              className="flex-1 bg-transparent border-none outline-none text-[15.5px] font-medium text-slate-800 dark:text-white placeholder:text-slate-400 placeholder:font-normal py-2.5"
+            />
+            <button
+              onClick={() => runSearch()}
               disabled={searchMutation.isPending}
-              className="h-11 px-5 rounded-xl bg-[#474ead] text-white hover:bg-[#3d439c] shrink-0"
+              className="bg-[#474ead] hover:bg-[#363c87] text-white font-semibold text-[15px] rounded-[10px] px-[22px] py-[11px] shrink-0 transition-colors disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
             >
               {searchMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                "Search"
+                "Hire Talent →"
               )}
-            </Button>
+            </button>
           </div>
 
-          {/* Category chips */}
-          <div className="mb-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              Category <span className="font-normal normal-case">(optional)</span>
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {TALENT_BROWSE_CATEGORIES.map((cat) => (
+          {/* Suggestion chips — dynamic, always visible */}
+          {suggestionChips.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {suggestionChips.map(({ category, phrase }) => (
                 <button
-                  key={cat}
+                  key={category}
                   type="button"
-                  onClick={() => setSelectedCategory((prev) => (prev === cat ? null : cat))}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-medium border transition-colors",
-                    selectedCategory === cat
-                      ? "bg-[#474ead] text-white border-[#474ead]"
-                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-[#474ead]/40 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
-                  ].join(" ")}
+                  onClick={() => runSearch(phrase)}
+                  className="text-[13px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-[13px] py-[6px] hover:border-[#474ead] hover:text-[#474ead] transition-[border-color,color] duration-150 cursor-pointer"
                 >
-                  {cat}
+                  {phrase}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Engagement type */}
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              Engagement Type
-            </p>
-            <div className="flex gap-1.5">
-              {(["Full-Time", "Half-Day"] as const).map((et) => (
-                <button
-                  key={et}
-                  type="button"
-                  onClick={() => setEngagementType(et)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-medium border transition-colors",
-                    engagementType === et
-                      ? "bg-[#474ead] text-white border-[#474ead]"
-                      : "bg-slate-50 text-slate-600 border-slate-200 hover:border-[#474ead]/40 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
-                  ].join(" ")}
-                >
-                  {et}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Results area ────────────────────────────────────────────────── */}
-        <div ref={resultsRef}>
-          {/* Loading state */}
-          {searchMutation.isPending && (
-            <div className="flex flex-col items-center gap-3 py-20 text-slate-400">
-              <Loader2 className="h-8 w-8 animate-spin text-[#474ead]" />
-              <p className="text-sm">Scoring talent profiles…</p>
-            </div>
-          )}
-
-          {/* Results */}
-          {!searchMutation.isPending && searchResults && (
-            <>
-              {/* Results header */}
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                    {searchResults.results.length} AI-matched profile
-                    {searchResults.results.length !== 1 ? "s" : ""}
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Ranked by fit — skills that matched the search are highlighted in{" "}
-                    <span className="text-[#474ead] font-medium">blue</span>.
-                  </p>
-                </div>
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  New search
-                </button>
-              </div>
-
-              {searchResults.results.length === 0 ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
-                  <Users className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="font-semibold text-slate-700 dark:text-slate-300">
-                    No matching profiles found
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Try broadening your search or selecting a different category.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {searchResults.results.map((r) => (
-                    <TalentCard
-                      key={r.candidateId}
-                      result={r}
-                      isInvited={invitedIds.has(r.userId)}
-                      isInviting={invitingId === r.userId}
-                      onInvite={() => handleInvite(r.userId)}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Invitation sent summary */}
-              {invitedIds.size > 0 && (
-                <div className="mt-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800/40 dark:bg-emerald-950/20">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                    <span className="font-semibold">
-                      {invitedIds.size} invitation{invitedIds.size !== 1 ? "s" : ""} sent.
-                    </span>{" "}
-                    Invited talent can accept or decline directly from their dashboard.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Pre-search prompt */}
-          {!searchMutation.isPending && !searchResults && (
-            <div className="flex flex-col items-center gap-3 py-16 text-slate-300 dark:text-slate-700">
-              <Users className="h-12 w-12" />
-              <p className="text-sm text-slate-400">
-                Enter a search term above to find AI-matched talent
-              </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Results — revealed on action ── */}
+      <AnimatePresence>
+        {stage === "active" && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+            className="max-w-5xl mx-auto px-5 pt-8 pb-20"
+          >
+            {/* Results header */}
+            <div className="mb-6">
+              <h1 className="text-[24px] font-extrabold tracking-tight text-slate-900 dark:text-white mb-1.5">
+                {searchMutation.isPending
+                  ? "Searching…"
+                  : searchResults
+                    ? `Matches for "${searchText}"`
+                    : "Matches"}
+              </h1>
+              <p className="text-[14.5px] text-slate-500 dark:text-slate-400">
+                Ranked by fit. Skills that matched your search are highlighted in{" "}
+                <span className="text-[#474ead] font-semibold">blue</span>.
+              </p>
+            </div>
+
+            {/* Filter row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-200 dark:border-slate-700">
+              {/* Category chips */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[13px] text-slate-400 font-semibold mr-0.5">Role:</span>
+                <button
+                  onClick={() => setCategoryFilter(null)}
+                  className={cn(
+                    "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
+                    !categoryFilter
+                      ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
+                      : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                  )}
+                >
+                  All roles
+                </button>
+                {TALENT_BROWSE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                    className={cn(
+                      "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
+                      categoryFilter === cat
+                        ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
+                        : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Engagement type (re-searches with new param) */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[13px] text-slate-400 font-semibold">Engagement:</span>
+                {ENGAGEMENT_OPTIONS.map((et) => (
+                  <button
+                    key={et}
+                    onClick={() => {
+                      if (et === "All") {
+                        setEngagementFilter("All");
+                        // re-search with Full-Time default (or just filter client-side — no-op)
+                      } else {
+                        setEngagementFilter(et);
+                        setEngagementType(et);
+                        runSearch(searchText, et);
+                      }
+                    }}
+                    className={cn(
+                      "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
+                      engagementFilter === et
+                        ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
+                        : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                    )}
+                  >
+                    {et}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Loading */}
+            {searchMutation.isPending && (
+              <div className="flex flex-col items-center gap-3 py-16 text-slate-400">
+                <Loader2 className="h-8 w-8 animate-spin text-[#474ead]" />
+                <p className="text-sm">Scoring talent profiles…</p>
+              </div>
+            )}
+
+            {/* Results grid */}
+            {!searchMutation.isPending && filteredResults.length > 0 && (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredResults.map((r) => (
+                  <ResultCard
+                    key={r.candidateId}
+                    result={r}
+                    isInvited={invitedIds.has(r.userId)}
+                    isInviting={invitingId === r.userId}
+                    onInvite={() => handleInvite(r.userId)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Empty results */}
+            {!searchMutation.isPending && searchResults && filteredResults.length === 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-900">
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No matching profiles found</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  {categoryFilter
+                    ? `No results in "${categoryFilter}" — try All roles or a different category.`
+                    : "Try broadening your search."}
+                </p>
+                {categoryFilter && (
+                  <button
+                    onClick={() => setCategoryFilter(null)}
+                    className="mt-3 text-sm text-[#474ead] font-semibold hover:underline"
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Invited summary */}
+            {invitedIds.size > 0 && (
+              <div className="mt-8 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+                <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                  <span className="font-semibold">
+                    {invitedIds.size} invitation{invitedIds.size !== 1 ? "s" : ""} sent.
+                  </span>{" "}
+                  Invited talent can accept or decline directly from their dashboard.
+                </p>
+              </div>
+            )}
+
+            {/* Assist banner */}
+            {!searchMutation.isPending && searchResults && (
+              <div className="mt-8 text-center text-[14px] text-slate-500 bg-[#EFEFFA] dark:bg-indigo-950/30 rounded-xl px-4 py-[18px]">
+                Don't see the right fit?{" "}
+                <a href="mailto:careers@onspotglobal.com" className="text-[#474ead] font-bold hover:underline">
+                  Request a shortlist
+                </a>{" "}
+                — same rate, we do the searching.
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

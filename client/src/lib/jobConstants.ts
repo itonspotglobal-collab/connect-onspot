@@ -160,6 +160,25 @@ const BROWSE_CATEGORY_ALIASES: Record<string, TalentBrowseCategory> = {
 };
 
 /**
+ * Natural-language suggestion phrase for each canonical browse category.
+ * Used by the Search-to-Shortlist suggestion chips — the backend returns which
+ * categories are top-volume; the frontend looks up the phrase from this map.
+ * Treat these as first-draft copy — likely to be tweaked over time.
+ */
+export const TALENT_CATEGORY_PHRASES: Record<TalentBrowseCategory, string> = {
+  "Customer Support":         "Handle customer support inquiries",
+  "Virtual Assistants":       "Manage my inbox & calendar",
+  "Developers":               "Build or maintain my website",
+  "Designers":                "Design marketing or product assets",
+  "Marketing Specialists":    "Run my social media & campaigns",
+  "Accountants":              "Keep my books and finances in order",
+  "Healthcare Professionals": "Support patient care & records",
+  "Sales Representatives":    "Handle outbound sales & leads",
+  "Operations Specialists":   "Keep my day-to-day operations running",
+  "IT & Technical Support":   "Manage my IT & tech support",
+};
+
+/**
  * Returns the canonical browse category for a raw DB value, or null if unrecognized.
  * Case-insensitive. Does NOT guess — unlisted values return null so mistagged jobs
  * are surfaced as unrecognized rather than silently mis-filed.

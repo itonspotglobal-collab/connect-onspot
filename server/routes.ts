@@ -9353,6 +9353,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== SEARCH-TO-SHORTLIST (Client-initiated talent discovery) ======
 
+  // GET /api/client/talent-search/suggestions — top-volume categories as suggestion chips
+  // Returns [{ category, phrase }] for the top 5 categories by approved-job count.
+  // The phrase mapping lives in the frontend (jobConstants.TALENT_CATEGORY_PHRASES);
+  // the server returns the category name and the frontend looks up the phrase.
+  // No auth required — only returns aggregate category counts, no PII
+  app.get("/api/client/talent-search/suggestions", async (req: Request, res: Response) => {
+    try {
+      // Server-side alias map — mirrors client/src/lib/jobConstants.ts BROWSE_CATEGORY_ALIASES
+      const SERVER_BROWSE_ALIASES: Record<string, string> = {
+        "customer support": "Customer Support",
+        "support": "Customer Support",
+        "customer success": "Customer Support",
+        "virtual assistant": "Virtual Assistants",
+        "virtual assistants": "Virtual Assistants",
+        "admin": "Virtual Assistants",
+        "engineering": "Developers",
+        "development": "Developers",
+        "software": "Developers",
+        "design (ui/ux)": "Designers",
+        "design": "Designers",
+        "marketing": "Marketing Specialists",
+        "finance & accounting": "Accountants",
+        "finance": "Accountants",
+        "accounting": "Accountants",
+        "healthcare": "Healthcare Professionals",
+        "sales": "Sales Representatives",
+        "sales development": "Sales Representatives",
+        "operations": "Operations Specialists",
+        "project & program management": "Operations Specialists",
+        "information technology (it)": "IT & Technical Support",
+        "it": "IT & Technical Support",
+        "tech support": "IT & Technical Support",
+        "technical support": "IT & Technical Support",
+      };
+      const CANONICAL = new Set([
+        "Customer Support", "Virtual Assistants", "Developers", "Designers",
+        "Marketing Specialists", "Accountants", "Healthcare Professionals",
+        "Sales Representatives", "Operations Specialists", "IT & Technical Support",
+      ]);
+
+      function resolveCanonical(raw: string | null | undefined): string | null {
+        if (!raw) return null;
+        const key = raw.trim().toLowerCase();
+        for (const cat of CANONICAL) { if (cat.toLowerCase() === key) return cat; }
+        return SERVER_BROWSE_ALIASES[key] ?? null;
+      }
+
+      const rows = await query(
+        `SELECT COALESCE(NULLIF(job_function,''), category) AS raw_cat, COUNT(*) AS cnt
+         FROM jobs
+         WHERE approval_status = 'approved'
+         GROUP BY raw_cat
+         ORDER BY cnt DESC
+         LIMIT 30`,
+      );
+
+      const counts = new Map<string, number>();
+      for (const row of rows.rows) {
+        const canonical = resolveCanonical(row.raw_cat);
+        if (!canonical) continue;
+        counts.set(canonical, (counts.get(canonical) ?? 0) + Number(row.cnt));
+      }
+
+      const suggestions = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([category]) => ({ category }));
+
+      return res.json(suggestions);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
   app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
     try {
