@@ -161,7 +161,9 @@ function ProfilePreviewModal({
       // Use apiRequest so the correct auth token is sent (onspot_jwt_token / talent_profile_token).
       // A raw localStorage.getItem("token") always returns null — that key is never written
       // by any login flow in this codebase, causing a silent 401.
-      const data = await apiRequest("GET", `/api/client/talent-profile/${result.userId}`);
+      // apiRequest returns a Response object — call .json() to get the parsed body.
+      const res = await apiRequest("GET", `/api/client/talent-profile/${result.userId}`);
+      const data = await res.json();
       setFullProfile(data);
     } catch {
       // silent — user can retry
@@ -384,7 +386,7 @@ function ProfilePreviewModal({
           )}
 
           {/* Education — shown when "Full profile" is loaded */}
-          {fullProfile && fullProfile.education.length > 0 && (
+          {fullProfile && (fullProfile.education?.length ?? 0) > 0 && (
             <div className="px-6 py-5 md:px-10">
               <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Education
@@ -420,7 +422,7 @@ function ProfilePreviewModal({
           )}
 
           {/* Certifications — shown when "Full profile" is loaded */}
-          {fullProfile && fullProfile.certifications.length > 0 && (
+          {fullProfile && (fullProfile.certifications?.length ?? 0) > 0 && (
             <div className="px-6 py-5 md:px-10">
               <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Certifications
