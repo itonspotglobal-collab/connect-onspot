@@ -1,0 +1,61 @@
+Tackling the Job Posting management bug cluster on the Client dashboard —
+three related findings, likely sharing root causes across View, Edit, and
+Delete on the same job.
+
+CONTEXT ALREADY CONFIRMED (from the scaffold-job incident, don't re-derive):
+GET /api/jobs/:id is intentionally public-only — it checks status='open'
+AND excludes scaffolds, returning 404 for anything else, by design, for
+anonymous/Talent visitors. It was already confirmed that this endpoint
+should NOT change. Instead, a separate owner-aware route is needed
+(something like GET /api/client/jobs/:jobId) with the check:
+WHERE id = $1 AND client_id = $2 AND created_via != 'search_scaffold'
+This lets a client see their own real draft/closed jobs, while still never
+exposing scaffold rows through either route.
+
+THREE FINDINGS TO FIX:
+
+1. VIEW returns "Job not found" for a client's own DRAFT/CLOSED jobs.
+   Confirm the View button currently calls the public GET /api/jobs/:id
+   (not owner-aware) — that's the root cause. Build the owner-aware
+   endpoint above, and point View at it instead. Confirm a client can now
+   view their own draft/closed job, and confirm the endpoint still 404s
+   for: (a) a scaffold job, (b) another client's job, (c) an
+   anonymous/non-owner request for the same job.
+
+2. DELETE shows a success confirmation but the job is never actually
+   removed. Audit before fixing:
+   - Does the frontend show success optimistically regardless of the real
+     server response? Report the actual code.
+   - Hit the real DELETE endpoint directly with a real client token and
+     real job ID, report the ACTUAL server response and check server logs.
+   - If it's failing on the job_submissions FK constraint (same pattern as
+     the earlier scaffold DDL issue): decide and implement — hard block
+     with a clear client-facing error ("can't delete a job with active
+     applicants/invitations") if submissions exist, or soft-archive instead
+     of hard delete. Propose which fits better before implementing.
+   - If the specific job being tested has zero submissions, there's no
+     legitimate reason delete should silently fail — treat as a pure
+     frontend bug (likely the same "shows success regardless of response"
+     pattern).
+
+3. EDIT opens a LEGACY job-posting form instead of the unified
+   JobFormModal/JobFormPage component that Admin was already migrated onto
+   specifically to avoid maintaining parallel job-posting implementations.
+   Audit first: what is this legacy form, does it reference any retired
+   fields (contract_type, hourly rate, or anything else already removed
+   from the canonical schema), and does it write to the jobs table
+   correctly or via a stale path? Then retire it — Edit should open the
+   SAME unified form component used everywhere else, pre-filled with the
+   job's existing data.
+
+Report audit findings for all three before implementing fixes. Fix View and
+Delete using whatever pattern is already correct elsewhere (the owner-aware
+approach, and Edit's working data-fetch pattern respectively), and
+consolidate Edit onto the single canonical job-posting form.
+
+After implementing, report back with a real end-to-end trace for a client's
+own draft/closed job: View succeeds and shows correct data, Edit opens the
+unified form pre-filled correctly and saves successfully, and Delete either
+genuinely removes the job or correctly blocks with a clear reason — with
+real evidence (actual API responses, actual DB state before/after), not a
+code description.

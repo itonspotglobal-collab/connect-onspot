@@ -9856,6 +9856,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/client/jobs/:jobId — owner-aware single-job fetch.
+  // Returns the job regardless of status/approval as long as the authenticated client
+  // owns it and it is not a scaffold. Used by the View button on the client dashboard
+  // to let clients see their own draft, pending, and closed jobs.
+  // 404s for: (a) scaffold jobs, (b) another client's job, (c) non-existent job.
+  // 401s for any unauthenticated request.
+  app.get("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { jobId } = req.params;
+      const r = await query(
+        `SELECT j.*, j.proposal_count AS "proposalCount"
+         FROM jobs j
+         WHERE j.id = $1
+           AND j.client_id = $2
+           AND (j.created_via IS NULL OR j.created_via != 'search_scaffold')`,
+        [jobId, userId],
+      );
+      if (!r.rows.length) return res.status(404).json({ error: "Job not found" });
+      return res.json(r.rows[0]);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/client/jobs", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -9964,16 +9990,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/client/jobs/:jobId — permanently removes a job the client owns.
+  // Decision: hard delete, not soft-close. "Close" is already a separate action on the
+  // dashboard. "Delete" must mean gone. Blocks with 409 if any business data references
+  // this job (submissions, applications, proposals, contracts, message threads).
+  // job_skills rows are cleaned up first (NO ACTION FK). job_matches auto-cascade.
   app.delete("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { jobId } = req.params;
-      const r = await query(
-        "UPDATE jobs SET status = 'closed', updated_at = NOW() WHERE id = $1 AND client_id = $2 RETURNING id",
+
+      // Verify ownership and that this is not a scaffold
+      const owns = await query(
+        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND (created_via IS NULL OR created_via != 'search_scaffold')`,
         [jobId, userId],
       );
-      if (r.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+      if (!owns.rows.length) return res.status(403).json({ error: "Forbidden" });
+
+      // Block if any real business data references this job.
+      // These tables have NO ACTION FK constraints — PostgreSQL would also reject the
+      // DELETE if we skipped this check, but we want a helpful client-facing message.
+      // Wrap in a subquery so the outer LIMIT 1 applies to the whole UNION result.
+      const deps = await query(
+        `SELECT 1 FROM (
+           SELECT 1 FROM job_submissions  WHERE job_id = $1
+           UNION ALL
+           SELECT 1 FROM job_applications WHERE job_id = $1
+           UNION ALL
+           SELECT 1 FROM proposals        WHERE job_id = $1
+           UNION ALL
+           SELECT 1 FROM contracts        WHERE job_id = $1
+           UNION ALL
+           SELECT 1 FROM message_threads  WHERE job_id = $1
+         ) _deps LIMIT 1`,
+        [jobId],
+      );
+      if (deps.rows.length > 0) {
+        return res.status(409).json({
+          error: "has_applications",
+          message: "This job has existing applications or conversations and cannot be deleted. You can close it instead.",
+        });
+      }
+
+      // Safe to delete — clean up the NO ACTION FK tag rows first.
+      // job_matches will auto-delete via their ON DELETE CASCADE constraint.
+      await query(`DELETE FROM job_skills WHERE job_id = $1`, [jobId]);
+      const r = await query(
+        `DELETE FROM jobs WHERE id = $1 AND client_id = $2 RETURNING id`,
+        [jobId, userId],
+      );
+      if (!r.rows.length) return res.status(403).json({ error: "Forbidden" });
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });

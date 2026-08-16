@@ -291,12 +291,100 @@ interface ClientProfile {
   createdAt: string;
 }
 
+// ─── Client job preview dialog ────────────────────────────────────────────────
+// Shows the full details of a client-owned job regardless of its status.
+// Uses data already loaded from GET /api/client/jobs (SELECT j.*) — no extra fetch.
+// For open+approved jobs a "View public listing" link is also shown.
+function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: () => void }) {
+  if (!job) return null;
+
+  const pay = buildRateDisplay(job as any);
+  const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const isPublic = job.status === "open" && approvalStatus === "approved";
+
+  const statusBadge = ({
+    open:   "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    closed: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+    draft:  "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400",
+  } as Record<string, string>)[job.status ?? "draft"] ?? "bg-slate-100 text-slate-500";
+
+  const approvalLabel = ({
+    pending:           "Pending Approval",
+    approved:          "Approved",
+    rejected:          "Declined",
+    linked_to_existing:"Linked to Existing",
+  } as Record<string, string>)[approvalStatus] ?? approvalStatus;
+
+  const fields: { label: string; value: string | null | undefined }[] = [
+    { label: "Engagement Type", value: (job as any).engagementType },
+    { label: "Category",        value: (job as any).category },
+    { label: "Rate / Salary",   value: pay || null },
+    { label: "Location",        value: (job as any).location },
+    { label: "Posted",          value: job.createdAt ? getTimeAgo(job.createdAt) : null },
+  ].filter((f) => f.value);
+
+  return (
+    <Dialog open={!!job} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base leading-snug pr-6">{job.title}</DialogTitle>
+        </DialogHeader>
+
+        {/* Status badges */}
+        <div className="flex flex-wrap gap-1.5">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${statusBadge}`}>
+            {job.status ?? "draft"}
+          </span>
+          {approvalStatus !== "approved" && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+              {approvalLabel}
+            </span>
+          )}
+          {isPublic && (
+            <a
+              href={`/find-work/job/${job.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-[#474ead] hover:underline border border-[#474ead]/30"
+            >
+              <ExternalLink className="w-3 h-3" />View public listing
+            </a>
+          )}
+        </div>
+
+        {/* Key fields */}
+        {fields.length > 0 && (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {fields.map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+                <p className="text-sm text-slate-800 dark:text-slate-200">{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Description */}
+        {(job as any).description && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Description</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+              {(job as any).description}
+            </p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Job row inside client profile ────────────────────────────────────────────
 function ClientJobRow({
   job,
   onEdit,
   onToggle,
   onDelete,
+  onView,
   isToggling,
   isDeleting,
 }: {
@@ -304,11 +392,12 @@ function ClientJobRow({
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
+  onView: () => void;
   isToggling: boolean;
   isDeleting: boolean;
 }) {
   const isOpen = job.status === "open";
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplay(job as any);
   const timeAgo = getTimeAgo(job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
 
@@ -409,10 +498,8 @@ function ClientJobRow({
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Pencil className="w-3 h-3 mr-1.5" />Edit
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/find-work/job/${job.id}`} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-3 h-3 mr-1.5" />View
-            </a>
+          <Button variant="outline" size="sm" onClick={onView}>
+            <Eye className="w-3 h-3 mr-1.5" />View
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -422,14 +509,19 @@ function ClientJobRow({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
+                <AlertDialogTitle>Permanently delete this job?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will cancel &ldquo;{job.title}&rdquo;. It will no longer appear on the Find Work page.
+                  &ldquo;{job.title}&rdquo; will be permanently removed and cannot be recovered.
+                  {(job.proposalCount ?? 0) > 0 && (
+                    <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                      This job has {job.proposalCount} application{job.proposalCount !== 1 ? "s" : ""}. Delete will be blocked — close it instead if you want to hide it.
+                    </span>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Remove</AlertDialogAction>
+                <AlertDialogAction onClick={onDelete} className="bg-red-600 hover:bg-red-700 text-white">Delete</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -473,6 +565,7 @@ export default function ClientProfile() {
   const [form, setForm] = useState<Partial<ClientProfile>>({});
   const [jobModalOpen, setJobModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
 
   // ─── Redirect if not client ───────────────────────────────────────────────
@@ -550,13 +643,20 @@ export default function ClientProfile() {
   });
 
   const deleteJobMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/client/jobs/${id}`),
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/client/jobs/${id}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || body.error || "Failed to delete job");
+      }
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/client/jobs"] });
-      toast({ title: "Job posting removed" });
+      toast({ title: "Job deleted" });
     },
     onError: (err: any) =>
-      toast({ title: "Failed to remove job", description: err.message, variant: "destructive" }),
+      toast({ title: "Could not delete job", description: err.message, variant: "destructive" }),
   });
 
   // ─── Edit handlers ────────────────────────────────────────────────────────
@@ -865,6 +965,7 @@ export default function ClientProfile() {
                     })
                   }
                   onDelete={() => deleteJobMutation.mutate(job.id)}
+                  onView={() => setViewingJob(job)}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteJobMutation.isPending}
                 />
@@ -896,6 +997,12 @@ export default function ClientProfile() {
         onSuccess={() => { setJobModalOpen(false); setEditingJob(null); }}
         clientMode={true}
         defaultCompany={profile?.companyName || user?.company || ""}
+      />
+
+      {/* ── Job preview dialog (owner-aware — works for draft/closed/pending) ── */}
+      <ClientJobPreviewDialog
+        job={viewingJob}
+        onClose={() => setViewingJob(null)}
       />
 
       {/* ── View Submission modal ─────────────────────────────────────────────── */}
