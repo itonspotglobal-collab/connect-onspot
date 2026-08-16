@@ -10048,7 +10048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
-  app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -10098,7 +10098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
   // engagement type. Avoids creating a duplicate scaffold job per filter change.
-  app.patch("/api/client/talent-search/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/client/talent-search/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -10117,15 +10117,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update engagement type in-place — re-use same job row, no new INSERT
       await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
 
-      const results = await storage.rankTalentForJob(jobId, 30);
+      const raw = await storage.rankTalentForJob(jobId, 30);
+      // Sanitize every result through the shared allowlist — no raw candidate
+      // fields (email, phone, resumeUrl, etc.) must reach the client.
+      const results = raw.map((r) => ({
+        ...r,
+        candidate: sanitizeSearchCandidate(r.candidate),
+      }));
       return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
   });
 
+  // GET /api/client/invitations/check — given a list of talentUserIds, return which are already invited by this client
+  app.get("/api/client/invitations/check", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      // Accept talentUserIds as a comma-separated query param or repeated param
+      const raw = req.query.talentUserIds;
+      let talentUserIds: string[] = [];
+      if (Array.isArray(raw)) {
+        talentUserIds = (raw as string[]).filter(Boolean);
+      } else if (typeof raw === "string" && raw.trim()) {
+        talentUserIds = raw.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+
+      if (talentUserIds.length === 0) {
+        return res.json({ invitedIds: [] });
+      }
+
+      const result = await query(
+        `SELECT DISTINCT talent_id
+         FROM job_submissions
+         WHERE client_id = $1
+           AND talent_id = ANY($2::text[])
+           AND initiated_by = 'client'
+           AND status NOT IN ('declined', 'rejected', 'withdrawn')`,
+        [clientId, talentUserIds],
+      );
+
+      return res.json({ invitedIds: result.rows.map((r: any) => r.talent_id) });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // POST /api/client/invitations — invite a specific talent to a scaffold job
-  app.post("/api/client/invitations", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });

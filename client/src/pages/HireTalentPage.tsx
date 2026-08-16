@@ -38,16 +38,16 @@ interface TalentResult {
     target_position?: string;
     location?: string;
     seniority?: string;
+    experienceYears?: string | number | null;
+    headline?: string | null;
+    summary?: string | null;
     coreSkills?: string[];
     core_skills?: string[];
     secondarySkills?: string[];
     secondary_skills?: string[];
     category?: string;
     availability?: string;
-    experienceYears?: number | string;
-    headline?: string;
-    summary?: string;
-    preferences?: Record<string, string>;
+    preferences?: Record<string, string> | null;
     workHistory?: Array<{
       company?: string;
       role?: string;
@@ -97,9 +97,6 @@ function getInitials(name?: string | null): string {
       .join("") || "TA"
   );
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: "$", PHP: "\u20b1", EUR: "\u20ac", GBP: "\u00a3", AUD: "A$", CAD: "C$",
 };
@@ -640,7 +637,7 @@ export default function HireTalentPage() {
         pendingTalentName: pendingTalentName ?? null,
       };
     },
-    onSuccess: ({ data, isBaseSearch, pendingTalentId, pendingTalentName }) => {
+    onSuccess: async ({ data, isBaseSearch, pendingTalentId, pendingTalentName }) => {
       setSearchResults(data);
       if (isBaseSearch) {
         setBaseResults(data);
@@ -655,6 +652,35 @@ export default function HireTalentPage() {
           talentName: pendingTalentName,
           query: searchText,
         });
+      }
+      // For authenticated clients, check which returned talent are already invited
+      // so we can pre-populate invitedIds and show the correct button state.
+      // We reconcile: for each ID in this result set, the server is authoritative —
+      // remove ones that are no longer invited (e.g. declined) and add current ones.
+      if (isClient && data.results.length > 0) {
+        try {
+          const resultIds = data.results.map((r) => r.userId).filter(Boolean);
+          const params = resultIds.map((id) => encodeURIComponent(id)).join(",");
+          const checkRes = await apiRequest("GET", `/api/client/invitations/check?talentUserIds=${params}`);
+          if (checkRes.ok) {
+            const body = await checkRes.json() as { invitedIds: string[] };
+            const serverInvited = new Set(body.invitedIds);
+            setInvitedIds((prev) => {
+              const next = new Set(prev);
+              // For every ID in this result set, defer to the server's answer
+              for (const id of resultIds) {
+                if (serverInvited.has(id)) {
+                  next.add(id);
+                } else {
+                  next.delete(id);
+                }
+              }
+              return next;
+            });
+          }
+        } catch {
+          // Non-critical — silently ignore; the user can still see the Shortlist button
+        }
       }
     },
     onError: (err: any) => {
@@ -1111,25 +1137,21 @@ export default function HireTalentPage() {
       />
 
       {/* ── Profile preview modal ── */}
-      <AnimatePresence>
-        {previewResult && (
-          <ProfilePreviewModal
-            result={previewResult}
-            open={true}
-            onClose={() => setPreviewResult(null)}
-            isAnonymous={isAnonymous}
-            isInvited={invitedIds.has(previewResult.userId)}
-            isInviting={invitingId === previewResult.userId}
-            onShortlist={() => {
-              if (!previewResult) return;
-              handleShortlist(
-                previewResult.userId,
-                previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
-              );
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <ProfilePreviewModal
+        result={previewResult}
+        open={previewResult !== null}
+        onClose={() => setPreviewResult(null)}
+        isAnonymous={isAnonymous}
+        isInvited={previewResult ? invitedIds.has(previewResult.userId) : false}
+        isInviting={previewResult ? invitingId === previewResult.userId : false}
+        onShortlist={() => {
+          if (!previewResult) return;
+          handleShortlist(
+            previewResult.userId,
+            previewResult.candidate.fullName ?? previewResult.candidate.full_name ?? "Talent Profile",
+          );
+        }}
+      />
     </div>
   );
 }
