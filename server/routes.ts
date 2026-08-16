@@ -9483,17 +9483,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const title = String(searchText).trim().slice(0, 120);
 
+      // Infer a non-null category from searchText (jobs.category is NOT NULL).
+      // Tries keyword matching; falls back to 'Customer Support' so the INSERT always succeeds.
+      function inferCategory(text: string): string {
+        const t = text.toLowerCase();
+        const MAP: [string, string][] = [
+          ["customer support", "Customer Support"], ["support", "Customer Support"],
+          ["inbox", "Virtual Assistants"], ["calendar", "Virtual Assistants"], ["virtual assistant", "Virtual Assistants"], ["admin", "Virtual Assistants"],
+          ["website", "Developers"], ["developer", "Developers"], ["engineer", "Developers"], ["software", "Developers"],
+          ["design", "Designers"], ["graphic", "Designers"], ["ui", "Designers"], ["ux", "Designers"],
+          ["social media", "Marketing Specialists"], ["campaign", "Marketing Specialists"], ["marketing", "Marketing Specialists"],
+          ["bookkeeping", "Accountants"], ["accounting", "Accountants"], ["finance", "Accountants"], ["books", "Accountants"],
+          ["patient", "Healthcare Professionals"], ["healthcare", "Healthcare Professionals"], ["medical", "Healthcare Professionals"],
+          ["sales", "Sales Representatives"], ["outbound", "Sales Representatives"], ["leads", "Sales Representatives"],
+          ["operations", "Operations Specialists"], ["day-to-day", "Operations Specialists"], ["ops", "Operations Specialists"],
+          ["it support", "IT & Technical Support"], ["tech support", "IT & Technical Support"], ["helpdesk", "IT & Technical Support"],
+        ];
+        for (const [kw, cat] of MAP) { if (t.includes(kw)) return cat; }
+        return "Customer Support";
+      }
+
+      const resolvedCategory = category?.trim() || inferCategory(title);
+
       // Create an internal scaffold job (draft, approved) purely for scoring purposes.
       // These are never shown on the public job board (status='draft', created_via='search_scaffold').
+      // All NOT NULL columns without useful defaults must be provided explicitly.
       const jobResult = await query(
         `INSERT INTO jobs
            (id, title, professional_role_name, category, job_function, engagement_type,
-            status, approval_status, is_client_submitted, client_id, created_via, description)
-         VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'draft', 'approved', true, $4, 'search_scaffold', $5)
+            experience_level, status, approval_status, is_client_submitted, client_id,
+            created_via, description)
+         VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'Mid-level',
+                 'draft', 'approved', true, $4, 'search_scaffold', $5)
          RETURNING id`,
-        [title, category ?? null, engagementType, userId, `Search scaffold: "${title}"`],
+        [title, resolvedCategory, engagementType, userId, `Search scaffold: "${title}"`],
       );
       const jobId = jobResult.rows[0].id as string;
+
+      const results = await storage.rankTalentForJob(jobId, 30);
+      return res.json({ jobId, results });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
+  // engagement type. Avoids creating a duplicate scaffold job per filter change.
+  app.patch("/api/client/talent-search/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { jobId } = req.params;
+      const { engagementType } = req.body;
+      if (!engagementType) return res.status(400).json({ error: "engagementType is required" });
+
+      // Verify ownership and that it's a scaffold job
+      const check = await query(
+        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
+        [jobId, userId],
+      );
+      if (!check.rows.length) return res.status(404).json({ error: "Scaffold job not found" });
+
+      // Update engagement type in-place — re-use same job row, no new INSERT
+      await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
 
       const results = await storage.rankTalentForJob(jobId, 30);
       return res.json({ jobId, results });

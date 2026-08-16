@@ -249,7 +249,8 @@ export default function SearchToShortlist() {
     [suggestions],
   );
 
-  // ── Search mutation ──────────────────────────────────────────────────────────
+  // ── Search mutations ─────────────────────────────────────────────────────────
+  // NEW search — creates a scaffold job, resets everything
   const searchMutation = useMutation({
     mutationFn: async ({
       text,
@@ -279,6 +280,33 @@ export default function SearchToShortlist() {
     },
   });
 
+  // RESCORE — updates engagement type on the EXISTING scaffold job; no new job created
+  const rescoreMutation = useMutation({
+    mutationFn: async ({
+      jobId,
+      engType,
+    }: {
+      jobId: string;
+      engType: "Full-Time" | "Half-Day";
+    }) => {
+      const res = await apiRequest("PATCH", `/api/client/talent-search/${jobId}`, {
+        engagementType: engType,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Rescore failed");
+      }
+      return res.json() as Promise<SearchResults>;
+    },
+    onSuccess: (data) => {
+      setSearchResults(data);
+      setCategoryFilter(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "Rescore failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   // ── Filtered results (client-side category + engagement filter) ──────────────
   const filteredResults = useMemo(() => {
     if (!searchResults) return [];
@@ -292,6 +320,7 @@ export default function SearchToShortlist() {
   }, [searchResults, categoryFilter]);
 
   // ── Trigger search ───────────────────────────────────────────────────────────
+  // Always creates a new scaffold job (new text or chip click).
   function runSearch(text?: string, engType?: "Full-Time" | "Half-Day") {
     const q = (text ?? searchText).trim();
     if (!q) { toast({ title: "Enter a search term" }); return; }
@@ -300,6 +329,19 @@ export default function SearchToShortlist() {
     setEngagementType(et);
     setStage("active");
     searchMutation.mutate({ text: q, engType: et });
+  }
+
+  // ── Re-score against existing scaffold job (engagement type change only) ─────
+  // Calls PATCH instead of POST — avoids creating a duplicate scaffold job.
+  function rescore(engType: "Full-Time" | "Half-Day") {
+    if (!searchResults?.jobId) {
+      // No job yet (shouldn't happen in active stage, but fall back to a new search)
+      runSearch(searchText, engType);
+      return;
+    }
+    setEngagementType(engType);
+    setEngagementFilter(engType);
+    rescoreMutation.mutate({ jobId: searchResults.jobId, engType });
   }
 
   // ── Invite handler ───────────────────────────────────────────────────────────
@@ -448,20 +490,19 @@ export default function SearchToShortlist() {
                 ))}
               </div>
 
-              {/* Engagement type (re-searches with new param) */}
+              {/* Engagement type — rescores against existing scaffold job (no new job created) */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[13px] text-slate-400 font-semibold">Engagement:</span>
                 {ENGAGEMENT_OPTIONS.map((et) => (
                   <button
                     key={et}
+                    disabled={rescoreMutation.isPending}
                     onClick={() => {
                       if (et === "All") {
                         setEngagementFilter("All");
-                        // re-search with Full-Time default (or just filter client-side — no-op)
+                        // "All" has no re-score meaning — just clears the active pill
                       } else {
-                        setEngagementFilter(et);
-                        setEngagementType(et);
-                        runSearch(searchText, et);
+                        rescore(et);
                       }
                     }}
                     className={cn(
@@ -469,9 +510,14 @@ export default function SearchToShortlist() {
                       engagementFilter === et
                         ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
                         : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                      rescoreMutation.isPending && "opacity-50 cursor-not-allowed",
                     )}
                   >
-                    {et}
+                    {rescoreMutation.isPending && engagementFilter !== et ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />{et}
+                      </span>
+                    ) : et}
                   </button>
                 ))}
               </div>
