@@ -3,5 +3,6 @@
 - [Settings dual-auth routing](settings-dual-auth.md) — /settings kept bouncing talent users; two auth systems (JWT + talent-only localStorage) must both be checked in SettingsRoute.
 - [Talent auth dual-system quirks](talent-auth-dual-system.md) — FormData Content-Type fix, AuthContext talent-token recognition, double-toast prevention pattern.
 - [Job apply route and auth handling](job-apply-auth.md) — apply route is /jobs/:jobId/apply; server handles both legacy JWT (userId) and talent JWT (type:"candidate",candidateId); useProfileResume flag reuses existing candidate resume without a new upload.
+- [Talent job matching surface](job-matching-talent.md) — jobs.skillTags is the real skill source (job_skills is empty); legacy candidates need candidateOverride; redact confidential company fields.
 - [TalentProfile public view pattern](talent-profile-public-view.md) — canEdit, isPublicPreview, showPrivateOwnerSections derivation; startup migration pattern for candidates table; EditField multiline paragraph rendering.
 - [Job matches system](job-matches-system.md) — persisted job_matches table, server scorer, event-driven triggers, race condition fix (persistMatchResults must be awaited), notification threshold=70.

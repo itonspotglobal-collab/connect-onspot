@@ -10,6 +10,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { useMatchedJobs, MatchedJobsList } from "@/components/MatchedJobs";
 import {
   useTalentApplications, TalentApplication, ApplicationAnswer, getTalentAppsLastViewedKey,
 } from "@/hooks/useTalentApplications";
@@ -19,6 +20,11 @@ import {
   CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
   FileText, X, Download, MessageSquare, BookOpen,
 } from "lucide-react";
+
+function MatchedJobsSection() {
+  const { data, isLoading } = useMatchedJobs(true);
+  return <MatchedJobsList matches={data} isLoading={isLoading} />;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const meta = getStatusMeta(status);
@@ -646,6 +652,15 @@ export default function TalentApplications() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Matched Jobs — scored matches for this talent */}
+        <div className="mb-8" id="matched-jobs">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Matched Jobs</h2>
+          <p className="text-xs text-slate-400 mb-3">
+            Roles ranked by how well they fit your skills, engagement preference, and rate.
+          </p>
+          <MatchedJobsSection />
         </div>
 
         {/* Recommended for You */}

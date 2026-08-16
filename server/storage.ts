@@ -216,7 +216,7 @@ export interface IStorage {
     engagementType?: string;
     category?: string;
     experienceLevel?: string;
-  }): Promise<Array<{
+  }, candidateOverride?: Candidate): Promise<Array<{
     job: Job & { skills: string[] };
     score: number;
     overlapSkills: string[];
@@ -319,31 +319,54 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+
   private profiles: Map<string, Profile>;
+
   private skills: Map<number, Skill>;
+
   private userSkills: Map<number, UserSkill>;
+
   private jobs: Map<string, Job>;
+
   private jobSkills: Map<number, JobSkill>;
+
   private proposals: Map<string, Proposal>;
+
   private contracts: Map<string, Contract>;
+
   private milestones: Map<string, Milestone>;
+
   private timeEntries: Map<string, TimeEntry>;
+
   private messageThreads: Map<string, MessageThread>;
+
   private messages: Map<string, Message>;
+
   private reviews: Map<string, Review>;
+
   private portfolioItems: Map<string, PortfolioItem>;
+
   private certifications: Map<string, Certification>;
+
   private payments: Map<string, Payment>;
+
   private disputes: Map<string, Dispute>;
+
   private notifications: Map<string, Notification>;
+
   private linkedinProfiles: Map<string, any>;
+
   private leadIntakes: Map<string, LeadIntake>;
+
   private vanessaLogs: Map<number, VanessaLog>;
 
   // Counter for auto-incrementing IDs
   private skillIdCounter: number = 1;
+
   private userSkillIdCounter: number = 1;
+
   private vanessaLogIdCounter: number = 1;
+
   private jobSkillIdCounter: number = 1;
 
   constructor() {
@@ -1089,7 +1112,7 @@ export class MemStorage implements IStorage {
     engagementType?: string;
     category?: string;
     experienceLevel?: string;
-  }): Promise<Array<{
+  }, candidateOverride?: Candidate): Promise<Array<{
     job: Job & { skills: string[] };
     score: number;
     overlapSkills: string[];
@@ -1104,7 +1127,17 @@ export class MemStorage implements IStorage {
     }
 
     const talentProfile = await this.getProfileByUserId(talentId);
-    const talentCandidate = await this.getCandidateByUserId(talentId);
+    // When the caller already resolved the candidate (e.g. Talent JWT auth), use it directly —
+    // legacy candidates may have no linked users row, so getCandidateByUserId would miss them.
+    const talentCandidate = candidateOverride ?? await this.getCandidateByUserId(talentId);
+
+    // Legacy candidates keep their skills on the candidate record rather than user_skills
+    if (talentSkills.length === 0 && talentCandidate) {
+      talentSkills = [
+        ...(talentCandidate.coreSkills ?? []),
+        ...(talentCandidate.secondarySkills ?? []),
+      ].filter(Boolean);
+    }
 
     const allJobs = await this.searchJobsWithSkills({
       status: 'open',
@@ -2346,6 +2379,7 @@ export class MemStorage implements IStorage {
 
   // Vanessa Feedbacks (in-memory implementation)
   private feedbacks: Map<number, Feedback> = new Map();
+
   private feedbackIdCounter: number = 1;
 
   async createFeedback(feedback: InsertFeedback): Promise<Feedback> {
@@ -2397,6 +2431,7 @@ export class MemStorage implements IStorage {
 
   // Admin Corrections (in-memory implementation)
   private correctionsMap: Map<number, Correction> = new Map();
+
   private correctionIdCounter: number = 1;
 
   async createCorrection(correction: InsertCorrection): Promise<Correction> {
@@ -2430,6 +2465,7 @@ export class MemStorage implements IStorage {
 
   // Training Logs (in-memory implementation)
   private trainingLogsMap: Map<number, TrainingLog> = new Map();
+
   private trainingLogIdCounter: number = 1;
 
   async createTrainingLog(trainingLog: InsertTrainingLog): Promise<TrainingLog> {
@@ -2609,14 +2645,21 @@ export class MemStorage implements IStorage {
     const candidate: Candidate = { ...data, id, createdAt: new Date() } as Candidate;
     return candidate;
   }
+
   async getCandidate(_id: string): Promise<Candidate | undefined> { return undefined; }
+
   async getCandidateByEmail(_email: string): Promise<Candidate | undefined> { return undefined; }
+
   async getCandidateByUserId(_userId: string): Promise<Candidate | undefined> { return undefined; }
+
   async getCandidates(): Promise<Candidate[]> { return []; }
+
   async updateCandidate(_id: string, _updates: Partial<InsertCandidate>): Promise<Candidate | undefined> { return undefined; }
+
   async upsertCultureEvaluation(_candidateId: string, _data: Omit<InsertCultureEvaluation, "candidateId">): Promise<CultureEvaluation> {
     throw new Error("Not implemented in MemStorage");
   }
+
   async getCultureEvaluationByCandidate(_candidateId: string): Promise<CultureEvaluation | undefined> { return undefined; }
 }
 
@@ -3091,7 +3134,9 @@ export class DbStorage extends MemStorage {
       );
     }
 
-    return jobs.map(job => ({ ...job, skills: [] }));
+    // Populate skills from the job's skillTags (authoritative skill source for DB jobs;
+    // the legacy job_skills table is unused). The match scorer depends on this.
+    return jobs.map(job => ({ ...job, skills: ((job as any).skillTags ?? []) as string[] }));
   }
 
   async searchJobs(filters: {

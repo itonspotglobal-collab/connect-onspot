@@ -4692,7 +4692,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matches = await storage_.getJobMatchesForTalent(candidateId);
       }
 
-      res.json(matches);
+      // SECURITY: redact the employer identity for confidential jobs before the
+      // payload leaves the server — same guard as public job search.
+      const redacted = matches.map((m: any) => {
+        const job = m.job;
+        if (job?.isCompanyConfidential) {
+          return { ...m, job: { ...job, company: null, companyName: null, companyOverview: null } };
+        }
+        return m;
+      });
+
+      res.json(redacted);
     } catch (error) {
       console.error("GET /api/talent/matches failed:", error);
       res.status(500).json({ error: "Failed to fetch job matches" });
