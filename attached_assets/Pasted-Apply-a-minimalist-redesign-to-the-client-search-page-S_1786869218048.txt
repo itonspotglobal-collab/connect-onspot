@@ -1,0 +1,50 @@
+Apply a minimalist redesign to the /client-search page (SearchToShortlist.tsx
+and its results view). This is a UI simplification on top of what's already
+built — no backend changes, no new endpoints. Reference mockup attached
+separately; match its layout logic, not its literal inline CSS.
+
+KEEP AS-IS (already correct, don't rebuild):
+- The Google-style progressive reveal: centered, minimal search bar on load;
+  everything else hidden until a search action fires
+- All real data wiring: rankTalentForJob results, masked names, Invite button
+  behavior, the dynamic category suggestion chips on the empty state
+- The existing design tokens (colors, fonts) already used elsewhere in the app
+
+CHANGE:
+
+1. Collapse the filter controls behind a single toggle. Currently the 10
+   category chips + engagement type selector are always visible after
+   search. Replace with one small text button — "Refine ▾" — that reveals
+   the filter row only when clicked, collapses it again on second click
+   ("Refine ▴"). Filters stay functionally the same (still filter/re-score
+   the same way); only their default visibility changes.
+
+2. Replace the 3-column card grid with a single-column list of rows.
+   Each row: avatar, name, one inline status/match signal (e.g.
+   "Available now · 92% match" or "Starts in 2 weeks · 81% match"), one-line
+   truncated description, one Shortlist/Invite button — right-aligned.
+   No card borders/shadows/padding-heavy boxes; rows separated by a single
+   hairline border, not boxed cards.
+
+3. Remove the skill-tag chips from the list view entirely. This is a
+   deliberate simplification, not an oversight — skill overlap detail moves
+   out of the default view. Do NOT build an expand-on-click/accordion for
+   this now; that's a real interaction pattern worth its own decision later,
+   not something to add speculatively in this pass.
+
+4. Replace the colored "assist banner" box (if one exists below the
+   results) with a single plain text line — no background/border treatment,
+   just quiet gray text with one link.
+
+5. Remove the results subheading paragraph ("Ranked by fit...") — the
+   heading alone is enough once real results are showing.
+
+Keep the whole thing responsive — on mobile, the row layout should stack
+naturally (avatar+name on one line, description below, button full-width or
+right-aligned depending on space) rather than needing a separate mobile
+treatment.
+
+After implementing, take a screenshot of both the empty (pre-search) and
+active (post-search) states and confirm the existing invite/shortlist
+functionality still works end-to-end — this should be a visual-only change,
+but confirm nothing in the data flow broke.

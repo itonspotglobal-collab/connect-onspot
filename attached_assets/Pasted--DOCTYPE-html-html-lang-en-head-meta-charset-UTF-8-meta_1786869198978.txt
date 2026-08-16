@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnSpot — Hire Talent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A0F2E;
+    --navy-2:#12183F;
+    --purple:#474EAD;
+    --purple-d:#363C87;
+    --purple-tint:#EFEFFA;
+    --gold:#F5A623;
+    --bg:#F7F7FA;
+    --card:#FFFFFF;
+    --line:#E4E4EE;
+    --text:#12132B;
+    --gray:#5B5B6E;
+    --gray-2:#8A8AAE;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--text);
+    background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Bricolage Grotesque',sans-serif;
+    letter-spacing:-0.02em;
+  }
+  a{text-decoration:none; color:inherit;}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 32px;}
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
+
+  /* ---------- Nav ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(247,247,250,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    height:72px;
+  }
+  .logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px;}
+  .logo-mark{width:30px; height:30px; border-radius:8px; background:var(--purple); position:relative; flex-shrink:0;}
+  .logo-mark::before{content:""; position:absolute; width:16px; height:16px; border-radius:50%; background:var(--gold); top:7px; left:7px;}
+  .logo-mark::after{content:""; position:absolute; width:6px; height:6px; border-radius:50%; background:var(--purple); top:12px; left:12px;}
+  .nav-links{display:flex; align-items:center; gap:36px;}
+  .nav-links a{font-size:15px; font-weight:500; color:var(--text); opacity:0.75;}
+  .nav-links a:hover{opacity:1;}
+  .nav-actions{display:flex; align-items:center; gap:14px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:15px;
+    border-radius:10px; cursor:pointer; border:none; white-space:nowrap;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-ghost{background:transparent; color:var(--text); padding:10px 18px; border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--purple);}
+  .btn-primary{background:var(--purple); color:#fff; padding:11px 22px; box-shadow:0 6px 16px rgba(71,78,173,0.28);}
+  .btn-primary:hover{background:var(--purple-d); box-shadow:0 8px 20px rgba(71,78,173,0.36);}
+  .btn-dark{background:var(--navy); color:#fff; padding:11px 22px;}
+  .btn-dark:hover{background:#050816;}
+  @media (max-width:900px){ .nav-links{display:none;} }
+
+  .search-module{
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    padding:10px; max-width:760px;
+    box-shadow:0 20px 45px -20px rgba(20,20,60,0.18);
+  }
+  .search-row{display:flex; align-items:center; gap:10px; padding:8px 8px 8px 18px;}
+  .search-row svg{flex-shrink:0; color:var(--gray-2);}
+  .search-row input{
+    flex:1; border:none; outline:none; background:transparent;
+    font-family:'Inter',sans-serif; font-size:16px; color:var(--text); padding:12px 0;
+  }
+  .search-row input::placeholder{color:var(--gray-2);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; padding:12px 10px 4px;}
+  .chip{
+    font-size:13.5px; font-weight:500; color:var(--gray); background:var(--bg);
+    border:1px solid var(--line); border-radius:100px; padding:8px 14px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .chip:hover{border-color:var(--purple); color:var(--purple);}
+
+  footer{padding:32px 0; text-align:center; font-size:13px; color:var(--gray-2);}
+
+  /* ---------- Action Bar (replaces hero — no marketing copy, straight to task) ---------- */
+  /* ---------- Action Bar: two states, Google-style progressive reveal ---------- */
+  #hero-stage{
+    padding:28px 0 8px;
+    transition:min-height .45s cubic-bezier(.4,0,.2,1), padding .45s cubic-bezier(.4,0,.2,1);
+  }
+  body.stage-initial #hero-stage{
+    min-height:calc(100vh - 72px);
+    display:flex; align-items:center; justify-content:center;
+    padding:40px 0;
+  }
+  body.stage-initial #hero-stage .wrap{width:100%;}
+  body.stage-initial .search-module{max-width:720px; margin:0 auto;}
+  body.stage-initial #results-section{display:none;}
+
+  body.stage-active #hero-stage{min-height:auto; padding:24px 0 4px;}
+  body.stage-active .search-module{max-width:760px; margin:0;}
+  #results-section{
+    opacity:0; transform:translateY(10px);
+  }
+  body.stage-active #results-section{
+    display:block; opacity:1; transform:translateY(0);
+    animation:revealResults .45s cubic-bezier(.4,0,.2,1) both;
+  }
+  @keyframes revealResults{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #hero-stage, #results-section{transition:none; animation:none !important;}
+  }
+
+  .results{padding:32px 0 80px;}
+  .search-module{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:8px; box-shadow:0 8px 24px -12px rgba(20,20,60,0.12);
+  }
+  .search-row{display:flex; align-items:center; gap:10px; padding:6px 6px 6px 16px;}
+  .search-row svg{flex-shrink:0; color:var(--gray-2);}
+  .search-row input{
+    flex:1; border:none; outline:none; background:transparent;
+    font-family:'Inter',sans-serif; font-size:15.5px; font-weight:500; color:var(--text); padding:10px 0;
+  }
+  .search-row input::placeholder{color:var(--gray-2); font-weight:400;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; padding:10px 8px 4px;}
+  .chip{
+    font-size:13px; font-weight:500; color:var(--gray); background:var(--bg);
+    border:1px solid var(--line); border-radius:100px; padding:6px 13px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .chip:hover{border-color:var(--purple); color:var(--purple);}
+
+  /* ---------- Results ---------- */
+  .results-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:8px; padding-bottom:20px; border-bottom:1px solid var(--line);
+  }
+  .results-head h1{font-size:22px; font-weight:800;}
+  .refine-toggle{
+    background:none; border:none; cursor:pointer; font-size:13.5px; font-weight:600;
+    color:var(--gray); font-family:'Inter',sans-serif; padding:6px 0;
+  }
+  .refine-toggle:hover{color:var(--purple);}
+
+  .filter-row{
+    display:none; flex-direction:column; gap:12px;
+    padding:16px 0 20px; border-bottom:1px solid var(--line); margin-bottom:8px;
+  }
+  .filter-row.open{display:flex;}
+  .filter-group{display:flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .filter-chip{
+    font-size:13px; font-weight:600; color:var(--gray); background:transparent;
+    border:1px solid var(--line); border-radius:100px; padding:6px 13px; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .filter-chip:hover{border-color:var(--purple);}
+  .filter-chip.active{background:var(--purple-tint); color:var(--purple); border-color:var(--purple-tint);}
+
+  .results-list{display:flex; flex-direction:column;}
+  .result-row{
+    display:flex; align-items:center; gap:16px; padding:20px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-row .avatar{
+    width:40px; height:40px; border-radius:10px; background:var(--purple-tint); color:var(--purple);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0;
+  }
+  .result-row .avatar.muted{background:var(--bg); color:var(--gray-2);}
+  .result-main{flex:1; min-width:0;}
+  .result-top{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:3px;}
+  .result-row h3{font-size:15px; font-weight:700;}
+  .signal{font-size:12.5px; font-weight:600; color:#B8790F; display:inline-flex; align-items:center; gap:5px;}
+  .signal .dot{width:5px; height:5px; border-radius:50%; background:var(--gold);}
+  .signal.muted{color:var(--gray-2);}
+  .result-row .desc{font-size:13.5px; color:var(--gray); line-height:1.4;}
+  .btn-sm{padding:8px 18px; font-size:13.5px; flex-shrink:0;}
+  .btn-ghost.btn-sm{border-color:var(--purple); color:var(--purple);}
+  .btn-ghost.btn-sm:hover{background:var(--purple); color:#fff;}
+
+  .assist-line{
+    margin-top:28px; text-align:center; font-size:13.5px; color:var(--gray-2);
+  }
+  .assist-line a{color:var(--purple); font-weight:600;}
+</style>
+</head>
+<body class="stage-initial">
+
+<nav>
+  <div class="wrap nav-inner">
+    <a href="#" class="logo"><span class="logo-mark"></span>onSpot</a>
+    <div class="nav-links">
+      <a href="#">Hire Talent</a>
+      <a href="#">Find Work</a>
+      <a href="#">How it Works</a>
+      <a href="#">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a href="#" class="btn btn-ghost">Log In</a>
+      <a href="#" class="btn btn-primary">Sign Up</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ACTION BAR -->
+<section class="action-bar" id="hero-stage">
+  <div class="wrap">
+    <div class="search-module">
+      <div class="search-row">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-input" value="" placeholder="Tell us what you need">
+        <button class="btn btn-primary" id="search-submit">Hire Talent →</button>
+      </div>
+      <div class="chips">
+        <span class="chip">Manage my inbox &amp; calendar</span>
+        <span class="chip">Outbound sales support</span>
+        <span class="chip">Monthly bookkeeping</span>
+        <span class="chip">Recruitment support</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section class="results" id="results-section">
+  <div class="wrap">
+    <div class="results-head">
+      <h1 id="results-heading">Matches</h1>
+      <button class="refine-toggle" id="refine-toggle">Refine ▾</button>
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <div class="filter-group">
+        <span class="filter-chip active">All roles</span>
+        <span class="filter-chip">Customer Support</span>
+        <span class="filter-chip">Virtual Assistants</span>
+        <span class="filter-chip">Developers</span>
+        <span class="filter-chip">Designers</span>
+        <span class="filter-chip">Marketing Specialists</span>
+        <span class="filter-chip">Accountants</span>
+        <span class="filter-chip">Healthcare Professionals</span>
+        <span class="filter-chip">Sales Representatives</span>
+        <span class="filter-chip">Operations Specialists</span>
+        <span class="filter-chip">IT &amp; Technical Support</span>
+      </div>
+      <div class="filter-group">
+        <span class="filter-chip active">Any engagement</span>
+        <span class="filter-chip">Full-Time</span>
+        <span class="filter-chip">Half-Day</span>
+      </div>
+    </div>
+
+    <div class="results-list">
+      <div class="result-row">
+        <div class="avatar">VA</div>
+        <div class="result-main">
+          <div class="result-top">
+            <h3>Virtual Assistant</h3>
+            <span class="signal"><span class="dot"></span>Available now · 92% match</span>
+          </div>
+          <p class="desc">Inbox, calendar, and daily operations support for fast-moving founders.</p>
+        </div>
+        <a href="#" class="btn btn-ghost btn-sm">Shortlist</a>
+      </div>
+
+      <div class="result-row">
+        <div class="avatar">CS</div>
+        <div class="result-main">
+          <div class="result-top">
+            <h3>Customer Support Specialist</h3>
+            <span class="signal"><span class="dot"></span>Available now · 88% match</span>
+          </div>
+          <p class="desc">Voice, chat, and email support with structured customer handling.</p>
+        </div>
+        <a href="#" class="btn btn-ghost btn-sm">Shortlist</a>
+      </div>
+
+      <div class="result-row">
+        <div class="avatar muted">SR</div>
+        <div class="result-main">
+          <div class="result-top">
+            <h3>Sales Representative</h3>
+            <span class="signal muted">Starts in 2 weeks · 81% match</span>
+          </div>
+          <p class="desc">Lead generation, prospecting, and CRM discipline for growth teams.</p>
+        </div>
+        <a href="#" class="btn btn-ghost btn-sm">Shortlist</a>
+      </div>
+    </div>
+
+    <p class="assist-line">Don't see the right fit? <a href="#">Request a shortlist</a> — same rate, we do the searching.</p>
+  </div>
+</section>
+
+<script>
+
+  const input = document.getElementById('search-input');
+  const heading = document.getElementById('results-heading');
+
+  function runSearch(query){
+    if(!query || !query.trim()) { input.focus(); return; }
+    heading.textContent = 'Matches for "' + query.trim() + '"';
+    document.body.classList.remove('stage-initial');
+    document.body.classList.add('stage-active');
+    // give the layout a beat to settle before scrolling results into view
+    requestAnimationFrame(() => {
+      document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  }
+
+  document.getElementById('search-submit').addEventListener('click', () => runSearch(input.value));
+  input.addEventListener('keydown', (e) => { if(e.key === 'Enter') runSearch(input.value); });
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      input.value = chip.textContent;
+      runSearch(chip.textContent);
+    });
+  });
+
+  document.querySelectorAll('.filter-chip').forEach(f => {
+    f.addEventListener('click', function(){
+      this.parentElement.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  const refineToggle = document.getElementById('refine-toggle');
+  const filterRow = document.getElementById('filter-row');
+  refineToggle.addEventListener('click', () => {
+    const isOpen = filterRow.classList.toggle('open');
+    refineToggle.textContent = isOpen ? 'Refine ▴' : 'Refine ▾';
+  });
+</script>
+
+</body>
+</html>

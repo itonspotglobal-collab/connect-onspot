@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
@@ -10,7 +10,6 @@ import {
 } from "@/lib/jobConstants";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Check, Loader2 } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
@@ -60,16 +59,9 @@ function getInitials(name?: string | null): string {
   );
 }
 
-function matchLabel(score: number): { label: string; className: string } | null {
-  if (score >= 85) return { label: "Best Match", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" };
-  if (score >= 70) return { label: "Strong Match", className: "bg-[#474ead]/10 text-[#474ead] dark:text-indigo-400" };
-  if (score >= 50) return { label: "Good Match", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" };
-  return null;
-}
+// ─── Result Row ───────────────────────────────────────────────────────────────
 
-// ─── Result Card ──────────────────────────────────────────────────────────────
-
-function ResultCard({
+function ResultRow({
   result,
   isInvited,
   isInviting,
@@ -80,117 +72,86 @@ function ResultCard({
   isInviting: boolean;
   onInvite: () => void;
 }) {
-  const badge = matchLabel(result.score);
   const { candidate } = result;
 
-  // maskedName is server-generated ("Jane S.") — full name is never sent to clients.
+  // maskedName is server-generated ("Jane S.") — full name never sent to clients.
   const name = candidate.maskedName ?? null;
   const position = candidate.targetPosition ?? candidate.target_position;
-  const coreSkills = candidate.coreSkills ?? candidate.core_skills ?? [];
-  const overlapSet = new Set(result.overlapSkills.map((s) => s.toLowerCase()));
-  const displaySkills =
-    result.overlapSkills.length > 0 ? result.overlapSkills.slice(0, 3) : coreSkills.slice(0, 3);
 
-  // Availability — treat seniority as a proxy for now; most talent is available
-  const isAvailableSoon = !candidate.seniority?.toLowerCase().includes("unavailable");
+  // Availability — use seniority as proxy; most talent is available
+  const isAvailable = !candidate.seniority?.toLowerCase().includes("unavailable");
+
+  const signal = isAvailable
+    ? `Available now · ${result.score}% match`
+    : `${result.score}% match`;
+
+  const desc = candidate.category
+    ? `${resolveBrowseCategory(candidate.category) ?? candidate.category} specialist`
+    : position
+      ? `Experienced ${position.toLowerCase()}`
+      : "Experienced professional available for remote work.";
 
   return (
-    <div className="result-card group bg-white border border-slate-200 rounded-2xl p-[22px] hover:shadow-[0_12px_28px_-16px_rgba(20,20,60,0.18)] hover:border-slate-300 transition-[box-shadow,border-color] duration-150 flex flex-col gap-3">
-      {/* Avatar row */}
-      <div className="flex items-start gap-3 mb-0.5">
-        <Avatar className="h-[42px] w-[42px] shrink-0 rounded-[11px]">
-          <AvatarFallback
-            className={cn(
-              "rounded-[11px] font-bold text-[13.5px]",
-              badge
-                ? "bg-[#EFEFFA] text-[#474ead]"
-                : "bg-slate-100 text-slate-400",
-            )}
-          >
-            {getInitials(name)}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[15.5px] font-bold leading-snug text-slate-900 dark:text-white truncate">
-            {name ?? "Talent Profile"}
-          </h3>
-          {position && (
-            <p className="text-[12.5px] text-slate-400 mt-0.5 truncate">{position}</p>
-          )}
-        </div>
-
-        {/* Availability pill */}
-        {isAvailableSoon ? (
-          <span className="shrink-0 flex items-center gap-1.5 text-[11.5px] font-bold text-[#B8790F] bg-[#FDF1DD] px-2.5 py-1 rounded-full whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623] inline-block" />
-            Available now
-          </span>
-        ) : (
-          <span className="shrink-0 text-[11.5px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
-            Soon
-          </span>
-        )}
-      </div>
-
-      {/* Description / category */}
-      <p className="text-[13.5px] text-slate-500 leading-[1.55] min-h-[56px]">
-        {candidate.category
-          ? `${resolveBrowseCategory(candidate.category) ?? candidate.category} specialist`
-          : position
-            ? `Experienced ${position.toLowerCase()}`
-            : "Experienced professional available for remote work."}
-      </p>
-
-      {/* Skill tags */}
-      {displaySkills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {displaySkills.map((s) => (
-            <span
-              key={s}
-              className={cn(
-                "rounded-full px-2.5 py-[5px] text-[11.5px] font-semibold",
-                overlapSet.has(s.toLowerCase())
-                  ? "bg-[#474ead]/10 text-[#474ead] dark:text-indigo-300"
-                  : "bg-slate-100 text-slate-500",
-              )}
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-3.5 mt-auto border-t border-slate-100">
-        {/* AI-match indicator */}
-        <span className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-500">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-          AI-matched profile
-        </span>
-
-        {/* Invite / Shortlist button */}
-        <button
-          disabled={isInvited || isInviting}
-          onClick={onInvite}
+    <div className="flex items-center gap-4 py-5 border-b border-slate-200 dark:border-slate-700 last:border-b-0">
+      {/* Avatar */}
+      <Avatar className="h-10 w-10 shrink-0 rounded-[10px]">
+        <AvatarFallback
           className={cn(
-            "rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
-            isInvited
-              ? "border-emerald-400 text-emerald-600 cursor-default"
-              : "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white",
+            "rounded-[10px] font-bold text-[13px]",
+            isAvailable
+              ? "bg-[#EFEFFA] text-[#474ead]"
+              : "bg-slate-100 text-slate-400",
           )}
         >
-          {isInviting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : isInvited ? (
-            <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" />Invited</span>
-          ) : (
-            "Shortlist"
-          )}
-        </button>
+          {getInitials(name)}
+        </AvatarFallback>
+      </Avatar>
+
+      {/* Name + signal + description */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 flex-wrap mb-0.5">
+          <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">
+            {name ?? "Talent Profile"}
+          </h3>
+          <span
+            className={cn(
+              "inline-flex items-center gap-[5px] text-[12.5px] font-semibold",
+              isAvailable ? "text-[#B8790F]" : "text-slate-400 dark:text-slate-500",
+            )}
+          >
+            {isAvailable && (
+              <span className="w-[5px] h-[5px] rounded-full bg-[#F5A623] inline-block shrink-0" />
+            )}
+            {signal}
+          </span>
+        </div>
+        <p className="text-[13.5px] text-slate-500 dark:text-slate-400 truncate leading-snug">
+          {desc}
+        </p>
       </div>
+
+      {/* Shortlist / Invite button */}
+      <button
+        disabled={isInvited || isInviting}
+        onClick={onInvite}
+        className={cn(
+          "shrink-0 rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
+          isInvited
+            ? "border-emerald-400 text-emerald-600 cursor-default"
+            : "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white",
+        )}
+      >
+        {isInviting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : isInvited ? (
+          <span className="flex items-center gap-1">
+            <Check className="h-3.5 w-3.5" />
+            Invited
+          </span>
+        ) : (
+          "Shortlist"
+        )}
+      </button>
     </div>
   );
 }
@@ -203,28 +164,28 @@ type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
 export default function SearchToShortlist() {
   const { toast } = useToast();
 
-  // ── Stage ────────────────────────────────────────────────────────────────────
+  // ── Stage ─────────────────────────────────────────────────────────────────────
   const [stage, setStage] = useState<"initial" | "active">("initial");
   const isInitial = stage === "initial";
 
-  // ── Search inputs ────────────────────────────────────────────────────────────
+  // ── Search inputs ─────────────────────────────────────────────────────────────
   const [searchText, setSearchText] = useState("");
   const [engagementType, setEngagementType] = useState<"Full-Time" | "Half-Day">("Full-Time");
 
-  // ── Post-search filters (client-side) ────────────────────────────────────────
+  // ── Post-search filters (client-side) ─────────────────────────────────────────
   const [categoryFilter, setCategoryFilter] = useState<TalentBrowseCategory | null>(null);
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("All");
 
-  // ── Results ──────────────────────────────────────────────────────────────────
-  // baseResults: the full unfiltered result set for the current search query.
-  // searchResults: the active result set (may be filtered by engagement).
-  // When "All" is selected, searchResults reverts to baseResults.
+  // ── Refine panel toggle ───────────────────────────────────────────────────────
+  const [refineOpen, setRefineOpen] = useState(false);
+
+  // ── Results ───────────────────────────────────────────────────────────────────
   const [baseResults, setBaseResults] = useState<SearchResults | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
 
-  // ── Dynamic suggestion chips ─────────────────────────────────────────────────
+  // ── Dynamic suggestion chips ──────────────────────────────────────────────────
   const { data: suggestions = [] } = useQuery<Suggestion[]>({
     queryKey: ["talent-search-suggestions"],
     queryFn: async () => {
@@ -235,7 +196,6 @@ export default function SearchToShortlist() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Map category → phrase, falling back to the category name itself
   const suggestionChips = useMemo(
     () =>
       suggestions.map((s) => ({
@@ -246,7 +206,7 @@ export default function SearchToShortlist() {
     [suggestions],
   );
 
-  // ── Search mutation ──────────────────────────────────────────────────────────
+  // ── Search mutation ───────────────────────────────────────────────────────────
   const searchMutation = useMutation({
     mutationFn: async ({
       text,
@@ -266,7 +226,7 @@ export default function SearchToShortlist() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Search failed");
       }
-      return { data: await res.json() as SearchResults, isBaseSearch };
+      return { data: (await res.json()) as SearchResults, isBaseSearch };
     },
     onSuccess: ({ data, isBaseSearch }) => {
       setSearchResults(data);
@@ -281,7 +241,7 @@ export default function SearchToShortlist() {
     },
   });
 
-  // ── Filtered results (client-side category filter only) ──────────────────────
+  // ── Filtered results (client-side category filter) ────────────────────────────
   const filteredResults = useMemo(() => {
     if (!searchResults) return [];
     return searchResults.results.filter((r) => {
@@ -293,7 +253,7 @@ export default function SearchToShortlist() {
     });
   }, [searchResults, categoryFilter]);
 
-  // ── Trigger search ───────────────────────────────────────────────────────────
+  // ── Trigger search ────────────────────────────────────────────────────────────
   function runSearch(text?: string, engType?: "Full-Time" | "Half-Day", isBaseSearch = true) {
     const q = (text ?? searchText).trim();
     if (!q) { toast({ title: "Enter a search term" }); return; }
@@ -304,7 +264,7 @@ export default function SearchToShortlist() {
     searchMutation.mutate({ text: q, engType: et, isBaseSearch });
   }
 
-  // ── Invite handler ───────────────────────────────────────────────────────────
+  // ── Invite handler ────────────────────────────────────────────────────────────
   async function handleInvite(talentUserId: string) {
     if (!searchResults?.jobId) return;
     setInvitingId(talentUserId);
@@ -330,7 +290,7 @@ export default function SearchToShortlist() {
     }
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#F7F7FA] dark:bg-[#060816]">
       <TopNavigation />
@@ -403,82 +363,84 @@ export default function SearchToShortlist() {
             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
             className="max-w-5xl mx-auto px-5 pt-8 pb-20"
           >
-            {/* Results header */}
-            <div className="mb-6">
-              <h1 className="text-[24px] font-extrabold tracking-tight text-slate-900 dark:text-white mb-1.5">
+            {/* Results header — heading + Refine toggle on one line */}
+            <div className="flex items-baseline justify-between mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
+              <h1 className="text-[22px] font-extrabold tracking-tight text-slate-900 dark:text-white">
                 {searchMutation.isPending
                   ? "Searching…"
                   : searchResults
                     ? `Matches for "${searchText}"`
                     : "Matches"}
               </h1>
-              <p className="text-[14.5px] text-slate-500 dark:text-slate-400">
-                Ranked by fit. Skills that matched your search are highlighted in{" "}
-                <span className="text-[#474ead] font-semibold">blue</span>.
-              </p>
+              <button
+                onClick={() => setRefineOpen((o) => !o)}
+                className="text-[13.5px] font-semibold text-slate-500 hover:text-[#474ead] transition-colors duration-150 py-1"
+              >
+                {refineOpen ? "Refine ▴" : "Refine ▾"}
+              </button>
             </div>
 
-            {/* Filter row */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-200 dark:border-slate-700">
-              {/* Category chips */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[13px] text-slate-400 font-semibold mr-0.5">Role:</span>
-                <button
-                  onClick={() => setCategoryFilter(null)}
-                  className={cn(
-                    "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
-                    !categoryFilter
-                      ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
-                      : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
-                  )}
-                >
-                  All roles
-                </button>
-                {TALENT_BROWSE_CATEGORIES.map((cat) => (
+            {/* Collapsible filter row */}
+            {refineOpen && (
+              <div className="flex flex-col gap-3 pb-5 mb-2 border-b border-slate-200 dark:border-slate-700">
+                {/* Category chips */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[13px] text-slate-400 font-semibold mr-0.5">Role:</span>
                   <button
-                    key={cat}
-                    onClick={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                    onClick={() => setCategoryFilter(null)}
                     className={cn(
                       "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
-                      categoryFilter === cat
+                      !categoryFilter
                         ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
                         : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
                     )}
                   >
-                    {cat}
+                    All roles
                   </button>
-                ))}
-              </div>
+                  {TALENT_BROWSE_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                      className={cn(
+                        "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
+                        categoryFilter === cat
+                          ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
+                          : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
 
-              {/* Engagement type filter */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[13px] text-slate-400 font-semibold">Engagement:</span>
-                {ENGAGEMENT_OPTIONS.map((et) => (
-                  <button
-                    key={et}
-                    onClick={() => {
-                      setEngagementFilter(et);
-                      if (et === "All") {
-                        // Restore the base (unfiltered-by-engagement) result set
-                        if (baseResults) setSearchResults(baseResults);
-                      } else {
-                        // Re-search with this specific engagement type (not a base search)
-                        setEngagementType(et);
-                        runSearch(searchText, et, false);
-                      }
-                    }}
-                    className={cn(
-                      "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
-                      engagementFilter === et
-                        ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
-                        : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
-                    )}
-                  >
-                    {et}
-                  </button>
-                ))}
+                {/* Engagement type filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[13px] text-slate-400 font-semibold">Engagement:</span>
+                  {ENGAGEMENT_OPTIONS.map((et) => (
+                    <button
+                      key={et}
+                      onClick={() => {
+                        setEngagementFilter(et);
+                        if (et === "All") {
+                          if (baseResults) setSearchResults(baseResults);
+                        } else {
+                          setEngagementType(et);
+                          runSearch(searchText, et, false);
+                        }
+                      }}
+                      className={cn(
+                        "text-[13.5px] font-semibold rounded-full px-[14px] py-[7px] border transition-colors duration-150",
+                        engagementFilter === et
+                          ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
+                          : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
+                      )}
+                    >
+                      {et}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Loading */}
             {searchMutation.isPending && (
@@ -488,11 +450,11 @@ export default function SearchToShortlist() {
               </div>
             )}
 
-            {/* Results grid */}
+            {/* Results list — single column, hairline-separated rows */}
             {!searchMutation.isPending && filteredResults.length > 0 && (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col">
                 {filteredResults.map((r) => (
-                  <ResultCard
+                  <ResultRow
                     key={r.candidateId}
                     result={r}
                     isInvited={invitedIds.has(r.userId)}
@@ -536,15 +498,18 @@ export default function SearchToShortlist() {
               </div>
             )}
 
-            {/* Assist banner */}
+            {/* Assist line — plain text, no background treatment */}
             {!searchMutation.isPending && searchResults && (
-              <div className="mt-8 text-center text-[14px] text-slate-500 bg-[#EFEFFA] dark:bg-indigo-950/30 rounded-xl px-4 py-[18px]">
+              <p className="mt-8 text-center text-[13.5px] text-slate-400 dark:text-slate-500">
                 Don't see the right fit?{" "}
-                <a href="mailto:careers@onspotglobal.com" className="text-[#474ead] font-bold hover:underline">
+                <a
+                  href="mailto:careers@onspotglobal.com"
+                  className="text-[#474ead] font-semibold hover:underline"
+                >
                   Request a shortlist
                 </a>{" "}
                 — same rate, we do the searching.
-              </div>
+              </p>
             )}
           </motion.div>
         )}
