@@ -23,7 +23,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
-import { query, db } from "./db.ts";
+import { query, db, pool } from "./db.ts";
 import { eq, desc, sql as sqlOp } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
@@ -6738,44 +6738,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ====== MESSAGES (Phase 1 Priority) ======
-  // ── Messaging endpoints — all require authentication + participant membership ──
+  // All messaging endpoints require authentication; access is limited to thread participants.
+  const getAuthedUserId = (req: Request): string | undefined =>
+    (req as any).user?.id;
 
-  app.get("/api/message-threads/:id", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/message-threads/:id", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const thread = await storage.getMessageThread(req.params.id);
-      if (!thread) return res.status(404).json({ error: "Thread not found" });
-      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
+      if (!thread) {
+        return res.status(404).json({ error: "Thread not found" });
+      }
+      if (!thread.participants.includes(userId)) {
+        return res.status(403).json({ error: "Not a participant of this thread" });
+      }
       res.json(thread);
     } catch (error) {
       res.status(500).json({ error: "Failed to get message thread" });
     }
   });
 
-  app.post("/api/message-threads", authenticateJWT, async (req: Request, res: Response) => {
+  // Thread creation is gated on an existing accepted relationship: a thread may
+  // only be opened between a client and a talent who has accepted that client's
+  // invitation (job_submissions status beyond 'invited'/'declined'). The jobId
+  // and participants are derived server-side from that submission — callers
+  // cannot open threads with arbitrary users (protects talent identity pre-accept).
+  app.post("/api/message-threads", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const validated = insertMessageThreadSchema.parse(req.body);
-      if (!validated.participants.includes(userId)) {
-        return res.status(403).json({ error: "You must be a participant in the thread" });
+      const participants = Array.from(new Set(validated.participants));
+      if (participants.length !== 2 || !participants.includes(userId)) {
+        return res.status(403).json({
+          error: "Threads must have exactly two participants, including yourself",
+        });
       }
-      const thread = await storage.createMessageThread(validated);
-      res.status(201).json(thread);
+      const otherId = participants.find((p) => p !== userId)!;
+      // Verify an accepted client↔talent relationship exists between the pair
+      // Only a client-initiated invitation that the talent has accepted counts —
+      // ordinary talent applications (initiated_by <> 'client') do not open a
+      // messaging channel, and only explicit accepted/downstream statuses qualify.
+      const rel = await query(
+        `SELECT job_id, client_id, talent_id FROM job_submissions
+         WHERE ((client_id = $1 AND talent_id = $2) OR (client_id = $2 AND talent_id = $1))
+           AND initiated_by = 'client'
+           AND status IN ('submitted', 'new', 'under_review', 'reviewed', 'shortlisted', 'interview', 'offered', 'hired')
+         ORDER BY updated_at DESC NULLS LAST
+         LIMIT 1`,
+        [userId, otherId],
+      );
+      if (!rel.rows.length) {
+        return res.status(403).json({
+          error: "Messaging requires an accepted invitation between both parties",
+        });
+      }
+      const jobId = rel.rows[0].job_id ?? null;
+      const relClientId: string = rel.rows[0].client_id;
+      const relTalentId: string = rel.rows[0].talent_id;
+      // Race-safe idempotent creation: serialize on the same pair/job advisory
+      // lock used by the acceptance flow (client:talent:job ordering), so
+      // concurrent explicit creations (or a creation racing an accept) always
+      // converge on a single thread.
+      const txClient = await pool.connect();
+      try {
+        await txClient.query("BEGIN");
+        await txClient.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || COALESCE($3, '')))`,
+          [relClientId, relTalentId, jobId ?? null],
+        );
+        const existing = await txClient.query(
+          `SELECT id FROM message_threads
+           WHERE participants @> ARRAY[$1, $2]::text[]
+             AND participants <@ ARRAY[$1, $2]::text[]
+             AND (job_id = $3 OR ($3::text IS NULL AND job_id IS NULL))
+           LIMIT 1`,
+          [userId, otherId, jobId],
+        );
+        if (existing.rows.length) {
+          await txClient.query("COMMIT");
+          const thread = await storage.getMessageThread(existing.rows[0].id);
+          return res.status(200).json(thread);
+        }
+        const created = await txClient.query(
+          `INSERT INTO message_threads (job_id, participants, subject)
+           VALUES ($1, ARRAY[$2, $3]::text[], $4)
+           RETURNING *`,
+          [jobId, userId, otherId, validated.subject ?? null],
+        );
+        await txClient.query("COMMIT");
+        return res.status(201).json({
+          id: created.rows[0].id,
+          jobId: created.rows[0].job_id,
+          contractId: created.rows[0].contract_id ?? null,
+          participants: created.rows[0].participants,
+          subject: created.rows[0].subject,
+          lastMessageAt: created.rows[0].last_message_at,
+          createdAt: created.rows[0].created_at,
+        });
+      } catch (txErr) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        throw txErr;
+      } finally {
+        txClient.release();
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: (error as z.ZodError).errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create message thread" });
     }
   });
 
-  app.get("/api/users/:userId/message-threads", authenticateJWT, async (req: Request, res: Response) => {
+  // Threads for the authenticated user (works for both legacy and talent JWTs,
+  // since authenticateJWT normalizes both to a users.id).
+  app.get("/api/me/message-threads", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      if (req.params.userId !== userId) return res.status(403).json({ error: "Forbidden" });
+      const threads = await storage.listMessageThreadsByUser(userId);
+      // Enrich with participant display names (no contact info — names only)
+      const otherIds = Array.from(
+        new Set(threads.flatMap((t) => t.participants).filter((p) => p !== userId)),
+      );
+      const names: Record<string, string> = {};
+      if (otherIds.length) {
+        const result = await query(
+          `SELECT id, COALESCE(NULLIF(TRIM(CONCAT(first_name, ' ', last_name)), ''), NULLIF(username, ''), 'Member') AS display_name
+           FROM users WHERE id = ANY($1::text[])`,
+          [otherIds as any],
+        );
+        for (const row of result.rows) names[row.id] = row.display_name;
+      }
+      res.json({ userId, threads, participantNames: names });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get message threads" });
+    }
+  });
+
+  app.get("/api/users/:userId/message-threads", authenticateJWT, async (req, res) => {
+    try {
+      const userId = getAuthedUserId(req);
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (req.params.userId !== userId) {
+        return res.status(403).json({ error: "Cannot view another user's threads" });
+      }
       const threads = await storage.listMessageThreadsByUser(userId);
       res.json(threads);
     } catch (error) {
@@ -6783,47 +6893,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/message-threads/:threadId/messages", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/message-threads/:threadId/messages", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const thread = await storage.getMessageThread(req.params.threadId);
       if (!thread) return res.status(404).json({ error: "Thread not found" });
-      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
-      const msgs = await storage.listMessagesByThread(req.params.threadId);
-      res.json(msgs);
+      if (!thread.participants.includes(userId)) {
+        return res.status(403).json({ error: "Not a participant of this thread" });
+      }
+      const messages = await storage.listMessagesByThread(req.params.threadId);
+      res.json(messages);
     } catch (error) {
       res.status(500).json({ error: "Failed to get thread messages" });
     }
   });
 
-  app.post("/api/messages", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/messages", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      // Force senderId to the authenticated user — never trust client-supplied senderId
-      const body = { ...req.body, senderId: userId };
-      const validated = insertMessageSchema.parse(body);
+      const validated = insertMessageSchema.parse({
+        ...req.body,
+        senderId: userId, // sender is always the authenticated user
+      });
       const thread = await storage.getMessageThread(validated.threadId);
       if (!thread) return res.status(404).json({ error: "Thread not found" });
-      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
+      if (!thread.participants.includes(userId)) {
+        return res.status(403).json({ error: "Not a participant of this thread" });
+      }
       const message = await storage.createMessage(validated);
       res.status(201).json(message);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Validation failed", details: (error as z.ZodError).errors });
+        return res
+          .status(400)
+          .json({ error: "Validation failed", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to send message" });
+      res.status(500).json({ error: "Failed to create message" });
     }
   });
 
-  app.post("/api/message-threads/:threadId/mark-read", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/message-threads/:threadId/mark-read", authenticateJWT, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const thread = await storage.getMessageThread(req.params.threadId);
       if (!thread) return res.status(404).json({ error: "Thread not found" });
-      if (!thread.participants.includes(userId)) return res.status(403).json({ error: "Forbidden" });
+      if (!thread.participants.includes(userId)) {
+        return res.status(403).json({ error: "Not a participant of this thread" });
+      }
       await storage.markMessagesAsRead(req.params.threadId, userId);
       res.status(204).send();
     } catch (error) {
@@ -9841,59 +9960,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
       }
 
-      // Verify ownership and that the invitation is still pending
+      // Ownership check for friendly 404 (the authoritative status check is the
+      // conditional UPDATE below, which is race-safe).
       const check = await query(
-        `SELECT js.id, js.status, js.client_id, js.job_id, j.title AS job_title
-         FROM job_submissions js
-         LEFT JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.talent_id = $2`,
+        `SELECT id FROM job_submissions WHERE id = $1 AND talent_id = $2`,
         [id, userId],
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
-      if (check.rows[0].status !== "invited") {
-        return res.status(409).json({ error: "This invitation is no longer pending" });
-      }
 
       const newStatus = action === "accept" ? "submitted" : "declined";
-      await query(
-        `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
-        [newStatus, id],
-      );
 
-      // On accept, ensure a message thread exists between talent and client so they
-      // can coordinate (schedule interviews etc.) without exchanging contact details.
-      if (action === "accept") {
-        const clientId: string | null = check.rows[0].client_id ?? null;
-        const jobId: string | null = check.rows[0].job_id ?? null;
-        const jobTitle: string = check.rows[0].job_title ?? "Invitation";
-
-        if (clientId && jobId) {
-          // Idempotent — don't create a second thread if one already exists for this job+pair
-          const existing = await query(
-            `SELECT id FROM message_threads
-             WHERE job_id = $1 AND $2 = ANY(participants) AND $3 = ANY(participants)
-             LIMIT 1`,
-            [jobId, userId, clientId],
-          );
-          if (existing.rows.length === 0) {
-            await storage.createMessageThread({
-              jobId,
-              participants: [userId, clientId],
-              subject: jobTitle,
-            });
-          }
-          const threadRow = existing.rows[0]
-            ?? (await query(
-              `SELECT id FROM message_threads
-               WHERE job_id = $1 AND $2 = ANY(participants) AND $3 = ANY(participants)
-               LIMIT 1`,
-              [jobId, userId, clientId],
-            )).rows[0];
-          return res.json({ status: newStatus, threadId: threadRow?.id ?? null });
+      if (action !== "accept") {
+        // Atomic transition: only flips if still pending; concurrent accept/decline
+        // requests cannot both win.
+        const declined = await query(
+          `UPDATE job_submissions SET status = $1, updated_at = NOW()
+           WHERE id = $2 AND talent_id = $3 AND status = 'invited'
+           RETURNING id`,
+          [newStatus, id, userId],
+        );
+        if (!declined.rows.length) {
+          return res.status(409).json({ error: "This invitation is no longer pending" });
         }
+        return res.json({ status: newStatus, threadId: null });
       }
 
-      return res.json({ status: newStatus });
+      // Acceptance opens an in-platform message thread between client and talent
+      // (so interviews can be scheduled without exchanging contact details).
+      // The conditional status transition and thread creation run in one
+      // transaction on a dedicated connection: only the request that wins the
+      // 'invited' → 'submitted' transition creates the thread, and acceptance
+      // never silently succeeds without the required communication channel.
+      let threadId: string;
+      const txClient = await pool.connect();
+      try {
+        await txClient.query("BEGIN");
+        // Only client-initiated invitations can be accepted into a messaging
+        // relationship — talent-initiated (legacy/malformed) 'invited' rows never
+        // create a thread or reveal identities.
+        const updated = await txClient.query(
+          `UPDATE job_submissions SET status = $1, updated_at = NOW()
+           WHERE id = $2 AND talent_id = $3 AND status = 'invited' AND initiated_by = 'client'
+           RETURNING client_id, job_id`,
+          [newStatus, id, userId],
+        );
+        if (!updated.rows.length) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "This invitation is no longer pending" });
+        }
+        const { client_id: clientId, job_id: jobId } = updated.rows[0];
+        const jobRow = jobId
+          ? await txClient.query(`SELECT title FROM jobs WHERE id = $1`, [jobId])
+          : { rows: [] as any[] };
+        const jobTitle = jobRow.rows[0]?.title ?? null;
+        if (!clientId || clientId === userId) {
+          throw new Error("Invitation has no valid inviting client");
+        }
+        // Serialize thread creation per client/talent pair so concurrent accepts
+        // cannot create duplicate threads (lock released at COMMIT/ROLLBACK).
+        await txClient.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || COALESCE($3, '')))`,
+          [clientId, userId, jobId ?? null],
+        );
+        // Idempotent: reuse an existing thread for this client/talent/job
+        const existing = await txClient.query(
+          `SELECT id FROM message_threads
+           WHERE participants @> ARRAY[$1, $2]::text[]
+             AND participants <@ ARRAY[$1, $2]::text[]
+             AND (job_id = $3 OR ($3::text IS NULL AND job_id IS NULL))
+           LIMIT 1`,
+          [clientId, userId, jobId],
+        );
+        if (existing.rows.length) {
+          threadId = existing.rows[0].id;
+        } else {
+          const created = await txClient.query(
+            `INSERT INTO message_threads (job_id, participants, subject)
+             VALUES ($1, ARRAY[$2, $3]::text[], $4)
+             RETURNING id`,
+            [
+              jobId ?? null,
+              clientId,
+              userId,
+              jobTitle ? `Invitation accepted — ${jobTitle}` : "Invitation accepted",
+            ],
+          );
+          threadId = created.rows[0].id;
+          // System message so the thread isn't empty when both sides open it
+          await txClient.query(
+            `INSERT INTO messages (thread_id, sender_id, content, message_type)
+             VALUES ($1, $2, $3, 'system')`,
+            [
+              threadId,
+              userId,
+              "Invitation accepted. You can use this thread to coordinate next steps, such as scheduling an interview.",
+            ],
+          );
+        }
+        await txClient.query("COMMIT");
+      } catch (threadErr: any) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        console.error("Invitation accept failed (rolled back):", threadErr);
+        return res
+          .status(500)
+          .json({ error: "Failed to accept invitation. Please try again." });
+      } finally {
+        txClient.release();
+      }
+
+      return res.json({ status: newStatus, threadId });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -12147,6 +12322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+
 
 // Helper function for resume parsing
 function parseResumeText(resumeText: string): any {

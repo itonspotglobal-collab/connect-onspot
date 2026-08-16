@@ -14,7 +14,8 @@ import {
   User,
   Loader2,
   Shield,
-  Upload
+  Upload,
+  MessageSquare
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
@@ -45,6 +46,11 @@ const coreModules = [
     title: "OnSpot Talent",
     url: "/talent",
     icon: Search,
+  },
+  {
+    title: "Messages",
+    url: "/messages",
+    icon: MessageSquare,
   },
   {
     title: "Client Projects",

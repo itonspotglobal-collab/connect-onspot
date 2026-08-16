@@ -92,6 +92,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PortalLogin from "@/pages/PortalLogin";
 
 // Scroll to the top of the page whenever the route changes
+import Messages from "@/pages/Messages";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -242,7 +243,23 @@ function PublicRouter() {
   );
 }
 
-// Client Routes (protected by authentication and role)
+function MessagesRoute() {
+  // Talent users authenticate with a talent token and don't get the client sidebar;
+  // client users are routed through ClientRouter (which includes /messages routes).
+  const talentAuth = loadTalentAuth();
+  const hasLegacyJwt = !!localStorage.getItem("onspot_jwt_token");
+  if (talentAuth && !hasLegacyJwt) {
+    return (
+      <>
+        <TopNavigation />
+        <main>
+          <Messages />
+        </main>
+      </>
+    );
+  }
+  return <ClientRouter />;
+}
 function ClientRouter() {
   return (
     <ClientProtectedRoute>
@@ -265,6 +282,8 @@ function ClientRouter() {
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
+          <Route path="/messages/:threadId" component={Messages} />
+          <Route path="/messages" component={Messages} />
           {/* Public routes accessible from client dashboard */}
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/talent-pool" component={TalentPool} />
@@ -444,6 +463,9 @@ function AppContent() {
       <Route path="/contracts" component={ClientRouter} />
       <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
+      {/* Messages — available for both client (sidebar layout) and talent (standalone) */}
+      <Route path="/messages/:threadId" component={MessagesRoute} />
+      <Route path="/messages" component={MessagesRoute} />
       {/* Old /talent-portal/applications URL — redirect FIRST, before /talent-portal prefix can match it */}
       <Route path="/talent-portal/applications" component={() => { const [, nav] = useLocation(); useEffect(() => { nav("/my-applications"); }, []); return null; }} />
       {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}

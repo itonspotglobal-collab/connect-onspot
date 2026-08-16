@@ -504,6 +504,7 @@ interface TalentInvitation {
 
 function InvitationsSection({ refetchApplications }: { refetchApplications: () => void }) {
   const auth = loadTalentAuth();
+  const [, navigate] = useLocation();
 
   const { data: invitations = [], refetch: refetchInvitations, isLoading } = useQuery<TalentInvitation[]>({
     queryKey: ["talent-invitations"],
@@ -534,9 +535,13 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetchInvitations();
       refetchApplications(); // accepted invite becomes a regular application
+      // On acceptance, a message thread with the client is opened — take the talent there
+      if (data?.threadId) {
+        navigate(`/messages/${data.threadId}`);
+      }
     },
   });
 

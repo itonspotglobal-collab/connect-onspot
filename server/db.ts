@@ -26,7 +26,11 @@ export const query = async (text: string, params: any[] = []): Promise<QueryResu
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('🔍 Executed query', { text: text.slice(0, 100) + (text.length > 100 ? '...' : ''), duration, rows: res.rowCount });
+    // Skip per-query logging inside node:test workers: the high-volume output
+    // intermittently corrupts the test runner's IPC stream (deserialization errors).
+    if (!process.env.NODE_TEST_CONTEXT) {
+      console.log('🔍 Executed query', { text: text.slice(0, 100) + (text.length > 100 ? '...' : ''), duration, rows: res.rowCount });
+    }
     return res;
   } catch (error: any) {
     const duration = Date.now() - start;
