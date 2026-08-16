@@ -89,10 +89,22 @@ comm -23 dev_idx.txt neon_idx.txt | grep -v -f <(echo "$MTFILTER" | sed 's/\^/ O
   | sed 's/^[^:]*:: //;s/CREATE INDEX/CREATE INDEX IF NOT EXISTS/;s/CREATE UNIQUE INDEX/CREATE UNIQUE INDEX IF NOT EXISTS/;s/$/;/' \
   > missing_indexes.sql || true
 
+# Guaranteed tables — applied regardless of pg_dump diff (idempotent DDL)
+# Add any table here that is created by a startup migration block in routes.ts
+# and must exist on Neon for production features to work correctly.
+cat > guaranteed_tables.sql << 'GUARANTEED_SQL'
+CREATE TABLE IF NOT EXISTS search_query_frequency (
+  normalized_query text PRIMARY KEY,
+  count            integer NOT NULL DEFAULT 1,
+  last_searched_at timestamptz NOT NULL DEFAULT NOW()
+);
+GUARANTEED_SQL
+
 echo "── Diff summary ──────────────────────────────────"
 echo "Missing tables : $(wc -l < missing_tables.txt)"
 echo "Missing columns: $( [ -f missing_cols.txt ] && wc -l < missing_cols.txt || echo 0)"
 echo "Missing indexes: $(wc -l < missing_indexes.sql)"
+echo "Guaranteed DDL : guaranteed_tables.sql (search_query_frequency)"
 
 if ! $APPLY; then
   echo ""
@@ -100,6 +112,7 @@ if ! $APPLY; then
   echo "-- tables --";  cat missing_tables.sql
   echo "-- columns --"; cat missing_columns.sql
   echo "-- indexes --"; cat missing_indexes.sql
+  echo "-- guaranteed --"; cat guaranteed_tables.sql
   echo ""
   echo "Re-run with --apply to execute against NEON_DATABASE_URL."
   exit 0
@@ -115,6 +128,10 @@ if [ -s missing_columns.sql ] || [ -s missing_indexes.sql ]; then
   cat missing_columns.sql missing_indexes.sql | psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -1 > /dev/null
   echo "✅ Columns + indexes applied"
 fi
+
+# Apply guaranteed tables (idempotent — safe to run every time)
+psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f guaranteed_tables.sql > /dev/null
+echo "✅ Guaranteed tables applied (search_query_frequency)"
 
 # Verify: re-diff should be empty
 psql "$DATABASE_URL" -Atc "$QC" | sort > d2.txt
