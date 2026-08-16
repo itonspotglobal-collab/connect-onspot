@@ -1,0 +1,69 @@
+Decision: Path C — merge into one canonical page. /hire-talent becomes the
+single real search+results implementation (public, anonymous-browsable).
+/client-search's route can redirect to /hire-talent for authenticated
+clients — do not maintain two parallel search implementations going forward.
+
+CRITICAL DESIGN REQUIREMENT — resolve before writing any code:
+Anonymous, unauthenticated search must NOT create a persisted scaffold job
+row per request. The current /api/client/talent-search flow writes a real
+row to `jobs` on every call — if that's made public with no auth gate, it
+becomes a denial-of-service and data-pollution vector (anyone could loop it
+and flood the jobs table with zero accountability).
+
+Propose a design for this before implementing — options to consider:
+(a) A separate, read-only anonymous preview endpoint that computes match
+    scores WITHOUT persisting any job row — pure computation against the
+    scorer, no DB write, until the visitor actually converts (signs up or
+    logs in).
+(b) Rate-limiting the existing endpoint aggressively for unauthenticated
+    callers plus an aggressive cleanup job for anonymous-origin scaffold
+    rows.
+(c) Something else you think fits the existing architecture better.
+
+Report back with your recommendation and reasoning before implementing —
+this is a real security/abuse design decision, same weight as the earlier
+passwordHash and participant-gate work, not a detail to default silently.
+
+AUTH FLOW FOR SHORTLIST/INVITE:
+Anonymous visitors can search and see results freely. Clicking Shortlist/
+Invite while logged out opens a sign-up/login prompt — NOT a 401 error.
+Critically: the visitor's search query and results context must be
+preserved through that sign-up flow, so they land back on their own results
+after authenticating, not an empty search. Confirm how this will work before
+implementing (return URL param, session storage, or similar) — don't lose
+their search.
+
+CONTENT TO REMOVE FROM THE CURRENT HireTalentPage.tsx:
+- ROLE_PROFILES (hardcoded fake talent cards) — replace with real data via
+  the search flow above
+- DEFAULT_SUGGESTIONS / CATEGORY_SUGGESTIONS (hardcoded) — replace with the
+  real dynamic suggestions from GET /api/client/talent-search/suggestions
+- ALL_COVERAGE (["All","Full-time","Part-time","Project-based"]) and
+  ALL_SENIORITY filters — these don't match the real model at all. Replace
+  entirely with the actual Engagement Type values (Half-Day / Full-Time).
+- The three marketing sections ("How it Works", "Why it Works", "Built for
+  Action") — remove. This page is meant to be action-first per earlier
+  direction (no hero, no branding, straight to the search), and duplicating
+  marketing content here contradicts that. Flagging this once since it's a
+  real tradeoff: if a meaningful share of traffic to this URL arrives
+  directly (SEO, typed URL) rather than via a homepage CTA that already
+  made the pitch, they'll see zero marketing context before hitting a search
+  box. If that's a concern, a single-line reframe (not a full section) could
+  stay — your call, but default to full removal per prior direction unless
+  told otherwise.
+
+DESIGN — apply the same minimalist pattern already built and traced on
+/client-search:
+Google-style progressive reveal (centered search + dynamic suggestion chips
+on load, nothing else visible) → on search action, bar lifts to compact top
+strip, results reveal as single-column rows (avatar, name, one inline
+status/match signal, one-line description, one Shortlist button) → filters
+(10 categories + engagement type) collapsed behind one "Refine ▾" toggle →
+no skill-tag chips in row view → no colored banner boxes, plain text only.
+
+TERMINOLOGY: Engagement Type (Half-Day/Full-Time only, never hourly), Talent/
+Client (never candidate/company), the 10 canonical categories, "AI-matched
+profile" (never "Pre-vetted by OnSpot" — Screening isn't built).
+
+Report back your recommendation on the anonymous-search design question
+first. Don't implement until that's resolved.
