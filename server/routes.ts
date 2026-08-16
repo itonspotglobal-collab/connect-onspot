@@ -669,6 +669,16 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
   }
 }
 
+// ── HTML-escape helper (prevents injection in email bodies) ──────────────────
+function escHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // ── Role-invitation email (non-blocking helper) ────────────────────────────
 async function fireInvitationEmail(opts: {
   talentEmail: string;
@@ -681,29 +691,37 @@ async function fireInvitationEmail(opts: {
     if (!opts.talentEmail) return;
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
 
+    // Build absolute base URL for email links — relative hrefs don't work in email clients
+    const baseUrl = process.env.APP_URL?.replace(/\/$/, "") ||
+      (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "https://onspotglobal.com");
+    const myAppsUrl = `${baseUrl}/my-applications`;
+
+    // HTML-escape all client-controlled / user-supplied values before injection
+    const safeName  = escHtml(opts.talentName  || "there");
+    const safeTitle = escHtml(opts.jobTitle     || "a role");
     const descriptionHtml = opts.jobDescription
-      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${opts.jobDescription.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${escHtml(opts.jobDescription)}</p>`
       : "";
 
-    const subject = `You've been invited to a role: ${opts.jobTitle}`;
+    const subject = `You've been invited to a role: ${safeTitle}`;
     const bodyHtml = `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
   <h2 style="color:#1a1a2e;margin-bottom:8px;">You've been invited to a role</h2>
-  <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${opts.talentName},</p>
+  <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${safeName},</p>
   <p style="color:#444;font-size:15px;margin:12px 0;">
     A client has invited you to apply for the following role:
   </p>
-  <h3 style="color:#1a1a2e;margin:8px 0;">${opts.jobTitle}</h3>
+  <h3 style="color:#1a1a2e;margin:8px 0;">${safeTitle}</h3>
   ${descriptionHtml}
   <p style="margin:24px 0;">
-    <a href="/my-applications"
+    <a href="${myAppsUrl}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       View Invitation
     </a>
   </p>
   <p style="color:#888;font-size:13px;">
     You can accept or decline the invitation from your
-    <a href="/my-applications" style="color:#4f46e5;">My Applications</a> page.
+    <a href="${myAppsUrl}" style="color:#4f46e5;">My Applications</a> page.
   </p>
 </div>`.trim();
 
@@ -9270,6 +9288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           j.proposal_count AS "proposalCount"
          FROM jobs j
          WHERE j.client_id = $1
+           AND (j.created_via IS DISTINCT FROM 'search_scaffold')
          ORDER BY j.created_at DESC`,
         [userId],
       );
@@ -9473,7 +9492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/client/talent-search — create a scaffold job and return ranked talent
-  app.post("/api/client/talent-search", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -9483,72 +9502,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const title = String(searchText).trim().slice(0, 120);
 
-      // Infer a non-null category from searchText (jobs.category is NOT NULL).
-      // Tries keyword matching; falls back to 'Customer Support' so the INSERT always succeeds.
-      function inferCategory(text: string): string {
-        const t = text.toLowerCase();
-        const MAP: [string, string][] = [
-          ["customer support", "Customer Support"], ["support", "Customer Support"],
-          ["inbox", "Virtual Assistants"], ["calendar", "Virtual Assistants"], ["virtual assistant", "Virtual Assistants"], ["admin", "Virtual Assistants"],
-          ["website", "Developers"], ["developer", "Developers"], ["engineer", "Developers"], ["software", "Developers"],
-          ["design", "Designers"], ["graphic", "Designers"], ["ui", "Designers"], ["ux", "Designers"],
-          ["social media", "Marketing Specialists"], ["campaign", "Marketing Specialists"], ["marketing", "Marketing Specialists"],
-          ["bookkeeping", "Accountants"], ["accounting", "Accountants"], ["finance", "Accountants"], ["books", "Accountants"],
-          ["patient", "Healthcare Professionals"], ["healthcare", "Healthcare Professionals"], ["medical", "Healthcare Professionals"],
-          ["sales", "Sales Representatives"], ["outbound", "Sales Representatives"], ["leads", "Sales Representatives"],
-          ["operations", "Operations Specialists"], ["day-to-day", "Operations Specialists"], ["ops", "Operations Specialists"],
-          ["it support", "IT & Technical Support"], ["tech support", "IT & Technical Support"], ["helpdesk", "IT & Technical Support"],
-        ];
-        for (const [kw, cat] of MAP) { if (t.includes(kw)) return cat; }
-        return "Customer Support";
+      // Extract skill tags from free-text query: split on whitespace/punctuation,
+      // drop common English stop words and very short tokens, keep up to 10 meaningful terms.
+      const STOP_WORDS = new Set([
+        "a","an","the","and","or","of","in","for","with","to","on","at","is","are",
+        "be","as","by","i","we","you","they","it","this","that","looking","need",
+        "experience","who","has","have","their","our","your","role","position","job",
+        "senior","junior","mid","level","developer","engineer","manager","specialist",
+        "consultant","lead","team","strong","good","great","excellent","proficient",
+      ]);
+      const skillTags: string[] = Array.from(
+        new Set(
+          title
+            .split(/[\s,/+|&()\-]+/)
+            .map((t) => t.replace(/[^a-zA-Z0-9#+.]/g, "").trim())
+            .filter((t) => t.length >= 2 && !STOP_WORDS.has(t.toLowerCase()))
+            .slice(0, 10),
+        ),
+      );
+
+      // Scaffold job lifecycle:
+      // 1. Delete any uninvited scaffold jobs for this client that have NO invitations (orphan cleanup).
+      // 2. Reuse an existing scaffold if one already matches this client+title+engagementType.
+      //    Only scaffold jobs with at least one invitation are retained long-term.
+      const safeCategory: string = (typeof category === "string" && category.trim()) ? category.trim() : "other";
+
+      // Remove orphaned scaffolds — scaffolds with no job_submissions rows at all
+      await query(
+        `DELETE FROM jobs
+         WHERE client_id    = $1
+           AND created_via  = 'search_scaffold'
+           AND id NOT IN (
+             SELECT DISTINCT job_id FROM job_submissions WHERE client_id = $1
+           )`,
+        [userId],
+      ).catch((e: any) => console.warn("scaffold orphan cleanup (non-fatal):", e?.message));
+
+      // Reuse an existing scaffold for this exact client+title+engagementType if one exists
+      const existing = await query(
+        `SELECT id FROM jobs
+         WHERE client_id     = $1
+           AND title          = $2
+           AND engagement_type = $3
+           AND created_via   = 'search_scaffold'
+         LIMIT 1`,
+        [userId, title, engagementType],
+      );
+
+      let jobId: string;
+      if (existing.rows.length > 0) {
+        // Reuse — keep the existing scaffold (it may already have invitations)
+        jobId = existing.rows[0].id as string;
+        // Refresh skill_tags in case the user refined their query text
+        await query(
+          `UPDATE jobs SET skill_tags = $1, updated_at = NOW() WHERE id = $2`,
+          [skillTags, jobId],
+        ).catch((e: any) => console.warn("scaffold skill_tags refresh (non-fatal):", e?.message));
+      } else {
+        // description is intentionally empty — never expose "Search scaffold:" text to talent
+        const jobResult = await query(
+          `INSERT INTO jobs
+             (id, title, professional_role_name, category, job_function, engagement_type,
+              status, approval_status, is_client_submitted, client_id, created_via, description,
+              skill_tags, experience_level)
+           VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'draft', 'approved', true, $4, 'search_scaffold', '', $5, 'intermediate')
+           RETURNING id`,
+          [title, safeCategory, engagementType, userId, skillTags],
+        );
+        jobId = jobResult.rows[0].id as string;
       }
 
-      const resolvedCategory = category?.trim() || inferCategory(title);
+      const rawResults = await storage.rankTalentForJob(jobId, 30);
 
-      // Create an internal scaffold job (draft, approved) purely for scoring purposes.
-      // These are never shown on the public job board (status='draft', created_via='search_scaffold').
-      // All NOT NULL columns without useful defaults must be provided explicitly.
-      const jobResult = await query(
-        `INSERT INTO jobs
-           (id, title, professional_role_name, category, job_function, engagement_type,
-            experience_level, status, approval_status, is_client_submitted, client_id,
-            created_via, description)
-         VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'Mid-level',
-                 'draft', 'approved', true, $4, 'search_scaffold', $5)
-         RETURNING id`,
-        [title, resolvedCategory, engagementType, userId, `Search scaffold: "${title}"`],
-      );
-      const jobId = jobResult.rows[0].id as string;
+      // Project a client-safe DTO: never expose passwordHash, email, phone, CV/video
+      // URLs, workHistory, education, preferences, or any other private profile fields.
+      const results = rawResults.map(({ candidateId, userId, score, overlapSkills, matchReasons, candidate }) => ({
+        candidateId,
+        userId,
+        score,
+        overlapSkills,
+        matchReasons,
+        candidate: (() => {
+          const rawName: string | null =
+            (candidate as any).fullName        ??
+            (candidate as any).full_name       ??
+            null;
+          // Server-side name masking: never expose full identity to clients.
+          // Format: "Jane S." for multi-part names, "J••••" for single-word names.
+          const maskedName = (() => {
+            if (!rawName || rawName.toLowerCase().startsWith("candidate ")) return null;
+            const parts = rawName.trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 1) return parts[0][0] + "••••";
+            return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+          })();
+          return {
+            maskedName,
+            targetPosition:  (candidate as any).targetPosition  ?? (candidate as any).target_position  ?? null,
+            location:        (candidate as any).location        ?? null,
+            seniority:       (candidate as any).seniority       ?? null,
+            coreSkills:      (candidate as any).coreSkills      ?? (candidate as any).core_skills      ?? [],
+            secondarySkills: (candidate as any).secondarySkills ?? (candidate as any).secondary_skills ?? [],
+            category:        (candidate as any).category        ?? null,
+          };
+        })(),
+      }));
 
-      const results = await storage.rankTalentForJob(jobId, 30);
-      return res.json({ jobId, results });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  });
-
-  // PATCH /api/client/talent-search/:jobId — re-score the EXISTING scaffold job with a new
-  // engagement type. Avoids creating a duplicate scaffold job per filter change.
-  app.patch("/api/client/talent-search/:jobId", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-
-      const { jobId } = req.params;
-      const { engagementType } = req.body;
-      if (!engagementType) return res.status(400).json({ error: "engagementType is required" });
-
-      // Verify ownership and that it's a scaffold job
-      const check = await query(
-        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
-        [jobId, userId],
-      );
-      if (!check.rows.length) return res.status(404).json({ error: "Scaffold job not found" });
-
-      // Update engagement type in-place — re-use same job row, no new INSERT
-      await query(`UPDATE jobs SET engagement_type = $1 WHERE id = $2`, [engagementType, jobId]);
-
-      const results = await storage.rankTalentForJob(jobId, 30);
       return res.json({ jobId, results });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
@@ -9556,7 +9614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/client/invitations — invite a specific talent to a scaffold job
-  app.post("/api/client/invitations", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });
@@ -9566,13 +9624,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "jobId and talentUserId are required" });
       }
 
-      // Verify the job belongs to this client
+      // Verify the job belongs to this client AND is a search scaffold (not a real posting)
       const jobCheck = await query(
-        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2`,
+        `SELECT id FROM jobs WHERE id = $1 AND client_id = $2 AND created_via = 'search_scaffold'`,
         [jobId, clientId],
       );
       if (!jobCheck.rows.length) {
-        return res.status(403).json({ error: "Job not found or not owned by you" });
+        return res.status(403).json({ error: "Job not found, not owned by you, or not a search scaffold" });
+      }
+
+      // Verify the target user exists and has the talent role
+      const talentCheck = await query(
+        `SELECT u.id FROM users u WHERE u.id = $1 AND u.role = 'talent'`,
+        [talentUserId],
+      );
+      if (!talentCheck.rows.length) {
+        return res.status(400).json({ error: "Target user is not a talent account" });
       }
 
       // Idempotency — return 409 if already invited (prevents duplicate rows)
@@ -9599,13 +9666,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Invited Talent";
       const email = talent?.email ?? "";
 
-      // Fetch job title & description for the invitation email
+      // Fetch job title for the invitation email.
+      // Scaffold job descriptions are internal markers — never forward them to talent.
       const jobRow = await query(
-        `SELECT title, description FROM jobs WHERE id = $1 LIMIT 1`,
+        `SELECT title, created_via FROM jobs WHERE id = $1 LIMIT 1`,
         [jobId],
       );
       const jobTitle = jobRow.rows[0]?.title ?? "a new role";
-      const jobDescription = jobRow.rows[0]?.description ?? null;
+      // Pass null description for scaffold jobs so the email body has no internal text
+      const jobDescription: string | null =
+        jobRow.rows[0]?.created_via === "search_scaffold" ? null : null; // always null for now; real jobs can add real descriptions later
 
       const result = await query(
         `INSERT INTO job_submissions
@@ -9631,11 +9701,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/talent/invitations — talent sees their pending role invitations
-  app.get("/api/talent/invitations", authenticateJWT, async (req: Request, res: Response) => {
+  // GET /api/talent/invitations — talent sees their pending role invitations.
+  // Uses authenticateTalentJWT (candidate portal token) — same auth as /api/talent/applications.
+  // Resolves candidateId → users.id so the ownership query works correctly.
+  app.get("/api/talent/invitations", authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { candidateId } = (req as any).talentAuth as { candidateId: string; email: string };
+      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
+
+      // Resolve the candidate's linked users.id — invitations are stored by talent_id (users.id)
+      const userRow = await query(
+        `SELECT user_id FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!userRow.rows.length) return res.status(404).json({ error: "Talent profile not found" });
+      const talentUserId: string = userRow.rows[0].user_id;
 
       const result = await query(
         `SELECT js.id,
@@ -9647,13 +9727,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 j.engagement_type AS "engagementType",
                 j.salary_display AS "salaryDisplay",
                 j.budget_currency AS "budgetCurrency",
-                j.description    AS "description"
+                -- Never expose the internal scaffold description to talent
+                CASE WHEN j.created_via = 'search_scaffold' THEN NULL
+                     ELSE j.description END AS "description"
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
          WHERE js.talent_id = $1
            AND js.status = 'invited'
          ORDER BY js.created_at DESC`,
-        [userId],
+        [talentUserId],
       );
 
       return res.json(result.rows);
@@ -9662,11 +9744,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/talent/invitations/:id/respond — accept (→ submitted) or decline an invitation
-  app.post("/api/talent/invitations/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
+  // POST /api/talent/invitations/:id/respond — accept (→ submitted) or decline an invitation.
+  // Uses authenticateTalentJWT (candidate portal token) — same auth scheme as GET above.
+  app.post("/api/talent/invitations/:id/respond", authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { candidateId } = (req as any).talentAuth as { candidateId: string; email: string };
+      if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
 
       const { id } = req.params;
       const { action } = req.body;
@@ -9674,10 +9757,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
       }
 
+      // Resolve candidateId → users.id for ownership check
+      const userRow = await query(
+        `SELECT user_id FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!userRow.rows.length) return res.status(404).json({ error: "Talent profile not found" });
+      const talentUserId: string = userRow.rows[0].user_id;
+
       // Verify ownership and that the invitation is still pending
       const check = await query(
         `SELECT id, status FROM job_submissions WHERE id = $1 AND talent_id = $2`,
-        [id, userId],
+        [id, talentUserId],
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
       if (check.rows[0].status !== "invited") {
@@ -11021,9 +11112,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
       const { status } = req.body;
-      const validStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status. Must be: new, reviewed, shortlisted, rejected, hired" });
+      // Only client-lifecycle statuses are allowed as targets
+      const CLIENT_STATUSES = ["new", "reviewed", "shortlisted", "rejected", "hired"];
+      if (!CLIENT_STATUSES.includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be one of: new, reviewed, shortlisted, rejected, hired" });
+      }
+      // Read current status — talent-controlled states (invited, declined) are immutable by the client
+      const current = await query(
+        `SELECT status FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        [id, userId],
+      );
+      if (current.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
+      const currentStatus: string = current.rows[0].status;
+      if (["invited", "declined"].includes(currentStatus)) {
+        return res.status(409).json({
+          error: "transition_blocked",
+          message: `This submission is in '${currentStatus}' state and cannot be changed by the client.`,
+        });
       }
       const result = await query(
         `UPDATE job_submissions SET status = $1, updated_at = NOW()

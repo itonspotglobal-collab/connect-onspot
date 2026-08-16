@@ -240,11 +240,15 @@ export function TopNavigation() {
   // Both items are visible to unauthenticated visitors and admins.
   const isTalentLoggedIn = !!(talentAuth || user?.role === "talent");
   const isClientLoggedIn = !!(user?.role === "client");
-  const visibleNavItems = navigationItems.filter((item) => {
-    if (isTalentLoggedIn && item.path === "/hire-talent") return false;
-    if (isClientLoggedIn && item.path === "/find-work/jobs") return false;
-    return true;
-  });
+  const visibleNavItems = [
+    ...navigationItems.filter((item) => {
+      if (isTalentLoggedIn && item.path === "/hire-talent") return false;
+      if (isClientLoggedIn && item.path === "/find-work/jobs") return false;
+      return true;
+    }),
+    // Append client-only "Find Talent" link
+    ...(isClientLoggedIn ? [{ title: "Find Talent", path: "/client-search" }] : []),
+  ];
 
   const getProfileRoute = () => {
     if (user?.role === "client") return "/client-profile";
@@ -268,6 +272,7 @@ export function TopNavigation() {
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
+      { label: "Find Talent",    route: "/client-search",  icon: Zap },
       { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
       { label: "Settings",       route: "/settings",       icon: Settings },
     ];

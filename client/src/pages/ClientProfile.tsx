@@ -63,6 +63,7 @@ import {
   Download,
   ChevronRight,
   Inbox,
+  Search,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 
@@ -164,20 +165,27 @@ function ViewSubmissionModal({
                 Pending response
               </span>
             )}
-            <Select
-              value={submission.status}
-              onValueChange={(v) => statusMutation.mutate({ id: submission.id, status: v })}
-              disabled={statusMutation.isPending}
-            >
-              <SelectTrigger className="h-8 w-40 text-xs">
-                <SelectValue placeholder="Update status" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(SUBMISSION_STATUS_LABELS).map(([val, { label }]) => (
-                  <SelectItem key={val} value={val}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Only show the status selector for submissions the client can act on.
+                Pending invitations (invited) and declined invitations are immutable
+                by the client — the talent controls those transitions. */}
+            {!["invited", "declined"].includes(submission.status) && (
+              <Select
+                value={submission.status}
+                onValueChange={(v) => statusMutation.mutate({ id: submission.id, status: v })}
+                disabled={statusMutation.isPending}
+              >
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue placeholder="Update status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["new", "reviewed", "shortlisted", "rejected", "hired"] as const).map((val) => (
+                    <SelectItem key={val} value={val}>
+                      {SUBMISSION_STATUS_LABELS[val]?.label ?? val}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Applicant details */}
@@ -713,6 +721,32 @@ export default function ClientProfile() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* ── Find Talent CTA ──────────────────────────────────────────────── */}
+        <Card className="border-[#474ead]/30 bg-gradient-to-r from-[#474ead]/5 to-indigo-500/5 dark:from-[#474ead]/10 dark:to-indigo-500/10">
+          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-5 px-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/15 border border-[#474ead]/25">
+                <Search className="h-5 w-5 text-[#474ead]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Search &amp; Shortlist Talent
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Browse and shortlist candidates from our talent pool.
+                </p>
+              </div>
+            </div>
+            <Link href="/client-search">
+              <Button className="shrink-0 bg-[#474ead] text-white shadow-[0_4px_16px_rgba(71,78,173,0.3)] hover:bg-[#3d439c]">
+                <Search className="w-4 h-4 mr-2" />
+                Find Talent
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 

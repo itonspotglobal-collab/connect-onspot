@@ -24,8 +24,7 @@ interface TalentResult {
   overlapSkills: string[];
   matchReasons: Record<string, any>;
   candidate: {
-    fullName?: string;
-    full_name?: string;
+    maskedName?: string | null;
     targetPosition?: string;
     target_position?: string;
     location?: string;
@@ -61,13 +60,6 @@ function getInitials(name?: string | null): string {
   );
 }
 
-function maskName(name?: string | null): string {
-  if (!name || name.toLowerCase().startsWith("candidate ")) return "Talent Profile";
-  const parts = name.trim().split(" ").filter(Boolean);
-  if (parts.length === 1) return parts[0][0] + "•".repeat(4);
-  return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
-}
-
 function matchLabel(score: number): { label: string; className: string } | null {
   if (score >= 85) return { label: "Best Match", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" };
   if (score >= 70) return { label: "Strong Match", className: "bg-[#474ead]/10 text-[#474ead] dark:text-indigo-400" };
@@ -91,7 +83,8 @@ function ResultCard({
   const badge = matchLabel(result.score);
   const { candidate } = result;
 
-  const name = candidate.fullName ?? candidate.full_name;
+  // maskedName is server-generated ("Jane S.") — full name is never sent to clients.
+  const name = candidate.maskedName ?? null;
   const position = candidate.targetPosition ?? candidate.target_position;
   const coreSkills = candidate.coreSkills ?? candidate.core_skills ?? [];
   const overlapSet = new Set(result.overlapSkills.map((s) => s.toLowerCase()));
@@ -120,7 +113,7 @@ function ResultCard({
 
         <div className="flex-1 min-w-0">
           <h3 className="text-[15.5px] font-bold leading-snug text-slate-900 dark:text-white truncate">
-            {maskName(name)}
+            {name ?? "Talent Profile"}
           </h3>
           {position && (
             <p className="text-[12.5px] text-slate-400 mt-0.5 truncate">{position}</p>
@@ -223,6 +216,10 @@ export default function SearchToShortlist() {
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("All");
 
   // ── Results ──────────────────────────────────────────────────────────────────
+  // baseResults: the full unfiltered result set for the current search query.
+  // searchResults: the active result set (may be filtered by engagement).
+  // When "All" is selected, searchResults reverts to baseResults.
+  const [baseResults, setBaseResults] = useState<SearchResults | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
@@ -249,15 +246,16 @@ export default function SearchToShortlist() {
     [suggestions],
   );
 
-  // ── Search mutations ─────────────────────────────────────────────────────────
-  // NEW search — creates a scaffold job, resets everything
+  // ── Search mutation ──────────────────────────────────────────────────────────
   const searchMutation = useMutation({
     mutationFn: async ({
       text,
       engType,
+      isBaseSearch,
     }: {
       text: string;
       engType: "Full-Time" | "Half-Day";
+      isBaseSearch: boolean;
     }) => {
       const res = await apiRequest("POST", "/api/client/talent-search", {
         searchText: text,
@@ -268,51 +266,27 @@ export default function SearchToShortlist() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Search failed");
       }
-      return res.json() as Promise<SearchResults>;
+      return { data: await res.json() as SearchResults, isBaseSearch };
     },
-    onSuccess: (data) => {
+    onSuccess: ({ data, isBaseSearch }) => {
       setSearchResults(data);
-      setCategoryFilter(null);
-      setEngagementFilter("All");
+      if (isBaseSearch) {
+        setBaseResults(data);
+        setCategoryFilter(null);
+        setEngagementFilter("All");
+      }
     },
     onError: (err: any) => {
       toast({ title: "Search failed", description: err.message, variant: "destructive" });
     },
   });
 
-  // RESCORE — updates engagement type on the EXISTING scaffold job; no new job created
-  const rescoreMutation = useMutation({
-    mutationFn: async ({
-      jobId,
-      engType,
-    }: {
-      jobId: string;
-      engType: "Full-Time" | "Half-Day";
-    }) => {
-      const res = await apiRequest("PATCH", `/api/client/talent-search/${jobId}`, {
-        engagementType: engType,
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Rescore failed");
-      }
-      return res.json() as Promise<SearchResults>;
-    },
-    onSuccess: (data) => {
-      setSearchResults(data);
-      setCategoryFilter(null);
-    },
-    onError: (err: any) => {
-      toast({ title: "Rescore failed", description: err.message, variant: "destructive" });
-    },
-  });
-
-  // ── Filtered results (client-side category + engagement filter) ──────────────
+  // ── Filtered results (client-side category filter only) ──────────────────────
   const filteredResults = useMemo(() => {
     if (!searchResults) return [];
     return searchResults.results.filter((r) => {
       if (categoryFilter) {
-        const cat = resolveBrowseCategory(r.candidate.category ?? r.candidate.category);
+        const cat = resolveBrowseCategory(r.candidate.category ?? "");
         if (cat !== categoryFilter && (r.candidate.category ?? "") !== categoryFilter) return false;
       }
       return true;
@@ -320,28 +294,14 @@ export default function SearchToShortlist() {
   }, [searchResults, categoryFilter]);
 
   // ── Trigger search ───────────────────────────────────────────────────────────
-  // Always creates a new scaffold job (new text or chip click).
-  function runSearch(text?: string, engType?: "Full-Time" | "Half-Day") {
+  function runSearch(text?: string, engType?: "Full-Time" | "Half-Day", isBaseSearch = true) {
     const q = (text ?? searchText).trim();
     if (!q) { toast({ title: "Enter a search term" }); return; }
     const et = engType ?? engagementType;
     setSearchText(q);
     setEngagementType(et);
     setStage("active");
-    searchMutation.mutate({ text: q, engType: et });
-  }
-
-  // ── Re-score against existing scaffold job (engagement type change only) ─────
-  // Calls PATCH instead of POST — avoids creating a duplicate scaffold job.
-  function rescore(engType: "Full-Time" | "Half-Day") {
-    if (!searchResults?.jobId) {
-      // No job yet (shouldn't happen in active stage, but fall back to a new search)
-      runSearch(searchText, engType);
-      return;
-    }
-    setEngagementType(engType);
-    setEngagementFilter(engType);
-    rescoreMutation.mutate({ jobId: searchResults.jobId, engType });
+    searchMutation.mutate({ text: q, engType: et, isBaseSearch });
   }
 
   // ── Invite handler ───────────────────────────────────────────────────────────
@@ -490,19 +450,21 @@ export default function SearchToShortlist() {
                 ))}
               </div>
 
-              {/* Engagement type — rescores against existing scaffold job (no new job created) */}
+              {/* Engagement type filter */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[13px] text-slate-400 font-semibold">Engagement:</span>
                 {ENGAGEMENT_OPTIONS.map((et) => (
                   <button
                     key={et}
-                    disabled={rescoreMutation.isPending}
                     onClick={() => {
+                      setEngagementFilter(et);
                       if (et === "All") {
-                        setEngagementFilter("All");
-                        // "All" has no re-score meaning — just clears the active pill
+                        // Restore the base (unfiltered-by-engagement) result set
+                        if (baseResults) setSearchResults(baseResults);
                       } else {
-                        rescore(et);
+                        // Re-search with this specific engagement type (not a base search)
+                        setEngagementType(et);
+                        runSearch(searchText, et, false);
                       }
                     }}
                     className={cn(
@@ -510,14 +472,9 @@ export default function SearchToShortlist() {
                       engagementFilter === et
                         ? "bg-[#EFEFFA] text-[#474ead] border-[#EFEFFA]"
                         : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-[#474ead]",
-                      rescoreMutation.isPending && "opacity-50 cursor-not-allowed",
                     )}
                   >
-                    {rescoreMutation.isPending && engagementFilter !== et ? (
-                      <span className="flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" />{et}
-                      </span>
-                    ) : et}
+                    {et}
                   </button>
                 ))}
               </div>

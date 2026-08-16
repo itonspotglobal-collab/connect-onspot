@@ -1162,12 +1162,20 @@ export class MemStorage implements IStorage {
       score: number;
       overlapSkills: string[];
       matchReasons: Record<string, any>;
+      factors: { skillOverlapCount: number; engagementMatch: boolean; rateMatch: boolean };
     }> = [];
 
     for (const job of allJobs) {
       const result = this.scoreJobForCandidate(talentSkills, talentProfile, talentCandidate, job);
       if (result.overlapSkills.length > 0 || talentSkills.length === 0) {
-        jobMatches.push(result);
+        jobMatches.push({
+          ...result,
+          factors: {
+            skillOverlapCount: result.overlapSkills.length,
+            engagementMatch: !!(result.matchReasons as any).engagementMatch,
+            rateMatch:        !!(result.matchReasons as any).rateMatch,
+          },
+        });
       }
     }
 
@@ -1202,6 +1210,7 @@ export class MemStorage implements IStorage {
           return {
             job, score: Math.round(jacc * 50), overlapSkills: overlap,
             matchReasons: { skillOverlap: overlap, engagementMatch: false, rateMatch: false, rateRatio: null, timezoneMatch: 'none', categoryMatch: false, experienceMatch: false, factors: [] },
+            factors: { skillOverlapCount: 0, engagementMatch: false, rateMatch: false },
           };
         })
         .sort((a, b) => b.score - a.score)
