@@ -3638,6 +3638,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profile: profile, // Drizzle automatically returns camelCase
           message: "Profile saved successfully",
         });
+
+        // Option C trigger A: recompute job matches after profile/preferences save.
+        // Fire-and-forget — does not delay the response.
+        setImmediate(() => {
+          storage.getCandidateByUserId(userId)
+            .then(c => { if (c?.id) return (storage as any).recomputeMatchesForTalent(c.id); })
+            .catch((err: any) => console.error("❌ Background match recompute (profile save):", err));
+        });
       } catch (error: any) {
         const requestId = (req as any).requestId;
         console.error(
@@ -4670,6 +4678,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Ownership is derived server-side from the Talent JWT; never accepts a query param.
    * Never exposes internal admin notes or other applicants' data.
    */
+  // ── Recommended job matches (reads from persisted job_matches table) ────────
+  app.get("/api/talent/matches", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId } = req.talentAuth;
+      const storage_ = storage as any;
+
+      let matches = await storage_.getJobMatchesForTalent(candidateId);
+
+      // First visit — no persisted matches yet. Compute on-demand and return.
+      if (matches.length === 0) {
+        await storage_.recomputeMatchesForTalent(candidateId);
+        matches = await storage_.getJobMatchesForTalent(candidateId);
+      }
+
+      res.json(matches);
+    } catch (error) {
+      console.error("GET /api/talent/matches failed:", error);
+      res.status(500).json({ error: "Failed to fetch job matches" });
+    }
+  });
+
   app.get("/api/talent/applications", authenticateTalentJWT, async (req: any, res) => {
     try {
       const { candidateId, email: jwtEmail } = req.talentAuth;
@@ -5108,6 +5137,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await storage.updateCandidate(profileId, candidateUpdates as any);
       if (!updated) return res.status(404).json({ error: "Candidate not found" });
       res.json(sanitizeCandidate(updated));
+
+      // Option C trigger A: recompute job matches after candidate preferences update.
+      setImmediate(() => {
+        (storage as any).recomputeMatchesForTalent(profileId)
+          .catch((err: any) => console.error("❌ Background match recompute (candidate save):", err));
+      });
     } catch (error) {
       const pgErr = error as any;
       console.error("PATCH /api/candidates/:id FAILED", {
@@ -5973,6 +6008,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertJobSchema.parse(body);
       const job = await storage.createJob(validated);
       res.status(201).json(job);
+      // Option C trigger B: fan-out match recompute when a new job is published.
+      if (job.id && ["open", "published"].includes(job.status ?? "")) {
+        setImmediate(() => {
+          (storage as any).recomputeMatchesForJob(job.id)
+            .catch((err: any) => console.error("❌ Background match fan-out (job create):", err));
+        });
+      }
       // Keep Vanessa's job knowledge current after every change
       import("./services/ragService")
         .then(({ indexJobListings }) => indexJobListings())

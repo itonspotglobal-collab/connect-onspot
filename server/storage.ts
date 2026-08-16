@@ -943,6 +943,144 @@ export class MemStorage implements IStorage {
   }
 
   // Job matching algorithm implementation
+  // ── Shared scoring helper ─────────────────────────────────────────────────
+  // Pure function — no DB calls. Call this from calculateJobMatches and
+  // recomputeMatchesForJob to score a single candidate × job pair.
+  private scoreJobForCandidate(
+    talentSkills: string[],
+    talentProfile: any | null,
+    talentCandidate: any | null,
+    job: any & { skills: string[] },
+  ): { job: any; score: number; overlapSkills: string[]; matchReasons: Record<string, any> } {
+    const blank = {
+      skillOverlap: [] as string[], engagementMatch: false, rateMatch: false,
+      rateRatio: null as number | null, timezoneMatch: 'none' as string,
+      categoryMatch: false, experienceMatch: false, factors: [] as string[],
+    };
+
+    const overlapSkills = job.skills.filter((js: string) =>
+      talentSkills.some(ts =>
+        ts.toLowerCase().includes(js.toLowerCase()) ||
+        js.toLowerCase().includes(ts.toLowerCase())
+      )
+    );
+
+    if (overlapSkills.length === 0 && talentSkills.length > 0) {
+      return { job, score: 0, overlapSkills: [], matchReasons: blank };
+    }
+
+    const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
+    const jaccardScore = skillsUnion.length > 0 ? overlapSkills.length / skillsUnion.length : 0;
+    let totalScore = jaccardScore * 100;
+
+    const reasons = { ...blank, skillOverlap: overlapSkills };
+    if (overlapSkills.length > 0) {
+      reasons.factors.push(`Skills: ${overlapSkills.slice(0, 3).join(', ')}`);
+    }
+
+    // Engagement type: +20
+    if (job.engagementType) {
+      const prefs = (talentCandidate?.preferences ?? {}) as Record<string, unknown>;
+      const candEngagement = prefs.rateEngagementType as string | undefined;
+      if (candEngagement && candEngagement.toLowerCase() === job.engagementType.toLowerCase()) {
+        totalScore += 20;
+        reasons.engagementMatch = true;
+        reasons.factors.push(`Availability: ${job.engagementType}`);
+      }
+
+      // Rate: +10 — ratio [0.8, 1.2] + same currency (see ADR for why not simple ≤)
+      const candRateRaw = prefs.rateAmount;
+      const candRate = candRateRaw != null ? parseFloat(String(candRateRaw)) : null;
+      const candCurrency = (prefs.rateCurrency as string | undefined)?.toUpperCase() ?? 'USD';
+      const jobCurrency = (job.budgetCurrency ?? 'PHP').toUpperCase();
+      if (candRate != null && candRate > 0 && job.budget != null && candCurrency === jobCurrency) {
+        const jobBudget = parseFloat(String(job.budget));
+        if (jobBudget > 0) {
+          const ratio = candRate / jobBudget;
+          reasons.rateRatio = ratio;
+          if (ratio >= 0.8 && ratio <= 1.2) {
+            totalScore += 10;
+            reasons.rateMatch = true;
+            reasons.factors.push('Rate: within range');
+          }
+        }
+      }
+    }
+
+    // Category/industry: +10
+    if (talentCandidate?.category && job.category &&
+        talentCandidate.category.toLowerCase() === job.category.toLowerCase()) {
+      totalScore += 10;
+      reasons.categoryMatch = true;
+      reasons.factors.push(`Industry: ${job.category}`);
+    }
+
+    // Experience level: +10 if within ±1 tier
+    const expYears = talentCandidate?.experienceYears as string | undefined;
+    const seniority = talentCandidate?.seniority as string | undefined;
+    const jobLevel = job.experienceLevel as string | undefined;
+    if (jobLevel && (expYears || seniority)) {
+      const yearsToTier = (y: string) => {
+        const n = parseFloat(y); if (isNaN(n)) return -1;
+        if (n < 1) return 0; if (n < 4) return 1; if (n < 8) return 2;
+        if (n < 13) return 3; return 4;
+      };
+      const senToTier = (s: string) => {
+        const sl = s.toLowerCase();
+        if (/entry|intern|fresh/.test(sl)) return 0;
+        if (/junior|jr/.test(sl)) return 1;
+        if (/\bmid\b|associate/.test(sl)) return 2;
+        if (/senior|sr|lead/.test(sl)) return 3;
+        if (/principal|staff|director|executive|vp|chief/.test(sl)) return 4;
+        return -1;
+      };
+      const levelToTier = (l: string) => {
+        const ll = l.toLowerCase();
+        if (ll.includes('entry')) return 0; if (/junior|jr/.test(ll)) return 1;
+        if (ll.includes('mid')) return 2;
+        if (/senior|sr|lead/.test(ll)) return 3;
+        if (/principal|director|executive/.test(ll)) return 4;
+        return 1;
+      };
+      const candTier = expYears ? yearsToTier(expYears) : (seniority ? senToTier(seniority) : -1);
+      const jobTier = levelToTier(jobLevel);
+      if (candTier >= 0 && Math.abs(candTier - jobTier) <= 1) {
+        totalScore += 10;
+        reasons.experienceMatch = true;
+        reasons.factors.push(`Experience: ${jobLevel}`);
+      }
+    }
+
+    // Timezone: FIXED — compare talent timezone vs job.timeZone, not a caller-supplied filter.
+    // The old implementation gated on filters?.timezone which was never passed by any caller,
+    // meaning this bonus never fired and would have produced wrong explainability copy.
+    if (talentProfile?.timezone && job.timeZone) {
+      const talentTz = (talentProfile.timezone as string).toLowerCase();
+      const jobTz = (job.timeZone as string).toLowerCase();
+      if (talentTz === jobTz) {
+        totalScore += 15;
+        reasons.timezoneMatch = 'exact';
+        reasons.factors.push('Timezone: exact match');
+      } else if (
+        (talentTz.includes('america') && jobTz.includes('america')) ||
+        (talentTz.includes('europe') && jobTz.includes('europe')) ||
+        (talentTz.includes('asia') && jobTz.includes('asia'))
+      ) {
+        totalScore += 5;
+        reasons.timezoneMatch = 'region';
+      }
+    }
+
+    // Recency: +10/+5
+    if (job.createdAt) {
+      const days = (Date.now() - new Date(job.createdAt).getTime()) / 86400000;
+      if (days <= 3) totalScore += 10;
+      else if (days <= 7) totalScore += 5;
+    }
+
+    return { job, score: Math.round(totalScore), overlapSkills, matchReasons: reasons };
+  }
+
   async calculateJobMatches(talentId: string, filters?: {
     skills?: string[];
     minRate?: number;
@@ -955,8 +1093,8 @@ export class MemStorage implements IStorage {
     job: Job & { skills: string[] };
     score: number;
     overlapSkills: string[];
+    matchReasons: Record<string, any>;
   }>> {
-    // Get talent's skills if not provided in filters
     let talentSkills: string[] = [];
     if (filters?.skills) {
       talentSkills = filters.skills;
@@ -965,11 +1103,9 @@ export class MemStorage implements IStorage {
       talentSkills = userSkills.map(us => us.skill?.name || '').filter(Boolean);
     }
 
-    // Get talent's profile for timezone matching, and candidate record for rate/engagement prefs
     const talentProfile = await this.getProfileByUserId(talentId);
     const talentCandidate = await this.getCandidateByUserId(talentId);
-    
-    // Search for all available jobs with enhanced skills
+
     const allJobs = await this.searchJobsWithSkills({
       status: 'open',
       ...(filters?.engagementType && { engagementType: filters.engagementType }),
@@ -979,131 +1115,221 @@ export class MemStorage implements IStorage {
       ...(filters?.maxRate && { maxBudget: filters.maxRate }),
     });
 
-    // Calculate matches with scoring
     const jobMatches: Array<{
       job: Job & { skills: string[] };
       score: number;
       overlapSkills: string[];
+      matchReasons: Record<string, any>;
     }> = [];
 
     for (const job of allJobs) {
-      // Skills intersection filter - only include jobs with ≥1 overlapping skill
-      const overlapSkills = job.skills.filter(jobSkill => 
-        talentSkills.some(talentSkill => 
-          talentSkill.toLowerCase().includes(jobSkill.toLowerCase()) ||
-          jobSkill.toLowerCase().includes(talentSkill.toLowerCase())
-        )
-      );
-
-      if (overlapSkills.length === 0 && talentSkills.length > 0) {
-        continue; // Skip jobs with no skill overlap
+      const result = this.scoreJobForCandidate(talentSkills, talentProfile, talentCandidate, job);
+      if (result.overlapSkills.length > 0 || talentSkills.length === 0) {
+        jobMatches.push(result);
       }
-
-      // Calculate Jaccard similarity score
-      const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
-      const jaccardScore = skillsUnion.length > 0 ? overlapSkills.length / skillsUnion.length : 0;
-
-      let totalScore = jaccardScore * 100; // Base score from skills similarity (0-100)
-
-      // Engagement type + rate compatibility bonus
-      // Only scores when the job has an engagementType set (legacy NULL jobs are skipped — no regression)
-      if (job.engagementType) {
-        const candidatePrefs = (talentCandidate?.preferences ?? {}) as Record<string, unknown>;
-        const candidateEngagement = candidatePrefs.rateEngagementType as string | undefined;
-        const candidateRateRaw = candidatePrefs.rateAmount;
-        const candidateRate = candidateRateRaw != null ? parseFloat(String(candidateRateRaw)) : null;
-
-        // +20 when the candidate's preferred engagement type matches the job's type
-        if (candidateEngagement && candidateEngagement.toLowerCase() === job.engagementType.toLowerCase()) {
-          totalScore += 20;
-        }
-
-        // +10 when the candidate's expected flat rate is within ±20% of the job budget,
-        // but only when both sides use the same currency to avoid cross-currency false matches
-        const candidateCurrency = (candidatePrefs.rateCurrency as string | undefined)?.toUpperCase() ?? "USD";
-        const jobCurrency = (job.budgetCurrency ?? "PHP").toUpperCase();
-        if (
-          candidateRate != null &&
-          candidateRate > 0 &&
-          job.budget != null &&
-          candidateCurrency === jobCurrency
-        ) {
-          const jobBudget = parseFloat(String(job.budget));
-          if (jobBudget > 0) {
-            const ratio = candidateRate / jobBudget;
-            if (ratio >= 0.8 && ratio <= 1.2) {
-              totalScore += 10;
-            }
-          }
-        }
-      }
-
-      // Timezone soft-match bonus
-      if (talentProfile?.timezone && filters?.timezone) {
-        const talentTz = talentProfile.timezone.toLowerCase();
-        const filterTz = filters.timezone.toLowerCase();
-        
-        // Same timezone
-        if (talentTz === filterTz) {
-          totalScore += 15;
-        }
-        // Same region (rough approximation)
-        else if (
-          (talentTz.includes('america') && filterTz.includes('america')) ||
-          (talentTz.includes('europe') && filterTz.includes('europe')) ||
-          (talentTz.includes('asia') && filterTz.includes('asia'))
-        ) {
-          totalScore += 5;
-        }
-      }
-
-      // Recent job bonus
-      if (job.createdAt) {
-        const daysSincePosted = (Date.now() - job.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSincePosted <= 3) {
-          totalScore += 10;
-        } else if (daysSincePosted <= 7) {
-          totalScore += 5;
-        }
-      }
-
-      jobMatches.push({
-        job,
-        score: Math.round(totalScore),
-        overlapSkills
-      });
     }
 
-    // Sort by score and ensure we have at least 3 results
     jobMatches.sort((a, b) => b.score - a.score);
-    
-    // If we have less than 3 matches after skill filtering, add top jobs by Jaccard
+
+    // Persist all scored matches (upsert) — await so callers can immediately query
+    // the job_matches table after calculateJobMatches returns.
+    if (talentCandidate?.id) {
+      try {
+        await this.persistMatchResults(talentCandidate.id, jobMatches.map(m => ({
+          jobId: m.job.id, score: m.score, matchReasons: m.matchReasons,
+        })));
+      } catch (err) {
+        console.error('❌ persistMatchResults failed:', err);
+      }
+    }
+
+    // Pad to at least 3 with Jaccard fallback (lower score bracket)
     if (jobMatches.length < 3) {
-      const additionalJobs = allJobs
-        .filter(job => !jobMatches.some(match => match.job.id === job.id))
+      const existingIds = new Set(jobMatches.map(m => m.job.id));
+      const fallbacks = allJobs
+        .filter(j => !existingIds.has(j.id))
         .map(job => {
           const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
-          const overlapSkills = job.skills.filter(jobSkill => 
-            talentSkills.some(talentSkill => 
-              talentSkill.toLowerCase().includes(jobSkill.toLowerCase()) ||
-              jobSkill.toLowerCase().includes(talentSkill.toLowerCase())
+          const overlap = job.skills.filter(js =>
+            talentSkills.some(ts =>
+              ts.toLowerCase().includes(js.toLowerCase()) ||
+              js.toLowerCase().includes(ts.toLowerCase())
             )
           );
-          const jaccardScore = skillsUnion.length > 0 ? overlapSkills.length / skillsUnion.length : 0;
-          
+          const jacc = skillsUnion.length > 0 ? overlap.length / skillsUnion.length : 0;
           return {
-            job,
-            score: Math.round(jaccardScore * 50), // Lower score for fallback jobs
-            overlapSkills
+            job, score: Math.round(jacc * 50), overlapSkills: overlap,
+            matchReasons: { skillOverlap: overlap, engagementMatch: false, rateMatch: false, rateRatio: null, timezoneMatch: 'none', categoryMatch: false, experienceMatch: false, factors: [] },
           };
         })
         .sort((a, b) => b.score - a.score)
         .slice(0, 3 - jobMatches.length);
-      
-      jobMatches.push(...additionalJobs);
+      jobMatches.push(...fallbacks);
     }
 
-    return jobMatches.slice(0, 3); // Return top 3 matches
+    return jobMatches.slice(0, 3);
+  }
+
+  // ── Persistence & retrieval for job_matches table ─────────────────────────
+  // NOTIFICATION THRESHOLD: raw score ≥ 70 (see ADR: requires strong skill
+  // signal OR medium skills + at least one preference factor aligned).
+  private readonly MATCH_NOTIFY_THRESHOLD = 70;
+
+  private async persistMatchResults(
+    candidateId: string,
+    results: Array<{ jobId: string; score: number; matchReasons: Record<string, any> }>,
+  ): Promise<void> {
+    if (results.length === 0) return;
+
+    // Read previous scores to detect newly-qualifying matches for notifications
+    const prevRes = await dbQuery(
+      `SELECT job_id, compatibility_score, notified_at FROM job_matches WHERE talent_id = $1`,
+      [candidateId],
+    );
+    const prevMap = new Map<string, { score: number; notifiedAt: Date | null }>(
+      prevRes.rows.map((r: any) => [r.job_id as string, {
+        score: Number(r.compatibility_score),
+        notifiedAt: r.notified_at ?? null,
+      }]),
+    );
+
+    // Upsert all results
+    for (const r of results) {
+      await dbQuery(`
+        INSERT INTO job_matches (talent_id, job_id, compatibility_score, match_reasons, computed_at)
+        VALUES ($1, $2, $3, $4::jsonb, NOW())
+        ON CONFLICT (talent_id, job_id) DO UPDATE SET
+          compatibility_score = EXCLUDED.compatibility_score,
+          match_reasons       = EXCLUDED.match_reasons,
+          computed_at         = NOW()
+      `, [candidateId, r.jobId, r.score, JSON.stringify(r.matchReasons)]);
+    }
+
+    // In-app notifications for new high-score matches
+    const candRow = await dbQuery(`SELECT email FROM candidates WHERE id = $1`, [candidateId]);
+    const candEmail = candRow.rows[0]?.email as string | undefined;
+    if (!candEmail) return;
+
+    const userRow = await dbQuery(
+      `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`, [candEmail],
+    );
+    const linkedUserId = userRow.rows[0]?.id as string | undefined;
+    if (!linkedUserId) return;
+
+    for (const r of results) {
+      if (r.score < this.MATCH_NOTIFY_THRESHOLD) continue;
+      const prev = prevMap.get(r.jobId);
+      if (prev?.notifiedAt != null || (prev && prev.score >= this.MATCH_NOTIFY_THRESHOLD)) continue;
+
+      const jobRow = await dbQuery(`SELECT title FROM jobs WHERE id = $1`, [r.jobId]);
+      const jobTitle = jobRow.rows[0]?.title ?? 'A new role';
+      const displayScore = Math.min(100, r.score);
+      try {
+        await this.createNotification({
+          userId: linkedUserId,
+          type: 'job_match',
+          title: 'New job match!',
+          message: `${jobTitle} is a ${displayScore}% match for you based on your skills and preferences.`,
+          relatedId: r.jobId,
+          relatedType: 'job',
+        });
+        await dbQuery(
+          `UPDATE job_matches SET notified_at = NOW() WHERE talent_id = $1 AND job_id = $2`,
+          [candidateId, r.jobId],
+        );
+        console.log(`🔔 Match notification sent: candidate=${candidateId} job=${r.jobId} score=${r.score}`);
+      } catch (err) {
+        console.error('❌ Match notification failed:', err);
+      }
+    }
+  }
+
+  async getJobMatchesForTalent(candidateId: string): Promise<Array<{
+    job: Job & { skills: string[] };
+    score: number;
+    matchReasons: Record<string, any>;
+    computedAt: Date;
+  }>> {
+    const result = await dbQuery(`
+      SELECT
+        jm.compatibility_score         AS score,
+        jm.match_reasons               AS "matchReasons",
+        jm.computed_at                 AS "computedAt",
+        j.id, j.title, j.company, j.location, j.description,
+        j.budget, j.budget_currency    AS "budgetCurrency",
+        j.engagement_type              AS "engagementType",
+        j.category, j.experience_level AS "experienceLevel",
+        j.status, j.created_at         AS "createdAt",
+        j.time_zone                    AS "timeZone",
+        j.skill_tags                   AS "skillTags"
+      FROM job_matches jm
+      JOIN jobs j ON j.id = jm.job_id
+      WHERE jm.talent_id = $1
+        AND j.status = 'open'
+      ORDER BY jm.compatibility_score DESC
+      LIMIT 20
+    `, [candidateId]);
+
+    return result.rows.map((row: any) => ({
+      job: {
+        id: row.id, title: row.title, company: row.company ?? null,
+        location: row.location ?? null, description: row.description ?? null,
+        budget: row.budget ?? null, budgetCurrency: row.budgetCurrency ?? null,
+        engagementType: row.engagementType ?? null, category: row.category ?? null,
+        experienceLevel: row.experienceLevel ?? null, status: row.status,
+        createdAt: row.createdAt, timeZone: row.timeZone ?? null,
+        skills: Array.isArray(row.skillTags) ? row.skillTags : [],
+      } as Job & { skills: string[] },
+      score: Number(row.score),
+      matchReasons: row.matchReasons ?? {},
+      computedAt: row.computedAt,
+    }));
+  }
+
+  // Trigger A: call after talent updates profile or preferences.
+  async recomputeMatchesForTalent(candidateId: string): Promise<void> {
+    const candRow = await dbQuery(
+      `SELECT user_id FROM candidates WHERE id = $1`, [candidateId],
+    );
+    const userId = candRow.rows[0]?.user_id as string | undefined;
+    if (!userId) {
+      console.log(`⚠️ recomputeMatchesForTalent: no user_id for candidate ${candidateId}`);
+      return;
+    }
+    await this.calculateJobMatches(userId);
+  }
+
+  // Trigger B: call after a new job is published (fan-out: 1 job × N candidates).
+  // At current scale (16 candidates) this is fast; queue it when candidates > 1,000.
+  async recomputeMatchesForJob(jobId: string): Promise<void> {
+    const allOpenJobs = await this.searchJobsWithSkills({ status: 'open' });
+    const job = allOpenJobs.find(j => j.id === jobId);
+    if (!job) {
+      console.log(`⚠️ recomputeMatchesForJob: job ${jobId} not open or not found`);
+      return;
+    }
+
+    const candidatesRes = await dbQuery(
+      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+    );
+
+    for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
+      try {
+        const [userSkills, profile, candidate] = await Promise.all([
+          this.getUserSkillsWithNames(row.user_id),
+          this.getProfileByUserId(row.user_id),
+          this.getCandidateByUserId(row.user_id),
+        ]);
+        const talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
+        const { score, matchReasons } = this.scoreJobForCandidate(talentSkills, profile, candidate, job);
+        if (score > 0 || talentSkills.length === 0) {
+          await this.persistMatchResults(row.id, [{ jobId: job.id, score, matchReasons }]);
+        }
+      } catch (err) {
+        console.error(`❌ recomputeMatchesForJob failed for candidate ${row.id}:`, err);
+      }
+    }
+    console.log(`✅ recomputeMatchesForJob complete: job=${jobId} candidates=${candidatesRes.rows.length}`);
   }
 
   // Proposal Methods

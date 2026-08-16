@@ -48,6 +48,7 @@ import {
 } from "@/components/PremiumFeatures";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { cn } from "@/lib/utils";
+import TalentMatchedJobs from "@/components/TalentMatchedJobs";
 import professionalWorkspaceImg from "@assets/generated_images/Professional_workspace_background_ccee2885.png";
 import businessNetworkImg from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
 import avatarImage from "@assets/generated_images/Professional_talent_avatar_71613d75.png";
@@ -130,6 +131,16 @@ interface MyApplication {
 
 export default function TalentPortal() {
   const { user } = useAuth();
+
+  // Derive the talent JWT (stored separately from the main auth token).
+  // Used for authenticateTalentJWT-gated endpoints (match feed, photo upload, etc.)
+  const talentToken = (() => {
+    try {
+      const raw = localStorage.getItem("talent_profile_token");
+      return raw ? (JSON.parse(raw) as { token?: string }).token ?? null : null;
+    } catch { return null; }
+  })();
+
   // Use real profile data from useTalentProfile hook
   const {
     profile,
@@ -433,6 +444,15 @@ export default function TalentPortal() {
                 })}
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Recommended Jobs — only shown to authenticated talent with a talent JWT */}
+      {user && talentToken && (
+        <section className="py-14 bg-background border-b" id="recommended-jobs">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <TalentMatchedJobs talentToken={talentToken} />
           </div>
         </section>
       )}

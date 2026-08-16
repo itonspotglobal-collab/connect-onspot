@@ -1385,3 +1385,35 @@ export const insertJobApplicationEmailSchema = createInsertSchema(jobApplication
 });
 export type InsertJobApplicationEmail = z.infer<typeof insertJobApplicationEmailSchema>;
 export type JobApplicationEmail = typeof jobApplicationEmails.$inferSelect;
+
+// ── Job Matches ────────────────────────────────────────────────────────────────
+// Persisted match scores between a candidate and a job.
+// Recomputed on: (a) talent profile/preferences save, (b) new job published,
+// (c) nightly drift-correction batch.
+// Recompute strategy: event-driven dual-trigger (Option C) — see ADR in memory.
+export const jobMatches = pgTable("job_matches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Keyed to candidates.id — the authoritative talent identity.
+  talentId: varchar("talent_id").notNull().references(() => candidates.id, { onDelete: "cascade" }),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  // Raw unbounded score (Jaccard * 100 + bonuses). Display layer caps at 100.
+  compatibilityScore: integer("compatibility_score").notNull(),
+  // Structured reasons: { skillOverlap, engagementMatch, rateMatch, rateRatio,
+  //   timezoneMatch, categoryMatch, experienceMatch, factors[] }
+  matchReasons: jsonb("match_reasons").notNull().default({}),
+  computedAt: timestamp("computed_at").defaultNow(),
+  // Set once the talent has been notified of this match (prevents repeat notifications).
+  notifiedAt: timestamp("notified_at"),
+}, (table) => [
+  index("idx_job_matches_talent_id").on(table.talentId),
+  index("idx_job_matches_job_id").on(table.jobId),
+  index("idx_job_matches_score").on(table.compatibilityScore),
+  uniqueIndex("uq_job_matches_talent_job").on(table.talentId, table.jobId),
+]);
+
+export const insertJobMatchSchema = createInsertSchema(jobMatches).omit({
+  id: true,
+  computedAt: true,
+});
+export type InsertJobMatch = z.infer<typeof insertJobMatchSchema>;
+export type JobMatch = typeof jobMatches.$inferSelect;
