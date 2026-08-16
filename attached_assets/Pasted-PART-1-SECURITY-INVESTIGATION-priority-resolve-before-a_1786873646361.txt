@@ -1,0 +1,69 @@
+PART 1 — SECURITY INVESTIGATION (priority — resolve before anything else)
+
+The discovery: /api/client/talent-search was returning unsanitized candidate
+data (email, phone, resumeUrl) to every authenticated Client caller. This is
+the same class of incident as the passwordHash exposure investigated earlier
+in this build. Run the same rigor:
+
+1. Git blame: when was this endpoint created, and has it EVER had the
+   sanitizer applied, or was it unsanitized from the very first commit that
+   introduced it?
+
+2. Was this endpoint reachable in production at any point — check against
+   the actual production deployment log the same way you confirmed the DB
+   identity earlier (the "Using DATABASE_URL" log line), not an assumption.
+
+3. If it was live in production: this is a real Client-facing feature that
+   real Clients may have used. Check for any evidence of real (non-test)
+   Client accounts calling this endpoint — same rigor as the passwordHash
+   log search. If real Clients used it, real Talent PII (email, phone,
+   resume links) was exposed to them, and that needs to be treated with the
+   same seriousness as the earlier incident — report exactly which Talent
+   accounts' data could have been exposed and to which Client accounts.
+
+4. Confirm the fix (sanitizeSearchCandidate now applied) is live and
+   verified on THIS endpoint specifically with a real trace — not just the
+   new public endpoint's trace, which was already shown clean.
+
+Report back on all four before moving to Part 2.
+
+PART 2 — PREVIEW POPUP FEATURE (separate work, does not supersede Part 1)
+
+ADD: a "Preview" button beside "Shortlist" on each result row (both the
+public /hire-talent anonymous view and the authenticated client view — same
+placement, same availability as Shortlist itself, since preview content has
+no PII either way).
+
+BEFORE BUILDING: audit for an existing profile-preview design first. I'm
+told one already exists somewhere in the app — check CandidateProfile.tsx,
+TalentPool.tsx, and any other profile-detail modal/popup already built
+(likely in an Admin-facing flow). Report what you find — reuse and adapt
+that existing design/component rather than building a new modal from
+scratch. If genuinely nothing reusable exists, say so before building new.
+
+BEHAVIOR: clicking "Preview" opens a popup/modal (not a page navigation) —
+same row stays in place, results underneath unaffected. Modal shows an
+expanded profile summary: masked name (same masking as the row — do not
+show more identity than the row already does), role/category, engagement
+type, full skill list (not just the 3 shown in the row), experience/seniority
+summary, bio or profile summary text, availability status, and match score
+with the reasons behind it. A "Shortlist" action should also be reachable
+from inside the modal itself, not just the row.
+
+DATA SOURCE — this is the part that needs the most care given Part 1's
+finding: the preview's data must go through the EXACT SAME sanitization
+discipline as the row view — either extend sanitizeSearchCandidate with an
+explicit allowlist of the additional preview-only fields, or build a
+sibling sanitizer that's equally strict. Do NOT build a new unreviewed data
+path for this — that's exactly the mistake that caused the PII leak on
+/api/client/talent-search. Whatever fields you add for the expanded preview
+(full skill list, bio, experience detail) must be explicitly allowlisted,
+never a broader/raw object with a few fields stripped.
+
+PROOF REQUIRED: same standard as everything else in this build — after
+implementing, show me the actual response shape returned to the preview
+modal (both anonymous and authenticated contexts), confirming no email,
+phone, resume/portfolio/social links, or other PII fields are present, not a
+description of the code.
+
+Work Part 1 to completion and report back before starting Part 2.
