@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
@@ -12,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { createPortal } from "react-dom";
 import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock3, Globe2, Sparkles, Star, X } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
@@ -21,10 +21,15 @@ import { SignUpDialog } from "@/components/SignUpDialog";
 
 interface TalentResult {
   candidateId: string;
+
   userId: string;
+
   score: number;
+
   overlapSkills: string[];
+
   matchReasons: Record<string, any>;
+
   candidate: {
     // Sanitizer returns fullName (masked "Jane S." or "Talent Profile")
     fullName?: string | null;
@@ -39,6 +44,20 @@ interface TalentResult {
     secondary_skills?: string[];
     category?: string;
     availability?: string;
+    experienceYears?: number | string;
+    headline?: string;
+    summary?: string;
+    preferences?: Record<string, string>;
+    workHistory?: Array<{
+      company?: string;
+      role?: string;
+      jobTitle?: string;
+      startDate?: string;
+      endDate?: string;
+      duration?: string;
+      description?: string;
+      responsibilities?: string;
+    }>;
   };
 }
 
@@ -643,6 +662,13 @@ export default function HireTalentPage() {
     },
   });
 
+  // ── Shared flag: prevents both init paths from firing a search ───────────────
+  // Declared before both init effects so both can read/write it in declaration
+  // order within the same React commit. The sessionStorage restore effect is
+  // listed first and sets the flag when it consumes valid saved state; the URL
+  // hydration effect (listed second) checks the flag and skips if already set.
+  const didAutoSearch = useRef(false);
+
   // ── Restore pending search state after authentication ────────────────────────
   // When a visitor clicks Shortlist while logged out, their search params +
   // intended talentId are saved to sessionStorage. After they sign up/log in
@@ -659,6 +685,9 @@ export default function HireTalentPage() {
     try {
       const saved: PendingSearchState = JSON.parse(raw);
       if (!saved.query?.trim()) return;
+
+      // Mark first so the URL-hydration effect (runs after this one) skips.
+      didAutoSearch.current = true;
 
       const engType =
         saved.engagementType === "Half-Day" ? "Half-Day" : "Full-Time";
@@ -691,6 +720,30 @@ export default function HireTalentPage() {
     });
   }, [searchResults, categoryFilter]);
 
+  // ── URL param sync — read on mount, write on every search ────────────────────
+  // On mount (once auth resolves), read ?q and ?type from the URL and auto-fire.
+  // Priority is controlled by didAutoSearch: the sessionStorage restore effect
+  // (declared before this one) sets the flag when it consumes valid saved state,
+  // so this effect simply skips if the flag is already set — one search maximum.
+  useEffect(() => {
+    if (isLoading) return;
+    if (didAutoSearch.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q")?.trim();
+    const type = params.get("type");
+
+    if (!q) return;
+    didAutoSearch.current = true;
+
+    const engType: "Full-Time" | "Half-Day" = type === "Half-Day" ? "Half-Day" : "Full-Time";
+    setSearchText(q);
+    setEngagementType(engType);
+    setStage("active");
+    searchMutation.mutate({ text: q, engType, isBaseSearch: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
   // ── Trigger search ────────────────────────────────────────────────────────────
   function runSearch(text?: string, engType?: "Full-Time" | "Half-Day", isBaseSearch = true) {
     const q = (text ?? searchText).trim();
@@ -699,6 +752,11 @@ export default function HireTalentPage() {
     setSearchText(q);
     setEngagementType(et);
     setStage("active");
+    // Push search state into the URL so it can be copied and shared.
+    const urlParams = new URLSearchParams();
+    urlParams.set("q", q);
+    urlParams.set("type", et);
+    history.replaceState(null, "", `?${urlParams.toString()}`);
     searchMutation.mutate({ text: q, engType: et, isBaseSearch });
   }
 
