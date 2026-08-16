@@ -159,12 +159,11 @@ function ProfilePreviewModal({
     if (loadingFull || fullProfile) return;
     setLoadingFull(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/client/talent-profile/${result.userId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error("Failed to load full profile");
-      setFullProfile(await res.json());
+      // Use apiRequest so the correct auth token is sent (onspot_jwt_token / talent_profile_token).
+      // A raw localStorage.getItem("token") always returns null — that key is never written
+      // by any login flow in this codebase, causing a silent 401.
+      const data = await apiRequest("GET", `/api/client/talent-profile/${result.userId}`);
+      setFullProfile(data);
     } catch {
       // silent — user can retry
     } finally {
