@@ -180,7 +180,6 @@ function PublicRouter() {
           <Route path="/pilot" component={PilotDashboard} />
           <Route path="/find-work" component={FindWorkRedirect} />
           <Route path="/find-best-matches" component={FindBestMatches} />
-          <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />
           <Route path="/find-work/jobs" component={FindWorkAllJobs} />
           <Route path="/find-work/job/:jobId" component={FindWorkJob} />
           <Route path="/find-work/:category" component={FindWorkAllJobs} />
@@ -432,7 +431,11 @@ function AppContent() {
       <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-best-matches" component={PublicRouter} />
-      <Route path="/candidate-profile/:candidateId" component={CandidateProfile} />
+      <Route path="/candidate-profile/:candidateId" component={() => (
+        <TalentProtectedRoute>
+          <CandidateProfile />
+        </TalentProtectedRoute>
+      )} />
       <Route path="/talent-profile/:id" component={TalentProfile} />
       <Route path="/find-work/jobs" component={PublicRouter} />
       <Route path="/find-work/job/:jobId" component={PublicRouter} />
