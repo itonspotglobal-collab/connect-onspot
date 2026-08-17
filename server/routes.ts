@@ -13380,6 +13380,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).catch((notifyErr: any) => {
           console.error("PATCH /api/talent/offers/:id/respond — failed to create client notification:", notifyErr);
         });
+
+        // Fire-and-forget: send the client an email about the talent's response.
+        (async () => {
+          try {
+            const clientUserRow = await query(
+              `SELECT email, first_name FROM users WHERE id = $1 LIMIT 1`,
+              [clientUserId],
+            );
+            const clientEmail: string | null = clientUserRow.rows[0]?.email ?? null;
+            if (!clientEmail) return;
+
+            const { sendApplicantEmail, isEmailServiceConfigured } =
+              await import("./services/microsoftGraphEmailService.ts");
+            if (!isEmailServiceConfigured()) {
+              console.warn("PATCH /api/talent/offers/:id/respond — email service not configured; skipping client email");
+              return;
+            }
+
+            const rawBase =
+              process.env.PUBLIC_APP_URL ??
+              process.env.APP_URL ??
+              process.env.PUBLIC_BASE_URL ??
+              (process.env.REPLIT_DOMAINS
+                ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+                : null);
+            if (!rawBase) {
+              console.warn("PATCH /api/talent/offers/:id/respond — no base URL configured; skipping client email");
+              return;
+            }
+            const baseUrl = rawBase.replace(/\/$/, "");
+            const pipelineUrl = `${baseUrl}/hiring-pipeline`;
+
+            const jobTitle: string = offer.job_title ?? "the role";
+            const decisionVerb = action === "accept" ? "accepted" : "declined";
+            const subject = `Your offer has been ${decisionVerb}`;
+            const bodyHtml = `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1a1a2e;margin-bottom:8px;">Offer ${decisionVerb}</h2>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    A talent has <strong>${decisionVerb}</strong> your offer for <strong>${jobTitle}</strong>.
+  </p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    Log in to your portal to view the updated status and take any next steps.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="${pipelineUrl}"
+       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
+      View Hiring Pipeline
+    </a>
+  </p>
+</div>`.trim();
+
+            const result = await sendApplicantEmail({ to: clientEmail, subject, bodyHtml });
+            if (result.success) {
+              console.log(`✅ Offer-response email (${decisionVerb}) sent to client ${clientEmail} for offer ${offer.id}`);
+            } else {
+              console.warn(`PATCH /api/talent/offers/:id/respond — offer-response email failed for ${clientEmail}:`, result.error);
+            }
+          } catch (emailErr: any) {
+            console.error("PATCH /api/talent/offers/:id/respond — unexpected error sending client email:", emailErr);
+          }
+        })();
       }
 
       return res.json(respondedOffer);
