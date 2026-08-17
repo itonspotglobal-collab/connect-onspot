@@ -90,9 +90,6 @@ export const ENGAGEMENT_TYPE_OPTIONS = [
 
 export type EngagementTypeValue = (typeof ENGAGEMENT_TYPE_OPTIONS)[number]["value"];
 
-// ── Compensation ──────────────────────────────────────────────────────────────
-// All new/edited jobs must use Monthly compensation.
-
 // ── Talent Browse Categories ──────────────────────────────────────────────────
 // The canonical 10 categories for the Client "Search & Shortlist" page and the
 // talent-browse filter chips. Source of truth — never duplicate in components.
