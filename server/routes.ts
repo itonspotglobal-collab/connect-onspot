@@ -940,14 +940,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  benefits migration skipped:", migErr.message);
   }
 
-  // ── One-time safe migration: add compensation_type column to jobs table ───────
-  try {
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS compensation_type text`);
-    console.log("✅ Migration: jobs.compensation_type column ready");
-  } catch (migErr: any) {
-    console.warn("⚠️  compensation_type migration skipped:", migErr.message);
-  }
-
   // ── One-time safe migration: add commission / equity flags to jobs table ──────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_commission boolean NOT NULL DEFAULT false`);
@@ -1034,9 +1026,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS other_equipment_requirements text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS work_days text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS time_zone text`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS weekly_hours text`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS schedule_flexibility text`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS payment_frequency text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS compensation_notes text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS what_we_offer text`);
     console.log("✅ Migration: jobs template alignment columns ready");
@@ -1340,13 +1329,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if ((ftMigration.rowCount ?? 0) > 0) {
       console.log(`✅ Migration: normalized ${ftMigration.rowCount} jobs.engagement_type 'full-time' → 'Full-Time'`);
     }
-    // 'part-time' maps to 'Half-Day' — the canonical equivalent for less-than-full-time engagements.
+    // 'part-time' → 'Half-Day': consistent with the contract_type normalization precedent
+    // established earlier in this build (part-time mapped to Half-Day there too).
     const ptMigration = await query(`
       UPDATE jobs SET engagement_type = 'Half-Day', updated_at = NOW()
       WHERE  engagement_type = 'part-time'
     `);
     if ((ptMigration.rowCount ?? 0) > 0) {
       console.log(`✅ Migration: normalized ${ptMigration.rowCount} jobs.engagement_type 'part-time' → 'Half-Day'`);
+    }
+
+    // Pre-flight: confirm zero non-canonical rows before adding CHECK constraint.
+    const canonicalEngagementTypes = ["Half-Day", "Full-Time"];
+    const violatingJobs = await query(
+      `SELECT id, engagement_type FROM jobs
+       WHERE  engagement_type IS NOT NULL
+         AND  engagement_type NOT IN ('Half-Day', 'Full-Time')
+       LIMIT  20`
+    );
+    if ((violatingJobs.rowCount ?? 0) > 0) {
+      const details = violatingJobs.rows.map((r: any) => `${r.id}:${r.engagement_type}`).join(", ");
+      console.error(
+        `❌ Migration: cannot add jobs.engagement_type CHECK constraint — ` +
+        `${violatingJobs.rowCount} row(s) still have non-canonical values: ${details}`
+      );
+    } else {
+      // Add CHECK constraint if it doesn't already exist
+      const constraintExists = await query(`
+        SELECT 1 FROM pg_constraint
+        WHERE  conrelid = 'jobs'::regclass
+          AND  conname  = 'jobs_engagement_type_check'
+        LIMIT  1
+      `);
+      if ((constraintExists.rowCount ?? 0) > 0) {
+        console.log("✅ Migration: jobs.engagement_type CHECK constraint already exists — skipping");
+      } else {
+        await query(`
+          ALTER TABLE jobs
+          ADD CONSTRAINT jobs_engagement_type_check
+          CHECK (engagement_type IS NULL OR engagement_type IN ('Half-Day', 'Full-Time'))
+        `);
+        console.log("✅ Migration: jobs.engagement_type CHECK constraint added");
+      }
+    }
+
+    // Step 0b: drop the now-empty non-canonical compensation columns.
+    // All rows were nulled in the previous migration (Task #259). Dropping is
+    // idempotent via IF EXISTS so it is safe to re-run on every restart.
+    try {
+      await query(`
+        ALTER TABLE jobs
+          DROP COLUMN IF EXISTS compensation_type,
+          DROP COLUMN IF EXISTS payment_frequency,
+          DROP COLUMN IF EXISTS weekly_hours,
+          DROP COLUMN IF EXISTS schedule_flexibility
+      `);
+      console.log("✅ Migration: dropped non-canonical compensation columns (compensation_type, payment_frequency, weekly_hours, schedule_flexibility)");
+    } catch (dropErr: any) {
+      console.warn("⚠️  compensation column drop skipped:", dropErr.message);
     }
 
     // Step 1: normalize legacy status values to canonical names before the CHECK
@@ -6707,8 +6747,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Approve a job posting ─────────────────────────────────────────
-  // No auth guard yet — spec: anyone with /admin/find-work access may approve.
-  // Structured for future approvedBy/approvedAt multi-admin tracking (fields already in schema).
   app.post("/api/admin/jobs/:id/approve", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
@@ -6748,7 +6786,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Reject a job posting ──────────────────────────────────────────
-  // No auth guard yet — spec: anyone with /admin/find-work access may decline.
   app.post("/api/admin/jobs/:id/reject", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
@@ -6778,7 +6815,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Link a client job to an existing approved job ────────────────
-  // No auth guard yet — consistent with approve/reject policy above.
   app.post("/api/admin/jobs/:id/link", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { existingJobId } = req.body;
@@ -6846,7 +6882,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
-  // No auth guard yet — consistent with approve/reject policy above.
   app.post("/api/admin/jobs/:id/pending", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const result = await query(

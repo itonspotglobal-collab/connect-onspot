@@ -646,16 +646,9 @@ function DbJobDetail({
   // "Work Schedule"
   const workDays = (job as any).workDays as string | null | undefined;
   const timeZone = (job as any).timeZone as string | null | undefined;
-  const weeklyHours = (job as any).weeklyHours as string | null | undefined;
-  const scheduleFlexibility = (job as any).scheduleFlexibility as
-    | string
-    | null
-    | undefined;
   const hasWorkSchedule = !!(
     workDays?.trim() ||
-    timeZone?.trim() ||
-    weeklyHours?.trim() ||
-    scheduleFlexibility?.trim()
+    timeZone?.trim()
   );
 
   // "What We Offer" extra content
@@ -665,10 +658,6 @@ function DbJobDetail({
     | undefined;
 
   // Compensation extras
-  const paymentFrequency = (job as any).paymentFrequency as
-    | string
-    | null
-    | undefined;
   const compensationNotes = (job as any).compensationNotes as
     | string
     | null
@@ -1028,26 +1017,6 @@ function DbJobDetail({
                   </p>
                 </div>
               )}
-              {weeklyHours?.trim() && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Weekly Hours
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {weeklyHours.trim()}
-                  </p>
-                </div>
-              )}
-              {scheduleFlexibility?.trim() && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Flexibility
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {scheduleFlexibility.trim()}
-                  </p>
-                </div>
-              )}
             </div>
           </Section>
         )}
@@ -1076,16 +1045,6 @@ function DbJobDetail({
                   {pay}
                 </p>
               </div>
-              {paymentFrequency?.trim() && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Payment Frequency
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {paymentFrequency.trim()}
-                  </p>
-                </div>
-              )}
               {(hasCommission || hasEquity) && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/[0.08] dark:bg-white/[0.04]">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">

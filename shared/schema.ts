@@ -163,12 +163,9 @@ export const jobs = pgTable("jobs", {
   // Work schedule
   workDays: text("work_days"),
   timeZone: text("time_zone"),
-  weeklyHours: text("weekly_hours"),
-  scheduleFlexibility: text("schedule_flexibility"),
   // Preferred qualifications
   preferredQualifications: text("preferred_qualifications"),
   // Compensation extras
-  paymentFrequency: text("payment_frequency"),
   compensationNotes: text("compensation_notes"),
   // What We Offer (rich text list)
   whatWeOffer: text("what_we_offer"),
@@ -187,7 +184,6 @@ export const jobs = pgTable("jobs", {
   existingJobId: varchar("existing_job_id"), // set when approvalStatus = linked_to_existing
   urgentlyHiring: boolean("urgently_hiring").notNull().default(false),
   benefits: text("benefits"),
-  compensationType: text("compensation_type"), // "monthly" | "annual" | "project"
   hasCommission: boolean("has_commission").notNull().default(false),
   hasEquity: boolean("has_equity").notNull().default(false),
   isFeatured: boolean("is_featured").notNull().default(false),

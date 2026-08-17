@@ -3,7 +3,6 @@
  * Extracted from JobFormModal so steps can import without pulling in the
  * full modal component and its Dialog dependencies.
  */
-import { COMPENSATION_TYPE } from "@/lib/jobConstants";
 import type { Job } from "@shared/schema";
 
 // ─── Quill helpers ────────────────────────────────────────────────────────────
@@ -60,12 +59,9 @@ export const defaultFormData = {
   // Work schedule
   workDays: "",
   timeZone: "",
-  weeklyHours: "",
-  scheduleFlexibility: "",
   // Preferred qualifications (rich text)
   preferredQualifications: "",
   // Compensation extras
-  paymentFrequency: "",
   compensationNotes: "",
   // What We Offer (rich text)
   whatWeOffer: "",
@@ -83,8 +79,6 @@ export const defaultFormData = {
   confidentialClientOverview: "",
   // Benefits / HMO
   benefits: "",
-  // Compensation type — locked to monthly for all new/edited jobs
-  compensationType: COMPENSATION_TYPE as "monthly",
   // Additional compensation benefits
   hasCommission: false,
   hasEquity: false,
@@ -142,12 +136,9 @@ export function jobToFormData(job: Job): JobFormData {
     // Work schedule
     workDays: (job as any).workDays || "",
     timeZone: (job as any).timeZone || "",
-    weeklyHours: (job as any).weeklyHours || "",
-    scheduleFlexibility: (job as any).scheduleFlexibility || "",
     // Preferred qualifications
     preferredQualifications: (job as any).preferredQualifications || "",
     // Compensation extras
-    paymentFrequency: (job as any).paymentFrequency || "",
     compensationNotes: (job as any).compensationNotes || "",
     // What We Offer
     whatWeOffer: (job as any).whatWeOffer || "",
@@ -165,8 +156,6 @@ export function jobToFormData(job: Job): JobFormData {
     confidentialClientOverview: (job as any).confidentialClientOverview || "",
     // Benefits / HMO
     benefits: (job as any).benefits || "",
-    // Compensation type — always "monthly" for edited jobs going forward
-    compensationType: COMPENSATION_TYPE,
     // Additional compensation benefits
     hasCommission: (job as any).hasCommission ?? false,
     hasEquity: (job as any).hasEquity ?? false,

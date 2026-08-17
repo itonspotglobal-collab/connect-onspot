@@ -152,19 +152,6 @@ export function JobRequirementsStep({ formData, updateField, errors, isEditing }
           )}
         </div>
 
-        {/* Compensation type note */}
-        <div className="rounded-md border border-border bg-muted/30 px-4 py-3 flex items-center gap-3 mb-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium">Compensation Type: Monthly</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              All jobs use monthly compensation. Annual, hourly, and project-based types are not supported.
-            </p>
-          </div>
-          <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-            Monthly
-          </span>
-        </div>
-
         {/* Commission + Equity chips */}
         <div className="flex flex-wrap gap-2 mb-4">
           {(
@@ -188,40 +175,19 @@ export function JobRequirementsStep({ formData, updateField, errors, isEditing }
           ))}
         </div>
 
-        {/* Payment Frequency */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <Label htmlFor="req-payFreq">
-              Payment Frequency{" "}
-              <span className="text-xs font-normal text-muted-foreground">— optional</span>
-            </Label>
-            <Select
-              value={formData.paymentFrequency || ""}
-              onValueChange={(v) => updateField("paymentFrequency", v)}
-            >
-              <SelectTrigger id="req-payFreq" className="mt-1.5">
-                <SelectValue placeholder="Select…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bi-weekly">Bi-weekly</SelectItem>
-                <SelectItem value="semi-monthly">Semi-monthly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="req-compNotes">
-              Compensation Notes{" "}
-              <span className="text-xs font-normal text-muted-foreground">— optional</span>
-            </Label>
-            <Input
-              id="req-compNotes"
-              className="mt-1.5"
-              value={formData.compensationNotes}
-              onChange={(e) => updateField("compensationNotes", e.target.value)}
-              placeholder="e.g. Performance bonus after 6 months"
-            />
-          </div>
+        {/* Compensation Notes */}
+        <div className="mb-4">
+          <Label htmlFor="req-compNotes">
+            Compensation Notes{" "}
+            <span className="text-xs font-normal text-muted-foreground">— optional</span>
+          </Label>
+          <Input
+            id="req-compNotes"
+            className="mt-1.5"
+            value={formData.compensationNotes}
+            onChange={(e) => updateField("compensationNotes", e.target.value)}
+            placeholder="e.g. Performance bonus after 6 months"
+          />
         </div>
       </div>
 
@@ -393,26 +359,6 @@ export function JobRequirementsStep({ formData, updateField, errors, isEditing }
                 value={formData.timeZone}
                 onChange={(e) => updateField("timeZone", e.target.value)}
                 placeholder="e.g. US Eastern overlap"
-              />
-            </div>
-            <div>
-              <Label htmlFor="req-hours">Weekly Hours</Label>
-              <Input
-                id="req-hours"
-                className="mt-1.5"
-                value={formData.weeklyHours}
-                onChange={(e) => updateField("weeklyHours", e.target.value)}
-                placeholder="e.g. 40 hours"
-              />
-            </div>
-            <div>
-              <Label htmlFor="req-flex">Flexibility</Label>
-              <Input
-                id="req-flex"
-                className="mt-1.5"
-                value={formData.scheduleFlexibility}
-                onChange={(e) => updateField("scheduleFlexibility", e.target.value)}
-                placeholder="e.g. Some flexibility"
               />
             </div>
           </div>

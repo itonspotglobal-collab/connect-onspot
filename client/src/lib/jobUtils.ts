@@ -82,46 +82,18 @@ export function formatJobCurrency(
   }
 }
 
-/** Returns the period suffix string for a given compensationType value. */
-function compensationSuffix(type?: string | null): string {
-  if (type === "monthly") return "/month";
-  if (type === "annual") return "/year";
-  if (type === "project") return "/project";
-  return "";
-}
-
-/**
- * Returns true when the salary text looks like a number or monetary value
- * (contains at least one digit), so a period suffix can safely be appended.
- * Pure descriptive text like "Competitive" or "Rate TBD" contains no digits
- * and should be left unchanged.
- */
-function salaryHasNumericContent(text: string): boolean {
-  return /\d/.test(text);
-}
-
 /** Formats a job's full salary/rate display string.
  *  Prefers the free-text `salaryDisplay` field; falls back to computing
- *  from the legacy numeric fields for backward compatibility.
- *  Appends a compensation-type suffix (/month, /year, /project) when the
- *  salary text contains numeric content — never appends to freeform phrases. */
+ *  from the legacy numeric fields for backward compatibility. */
 export function formatJobSalary(job: {
   salaryDisplay?: string | null;
   budget?: string | null;
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
-  compensationType?: string | null;
 }): string {
-  const suffix = compensationSuffix(job.compensationType);
-
   // 1. Free-text display wins
   if (job.salaryDisplay?.trim()) {
-    const display = job.salaryDisplay.trim();
-    // Only append suffix when the text contains a number, not for "Competitive" etc.
-    if (suffix && salaryHasNumericContent(display)) {
-      return `${display}${suffix}`;
-    }
-    return display;
+    return job.salaryDisplay.trim();
   }
 
   // 2. Numeric budget fallback
@@ -375,7 +347,6 @@ export function buildRateDisplay(job: {
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
   engagementType?: string;
-  compensationType?: string | null;
 }): string {
   return buildRateDisplayWithCode(job);
 }
@@ -393,7 +364,6 @@ export function buildRateDisplayWithCode(job: {
   budgetCurrency?: string | null;
   customCurrencyCode?: string | null;
   engagementType?: string;
-  compensationType?: string | null;
 }): string {
   const sym = getCurrencySymbol(job.budgetCurrency, job.customCurrencyCode);
 

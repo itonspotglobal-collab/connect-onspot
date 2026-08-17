@@ -197,20 +197,8 @@ function JobCard({
   const pilotId = getJobPilotId(job);
   const jobBenefits = ((job as any).benefits as string | null | undefined)?.trim();
 
-  const compensationType = (job as any).compensationType as string | null | undefined;
-
-  // Strip the trailing suffix that buildRateDisplay appends (e.g. /year, /month, /project, /mo)
-  // so the card can render salary and compensation type independently.
+  // Strip any trailing period suffix from the salary display for cleaner rendering
   const payClean = pay.replace(/\/(year|month|project|mo)\b/g, "").trim();
-
-  // Small badge label rendered below the salary figure (not as plain text).
-  // "Monthly" is intentionally omitted — the $ format is self-evident and the
-  // period badge was redundant. Annual / Hourly / Project still add useful context.
-  const compensationBadgeLabel: string | null =
-    compensationType === "annual"  ? "Annual"        :
-    compensationType === "project" ? "Project Based" :
-    compensationType === "hourly"  ? "Hourly"        :
-    null;
 
   // Build header badge list: utility badges first, then location, then contract type
   const cardBadges: { key: string; label: string }[] = [];
@@ -315,11 +303,6 @@ function JobCard({
               {/* Right: amber salary — warm accent on cool navy — + posted */}
               <div className="relative shrink-0 sm:text-right">
                 <p className="text-lg font-semibold text-white md:text-xl">{payClean}</p>
-                {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white/80 ring-1 ring-white/20">
-                    {compensationBadgeLabel}
-                  </span>
-                )}
                 <p className="mt-1.5 text-xs text-white/45">{postedLabel}</p>
                 {commissionEquityBadges}
               </div>
@@ -367,11 +350,6 @@ function JobCard({
               {/* Right: salary + compensation badge + posted + commission/equity */}
               <div className="shrink-0 sm:text-right">
                 <p className="text-lg font-bold text-[#3A47A8] md:text-xl">{payClean}</p>
-                {compensationBadgeLabel && (
-                  <span className="mt-1.5 inline-flex items-center rounded-md bg-[#3A47A8]/10 px-2 py-0.5 text-[10px] font-medium text-[#3A47A8] ring-1 ring-[#3A47A8]/15">
-                    {compensationBadgeLabel}
-                  </span>
-                )}
                 <p className="mt-1 text-xs text-slate-400">{postedLabel}</p>
                 {commissionEquityBadges}
               </div>

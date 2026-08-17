@@ -36,7 +36,6 @@ import {
   JOB_FUNCTIONS,
   ENGAGEMENT_TYPE_OPTIONS,
   WORK_SETUPS,
-  COMPENSATION_TYPE,
 } from "@/lib/jobConstants";
 // Shared utilities re-exported so any existing callers keep working
 export {

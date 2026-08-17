@@ -606,8 +606,6 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
   // Work schedule
   payload.workDays = formData.workDays.trim() || null;
   payload.timeZone = formData.timeZone.trim() || null;
-  payload.weeklyHours = formData.weeklyHours.trim() || null;
-  payload.scheduleFlexibility = formData.scheduleFlexibility.trim() || null;
 
   // Preferred qualifications
   payload.preferredQualifications = !isEmptyQuill(formData.preferredQualifications)
@@ -615,7 +613,6 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
     : null;
 
   // Compensation extras
-  payload.paymentFrequency = formData.paymentFrequency.trim() || null;
   payload.compensationNotes = formData.compensationNotes.trim() || null;
 
   // What We Offer
@@ -642,7 +639,6 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
   payload.confidentialClientOverview =
     formData.confidentialClientOverview.trim() || null;
   payload.benefits = formData.benefits.trim() || null;
-  payload.compensationType = formData.compensationType || null;
   payload.hasCommission = formData.hasCommission;
   payload.hasEquity = formData.hasEquity;
 
