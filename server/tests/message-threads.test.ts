@@ -158,7 +158,7 @@ function buildMessagingTestApp(): Express {
     );
     if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
 
-    const newStatus = action === "accept" ? "submitted" : "declined";
+    const newStatus = action === "accept" ? "new" : "declined";
     if (action !== "accept") {
       const declined = await query(
         `UPDATE job_submissions SET status = $1, updated_at = NOW()
@@ -335,7 +335,7 @@ describe("messaging authorization model", () => {
     // A talent-initiated, submitted application between the same pair must not count
     const r = await query(
       `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, first_name, last_name, email, status, initiated_by, talent_id, registration_status)
-       VALUES (gen_random_uuid(), $1, $2, 'Msg Talent', 'Msg', 'Talent', 'msgtest-talent@example.com', 'submitted', 'talent', $3, 'linked')
+       VALUES (gen_random_uuid(), $1, $2, 'Msg Talent', 'Msg', 'Talent', 'msgtest-talent@example.com', 'new', 'talent', $3, 'linked')
        RETURNING id`,
       [JOB_ID, CLIENT_ID, TALENT_ID],
     );
@@ -374,7 +374,7 @@ describe("messaging authorization model", () => {
     // (b) left one pending invitation; respond to the new one
     const res = await request(srv, "POST", `/api/talent/invitations/${invId}/respond`, talentTok, { action: "accept" });
     assert.equal(res.status, 200);
-    assert.equal(res.json.status, "submitted");
+    assert.equal(res.json.status, "new");
     assert.ok(res.json.threadId, "accept response must include threadId");
     threadId = res.json.threadId;
   });
@@ -429,7 +429,7 @@ describe("messaging authorization model", () => {
     if (final.rows[0].status === "declined") {
       assert.equal(threadCount.rows[0].n, 0, "no thread may exist after a decline win");
     } else {
-      assert.equal(final.rows[0].status, "submitted");
+      assert.equal(final.rows[0].status, "new");
       assert.equal(threadCount.rows[0].n, 1);
     }
     await query(`DELETE FROM messages WHERE thread_id IN (SELECT id FROM message_threads WHERE job_id = 'msgtest-job-2')`);

@@ -13,7 +13,7 @@
  *  (b) Token signed with the wrong secret → 401
  *  (c) Token with wrong type (not "candidate") → 401
  *  (d) Valid candidate JWT for a real candidate → 200 + array on GET
- *  (e) Valid candidate JWT + accept action → status becomes "submitted"
+ *  (e) Valid candidate JWT + accept action → status becomes "new" (canonical; UI shows "submitted")
  *  (f) Valid candidate JWT + decline action → status becomes "declined"
  *  (g) Cross-tenant denial: candidate A cannot respond to candidate B's invitation
  *  (h) Already-responded invitation → 409
@@ -119,7 +119,7 @@ function buildInvitationTestApp(): Express {
         return res.status(409).json({ error: "This invitation is no longer pending" });
       }
 
-      const newStatus = action === "accept" ? "submitted" : "declined";
+      const newStatus = action === "accept" ? "new" : "declined";
       await query(`UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`, [newStatus, id]);
       return res.json({ status: newStatus });
     } catch (err: any) {
@@ -290,7 +290,7 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
     assert.equal(status, 401);
   });
 
-  it("(e) valid candidate JWT + accept action → status 'submitted'", async () => {
+  it("(e) valid candidate JWT + accept action → status 'new' (canonical; UI displays as 'submitted')", async () => {
     const pair = await getLinkedTalentPair();
     const clientId = await getClientUserId();
     if (!pair || !clientId) return;
@@ -305,11 +305,11 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
         srv, "POST", `/api/talent/invitations/${inviteId}/respond`, token, { action: "accept" },
       );
       assert.equal(status, 200, `accept must return 200; got ${status}: ${JSON.stringify(body)}`);
-      assert.equal(body.status, "submitted", "accept must transition status to 'submitted'");
+      assert.equal(body.status, "new", "accept must transition status to 'new' (canonical; displayed as 'submitted' in UI)");
 
       // Verify in DB
       const dbRow = await query(`SELECT status FROM job_submissions WHERE id = $1`, [inviteId]);
-      assert.equal(dbRow.rows[0]?.status, "submitted", "DB must reflect the accepted status");
+      assert.equal(dbRow.rows[0]?.status, "new", "DB must store canonical 'new' (displayed as 'submitted' in UI)");
     } finally {
       await query(`DELETE FROM job_submissions WHERE id = $1`, [inviteId ?? "none"]).catch(() => {});
       await query(`DELETE FROM jobs WHERE id = $1`, [scaffoldId]).catch(() => {});
@@ -390,7 +390,7 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
     try {
       if (!inviteId) return;
       // Move it to 'submitted' directly in DB to simulate already-accepted
-      await query(`UPDATE job_submissions SET status = 'submitted' WHERE id = $1`, [inviteId]);
+      await query(`UPDATE job_submissions SET status = 'new' WHERE id = $1`, [inviteId]);
 
       const token = makeCandidateToken(pair.candidateId);
       const { status, body } = await jsonRequest(

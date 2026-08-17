@@ -239,10 +239,10 @@ describe("client talent-search — invitation state transition guard", () => {
     assert.ok(wouldBlock, "declined submission must trigger transition_blocked");
   });
 
-  it("allows transition from 'submitted' (talent accepted) to client statuses", () => {
-    const currentStatus = "submitted";
+  it("allows transition from 'new' (talent accepted, canonical) to client statuses", () => {
+    const currentStatus = "new"; // canonical value; was 'submitted' before the status rename
     const isBlocked = TALENT_CONTROLLED.includes(currentStatus);
-    assert.ok(!isBlocked, "submitted invitation must be movable to client statuses");
+    assert.ok(!isBlocked, "'new' invitation must be movable to client statuses");
   });
 
   it("allows transition from 'new' to reviewed/shortlisted/rejected/hired", () => {

@@ -1124,11 +1124,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updated_at timestamp NOT NULL DEFAULT now()
       )
     `);
-    // Seed default: name reveal triggers on "submitted" (talent accepts invite)
+    // Seed default: name reveal triggers on "new" (talent accepts invite; was 'submitted' pre-rename)
     await query(`
       INSERT INTO platform_settings (key, value)
-      VALUES ('name_reveal_threshold', 'submitted')
+      VALUES ('name_reveal_threshold', 'new')
       ON CONFLICT (key) DO NOTHING
+    `);
+    // Migrate any existing stored 'submitted' threshold value to canonical 'new'
+    await query(`
+      UPDATE platform_settings SET value = 'new', updated_at = NOW()
+      WHERE key = 'name_reveal_threshold' AND value = 'submitted'
     `);
     // Seed default: search chip activation threshold = 100 (raised from launch-window 10)
     await query(`
@@ -6324,12 +6329,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings: Record<string, string> = {};
       for (const row of result.rows) settings[row.key] = row.value;
       res.json({
-        nameRevealThreshold: settings['name_reveal_threshold'] ?? 'submitted',
+        nameRevealThreshold: settings['name_reveal_threshold'] ?? 'new',
       });
     } catch (err: any) {
       console.error("GET /api/platform-settings/public error:", err);
       // Never break the client portal — fall back to safe default
-      res.json({ nameRevealThreshold: 'submitted' });
+      res.json({ nameRevealThreshold: 'new' });
     }
   });
 
@@ -6349,7 +6354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const ALLOWED_KEYS = new Set(['name_reveal_threshold', 'search_suggestion_threshold']);
-      const VALID_THRESHOLDS = new Set(['submitted', 'reviewed', 'shortlisted', 'hired']);
+      const VALID_THRESHOLDS = new Set(['new', 'reviewed', 'shortlisted', 'hired']);
       const updates: Array<{ key: string; value: string }> = [];
 
       for (const [key, value] of Object.entries(req.body)) {
@@ -7070,7 +7075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `SELECT job_id, client_id, talent_id FROM job_submissions
          WHERE ((client_id = $1 AND talent_id = $2) OR (client_id = $2 AND talent_id = $1))
            AND initiated_by = 'client'
-           AND status IN ('submitted', 'new', 'under_review', 'reviewed', 'shortlisted', 'interview', 'offered', 'hired')
+           AND status IN ('new', 'under_review', 'reviewed', 'shortlisted', 'interviewing', 'offer_extended', 'offer_accepted', 'contract_sent', 'hired')
          ORDER BY updated_at DESC NULLS LAST
          LIMIT 1`,
         [userId, otherId],
@@ -7166,8 +7171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                WHERE ((js.client_id = $2 AND js.talent_id = u.id)
                    OR (js.client_id = u.id AND js.talent_id = $2))
                  AND js.initiated_by = 'client'
-                 AND js.status IN ('submitted','new','under_review','reviewed',
-                                   'shortlisted','interview','offered','hired')
+                 AND js.status IN ('new','under_review','reviewed',
+                                   'shortlisted','interviewing','offer_extended','offer_accepted','contract_sent','hired')
              ) AS name_revealed,
              -- Clients are never masked; only talent participants need masking
              EXISTS (SELECT 1 FROM candidates c WHERE c.user_id = u.id) AS is_talent
@@ -10844,7 +10849,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
 
-      const newStatus = action === "accept" ? "submitted" : "declined";
+      // Canonical DB values: accept → 'new' (display alias 'submitted'), decline → 'declined'
+      const newStatus = action === "accept" ? "new" : "declined";
 
       if (action !== "accept") {
         // Atomic transition: only flips if still pending; concurrent accept/decline
@@ -11404,7 +11410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               resume_url, resume_file_name,
               video_introduction_url, video_introduction_file_name,
               status, registration_status, talent_id, is_repeat_application, answers)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', 'linked', $13, $14, $15)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', 'linked', $13, $14, $15)
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -11527,7 +11533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             resume_url, resume_file_name,
             video_introduction_url, video_introduction_file_name,
             status, registration_status, is_repeat_application, answers)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'submitted', $13, $14, $15)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', $13, $14, $15)
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -12239,8 +12245,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Shared helpers for client submission endpoints ───────────────────────────
 
-  /** Ordered list of statuses used to compute the reveal threshold. */
-  const SUBMISSION_STATUS_ORDER = ["submitted", "reviewed", "shortlisted", "hired"] as const;
+  /**
+   * Ordered list of statuses used to compute the name-reveal threshold.
+   * Only post-acceptance statuses are listed; 'invited' and 'declined' are
+   * deliberately absent so pre-acceptance client-invited talent stay anonymous.
+   * The threshold is admin-configurable via platform_settings('name_reveal_threshold').
+   */
+  const SUBMISSION_STATUS_ORDER = [
+    "new",            // accepted invitation or self-applied (was 'submitted' before canonical rename)
+    "under_review",   // client actively reviewing
+    "reviewed",       // client completed review
+    "shortlisted",    // client shortlisted
+    "interviewing",   // interview scheduled (Phase 1)
+    "offer_extended", // offer sent (Phase 2)
+    "offer_accepted", // talent accepted offer
+    "offer_declined", // talent declined offer — name still visible; relationship was active
+    "contract_sent",  // contract sent (Phase 3)
+    "hired",          // terminal success
+    "rejected",       // client or outcome rejected — name still visible; review already happened
+    "withdrawn",      // talent withdrew — name still visible if post-acceptance
+  ] as const;
 
   /**
    * Returns the set of statuses at which identity is revealed for a given threshold.
@@ -12761,6 +12785,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(updatedInterview.rows[0]);
     } catch (err: any) {
       console.error("PATCH /api/client/interviews/:id/outcome error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Phase 2: Offer Flow ──────────────────────────────────────────────────────
+  //
+  // Client creates an offer for a submission they own. Talent responds (accept / decline).
+  // Ownership rule: client endpoints verify job_submissions.client_id = req.user.id.
+  // Talent endpoints verify job_submissions.talent_id = req.user.id (resolved from JWT).
+
+  // POST /api/client/offers — client extends a formal offer to a talent
+  app.post("/api/client/offers", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { submissionId, rate, rateCurrency = "PHP", proposedStartDate, expiresAt, notes } = req.body;
+      if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
+      if (rate === undefined || rate === null || isNaN(parseFloat(rate))) {
+        return res.status(400).json({ error: "rate must be a valid number" });
+      }
+      const offerRate = parseFloat(rate);
+      if (offerRate <= 0) return res.status(400).json({ error: "rate must be greater than zero" });
+
+      // Ownership check + join to jobs for engagement_type snapshot
+      const subResult = await query(
+        `SELECT js.id, js.status, js.client_id, js.talent_id, js.job_id,
+                j.engagement_type
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND js.client_id = $2`,
+        [submissionId, userId],
+      );
+      if (subResult.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+      const sub = subResult.rows[0];
+
+      // engagement_type is snapshotted from jobs — must be a known value
+      const engagementType: string = sub.engagement_type;
+      if (!["Half-Day", "Full-Time"].includes(engagementType)) {
+        return res.status(422).json({
+          error: "cannot_create_offer",
+          message: `Job engagement type '${engagementType}' is not supported for offers.`,
+        });
+      }
+
+      // Guard: only offer-eligible statuses
+      const offerEligible = ["shortlisted", "reviewed", "under_review", "interviewing"];
+      if (!offerEligible.includes(sub.status)) {
+        return res.status(409).json({
+          error: "cannot_create_offer",
+          message: `Submission status '${sub.status}' is not eligible for an offer. ` +
+            `Submission must be shortlisted, reviewed, under_review, or interviewing.`,
+        });
+      }
+
+      // Snapshot talent's rate expectation for the mismatch flag.
+      // talent_id is users.id — look up via candidates.user_id.
+      let rateBelowExpectation: boolean | null = null;
+      let rateDelta: number | null = null;
+      let talentExpectedRate: number | null = null;
+      let talentExpectedCurrency: string | null = null;
+      let talentExpectedEngagement: string | null = null;
+
+      if (sub.talent_id) {
+        const candidateResult = await query(
+          `SELECT preferences FROM candidates WHERE user_id = $1 LIMIT 1`,
+          [sub.talent_id],
+        );
+        if (candidateResult.rows.length > 0) {
+          const prefs = candidateResult.rows[0].preferences ?? {};
+          const rawRate = prefs.rateAmount !== undefined ? parseFloat(prefs.rateAmount) : null;
+          const rawCurrency: string | null = prefs.rateCurrency ?? null;
+          const rawEngagement: string | null = prefs.rateEngagementType ?? null;
+
+          if (rawRate !== null && !isNaN(rawRate)) talentExpectedRate = rawRate;
+          if (rawCurrency) talentExpectedCurrency = rawCurrency;
+          if (rawEngagement) talentExpectedEngagement = rawEngagement;
+
+          // Compute mismatch only when currencies AND engagement types match.
+          // NULL when either axis differs or expectation is not set — no fake FX conversion.
+          if (
+            talentExpectedRate !== null &&
+            talentExpectedCurrency !== null &&
+            talentExpectedEngagement !== null &&
+            talentExpectedCurrency === rateCurrency &&
+            talentExpectedEngagement === engagementType
+          ) {
+            rateBelowExpectation = offerRate < talentExpectedRate;
+            rateDelta = parseFloat((offerRate - talentExpectedRate).toFixed(2));
+          }
+        }
+      }
+
+      // Insert the offer row
+      const offerInsert = await query(
+        `INSERT INTO offers
+           (submission_id, engagement_type, rate, rate_currency, proposed_start_date, expires_at,
+            notes, talent_expected_rate, talent_expected_currency, talent_expected_engagement,
+            rate_below_expectation, rate_delta, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'sent')
+         RETURNING *`,
+        [
+          submissionId, engagementType, offerRate, rateCurrency,
+          proposedStartDate ?? null, expiresAt ?? null, notes ?? null,
+          talentExpectedRate, talentExpectedCurrency, talentExpectedEngagement,
+          rateBelowExpectation, rateDelta,
+        ],
+      );
+      const offer = offerInsert.rows[0];
+
+      // Side-effect: advance submission to 'offer_extended'
+      const prevStatus = sub.status;
+      await query(
+        `UPDATE job_submissions SET status = 'offer_extended', updated_at = NOW() WHERE id = $1`,
+        [submissionId],
+      );
+      await query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, 'offer_extended', $3, $4)`,
+        [submissionId, prevStatus,
+         `Offer extended: ${rateCurrency} ${offerRate.toLocaleString()} (${engagementType})`, userId],
+      );
+
+      return res.status(201).json(offer);
+    } catch (err: any) {
+      console.error("POST /api/client/offers error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/offers?submissionId= — list all offers for a submission (client view)
+  app.get("/api/client/offers", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { submissionId } = req.query as { submissionId?: string };
+      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
+
+      // Ownership check
+      const ownerCheck = await query(
+        `SELECT id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        [submissionId, userId],
+      );
+      if (ownerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+
+      const result = await query(
+        `SELECT * FROM offers WHERE submission_id = $1 ORDER BY sent_at DESC`,
+        [submissionId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/client/offers error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/talent/offers/:id/respond — talent accepts or declines an offer
+  // Auth: candidate JWT (type:"candidate") or standard user JWT with talent role.
+  // Ownership: offer → submission → talent_id must equal req.user.id (users.id).
+  app.patch("/api/talent/offers/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { id } = req.params;
+      const { action } = req.body;
+      if (!["accept", "decline"].includes(action)) {
+        return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
+      }
+
+      // Load offer + verify talent ownership via submission
+      const offerResult = await query(
+        `SELECT o.*, js.talent_id, js.client_id, js.status AS submission_status, js.id AS js_id
+         FROM offers o
+         JOIN job_submissions js ON js.id = o.submission_id
+         WHERE o.id = $1 AND js.talent_id = $2`,
+        [id, userId],
+      );
+      if (offerResult.rows.length === 0) {
+        return res.status(404).json({ error: "Offer not found or forbidden" });
+      }
+      const offer = offerResult.rows[0];
+
+      if (offer.status !== "sent") {
+        return res.status(409).json({
+          error: "offer_already_resolved",
+          message: `This offer has already been ${offer.status}. Only a 'sent' offer can be accepted or declined.`,
+        });
+      }
+
+      const offerNewStatus = action === "accept" ? "offer_accepted" : "offer_declined";
+      const submissionNewStatus = action === "accept" ? "offer_accepted" : "offer_declined";
+
+      // Update the offer
+      const updatedOffer = await query(
+        `UPDATE offers
+         SET status = $1, responded_at = NOW(), updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [offerNewStatus, id],
+      );
+
+      // Side-effect: update submission status
+      await query(
+        `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+        [submissionNewStatus, offer.js_id],
+      );
+      await query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [offer.js_id, offer.submission_status, submissionNewStatus,
+         `Talent ${action === "accept" ? "accepted" : "declined"} the offer`, userId],
+      );
+
+      return res.json(updatedOffer.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/talent/offers/:id/respond error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/talent/offers/:id — talent view of a specific offer
+  // Returns offer details without exposing client-internal rate snapshot fields.
+  app.get("/api/talent/offers/:id", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+
+      const offerResult = await query(
+        `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
+                o.proposed_start_date, o.expires_at, o.status, o.responded_at,
+                o.notes, o.sent_at, o.created_at,
+                j.title AS job_title, j.company AS job_company
+         FROM offers o
+         JOIN job_submissions js ON js.id = o.submission_id
+         JOIN jobs j ON j.id = js.job_id
+         WHERE o.id = $1 AND js.talent_id = $2`,
+        [id, userId],
+      );
+      if (offerResult.rows.length === 0) {
+        return res.status(404).json({ error: "Offer not found or forbidden" });
+      }
+      // Deliberately excludes rate_below_expectation, rate_delta, and talent_expected_* —
+      // those are client-internal analytics, not talent-facing fields.
+      return res.json(offerResult.rows[0]);
+    } catch (err: any) {
+      console.error("GET /api/talent/offers/:id error:", err);
       return res.status(500).json({ error: err.message });
     }
   });

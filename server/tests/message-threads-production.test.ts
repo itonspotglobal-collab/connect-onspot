@@ -148,7 +148,7 @@ describe("production messaging routes (registerRoutes)", () => {
   it("concurrent explicit thread creations converge on a single thread", async () => {
     // An accepted client-initiated relationship already exists after this test
     // block seeds one; create it here to be self-contained.
-    const subId = await insertSubmission("client", "submitted");
+    const subId = await insertSubmission("client", "new");
     const body = { participants: [CLIENT_ID, TALENT_ID] };
     const [r1, r2, r3] = await Promise.all([
       request(srv, "POST", "/api/message-threads", clientTok, body),
@@ -169,7 +169,7 @@ describe("production messaging routes (registerRoutes)", () => {
     const subId = await insertSubmission("client", "invited");
     const res = await request(srv, "POST", `/api/talent/invitations/${subId}/respond`, talentTok, { action: "accept" });
     assert.equal(res.status, 200, JSON.stringify(res.json));
-    assert.equal(res.json.status, "submitted");
+    assert.equal(res.json.status, "new"); // canonical DB value; UI displays as 'submitted'
     assert.ok(res.json.threadId);
     const threadId = res.json.threadId;
 
