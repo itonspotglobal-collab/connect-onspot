@@ -1384,6 +1384,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
+    // Step 0b: null out non-canonical compensation fields written by the old
+    // JobFormModal before it was fixed.  The old form unconditionally wrote:
+    //   compensation_type = 'monthly'  (65 jobs)
+    //   payment_frequency = 'Monthly'  (35 jobs)
+    //   weekly_hours      = <value>    ( 1 job)
+    // These fields are not part of the canonical OnSpot model and nothing reads
+    // them, but their presence could mislead future code.  Nulling is idempotent.
+    const compTypeMigration = await query(`
+      UPDATE jobs SET compensation_type = NULL, updated_at = NOW()
+      WHERE compensation_type IS NOT NULL
+    `);
+    const payFreqMigration = await query(`
+      UPDATE jobs SET payment_frequency = NULL, updated_at = NOW()
+      WHERE payment_frequency IS NOT NULL
+    `);
+    const weeklyHoursMigration = await query(`
+      UPDATE jobs SET weekly_hours = NULL, updated_at = NOW()
+      WHERE weekly_hours IS NOT NULL
+    `);
+    const totalCompCleared =
+      (compTypeMigration.rowCount ?? 0) +
+      (payFreqMigration.rowCount ?? 0) +
+      (weeklyHoursMigration.rowCount ?? 0);
+    if (totalCompCleared > 0) {
+      console.log(
+        `✅ Migration: cleared non-canonical compensation fields — ` +
+        `${compTypeMigration.rowCount ?? 0} compensation_type, ` +
+        `${payFreqMigration.rowCount ?? 0} payment_frequency, ` +
+        `${weeklyHoursMigration.rowCount ?? 0} weekly_hours rows nulled`,
+      );
+    }
+
     // Step 1: normalize legacy status values to canonical names before the CHECK
     // constraint is added. All updates are idempotent — no-op when values are correct.
 
