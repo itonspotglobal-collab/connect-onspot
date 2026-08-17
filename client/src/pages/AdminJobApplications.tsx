@@ -49,11 +49,14 @@ function getPaginationPages(current: number, total: number): (number | "...")[] 
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
+// Canonical admin-settable statuses (mirrors ADMIN_SETTABLE_STATUSES in
+// shared/submissionStatuses.ts). 'contract_sent' and 'hired' are reached only
+// via the hiring-contract workflow, never by direct status change.
 const VALID_STATUSES = [
-  "submitted", "under_review", "shortlisted", "interview",
-  "offered", "hired", "rejected", "withdrawn",
+  "new", "under_review", "reviewed", "shortlisted", "interviewing",
+  "offer_extended", "offer_accepted", "offer_declined", "rejected", "withdrawn",
 ] as const;
-type AppStatus = typeof VALID_STATUSES[number] | "new" | "reviewed";
+type AppStatus = typeof VALID_STATUSES[number] | "submitted" | "hired";
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   submitted:    { label: "Submitted",    cls: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -62,7 +65,12 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   reviewed:     { label: "Under Review", cls: "bg-yellow-100 text-yellow-800 border-yellow-200" },
   shortlisted:  { label: "Shortlisted",  cls: "bg-purple-100 text-purple-800 border-purple-200" },
   interview:    { label: "Interview",    cls: "bg-orange-100 text-orange-800 border-orange-200" },
+  interviewing: { label: "Interviewing", cls: "bg-orange-100 text-orange-800 border-orange-200" },
   offered:      { label: "Offered",      cls: "bg-teal-100 text-teal-800 border-teal-200" },
+  offer_extended:{ label: "Offer Extended", cls: "bg-teal-100 text-teal-800 border-teal-200" },
+  offer_accepted:{ label: "Offer Accepted", cls: "bg-teal-100 text-teal-800 border-teal-200" },
+  offer_declined:{ label: "Offer Declined", cls: "bg-slate-100 text-slate-700 border-slate-200" },
+  contract_sent:{ label: "Contract Sent", cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
   hired:        { label: "Hired",        cls: "bg-green-100 text-green-800 border-green-200" },
   rejected:     { label: "Rejected",     cls: "bg-red-100 text-red-800 border-red-200" },
   withdrawn:    { label: "Withdrawn",    cls: "bg-slate-100 text-slate-700 border-slate-200" },
@@ -190,7 +198,7 @@ function SummaryCards({ summary, loading }: { summary?: Summary; loading: boolea
     { label: "Submitted",    key: "submitted",     icon: Clock,        color: "text-blue-600" },
     { label: "Under Review", key: "under_review",  icon: Eye,          color: "text-yellow-600" },
     { label: "Shortlisted",  key: "shortlisted",   icon: Filter,       color: "text-purple-600" },
-    { label: "Interview",    key: "interview",     icon: Briefcase,    color: "text-orange-600" },
+    { label: "Interviewing", key: "interviewing",  icon: Briefcase,    color: "text-orange-600" },
     { label: "Hired",        key: "hired",         icon: CheckCircle2, color: "text-green-600" },
   ];
   return (
@@ -1561,14 +1569,13 @@ export default function AdminJobApplications() {
                 </SelectTrigger>
                 <SelectContent>
                   {([
-                    { value: "_none",        label: "— No stage change —" },
-                    { value: "under_review", label: "Under Review" },
-                    { value: "shortlisted",  label: "Shortlisted" },
-                    { value: "interview",    label: "Interview" },
-                    { value: "offered",      label: "Offered" },
-                    { value: "hired",        label: "Hired" },
-                    { value: "rejected",     label: "Rejected" },
-                    { value: "withdrawn",    label: "Withdrawn" },
+                    { value: "_none",         label: "— No stage change —" },
+                    { value: "under_review",  label: "Under Review" },
+                    { value: "shortlisted",   label: "Shortlisted" },
+                    { value: "interviewing",  label: "Interviewing" },
+                    { value: "offer_extended",label: "Offer Extended" },
+                    { value: "rejected",      label: "Rejected" },
+                    { value: "withdrawn",     label: "Withdrawn" },
                   ] as const).map(s => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}

@@ -53,6 +53,7 @@ export const CLIENT_SETTABLE_STATUSES: SubmissionStatus[] = [
  * Contract-stage statuses (contract_sent, hired) are set via the hiring_contracts workflow.
  */
 export const ADMIN_SETTABLE_STATUSES: SubmissionStatus[] = [
+  "new",
   "under_review",
   "reviewed",
   "shortlisted",
@@ -60,11 +61,57 @@ export const ADMIN_SETTABLE_STATUSES: SubmissionStatus[] = [
   "offer_extended",
   "offer_accepted",
   "offer_declined",
-  "contract_sent",
-  "hired",
   "rejected",
   "withdrawn",
 ];
+
+/**
+ * True when an admin may set this status directly (email-send stage update,
+ * status PATCH endpoints). Contract-workflow statuses always return false.
+ */
+export function isAdminSettableStatus(status: string): boolean {
+  return ADMIN_SETTABLE_STATUSES.includes(status as SubmissionStatus);
+}
+
+/**
+ * Ordered reveal-threshold phases. 'new' is the canonical submitted phase;
+ * 'submitted' is its legacy alias (accepted as a stored threshold value and
+ * included in the revealed set for any legacy rows).
+ */
+/**
+ * Ordered list of statuses used to compute the name-reveal threshold.
+ * Only post-acceptance statuses are listed; 'invited' and 'declined' are
+ * deliberately absent so pre-acceptance client-invited talent stay anonymous.
+ * 'new' is the canonical submitted phase; 'submitted' is its legacy alias
+ * (accepted as a stored threshold value and included in revealed sets).
+ */
+export const REVEAL_STATUS_ORDER = [
+  "new",            // accepted invitation or self-applied
+  "under_review",   // client actively reviewing
+  "reviewed",       // client completed review
+  "shortlisted",    // client shortlisted
+  "interviewing",   // interview scheduled
+  "offer_extended", // offer sent
+  "offer_accepted", // talent accepted offer
+  "offer_declined", // talent declined offer — name still visible; relationship was active
+  "contract_sent",  // contract sent
+  "hired",          // terminal success
+  "rejected",       // name still visible; review already happened
+  "withdrawn",      // name still visible if post-acceptance
+] as const;
+
+/**
+ * Returns the set of submission statuses at which identity is revealed for a
+ * given threshold (single definition shared by server, client, and tests).
+ */
+export function revealedStatusesForThreshold(threshold: string): Set<string> {
+  const normalized = threshold === "submitted" ? "new" : threshold;
+  const idx = REVEAL_STATUS_ORDER.indexOf(normalized as (typeof REVEAL_STATUS_ORDER)[number]);
+  const startAt = idx === -1 ? 0 : idx;
+  const revealed = new Set<string>(REVEAL_STATUS_ORDER.slice(startAt));
+  if (revealed.has("new")) revealed.add("submitted"); // legacy alias rows
+  return revealed;
+}
 
 /** All values accepted by the DB CHECK constraint (used in migration). */
 export const DB_CHECK_VALUES = SUBMISSION_STATUSES.join("', '");

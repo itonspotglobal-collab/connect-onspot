@@ -1206,7 +1206,6 @@ export default function AdminDashboard() {
                         <SelectItem value="new">New</SelectItem>
                         <SelectItem value="reviewed">Reviewed</SelectItem>
                         <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                        <SelectItem value="hired">Hired</SelectItem>
                         <SelectItem value="rejected">Rejected</SelectItem>
                       </SelectContent>
                     </Select>

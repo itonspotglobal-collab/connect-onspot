@@ -94,6 +94,7 @@ interface JobSubmission {
 const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new:        { label: "New",        color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
   submitted:  { label: "Applied",    color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
+  under_review:{ label: "Under Review", color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
   reviewed:   { label: "Reviewed",   color: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
   shortlisted:{ label: "Shortlisted",color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
   rejected:   { label: "Rejected",   color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
@@ -182,8 +183,9 @@ function ViewSubmissionModal({
                 </SelectTrigger>
                 <SelectContent>
                   {/* Only include statuses the PATCH /api/client/job-submissions/:id/status
-                      endpoint accepts: new | reviewed | shortlisted | rejected | hired */}
-                  {(["new", "reviewed", "shortlisted", "rejected", "hired"] as const).map((val) => (
+                      endpoint accepts (CLIENT_SETTABLE_STATUSES): under_review | reviewed |
+                      shortlisted | rejected. 'hired' is reached only via the contract workflow. */}
+                  {(["under_review", "reviewed", "shortlisted", "rejected"] as const).map((val) => (
                     <SelectItem key={val} value={val}>
                       {SUBMISSION_STATUS_LABELS[val]?.label ?? val}
                     </SelectItem>
@@ -1188,7 +1190,8 @@ function JobSubmissionsSection({
   );
 }
 
-const STATUS_ORDER = ["submitted", "reviewed", "shortlisted", "hired"] as const;
+// Reveal logic is shared with the server — see shared/submissionStatuses.ts.
+import { revealedStatusesForThreshold } from "@shared/submissionStatuses";
 function maskSubmissionName(
   name: string,
   initiatedBy: string | null,
@@ -1218,7 +1221,5 @@ function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string): 
 }
 
 function revealedStatuses(threshold: string): Set<string> {
-  const idx = STATUS_ORDER.indexOf(threshold as (typeof STATUS_ORDER)[number]);
-  const startAt = idx === -1 ? 0 : idx;
-  return new Set(STATUS_ORDER.slice(startAt));
+  return revealedStatusesForThreshold(threshold);
 }

@@ -511,15 +511,17 @@ function SendConfirmDialog({
   onCancel: () => void;
   isSending: boolean;
 }) {
+  // Canonical admin-settable stages (mirrors ADMIN_SETTABLE_STATUSES).
+  // 'contract_sent' and 'hired' are reached only via the hiring-contract workflow.
   const STAGES = [
     { value: "", label: "— No stage change —" },
-    { value: "under_review",  label: "Under Review" },
-    { value: "shortlisted",   label: "Shortlisted" },
-    { value: "interview",     label: "Interview" },
-    { value: "offered",       label: "Offered" },
-    { value: "hired",         label: "Hired" },
-    { value: "rejected",      label: "Rejected" },
-    { value: "withdrawn",     label: "Withdrawn" },
+    { value: "under_review",   label: "Under Review" },
+    { value: "reviewed",       label: "Reviewed" },
+    { value: "shortlisted",    label: "Shortlisted" },
+    { value: "interviewing",   label: "Interviewing" },
+    { value: "offer_extended", label: "Offer Extended" },
+    { value: "rejected",       label: "Rejected" },
+    { value: "withdrawn",      label: "Withdrawn" },
   ];
 
   if (!open) return null;
