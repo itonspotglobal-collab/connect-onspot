@@ -1350,23 +1350,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
     }
 
-    // Step 2: add the CHECK constraint (idempotent — catches duplicate_object error)
-    await query(`
-      DO $$ BEGIN
-        ALTER TABLE job_submissions ADD CONSTRAINT job_submissions_status_check
-          CHECK (status IN (
-            'new', 'invited', 'declined', 'withdrawn',
-            'under_review', 'reviewed', 'shortlisted', 'rejected',
-            'interviewing',
-            'offer_extended', 'offer_accepted', 'offer_declined',
-            'contract_sent', 'hired'
-          ));
-      EXCEPTION WHEN duplicate_object THEN NULL;
-      END $$;
+    // Step 2: add the CHECK constraint.
+    // First check whether it already exists so we can skip cleanly and avoid
+    // the DO-block exception path, which can mask real errors on some PG versions.
+    const constraintExists = await query(`
+      SELECT 1 FROM pg_constraint
+      WHERE  conrelid = 'job_submissions'::regclass
+        AND  conname  = 'job_submissions_status_check'
+      LIMIT  1
     `);
-    console.log("✅ Migration: job_submissions.status CHECK constraint in place");
+
+    if ((constraintExists.rowCount ?? 0) > 0) {
+      console.log("✅ Migration: job_submissions.status CHECK constraint already exists — skipping");
+    } else {
+      // Verify no violating rows remain before adding the constraint.
+      const violations = await query(`
+        SELECT status, COUNT(*) AS cnt
+        FROM   job_submissions
+        WHERE  status NOT IN (
+                 'new','invited','declined','withdrawn',
+                 'under_review','reviewed','shortlisted','rejected',
+                 'interviewing',
+                 'offer_extended','offer_accepted','offer_declined',
+                 'contract_sent','hired'
+               )
+        GROUP  BY status
+      `);
+      if ((violations.rowCount ?? 0) > 0) {
+        console.error(
+          "❌ Migration: cannot add CHECK constraint — violating rows exist:",
+          violations.rows.map((r: any) => `${r.status}×${r.cnt}`).join(", ")
+        );
+      } else {
+        await query(`
+          ALTER TABLE job_submissions ADD CONSTRAINT job_submissions_status_check
+            CHECK (status IN (
+              'new', 'invited', 'declined', 'withdrawn',
+              'under_review', 'reviewed', 'shortlisted', 'rejected',
+              'interviewing',
+              'offer_extended', 'offer_accepted', 'offer_declined',
+              'contract_sent', 'hired'
+            ))
+        `);
+        console.log("✅ Migration: job_submissions.status CHECK constraint added");
+      }
+    }
   } catch (statusCheckErr: any) {
-    console.warn("⚠️  job_submissions.status CHECK constraint migration skipped:", statusCheckErr.message);
+    console.error("❌ job_submissions.status CHECK constraint migration failed:", statusCheckErr.message);
   }
 
   // Protected Dashboard Routes with Role-Based Access Control
