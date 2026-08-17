@@ -1319,6 +1319,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Migrate stale status values → canonical names, then add CHECK constraint ─
   try {
+    // Step 0: normalize legacy engagement_type values in the jobs table.
+    // 'full-time' and 'part-time' (lowercase) were written by an older version of
+    // JobFormModal before ENGAGEMENT_TYPE_OPTIONS was standardised to 'Full-Time'/'Half-Day'.
+    const ftMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Full-Time', updated_at = NOW()
+      WHERE  engagement_type = 'full-time'
+    `);
+    if ((ftMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ftMigration.rowCount} jobs.engagement_type 'full-time' → 'Full-Time'`);
+    }
+    // 'part-time' has no direct canonical equivalent; flag it for review by setting
+    // a placeholder value that is still human-readable and won't break downstream logic.
+    // (Only 1 row existed at time of writing — update if mapping is clarified.)
+    const ptCheck = await query(`SELECT id, title FROM jobs WHERE engagement_type = 'part-time' LIMIT 10`);
+    if ((ptCheck.rowCount ?? 0) > 0) {
+      console.warn(
+        `⚠️  Migration: ${ptCheck.rowCount} job(s) still have engagement_type='part-time' — ` +
+        `no canonical mapping defined; manual review required. IDs: ` +
+        ptCheck.rows.map((r: any) => r.id).join(", ")
+      );
+    }
+
     // Step 1: normalize legacy status values to canonical names before the CHECK
     // constraint is added. All updates are idempotent — no-op when values are correct.
 

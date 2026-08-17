@@ -300,8 +300,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
     // Work schedule
     payload.workDays = formData.workDays.trim() || null;
     payload.timeZone = formData.timeZone.trim() || null;
-    payload.weeklyHours = formData.weeklyHours.trim() || null;
-    payload.scheduleFlexibility = formData.scheduleFlexibility.trim() || null;
 
     // Preferred qualifications (rich text stored as single HTML string)
     payload.preferredQualifications = !isEmptyQuill(formData.preferredQualifications)
@@ -309,7 +307,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
       : null;
 
     // Compensation extras
-    payload.paymentFrequency = formData.paymentFrequency.trim() || null;
     payload.compensationNotes = formData.compensationNotes.trim() || null;
 
     // What We Offer (rich text)
@@ -338,9 +335,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
     // Benefits / HMO (always send so admins can clear the value)
     payload.benefits = formData.benefits.trim() || null;
-
-    // Compensation type (always send so admins can clear the value)
-    payload.compensationType = formData.compensationType || null;
 
     // Additional compensation benefits
     payload.hasCommission = formData.hasCommission;
@@ -860,24 +854,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
                   placeholder="e.g. US Eastern overlap"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-weeklyHours">Weekly Hours</Label>
-                <Input
-                  id="modal-weeklyHours"
-                  value={formData.weeklyHours}
-                  onChange={(e) => updateField("weeklyHours", e.target.value)}
-                  placeholder="e.g. 40 hours / week"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-scheduleFlexibility">Flexibility</Label>
-                <Input
-                  id="modal-scheduleFlexibility"
-                  value={formData.scheduleFlexibility}
-                  onChange={(e) => updateField("scheduleFlexibility", e.target.value)}
-                  placeholder="e.g. Set hours, remote"
-                />
-              </div>
             </div>
           </div>
 
@@ -957,17 +933,6 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               )}
             </div>
 
-            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 flex items-center gap-3 mb-4">
-              <div className="flex-1">
-                <p className="text-sm font-medium">Compensation Type: Monthly</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  All jobs use monthly compensation. Annual, hourly, and project-based types are not supported.
-                </p>
-              </div>
-              <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-                Monthly
-              </span>
-            </div>
 
             {previewBadges.length > 0 && (
               <div className="mb-4 p-3 rounded-md bg-muted/40 border border-border">
@@ -994,28 +959,17 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div className="space-y-2">
-                <Label htmlFor="modal-paymentFrequency">Payment Frequency</Label>
-                <Input
-                  id="modal-paymentFrequency"
-                  value={formData.paymentFrequency}
-                  onChange={(e) => updateField("paymentFrequency", e.target.value)}
-                  placeholder="e.g. Monthly"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modal-compensationNotes">
-                  Compensation Notes
-                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="modal-compensationNotes"
-                  value={formData.compensationNotes}
-                  onChange={(e) => updateField("compensationNotes", e.target.value)}
-                  placeholder="e.g. Includes performance-based incentives"
-                />
-              </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="modal-compensationNotes">
+                Compensation Notes
+                <span className="ml-1 text-[10px] text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="modal-compensationNotes"
+                value={formData.compensationNotes}
+                onChange={(e) => updateField("compensationNotes", e.target.value)}
+                placeholder="e.g. Includes performance-based incentives"
+              />
             </div>
 
             <div className="space-y-2">

@@ -1,0 +1,39 @@
+URGENT: the "Post a Job" / "Add New Job Posting" flow on production is
+showing a form with fields that don't match the canonical job schema —
+"Weekly Hours," "Flexibility," "Compensation Type: Monthly," "Payment
+Frequency." None of these exist in the established model (Engagement Type:
+Half-Day/Full-Time only, flat rate per Engagement Type).
+
+This is NOT the same form already confirmed unified during the View/Delete/
+Edit audit — that finding was specifically about the EDIT flow
+("JobFormModal with clientMode={true}"). This screenshot is the CREATE
+flow, which may never have been touched by that work.
+
+AUDIT FIRST, before changing anything:
+
+1. Confirm exactly which component renders when a Client clicks "Post a
+   Job" today. Is it JobFormModal (the same component confirmed unified
+   earlier), or a separate/legacy component?
+
+2. If it's a separate component: confirm what it actually writes to the
+   jobs table. Do "Weekly Hours," "Flexibility," "Compensation Type," and
+   "Payment Frequency" map to any real columns, or do they write to
+   nothing (silently discarded), or worse, write into fields that get
+   misinterpreted downstream (e.g., does "Compensation Type: Monthly" end
+   up setting engagement_type to something that isn't 'Half-Day' or
+   'Full-Time'?).
+
+3. Check production directly: are there real jobs already created through
+   this form with non-canonical engagement_type values, or with the
+   CHECK-constraint-adjacent issues seen earlier in this exact session?
+   Query and report actual rows.
+
+4. If this is confirmed to be a separate, non-canonical form: retire it
+   and point "Post a Job" at the same JobFormModal component already
+   confirmed correct for Edit — same fix pattern as the original
+   View/Delete/Edit cluster, just applied to Create this time.
+
+Report findings before implementing. Given this is live and actively
+producing real data on production right now, treat this ahead of the
+currently queued items — this is closer to the scaffold-job incident in
+severity than a cosmetic bug.
