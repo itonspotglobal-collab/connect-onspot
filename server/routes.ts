@@ -1317,6 +1317,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  Hiring pipeline table migration skipped:", pipelineErr.message);
   }
 
+  // ── Add expiry_reminder_sent_at to offers (idempotent) ────────────────────
+  try {
+    await query(`
+      ALTER TABLE offers
+        ADD COLUMN IF NOT EXISTS expiry_reminder_sent_at timestamp
+    `);
+    console.log("✅ Migration: offers.expiry_reminder_sent_at column ready");
+  } catch (reminderColErr: any) {
+    console.warn("⚠️  offers.expiry_reminder_sent_at migration skipped:", reminderColErr.message);
+  }
+
   // ── Migrate stale status values → canonical names, then add CHECK constraint ─
   try {
     // Step 0: normalize legacy engagement_type values in the jobs table.

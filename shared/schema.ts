@@ -1490,6 +1490,9 @@ export const offers = pgTable("offers", {
   sentAt:                    timestamp("sent_at").notNull().defaultNow(),
   respondedAt:               timestamp("responded_at"),
   expiresAt:                 timestamp("expires_at"),
+  // Stamped only after a confirmed successful reminder email delivery.
+  // NULL = reminder not yet sent (or send failed — eligible for retry).
+  expiryReminderSentAt:      timestamp("expiry_reminder_sent_at"),
   notes:                     text("notes"),
   createdAt:                 timestamp("created_at").notNull().defaultNow(),
   updatedAt:                 timestamp("updated_at").notNull().defaultNow(),
