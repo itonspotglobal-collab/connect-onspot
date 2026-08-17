@@ -1,0 +1,39 @@
+Audit: multiple popups/modals/cards across the app have been reported as
+misplaced — parts hidden under the navigation panel. Given how much UI has
+changed since this was first flagged (search redesign, job-picker modal,
+message button, profile preview modal, etc.), do a fresh, full pass now
+rather than relying on the original report.
+
+STEP 1 — FIND EVERY INSTANCE, don't fix anything yet:
+Go through every modal/popup/dialog/card component in the app —
+ProfilePreviewModal, the job-picker modal, SignUpDialog, LoginDialog,
+ClientJobPreviewDialog, the delete-confirmation dialog, any admin modals,
+and anything else that renders as an overlay — on both desktop and mobile
+viewport widths. For each one, report:
+- Component name and the page/route it appears on
+- Whether any part of it is hidden, clipped, or rendered behind the fixed/
+  sticky nav bar
+- At what viewport width(s) this happens (some may only break on mobile,
+  some only on very short viewports, etc.)
+
+I want the actual enumerated list — component by component — not a general
+impression or a fix to just the ones you remember.
+
+STEP 2 — ROOT CAUSE PER INSTANCE:
+For each instance found, identify the likely cause:
+- z-index / stacking context issue (the modal's z-index is lower than or
+  equal to the nav's, or a parent element creates a new stacking context
+  that traps it)
+- positioning issue (the modal doesn't account for the nav bar's actual
+  height — e.g. hardcoded top offset that doesn't match the real nav, or
+  100vh usage that doesn't subtract the nav)
+- something else (report what)
+
+If the SAME root cause explains multiple instances, say so explicitly and
+group them — the fix should happen once at a shared pattern/component
+level (e.g. a shared modal wrapper, a shared z-index scale/token) rather
+than patching each one individually with a different one-off number.
+
+Report the full findings from Steps 1 and 2 before fixing anything. Once
+confirmed, fix and provide before/after screenshots for each distinct
+instance (or each root-cause group, if multiple instances share one fix).
