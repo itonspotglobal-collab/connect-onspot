@@ -13043,6 +13043,293 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Phase 3: Contract Flow ───────────────────────────────────────────────────
+  //
+  // Admin/OnSpot-driven: admin creates the contract from an accepted offer, records
+  // signatures, and voids if needed. Talent-signed_at is informational; OnSpot
+  // countersign is the execution trigger that advances the submission to 'hired'.
+  //
+  // Auth: all /api/admin/hiring-contracts routes require authenticateJWT + role=admin.
+  //       BYPASS_ADMIN_AUTH does NOT apply here (consistent with PATCH /api/admin/job-applications/:id).
+
+  // POST /api/admin/hiring-contracts — create & send a contract from an accepted offer
+  app.post("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { offerId, templateRef, documentPath, notes } = req.body;
+      if (!offerId) return res.status(400).json({ error: "offerId is required" });
+
+      // Load the offer and verify it is in offer_accepted state
+      const offerResult = await query(
+        `SELECT o.*, js.id AS js_id, js.status AS sub_status, js.client_id
+         FROM offers o
+         JOIN job_submissions js ON js.id = o.submission_id
+         WHERE o.id = $1`,
+        [offerId],
+      );
+      if (offerResult.rows.length === 0) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+      const offer = offerResult.rows[0];
+
+      if (offer.status !== "offer_accepted") {
+        return res.status(409).json({
+          error: "cannot_create_contract",
+          message: `Offer status is '${offer.status}'. A contract can only be created from an 'offer_accepted' offer.`,
+        });
+      }
+
+      // Guard: only one active contract per offer
+      const existingContract = await query(
+        `SELECT id, status FROM hiring_contracts WHERE offer_id = $1 AND status != 'voided' LIMIT 1`,
+        [offerId],
+      );
+      if (existingContract.rows.length > 0) {
+        return res.status(409).json({
+          error: "contract_already_exists",
+          message: `An active contract already exists for this offer (status: '${existingContract.rows[0].status}').`,
+          existingContractId: existingContract.rows[0].id,
+        });
+      }
+
+      // Snapshot signing_entity from platform_settings at creation time
+      const settingResult = await query(
+        `SELECT value FROM platform_settings WHERE key = 'contract_signing_entity' LIMIT 1`,
+      );
+      const signingEntity = settingResult.rows[0]?.value ?? "OnSpot Technologies Inc.";
+
+      // Insert the contract
+      const contractInsert = await query(
+        `INSERT INTO hiring_contracts
+           (offer_id, submission_id, template_ref, document_path, status, signing_entity)
+         VALUES ($1, $2, $3, $4, 'sent', $5)
+         RETURNING *`,
+        [offerId, offer.submission_id, templateRef ?? null, documentPath ?? null, signingEntity],
+      );
+      const contract = contractInsert.rows[0];
+
+      // Side-effect: advance submission to 'contract_sent'
+      const prevStatus = offer.sub_status;
+      await query(
+        `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
+        [offer.submission_id],
+      );
+      await query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, 'contract_sent', $3, $4)`,
+        [offer.submission_id, prevStatus,
+         `Contract sent (signing entity: ${signingEntity})`, user.id],
+      );
+
+      return res.status(201).json(contract);
+    } catch (err: any) {
+      console.error("POST /api/admin/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/admin/hiring-contracts?submissionId= — list contracts for a submission (admin)
+  app.get("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { submissionId } = req.query as { submissionId?: string };
+      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
+
+      const result = await query(
+        `SELECT hc.*, o.rate, o.rate_currency, o.engagement_type
+         FROM hiring_contracts hc
+         JOIN offers o ON o.id = hc.offer_id
+         WHERE hc.submission_id = $1
+         ORDER BY hc.created_at DESC`,
+        [submissionId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/hiring-contracts/:id/sign — record a signature (talent or OnSpot).
+  // Body: { signerType: 'talent' | 'onspot', signedAt?: ISO date string }
+  // When onspot_signed_at is set → contract status = 'signed'; submission → 'hired'.
+  app.patch("/api/admin/hiring-contracts/:id/sign", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { id } = req.params;
+      const { signerType, signedAt } = req.body;
+
+      if (!["talent", "onspot"].includes(signerType)) {
+        return res.status(400).json({ error: "signerType must be 'talent' or 'onspot'" });
+      }
+
+      const signTs = signedAt ? new Date(signedAt) : new Date();
+      if (isNaN(signTs.getTime())) {
+        return res.status(400).json({ error: "signedAt must be a valid ISO date string" });
+      }
+
+      // Load contract
+      const contractResult = await query(
+        `SELECT hc.*, js.status AS sub_status, js.id AS js_id
+         FROM hiring_contracts hc
+         JOIN job_submissions js ON js.id = hc.submission_id
+         WHERE hc.id = $1`,
+        [id],
+      );
+      if (contractResult.rows.length === 0) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      const contract = contractResult.rows[0];
+
+      if (contract.status === "voided") {
+        return res.status(409).json({
+          error: "contract_voided",
+          message: "Cannot sign a voided contract.",
+        });
+      }
+      if (contract.status === "signed") {
+        return res.status(409).json({
+          error: "contract_already_signed",
+          message: "This contract is already fully signed.",
+        });
+      }
+
+      // Set the relevant timestamp
+      const col = signerType === "talent" ? "talent_signed_at" : "onspot_signed_at";
+      const updatedContract = await query(
+        `UPDATE hiring_contracts
+         SET ${col} = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [signTs, id],
+      );
+      let c = updatedContract.rows[0];
+
+      // If OnSpot has signed → contract is executed; submission → 'hired'
+      if (c.onspot_signed_at) {
+        const signed = await query(
+          `UPDATE hiring_contracts SET status = 'signed', updated_at = NOW() WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        c = signed.rows[0];
+
+        const prevStatus = contract.sub_status;
+        await query(
+          `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
+          [contract.js_id],
+        );
+        await query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, 'hired', $3, $4)`,
+          [contract.js_id, prevStatus,
+           `Contract fully executed — OnSpot countersigned by admin ${user.id}`, user.id],
+        );
+      }
+
+      return res.json(c);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/hiring-contracts/:id/sign error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/hiring-contracts/:id/void — admin voids a contract
+  // Body: { reason: string }
+  // Submission status is NOT automatically reverted — admin must adjust manually.
+  app.patch("/api/admin/hiring-contracts/:id/void", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { id } = req.params;
+      const { reason } = req.body;
+      if (!reason?.trim()) {
+        return res.status(400).json({ error: "reason is required to void a contract" });
+      }
+
+      const contractResult = await query(
+        `SELECT id, status FROM hiring_contracts WHERE id = $1`,
+        [id],
+      );
+      if (contractResult.rows.length === 0) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      const contract = contractResult.rows[0];
+
+      if (contract.status === "voided") {
+        return res.status(409).json({ error: "already_voided", message: "Contract is already voided." });
+      }
+      if (contract.status === "signed") {
+        return res.status(409).json({
+          error: "cannot_void_signed",
+          message: "A fully signed contract cannot be voided. Contact legal.",
+        });
+      }
+
+      const updated = await query(
+        `UPDATE hiring_contracts
+         SET status = 'voided', voided_at = NOW(), voided_reason = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [reason.trim(), id],
+      );
+      return res.json(updated.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/hiring-contracts/:id/void error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/talent/hiring-contracts?submissionId= — talent view of their own contract
+  // Returns non-sensitive fields only (no admin notes or signing entity internals).
+  app.get("/api/talent/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { submissionId } = req.query as { submissionId?: string };
+      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
+
+      // Ownership: submission.talent_id must match the authenticated user
+      const ownerCheck = await query(
+        `SELECT id FROM job_submissions WHERE id = $1 AND talent_id = $2`,
+        [submissionId, userId],
+      );
+      if (ownerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+
+      const result = await query(
+        `SELECT hc.id, hc.submission_id, hc.status,
+                hc.document_path, hc.document_version,
+                hc.talent_signed_at, hc.onspot_signed_at,
+                hc.signing_entity, hc.created_at,
+                o.engagement_type, o.rate, o.rate_currency, o.proposed_start_date
+         FROM hiring_contracts hc
+         JOIN offers o ON o.id = hc.offer_id
+         WHERE hc.submission_id = $1 AND hc.status != 'voided'
+         ORDER BY hc.created_at DESC`,
+        [submissionId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/talent/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/job-resumes/:resumeId — serve job submission resume (client auth required)
   app.get("/api/job-resumes/:resumeId", authenticateJWT, async (req: any, res) => {
     try {

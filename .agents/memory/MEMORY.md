@@ -16,4 +16,5 @@
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.
 - [Hiring pipeline — Phase 1](hiring-pipeline-phase1.md) — canonical status constant, 3 new tables, CHECK constraint, interview endpoints; key decisions and gotchas for Phase 2/3.
 - [Hiring pipeline — Phase 2](hiring-pipeline-phase2.md) — offer endpoints, rate mismatch computation, talent respond flow; 'submitted' status rename audit fully closed.
+- [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — contract endpoints (admin-only create/sign/void + talent view); OnSpot countersign triggers hired; FK delete order on cleanup.
 - [Status rename audit](status-rename-audit.md) — 'submitted' → 'new' canonical rename; all write paths, name_reveal system, test files, and platform_settings migration fully closed.
