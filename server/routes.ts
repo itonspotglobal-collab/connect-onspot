@@ -7738,8 +7738,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications
-  app.get("/api/users/:userId/notifications", async (req, res) => {
+
+  // GET /api/users/:userId/notifications
+  // Requires authentication; the requesting user must own the target userId (or be admin).
+  // Talent-portal sessions should use GET /api/talent/notifications instead.
+  app.get("/api/users/:userId/notifications", authenticateJWT, async (req: any, res) => {
     try {
+      const authedUser = req.user;
+      if (authedUser.role !== "admin" && authedUser.id !== req.params.userId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const unreadOnly = req.query.unread_only === "true";
       const notifications = await storage.listNotificationsByUser(
         req.params.userId,
@@ -7748,6 +7756,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to get notifications" });
+    }
+  });
+
+  // GET /api/talent/notifications
+  // Talent-portal authenticated endpoint. Resolves candidateId → linked users.id
+  // server-side so the correct notification owner is always used. Supports
+  // ?unread_only=true for badge-count queries.
+  app.get("/api/talent/notifications", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId, email } = req.talentAuth;
+
+      // Resolve the linked users.id from the candidate record.
+      let linkedUserId: string | null = null;
+      const candRow = await query(
+        `SELECT email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      const candidateEmail: string = candRow.rows[0]?.email ?? email;
+      if (candidateEmail) {
+        const userRow = await query(
+          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+          [candidateEmail],
+        );
+        linkedUserId = userRow.rows[0]?.id ?? null;
+      }
+
+      if (!linkedUserId) {
+        // No linked user account; no notifications can exist for this talent.
+        return res.json([]);
+      }
+
+      const unreadOnly = req.query.unread_only === "true";
+      const notifications = await storage.listNotificationsByUser(
+        linkedUserId,
+        unreadOnly,
+      );
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get talent notifications" });
     }
   });
 
@@ -7766,8 +7813,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/notifications/:id/read", async (req, res) => {
+  // PATCH /api/notifications/:id/read
+  // Requires authentication (main JWT). Verifies the caller owns the notification
+  // before marking it read. Talent-portal sessions should use
+  // PATCH /api/talent/notifications/:id/read instead.
+  app.patch("/api/notifications/:id/read", authenticateJWT, async (req: any, res) => {
     try {
+      const authedUser = req.user;
+      // Verify ownership: look up the notification's userId.
+      const notifRow = await query(
+        `SELECT user_id FROM notifications WHERE id = $1 LIMIT 1`,
+        [req.params.id],
+      );
+      if (!notifRow.rows.length) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      if (authedUser.role !== "admin" && notifRow.rows[0].user_id !== authedUser.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const success = await storage.markNotificationAsRead(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Notification not found" });
@@ -7775,6 +7838,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  // PATCH /api/talent/notifications/:id/read
+  // Talent-portal authenticated endpoint. Resolves candidateId → linked users.id
+  // and verifies the notification belongs to that user before marking it read.
+  app.patch("/api/talent/notifications/:id/read", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const { candidateId, email } = req.talentAuth;
+
+      // Resolve the linked users.id.
+      let linkedUserId: string | null = null;
+      const candRow = await query(
+        `SELECT email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      const candidateEmail: string = candRow.rows[0]?.email ?? email;
+      if (candidateEmail) {
+        const userRow = await query(
+          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+          [candidateEmail],
+        );
+        linkedUserId = userRow.rows[0]?.id ?? null;
+      }
+
+      if (!linkedUserId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Verify ownership.
+      const notifRow = await query(
+        `SELECT user_id FROM notifications WHERE id = $1 LIMIT 1`,
+        [req.params.id],
+      );
+      if (!notifRow.rows.length) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      if (notifRow.rows[0].user_id !== linkedUserId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const success = await storage.markNotificationAsRead(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark talent notification as read" });
     }
   });
 

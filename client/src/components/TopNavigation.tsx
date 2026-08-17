@@ -72,6 +72,7 @@ import {
 import { useUnreadApplicationsCount } from "@/hooks/useTalentApplications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { useUnreadOfferNotificationsCount } from "@/hooks/useUnreadOfferNotificationsCount";
+import { NotificationBell } from "@/components/NotificationBell";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
@@ -772,6 +773,9 @@ export function TopNavigation() {
                 <Menu className="h-6 w-6" />
               )}
             </button>
+
+            {/* Offer notification bell — shown for authenticated talent and client/admin */}
+            {(isAuthenticated || talentAuth) && <NotificationBell />}
 
             {/* Access Portal / Account Dropdown */}
             {isAuthenticated && user ? (
