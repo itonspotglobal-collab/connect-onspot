@@ -71,6 +71,7 @@ import {
 } from "@/components/TalentLoginModal";
 import { useUnreadApplicationsCount } from "@/hooks/useTalentApplications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { useUnreadOfferNotificationsCount } from "@/hooks/useUnreadOfferNotificationsCount";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 
@@ -230,6 +231,8 @@ export function TopNavigation() {
   const unreadAppsCount = useUnreadApplicationsCount();
   // ── Unread message notifications badge (talent) ───────────────────────────
   const unreadMsgsCount = useUnreadMessagesCount();
+  // ── Unread offer notifications (talent: offer_received; client: offer_accepted/declined) ──
+  const unreadOfferCount = useUnreadOfferNotificationsCount();
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   // Resolve candidate ID for talent users regardless of which auth path was used:
@@ -937,6 +940,11 @@ export function TopNavigation() {
                             {submittedCount > 99 ? "99+" : submittedCount}
                           </span>
                         )}
+                        {label === "Hire Talent" && unreadOfferCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
+                            {unreadOfferCount > 99 ? "99+" : unreadOfferCount}
+                          </span>
+                        )}
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />
@@ -1114,9 +1122,9 @@ export function TopNavigation() {
                       >
                         <ClipboardList style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
                         <span style={{ flex: 1 }}>My Applications</span>
-                        {unreadAppsCount > 0 && (
+                        {(unreadAppsCount + unreadOfferCount) > 0 && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18, borderRadius: 99, background: '#E5484D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '0 5px', flexShrink: 0 }}>
-                            {unreadAppsCount > 99 ? '99+' : unreadAppsCount}
+                            {(unreadAppsCount + unreadOfferCount) > 99 ? '99+' : (unreadAppsCount + unreadOfferCount)}
                           </span>
                         )}
                       </button>
@@ -1512,9 +1520,14 @@ export function TopNavigation() {
                       {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
                     </span>
                   )}
-                  {label === "My Applications" && unreadAppsCount > 0 && (
+                  {label === "My Applications" && (unreadAppsCount + unreadOfferCount) > 0 && (
                     <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
-                      {unreadAppsCount > 99 ? '99+' : unreadAppsCount}
+                      {(unreadAppsCount + unreadOfferCount) > 99 ? '99+' : (unreadAppsCount + unreadOfferCount)}
+                    </span>
+                  )}
+                  {label === "Hire Talent" && unreadOfferCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
+                      {unreadOfferCount > 99 ? '99+' : unreadOfferCount}
                     </span>
                   )}
                 </button>

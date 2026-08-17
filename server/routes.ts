@@ -779,7 +779,6 @@ async function fireInvitationEmail(opts: {
   }
 }
 
-// hint: Logic changed on both sides. Requires understanding intent of each change.
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
@@ -1276,6 +1275,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_offers_submission_id ON offers(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_offers_status ON offers(status)`);
+    // Race safety: at most ONE pending ('sent') offer per submission, enforced by
+    // the database — concurrent POST /api/client/offers cannot both insert.
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_offers_one_pending_per_submission
+      ON offers(submission_id) WHERE status = 'sent'
+    `);
 
     // hiring_contracts — admin/OnSpot-driven; linked to offers
     await query(`
@@ -1299,8 +1304,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_offer_id ON hiring_contracts(offer_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_submission_id ON hiring_contracts(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_status ON hiring_contracts(status)`);
-    // At most one active (non-void) contract per offer — race-safe duplicate guard
-    await query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_hiring_contracts_active_offer ON hiring_contracts(offer_id) WHERE status != 'void'`);
 
     // Seed the signing entity into platform_settings (idempotent)
     await query(`
@@ -12170,14 +12173,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const changedBy: string | null = (req as any).user?.id ?? null;
 
       const { applicationId } = req.params;
-      const { status, note } = req.body ?? {};
+      const { status: rawStatus, note } = req.body ?? {};
 
-      // Canonical admin allowlist (shared/submissionStatuses.ts) — matches the DB CHECK
-      // constraint. Contract-stage statuses ('contract_sent', 'hired') are deliberately
-      // excluded: they can only be reached via the hiring-contracts workflow endpoints.
-      const { ADMIN_SETTABLE_STATUSES: VALID_STATUSES } = await import("../shared/submissionStatuses");
-      if (!status || !VALID_STATUSES.includes(status)) {
-        return res.status(400).json({ error: `Invalid status. Valid values: ${VALID_STATUSES.join(", ")}` });
+      // Canonical statuses only (see shared/submissionStatuses.ts) — the DB CHECK
+      // constraint rejects legacy values, so map old UI aliases to canonical first.
+      const LEGACY_STATUS_ALIASES: Record<string, string> = {
+        submitted: "new",
+        interview: "interviewing",
+        offered: "offer_extended",
+      };
+      const status = LEGACY_STATUS_ALIASES[rawStatus] ?? rawStatus;
+      const { ADMIN_SETTABLE_STATUSES } = await import("../shared/submissionStatuses");
+      if (!status || !ADMIN_SETTABLE_STATUSES.includes(status as any)) {
+        return res.status(400).json({ error: `Invalid status. Valid values: ${ADMIN_SETTABLE_STATUSES.join(", ")}` });
       }
 
       // Fetch existing application (confirm it exists and get current status)
@@ -12279,107 +12287,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── Phase 3: Hiring Contracts (admin/OnSpot-driven) ──────────────────────────
-  //
-  // All state transitions run in single-connection transactions inside
-  // server/services/hiringContractService.ts — the only writer of the
-  // 'contract_sent' and 'hired' submission statuses.
-  const hiringContractService = await import("./services/hiringContractService.ts");
-  const { ContractError } = hiringContractService;
-  const sendContractError = (res: Response, err: any, label: string) => {
-    if (err instanceof ContractError) return res.status(err.status).json(err.body);
-    console.error(`${label} error:`, err);
-    return res.status(500).json({ error: "Internal server error" });
-  };
-  // Auth: all /api/admin/hiring-contracts routes require authenticateJWT + role=admin.
-  // BYPASS_ADMIN_AUTH deliberately does NOT apply to this sensitive workflow.
-  const requireContractAdmin = (req: Request, res: Response): string | null => {
-    const user = (req as any).user;
-    if (!user?.id || user.role !== "admin") {
-      res.status(403).json({ error: "Admin access required" });
-      return null;
-    }
-    return user.id as string;
-  };
-
-  // POST /api/admin/hiring-contracts — create + send a contract from an accepted offer
-  app.post("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const adminId = requireContractAdmin(req, res);
-      if (!adminId) return;
-      const { offerId, templateRef, documentPath } = req.body ?? {};
-      if (!offerId) return res.status(400).json({ error: "offerId is required" });
-      const contract = await hiringContractService.createHiringContract({
-        offerId,
-        templateRef: templateRef ?? null,
-        documentPath: documentPath ?? null,
-        adminId,
-      });
-      return res.status(201).json(contract);
-    } catch (err: any) {
-      return sendContractError(res, err, "POST /api/admin/hiring-contracts");
-    }
-  });
-
-  // PATCH /api/admin/hiring-contracts/:id — update document / record signatures
-  // Body: { documentPath?, templateRef?, onspotSigned?: true, talentSigned?: true }
-  // When both signatures are set the contract becomes 'signed' and the submission → 'hired'.
-  app.patch("/api/admin/hiring-contracts/:id", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const adminId = requireContractAdmin(req, res);
-      if (!adminId) return;
-      const { documentPath, templateRef, onspotSigned, talentSigned } = req.body ?? {};
-      const contract = await hiringContractService.updateHiringContract(req.params.id, {
-        documentPath,
-        templateRef,
-        onspotSigned,
-        talentSigned,
-        adminId,
-      });
-      return res.json(contract);
-    } catch (err: any) {
-      return sendContractError(res, err, "PATCH /api/admin/hiring-contracts/:id");
-    }
-  });
-
-  // PATCH /api/admin/hiring-contracts/:id/void — void a contract
-  app.patch("/api/admin/hiring-contracts/:id/void", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const adminId = requireContractAdmin(req, res);
-      if (!adminId) return;
-      const contract = await hiringContractService.voidHiringContract(
-        req.params.id,
-        (req.body ?? {}).reason,
-        adminId,
-      );
-      return res.json(contract);
-    } catch (err: any) {
-      return sendContractError(res, err, "PATCH /api/admin/hiring-contracts/:id/void");
-    }
-  });
-
-  // GET /api/admin/hiring-contracts?submissionId= — list contracts for a submission
-  app.get("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      if (!requireContractAdmin(req, res)) return;
-      const { submissionId } = req.query as { submissionId?: string };
-      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
-      const result = await query(
-        `SELECT * FROM hiring_contracts WHERE submission_id = $1 ORDER BY created_at DESC`,
-        [submissionId],
-      );
-      return res.json(result.rows);
-    } catch (err: any) {
-      console.error("GET /api/admin/hiring-contracts error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // ── Shared helpers for client submission endpoints ───────────────────────────
 
-  // Name-reveal logic lives in shared/submissionStatuses.ts so the server,
-  // client, and tests share one definition.
-  const { revealedStatusesForThreshold } = await import("../shared/submissionStatuses");
+  /**
+   * Ordered list of statuses used to compute the name-reveal threshold.
+   * Only post-acceptance statuses are listed; 'invited' and 'declined' are
+   * deliberately absent so pre-acceptance client-invited talent stay anonymous.
+   * The threshold is admin-configurable via platform_settings('name_reveal_threshold').
+   */
+  const SUBMISSION_STATUS_ORDER = [
+    "new",            // accepted invitation or self-applied (was 'submitted' before canonical rename)
+    "under_review",   // client actively reviewing
+    "reviewed",       // client completed review
+    "shortlisted",    // client shortlisted
+    "interviewing",   // interview scheduled (Phase 1)
+    "offer_extended", // offer sent (Phase 2)
+    "offer_accepted", // talent accepted offer
+    "offer_declined", // talent declined offer — name still visible; relationship was active
+    "contract_sent",  // contract sent (Phase 3)
+    "hired",          // terminal success
+    "rejected",       // client or outcome rejected — name still visible; review already happened
+    "withdrawn",      // talent withdrew — name still visible if post-acceptance
+  ] as const;
+
+  /**
+   * Returns the set of statuses at which identity is revealed for a given threshold.
+   * e.g. threshold "shortlisted" → Set{"shortlisted","hired"}
+   */
+  const revealedStatusesForThreshold = (threshold: string): Set<string> => {
+    const idx = SUBMISSION_STATUS_ORDER.indexOf(threshold as (typeof SUBMISSION_STATUS_ORDER)[number]);
+    const startAt = idx === -1 ? 0 : idx;
+    return new Set(SUBMISSION_STATUS_ORDER.slice(startAt));
+  };
 
   /**
    * Fetch the name-reveal threshold from platform_settings.
@@ -12894,13 +12833,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── Phase 2: Offer Flow ──────────────────────────────────────────────────────
+  // ── Phase 2: Offer Flow (client extends, talent responds) ────────────────────
   //
-  // Client creates an offer for a submission they own. Talent responds (accept / decline).
-  // Ownership rule: client endpoints verify job_submissions.client_id = req.user.id.
-  // Talent endpoints verify job_submissions.talent_id = req.user.id (resolved from JWT).
+  // Ownership rules:
+  //   - Client endpoints verify job_submissions.client_id = authenticated user id.
+  //   - Talent endpoints use the talent JWT (type:"candidate") and verify ownership
+  //     via job_submissions.talent_id (linked users.id) or legacy email match.
+  //
+  // Rate-mismatch flag rules (rate_below_expectation / rate_delta):
+  //   set ONLY when offer currency === talent's expected currency AND
+  //   offer engagement type === talent's expected engagement type AND
+  //   the talent has an expectation recorded. Otherwise both stay NULL.
+  //   Never fake FX conversion.
 
-  // POST /api/client/offers — client extends a formal offer to a talent
+  // POST /api/client/offers — client creates a formal offer for a submission
+  // Body: { submissionId, rate, rateCurrency?, proposedStartDate?, expiresAt?, notes? }
+  // engagement_type is snapshotted from the jobs row — NOT accepted from the body.
   app.post("/api/client/offers", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -12908,16 +12856,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { submissionId, rate, rateCurrency = "PHP", proposedStartDate, expiresAt, notes } = req.body;
       if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
-      if (rate === undefined || rate === null || isNaN(parseFloat(rate))) {
-        return res.status(400).json({ error: "rate must be a valid number" });
+      const rateNum = Number(rate);
+      if (rate === undefined || rate === null || Number.isNaN(rateNum) || rateNum <= 0) {
+        return res.status(400).json({ error: "rate must be a positive number" });
       }
-      const offerRate = parseFloat(rate);
-      if (offerRate <= 0) return res.status(400).json({ error: "rate must be greater than zero" });
+      if (typeof rateCurrency !== "string" || !/^[A-Z]{3}$/.test(rateCurrency)) {
+        return res.status(400).json({ error: "rateCurrency must be a 3-letter uppercase currency code" });
+      }
 
-      // Ownership check + join to jobs for engagement_type snapshot
+      // Ownership + submission state
       const subResult = await query(
-        `SELECT js.id, js.status, js.client_id, js.talent_id, js.job_id,
-                j.engagement_type
+        `SELECT js.id, js.status, js.talent_id, js.email, js.job_id,
+                j.engagement_type AS job_engagement_type
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
          WHERE js.id = $1 AND js.client_id = $2`,
@@ -12926,95 +12876,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (subResult.rows.length === 0) {
         return res.status(404).json({ error: "Submission not found or forbidden" });
       }
-      const sub = subResult.rows[0];
+      const submission = subResult.rows[0];
 
-      // engagement_type is snapshotted from jobs — must be a known value
-      const engagementType: string = sub.engagement_type;
-      if (!["Half-Day", "Full-Time"].includes(engagementType)) {
-        return res.status(422).json({
-          error: "cannot_create_offer",
-          message: `Job engagement type '${engagementType}' is not supported for offers.`,
-        });
-      }
-
-      // Guard: only offer-eligible statuses
-      const offerEligible = ["shortlisted", "reviewed", "under_review", "interviewing"];
-      if (!offerEligible.includes(sub.status)) {
+      // Guard: offer only from states where an offer makes sense.
+      // offer_declined allows a re-offer (new row).
+      const offerable = ["shortlisted", "reviewed", "under_review", "interviewing", "offer_declined"];
+      if (!offerable.includes(submission.status)) {
         return res.status(409).json({
-          error: "cannot_create_offer",
-          message: `Submission status '${sub.status}' is not eligible for an offer. ` +
-            `Submission must be shortlisted, reviewed, under_review, or interviewing.`,
+          error: "cannot_extend_offer",
+          message: `Submission status '${submission.status}' does not allow extending an offer. ` +
+            `Submission must be one of: ${offerable.join(", ")}.`,
         });
       }
 
-      // Snapshot talent's rate expectation for the mismatch flag.
-      // talent_id is users.id — look up via candidates.user_id.
-      let rateBelowExpectation: boolean | null = null;
-      let rateDelta: number | null = null;
-      let talentExpectedRate: number | null = null;
+      // Guard: no second live offer while one is pending
+      const pending = await query(
+        `SELECT id FROM offers WHERE submission_id = $1 AND status = 'sent' LIMIT 1`,
+        [submissionId],
+      );
+      if (pending.rows.length > 0) {
+        return res.status(409).json({
+          error: "offer_already_pending",
+          message: "An offer is already awaiting the talent's response for this submission.",
+        });
+      }
+
+      // Snapshot engagement_type from the jobs row — the DB CHECK only accepts
+      // 'Half-Day' | 'Full-Time'; legacy jobs with NULL/other values cannot get offers.
+      const engagementType: string | null = submission.job_engagement_type;
+      if (engagementType !== "Half-Day" && engagementType !== "Full-Time") {
+        return res.status(409).json({
+          error: "job_missing_engagement_type",
+          message: "The job for this submission has no valid engagement type (Half-Day or Full-Time). " +
+            "Update the job before extending an offer.",
+        });
+      }
+
+      // Snapshot the talent's rate expectation at offer creation time.
+      // Source of truth: candidates.preferences (rateAmount / rateCurrency / rateEngagementType),
+      // resolved via candidates.user_id = talent_id, falling back to email match.
+      let talentExpectedRate: string | null = null;
       let talentExpectedCurrency: string | null = null;
       let talentExpectedEngagement: string | null = null;
-
-      if (sub.talent_id) {
-        const candidateResult = await query(
-          `SELECT preferences FROM candidates WHERE user_id = $1 LIMIT 1`,
-          [sub.talent_id],
-        );
-        if (candidateResult.rows.length > 0) {
-          const prefs = candidateResult.rows[0].preferences ?? {};
-          const rawRate = prefs.rateAmount !== undefined ? parseFloat(prefs.rateAmount) : null;
-          const rawCurrency: string | null = prefs.rateCurrency ?? null;
-          const rawEngagement: string | null = prefs.rateEngagementType ?? null;
-
-          if (rawRate !== null && !isNaN(rawRate)) talentExpectedRate = rawRate;
-          if (rawCurrency) talentExpectedCurrency = rawCurrency;
-          if (rawEngagement) talentExpectedEngagement = rawEngagement;
-
-          // Compute mismatch only when currencies AND engagement types match.
-          // NULL when either axis differs or expectation is not set — no fake FX conversion.
-          if (
-            talentExpectedRate !== null &&
-            talentExpectedCurrency !== null &&
-            talentExpectedEngagement !== null &&
-            talentExpectedCurrency === rateCurrency &&
-            talentExpectedEngagement === engagementType
-          ) {
-            rateBelowExpectation = offerRate < talentExpectedRate;
-            rateDelta = parseFloat((offerRate - talentExpectedRate).toFixed(2));
-          }
+      const candResult = await query(
+        `SELECT preferences FROM candidates
+         WHERE ($1::text IS NOT NULL AND user_id = $1::text)
+            OR (lower(email) = lower($2))
+         ORDER BY (user_id = $1::text) DESC NULLS LAST
+         LIMIT 1`,
+        [submission.talent_id ?? null, submission.email],
+      );
+      if (candResult.rows.length > 0) {
+        const prefs = candResult.rows[0].preferences || {};
+        const amt = Number(prefs.rateAmount);
+        if (prefs.rateAmount != null && !Number.isNaN(amt) && amt > 0) {
+          talentExpectedRate = String(prefs.rateAmount);
+          talentExpectedCurrency = prefs.rateCurrency ? String(prefs.rateCurrency) : null;
+          talentExpectedEngagement = prefs.rateEngagementType ? String(prefs.rateEngagementType) : null;
         }
       }
 
-      // Insert the offer row
-      const offerInsert = await query(
-        `INSERT INTO offers
-           (submission_id, engagement_type, rate, rate_currency, proposed_start_date, expires_at,
-            notes, talent_expected_rate, talent_expected_currency, talent_expected_engagement,
-            rate_below_expectation, rate_delta, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'sent')
-         RETURNING *`,
-        [
-          submissionId, engagementType, offerRate, rateCurrency,
-          proposedStartDate ?? null, expiresAt ?? null, notes ?? null,
-          talentExpectedRate, talentExpectedCurrency, talentExpectedEngagement,
-          rateBelowExpectation, rateDelta,
-        ],
-      );
-      const offer = offerInsert.rows[0];
+      // Mismatch flag: computed ONLY when currencies AND engagement types both match.
+      let rateBelowExpectation: boolean | null = null;
+      let rateDelta: string | null = null;
+      if (
+        talentExpectedRate !== null &&
+        talentExpectedCurrency !== null &&
+        talentExpectedCurrency === rateCurrency &&
+        talentExpectedEngagement !== null &&
+        talentExpectedEngagement === engagementType
+      ) {
+        const expected = Number(talentExpectedRate);
+        rateBelowExpectation = rateNum < expected;
+        rateDelta = (rateNum - expected).toFixed(2);
+      }
 
-      // Side-effect: advance submission to 'offer_extended'
-      const prevStatus = sub.status;
-      await query(
-        `UPDATE job_submissions SET status = 'offer_extended', updated_at = NOW() WHERE id = $1`,
-        [submissionId],
-      );
-      await query(
-        `INSERT INTO job_application_status_history
-           (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, 'offer_extended', $3, $4)`,
-        [submissionId, prevStatus,
-         `Offer extended: ${rateCurrency} ${offerRate.toLocaleString()} (${engagementType})`, userId],
-      );
+      // Insert offer + submission status side-effect in ONE transaction.
+      // The partial unique index uq_offers_one_pending_per_submission is the
+      // authoritative single-pending-offer guard — concurrent creates lose with
+      // a unique violation, mapped to 409 offer_already_pending.
+      const txClient = await pool.connect();
+      let offer: any;
+      try {
+        await txClient.query("BEGIN");
+        const insert = await txClient.query(
+          `INSERT INTO offers
+             (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+              status, talent_expected_rate, talent_expected_currency, talent_expected_engagement,
+              rate_below_expectation, rate_delta, expires_at, notes)
+           VALUES ($1, $2, $3, $4, $5, 'sent', $6, $7, $8, $9, $10, $11, $12)
+           RETURNING *`,
+          [submissionId, engagementType, rateNum.toFixed(2), rateCurrency,
+           proposedStartDate ?? null, talentExpectedRate, talentExpectedCurrency,
+           talentExpectedEngagement, rateBelowExpectation, rateDelta,
+           expiresAt ?? null, notes ?? null],
+        );
+        offer = insert.rows[0];
+
+        // Side-effect: submission → 'offer_extended' with audit trail
+        if (submission.status !== "offer_extended") {
+          await txClient.query(
+            `UPDATE job_submissions SET status = 'offer_extended', updated_at = NOW() WHERE id = $1`,
+            [submissionId],
+          );
+          await txClient.query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, 'offer_extended', $3, $4)`,
+            [submissionId, submission.status,
+             `Offer extended (${rateCurrency} ${rateNum.toFixed(2)}, ${engagementType})`, userId],
+          );
+        }
+        await txClient.query("COMMIT");
+      } catch (txErr: any) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        if (txErr?.code === "23505") {
+          return res.status(409).json({
+            error: "offer_already_pending",
+            message: "An offer is already awaiting the talent's response for this submission.",
+          });
+        }
+        throw txErr;
+      } finally {
+        txClient.release();
+      }
+
+      // Fire-and-forget: notify the talent that they have received an offer.
+      // Prefer submission.talent_id (the talent's users.id); fall back to email
+      // lookup for legacy rows where talent_id is NULL (email-matched candidates).
+      // No PII is included in the notification message.
+      (async () => {
+        try {
+          let talentUserId: string | null = submission.talent_id ?? null;
+          if (!talentUserId && submission.email) {
+            const userLookup = await query(
+              `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+              [submission.email],
+            );
+            talentUserId = userLookup.rows[0]?.id ?? null;
+          }
+          if (talentUserId) {
+            await storage.createNotification({
+              userId: talentUserId,
+              type: "offer_received",
+              title: "You have a new offer",
+              message: "A client has extended an offer for one of your applications. Review it in your portal.",
+              relatedId: String(offer.id),
+              relatedType: "offer",
+            });
+          }
+        } catch (notifyErr: any) {
+          console.error("POST /api/client/offers — failed to create talent notification:", notifyErr);
+        }
+      })();
 
       return res.status(201).json(offer);
     } catch (err: any) {
@@ -13023,7 +13037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/client/offers?submissionId= — list all offers for a submission (client view)
+  // GET /api/client/offers?submissionId= — list offers for a submission (client view)
   app.get("/api/client/offers", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -13031,7 +13045,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { submissionId } = req.query as { submissionId?: string };
       if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
-      // Ownership check
       const ownerCheck = await query(
         `SELECT id FROM job_submissions WHERE id = $1 AND client_id = $2`,
         [submissionId, userId],
@@ -13041,7 +13054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await query(
-        `SELECT * FROM offers WHERE submission_id = $1 ORDER BY sent_at DESC`,
+        `SELECT * FROM offers WHERE submission_id = $1 ORDER BY sent_at DESC, created_at DESC`,
         [submissionId],
       );
       return res.json(result.rows);
@@ -13051,99 +13064,420 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // PATCH /api/talent/offers/:id/respond — talent accepts or declines an offer
-  // Auth: candidate JWT (type:"candidate") or standard user JWT with talent role.
-  // Ownership: offer → submission → talent_id must equal req.user.id (users.id).
-  app.patch("/api/talent/offers/:id/respond", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  // Helper: load an offer + verify the authenticated talent owns its submission.
+  // Ownership: job_submissions.talent_id = candidate's linked users.id, or
+  // (legacy rows) talent_id IS NULL and submission email matches candidate email.
+  // Returns { offer, linkedUserId } or null (a 4xx has already been sent).
+  async function loadTalentOwnedOffer(req: Request, res: Response): Promise<{ offer: any; linkedUserId: string | null } | null> {
+    const { candidateId } = (req as any).talentAuth;
+    const { id } = req.params;
 
-      const { id } = req.params;
+    const candRow = await query(
+      `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+      [candidateId],
+    );
+    if (!candRow.rows.length) {
+      res.status(404).json({ error: "Candidate not found" });
+      return null;
+    }
+    const candidateEmail = candRow.rows[0].email as string;
+    const userRow = await query(
+      `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+      [candidateEmail],
+    );
+    const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+
+    const offerResult = await query(
+      `SELECT o.*, js.status AS submission_status, js.id AS js_id,
+              js.client_id AS js_client_id,
+              j.title AS job_title, j.location AS job_location, j.company AS job_company
+       FROM offers o
+       JOIN job_submissions js ON js.id = o.submission_id
+       JOIN jobs j ON j.id = js.job_id
+       WHERE o.id = $1
+         AND (
+           ($2::text IS NOT NULL AND js.talent_id = $2::text)
+           OR (js.talent_id IS NULL AND lower(js.email) = lower($3))
+         )`,
+      [id, linkedUserId, candidateEmail],
+    );
+    if (offerResult.rows.length === 0) {
+      res.status(404).json({ error: "Offer not found" });
+      return null;
+    }
+    return { offer: offerResult.rows[0], linkedUserId };
+  }
+
+  // GET /api/talent/offers/:id — talent view of a specific offer.
+  // Rate-sensitive fields shown are the talent's OWN snapshotted expectation;
+  // no client-internal fields or contact PII are exposed.
+  app.get("/api/talent/offers/:id", authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
+      const loaded = await loadTalentOwnedOffer(req, res);
+      if (!loaded) return;
+      const o = loaded.offer;
+      return res.json({
+        id: o.id,
+        submissionId: o.submission_id,
+        job: {
+          title: o.job_title,
+          company: o.job_company || "OnSpot",
+          location: o.job_location || undefined,
+        },
+        engagementType: o.engagement_type,
+        rate: o.rate,
+        rateCurrency: o.rate_currency,
+        proposedStartDate: o.proposed_start_date,
+        status: o.status,
+        talentExpectedRate: o.talent_expected_rate,
+        talentExpectedCurrency: o.talent_expected_currency,
+        talentExpectedEngagement: o.talent_expected_engagement,
+        rateBelowExpectation: o.rate_below_expectation,
+        rateDelta: o.rate_delta,
+        sentAt: o.sent_at,
+        respondedAt: o.responded_at,
+        expiresAt: o.expires_at,
+        notes: o.notes,
+      });
+    } catch (err: any) {
+      console.error("GET /api/talent/offers/:id error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/talent/offers/:id/respond — talent accepts or declines an offer
+  // Body: { action: 'accept' | 'decline' }
+  app.patch("/api/talent/offers/:id/respond", authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
       const { action } = req.body;
       if (!["accept", "decline"].includes(action)) {
         return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
       }
 
-      // Load offer + verify talent ownership via submission
-      const offerResult = await query(
-        `SELECT o.*, js.talent_id, js.client_id, js.status AS submission_status, js.id AS js_id
-         FROM offers o
-         JOIN job_submissions js ON js.id = o.submission_id
-         WHERE o.id = $1 AND js.talent_id = $2`,
-        [id, userId],
-      );
-      if (offerResult.rows.length === 0) {
-        return res.status(404).json({ error: "Offer not found or forbidden" });
-      }
-      const offer = offerResult.rows[0];
+      const loaded = await loadTalentOwnedOffer(req, res);
+      if (!loaded) return;
+      const { offer, linkedUserId } = loaded;
 
-      if (offer.status !== "sent") {
-        return res.status(409).json({
-          error: "offer_already_resolved",
-          message: `This offer has already been ${offer.status}. Only a 'sent' offer can be accepted or declined.`,
+      if (offer.expires_at && new Date(offer.expires_at) < new Date()) {
+        return res.status(409).json({ error: "offer_expired", message: "This offer has expired." });
+      }
+
+      const newOfferStatus = action === "accept" ? "accepted" : "declined";
+      const newSubmissionStatus = action === "accept" ? "offer_accepted" : "offer_declined";
+
+      // Atomic transition + submission side-effect in ONE transaction: only flips
+      // if still 'sent' — concurrent accept/decline requests cannot both win.
+      const txClient = await pool.connect();
+      let respondedOffer: any;
+      try {
+        await txClient.query("BEGIN");
+        const updated = await txClient.query(
+          `UPDATE offers
+           SET status = $1, responded_at = NOW(), updated_at = NOW()
+           WHERE id = $2 AND status = 'sent'
+           RETURNING *`,
+          [newOfferStatus, offer.id],
+        );
+        if (updated.rows.length === 0) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({
+            error: "offer_not_pending",
+            message: `This offer is no longer pending (current status: ${offer.status}).`,
+          });
+        }
+        respondedOffer = updated.rows[0];
+
+        // Side-effect: submission status + audit trail
+        await txClient.query(
+          `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+          [newSubmissionStatus, offer.js_id],
+        );
+        await txClient.query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [offer.js_id, offer.submission_status, newSubmissionStatus,
+           `Talent ${action === "accept" ? "accepted" : "declined"} the offer`,
+           linkedUserId],
+        );
+        await txClient.query("COMMIT");
+      } catch (txErr: any) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        throw txErr;
+      } finally {
+        txClient.release();
+      }
+
+      // Fire-and-forget: notify the client that the talent has responded to their offer.
+      // offer.js_client_id is the client user's ID from job_submissions; no PII in message.
+      const clientUserId = offer.js_client_id;
+      if (clientUserId) {
+        const actionLabel = action === "accept" ? "accepted" : "declined";
+        storage.createNotification({
+          userId: clientUserId,
+          type: action === "accept" ? "offer_accepted" : "offer_declined",
+          title: `Offer ${actionLabel}`,
+          message: `A talent has ${actionLabel} your offer. View the hiring pipeline for next steps.`,
+          relatedId: String(offer.id),
+          relatedType: "offer",
+        }).catch((notifyErr: any) => {
+          console.error("PATCH /api/talent/offers/:id/respond — failed to create client notification:", notifyErr);
         });
       }
 
-      const offerNewStatus = action === "accept" ? "offer_accepted" : "offer_declined";
-      const submissionNewStatus = action === "accept" ? "offer_accepted" : "offer_declined";
-
-      // Update the offer
-      const updatedOffer = await query(
-        `UPDATE offers
-         SET status = $1, responded_at = NOW(), updated_at = NOW()
-         WHERE id = $2
-         RETURNING *`,
-        [offerNewStatus, id],
-      );
-
-      // Side-effect: update submission status
-      await query(
-        `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
-        [submissionNewStatus, offer.js_id],
-      );
-      await query(
-        `INSERT INTO job_application_status_history
-           (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [offer.js_id, offer.submission_status, submissionNewStatus,
-         `Talent ${action === "accept" ? "accepted" : "declined"} the offer`, userId],
-      );
-
-      return res.json(updatedOffer.rows[0]);
+      return res.json(respondedOffer);
     } catch (err: any) {
       console.error("PATCH /api/talent/offers/:id/respond error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
 
-  // GET /api/talent/offers/:id — talent view of a specific offer
-  // Returns offer details without exposing client-internal rate snapshot fields.
-  app.get("/api/talent/offers/:id", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const { id } = req.params;
+  // ── Phase 3: Contract Flow ───────────────────────────────────────────────────
+  //
+  // Admin/OnSpot-driven: admin creates the contract from an accepted offer, records
+  // signatures, and voids if needed. Talent-signed_at is informational; OnSpot
+  // countersign is the execution trigger that advances the submission to 'hired'.
+  //
+  // Auth: all /api/admin/hiring-contracts routes require authenticateJWT + role=admin.
+  //       BYPASS_ADMIN_AUTH does NOT apply here (consistent with PATCH /api/admin/job-applications/:id).
 
+  // POST /api/admin/hiring-contracts — create & send a contract from an accepted offer
+  app.post("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const { offerId, templateRef, documentPath, notes } = req.body;
+      if (!offerId) return res.status(400).json({ error: "offerId is required" });
+
+      // Load the offer and verify it is in offer_accepted state
       const offerResult = await query(
-        `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
-                o.proposed_start_date, o.expires_at, o.status, o.responded_at,
-                o.notes, o.sent_at, o.created_at,
-                j.title AS job_title, j.company AS job_company
+        `SELECT o.*, js.id AS js_id, js.status AS sub_status, js.client_id
          FROM offers o
          JOIN job_submissions js ON js.id = o.submission_id
-         JOIN jobs j ON j.id = js.job_id
-         WHERE o.id = $1 AND js.talent_id = $2`,
-        [id, userId],
+         WHERE o.id = $1`,
+        [offerId],
       );
       if (offerResult.rows.length === 0) {
-        return res.status(404).json({ error: "Offer not found or forbidden" });
+        return res.status(404).json({ error: "Offer not found" });
       }
-      // Deliberately excludes rate_below_expectation, rate_delta, and talent_expected_* —
-      // those are client-internal analytics, not talent-facing fields.
-      return res.json(offerResult.rows[0]);
+      const offer = offerResult.rows[0];
+
+      if (offer.status !== "offer_accepted") {
+        return res.status(409).json({
+          error: "cannot_create_contract",
+          message: `Offer status is '${offer.status}'. A contract can only be created from an 'offer_accepted' offer.`,
+        });
+      }
+
+      // Guard: only one active contract per offer
+      const existingContract = await query(
+        `SELECT id, status FROM hiring_contracts WHERE offer_id = $1 AND status != 'voided' LIMIT 1`,
+        [offerId],
+      );
+      if (existingContract.rows.length > 0) {
+        return res.status(409).json({
+          error: "contract_already_exists",
+          message: `An active contract already exists for this offer (status: '${existingContract.rows[0].status}').`,
+          existingContractId: existingContract.rows[0].id,
+        });
+      }
+
+      // Snapshot signing_entity from platform_settings at creation time
+      const settingResult = await query(
+        `SELECT value FROM platform_settings WHERE key = 'contract_signing_entity' LIMIT 1`,
+      );
+      const signingEntity = settingResult.rows[0]?.value ?? "OnSpot Technologies Inc.";
+
+      // Insert the contract
+      const contractInsert = await query(
+        `INSERT INTO hiring_contracts
+           (offer_id, submission_id, template_ref, document_path, status, signing_entity)
+         VALUES ($1, $2, $3, $4, 'sent', $5)
+         RETURNING *`,
+        [offerId, offer.submission_id, templateRef ?? null, documentPath ?? null, signingEntity],
+      );
+      const contract = contractInsert.rows[0];
+
+      // Side-effect: advance submission to 'contract_sent'
+      const prevStatus = offer.sub_status;
+      await query(
+        `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
+        [offer.submission_id],
+      );
+      await query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, 'contract_sent', $3, $4)`,
+        [offer.submission_id, prevStatus,
+         `Contract sent (signing entity: ${signingEntity})`, user.id],
+      );
+
+      return res.status(201).json(contract);
     } catch (err: any) {
-      console.error("GET /api/talent/offers/:id error:", err);
+      console.error("POST /api/admin/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/admin/hiring-contracts?submissionId= — list contracts for a submission (admin)
+  app.get("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { submissionId } = req.query as { submissionId?: string };
+      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
+
+      const result = await query(
+        `SELECT hc.*, o.rate, o.rate_currency, o.engagement_type
+         FROM hiring_contracts hc
+         JOIN offers o ON o.id = hc.offer_id
+         WHERE hc.submission_id = $1
+         ORDER BY hc.created_at DESC`,
+        [submissionId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/hiring-contracts/:id/sign — record a signature (talent or OnSpot).
+  // Body: { signerType: 'talent' | 'onspot', signedAt?: ISO date string }
+  // When onspot_signed_at is set → contract status = 'signed'; submission → 'hired'.
+  app.patch("/api/admin/hiring-contracts/:id/sign", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { id } = req.params;
+      const { signerType, signedAt } = req.body;
+
+      if (!["talent", "onspot"].includes(signerType)) {
+        return res.status(400).json({ error: "signerType must be 'talent' or 'onspot'" });
+      }
+
+      const signTs = signedAt ? new Date(signedAt) : new Date();
+      if (isNaN(signTs.getTime())) {
+        return res.status(400).json({ error: "signedAt must be a valid ISO date string" });
+      }
+
+      // Load contract
+      const contractResult = await query(
+        `SELECT hc.*, js.status AS sub_status, js.id AS js_id
+         FROM hiring_contracts hc
+         JOIN job_submissions js ON js.id = hc.submission_id
+         WHERE hc.id = $1`,
+        [id],
+      );
+      if (contractResult.rows.length === 0) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      const contract = contractResult.rows[0];
+
+      if (contract.status === "voided") {
+        return res.status(409).json({
+          error: "contract_voided",
+          message: "Cannot sign a voided contract.",
+        });
+      }
+      if (contract.status === "signed") {
+        return res.status(409).json({
+          error: "contract_already_signed",
+          message: "This contract is already fully signed.",
+        });
+      }
+
+      // Set the relevant timestamp
+      const col = signerType === "talent" ? "talent_signed_at" : "onspot_signed_at";
+      const updatedContract = await query(
+        `UPDATE hiring_contracts
+         SET ${col} = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [signTs, id],
+      );
+      let c = updatedContract.rows[0];
+
+      // If OnSpot has signed → contract is executed; submission → 'hired'
+      if (c.onspot_signed_at) {
+        const signed = await query(
+          `UPDATE hiring_contracts SET status = 'signed', updated_at = NOW() WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        c = signed.rows[0];
+
+        const prevStatus = contract.sub_status;
+        await query(
+          `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
+          [contract.js_id],
+        );
+        await query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, 'hired', $3, $4)`,
+          [contract.js_id, prevStatus,
+           `Contract fully executed — OnSpot countersigned by admin ${user.id}`, user.id],
+        );
+      }
+
+      return res.json(c);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/hiring-contracts/:id/sign error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/hiring-contracts/:id/void — admin voids a contract
+  // Body: { reason: string }
+  // Submission status is NOT automatically reverted — admin must adjust manually.
+  app.patch("/api/admin/hiring-contracts/:id/void", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { id } = req.params;
+      const { reason } = req.body;
+      if (!reason?.trim()) {
+        return res.status(400).json({ error: "reason is required to void a contract" });
+      }
+
+      const contractResult = await query(
+        `SELECT id, status FROM hiring_contracts WHERE id = $1`,
+        [id],
+      );
+      if (contractResult.rows.length === 0) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      const contract = contractResult.rows[0];
+
+      if (contract.status === "voided") {
+        return res.status(409).json({ error: "already_voided", message: "Contract is already voided." });
+      }
+      if (contract.status === "signed") {
+        return res.status(409).json({
+          error: "cannot_void_signed",
+          message: "A fully signed contract cannot be voided. Contact legal.",
+        });
+      }
+
+      const updated = await query(
+        `UPDATE hiring_contracts
+         SET status = 'voided', voided_at = NOW(), voided_reason = $1, updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [reason.trim(), id],
+      );
+      return res.json(updated.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/hiring-contracts/:id/void error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -13174,7 +13508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 o.engagement_type, o.rate, o.rate_currency, o.proposed_start_date
          FROM hiring_contracts hc
          JOIN offers o ON o.id = hc.offer_id
-         WHERE hc.submission_id = $1 AND hc.status != 'void'
+         WHERE hc.submission_id = $1 AND hc.status != 'voided'
          ORDER BY hc.created_at DESC`,
         [submissionId],
       );
@@ -13710,17 +14044,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [id, resolvedTemplateId, resolvedSubject, resolvedBody, app_.email, sentBy ?? null, resolvedSenderEmail, resolvedSenderName, emailStatus, emailErr],
       );
 
-      // Optionally update application stage — failure here must not block email response.
-      // Validated against the canonical admin allowlist: contract-workflow statuses
-      // ('contract_sent', 'hired') can never be set through the email path.
-      const { isAdminSettableStatus } = await import("../shared/submissionStatuses");
-      let stageUpdated = false;
-      let stageIgnoredReason: string | null = null;
-      if (updateStage && !isAdminSettableStatus(updateStage)) {
-        stageIgnoredReason = `Stage '${updateStage}' cannot be set via email send — contract-workflow and unknown statuses are excluded.`;
-        console.warn(`Email send: ignoring invalid updateStage '${updateStage}' — contract-workflow and unknown statuses cannot be set via email send`);
-      }
-      if (updateStage && isAdminSettableStatus(updateStage) && sendResult.success) {
+      // Optionally update application stage — failure here must not block email response
+      if (updateStage && sendResult.success) {
         try {
           await query(
             `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
@@ -13732,7 +14057,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
              VALUES ($1, $2, $3, $4, $5)`,
             [id, app_.status, updateStage, "Stage updated via email send", sentBy ?? null],
           );
-          stageUpdated = true;
         } catch (stageErr: any) {
           console.warn("Email send: stage update failed (non-fatal):", stageErr.message);
         }
@@ -13741,7 +14065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sendResult.success) {
         return res.status(502).json({ error: `Email delivery failed: ${sendResult.error}` });
       }
-      return res.json({ success: true, sentTo: app_.email, stageUpdated, stageIgnoredReason });
+      return res.json({ success: true, sentTo: app_.email });
     } catch (err: any) {
       console.error("POST /api/admin/job-applications/:id/email/send error:", err);
       return res.status(500).json({ error: "Internal server error" });

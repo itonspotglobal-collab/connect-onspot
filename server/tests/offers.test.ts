@@ -23,6 +23,7 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { query, pool } from "../db.js";
+import { DbStorage } from "../storage.js";
 
 let clientId: string | null = null;
 let jobId: string | null = null;
@@ -179,5 +180,131 @@ describe("offers — single-pending guarantee and transitions", () => {
     assert.equal(r.ok, true, "re-offer after decline must succeed");
     const n = await query(`SELECT count(*)::int AS n FROM offers WHERE submission_id = $1`, [submissionId]);
     assert.ok(n.rows[0].n >= 2, "re-offer creates a new row");
+  });
+});
+
+// ── Offer notification tests ──────────────────────────────────────────────────
+//
+// These tests verify the notification storage layer used by the offer endpoints:
+//  (f) offer_received notification stored for a talent user (direct user ID path)
+//  (g) offer response notifications stored for client (offer_accepted / offer_declined)
+//  (h) legacy email-lookup: when talent_id is NULL, the route resolves user via email
+//
+// We call DbStorage directly — the same code path the route handlers use — and
+// confirm rows appear in (and can be retrieved from) the notifications table.
+
+describe("offer notifications — storage and recipient resolution", () => {
+  const storage = new DbStorage();
+  let testUserId: string | null = null;
+  let clientTestUserId: string | null = null;
+  const testEmail = `offer-notify-test-${Date.now()}@example.com`;
+  const insertedNotificationIds: string[] = [];
+
+  before(async () => {
+    // Reuse any existing client/admin user as the client recipient.
+    const clientRow = await query(
+      `SELECT id FROM users WHERE role IN ('client', 'admin') LIMIT 1`,
+    );
+    clientTestUserId = clientRow.rows[0]?.id ?? null;
+
+    // Create a minimal talent user with a unique email for the legacy lookup test.
+    const userRow = await query(
+      `INSERT INTO users (email, name, role, password_hash)
+       VALUES ($1, 'Notify Test Talent', 'talent', 'x')
+       RETURNING id`,
+      [testEmail],
+    );
+    testUserId = userRow.rows[0].id;
+  });
+
+  after(async () => {
+    // Clean up notifications created during tests
+    if (insertedNotificationIds.length) {
+      await query(
+        `DELETE FROM notifications WHERE id = ANY($1::uuid[])`,
+        [insertedNotificationIds],
+      ).catch(() => {});
+    }
+    if (testUserId) {
+      await query(`DELETE FROM users WHERE id = $1`, [testUserId]).catch(() => {});
+    }
+  });
+
+  it("(f) offer_received notification is stored for a talent user and returned unread", async () => {
+    if (!testUserId) return;
+    const offerId = "00000000-0000-0000-0000-000000000001";
+    const notif = await storage.createNotification({
+      userId: testUserId,
+      type: "offer_received",
+      title: "You have a new offer",
+      message: "A client has extended an offer for one of your applications.",
+      relatedId: offerId,
+      relatedType: "offer",
+    });
+    insertedNotificationIds.push(notif.id);
+
+    assert.equal(notif.type, "offer_received", "type must be offer_received");
+    assert.equal(notif.userId, testUserId, "recipient must be the talent user");
+    assert.equal(notif.isRead, false, "new notification must be unread");
+    assert.equal(notif.relatedId, offerId, "relatedId must match the offer");
+    assert.equal(notif.relatedType, "offer");
+
+    // Must appear in the unread list for this user
+    const unread = await storage.listNotificationsByUser(testUserId, true);
+    const found = unread.find((n) => n.id === notif.id);
+    assert.ok(found, "offer_received notification must appear in unread list");
+  });
+
+  it("(g) offer_accepted and offer_declined notifications are stored for a client user", async () => {
+    if (!clientTestUserId) return;
+    const offerId = "00000000-0000-0000-0000-000000000002";
+
+    const accepted = await storage.createNotification({
+      userId: clientTestUserId,
+      type: "offer_accepted",
+      title: "Offer accepted",
+      message: "A talent has accepted your offer.",
+      relatedId: offerId,
+      relatedType: "offer",
+    });
+    insertedNotificationIds.push(accepted.id);
+
+    const declined = await storage.createNotification({
+      userId: clientTestUserId,
+      type: "offer_declined",
+      title: "Offer declined",
+      message: "A talent has declined your offer.",
+      relatedId: offerId,
+      relatedType: "offer",
+    });
+    insertedNotificationIds.push(declined.id);
+
+    assert.equal(accepted.type, "offer_accepted");
+    assert.equal(accepted.userId, clientTestUserId);
+    assert.equal(declined.type, "offer_declined");
+    assert.equal(declined.userId, clientTestUserId);
+  });
+
+  it("(h) legacy email lookup: user can be resolved from submission.email when talent_id is NULL", async () => {
+    if (!testUserId) return;
+    // Simulate the fallback: query users table by email (mirrors the route handler logic)
+    const lookupResult = await query(
+      `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+      [testEmail],
+    );
+    assert.equal(lookupResult.rows.length, 1, "email lookup must find the test user");
+    assert.equal(lookupResult.rows[0].id, testUserId, "resolved user ID must match");
+
+    // Verify a notification created for the looked-up ID is retrievable
+    const notif = await storage.createNotification({
+      userId: lookupResult.rows[0].id,
+      type: "offer_received",
+      title: "You have a new offer",
+      message: "Resolved via legacy email path.",
+      relatedId: "00000000-0000-0000-0000-000000000003",
+      relatedType: "offer",
+    });
+    insertedNotificationIds.push(notif.id);
+    assert.equal(notif.userId, testUserId, "notification recipient must be the email-resolved user");
   });
 });
