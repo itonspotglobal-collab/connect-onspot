@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { ProfileRichTextEditor } from "@/components/ProfileRichTextEditor";
+import { ProfileRichTextRenderer } from "@/components/ProfileRichTextRenderer";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTalentApplications } from "@/hooks/useTalentApplications";
@@ -143,20 +145,26 @@ function EditField({
   onSave,
   multiline = false,
   longForm = false,
+  richText = false,
   placeholder,
   canEdit = true,
   nameMode = false,
   minHeight,
+  maxLength,
 }: {
   label: string;
   value: string;
   onSave: (v: string) => void;
   multiline?: boolean;
   longForm?: boolean;
+  /** When true, About/More About Me sections use the rich-text editor + renderer. */
+  richText?: boolean;
   placeholder?: string;
   canEdit?: boolean;
   nameMode?: boolean;
   minHeight?: string;
+  /** Maximum plain-text character count shown while editing (rich-text fields only). */
+  maxLength?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -193,7 +201,10 @@ function EditField({
     return (
       <div className="group flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          {longForm && value ? (
+          {longForm && richText && value ? (
+            // Rich-text renderer — handles both HTML (new) and legacy plain text
+            <ProfileRichTextRenderer value={value} />
+          ) : longForm && value ? (
             <ProfileLongFormText value={value} />
           ) : multiline && value ? (
             // Multi-paragraph rendering — split on blank lines, preserve intra-paragraph newlines
@@ -223,7 +234,16 @@ function EditField({
   }
   return (
     <div className="space-y-2">
-      {multiline ? (
+      {multiline && richText ? (
+        // Rich-text editor for long-form profile sections
+        <ProfileRichTextEditor
+          value={draft}
+          onChange={setDraft}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          minHeight={minHeight ?? "120px"}
+        />
+      ) : multiline ? (
         <Textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -1333,8 +1353,10 @@ export default function TalentProfile() {
                 value={candidate.summary ?? ""}
                 multiline
                 longForm
+                richText
+                maxLength={8000}
                 minHeight="120px"
-                placeholder="Write a short professional summary…"
+                placeholder="Tell clients and employers about your professional background, strengths, and experience…"
                 onSave={(v) => save("summary", v)}
                 canEdit={canEdit}
               />
@@ -1351,8 +1373,10 @@ export default function TalentProfile() {
                   value={candidate.moreAboutMe ?? ""}
                   multiline
                   longForm
+                  richText
+                  maxLength={12000}
                   minHeight="180px"
-                  placeholder="Share more about yourself, your working style, goals, interests, or what you'd like potential employers to know…"
+                  placeholder="Share more about your working style, goals, values, interests, or anything else you'd like people to know…"
                   onSave={(v) => save("moreAboutMe", v)}
                   canEdit={canEdit}
                 />

@@ -1,0 +1,437 @@
+Implement rich-text editing for the Talent Profile so Talents can present themselves more professionally.
+
+Focus primarily on the long-form sections:
+
+About
+More About Me
+
+Do not convert short fields such as headline, location, availability, skills, job titles, education names, or certification titles into rich text.
+
+Requirements
+
+Use the existing Talent Profile architecture and preserve:
+
+Talent owner editing
+Public View
+Client/visitor view
+existing visual hierarchy
+current profile navigation
+existing isOwner / canEdit behavior
+existing About and More About Me database fields
+
+Do not create duplicate profile fields.
+
+Rich-text features
+
+Allow only a controlled set of formatting options:
+
+Paragraphs
+Heading 2 / Heading 3
+Bold
+Italic
+Bullet list
+Numbered list
+Blockquote
+Links
+Undo / Redo
+
+Do not allow:
+
+custom colors
+arbitrary font sizes
+custom fonts
+tables
+embedded scripts
+iframes
+raw HTML editing
+inline CSS
+images inside About/More About Me
+
+Keep the editor simple and professional.
+
+Recommended editor
+
+Prefer an established React editor already compatible with the codebase, such as:
+
+Tiptap
+Lexical
+
+Before installing anything new, check whether a rich-text editor package already exists in package.json.
+
+If one exists, reuse it.
+
+Avoid building a contentEditable editor manually.
+
+Data storage
+
+Inspect how summary / About and moreAboutMe are currently stored.
+
+Store sanitized rich-text content in a consistent format.
+
+Preferred options:
+
+JSON document format from the editor, or
+sanitized HTML
+
+Use whichever integrates best with the current project.
+
+If using HTML:
+
+sanitize before persistence and/or rendering
+never render unsanitized user HTML
+never use raw dangerouslySetInnerHTML without sanitization
+
+If using editor JSON:
+
+render it through the same rich-text renderer
+do not convert back and forth unnecessarily
+Backward compatibility
+
+Existing Talent profiles currently contain plain text.
+
+They must continue to render correctly.
+
+If the stored value is old plain text, treat it as paragraphs automatically.
+
+Do not require a migration for every existing Talent unless necessary.
+
+Example legacy value:
+
+I am a customer support specialist with five years of experience.
+
+
+I enjoy helping teams improve customer satisfaction.
+
+should render as two normal paragraphs.
+
+About editor
+
+When the profile owner edits About, replace the plain textarea with a Rich Text Editor.
+
+Suggested toolbar:
+
+Normal | H2 | H3 | B | I | • List | 1. List | Quote | Link | Undo | Redo
+
+Keep the toolbar compact.
+
+Suggested placeholder:
+
+Tell clients and employers about your professional background, strengths, and experience...
+More About Me editor
+
+Use the same rich-text editor component.
+
+Suggested placeholder:
+
+Share more about your working style, goals, values, interests, or anything else you'd like people to know...
+
+Reuse the same editor implementation rather than creating two different editors.
+
+Shared component
+
+Create a reusable component such as:
+
+client/src/components/ProfileRichTextEditor.tsx
+
+and optionally:
+
+client/src/components/ProfileRichTextRenderer.tsx
+
+Conceptually:
+
+<ProfileRichTextEditor
+  value={value}
+  onChange={setValue}
+  placeholder="..."
+/>
+
+and:
+
+<ProfileRichTextRenderer value={value} />
+
+Use the renderer in:
+
+Talent owner non-edit mode
+Public View
+Client view
+logged-out visitor view
+Rendering styles
+
+Rich-text output should match the improved Talent Profile visual hierarchy.
+
+Recommended content styling:
+
+text-[15px]
+leading-7
+text-slate-700
+
+Paragraphs:
+
+mb-4
+
+Headings:
+
+h2:
+text-lg
+font-semibold
+mt-6
+mb-3
+
+
+h3:
+text-base
+font-semibold
+mt-5
+mb-2
+
+Bullet/numbered lists:
+
+pl-5
+space-y-1
+
+Blockquote:
+
+border-l-4
+border-[#474ead]/30
+pl-4
+italic
+text-slate-600
+
+Links:
+
+text-[#474ead]
+underline
+underline-offset-2
+
+Do not make rich text visually overpower the rest of the profile.
+
+Text alignment
+
+Because the previous profile requirement requested justified long-form content:
+
+normal paragraphs may remain justified on desktop
+lists should remain left-aligned
+headings should remain left-aligned
+blockquotes should remain left-aligned
+
+Recommended:
+
+mobile: text-left
+sm/md+: justified paragraphs
+
+Do not justify list items or headings.
+
+Public View
+
+Rich-text formatting must render exactly the same in Public View and actual visitor/client view.
+
+Public View must remain read-only.
+
+Do not render editor toolbars when:
+
+canEdit === false
+
+The output should simply display the formatted content.
+
+Editing flow
+
+Keep the existing edit/save/cancel pattern.
+
+Conceptually:
+
+View mode
+→ Edit
+→ Rich Text Editor
+→ Save / Cancel
+→ View mode
+
+On Cancel:
+
+restore the previously saved value
+do not persist draft changes
+
+On Save:
+
+persist through the existing Candidate/Profile update API
+invalidate/refetch the existing Talent Profile query
+Security
+
+This is critical.
+
+Do not trust rich-text content from the client.
+
+Sanitize supported markup on the server if HTML is persisted.
+
+Allowed tags should be limited to something like:
+
+p
+br
+h2
+h3
+strong
+em
+ul
+ol
+li
+blockquote
+a
+
+For links:
+
+allow only safe URL protocols such as http, https, and optionally mailto
+add safe rel attributes when opening external links
+
+Strip:
+
+script
+style
+iframe
+object
+embed
+event handlers such as onclick
+javascript URLs
+arbitrary class/style attributes
+Character limits
+
+Add a sensible maximum length.
+
+Suggested:
+
+About: 5,000–8,000 characters
+More About Me: 8,000–12,000 characters
+
+Use the existing product limits if already defined.
+
+Display a subtle character counter only while editing if useful.
+
+Do not count HTML markup as user-facing character count if HTML storage is used; count plain text content.
+
+Paste handling
+
+When Talent pastes content from Word, Google Docs, LinkedIn, etc.:
+
+preserve basic paragraphs, bold, italic, lists, and links
+remove unsupported styles, fonts, colors, spacing, and HTML attributes
+
+Do not allow messy pasted HTML to break the profile design.
+
+Mobile
+
+Rich-text editor must work on mobile.
+
+Toolbar may horizontally scroll or collapse gracefully.
+
+Do not let the editor create horizontal overflow.
+
+The rendered profile content must remain responsive.
+
+Existing plain-text paragraph behavior
+
+The previous About / More About Me paragraph rendering should not remain as a separate competing system.
+
+Once rich text is added, centralize rendering in the rich-text renderer.
+
+For legacy plain text, the renderer should gracefully convert line breaks/paragraphs.
+
+Files to inspect
+
+At minimum:
+
+client/src/pages/TalentProfile.tsx
+client/src/hooks/useTalentProfile.ts
+client/src/hooks/useCandidateProfileSettings.ts
+shared/schema.ts
+server routes for candidate/profile updates
+server/storage.ts
+package.json
+
+Also search for:
+
+summary
+moreAboutMe
+EditField
+multiline
+dangerouslySetInnerHTML
+sanitize
+DOMPurify
+tiptap
+lexical
+quill
+Do not affect these sections
+
+Do not change functionality for:
+
+Skills
+Experience
+Education
+Certifications
+Applications
+Values Alignment
+Preferences
+Portfolio
+Profile Strength
+Public View
+profile photo
+resume/video upload
+Find Work
+
+This task is only about adding rich text to the long-form Talent Profile content.
+
+Acceptance criteria
+Talent can rich-text edit About
+Talent can rich-text edit More About Me
+Bold works
+Italic works
+H2/H3 work
+Bullet list works
+Numbered list works
+Blockquote works
+Links work
+Undo/redo work
+Save persists content
+Cancel discards edits
+Refresh preserves formatting
+Existing plain-text profiles still render correctly
+Client view renders rich text correctly
+Public View renders rich text correctly
+Logged-out visitor view renders rich text correctly
+No editor toolbar appears for non-owner users
+Unsupported pasted styles are stripped
+Unsafe HTML/script content is removed
+Mobile editor works
+Current Talent Profile styling remains intact
+TypeScript/build passes
+Manual testing
+
+Test this content:
+
+About
+
+
+Customer Experience Specialist
+
+
+I have more than five years of experience supporting customers across SaaS and e-commerce businesses.
+
+
+Key strengths:
+• Customer communication
+• Escalation handling
+• Process improvement
+
+
+My goal is to help teams create customer experiences that are both efficient and human.
+
+
+Portfolio: https://example.com
+
+Verify:
+
+heading renders correctly
+paragraphs are spaced correctly
+bullet list displays correctly
+bold/italic formatting persists
+URL renders safely
+Public View looks identical without edit controls
+
+Also paste formatted text from Google Docs/Word and verify unsupported styles are cleaned up.

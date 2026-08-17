@@ -1,4 +1,34 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import sanitizeHtml from "sanitize-html";
+
+// ── Profile rich-text sanitizer (server-side) ─────────────────────────────────
+// Mirrors the client-side DOMPurify allowlist in ProfileRichTextRenderer.tsx.
+// Applied to summary and moreAboutMe before persistence.
+const PROFILE_ALLOWED_TAGS = [
+  "p", "br", "h2", "h3", "strong", "em",
+  "ul", "ol", "li", "blockquote", "a",
+];
+
+function sanitizeProfileHtml(input: string | null | undefined): string | null {
+  if (!input || !input.trim()) return null;
+  const clean = sanitizeHtml(input, {
+    allowedTags: PROFILE_ALLOWED_TAGS,
+    allowedAttributes: { a: ["href", "rel", "target"] },
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      // Force safe rel on every anchor regardless of what the client sent
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...attribs,
+          rel: "noopener noreferrer",
+          ...(attribs.href?.startsWith("http") ? { target: "_blank" } : {}),
+        },
+      }),
+    },
+  });
+  return clean.trim() || null;
+}
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
@@ -5426,8 +5456,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.category       !== undefined) candidateUpdates.category       = body.category       ?? "";  // NOT NULL
       if (body.phone          !== undefined) candidateUpdates.phone          = body.phone          || null;
       if (body.location       !== undefined) candidateUpdates.location       = body.location       || null;
-      if (body.summary        !== undefined) candidateUpdates.summary        = body.summary        || null;
-      if (body.moreAboutMe    !== undefined) candidateUpdates.moreAboutMe    = body.moreAboutMe    || null;
+      if (body.summary     !== undefined) candidateUpdates.summary     = sanitizeProfileHtml(body.summary);
+      if (body.moreAboutMe !== undefined) candidateUpdates.moreAboutMe = sanitizeProfileHtml(body.moreAboutMe);
       if (body.availability   !== undefined) candidateUpdates.availability   = body.availability   || null;
       if (body.headline       !== undefined) candidateUpdates.headline       = body.headline       || null;
       if (body.displayName    !== undefined) candidateUpdates.displayName    = body.displayName    || null;
