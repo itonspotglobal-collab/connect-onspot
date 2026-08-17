@@ -13029,6 +13029,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (notifyErr: any) {
           console.error("POST /api/client/offers — failed to create talent notification:", notifyErr);
         }
+
+        // Also send an email so the talent is alerted even when not in the portal.
+        try {
+          const talentEmail: string | null = submission.email ?? null;
+          if (!talentEmail) return;
+
+          const { sendApplicantEmail, isEmailServiceConfigured } =
+            await import("./services/microsoftGraphEmailService.ts");
+          if (!isEmailServiceConfigured()) {
+            console.warn("POST /api/client/offers — email service not configured; skipping offer email");
+            return;
+          }
+
+          const rawBase =
+            process.env.PUBLIC_APP_URL ??
+            process.env.APP_URL ??
+            process.env.PUBLIC_BASE_URL ??
+            (process.env.REPLIT_DOMAINS
+              ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+              : null);
+          if (!rawBase) {
+            console.warn("POST /api/client/offers — no base URL configured; skipping offer email");
+            return;
+          }
+          const baseUrl = rawBase.replace(/\/$/, "");
+          const portalUrl = `${baseUrl}/my-applications`;
+
+          const subject = "You have a new offer — review it in your portal";
+          const bodyHtml = `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1a1a2e;margin-bottom:8px;">You have a new offer</h2>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    A client has extended a formal offer for one of your applications.
+  </p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    Log in to your portal to review the offer details and respond before it expires.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="${portalUrl}"
+       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
+      Review Offer
+    </a>
+  </p>
+  <p style="color:#888;font-size:13px;">
+    You can accept or decline the offer from your
+    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
+  </p>
+</div>`.trim();
+
+          const result = await sendApplicantEmail({ to: talentEmail, subject, bodyHtml });
+          if (result.success) {
+            console.log(`✅ Offer notification email sent to ${talentEmail} for offer ${offer.id}`);
+          } else {
+            console.warn(`POST /api/client/offers — offer email failed for ${talentEmail}:`, result.error);
+          }
+        } catch (emailErr: any) {
+          console.error("POST /api/client/offers — unexpected error sending offer email:", emailErr);
+        }
       })();
 
       return res.status(201).json(offer);
