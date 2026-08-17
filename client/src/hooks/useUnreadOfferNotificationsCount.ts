@@ -62,7 +62,7 @@ async function fetchUnreadOfferCount(
     return data.filter((n) => n.type === "offer_received").length;
   }
   return data.filter(
-    (n) => n.type === "offer_accepted" || n.type === "offer_declined",
+    (n) => n.type === "offer_accepted" || n.type === "offer_declined" || n.type === "offer_expired",
   ).length;
 }
 

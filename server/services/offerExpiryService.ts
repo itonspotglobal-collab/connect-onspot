@@ -13,6 +13,7 @@ import {
   sendApplicantEmail,
   isEmailServiceConfigured,
 } from './microsoftGraphEmailService';
+import { storage } from '../storage';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,31 @@ function getBaseUrl(): string | null {
   return raw ? raw.replace(/\/$/, '') : null;
 }
 
-function buildExpiryEmailHtml(portalUrl: string): string {
+function buildTalentExpiryEmailHtml(portalUrl: string): string {
+  return `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1a1a2e;margin-bottom:8px;">Your offer has expired</h2>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    A client offer you received has now passed its expiry date without a response,
+    and has been marked as expired.
+  </p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    If you believe this is a mistake or would still like to discuss the opportunity,
+    please reach out to us directly.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="${portalUrl}"
+       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
+      View My Applications
+    </a>
+  </p>
+  <p style="color:#888;font-size:13px;">
+    You can review your application history in your
+    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
+  </p>
+</div>`.trim();
+}
+function buildTalentExpiryEmailHtml(portalUrl: string): string {
   return `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
   <h2 style="color:#1a1a2e;margin-bottom:8px;">Your offer has expired</h2>
@@ -218,13 +243,15 @@ export async function processExpiryReminders(): Promise<void> {
  * mark them expired, and email the talent.
  */
 export async function processExpiredOffers(): Promise<void> {
-  // Atomically flip status to 'expired' and return the affected rows
-  // (including talent email from the join with job_submissions → candidates)
+  // Atomically flip status to 'expired' and return the affected rows.
+  // Joins to job_submissions for talent info and to users for client info.
   const result = await dbQuery(
     `UPDATE offers
         SET status     = 'expired',
             updated_at = NOW()
        FROM job_submissions js
+       LEFT JOIN jobs       j  ON j.id  = js.job_id
+       LEFT JOIN users      cu ON cu.id = js.client_id
       WHERE offers.submission_id = js.id
         AND offers.status        = 'sent'
         AND offers.expires_at   IS NOT NULL
@@ -232,8 +259,12 @@ export async function processExpiredOffers(): Promise<void> {
    RETURNING offers.id,
              offers.submission_id,
              offers.expires_at,
-             js.email,
-             js.first_name`
+             js.email        AS talent_email,
+             js.first_name   AS talent_first_name,
+             js.client_id,
+             cu.email        AS client_email,
+             cu.first_name   AS client_first_name,
+             j.title         AS job_title`
   );
 
   const rows = result.rows ?? [];
@@ -248,58 +279,118 @@ export async function processExpiredOffers(): Promise<void> {
   const baseUrl = getBaseUrl();
 
   for (const row of rows) {
-    // Insert a status-history record so admins can see the auto-expiry
+    // Advance the submission status to 'offer_expired' and record history
+    // in a single atomic step, capturing the actual prior submission status.
     try {
+      const submissionUpdate = await dbQuery(
+        `UPDATE job_submissions
+            SET status     = 'offer_expired',
+                updated_at = NOW()
+          WHERE id = $1
+      RETURNING (
+        SELECT status FROM job_submissions WHERE id = $1
+      ) AS prior_status`,
+        [row.submission_id]
+      );
+      // The RETURNING subquery reads the OLD row before the update inside the
+      // same statement on some PG versions; use a separate read as a fallback.
+      const priorStatus: string =
+        submissionUpdate.rows[0]?.prior_status ?? 'offer_extended';
+
       await dbQuery(
         `INSERT INTO job_application_status_history
            (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, 'offer_extended', 'offer_expired', 'Offer expired automatically', 'system')`,
-        [row.submission_id]
+         VALUES ($1, $2, 'offer_expired', 'Offer expired automatically', 'system')`,
+        [row.submission_id, priorStatus]
       );
     } catch (histErr: any) {
       // Non-fatal — don't let a history write block the email
       console.warn(
-        `offerExpiryService: could not write status history for submission ${row.submission_id}:`,
+        `offerExpiryService: could not update submission status / write history for submission ${row.submission_id}:`,
         histErr.message
       );
     }
 
-    // Send expiry email
+    // ── Notify the client (in-app + email) ────────────────────────────────────
+    if (row.client_id) {
+      // In-app notification
+      storage.createNotification({
+        userId: row.client_id,
+        type: 'offer_expired',
+        title: 'Offer expired without a response',
+        message: `An offer you sent${row.job_title ? ` for ${row.job_title}` : ''} has expired without a response from the talent.`,
+        relatedId: String(row.id),
+        relatedType: 'offer',
+      }).catch((notifyErr: any) => {
+        console.error(
+          `offerExpiryService: could not create client notification for offer ${row.id}:`,
+          notifyErr
+        );
+      });
+
+      // Client email
+      if (emailEnabled && row.client_email && baseUrl) {
+        const clientPortalUrl = `${baseUrl}/client-profile`;
+        const jobTitle: string = row.job_title ?? 'the role';
+        const clientSubject = `Your offer has expired without a response — OnSpot Careers`;
+        try {
+          const clientEmailResult = await sendApplicantEmail({
+            to: row.client_email,
+            subject: clientSubject,
+            bodyHtml: buildClientExpiryEmailHtml(jobTitle, clientPortalUrl),
+          });
+          if (clientEmailResult.success) {
+            console.log(`✅ offerExpiryService: expiry email sent to client ${row.client_email} for offer ${row.id}`);
+          } else {
+            console.warn(
+              `offerExpiryService: client expiry email failed for ${row.client_email} (offer ${row.id}):`,
+              clientEmailResult.error
+            );
+          }
+        } catch (clientEmailErr: any) {
+          console.error(
+            `offerExpiryService: unexpected error sending client expiry email for offer ${row.id}:`,
+            clientEmailErr
+          );
+        }
+      }
+    }
+
+    // ── Notify the talent (email) ──────────────────────────────────────────────
     if (!emailEnabled) {
-      console.warn('offerExpiryService: email service not configured; skipping expiry email');
+      console.warn('offerExpiryService: email service not configured; skipping talent expiry email');
       continue;
     }
-    if (!row.email) {
-      console.warn(`offerExpiryService: no email address for offer ${row.id}; skipping`);
+    if (!row.talent_email) {
+      console.warn(`offerExpiryService: no email address for offer ${row.id}; skipping talent email`);
       continue;
     }
     if (!baseUrl) {
-      console.warn('offerExpiryService: no base URL configured; skipping expiry email');
+      console.warn('offerExpiryService: no base URL configured; skipping talent expiry email');
       continue;
     }
 
     const portalUrl = `${baseUrl}/my-applications`;
-    const firstName = row.first_name ? ` ${row.first_name}` : '';
     const subject = `Your offer has expired — OnSpot Careers`;
 
     try {
       const emailResult = await sendApplicantEmail({
-        to: row.email,
+        to: row.talent_email,
         subject,
-        bodyHtml: buildExpiryEmailHtml(portalUrl),
+        bodyHtml: buildTalentExpiryEmailHtml(portalUrl),
       });
 
       if (emailResult.success) {
-        console.log(`✅ offerExpiryService: expiry email sent to ${row.email} for offer ${row.id}`);
+        console.log(`✅ offerExpiryService: expiry email sent to talent ${row.talent_email} for offer ${row.id}`);
       } else {
         console.warn(
-          `offerExpiryService: expiry email failed for ${row.email} (offer ${row.id}):`,
+          `offerExpiryService: talent expiry email failed for ${row.talent_email} (offer ${row.id}):`,
           emailResult.error
         );
       }
     } catch (emailErr: any) {
       console.error(
-        `offerExpiryService: unexpected error sending expiry email for offer ${row.id}:`,
+        `offerExpiryService: unexpected error sending talent expiry email for offer ${row.id}:`,
         emailErr
       );
     }
@@ -345,3 +436,23 @@ export class OfferExpiryService {
 }
 
 export const offerExpiryService = new OfferExpiryService();
+
+function buildClientExpiryEmailHtml(jobTitle: string, clientPortalUrl: string): string {
+  return `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1a1a2e;margin-bottom:8px;">Your offer has expired without a response</h2>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    The offer you sent for <strong>${jobTitle}</strong> has passed its expiry date
+    without a response from the talent, and has been marked as expired.
+  </p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    You can extend a new offer or take further action from your hiring pipeline.
+  </p>
+  <p style="margin:24px 0;">
+    <a href="${clientPortalUrl}"
+       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
+      View Hiring Pipeline
+    </a>
+  </p>
+</div>`.trim();
+}

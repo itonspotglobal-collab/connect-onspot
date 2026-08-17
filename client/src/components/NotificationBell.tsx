@@ -13,7 +13,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, PackageOpen, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Bell, PackageOpen, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { useUnreadOfferNotificationsCount } from "@/hooks/useUnreadOfferNotificationsCount";
@@ -89,10 +89,17 @@ const TYPE_CONFIG: Record<
     label: "Offer Declined",
     route: "/hire-talent",
   },
+  offer_expired: {
+    icon: Clock,
+    color: "#BE123C",   // rose-700
+    bg: "#FFE4E6",      // rose-100
+    label: "Offer Expired",
+    route: "/hire-talent",
+  },
 };
 
 const OFFER_TYPES_TALENT = ["offer_received"];
-const OFFER_TYPES_CLIENT = ["offer_accepted", "offer_declined"];
+const OFFER_TYPES_CLIENT = ["offer_accepted", "offer_declined", "offer_expired"];
 
 // ── Component ──────────────────────────────────────────────────────────────────
 

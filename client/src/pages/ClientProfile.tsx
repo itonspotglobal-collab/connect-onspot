@@ -104,6 +104,7 @@ const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }>
   shortlisted:    { label: "Shortlisted",     color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
   interviewing:   { label: "Interviewing",    color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
   offer_extended: { label: "Offer Extended",  color: "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" },
+  offer_expired:  { label: "Offer Expired",   color: "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" },
   offer_declined: { label: "Offer Declined",  color: "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" },
   rejected:       { label: "Rejected",        color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
   hired:          { label: "Hired",           color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
@@ -1500,6 +1501,7 @@ function ExtendOfferDialog({
                           o.status === "accepted" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" :
                           o.status === "declined" ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
                           o.status === "sent"     ? "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" :
+                          o.status === "expired"  ? "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" :
                           "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                         }`}>
                           {offerStatusLabel[o.status] ?? o.status}

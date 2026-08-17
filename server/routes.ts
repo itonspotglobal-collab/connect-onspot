@@ -1394,7 +1394,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
 
     if ((constraintExists.rowCount ?? 0) > 0) {
-      console.log("✅ Migration: job_submissions.status CHECK constraint already exists — skipping");
+      // The constraint exists — check whether it already includes 'offer_expired'.
+      // If not, drop it and re-add it with the full, current set of valid values.
+      const hasOfferExpired = await query(`
+        SELECT 1 FROM pg_constraint
+        WHERE  conrelid = 'job_submissions'::regclass
+          AND  conname  = 'job_submissions_status_check'
+          AND  pg_get_constraintdef(oid) LIKE '%offer_expired%'
+        LIMIT  1
+      `);
+      if ((hasOfferExpired.rowCount ?? 0) === 0) {
+        // Drop old constraint and re-add with offer_expired included.
+        await query(`
+          ALTER TABLE job_submissions DROP CONSTRAINT job_submissions_status_check
+        `);
+        await query(`
+          ALTER TABLE job_submissions ADD CONSTRAINT job_submissions_status_check
+            CHECK (status IN (
+              'new', 'invited', 'declined', 'withdrawn',
+              'under_review', 'reviewed', 'shortlisted', 'rejected',
+              'interviewing',
+              'offer_extended', 'offer_expired', 'offer_accepted', 'offer_declined',
+              'contract_sent', 'hired'
+            ))
+        `);
+        console.log("✅ Migration: job_submissions.status CHECK constraint upgraded to include 'offer_expired'");
+      } else {
+        console.log("✅ Migration: job_submissions.status CHECK constraint already exists — skipping");
+      }
     } else {
       // Verify no violating rows remain before adding the constraint.
       const violations = await query(`
@@ -1421,7 +1448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'new', 'invited', 'declined', 'withdrawn',
               'under_review', 'reviewed', 'shortlisted', 'rejected',
               'interviewing',
-              'offer_extended', 'offer_accepted', 'offer_declined',
+              'offer_extended', 'offer_expired', 'offer_accepted', 'offer_declined',
               'contract_sent', 'hired'
             ))
         `);

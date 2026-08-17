@@ -27,6 +27,7 @@ export const SUBMISSION_STATUSES = [
 
   // ── Offer pipeline (client-driven for offer, talent for response) ──────────
   "offer_extended", // Client created and sent offer; replaces old partial value "offered"
+  "offer_expired",  // Offer passed its expiry date without a talent response (system-set)
   "offer_accepted", // Talent formally accepted the offer
   "offer_declined", // Talent formally declined the offer
 
@@ -92,6 +93,7 @@ export const REVEAL_STATUS_ORDER = [
   "shortlisted",    // client shortlisted
   "interviewing",   // interview scheduled
   "offer_extended", // offer sent
+  "offer_expired",  // offer lapsed without a response — name stays visible
   "offer_accepted", // talent accepted offer
   "offer_declined", // talent declined offer — name still visible; relationship was active
   "contract_sent",  // contract sent
