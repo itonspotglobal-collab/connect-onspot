@@ -6335,7 +6335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ====== ADMIN JOBS ======
-  app.get("/api/admin/jobs", async (req: Request, res: Response) => {
+  app.get("/api/admin/jobs", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
       // tab param drives server-side filtering so each tab has its own correct pagination
@@ -6406,7 +6406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/admin/jobs/options — lightweight job list for filter dropdowns.
   // Returns ALL jobs (no pagination) so the filter is never truncated.
   // MUST be registered before /api/admin/jobs/:id to avoid "options" being treated as an id.
-  app.get("/api/admin/jobs/options", async (req: Request, res: Response) => {
+  app.get("/api/admin/jobs/options", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const search = (req.query.search as string | undefined)?.trim();
       const params: any[] = [];
@@ -6537,7 +6537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/jobs", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { clientId: rawClientId } = req.body;
 
@@ -6602,7 +6602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+  app.patch("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { clientId, ...rest } = req.body;
       const updates = insertJobSchema.partial().parse(rest);
@@ -6640,7 +6640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/jobs/:id/status", async (req: Request, res: Response) => {
+  app.patch("/api/admin/jobs/:id/status", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { status } = req.body;
       if (!status || !["open", "closed", "cancelled"].includes(status)) {
@@ -6670,7 +6670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/jobs/:id/refresh", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/refresh", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const now = new Date();
       const existing = await storage.getJob(req.params.id);
@@ -6690,7 +6690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/jobs/:id", async (req: Request, res: Response) => {
+  app.delete("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const job = await storage.updateJob(req.params.id, { status: "cancelled" });
       if (!job) {
@@ -6709,7 +6709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Admin: Approve a job posting ─────────────────────────────────────────
   // No auth guard yet — spec: anyone with /admin/find-work access may approve.
   // Structured for future approvedBy/approvedAt multi-admin tracking (fields already in schema).
-  app.post("/api/admin/jobs/:id/approve", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/approve", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       // Guard: published jobs must have a valid engagement type
@@ -6749,7 +6749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Admin: Reject a job posting ──────────────────────────────────────────
   // No auth guard yet — spec: anyone with /admin/find-work access may decline.
-  app.post("/api/admin/jobs/:id/reject", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/reject", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const adminId = (req as any).user?.id;
       const { rejectionReason } = req.body;
@@ -6779,7 +6779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Admin: Link a client job to an existing approved job ────────────────
   // No auth guard yet — consistent with approve/reject policy above.
-  app.post("/api/admin/jobs/:id/link", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/link", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { existingJobId } = req.body;
       if (!existingJobId) return res.status(400).json({ error: "existingJobId is required" });
@@ -6847,7 +6847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
   // No auth guard yet — consistent with approve/reject policy above.
-  app.post("/api/admin/jobs/:id/pending", async (req: Request, res: Response) => {
+  app.post("/api/admin/jobs/:id/pending", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const result = await query(
         `UPDATE jobs SET
