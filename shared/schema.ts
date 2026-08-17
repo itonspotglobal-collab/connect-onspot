@@ -1426,3 +1426,113 @@ export const insertJobMatchSchema = createInsertSchema(jobMatches).omit({
 });
 export type InsertJobMatch = z.infer<typeof insertJobMatchSchema>;
 export type JobMatch = typeof jobMatches.$inferSelect;
+
+// ── Hiring Pipeline — Phase 1: Interviews ────────────────────────────────────
+// One row per interview round per job_submission.
+// Multiple rounds are supported via round_number (1, 2, 3…).
+// Client-driven: all write endpoints key to job_submissions.client_id.
+export const interviews = pgTable("interviews", {
+  id:             uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId:   varchar("submission_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+  roundNumber:    integer("round_number").notNull().default(1),
+  // 'initial' | 'technical' | 'final' | 'culture' | 'other'
+  interviewType:  text("interview_type").notNull().default("initial"),
+  // 'proposed' → 'confirmed' → 'completed' | 'cancelled' | 'rescheduled'
+  status:         text("status").notNull().default("proposed"),
+  // null until status = 'completed': 'advance' | 'reject' | 'pending'
+  outcome:        text("outcome"),
+  // [{start: ISO8601, end: ISO8601, timezone: string}, ...]
+  proposedTimes:  jsonb("proposed_times").notNull().default([]),
+  // Populated when client confirms one of the proposed slots
+  confirmedTime:  timestamp("confirmed_time"),
+  // Client user who created this interview row (must match submission's client_id)
+  createdBy:      varchar("created_by").notNull().references(() => users.id),
+  // Shown to the candidate (instructions, location, video link, etc.)
+  candidateNotes: text("candidate_notes"),
+  // Internal notes — not shown to talent
+  internalNotes:  text("internal_notes"),
+  createdAt:      timestamp("created_at").notNull().defaultNow(),
+  updatedAt:      timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_interviews_submission_id").on(table.submissionId),
+  index("idx_interviews_status").on(table.status),
+]);
+
+export const insertInterviewSchema = createInsertSchema(interviews).omit({
+  id: true, createdAt: true, updatedAt: true,
+});
+export type InsertInterview = z.infer<typeof insertInterviewSchema>;
+export type Interview = typeof interviews.$inferSelect;
+
+// ── Hiring Pipeline — Phase 2: Offers ────────────────────────────────────────
+// One row per offer per job_submission (re-offers after decline create a new row).
+// Client-driven: client creates the offer; talent responds.
+export const offers = pgTable("offers", {
+  id:                        uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId:              varchar("submission_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+  // Snapshotted from jobs.engagement_type at offer creation — NOT freely settable.
+  engagementType:            text("engagement_type").notNull(),
+  rate:                      decimal("rate", { precision: 12, scale: 2 }).notNull(),
+  rateCurrency:              text("rate_currency").notNull().default("PHP"),
+  proposedStartDate:         timestamp("proposed_start_date"),
+  // 'sent' → 'accepted' | 'declined' | 'withdrawn' | 'expired'
+  status:                    text("status").notNull().default("sent"),
+  // Snapshots of talent's rate expectation AT offer creation time (non-retroactive)
+  talentExpectedRate:        decimal("talent_expected_rate", { precision: 12, scale: 2 }),
+  talentExpectedCurrency:    text("talent_expected_currency"),
+  talentExpectedEngagement:  text("talent_expected_engagement"),
+  // Mismatch flag — set by application code at INSERT
+  // TRUE  = offer below expectation (same currency + same engagement type)
+  // FALSE = at or above expectation
+  // NULL  = currencies differ | engagement types differ | no expectation recorded
+  rateBelowExpectation:      boolean("rate_below_expectation"),
+  rateDelta:                 decimal("rate_delta", { precision: 12, scale: 2 }),
+  sentAt:                    timestamp("sent_at").notNull().defaultNow(),
+  respondedAt:               timestamp("responded_at"),
+  expiresAt:                 timestamp("expires_at"),
+  notes:                     text("notes"),
+  createdAt:                 timestamp("created_at").notNull().defaultNow(),
+  updatedAt:                 timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_offers_submission_id").on(table.submissionId),
+  index("idx_offers_status").on(table.status),
+]);
+
+export const insertOfferSchema = createInsertSchema(offers).omit({
+  id: true, sentAt: true, createdAt: true, updatedAt: true,
+});
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type Offer = typeof offers.$inferSelect;
+
+// ── Hiring Pipeline — Phase 3: Hiring Contracts ───────────────────────────────
+// One row per contract per offer. Admin/OnSpot-driven.
+// signing_entity is snapshotted from platform_settings at creation time.
+export const hiringContracts = pgTable("hiring_contracts", {
+  id:              uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  offerId:         uuid("offer_id").notNull().references(() => offers.id, { onDelete: "restrict" }),
+  // Denormalised for direct lookups without joining through offers
+  submissionId:    varchar("submission_id").notNull().references(() => jobSubmissions.id),
+  templateRef:     text("template_ref"),
+  documentPath:    text("document_path"),
+  documentVersion: integer("document_version").notNull().default(1),
+  // 'draft' → 'sent' → 'signed' | 'void'
+  status:          text("status").notNull().default("draft"),
+  // Snapshotted from platform_settings('contract_signing_entity') at row creation
+  signingEntity:   text("signing_entity").notNull().default("OnSpot Technologies Inc."),
+  talentSignedAt:  timestamp("talent_signed_at"),
+  onspotSignedAt:  timestamp("onspot_signed_at"),
+  voidedAt:        timestamp("voided_at"),
+  voidedReason:    text("voided_reason"),
+  createdAt:       timestamp("created_at").notNull().defaultNow(),
+  updatedAt:       timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_hiring_contracts_offer_id").on(table.offerId),
+  index("idx_hiring_contracts_submission_id").on(table.submissionId),
+  index("idx_hiring_contracts_status").on(table.status),
+]);
+
+export const insertHiringContractSchema = createInsertSchema(hiringContracts).omit({
+  id: true, createdAt: true, updatedAt: true,
+});
+export type InsertHiringContract = z.infer<typeof insertHiringContractSchema>;
+export type HiringContract = typeof hiringContracts.$inferSelect;

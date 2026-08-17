@@ -1192,6 +1192,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn("⚠️  Scaffold draft cleanup skipped:", scaffoldDeleteErr.message);
   }
 
+  // ── Hiring pipeline tables: interviews, offers, hiring_contracts ─────────
+  try {
+    // interviews — one row per round per submission, client-driven
+    await query(`
+      CREATE TABLE IF NOT EXISTS interviews (
+        id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        submission_id    varchar     NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        round_number     integer     NOT NULL DEFAULT 1,
+        interview_type   text        NOT NULL DEFAULT 'initial',
+        status           text        NOT NULL DEFAULT 'proposed',
+        outcome          text,
+        proposed_times   jsonb       NOT NULL DEFAULT '[]',
+        confirmed_time   timestamp,
+        created_by       varchar     NOT NULL REFERENCES users(id),
+        candidate_notes  text,
+        internal_notes   text,
+        created_at       timestamp   NOT NULL DEFAULT now(),
+        updated_at       timestamp   NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_interviews_submission_id ON interviews(submission_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_interviews_status ON interviews(status)`);
+
+    // offers — client creates; talent responds
+    await query(`
+      CREATE TABLE IF NOT EXISTS offers (
+        id                         uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+        submission_id              varchar       NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        engagement_type            text          NOT NULL CHECK (engagement_type IN ('Half-Day', 'Full-Time')),
+        rate                       numeric(12,2) NOT NULL,
+        rate_currency              text          NOT NULL DEFAULT 'PHP',
+        proposed_start_date        date,
+        status                     text          NOT NULL DEFAULT 'sent',
+        talent_expected_rate       numeric(12,2),
+        talent_expected_currency   text,
+        talent_expected_engagement text,
+        rate_below_expectation     boolean,
+        rate_delta                 numeric(12,2),
+        sent_at                    timestamp     NOT NULL DEFAULT now(),
+        responded_at               timestamp,
+        expires_at                 timestamp,
+        notes                      text,
+        created_at                 timestamp     NOT NULL DEFAULT now(),
+        updated_at                 timestamp     NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_offers_submission_id ON offers(submission_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_offers_status ON offers(status)`);
+
+    // hiring_contracts — admin/OnSpot-driven; linked to offers
+    await query(`
+      CREATE TABLE IF NOT EXISTS hiring_contracts (
+        id               uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        offer_id         uuid        NOT NULL REFERENCES offers(id) ON DELETE RESTRICT,
+        submission_id    varchar     NOT NULL REFERENCES job_submissions(id),
+        template_ref     text,
+        document_path    text,
+        document_version integer     NOT NULL DEFAULT 1,
+        status           text        NOT NULL DEFAULT 'draft',
+        signing_entity   text        NOT NULL DEFAULT 'OnSpot Technologies Inc.',
+        talent_signed_at   timestamp,
+        onspot_signed_at   timestamp,
+        voided_at        timestamp,
+        voided_reason    text,
+        created_at       timestamp   NOT NULL DEFAULT now(),
+        updated_at       timestamp   NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_offer_id ON hiring_contracts(offer_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_submission_id ON hiring_contracts(submission_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_status ON hiring_contracts(status)`);
+
+    // Seed the signing entity into platform_settings (idempotent)
+    await query(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('contract_signing_entity', 'OnSpot Technologies Inc.')
+      ON CONFLICT (key) DO NOTHING
+    `);
+
+    console.log("✅ Migration: hiring pipeline tables ready (interviews, offers, hiring_contracts)");
+  } catch (pipelineErr: any) {
+    console.warn("⚠️  Hiring pipeline table migration skipped:", pipelineErr.message);
+  }
+
+  // ── Migrate stale status values → canonical names, then add CHECK constraint ─
+  try {
+    // Step 1: normalize legacy status values to canonical names before the CHECK
+    // constraint is added. All updates are idempotent — no-op when values are correct.
+
+    // 'submitted' is a legacy alias for 'new' (display layer only).
+    const submittedMigration = await query(`
+      UPDATE job_submissions SET status = 'new', updated_at = NOW()
+      WHERE status = 'submitted'
+    `);
+    // 'offered' → 'offer_extended'
+    const offeredMigration = await query(`
+      UPDATE job_submissions SET status = 'offer_extended', updated_at = NOW()
+      WHERE status = 'offered'
+    `);
+    // 'interview' → 'interviewing'
+    const interviewMigration = await query(`
+      UPDATE job_submissions SET status = 'interviewing', updated_at = NOW()
+      WHERE status = 'interview'
+    `);
+    const totalNormalized =
+      (submittedMigration.rowCount ?? 0) +
+      (offeredMigration.rowCount ?? 0) +
+      (interviewMigration.rowCount ?? 0);
+    if (totalNormalized > 0) {
+      console.log(
+        `✅ Migration: normalized status values — ` +
+        `${submittedMigration.rowCount ?? 0} 'submitted'→'new', ` +
+        `${offeredMigration.rowCount ?? 0} 'offered'→'offer_extended', ` +
+        `${interviewMigration.rowCount ?? 0} 'interview'→'interviewing'`
+      );
+    }
+
+    // Step 2: add the CHECK constraint (idempotent — catches duplicate_object error)
+    await query(`
+      DO $$ BEGIN
+        ALTER TABLE job_submissions ADD CONSTRAINT job_submissions_status_check
+          CHECK (status IN (
+            'new', 'invited', 'declined', 'withdrawn',
+            'under_review', 'reviewed', 'shortlisted', 'rejected',
+            'interviewing',
+            'offer_extended', 'offer_accepted', 'offer_declined',
+            'contract_sent', 'hired'
+          ));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+    console.log("✅ Migration: job_submissions.status CHECK constraint in place");
+  } catch (statusCheckErr: any) {
+    console.warn("⚠️  job_submissions.status CHECK constraint migration skipped:", statusCheckErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -12082,9 +12218,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { id } = req.params;
       const { status } = req.body;
-      const validStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
-      if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status. Must be one of: new, reviewed, shortlisted, rejected, hired" });
+      const { ADMIN_SETTABLE_STATUSES } = await import("../shared/submissionStatuses");
+      if (!status || !ADMIN_SETTABLE_STATUSES.includes(status as any)) {
+        return res.status(400).json({ error: "Invalid status", allowed: ADMIN_SETTABLE_STATUSES });
       }
 
       const result = await query(
@@ -12290,15 +12426,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/client/job-submissions/:id/status — update submission status
+  // Uses the canonical CLIENT_SETTABLE_STATUSES list from shared/submissionStatuses.ts.
+  // Pipeline-driven statuses (interviewing, offer_extended, etc.) are set as side
+  // effects of creating interview/offer/contract records — never directly via this endpoint.
   app.patch("/api/client/job-submissions/:id/status", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
       const { status } = req.body;
-      const validStatuses = ["new", "reviewed", "shortlisted", "rejected", "hired"];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status. Must be: new, reviewed, shortlisted, rejected, hired" });
+      const { CLIENT_SETTABLE_STATUSES } = await import("../shared/submissionStatuses");
+      if (!status || !CLIENT_SETTABLE_STATUSES.includes(status as any)) {
+        return res.status(400).json({
+          error: "Invalid status",
+          allowed: CLIENT_SETTABLE_STATUSES,
+        });
       }
 
       // Fetch current row to check current status.
@@ -12344,6 +12486,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revealed = revealedStatusesForThreshold(threshold);
       return res.json(sanitizeClientSubmissionRow(updated.rows[0], revealed));
     } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Phase 1: Interview Scheduling (client-driven) ────────────────────────────
+  //
+  // Ownership rule: every endpoint below verifies that the authenticated client's
+  // user ID matches job_submissions.client_id — same pattern as job deletion and
+  // invitation endpoints. A client can only act on their own submissions.
+
+  // POST /api/client/interviews — schedule a new interview round
+  app.post("/api/client/interviews", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const { submissionId, interviewType = "initial", proposedTimes, candidateNotes, internalNotes } = req.body;
+      if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
+      if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
+        return res.status(400).json({ error: "proposedTimes must be a non-empty array of time slots" });
+      }
+      const validTypes = ["initial", "technical", "final", "culture", "other"];
+      if (!validTypes.includes(interviewType)) {
+        return res.status(400).json({ error: "interviewType must be one of: " + validTypes.join(", ") });
+      }
+
+      // Ownership: submission must belong to this client
+      const subResult = await query(
+        `SELECT id, status, client_id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        [submissionId, userId],
+      );
+      if (subResult.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+      const submission = subResult.rows[0];
+
+      // Guard: can only schedule interviews for submissions that are in a scheduleable state
+      const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing"];
+      if (!scheduleable.includes(submission.status)) {
+        return res.status(409).json({
+          error: "cannot_schedule_interview",
+          message: `Submission status '${submission.status}' does not allow scheduling an interview. ` +
+            `Submission must be shortlisted, reviewed, under_review, or already interviewing.`,
+        });
+      }
+
+      // Determine next round number
+      const roundResult = await query(
+        `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM interviews WHERE submission_id = $1`,
+        [submissionId],
+      );
+      const roundNumber = roundResult.rows[0].next_round;
+
+      // Create the interview row
+      const insert = await query(
+        `INSERT INTO interviews
+           (submission_id, round_number, interview_type, status, proposed_times,
+            candidate_notes, internal_notes, created_by)
+         VALUES ($1, $2, $3, 'proposed', $4, $5, $6, $7)
+         RETURNING *`,
+        [submissionId, roundNumber, interviewType, JSON.stringify(proposedTimes),
+         candidateNotes ?? null, internalNotes ?? null, userId],
+      );
+      const interview = insert.rows[0];
+
+      // Side-effect: advance submission to 'interviewing' if not already there
+      if (submission.status !== "interviewing") {
+        await query(
+          `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
+          [submissionId],
+        );
+        // Audit trail
+        await query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, 'interviewing', $3, $4)`,
+          [submissionId, submission.status,
+           `Round ${roundNumber} interview scheduled (type: ${interviewType})`, userId],
+        );
+      }
+
+      return res.status(201).json(interview);
+    } catch (err: any) {
+      console.error("POST /api/client/interviews error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/interviews?submissionId= — list all interview rounds for a submission
+  app.get("/api/client/interviews", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { submissionId } = req.query as { submissionId?: string };
+      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
+
+      // Ownership check
+      const ownerCheck = await query(
+        `SELECT id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        [submissionId, userId],
+      );
+      if (ownerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Submission not found or forbidden" });
+      }
+
+      const result = await query(
+        `SELECT * FROM interviews WHERE submission_id = $1 ORDER BY round_number ASC, created_at ASC`,
+        [submissionId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/client/interviews error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/client/interviews/:id — confirm, reschedule, or cancel an interview
+  // Body: { status, confirmedTime?, proposedTimes?, candidateNotes?, internalNotes? }
+  app.patch("/api/client/interviews/:id", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+      const { status, confirmedTime, proposedTimes, candidateNotes, internalNotes } = req.body;
+
+      // Load the interview and verify client ownership via submission
+      const interviewResult = await query(
+        `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
+         FROM interviews i
+         JOIN job_submissions js ON js.id = i.submission_id
+         WHERE i.id = $1 AND js.client_id = $2`,
+        [id, userId],
+      );
+      if (interviewResult.rows.length === 0) {
+        return res.status(404).json({ error: "Interview not found or forbidden" });
+      }
+      const interview = interviewResult.rows[0];
+
+      const validTransitions: Record<string, string[]> = {
+        proposed:     ["confirmed", "cancelled"],
+        confirmed:    ["rescheduled", "cancelled"],
+        rescheduled:  ["confirmed", "cancelled"],
+      };
+      const allowed = validTransitions[interview.status] ?? [];
+
+      // Build update payload
+      const updates: Record<string, any> = { updated_at: "NOW()" };
+      const params: any[] = [];
+
+      if (status) {
+        if (!allowed.includes(status)) {
+          return res.status(409).json({
+            error: "invalid_transition",
+            message: `Cannot transition from '${interview.status}' to '${status}'. ` +
+              `Allowed transitions: ${allowed.join(", ") || "none"}.`,
+          });
+        }
+        if (status === "confirmed") {
+          if (!confirmedTime) {
+            return res.status(400).json({ error: "confirmedTime is required when confirming an interview" });
+          }
+          params.push(confirmedTime);
+          updates.confirmed_time = `$${params.length}`;
+        }
+        if (status === "rescheduled") {
+          if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
+            return res.status(400).json({ error: "proposedTimes is required when rescheduling" });
+          }
+          params.push(JSON.stringify(proposedTimes));
+          updates.proposed_times = `$${params.length}`;
+          updates.confirmed_time = "NULL";
+        }
+        if (status === "cancelled") {
+          updates.confirmed_time = "NULL";
+        }
+        params.push(status);
+        updates.status = `$${params.length}`;
+      }
+
+      if (candidateNotes !== undefined) {
+        params.push(candidateNotes);
+        updates.candidate_notes = `$${params.length}`;
+      }
+      if (internalNotes !== undefined) {
+        params.push(internalNotes);
+        updates.internal_notes = `$${params.length}`;
+      }
+      if (proposedTimes !== undefined && status !== "rescheduled") {
+        params.push(JSON.stringify(proposedTimes));
+        updates.proposed_times = `$${params.length}`;
+      }
+
+      if (Object.keys(updates).length === 1) {
+        return res.status(400).json({ error: "No updatable fields provided" });
+      }
+
+      const setClauses = Object.entries(updates)
+        .map(([col, val]) => `${col} = ${val === "NOW()" || val === "NULL" ? val : val}`)
+        .join(", ");
+      params.push(id);
+      const updated = await query(
+        `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
+        params,
+      );
+
+      return res.json(updated.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/client/interviews/:id error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/client/interviews/:id/outcome — record the outcome of a completed interview
+  // Body: { outcome: 'advance' | 'reject' | 'pending', internalNotes? }
+  // Sets interview.status = 'completed'. If outcome = 'reject', also sets
+  // job_submissions.status = 'rejected' with an audit trail entry.
+  app.patch("/api/client/interviews/:id/outcome", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+      const { outcome, internalNotes } = req.body;
+
+      const validOutcomes = ["advance", "reject", "pending"];
+      if (!outcome || !validOutcomes.includes(outcome)) {
+        return res.status(400).json({ error: "outcome must be one of: " + validOutcomes.join(", ") });
+      }
+
+      // Load interview + verify ownership
+      const interviewResult = await query(
+        `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
+         FROM interviews i
+         JOIN job_submissions js ON js.id = i.submission_id
+         WHERE i.id = $1 AND js.client_id = $2`,
+        [id, userId],
+      );
+      if (interviewResult.rows.length === 0) {
+        return res.status(404).json({ error: "Interview not found or forbidden" });
+      }
+      const interview = interviewResult.rows[0];
+
+      if (interview.status === "cancelled") {
+        return res.status(409).json({ error: "Cannot record outcome for a cancelled interview" });
+      }
+      if (interview.status === "completed") {
+        return res.status(409).json({ error: "Outcome already recorded for this interview" });
+      }
+
+      // Mark interview completed
+      const updatedInterview = await query(
+        `UPDATE interviews
+         SET status = 'completed', outcome = $1, internal_notes = COALESCE($2, internal_notes), updated_at = NOW()
+         WHERE id = $3
+         RETURNING *`,
+        [outcome, internalNotes ?? null, id],
+      );
+
+      // Side-effect: if rejected, advance submission to 'rejected'
+      if (outcome === "reject" && interview.submission_status !== "rejected") {
+        await query(
+          `UPDATE job_submissions SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
+          [interview.js_id],
+        );
+        await query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, 'rejected', $3, $4)`,
+          [interview.js_id, interview.submission_status,
+           `Rejected after interview round ${interview.round_number}`, userId],
+        );
+      }
+
+      return res.json(updatedInterview.rows[0]);
+    } catch (err: any) {
+      console.error("PATCH /api/client/interviews/:id/outcome error:", err);
       return res.status(500).json({ error: err.message });
     }
   });

@@ -14,3 +14,4 @@
 - [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.
 - [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.
+- [Hiring pipeline — Phase 1](hiring-pipeline-phase1.md) — canonical status constant, 3 new tables, CHECK constraint, interview endpoints; key decisions and gotchas for Phase 2/3.
