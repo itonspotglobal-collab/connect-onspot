@@ -1,0 +1,51 @@
+Before any UI or endpoints: design and confirm the schema for the full
+hiring pipeline — Interview, Offer, Contract, Hired. Audit first, propose,
+report back — do not implement until confirmed.
+
+AUDIT FIRST:
+1. Report the FULL current status enum/values on job_submissions (or
+   whatever the actual applicant/pipeline table is called) — every value
+   in use today (submitted, invited, shortlisted, declined, whatever else
+   exists), and confirm whether it's a DB enum type or a plain text column
+   (given other status-like columns in this build have turned out to be
+   plain text, not enforced enums).
+2. Confirm no interviews/offers/contracts tables already exist anywhere in
+   the schema before designing new ones.
+3. Confirm the candidates/talent schema field that stores rate expectation
+   (candidates.preferences.rateAmount, per earlier work) — this is needed
+   for the offer-rate-mismatch flag below.
+
+PROPOSE SCHEMA for three new tables, plus new status values on the
+existing pipeline table:
+
+1. interviews — linked to job_submissions (application/invitation record),
+   not directly to jobs. Needs: proposed time(s), status (proposed/
+   confirmed/completed/cancelled/rescheduled), outcome (advance/reject/
+   pending), notes, timestamps. Support multiple interview rounds per
+   application if that's a reasonable default — report your recommendation.
+
+2. offers — linked to job_submissions. Needs: engagement_type, rate,
+   rate_currency, proposed_start_date, status (sent/accepted/declined/
+   withdrawn/expired), sent_at, responded_at. ALSO: a snapshot field
+   capturing the talent's rate expectation AT THE TIME of the offer (not a
+   live reference — same non-retroactive principle used elsewhere in this
+   build), so the system can flag (not block) if the offer rate is below
+   what the talent indicated. Propose the exact flag mechanism — a boolean
+   + the delta, or similar.
+
+3. contracts — linked to offers. Needs: template reference, a
+   signing_entity field (default value "OnSpot Technologies Inc.", stored
+   as configurable data — not hardcoded in code — so it can change later
+   without a migration), talent_signed_at, client_signed_at (or
+   OnSpot-signed-on-behalf-of, if that's how it actually works given the
+   Client isn't the contracting party), document reference/storage path,
+   status (draft/sent/signed/void), version.
+
+4. New status values needed on job_submissions to represent the fuller
+   pipeline (interviewing, offer_extended, offer_accepted, contract_sent,
+   hired, rejected — propose the exact set and where each new stage's
+   status transition gets written from).
+
+Report the full proposed schema (table definitions, foreign keys, status
+enums) before writing any migration or code. I want to review and confirm
+the design before it's built.
