@@ -52,30 +52,6 @@ function buildTalentExpiryEmailHtml(portalUrl: string): string {
   </p>
 </div>`.trim();
 }
-function buildTalentExpiryEmailHtml(portalUrl: string): string {
-  return `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-  <h2 style="color:#1a1a2e;margin-bottom:8px;">Your offer has expired</h2>
-  <p style="color:#444;font-size:15px;margin:12px 0;">
-    A client offer you received has now passed its expiry date without a response,
-    and has been marked as expired.
-  </p>
-  <p style="color:#444;font-size:15px;margin:12px 0;">
-    If you believe this is a mistake or would still like to discuss the opportunity,
-    please reach out to us directly.
-  </p>
-  <p style="margin:24px 0;">
-    <a href="${portalUrl}"
-       style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
-      View My Applications
-    </a>
-  </p>
-  <p style="color:#888;font-size:13px;">
-    You can review your application history in your
-    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
-  </p>
-</div>`.trim();
-}
 
 /** Format a UTC timestamp as a human-readable deadline in Philippine Time (UTC+8). */
 function formatDeadline(expiresAt: Date): string {

@@ -1,0 +1,36 @@
+The four-field removal and the "don't guess at part-time" restraint are
+both accepted — good work. Four things before this is closed:
+
+1. URGENT, answer first: your own investigation found "JobFormPage.tsx
+   (650-line multi-step form with JobRequirementsStep) is on admin routes
+   with BYPASS_ADMIN_AUTH=true" — then this never appeared again in the
+   final report. I need a full, direct answer: what does BYPASS_ADMIN_AUTH
+   actually do — is authentication genuinely skipped for this route, or is
+   that a dev-only flag that's disabled in production? Is this route
+   reachable on production right now? Does it write to jobs at all, and
+   if so, does it have the SAME non-canonical fields as JobFormModal did?
+   Treat this with the same urgency as the earlier passwordHash and
+   unauthenticated-profile-route incidents until proven otherwise.
+
+2. part-time mapping: use the SAME precedent already established earlier
+   in this build (fixed → Full-Time, part-time → Half-Day, from the
+   original contract_type normalization). Map the 1 production part-time
+   row to Half-Day. This isn't a new open decision — it's consistency with
+   a call already made.
+
+3. Add a CHECK constraint to jobs.engagement_type, same as was done for
+   job_submissions.status — 74 of 76 production rows were non-canonical
+   until this audit caught it, which is the identical failure pattern that
+   justified the earlier constraint. Confirm zero non-canonical rows
+   remain (after the full-time and part-time fixes) before adding it, same
+   sequencing discipline as last time — and confirm whether this needs to
+   go through the DB pane manually again or whether the app-startup path
+   is safe this time, given the Publish schema-diff issue from the last
+   incident.
+
+4. Confirm status on #252 and #253 (offer-expiry warnings, shown
+   completed) and #30/#160 (Microsoft 365 credentials, shown blocked) —
+   were these explicitly approved, or did they proceed without a
+   confirm-first step? I want to know before treating either as settled.
+
+Report back on all four before this closes.
