@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,32 +88,55 @@ interface JobSubmission {
   submittedAt: string;
   jobTitle: string;
   jobCompany: string | null;
+  jobEngagementType: string | null;
   /** 'client' when the client invited this talent via Search & Shortlist; 'talent' for self-applied */
   initiated_by: string | null;
 }
 
+const OFFERABLE_STATUSES = new Set([
+  "shortlisted", "reviewed", "under_review", "interviewing", "offer_declined",
+]);
 const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  new:        { label: "New",        color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
-  submitted:  { label: "Applied",    color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
-  under_review:{ label: "Under Review", color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
-  reviewed:   { label: "Reviewed",   color: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
-  shortlisted:{ label: "Shortlisted",color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
-  rejected:   { label: "Rejected",   color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
-  hired:      { label: "Hired",      color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
-  invited:    { label: "Invited",    color: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" },
-  declined:   { label: "Declined",   color: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" },
+  new:            { label: "New",             color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
+  submitted:      { label: "Applied",         color: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" },
+  reviewed:       { label: "Reviewed",        color: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
+  under_review:   { label: "Under Review",    color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
+  shortlisted:    { label: "Shortlisted",     color: "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" },
+  interviewing:   { label: "Interviewing",    color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
+  offer_extended: { label: "Offer Extended",  color: "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" },
+  offer_declined: { label: "Offer Declined",  color: "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" },
+  rejected:       { label: "Rejected",        color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
+  hired:          { label: "Hired",           color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
+  invited:        { label: "Invited",         color: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400" },
+  declined:       { label: "Declined",        color: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" },
 };
 
-// ─── View Submission Modal ─────────────────────────────────────────────────────
+interface OfferRecord {
+  id: string;
+  submission_id: string;
+  engagement_type: string | null;
+  rate: string;
+  rate_currency: string;
+  proposed_start_date: string | null;
+  expires_at: string | null;
+  notes: string | null;
+  status: string;
+  rate_below_expectation: boolean | null;
+  rate_delta: string | null;
+  sent_at: string | null;
+  created_at: string;
+}
 function ViewSubmissionModal({
   submission,
   onClose,
   onStatusChange,
+  onExtendOffer,
   nameRevealThreshold = "submitted",
 }: {
   submission: JobSubmission;
   onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
+  onExtendOffer: (sub: JobSubmission) => void;
   nameRevealThreshold?: string;
 }) {
   const { toast } = useToast();
@@ -265,6 +289,19 @@ function ViewSubmissionModal({
               <Button variant="outline" size="sm" onClick={handleResumeDownload} className="gap-2">
                 <Download className="h-4 w-4" />
                 {submission.resumeFileName || "Download Resume"}
+              </Button>
+            </div>
+          )}
+
+          {/* Extend Offer action */}
+          {OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+            <div className="border-t border-slate-100 dark:border-white/[0.08] pt-4">
+              <Button
+                className="w-full gap-2 bg-[#474ead] hover:bg-[#3a3d8f] text-white"
+                onClick={() => { onClose(); onExtendOffer(submission); }}
+              >
+                <FileText className="h-4 w-4" />
+                Extend an Offer
               </Button>
             </div>
           )}
@@ -569,6 +606,7 @@ export default function ClientProfile() {
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
+  const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
 
   // ─── Redirect if not client ───────────────────────────────────────────────
   if (!isAuthenticated || user?.role !== "client") {
@@ -979,6 +1017,7 @@ export default function ClientProfile() {
         {/* ── Job Submissions ───────────────────────────────────────────────── */}
         <JobSubmissionsSection
           onView={(sub) => setViewingSubmission(sub)}
+          onExtendOffer={(sub) => setExtendingOfferFor(sub)}
           nameRevealThreshold={nameRevealThreshold}
         />
 
@@ -1015,7 +1054,20 @@ export default function ClientProfile() {
           onStatusChange={(id, status) =>
             setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status } : prev)
           }
+          onExtendOffer={(sub) => setExtendingOfferFor(sub)}
           nameRevealThreshold={nameRevealThreshold}
+        />
+      )}
+
+      {/* ── Extend Offer dialog ──────────────────────────────────────────────── */}
+      {extendingOfferFor && (
+        <ExtendOfferDialog
+          submission={extendingOfferFor}
+          onClose={() => setExtendingOfferFor(null)}
+          onOfferSent={() => {
+            setExtendingOfferFor(null);
+            queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+          }}
         />
       )}
     </div>
@@ -1025,9 +1077,11 @@ export default function ClientProfile() {
 // ─── Job Submissions Section ──────────────────────────────────────────────────
 function JobSubmissionsSection({
   onView,
+  onExtendOffer,
   nameRevealThreshold = "submitted",
 }: {
   onView: (sub: JobSubmission) => void;
+  onExtendOffer: (sub: JobSubmission) => void;
   nameRevealThreshold?: string;
 }) {
   const { data: submissions = [], isLoading } = useQuery<JobSubmission[]>({
@@ -1169,15 +1223,28 @@ function JobSubmissionsSection({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 text-xs"
-                        onClick={() => onView(sub)}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {OFFERABLE_STATUSES.has(sub.status) && !isPendingOrDeclinedInvite(sub.initiated_by, sub.status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs border-[#474ead]/40 text-[#474ead] hover:bg-[#474ead]/5"
+                            onClick={() => onExtendOffer(sub)}
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Offer</span>
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          onClick={() => onView(sub)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1222,4 +1289,252 @@ function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string): 
 
 function revealedStatuses(threshold: string): Set<string> {
   return revealedStatusesForThreshold(threshold);
+}
+
+function ExtendOfferDialog({
+  submission,
+  onClose,
+  onOfferSent,
+}: {
+  submission: JobSubmission;
+  onClose: () => void;
+  onOfferSent: () => void;
+}) {
+  const { toast } = useToast();
+  const [rate, setRate] = useState("");
+  const [rateCurrency, setRateCurrency] = useState("PHP");
+  const [proposedStartDate, setProposedStartDate] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lastResult, setLastResult] = useState<{ rate_below_expectation?: boolean | null; rate_delta?: string | null } | null>(null);
+
+  // Load prior offers for this submission
+  const { data: priorOffers = [], isLoading: offersLoading } = useQuery<OfferRecord[]>({
+    queryKey: ["/api/client/offers", submission.id],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/client/offers?submissionId=${submission.id}`);
+      return res.json();
+    },
+  });
+
+  const offerMutation = useMutation({
+    mutationFn: async () => {
+      const body: Record<string, unknown> = {
+        submissionId: submission.id,
+        rate: parseFloat(rate),
+        rateCurrency: rateCurrency.trim().toUpperCase(),
+      };
+      if (proposedStartDate) body.proposedStartDate = proposedStartDate;
+      if (expiresAt) body.expiresAt = expiresAt;
+      if (notes.trim()) body.notes = notes.trim();
+      const res = await apiRequest("POST", "/api/client/offers", body);
+      if (!res.ok) {
+        const data = await res.json();
+        // Map known error codes to human-readable messages
+        const errorMessages: Record<string, string> = {
+          offer_already_pending: "An offer is already awaiting this talent's response. Wait for them to respond before sending another.",
+          cannot_extend_offer:   `An offer cannot be extended for a submission in "${submission.status}" status.`,
+          job_missing_engagement_type: "This job is missing an engagement type. Please set it before extending an offer.",
+        };
+        throw new Error(errorMessages[data.error] ?? data.message ?? data.error ?? "Failed to send offer");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setLastResult({ rate_below_expectation: data.rate_below_expectation, rate_delta: data.rate_delta });
+      queryClient.invalidateQueries({ queryKey: ["/api/client/offers", submission.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+      toast({ title: "Offer sent", description: "The talent will be notified." });
+      onOfferSent();
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not send offer", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const formatOfferDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+  const offerStatusLabel: Record<string, string> = {
+    sent:     "Sent",
+    accepted: "Accepted",
+    declined: "Declined",
+    expired:  "Expired",
+    voided:   "Voided",
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-[#474ead]" />
+            Extend an Offer
+          </DialogTitle>
+          <DialogDescription className="text-sm text-slate-500">
+            For <span className="font-medium text-slate-700 dark:text-slate-200">{submission.applicantName}</span>
+            {" — "}{submission.jobTitle}
+            {submission.jobEngagementType && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                {submission.jobEngagementType}
+              </span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          {/* Rate row */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Label htmlFor="offer-rate" className="text-xs font-semibold">Rate <span className="text-red-500">*</span></Label>
+              <Input
+                id="offer-rate"
+                type="number"
+                min={0}
+                step="any"
+                placeholder="e.g. 50000"
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="w-28">
+              <Label htmlFor="offer-currency" className="text-xs font-semibold">Currency</Label>
+              <Input
+                id="offer-currency"
+                maxLength={3}
+                placeholder="PHP"
+                value={rateCurrency}
+                onChange={(e) => setRateCurrency(e.target.value.toUpperCase())}
+                className="mt-1 uppercase"
+              />
+            </div>
+          </div>
+
+          {/* Engagement type (read-only) */}
+          {submission.jobEngagementType && (
+            <div>
+              <Label className="text-xs font-semibold">Engagement Type</Label>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{submission.jobEngagementType}</p>
+            </div>
+          )}
+
+          {/* Dates */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Label htmlFor="offer-start" className="text-xs font-semibold">Proposed Start Date</Label>
+              <Input
+                id="offer-start"
+                type="date"
+                value={proposedStartDate}
+                onChange={(e) => setProposedStartDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="offer-expiry" className="text-xs font-semibold">Offer Expiry</Label>
+              <Input
+                id="offer-expiry"
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="offer-notes" className="text-xs font-semibold">Notes</Label>
+            <Textarea
+              id="offer-notes"
+              rows={3}
+              placeholder="Any additional details for the talent…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="mt-1 resize-none"
+            />
+          </div>
+
+          {/* Rate expectation result banner */}
+          {lastResult && lastResult.rate_below_expectation !== null && lastResult.rate_below_expectation !== undefined && (
+            <div className={`rounded-lg border px-4 py-3 text-sm ${
+              lastResult.rate_below_expectation
+                ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-300"
+            }`}>
+              {lastResult.rate_below_expectation ? (
+                <>
+                  <p className="font-semibold">Rate is below the talent's expectation</p>
+                  {lastResult.rate_delta && (
+                    <p className="text-xs mt-0.5">
+                      Difference: {rateCurrency} {Math.abs(parseFloat(lastResult.rate_delta)).toLocaleString()}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="font-semibold">Rate meets or exceeds the talent's expectation ✓</p>
+              )}
+            </div>
+          )}
+
+          {/* Prior offers */}
+          {(offersLoading || priorOffers.length > 0) && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Prior Offers</p>
+              {offersLoading ? (
+                <Skeleton className="h-12 w-full rounded-lg" />
+              ) : (
+                <div className="space-y-2">
+                  {priorOffers.map((o) => (
+                    <div
+                      key={o.id}
+                      className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs dark:border-white/[0.06] dark:bg-white/[0.03]"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {o.rate_currency} {parseFloat(o.rate).toLocaleString()}
+                          {o.engagement_type && <span className="ml-1 text-slate-400">· {o.engagement_type}</span>}
+                        </span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                          o.status === "accepted" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                          o.status === "declined" ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
+                          o.status === "sent"     ? "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" :
+                          "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                        }`}>
+                          {offerStatusLabel[o.status] ?? o.status}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 text-slate-400 mt-0.5">
+                        {o.proposed_start_date && <span>Start: {formatOfferDate(o.proposed_start_date)}</span>}
+                        {o.expires_at && <span>Expires: {formatOfferDate(o.expires_at)}</span>}
+                        <span>Sent: {formatOfferDate(o.sent_at ?? o.created_at)}</span>
+                      </div>
+                      {o.rate_below_expectation === true && (
+                        <p className="mt-0.5 text-amber-600 dark:text-amber-400">Below expectation by {o.rate_currency} {Math.abs(parseFloat(o.rate_delta ?? "0")).toLocaleString()}</p>
+                      )}
+                      {o.notes && <p className="mt-1 text-slate-500 italic line-clamp-2">{o.notes}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={offerMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => offerMutation.mutate()}
+            disabled={offerMutation.isPending || !rate || !rateCurrency || rateCurrency.length !== 3}
+            className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
+          >
+            {offerMutation.isPending ? "Sending…" : "Send Offer"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

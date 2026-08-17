@@ -12445,7 +12445,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       js.initiated_by,
       js.registration_status      AS "registrationStatus",
       j.title                     AS "jobTitle",
-      j.company                   AS "jobCompany"
+      j.company                   AS "jobCompany",
+      j.engagement_type           AS "jobEngagementType"
     FROM job_submissions js
     JOIN jobs j ON j.id = js.job_id
   `;
