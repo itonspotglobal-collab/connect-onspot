@@ -1,0 +1,64 @@
+Schema structure is largely good — approving with two required corrections
+before any code is written.
+
+CORRECTION 1 — offers.engagement_type must be 'Half-Day' | 'Full-Time' only,
+never 'hourly'/'monthly'/'project'. This directly violates the established
+Engagement Type rule from earlier in this build (no hourly billing,
+anywhere, ever). This field should be a SNAPSHOT of the job's own
+engagement_type at offer-creation time, not a freely-settable value — an
+offer shouldn't be able to invent a different engagement type than the job
+itself specifies.
+
+Before finalizing: directly query production right now for the actual
+values currently stored in candidates.preferences.rateEngagementType — your
+audit describes them as "e.g. monthly, hourly," but a prior verified trace
+in this build confirmed this field holds "Full-Time" and scores correctly
+against it. I want the real current values confirmed, not assumed from
+either source, before this field's comparison logic is built.
+
+CORRECTION 2 — ownership model is backwards. Per the confirmed decision
+(Screening deferred, no Admin gate) and the standing principle that Clients
+own their day-to-day hiring process: Interview scheduling, confirming, and
+outcome recording must be CLIENT-driven actions (client-authenticated
+endpoints, keyed to the job_submissions.client_id), not Admin. Same for
+Offer creation — the Client decides to extend an offer and sets its terms.
+OnSpot's role is narrower: executing and signing the contract
+(onspot_signed_at) once an offer is accepted — that's a legal/payment
+execution step, not a hiring decision. Rework the "who writes each
+transition" table with Client as the actor for Interview and Offer stages,
+and OnSpot/Admin only entering at the Contract stage (generation, sending,
+signing).
+
+CONFIRMED, no changes needed:
+- onspot_signed_at with no client_signed_at — correct, this matches the
+  business model (OnSpot is the contracting party with Talent; the Client's
+  relationship with OnSpot is the separate MSA, not this per-engagement
+  contract).
+- hiring_contracts naming, kept separate from the legacy freelancer
+  contracts table — correct, no rename needed now.
+- Rate mismatch flag/delta mechanism (boolean + delta, NULL when
+  currencies differ) — correct, honest about not faking FX conversion.
+- Multiple interview rounds via round_number on one table — correct,
+  simple, matches this project's scale.
+
+ADDITIONAL REQUIRED WORK — flagged by your own audit, not optional cleanup:
+You found THREE conflicting validStatus arrays already in the codebase
+(Admin full, Admin simple, Client) for job_submissions.status. This is the
+same "multiple sources of truth" pattern that's caused real bugs elsewhere
+in this build (two scorers, two contract-type fields). Consolidate into
+ONE canonical status list — the one in your Table 4 proposal — used by
+every endpoint that reads or writes this column. Do not leave three
+separate lists coexisting alongside the new values.
+
+Also: since job_submissions.status has caused real bugs before from
+free-text drift (casing mismatches, typos), add a real CHECK constraint
+enforcing the full canonical value set at the DB level now that it's being
+formalized — don't leave it as app-code-only validation on a plain text
+column, the same mistake that's bitten this build multiple times already.
+
+Before running the interview→interviewing / offered→offer_extended
+migration: confirm the actual affected row count in production directly
+(query it), don't assume near-zero.
+
+Report back with the corrected schema and the real query results (rate
+engagement values, affected row count) before writing any migration.
