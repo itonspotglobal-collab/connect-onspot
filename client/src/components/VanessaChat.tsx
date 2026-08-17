@@ -972,7 +972,7 @@ export function VanessaChat({
   // Full-screen luminous glass modal mode - vertically balanced with viewport-aware height
   return (
     <div
-      className="fixed inset-0 z-50 flex animate-in fade-in duration-300"
+      className="fixed inset-0 z-[9000] flex animate-in fade-in duration-300"
       style={{
         background:
           "radial-gradient(ellipse at center, rgba(127, 61, 244, 0.15) 0%, rgba(58, 58, 248, 0.1) 50%, rgba(0, 0, 0, 0.3) 100%)",

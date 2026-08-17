@@ -62,7 +62,6 @@ import {
   profileStrengthFromCandidate,
 } from "@/lib/profileCompletion";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
-import { VanessaChat } from "@/components/VanessaChat";
 import {
   TOKEN_KEY as TALENT_TOKEN_KEY,
   loadTalentAuth,
@@ -95,7 +94,6 @@ export function TopNavigation() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
 
-  const [showVanessaChat, setShowVanessaChat] = useState(false);
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
     "client" | "talent" | null
