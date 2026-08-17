@@ -386,6 +386,10 @@ app.use((req, res, next) => {
     const { ghlSyncService } = await import('./services/ghlSyncService');
     ghlSyncService.startCronJob();
 
+    // Start offer expiry service (runs hourly — marks expired offers and emails talent)
+    const { offerExpiryService } = await import('./services/offerExpiryService');
+    offerExpiryService.startCronJob();
+
     // Start site crawler service (automatic crawl daily at 3:00 AM)
     const { siteCrawlerService } = await import('./services/siteCrawlerService');
 
