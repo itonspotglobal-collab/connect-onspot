@@ -13,7 +13,7 @@
  *  (b) Token signed with the wrong secret → 401
  *  (c) Token with wrong type (not "candidate") → 401
  *  (d) Valid candidate JWT for a real candidate → 200 + array on GET
- *  (e) Valid candidate JWT + accept action → status becomes "new" (canonical; UI shows "submitted")
+ *  (e) Valid candidate JWT + accept action → status becomes "new" (canonical)
  *  (f) Valid candidate JWT + decline action → status becomes "declined"
  *  (g) Cross-tenant denial: candidate A cannot respond to candidate B's invitation
  *  (h) Already-responded invitation → 409
@@ -290,7 +290,7 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
     assert.equal(status, 401);
   });
 
-  it("(e) valid candidate JWT + accept action → status 'new' (canonical; UI displays as 'submitted')", async () => {
+  it("(e) valid candidate JWT + accept action → status 'new' (canonical for submitted)", async () => {
     const pair = await getLinkedTalentPair();
     const clientId = await getClientUserId();
     if (!pair || !clientId) return;
@@ -305,11 +305,11 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
         srv, "POST", `/api/talent/invitations/${inviteId}/respond`, token, { action: "accept" },
       );
       assert.equal(status, 200, `accept must return 200; got ${status}: ${JSON.stringify(body)}`);
-      assert.equal(body.status, "new", "accept must transition status to 'new' (canonical; displayed as 'submitted' in UI)");
+      assert.equal(body.status, "new", "accept must transition status to canonical 'new'");
 
       // Verify in DB
       const dbRow = await query(`SELECT status FROM job_submissions WHERE id = $1`, [inviteId]);
-      assert.equal(dbRow.rows[0]?.status, "new", "DB must store canonical 'new' (displayed as 'submitted' in UI)");
+      assert.equal(dbRow.rows[0]?.status, "new", "DB must reflect the accepted status");
     } finally {
       await query(`DELETE FROM job_submissions WHERE id = $1`, [inviteId ?? "none"]).catch(() => {});
       await query(`DELETE FROM jobs WHERE id = $1`, [scaffoldId]).catch(() => {});

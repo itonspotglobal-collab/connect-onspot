@@ -1,37 +1,18 @@
 ---
-name: Hiring pipeline — Phase 2
-description: Offer endpoints (POST/GET client, GET/PATCH talent), rate mismatch computation, engagement_type snapshot, talent respond flow.
+name: Hiring pipeline — offers
+description: Durable rules for the offer flow — engagement snapshot, rate-mismatch flags, expectation source, canonical statuses, and concurrency patterns.
 ---
 
-## Key decisions
+## Durable rules
+- **Offer engagement type is snapshotted from the job, never accepted from a request body.** Only 'Half-Day' | 'Full-Time' are valid (DB CHECK); jobs without one cannot receive offers (409 `job_missing_engagement_type`).
+  **Why:** offer terms must reflect what the job was approved as, not what a client types.
+- **Rate-mismatch flags (`rate_below_expectation`/`rate_delta`) are NULL unless currency AND engagement type both match the talent's expectation exactly. Never fake FX conversion.** Talent-facing views omit these fields — client-internal analytics only.
+- **Talent rate expectation source of truth is `candidates.preferences` (keys rateAmount / rateCurrency / rateEngagementType)** — dual-written from Settings and onboarding. Not profiles.hourlyRate. Resolved via `candidates.user_id = js.talent_id`, email fallback.
+- **Only canonical submission statuses may be written to the DB** ('new', not 'submitted'; 'interviewing', not 'interview'; 'offer_extended', not 'offered'). The CHECK constraint rejects legacy aliases — any endpoint or UI writing legacy values fails at the DB. Legacy aliases belong in the display layer or an alias map at the route boundary.
+  **Why:** a review caught invitation-accept and the admin status route still writing legacy values after the constraint landed — a production-breaking regression.
+- **Business-rule uniqueness must be DB-enforced, not check-then-insert.** Single pending offer per submission uses a partial unique index (`WHERE status = 'sent'`); the route maps error 23505 to a 409 `offer_already_pending`. Status transitions plus their history/side-effect writes go in one transaction, with conditional UPDATEs (`WHERE status = ...`) for race safety; re-offer after decline is a new row.
+- **Talent ownership resolution:** talent JWT (type:"candidate") → candidates row → linked users row by email → `job_submissions.talent_id = users.id`, with legacy fallback `(talent_id IS NULL AND email match)`.
+- **Dev trace JWTs:** client tokens need `{userId, email, role}` and the role must match the users row (middleware re-checks DB → 401 "User role has changed" on mismatch); talent tokens need `{type:"candidate", candidateId, email}`.
 
-- `engagement_type` is snapshotted from `jobs.engagement_type` at offer-creation time; never from request body.
-- Valid `engagement_type` values: `'Half-Day'` | `'Full-Time'` (enforced by offers table CHECK constraint).
-- Talent rate expectations stored in `candidates.preferences` JSONB: keys `rateAmount`, `rateCurrency`, `rateEngagementType`.
-- `job_submissions.talent_id` is `users.id` (not `candidates.id`); resolve to candidate preferences via `candidates.user_id`.
-- `rate_below_expectation` / `rate_delta` are NULL when currencies differ, engagement types differ, or expectation not set — no fake FX conversion.
-- `rate_delta = offerRate - talentExpectedRate` (negative = below expectation).
-- Talent GET view deliberately omits `rate_below_expectation`, `rate_delta`, `talent_expected_*` — client-internal analytics only.
-- Offer `status` column is plain text (no CHECK constraint) — values: `sent`, `offer_accepted`, `offer_declined`.
+**How to apply:** contract-stage work hangs contracts off offers, reuses the conditional-UPDATE + single-transaction pattern, and checks every status writer against the canonical list before adding new pipeline states.
 
-## Endpoint summary
-
-| Endpoint | Auth | Guard |
-|---|---|---|
-| `POST /api/client/offers` | JWT (any role; ownership via client_id) | submission must be shortlisted/reviewed/under_review/interviewing |
-| `GET /api/client/offers?submissionId=` | JWT | ownership via client_id |
-| `GET /api/talent/offers/:id` | JWT (talent/candidate) | ownership via talent_id on submission |
-| `PATCH /api/talent/offers/:id/respond` | JWT (talent/candidate) | ownership + offer must be `sent` |
-
-## Status side-effects
-
-- `POST /api/client/offers` → submission: any eligible → `offer_extended`
-- `PATCH respond action=accept` → offer: `offer_accepted`; submission: `offer_accepted`
-- `PATCH respond action=decline` → offer: `offer_declined`; submission: `offer_declined`
-- All side-effects write audit trail to `job_application_status_history`.
-
-## Test JWT note
-
-Real client users must be used for client endpoint traces — `authenticateJWT` validates role against DB. `test-user-1` is `role=admin` in dev DB, not `role=client`. Use `1779697322933_iw3h9irnh` (val.testclient@onspotglobal.com) for client token in dev traces.
-
-**Why:** JWT middleware does a DB lookup and compares roles; mismatched role → 401 "User role has changed".
