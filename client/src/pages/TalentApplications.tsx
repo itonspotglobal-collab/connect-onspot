@@ -487,6 +487,309 @@ function RecommendedJobs({ appliedJobIds }: { appliedJobIds: Set<string> }) {
   );
 }
 
+// ─── Offers Section ───────────────────────────────────────────────────────────
+
+interface TalentOffer {
+  id: string;
+  submissionId: string;
+  job: { title: string; company: string; location?: string };
+  engagementType: string | null;
+  rate: string | null;
+  rateCurrency: string | null;
+  proposedStartDate: string | null;
+  status: string;
+  talentExpectedRate: string | null;
+  talentExpectedCurrency: string | null;
+  talentExpectedEngagement: string | null;
+  rateBelowExpectation: boolean | null;
+  rateDelta: string | null;
+  sentAt: string | null;
+  respondedAt: string | null;
+  expiresAt: string | null;
+  notes: string | null;
+}
+
+function formatRate(rate: string | null, currency: string | null, engagement: string | null): string {
+  if (!rate) return "—";
+  const amount = parseFloat(rate).toLocaleString();
+  const cur = currency ?? "PHP";
+  const eng = engagement ? ` / ${engagement}` : "";
+  return `${cur} ${amount}${eng}`;
+}
+
+interface OfferCardProps {
+  offer: TalentOffer;
+  isPending: boolean;
+  errorMessages: Record<string, string>;
+  respondingId: string | null;
+  onRespond: (id: string, action: "accept" | "decline") => void;
+  isMutating: boolean;
+}
+
+function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, isMutating }: OfferCardProps) {
+    const isExpired = offer.expiresAt ? new Date(offer.expiresAt) < new Date() : false;
+    const expiryLabel = offer.expiresAt
+      ? new Date(offer.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+      : null;
+    const startLabel = offer.proposedStartDate
+      ? new Date(offer.proposedStartDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+      : null;
+    const offerError = errorMessages[offer.id];
+    const isBusy = isMutating && respondingId === offer.id;
+
+    let statusBadge: { label: string; classes: string } | null = null;
+    if (offer.status === "accepted")
+      statusBadge = { label: "Accepted", classes: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400" };
+    else if (offer.status === "declined")
+      statusBadge = { label: "Declined", classes: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400" };
+    else if (offer.status === "expired" || isExpired)
+      statusBadge = { label: "Expired", classes: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400" };
+    else if (offer.status === "withdrawn")
+      statusBadge = { label: "Withdrawn", classes: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400" };
+
+    return (
+      <div
+        className={[
+          "rounded-xl border p-4",
+          isPending && !isExpired
+            ? "border-teal-200 bg-teal-50/60 dark:border-teal-800/40 dark:bg-teal-950/20"
+            : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
+        ].join(" ")}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {offer.job.title}
+              </p>
+              {statusBadge && (
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadge.classes}`}>
+                  {statusBadge.label}
+                </span>
+              )}
+              {isPending && !isExpired && (
+                <span className="rounded-full border border-teal-300 bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                  Pending Response
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {offer.job.company}
+              {offer.job.location ? ` · ${offer.job.location}` : ""}
+            </p>
+          </div>
+        </div>
+
+        {/* Offer details */}
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          <div>
+            <span className="text-slate-400 dark:text-slate-500">Offered Rate</span>
+            <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">
+              {formatRate(offer.rate, offer.rateCurrency, offer.engagementType)}
+            </p>
+          </div>
+          {offer.talentExpectedRate && (
+            <div>
+              <span className="text-slate-400 dark:text-slate-500">Your Expectation</span>
+              <p className={[
+                "font-medium mt-0.5",
+                offer.rateBelowExpectation === true
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-slate-800 dark:text-slate-200",
+              ].join(" ")}>
+                {formatRate(offer.talentExpectedRate, offer.talentExpectedCurrency, offer.talentExpectedEngagement)}
+                {offer.rateBelowExpectation === true && " ↓"}
+              </p>
+            </div>
+          )}
+          {offer.engagementType && (
+            <div>
+              <span className="text-slate-400 dark:text-slate-500">Engagement</span>
+              <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">{offer.engagementType}</p>
+            </div>
+          )}
+          {startLabel && (
+            <div>
+              <span className="text-slate-400 dark:text-slate-500">Start Date</span>
+              <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">{startLabel}</p>
+            </div>
+          )}
+          {expiryLabel && (
+            <div>
+              <span className={isExpired ? "text-red-400" : "text-slate-400 dark:text-slate-500"}>
+                {isExpired ? "Expired" : "Offer Expires"}
+              </span>
+              <p className={[
+                "font-medium mt-0.5",
+                isExpired ? "text-red-500 dark:text-red-400" : "text-slate-800 dark:text-slate-200",
+              ].join(" ")}>
+                {expiryLabel}
+              </p>
+            </div>
+          )}
+          {offer.respondedAt && (
+            <div>
+              <span className="text-slate-400 dark:text-slate-500">Responded</span>
+              <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">
+                {new Date(offer.respondedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {offer.notes && (
+          <div className="mt-3 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 px-3 py-2">
+            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-0.5">Note from recruiter</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">{offer.notes}</p>
+          </div>
+        )}
+
+        {/* Error message */}
+        {offerError && (
+          <div className="mt-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 px-3 py-2">
+            <p className="text-xs text-red-600 dark:text-red-400">{offerError}</p>
+          </div>
+        )}
+
+        {/* Action buttons — only for genuinely pending offers */}
+        {isPending && !isExpired && offer.status === "sent" && (
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              className="rounded-full bg-teal-600 text-white hover:bg-teal-700 h-8 text-xs"
+              disabled={isBusy}
+              onClick={() => onRespond(offer.id, "accept")}
+            >
+              {isBusy ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <>
+                  <Check className="mr-1 h-3 w-3" />
+                  Accept Offer
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full h-8 text-xs text-slate-500"
+              disabled={isBusy}
+              onClick={() => onRespond(offer.id, "decline")}
+            >
+              <XCircle className="mr-1 h-3 w-3" />
+              Decline
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+}
+
+function OffersSection({ refetchApplications }: { refetchApplications: () => void }) {
+  const auth = loadTalentAuth();
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
+
+  const { data: offers = [], refetch: refetchOffers, isLoading } = useQuery<TalentOffer[]>({
+    queryKey: ["talent-offers"],
+    queryFn: async () => {
+      if (!auth) return [];
+      const res = await fetch("/api/talent/offers", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+
+  const respondMutation = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: "accept" | "decline" }) => {
+      const res = await fetch(`/api/talent/offers/${id}/respond`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth?.token ?? ""}`,
+        },
+        body: JSON.stringify({ action }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw Object.assign(new Error(body.message || body.error || "Failed to respond"), { code: body.error });
+      }
+      return body;
+    },
+    onMutate: ({ id }) => setRespondingId(id),
+    onSuccess: () => {
+      setRespondingId(null);
+      refetchOffers();
+      refetchApplications();
+    },
+    onError: (err: any, variables) => {
+      setRespondingId(null);
+      const friendly =
+        err.code === "offer_expired"
+          ? "This offer has expired and can no longer be responded to."
+          : err.code === "offer_not_pending"
+          ? "This offer has already been responded to."
+          : err.message || "Something went wrong. Please try again.";
+      setErrorMessages((prev) => ({ ...prev, [variables.id]: friendly }));
+    },
+  });
+
+  if (isLoading || offers.length === 0) return null;
+
+  const pendingOffers = offers.filter((o) => o.status === "sent");
+  const pastOffers = offers.filter((o) => o.status !== "sent");
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <FileText className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Offers
+        </h2>
+        {pendingOffers.length > 0 && (
+          <span className="ml-1 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+            {pendingOffers.length} pending
+          </span>
+        )}
+      </div>
+
+      {pendingOffers.length > 0 && (
+        <p className="text-xs text-slate-400 mb-3">
+          Review your offer{pendingOffers.length > 1 ? "s" : ""} and respond before {pendingOffers.length > 1 ? "they expire" : "it expires"}.
+        </p>
+      )}
+
+      <div className="space-y-3">
+        {pendingOffers.map((offer) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            isPending={true}
+            errorMessages={errorMessages}
+            respondingId={respondingId}
+            onRespond={(id, action) => respondMutation.mutate({ id, action })}
+            isMutating={respondMutation.isPending}
+          />
+        ))}
+        {pastOffers.map((offer) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            isPending={false}
+            errorMessages={errorMessages}
+            respondingId={respondingId}
+            onRespond={(id, action) => respondMutation.mutate({ id, action })}
+            isMutating={respondMutation.isPending}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Role Invitations Section ─────────────────────────────────────────────────
 
 interface TalentInvitation {
@@ -803,6 +1106,9 @@ export default function TalentApplications() {
             </div>
           )}
         </div>
+
+        {/* Offers — rate/engagement offers from clients that talent can accept or decline */}
+        <OffersSection refetchApplications={refetch} />
 
         {/* Role Invitations — client-initiated invites the talent can accept/decline */}
         <InvitationsSection refetchApplications={refetch} />

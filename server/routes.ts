@@ -13109,6 +13109,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return { offer: offerResult.rows[0], linkedUserId };
   }
 
+  // GET /api/talent/offers — list all offers for the authenticated talent, newest first.
+  app.get("/api/talent/offers", authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
+      const { candidateId } = (req as any).talentAuth;
+
+      const candRow = await query(
+        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+        [candidateId],
+      );
+      if (!candRow.rows.length) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+      const candidateEmail = candRow.rows[0].email as string;
+      const userRow = await query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [candidateEmail],
+      );
+      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+
+      const result = await query(
+        `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
+                o.proposed_start_date, o.status,
+                o.talent_expected_rate, o.talent_expected_currency, o.talent_expected_engagement,
+                o.rate_below_expectation, o.rate_delta,
+                o.sent_at, o.responded_at, o.expires_at, o.notes,
+                j.title AS job_title, j.location AS job_location, j.company AS job_company
+         FROM offers o
+         JOIN job_submissions js ON js.id = o.submission_id
+         JOIN jobs j ON j.id = js.job_id
+         WHERE (
+           ($1::text IS NOT NULL AND js.talent_id = $1::text)
+           OR (js.talent_id IS NULL AND lower(js.email) = lower($2))
+         )
+         ORDER BY o.sent_at DESC NULLS LAST`,
+        [linkedUserId, candidateEmail],
+      );
+
+      return res.json(
+        result.rows.map((o) => ({
+          id: o.id,
+          submissionId: o.submission_id,
+          job: {
+            title: o.job_title,
+            company: o.job_company || "OnSpot",
+            location: o.job_location || undefined,
+          },
+          engagementType: o.engagement_type,
+          rate: o.rate,
+          rateCurrency: o.rate_currency,
+          proposedStartDate: o.proposed_start_date,
+          status: o.status,
+          talentExpectedRate: o.talent_expected_rate,
+          talentExpectedCurrency: o.talent_expected_currency,
+          talentExpectedEngagement: o.talent_expected_engagement,
+          rateBelowExpectation: o.rate_below_expectation,
+          rateDelta: o.rate_delta,
+          sentAt: o.sent_at,
+          respondedAt: o.responded_at,
+          expiresAt: o.expires_at,
+          notes: o.notes,
+        })),
+      );
+    } catch (err: any) {
+      console.error("GET /api/talent/offers error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/talent/offers/:id — talent view of a specific offer.
   // Rate-sensitive fields shown are the talent's OWN snapshotted expectation;
   // no client-internal fields or contact PII are exposed.
