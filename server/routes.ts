@@ -374,48 +374,59 @@ const requireClientOrTalent = requireRole(["client", "talent"]);
 const requireAnyRole = requireRole(["client", "talent", "admin"]);
 
 /**
- * Sub-role middleware for admin-only endpoints that are further scoped to a
- * specific internal function (e.g. 'talent_acquisition', 'client_success').
- *
- * Bypass rule: if the admin's admin_sub_role is NULL they are treated as a
- * super-admin and always pass, regardless of the allowed list.  This means all
- * current bootstrapped admins (who have no sub_role assigned yet) continue to
- * reach every endpoint until Phase 5 sub-role assignments are made.
- *
- * Usage on a route:
- *   app.get('/api/admin/clients', authenticateJWT, requireAdmin,
- *     // Phase 5: requireAdminSubRole(['client_success']),
- *     async (req, res) => { ... });
- *
- * Task #271 tracks the exact call sites that need to be uncommented in Phase 5.
+ * isAdminWithTalentAccess — true when the admin (by userId) has permission to
+ * access Talent/candidate data: admin_sub_role IS NULL (super-admin) or
+ * admin_sub_role = 'talent_acquisition'. client_success admins are denied.
  */
-const requireAdminSubRole = (allowed: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const requestId = (req as any).requestId;
-    const user = (req as any).user;
-
-    // requireAdmin must have already run — user and role are guaranteed here.
-    const subRole: string | null = user?.admin_sub_role ?? null;
-
-    // NULL == super-admin: bypass sub-role check entirely.
-    if (subRole === null) {
-      return next();
+async function isAdminWithTalentAccess(userId: string): Promise<boolean> {
+  try {
+    const result = await query(
+      "SELECT admin_sub_role FROM users WHERE id = $1 LIMIT 1",
+      [userId]
+    );
+    if (result.rows.length === 0) return false;
+    const subRole: string | null = result.rows[0].admin_sub_role ?? null;
+    return subRole === null || subRole === "talent_acquisition";
+  } catch {
+    return false;
+  }
+}
+/**
+ * Sub-role enforcement middleware (Phase 5).
+ * Requires the authenticated admin to have one of the given admin_sub_role values.
+ * NULL admin_sub_role = super-admin bypass (passes all sub-role checks).
+ * Must run AFTER authenticateAdminFlexible (or authenticateJWT + requireAdmin).
+ */
+const requireAdminSubRole = (allowedSubRoles: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
     }
-
-    if (!allowed.includes(subRole)) {
-      console.error(
-        `❌ Sub-role check failed [${requestId}]:`,
-        { userId: user?.id, subRole, allowed },
+    try {
+      const result = await query(
+        "SELECT admin_sub_role FROM users WHERE id = $1 LIMIT 1",
+        [userId]
       );
-      return res.status(403).json({
-        error: "Insufficient permissions",
-        message: `Access denied. Required sub-role: ${allowed.join(" or ")}`,
-        requestId,
-      });
+      if (result.rows.length === 0) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const adminSubRole: string | null = result.rows[0].admin_sub_role ?? null;
+      // NULL = super-admin, bypasses all sub-role checks
+      if (adminSubRole === null) {
+        return next();
+      }
+      if (!allowedSubRoles.includes(adminSubRole)) {
+        return res.status(403).json({
+          error: "Insufficient permissions",
+          message: `This action requires sub-role: ${allowedSubRoles.join(" or ")}`,
+        });
+      }
+      next();
+    } catch (err: any) {
+      console.error("requireAdminSubRole error:", err);
+      return res.status(500).json({ error: "Authorization check failed" });
     }
-
-    console.log(`✅ Sub-role check passed [${requestId}]:`, { userId: user?.id, subRole, allowed });
-    next();
   };
 };
 
@@ -838,6 +849,10 @@ async function fireInvitationEmail(opts: {
   }
 }
 
+// hint: Logic changed on both sides. Requires understanding intent of each change.
+// hint: Logic changed on both sides. Requires understanding intent of each change.
+// hint: Logic changed on both sides. Requires understanding intent of each change.
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
@@ -5658,8 +5673,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
       const decoded: any = jwt.verify(token, jwtSecret);
-      // Internal staff
-      if (decoded.userId && ["admin", "talent_acquisition"].includes(decoded.role)) return true;
+      // Internal staff — admin must have talent_acquisition sub-role (or NULL = super-admin)
+      if (decoded.userId && decoded.role === "admin") {
+        return await isAdminWithTalentAccess(decoded.userId);
+      }
+      if (decoded.userId && decoded.role === "talent_acquisition") return true;
       // Candidate JWT owner
       if (decoded.type === "candidate" && decoded.candidateId === candidateId) return true;
       // Talent user JWT owner (email match)
@@ -5681,7 +5699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const jwtSecret = process.env.JWT_SECRET || "dev-fallback-secret";
           const decoded: any = jwt.verify(token, jwtSecret);
-          callerIsPrivileged = decoded.userId && ["admin", "talent_acquisition"].includes(decoded.role);
+          if (decoded.userId && decoded.role === "admin") {
+            callerIsPrivileged = await isAdminWithTalentAccess(decoded.userId);
+          } else if (decoded.userId && decoded.role === "talent_acquisition") {
+            callerIsPrivileged = true;
+          }
         } catch { /* ignore */ }
       }
       const sanitized = callerIsPrivileged
@@ -5724,7 +5746,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const profileId = req.params.id;
       const isTalentOwner = decoded.type === "candidate" && decoded.candidateId === profileId;
-      const isStaffUser = decoded.userId && ["admin", "talent_acquisition", "client"].includes(decoded.role);
+      // Admins must have talent_acquisition sub-role (or NULL = super-admin) to edit candidate profiles.
+      const adminHasTalentAccess = decoded.role === "admin" && decoded.userId
+        ? await isAdminWithTalentAccess(decoded.userId)
+        : false;
+      const isStaffUser = (decoded.userId && decoded.role === "talent_acquisition")
+        || adminHasTalentAccess;
 
       // Allow talent users (standard user JWT) to update their own candidate record if email matches
       let isTalentUserOwner = false;
@@ -6179,8 +6206,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (decoded.role === "talent" && decoded.email) {
         const check = await query(`SELECT id FROM candidates WHERE id = $1 AND LOWER(email) = LOWER($2) LIMIT 1`, [id, decoded.email]);
         if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
-      } else if (decoded.role === "admin" || decoded.role === "talent_acquisition") {
-        // admins can access any resume
+      } else if (decoded.role === "admin" && decoded.userId) {
+        // Admin must have talent_acquisition sub-role (or NULL = super-admin)
+        const allowed = await isAdminWithTalentAccess(decoded.userId);
+        if (!allowed) return res.status(403).json({ error: "Insufficient permissions — talent_acquisition sub-role required" });
+      } else if (decoded.role === "talent_acquisition") {
+        // explicit talent_acquisition role (legacy path) — permitted
       } else {
         return res.status(403).json({ error: "Insufficient permissions" });
       }
@@ -6252,8 +6283,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           [id, decoded.email],
         );
         if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
-      } else if (decoded.role === "admin" || decoded.role === "talent_acquisition") {
-        // Admins/talent_acquisition can view any candidate video
+      } else if (decoded.role === "admin" && decoded.userId) {
+        // Admin must have talent_acquisition sub-role (or NULL = super-admin)
+        const allowed = await isAdminWithTalentAccess(decoded.userId);
+        if (!allowed) return res.status(403).json({ error: "Insufficient permissions — talent_acquisition sub-role required" });
+      } else if (decoded.role === "talent_acquisition") {
+        // explicit talent_acquisition role (legacy path) — permitted
       } else {
         return res.status(403).json({ error: "Insufficient permissions" });
       }
@@ -6766,11 +6801,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/users — list all platform users (super-admin only)
+  app.get("/api/admin/users", authenticateAdminFlexible, requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+      const result = await query(`
+        SELECT id, email,
+               first_name   AS "firstName",
+               last_name    AS "lastName",
+               role,
+               admin_sub_role AS "adminSubRole"
+        FROM users
+        ORDER BY role, email
+      `);
+      res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/users error:", err);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // PATCH /api/admin/users/:id/sub-role — assign / clear admin_sub_role (super-admin only, transactional + audited)
+  app.patch("/api/admin/users/:id/sub-role", authenticateAdminFlexible, requireSuperAdmin, async (req: Request, res: Response) => {
+    const client = await pool.connect();
+    try {
+      const { id } = req.params;
+      const { subRole } = req.body; // 'talent_acquisition' | 'client_success' | null
+      const changedBy = (req as any).user?.email ?? "unknown";
+
+      const VALID_VALUES = ["talent_acquisition", "client_success", null];
+      const normalizedSubRole: string | null = subRole === undefined ? null : (subRole ?? null);
+      if (!VALID_VALUES.includes(normalizedSubRole)) {
+        client.release();
+        return res.status(400).json({
+          error: "Invalid sub-role",
+          message: "subRole must be 'talent_acquisition', 'client_success', or null",
+        });
+      }
+
+      await client.query("BEGIN");
+
+      const targetRow = await client.query(
+        "SELECT id, email, role, admin_sub_role FROM users WHERE id = $1 LIMIT 1 FOR UPDATE",
+        [id]
+      );
+      if (targetRow.rows.length === 0) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(404).json({ error: "User not found" });
+      }
+      const target = targetRow.rows[0];
+      if (target.role !== "admin") {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({ error: "Sub-roles only apply to admin accounts" });
+      }
+
+      const previousSubRole: string | null = target.admin_sub_role ?? null;
+      const newSubRole: string | null = normalizedSubRole;
+
+      // Use 'super_admin' sentinel in audit table when sub-role is null
+      // (admin_role_changes.new_role is NOT NULL; null sub-role = super-admin bypass)
+      const auditPrevRole = previousSubRole ?? "super_admin";
+      const auditNewRole  = newSubRole ?? "super_admin";
+
+      await client.query(
+        "UPDATE users SET admin_sub_role = $1, updated_at = NOW() WHERE id = $2",
+        [newSubRole, id]
+      );
+
+      await client.query(
+        `INSERT INTO admin_role_changes
+           (user_id, email, previous_role, new_role, mechanism, changed_by, notes)
+         VALUES ($1, $2, $3, $4, 'admin_ui_sub_role_assignment', $5,
+                 'admin_sub_role changed from ' || $3 || ' to ' || $4)`,
+        [id, target.email, auditPrevRole, auditNewRole, changedBy]
+      );
+
+      await client.query("COMMIT");
+      client.release();
+
+      console.log(`✅ PATCH /api/admin/users/${id}/sub-role: ${target.email} ${auditPrevRole} → ${auditNewRole} (by ${changedBy})`);
+      res.json({ success: true, userId: id, email: target.email, previousSubRole, newSubRole });
+    } catch (err: any) {
+      try { await client.query("ROLLBACK"); } catch {}
+      client.release();
+      console.error("PATCH /api/admin/users/:id/sub-role error:", err);
+      res.status(500).json({ error: "Failed to update sub-role" });
+    }
+  });
+
   // GET /api/admin/clients — paginated, searchable client management list.
-  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
-  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
-  app.get("/api/admin/clients", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
-    // Phase 5: requireAdminSubRole(['client_success']),
+  // Phase 5: client_success sub-role required (NULL = super-admin bypass).
+  app.get("/api/admin/clients", authenticateJWT, requireAdmin, requireAdminSubRole(["client_success"]), async (req: Request, res: Response) => {
     try {
       const search = (req.query.search as string) || null;
       const page   = Math.max(1, parseInt(req.query.page  as string) || 1);
@@ -6835,133 +6957,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/clients/:id — full client profile + all their jobs, each with a
-  // cross-reference applications array.
-  //
-  // CROSS-REFERENCE BOUNDARY (enforced at query + object-construction level):
-  // The nested applications array contains ONLY:
-  //   { applicationId, talentName, applicationStatus, submittedAt }
-  // No talent email, phone, resume URL, skills, rate, or any other profile field
-  // is selected by the query or placed into the response object.  The enforcement
-  // is double: the SQL SELECT names only those four values, and the JS push()
-  // explicitly constructs the object with only those four keys — no spread, no row
-  // passthrough.
-  //
-  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
-  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
-  //
-  // Route ordering note: registered AFTER exact GET /api/admin/clients so the list
-  // endpoint is not swallowed.  Express always prefers exact matches over :param
-  // routes regardless of registration order, but explicit ordering is maintained
-  // for readability.
-  app.get("/api/admin/clients/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
-    // Phase 5: requireAdminSubRole(['client_success']),
+  // GET /api/admin/clients/:id — single client detail (client_success sub-role required)
+  app.get("/api/admin/clients/:id", authenticateJWT, requireAdmin, requireAdminSubRole(["client_success"]), async (req: Request, res: Response) => {
     try {
-      const clientId = req.params.id;
-
-      // ── 1. Client profile ──────────────────────────────────────────────────
-      const profileResult = await query(`
+      const { id } = req.params;
+      const result = await query(`
         SELECT
-          u.id,
-          u.email,
-          u.first_name,
-          u.last_name,
-          u.created_at,
-          cp.company_name,
-          cp.contact_person,
-          cp.phone_number,
-          cp.industry,
-          cp.location,
-          cp.website,
-          cp.company_size,
-          cp.about,
-          cp.timezone,
-          cp.updated_at AS profile_updated_at
-        FROM   users u
+          u.id, u.email, u.first_name, u.last_name, u.created_at,
+          cp.company_name, cp.contact_person, cp.phone_number,
+          cp.industry, cp.location, cp.website,
+          COUNT(j.id)::int                                              AS total_jobs,
+          COUNT(j.id) FILTER (WHERE j.status = 'open')::int             AS open_jobs,
+          COUNT(j.id) FILTER (WHERE j.status = 'closed')::int           AS closed_jobs,
+          COUNT(j.id) FILTER (WHERE j.approval_status = 'pending')::int AS pending_jobs
+        FROM users u
         LEFT JOIN client_profiles cp ON cp.user_id = u.id
-        WHERE  u.id = $1
-          AND  u.role = 'client'
-      `, [clientId]);
-
-      if (profileResult.rows.length === 0) {
-        return res.status(404).json({ error: "Client not found" });
-      }
-
-      const clientRow = profileResult.rows[0];
-
-      // ── 2. Jobs + cross-reference applications ─────────────────────────────
-      // The SELECT names ONLY the four cross-reference fields from the
-      // submission/user join.  No other talent-side column is fetched.
-      const jobsResult = await query(`
-        SELECT
-          j.id                                                          AS job_id,
-          COALESCE(j.professional_role_name, j.title)                  AS title,
-          j.status,
-          j.approval_status,
-          j.created_at                                                  AS job_created_at,
-          js.id                                                         AS application_id,
-          COALESCE(
-            NULLIF(TRIM(
-              COALESCE(u_t.first_name, '') || ' ' || COALESCE(u_t.last_name, '')
-            ), ''),
-            js.email
-          )                                                             AS talent_name,
-          js.status                                                     AS application_status,
-          js.submitted_at
-        FROM   jobs j
-        LEFT JOIN job_submissions js ON  js.job_id   = j.id
-        LEFT JOIN users           u_t ON u_t.id      = js.talent_id
-        WHERE  j.client_id = $1
-        ORDER BY j.created_at DESC, js.submitted_at DESC NULLS LAST
-      `, [clientId]);
-
-      // Group applications under their parent job.
-      // Object construction is explicit — no spread, no row passthrough.
-      const jobMap = new Map<string, any>();
-      for (const row of jobsResult.rows) {
-        if (!jobMap.has(row.job_id)) {
-          jobMap.set(row.job_id, {
-            id:             row.job_id,
-            title:          row.title,
-            status:         row.status,
-            approvalStatus: row.approval_status,
-            createdAt:      row.job_created_at,
-            applications:   [],
-          });
-        }
-        if (row.application_id) {
-          jobMap.get(row.job_id)!.applications.push({
-            applicationId:     row.application_id,
-            talentName:        row.talent_name,
-            applicationStatus: row.application_status,
-            submittedAt:       row.submitted_at,
-          });
-        }
-      }
-
-      res.json({
-        client: {
-          id:              clientRow.id,
-          email:           clientRow.email,
-          firstName:       clientRow.first_name,
-          lastName:        clientRow.last_name,
-          createdAt:       clientRow.created_at,
-          companyName:     clientRow.company_name,
-          contactPerson:   clientRow.contact_person,
-          phoneNumber:     clientRow.phone_number,
-          industry:        clientRow.industry,
-          location:        clientRow.location,
-          website:         clientRow.website,
-          companySize:     clientRow.company_size,
-          about:           clientRow.about,
-          timezone:        clientRow.timezone,
-          profileUpdatedAt: clientRow.profile_updated_at,
-        },
-        jobs: Array.from(jobMap.values()),
-      });
+        LEFT JOIN jobs j             ON j.client_id = u.id
+        WHERE u.id = $1 AND u.role = 'client'
+        GROUP BY u.id, u.email, u.first_name, u.last_name, u.created_at,
+                 cp.company_name, cp.contact_person, cp.phone_number,
+                 cp.industry, cp.location, cp.website
+      `, [id]);
+      if (!result.rows.length) return res.status(404).json({ error: "Client not found" });
+      res.json(result.rows[0]);
     } catch (err: any) {
       console.error("GET /api/admin/clients/:id error:", err);
-      res.status(500).json({ error: "Failed to fetch client detail" });
+      res.status(500).json({ error: "Failed to fetch client" });
+    }
+  });
+
+  // GET /api/admin/talent — paginated, searchable talent list (talent_acquisition sub-role required)
+  app.get("/api/admin/talent", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    try {
+      const search = (req.query.search as string) || null;
+      const page   = Math.max(1, parseInt(req.query.page  as string) || 1);
+      const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 25));
+      const offset = (page - 1) * limit;
+
+      const countResult = await query(`
+        SELECT COUNT(*)::int AS total
+        FROM candidates c
+        WHERE ($1::text IS NULL
+          OR c.full_name  ILIKE '%' || $1 || '%'
+          OR c.email      ILIKE '%' || $1 || '%'
+          OR c.category   ILIKE '%' || $1 || '%')
+      `, [search]);
+
+      const result = await query(`
+        SELECT
+          c.id, c.full_name AS "fullName", c.email, c.category,
+          c.target_position AS "targetPosition", c.location,
+          c.availability, c.seniority, c.experience_years AS "experienceYears",
+          c.profile_completed AS "profileCompleted",
+          c.resume_url IS NOT NULL AS "hasResume",
+          c.video_intro_url IS NOT NULL AS "hasVideo",
+          c.created_at AS "createdAt"
+        FROM candidates c
+        WHERE ($1::text IS NULL
+          OR c.full_name  ILIKE '%' || $1 || '%'
+          OR c.email      ILIKE '%' || $1 || '%'
+          OR c.category   ILIKE '%' || $1 || '%')
+        ORDER BY c.created_at DESC
+        LIMIT $2 OFFSET $3
+      `, [search, limit, offset]);
+
+      res.json({
+        total: countResult.rows[0]?.total ?? 0,
+        page,
+        limit,
+        items: result.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/talent error:", err);
+      res.status(500).json({ error: "Failed to fetch talent list" });
+    }
+  });
+
+  // GET /api/admin/talent/:id — single talent detail (talent_acquisition sub-role required)
+  app.get("/api/admin/talent/:id", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    try {
+      const candidate = await storage.getCandidate(req.params.id);
+      if (!candidate) return res.status(404).json({ error: "Talent not found" });
+      res.json(sanitizeCandidate(candidate));
+    } catch (err: any) {
+      console.error("GET /api/admin/talent/:id error:", err);
+      res.status(500).json({ error: "Failed to fetch talent" });
+    }
+  });
+
+  // GET /api/admin/talent/:id/resume — stream talent resume (talent_acquisition sub-role required)
+  app.get("/api/admin/talent/:id/resume", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const row = await query(
+        `SELECT resume_url AS "resumeUrl", resume_file_name AS "resumeFileName" FROM candidates WHERE id = $1 LIMIT 1`,
+        [id]
+      );
+      if (!row.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { resumeUrl, resumeFileName } = row.rows[0];
+      if (!resumeUrl) return res.status(404).json({ error: "No resume on this profile" });
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(resumeUrl);
+      const disposition = req.query.download === "1" ? "attachment" : "inline";
+      const fileName = (resumeFileName || "resume").replace(/"/g, "");
+      res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
+      await objectStorageService.downloadObject(objectFile, res, 0);
+    } catch (err: any) {
+      console.error("GET /api/admin/talent/:id/resume error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve resume" });
+    }
+  });
+
+  // GET /api/admin/talent/:id/video — stream talent video intro (talent_acquisition sub-role required)
+  app.get("/api/admin/talent/:id/video", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const candRow = await query(
+        `SELECT video_intro_url AS "videoIntroUrl", video_intro_file_name AS "videoIntroFileName" FROM candidates WHERE id = $1 LIMIT 1`,
+        [id]
+      );
+      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
+      const { videoIntroUrl, videoIntroFileName } = candRow.rows[0];
+      if (!videoIntroUrl) return res.status(404).json({ error: "No video on this profile" });
+
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(videoIntroUrl);
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = (metadata.contentType as string) || "video/mp4";
+      const fileSize = Number(metadata.size) || 0;
+      const fileName = (videoIntroFileName || "video-intro").replace(/"/g, "");
+
+      const rangeHeader = req.headers.range;
+      if (rangeHeader && fileSize > 0) {
+        const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+        const start = match?.[1] ? parseInt(match[1], 10) : 0;
+        const end   = match?.[2] ? parseInt(match[2], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        res.status(206);
+        res.set({
+          "Content-Range":  `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges":  "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type":   contentType,
+          "Content-Disposition": `inline; filename="${fileName}"`,
+        });
+        objectFile.createReadStream({ start, end }).pipe(res);
+      } else {
+        res.set({
+          "Content-Type":        contentType,
+          "Accept-Ranges":       "bytes",
+          "Content-Length":      fileSize || undefined,
+          "Content-Disposition": `inline; filename="${fileName}"`,
+          "Cache-Control":       "no-store",
+        });
+        objectFile.createReadStream().pipe(res);
+      }
+    } catch (err: any) {
+      console.error("GET /api/admin/talent/:id/video error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Failed to serve video" });
     }
   });
 
@@ -12540,6 +12693,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const maybeAuthenticateAdmin = BYPASS_ADMIN_AUTH
     ? (_req: Request, _res: Response, next: NextFunction) => next()
     : authenticateAdminFlexible;
+  // Sub-role enforcement paired with maybeAuthenticateAdmin:
+  // when the dev bypass is active, also skip sub-role checks so the bypass is self-consistent.
+  const maybeRequireTalentSubRole = BYPASS_ADMIN_AUTH
+    ? (_req: Request, _res: Response, next: NextFunction) => next()
+    : requireAdminSubRole(["talent_acquisition"]);
   if (BYPASS_ADMIN_AUTH) {
     console.warn("⚠️  BYPASS_ADMIN_AUTH=true — admin job-application endpoints are UNPROTECTED");
   }
@@ -12565,7 +12723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/admin/job-applications/summary — status counts (admin only)
   // NOTE: must be registered BEFORE the :applicationId route to avoid Express
   //       matching the literal string "summary" as a URL parameter.
-  app.get("/api/admin/job-applications/summary", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/summary", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
 
       const [byStatus, byReg, total] = await Promise.all([
@@ -12594,7 +12752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications — paginated list with search/filter/sort (admin only)
-  app.get("/api/admin/job-applications", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
 
       const page  = Math.max(1, parseInt(String(req.query.page  ?? "1"),   10));
@@ -12695,7 +12853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId — full detail with history (admin only)
-  app.get("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
 
       const { applicationId } = req.params;
@@ -12774,7 +12932,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId/resume — proxy CV from object storage (admin only)
-  app.get("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       const disposition = (req.query.download === "1") ? "attachment" : "inline";
@@ -12818,7 +12976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:applicationId/video — proxy video introduction from object storage (admin only)
-  app.get("/api/admin/job-applications/:applicationId/video", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.get("/api/admin/job-applications/:applicationId/video", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       const disposition = (req.query.download === "1") ? "attachment" : "inline";
@@ -12846,7 +13004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/admin/job-applications/:applicationId/resume — upload a CV on behalf of an application (admin only)
   // Used when an application was submitted before CV upload was required and resume_url is NULL.
-  app.post("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, upload.single("resume"), async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:applicationId/resume", maybeAuthenticateAdmin, maybeRequireTalentSubRole, upload.single("resume"), async (req: any, res: Response) => {
     try {
       const { applicationId } = req.params;
 
@@ -12917,7 +13075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
-  app.patch("/api/admin/job-applications/:applicationId/status", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/admin/job-applications/:applicationId/status", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
       const changedBy: string | null = (req as any).user?.id ?? null;
 
@@ -12968,7 +13126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/admin/job-applications/:applicationId — delete a single application submission (admin only)
-  app.delete("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, async (req: Request, res: Response) => {
+  app.delete("/api/admin/job-applications/:applicationId", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
       const { applicationId } = req.params;
       if (!applicationId) return res.status(400).json({ error: "applicationId is required" });
@@ -13010,7 +13168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/job-applications/:id — update application status (admin only)
-  app.patch("/api/admin/job-applications/:id", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/admin/job-applications/:id", authenticateJWT, requireAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
@@ -14788,7 +14946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // TODO: Protect all application email routes with admin authorization before production.
 
   // POST /api/admin/job-applications/:id/email/preview — resolve variables, return HTML
-  app.post("/api/admin/job-applications/:id/email/preview", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/preview", authenticateAdminFlexible, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const { templateId, subject, bodyHtml } = req.body;
@@ -14845,7 +15003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/job-applications/:id/email/test — send a test email (prefixes subject with [TEST])
-  app.post("/api/admin/job-applications/:id/email/test", maybeAuthenticateAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/test", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const { templateId, subject, bodyHtml, testRecipient } = req.body;
@@ -14905,7 +15063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/admin/job-applications/:id/email/send — send email + optionally update stage
   // TODO: Protect with admin authorization before production.
-  app.post("/api/admin/job-applications/:id/email/send", maybeAuthenticateAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/send", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const { templateId, subject, bodyHtml, updateStage, senderEmail: rawSenderEmail } = req.body;
@@ -15011,7 +15169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/job-applications/:id/email/history — list sent emails for an application
-  app.get("/api/admin/job-applications/:id/email/history", maybeAuthenticateAdmin, async (req: any, res: Response) => {
+  app.get("/api/admin/job-applications/:id/email/history", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const result = await query(
@@ -15036,7 +15194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/job-applications/:id/email/:emailId/retry — retry a failed email
-  app.post("/api/admin/job-applications/:id/email/:emailId/retry", maybeAuthenticateAdmin, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/:emailId/retry", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
     try {
       const { id, emailId } = req.params;
       const emailRow = await query(
@@ -15413,3 +15571,32 @@ function parseResumeText(resumeText: string): any {
 
   return parsedData;
 }
+
+/**
+ * requireSuperAdmin — allows only admins whose admin_sub_role IS NULL in the DB.
+ * NULL sub-role = super-admin (unrestricted). Restricted sub-roles are rejected
+ * so they cannot assign or escalate roles.
+ * Must run AFTER authenticateAdminFlexible or authenticateJWT + requireAdmin.
+ */
+const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user?.id;
+  if (!userId) return res.status(401).json({ error: "Authentication required" });
+  try {
+    const result = await query(
+      "SELECT admin_sub_role FROM users WHERE id = $1 LIMIT 1",
+      [userId]
+    );
+    if (result.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
+    const adminSubRole: string | null = result.rows[0].admin_sub_role ?? null;
+    if (adminSubRole !== null) {
+      return res.status(403).json({
+        error: "Insufficient permissions",
+        message: "Only super-admins (no sub-role) may manage admin role assignments.",
+      });
+    }
+    next();
+  } catch (err: any) {
+    console.error("requireSuperAdmin error:", err);
+    return res.status(500).json({ error: "Authorization check failed" });
+  }
+};

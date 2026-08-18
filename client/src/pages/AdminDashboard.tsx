@@ -105,6 +105,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   role: string;
+  adminSubRole?: string | null;
 }
 
 interface JobApplication {
@@ -406,6 +407,25 @@ export default function AdminDashboard() {
     },
   });
 
+  // ── Sub-role assignment ──────────────────────────────────────────────────
+  const subRoleMutation = useMutation({
+    mutationFn: ({ userId, subRole }: { userId: string; subRole: string | null }) =>
+      authAPI.patch(`/api/admin/users/${userId}/sub-role`, { subRole }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: 'Sub-role updated', description: 'Admin sub-role saved successfully.' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Update failed',
+        description: error.response?.data?.message || 'Failed to update sub-role',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const adminUsers = users.filter((u) => u.role === 'admin');
+
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-8" data-testid="admin-dashboard-page">
       {/* Page Header */}
@@ -590,6 +610,62 @@ export default function AdminDashboard() {
 
         {/* Users & Passwords Tab */}
         <TabsContent value="passwords" className="space-y-6">
+
+          {/* Sub-role assignment (super-admins only — those with NULL admin_sub_role) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Admin Sub-Role Assignment
+              </CardTitle>
+              <CardDescription>
+                Assign <strong>Talent Acquisition</strong> or <strong>Client Success</strong> sub-roles to restrict each admin's access.
+                Admins with no sub-role (super-admin) can reach all pages.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {adminUsers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No admin accounts found.</p>
+              ) : (
+                <div className="divide-y">
+                  {adminUsers.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between py-3 gap-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{u.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {u.adminSubRole
+                            ? u.adminSubRole === 'talent_acquisition'
+                              ? 'Talent Acquisition'
+                              : 'Client Success'
+                            : 'Super-admin (no restriction)'}
+                        </p>
+                      </div>
+                      <Select
+                        value={u.adminSubRole ?? '__null__'}
+                        onValueChange={(val) =>
+                          subRoleMutation.mutate({
+                            userId: u.id,
+                            subRole: val === '__null__' ? null : val,
+                          })
+                        }
+                        disabled={subRoleMutation.isPending}
+                      >
+                        <SelectTrigger className="w-52 shrink-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__null__">Super-admin (no restriction)</SelectItem>
+                          <SelectItem value="talent_acquisition">Talent Acquisition</SelectItem>
+                          <SelectItem value="client_success">Client Success</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
