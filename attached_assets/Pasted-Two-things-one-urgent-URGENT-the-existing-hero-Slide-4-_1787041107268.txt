@@ -1,0 +1,39 @@
+Two things, one urgent.
+
+URGENT: the existing hero Slide 4 ("The Talent Network") is showing real
+test/dev account names on the LIVE production homepage right now —
+visible in a screenshot as "test T.", "Legacy U.", "Int T." with role
+"Professional". This is the exact same GET /api/candidates endpoint the
+new post-hero carousel is being built to reuse. If this isn't filtered,
+the new section will show the same obviously-fake names the moment it
+ships — undermining trust on the highest-traffic public page, same
+severity as prior "visible test data in production" incidents this
+session.
+
+Fix both surfaces together: add a real filter to whichever query powers
+public candidate display (existing Slide 4 AND the new carousel) that
+excludes obvious test/seed accounts — check for test/seed email domains
+(@onspot.test, @example.com, etc.), placeholder name patterns, or
+whatever marker already exists elsewhere in this codebase for identifying
+test data (the created_via / source-flag pattern already used for
+scaffold jobs is a reasonable model to follow here too). Report what
+filter you apply and confirm with real evidence — the actual candidate
+list returned, showing no test accounts — for BOTH surfaces, not just the
+new one.
+
+DESIGN DIRECTION for the new post-hero carousel section — updated per
+review: LIGHT section background (#F7F7FA, matching the surrounding page),
+NOT dark. Reasoning: the Hero above it is already dark, so a second dark
+section back-to-back breaks the light/dark alternating rhythm this
+product already uses elsewhere — and the section immediately after this
+one is also light. Keep the section wrapper light; the visual "pop" comes
+from the CARDS themselves, which stay dark (gradient navy surfaces,
+subtle shadow-lift on hover, gold pulsing ring reserved for "available
+now" — unchanged from the earlier direction). Headline/eyebrow text
+switches to dark-on-light. Nav arrow buttons become white circles with a
+soft shadow instead of translucent-on-dark. Reference mockup attached
+separately reflects this correction — build to match its layout logic,
+not its literal inline CSS.
+
+Confirm the test-data filter fix first, then proceed with the visual
+implementation using the corrected light-section/dark-card direction.
