@@ -21,7 +21,8 @@ import {
   clearTalentAuth,
 } from "@/components/TalentLoginModal";
 import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
-import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
+import { applyResumeToCandidate, type ResumeReviewField } from "@/lib/applyResumeToCandidate";
+import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -714,6 +715,11 @@ export default function TalentProfile() {
   // ── Resume & video upload state ───────────────────────────────────────────
   const [resumeUploading, setResumeUploading] = useState(false);
   const [resumeAnalyzing, setResumeAnalyzing] = useState(false);
+  // Review panel shown after Vanessa auto-fills profile fields from a resume
+  const [resumeReview, setResumeReview] = useState<{
+    fields: ResumeReviewField[];
+    source: "vanessa" | "deterministic";
+  } | null>(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoDeleting, setVideoDeleting] = useState(false);
   // 'idle' | 'camera' | 'recording' | 'recorded'
@@ -877,7 +883,7 @@ export default function TalentProfile() {
     // ── Parse resume and apply extracted fields to the Candidate profile ────
     setResumeAnalyzing(true);
     try {
-      const { appliedFields, parseError } = await applyResumeToCandidate({
+      const { appliedFields, reviewFields, parseError, analysisSource } = await applyResumeToCandidate({
         file,
         candidateId: id,
         token,
@@ -890,17 +896,8 @@ export default function TalentProfile() {
           description: "Resume saved successfully. Vanessa couldn't extract all profile details — you can complete them manually.",
         });
       } else if (appliedFields.length > 0) {
-        const FIELD_LABELS: Record<string, string> = {
-          fullName: "Name", phone: "Phone", location: "Location",
-          targetPosition: "Title", summary: "About", coreSkills: "Core Skills",
-          secondarySkills: "Skills", workHistory: "Experience",
-          education: "Education", certifications: "Certifications",
-          languages: "Languages",
-        };
-        toast({
-          title: "Vanessa analyzed your resume",
-          description: `Review your updated profile. Fields updated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
-        });
+        // Open the review panel so the talent can confirm or correct each field
+        setResumeReview({ fields: reviewFields, source: analysisSource });
       } else {
         toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
       }
@@ -909,6 +906,29 @@ export default function TalentProfile() {
     } finally {
       setResumeAnalyzing(false);
     }
+  }
+
+  // ── Resume review panel — jump to the section that holds a given field ────
+  function handleReviewEdit(field: string) {
+    const SECTION_BY_FIELD: Record<string, string> = {
+      fullName: "section-overview", phone: "section-overview",
+      location: "section-overview", targetPosition: "section-overview",
+      summary: "section-about", coreSkills: "section-skills",
+      secondarySkills: "section-skills", workHistory: "section-experience",
+      education: "section-education", certifications: "section-certifications",
+      languages: "section-preferences",
+    };
+    const sectionId = SECTION_BY_FIELD[field] ?? "section-overview";
+    setResumeReview(null);
+    // Wait a tick so the panel unmounts before scrolling
+    setTimeout(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - (NAVBAR_H + TABBAR_H + 8);
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
+      if (sectionId !== "section-overview") handleSectionNavigate(sectionId);
+    }, 50);
   }
 
   // ── Video recording / upload handlers ────────────────────────────────────
@@ -2071,6 +2091,15 @@ export default function TalentProfile() {
           </p>
         </div>
       )}
+
+      {/* ── Resume import review panel ── */}
+      <ResumeImportReviewPanel
+        open={!!resumeReview}
+        onClose={() => setResumeReview(null)}
+        fields={resumeReview?.fields ?? []}
+        analysisSource={resumeReview?.source ?? "vanessa"}
+        onEditField={handleReviewEdit}
+      />
     </div>
     </>
   );

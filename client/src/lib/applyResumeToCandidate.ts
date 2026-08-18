@@ -126,6 +126,9 @@ function vanessaToExtracted(v: NonNullable<VanessaServerResponse["profile"]>): E
 
 // ─── Try Vanessa server endpoint ───────────────────────────────────────────────
 
+/** Per-field confidence scores as returned by the Vanessa server. */
+export type VanessaConfidence = NonNullable<VanessaServerResponse["profile"]>["confidence"];
+
 /**
  * POST resume text to /api/resume/analyze.
  * Returns Vanessa's parsed result mapped to ExtractedCandidateProfile,
@@ -134,7 +137,7 @@ function vanessaToExtracted(v: NonNullable<VanessaServerResponse["profile"]>): E
 async function tryVanessaAnalysis(
   file: File,
   token: string | null | undefined,
-): Promise<ExtractedCandidateProfile | null> {
+): Promise<{ extracted: ExtractedCandidateProfile; confidence: VanessaConfidence } | null> {
   try {
     const resumeText = await extractTextFromFile(file);
     if (!resumeText.trim()) return null;
@@ -153,7 +156,7 @@ async function tryVanessaAnalysis(
     const data: VanessaServerResponse = await res.json();
     if (!data.success || !data.profile) return null;
 
-    return vanessaToExtracted(data.profile);
+    return { extracted: vanessaToExtracted(data.profile), confidence: data.profile.confidence };
   } catch {
     return null;
   }
@@ -276,13 +279,63 @@ export function mergeResumeWithCandidate(
 
 // ─── Public result type ────────────────────────────────────────────────────────
 
+/** One profile field Vanessa populated, with before/after values and confidence. */
+export interface ResumeReviewField {
+  field: string;
+  /** Value now on the profile after merging (what was written). */
+  importedValue: unknown;
+  /** Value that was on the profile before the import. */
+  previousValue: unknown;
+  /** Vanessa's confidence score 0–1, or null when the deterministic fallback ran. */
+  confidence: number | null;
+}
+
 export interface ApplyResumeResult {
   extracted: ExtractedCandidateProfile;
   updated: Record<string, unknown> | null;
   appliedFields: string[];
+  /** Per-field review details for the "review what Vanessa filled" panel. */
+  reviewFields: ResumeReviewField[];
   parseError?: string;
   /** "vanessa" when AI was used, "deterministic" on fallback. */
   analysisSource: "vanessa" | "deterministic";
+}
+
+/** Which Vanessa confidence key applies to each candidate field. */
+const CONFIDENCE_KEY_BY_FIELD: Record<string, keyof VanessaConfidence> = {
+  targetPosition:  "professionalTitle",
+  summary:         "summary",
+  workHistory:     "experience",
+  education:       "education",
+  coreSkills:      "skills",
+  secondarySkills: "skills",
+  location:        "location",
+};
+
+function buildReviewFields(
+  appliedFields: string[],
+  patch: Record<string, unknown>,
+  existing: CandidateSnapshot,
+  confidence: VanessaConfidence | null,
+): ResumeReviewField[] {
+  return appliedFields.map((field) => {
+    let importedValue: unknown;
+    let previousValue: unknown;
+    if (field === "languages") {
+      importedValue = (patch.preferences as Record<string, unknown> | undefined)?.languages ?? [];
+      const prevPrefs = (existing.preferences as Record<string, unknown>) ?? {};
+      previousValue = Array.isArray(prevPrefs.languages) ? prevPrefs.languages : [];
+    } else {
+      importedValue = patch[field];
+      previousValue = (existing as Record<string, unknown>)[field] ?? null;
+    }
+    let conf: number | null = null;
+    if (confidence) {
+      const key = CONFIDENCE_KEY_BY_FIELD[field];
+      conf = (key ? confidence[key] : undefined) ?? confidence.overall ?? null;
+    }
+    return { field, importedValue, previousValue, confidence: conf };
+  });
 }
 
 // ─── Main pipeline ─────────────────────────────────────────────────────────────
@@ -315,11 +368,13 @@ export async function applyResumeToCandidate({
   // Step 1 — Try Vanessa, fall back to deterministic
   let extracted: ExtractedCandidateProfile;
   let analysisSource: "vanessa" | "deterministic" = "vanessa";
+  let vanessaConfidence: VanessaConfidence | null = null;
 
   const vanessaResult = await tryVanessaAnalysis(file, token);
 
   if (vanessaResult) {
-    extracted = vanessaResult;
+    extracted = vanessaResult.extracted;
+    vanessaConfidence = vanessaResult.confidence;
   } else {
     // Vanessa unavailable or failed — fall back gracefully
     analysisSource = "deterministic";
@@ -330,6 +385,7 @@ export async function applyResumeToCandidate({
         extracted:      { ...EMPTY_EXTRACTION },
         updated:        null,
         appliedFields:  [],
+        reviewFields:   [],
         parseError:     "An unexpected error occurred while reading your resume.",
         analysisSource: "deterministic",
       };
@@ -337,7 +393,7 @@ export async function applyResumeToCandidate({
   }
 
   if (extracted.parseError) {
-    return { extracted, updated: null, appliedFields: [], parseError: extracted.parseError, analysisSource };
+    return { extracted, updated: null, appliedFields: [], reviewFields: [], parseError: extracted.parseError, analysisSource };
   }
 
   // Step 2 — Fetch current candidate (with auth to get privileged view)
@@ -355,7 +411,7 @@ export async function applyResumeToCandidate({
   const patch = mergeResumeWithCandidate(existing, extracted);
 
   if (Object.keys(patch).length === 0) {
-    return { extracted, updated: null, appliedFields: [], analysisSource };
+    return { extracted, updated: null, appliedFields: [], reviewFields: [], analysisSource };
   }
 
   // Step 4 — PATCH
@@ -385,5 +441,12 @@ export async function applyResumeToCandidate({
     (f) => f in patch || (f === "languages" && "preferences" in patch),
   );
 
-  return { extracted, updated, appliedFields, analysisSource };
+  const reviewFields = buildReviewFields(
+    appliedFields,
+    patch as Record<string, unknown>,
+    existing,
+    vanessaConfidence,
+  );
+
+  return { extracted, updated, appliedFields, reviewFields, analysisSource };
 }

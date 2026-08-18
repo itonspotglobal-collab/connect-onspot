@@ -57,7 +57,8 @@ import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
 import { queryClient } from "@/lib/queryClient";
 import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
-import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
+import { applyResumeToCandidate, type ResumeReviewField } from "@/lib/applyResumeToCandidate";
+import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -242,6 +243,11 @@ export default function ProfileSettings() {
   const [resumeUploading, setResumeUploading] = useState(false);
   const [resumeAnalyzing, setResumeAnalyzing] = useState(false);
   const [resumeDeleting,  setResumeDeleting]  = useState(false);
+  // Review panel shown after Vanessa auto-fills profile fields from a resume
+  const [resumeReview, setResumeReview] = useState<{
+    fields: ResumeReviewField[];
+    source: "vanessa" | "deterministic";
+  } | null>(null);
   const [videoUploading,  setVideoUploading]  = useState(false);
   const [videoDeleting,   setVideoDeleting]   = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
@@ -312,7 +318,7 @@ export default function ProfileSettings() {
     // ── Parse resume and apply extracted fields to the Candidate profile ────
     setResumeAnalyzing(true);
     try {
-      const { appliedFields, parseError } = await applyResumeToCandidate({
+      const { appliedFields, reviewFields, parseError, analysisSource } = await applyResumeToCandidate({
         file,
         candidateId,
         token,
@@ -325,16 +331,8 @@ export default function ProfileSettings() {
           description: "Resume saved successfully. Vanessa couldn't analyze all details — you can complete them manually.",
         });
       } else if (appliedFields.length > 0) {
-        const FIELD_LABELS: Record<string, string> = {
-          phone: "Phone", location: "Location", targetPosition: "Professional Title",
-          summary: "Bio", coreSkills: "Core Skills", secondarySkills: "Skills",
-          workHistory: "Experience", education: "Education",
-          certifications: "Certifications", languages: "Languages",
-        };
-        toast({
-          title: "Vanessa analyzed your resume",
-          description: `Review your updated profile. Fields populated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
-        });
+        // Open the review panel so the talent can confirm or correct each field
+        setResumeReview({ fields: reviewFields, source: analysisSource });
       } else {
         toast({ title: "Resume uploaded", description: "Your resume has been saved." });
       }
@@ -344,6 +342,24 @@ export default function ProfileSettings() {
       setResumeAnalyzing(false);
     }
   };
+
+  // ── Resume review panel — route to the settings section that holds a field ──
+  function handleReviewEdit(field: string) {
+    setResumeReview(null);
+    // Experience/education aren't editable in Settings — send to the Talent Profile page
+    if (field === "workHistory" || field === "education" || field === "fullName") {
+      if (candidateId) window.location.href = `/talent-profile/${candidateId}`;
+      return;
+    }
+    const SECTION_BY_FIELD: Record<string, string> = {
+      phone: "basic", location: "basic", languages: "basic",
+      targetPosition: "professional", summary: "professional",
+      coreSkills: "skills", secondarySkills: "skills",
+      certifications: "certifications",
+    };
+    setActiveSection(SECTION_BY_FIELD[field] ?? "basic");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   const deleteResume = async () => {
     if (!candidateId || !window.confirm("Remove your resume? This cannot be undone.")) return;
@@ -1569,6 +1585,15 @@ export default function ProfileSettings() {
           </div>
         </div>
       </div>
+
+      {/* ── Resume import review panel ── */}
+      <ResumeImportReviewPanel
+        open={!!resumeReview}
+        onClose={() => setResumeReview(null)}
+        fields={resumeReview?.fields ?? []}
+        analysisSource={resumeReview?.source ?? "vanessa"}
+        onEditField={handleReviewEdit}
+      />
     </div>
   );
 }
