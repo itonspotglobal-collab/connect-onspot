@@ -54,6 +54,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminTalent from "@/pages/AdminTalent";
+import AdminTalentDetail from "@/pages/AdminTalentDetail";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
@@ -222,6 +223,7 @@ function PublicRouter() {
           <Route path="/admin/clients" component={() => <AdminProtectedRoute><AdminClients /></AdminProtectedRoute>} />
           <Route path="/admin/clients/:id" component={() => <AdminProtectedRoute><AdminClientDetail /></AdminProtectedRoute>} />
           <Route path="/admin/talent" component={() => <AdminProtectedRoute><AdminTalent /></AdminProtectedRoute>} />
+          <Route path="/admin/talent/:id" component={() => <AdminProtectedRoute><AdminTalentDetail /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-responses" component={() => <AdminProtectedRoute><VanessaResponses /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-learning" component={() => <AdminProtectedRoute><VanessaLearningDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-rag" component={() => <AdminProtectedRoute><AdminVanessaRAG /></AdminProtectedRoute>} />

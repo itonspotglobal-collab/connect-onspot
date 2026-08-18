@@ -7107,24 +7107,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/talent/:id — single talent detail (talent_acquisition sub-role required)
+  // GET /api/admin/talent/:id — full talent profile + reverse cross-reference applications.
+  //
+  // The :id parameter is users.id (what AdminTalent.tsx sends from the list).
+  // The original Task #271 handler used storage.getCandidate(candidates.id) which
+  // would 404 for every row — replaced here with a users.id lookup.
+  //
+  // REVERSE CROSS-REFERENCE BOUNDARY (enforced at query + object-construction level):
+  // The nested applications array contains ONLY:
+  //   { applicationId, jobTitle, clientCompanyName, applicationStatus, submittedAt }
+  // No client email, phone, contactPerson, about, companySize, website, or any other
+  // client-profile field is selected by the query or placed into the response object.
+  // Enforcement is double: SQL SELECT names only those five values, and the JS push()
+  // explicitly constructs the object with only those five keys — no spread, no row
+  // passthrough.
+  //
+  // Phase 5 (Task #271): requireAdminSubRole(['talent_acquisition']) already applied.
   app.get("/api/admin/talent/:id", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
     try {
-      const candidate = await storage.getCandidate(req.params.id);
-      if (!candidate) return res.status(404).json({ error: "Talent not found" });
-      res.json(sanitizeCandidate(candidate));
+      const userId = req.params.id;
+
+      // ── 1. Talent profile (lookup by users.id, joined to candidates) ──────
+      const profileResult = await query(`
+        SELECT
+          u.id,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.created_at,
+          c.id                   AS candidate_id,
+          c.full_name,
+          c.display_name,
+          c.category,
+          c.target_position,
+          c.seniority,
+          c.experience_years,
+          c.headline,
+          c.summary,
+          c.more_about_me,
+          c.availability,
+          c.location,
+          c.core_skills,
+          c.secondary_skills,
+          c.work_history,
+          c.education,
+          c.certifications,
+          c.preferences,
+          c.profile_completed,
+          c.profile_photo_url,
+          c.linkedin_url,
+          c.github_url,
+          c.portfolio_url,
+          c.website_url,
+          c.resume_url           IS NOT NULL AS has_resume,
+          c.video_intro_url      IS NOT NULL AS has_video,
+          c.resume_file_name,
+          c.video_intro_file_name,
+          c.updated_at           AS profile_updated_at
+        FROM   users u
+        LEFT JOIN candidates c ON c.user_id = u.id
+        WHERE  u.id   = $1
+          AND  u.role = 'talent'
+      `, [userId]);
+
+      if (profileResult.rows.length === 0) {
+        return res.status(404).json({ error: "Talent not found" });
+      }
+
+      const profileRow = profileResult.rows[0];
+
+      // ── 2. Applications — reverse cross-reference ─────────────────────────
+      // SQL SELECT names ONLY the five cross-reference fields.
+      // No client email, phone, contactPerson, or other client-profile columns
+      // are fetched here. The JS push() below constructs the object explicitly
+      // with only those five keys — no spread.
+      const appsResult = await query(`
+        SELECT
+          js.id                                                    AS application_id,
+          COALESCE(j.professional_role_name, j.title)             AS job_title,
+          COALESCE(cp.company_name, u_c.email)                    AS client_company_name,
+          js.status                                                AS application_status,
+          js.submitted_at
+        FROM   job_submissions js
+        JOIN   jobs          j   ON j.id        = js.job_id
+        JOIN   users         u_c ON u_c.id      = js.client_id
+        LEFT JOIN client_profiles cp ON cp.user_id = u_c.id
+        WHERE  js.talent_id = $1
+        ORDER  BY js.submitted_at DESC NULLS LAST
+      `, [userId]);
+
+      // Explicit object construction — no spread, no row passthrough.
+      const applications = appsResult.rows.map(row => ({
+        applicationId:     row.application_id,
+        jobTitle:          row.job_title,
+        clientCompanyName: row.client_company_name,
+        applicationStatus: row.application_status,
+        submittedAt:       row.submitted_at,
+      }));
+
+      res.json({
+        talent: {
+          id:                 profileRow.id,
+          email:              profileRow.email,
+          firstName:          profileRow.first_name,
+          lastName:           profileRow.last_name,
+          createdAt:          profileRow.created_at,
+          candidateId:        profileRow.candidate_id,
+          fullName:           profileRow.full_name,
+          displayName:        profileRow.display_name,
+          category:           profileRow.category,
+          targetPosition:     profileRow.target_position,
+          seniority:          profileRow.seniority,
+          experienceYears:    profileRow.experience_years,
+          headline:           profileRow.headline,
+          summary:            profileRow.summary,
+          moreAboutMe:        profileRow.more_about_me,
+          availability:       profileRow.availability,
+          location:           profileRow.location,
+          coreSkills:         profileRow.core_skills ?? [],
+          secondarySkills:    profileRow.secondary_skills ?? [],
+          workHistory:        profileRow.work_history ?? [],
+          education:          profileRow.education ?? [],
+          certifications:     profileRow.certifications ?? [],
+          preferences:        profileRow.preferences ?? {},
+          profileCompleted:   profileRow.profile_completed,
+          profilePhotoUrl:    profileRow.profile_photo_url,
+          linkedinUrl:        profileRow.linkedin_url,
+          githubUrl:          profileRow.github_url,
+          portfolioUrl:       profileRow.portfolio_url,
+          websiteUrl:         profileRow.website_url,
+          hasResume:          profileRow.has_resume,
+          hasVideo:           profileRow.has_video,
+          resumeFileName:     profileRow.resume_file_name,
+          videoIntroFileName: profileRow.video_intro_file_name,
+          profileUpdatedAt:   profileRow.profile_updated_at,
+        },
+        applications,
+      });
     } catch (err: any) {
       console.error("GET /api/admin/talent/:id error:", err);
-      res.status(500).json({ error: "Failed to fetch talent" });
+      res.status(500).json({ error: "Failed to fetch talent detail" });
     }
   });
 
   // GET /api/admin/talent/:id/resume — stream talent resume (talent_acquisition sub-role required)
+  // Note: :id is users.id — lookup changed from candidates.id to candidates.user_id
+  // to match what AdminTalentDetail sends.
   app.get("/api/admin/talent/:id/resume", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const row = await query(
-        `SELECT resume_url AS "resumeUrl", resume_file_name AS "resumeFileName" FROM candidates WHERE id = $1 LIMIT 1`,
+        `SELECT resume_url AS "resumeUrl", resume_file_name AS "resumeFileName" FROM candidates WHERE user_id = $1 LIMIT 1`,
         [id]
       );
       if (!row.rows.length) return res.status(404).json({ error: "Candidate not found" });
@@ -7143,11 +7276,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/talent/:id/video — stream talent video intro (talent_acquisition sub-role required)
+  // Note: :id is users.id — lookup changed from candidates.id to candidates.user_id.
   app.get("/api/admin/talent/:id/video", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const candRow = await query(
-        `SELECT video_intro_url AS "videoIntroUrl", video_intro_file_name AS "videoIntroFileName" FROM candidates WHERE id = $1 LIMIT 1`,
+        `SELECT video_intro_url AS "videoIntroUrl", video_intro_file_name AS "videoIntroFileName" FROM candidates WHERE user_id = $1 LIMIT 1`,
         [id]
       );
       if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
