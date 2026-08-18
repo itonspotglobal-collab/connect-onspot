@@ -126,13 +126,13 @@ export function MatchedJobsList({ matches, isLoading }: { matches?: MatchedJob[]
                           {skill}
                         </Badge>
                       ))}
-                      {m.factors.engagementMatch && (
+                      {m.factors?.engagementMatch && (
                         <Badge variant="outline" className="text-xs border-green-500/50 text-green-600 dark:text-green-400">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Engagement match
                         </Badge>
                       )}
-                      {m.factors.rateMatch && (
+                      {m.factors?.rateMatch && (
                         <Badge variant="outline" className="text-xs border-green-500/50 text-green-600 dark:text-green-400">
                           <DollarSign className="h-3 w-3 mr-1" />
                           Rate match
