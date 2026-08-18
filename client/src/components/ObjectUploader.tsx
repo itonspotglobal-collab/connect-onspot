@@ -132,6 +132,9 @@ export function ObjectUploader({
               type: file.type,
               size: file.size,
               uploadURL: fileUrl,
+              // Pass the original File object so callers can run
+              // client-side parsing / Vanessa analysis without re-fetching.
+              data: file,
             },
           ],
           failed: [],

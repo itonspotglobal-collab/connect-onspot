@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
 import { authAPI } from "@/lib/api";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -220,12 +221,14 @@ export default function GetHired() {
       };
       addDocument(newDocument);
 
+      let saveSucceeded = false;
       try {
         // Persist to candidates table (source of truth)
         const endpoint = type === "video_intro"
           ? "/api/talent/me/video-intro-url"
           : "/api/talent/me/resume-url";
         await authAPI.patch(endpoint, { fileUrl, fileName });
+        saveSucceeded = true;
 
         // Invalidate ALL candidate query-key variants so TalentProfile and
         // ProfileSettings reflect the new resume immediately without a hard refresh.
@@ -242,6 +245,73 @@ export default function GetHired() {
           description: "File uploaded but could not be saved to your profile. Please try again.",
           variant: "destructive",
         });
+      }
+
+      // Run Vanessa resume analysis only after a confirmed successful save.
+      // ObjectUploader passes `data` (the original File) in the successful result.
+      if (saveSucceeded && type === "resume" && file.data instanceof File) {
+        try {
+          // Resolve candidateId + token from whichever auth session is active.
+          //
+          // Talent Portal session (talent_profile_token): candidateId is stored
+          // directly in the session payload.
+          //
+          // Main portal JWT (onspot_jwt_token): /api/candidates/:id uses the
+          // candidate primary key, not users.id — so we call GET /api/candidates/me
+          // (auth-gated by JWT, looks up by req.user.email) to get the real ID.
+          let candidateId: string | undefined;
+          let token: string | undefined;
+
+          const talentRaw = localStorage.getItem("talent_profile_token");
+          const talentSession = talentRaw
+            ? (JSON.parse(talentRaw) as { token?: string; candidateId?: string })
+            : null;
+
+          if (talentSession?.candidateId && talentSession?.token) {
+            // Talent Portal path — candidateId already known
+            candidateId = talentSession.candidateId;
+            token = talentSession.token;
+          } else {
+            // Main portal JWT path — resolve real candidates.id via /api/candidates/me
+            const jwtToken = localStorage.getItem("onspot_jwt_token");
+            if (jwtToken) {
+              token = jwtToken;
+              try {
+                const meRes = await fetch("/api/candidates/me", {
+                  headers: { Authorization: `Bearer ${jwtToken}` },
+                });
+                if (meRes.ok) {
+                  const meData = await meRes.json();
+                  candidateId = meData.id;
+                }
+              } catch {
+                // Network failure — skip analysis silently
+              }
+            }
+          }
+
+          if (candidateId) {
+            const { updated, appliedFields, parseError, analysisSource } = await applyResumeToCandidate({
+              file: file.data,
+              candidateId,
+              token,
+              queryClient,
+            });
+
+            if (parseError) {
+              console.warn("Resume analysis partial error:", parseError);
+            } else if (updated !== null && appliedFields.length > 0) {
+              // Only surface a toast when the PATCH actually persisted to the DB
+              toast({
+                title: analysisSource === "vanessa" ? "Profile auto-filled" : "Resume imported",
+                description: `Updated: ${appliedFields.slice(0, 4).join(", ")}${appliedFields.length > 4 ? ` +${appliedFields.length - 4} more` : ""}.`,
+              });
+            }
+          }
+        } catch (analysisErr) {
+          // Non-fatal — the resume file is already saved; analysis is best-effort.
+          console.warn("Resume analysis failed (non-fatal):", analysisErr);
+        }
       }
     }
   };
