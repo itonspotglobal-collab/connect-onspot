@@ -516,6 +516,7 @@ export class MemStorage implements IStorage {
       role: insertUser.role || "client",
       email: insertUser.email || null,
       username: insertUser.username || null,
+      company: null,
       firstName: (insertUser as any).firstName || null,
       lastName: (insertUser as any).lastName || null,
       profileImageUrl: (insertUser as any).profileImageUrl || null,
@@ -561,6 +562,7 @@ export class MemStorage implements IStorage {
         id: userData.id || randomUUID(),
         username: userData.username || null,
         email: userData.email || null,
+        company: null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
@@ -827,7 +829,7 @@ export class MemStorage implements IStorage {
   async createJob(insertJob: InsertJob): Promise<Job> {
     const id = randomUUID();
     const now = new Date();
-    const job: Job = {
+    const job = {
       ...insertJob,
       id,
       company: insertJob.company ?? "OnSpot",
@@ -838,8 +840,8 @@ export class MemStorage implements IStorage {
       status: insertJob.status ?? "open",
       proposalCount: 0,
       createdAt: now,
-      updatedAt: now
-    };
+      updatedAt: now,
+    } as Job;
     this.jobs.set(id, job);
     return job;
   }
@@ -2382,12 +2384,12 @@ export class MemStorage implements IStorage {
       }
 
       // Create valid BulkTalentData
-      const user: InsertUser = {
+      const user = {
         email: row.email,
         firstName: row.firstName,
         lastName: row.lastName,
         role: "talent",
-      };
+      } as any as InsertUser;
 
       const profile: Omit<InsertProfile, 'userId'> = {
         firstName: row.firstName,
@@ -2434,12 +2436,12 @@ export class MemStorage implements IStorage {
       }
 
       // Create user
-      const user: InsertUser = {
+      const user = {
         email: csvRow.email,
         firstName: csvRow.firstName,
         lastName: csvRow.lastName,
         role: "talent",
-      };
+      } as any as InsertUser;
 
       const newUser = await this.createUser(user);
 
@@ -2554,7 +2556,7 @@ export class MemStorage implements IStorage {
     const threadMap = new Map<string, VanessaLog[]>();
     
     // Group logs by thread
-    for (const log of this.vanessaLogs.values()) {
+    for (const log of Array.from(this.vanessaLogs.values())) {
       if (!threadMap.has(log.threadId)) {
         threadMap.set(log.threadId, []);
       }
@@ -3932,7 +3934,7 @@ export class DbStorage extends MemStorage {
       .orderBy(desc(messagesTable.createdAt));
 
     // Fetch threads for context
-    const threadIds = [...new Set(flagged.map((m) => m.threadId))];
+    const threadIds = Array.from(new Set(flagged.map((m) => m.threadId)));
     const threads: MessageThread[] = threadIds.length
       ? await db
           .select()

@@ -575,7 +575,7 @@ const loginLimiter = rateLimit({
       typeof req.body?.email === "string"
         ? req.body.email.trim().toLowerCase()
         : "unknown";
-    return `login:${ipKeyGenerator(req)}:${email}`;
+    return `login:${ipKeyGenerator(req.ip ?? "")}:${email}`;
   },
   handler: (req: Request, res: Response) => {
     const secs = retryAfterSecs(req);
@@ -596,7 +596,7 @@ const signupLimiter = rateLimit({
   max: Number(process.env.AUTH_SIGNUP_LIMIT ?? (isDev ? 50 : 10)),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `signup:${ipKeyGenerator(req)}`,
+  keyGenerator: (req) => `signup:${ipKeyGenerator(req.ip ?? "")}`,
   handler: (req: Request, res: Response) => {
     const secs = retryAfterSecs(req);
     console.warn(`🚫 Signup rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
@@ -616,7 +616,7 @@ const authResetLimiter = rateLimit({
   max: Number(process.env.AUTH_RESET_LIMIT ?? (isDev ? 50 : 5)),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `reset:${ipKeyGenerator(req)}`,
+  keyGenerator: (req) => `reset:${ipKeyGenerator(req.ip ?? "")}`,
   handler: (req: Request, res: Response) => {
     const secs = retryAfterSecs(req);
     console.warn(`🚫 Reset rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
@@ -639,7 +639,7 @@ const applyLimiter = rateLimit({
   max: isDev ? 50 : 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `apply:${ipKeyGenerator(req)}`,
+  keyGenerator: (req) => `apply:${ipKeyGenerator(req.ip ?? "")}`,
   handler: (req: Request, res: Response) => {
     const secs = retryAfterSecs(req);
     console.warn(`🚫 Apply rate-limit: IP=${req.ip} [${(req as any).requestId}]`);
@@ -659,7 +659,7 @@ const publicSearchLimiter = rateLimit({
   max: isDev ? 100 : 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `pubsearch:${ipKeyGenerator(req)}`,
+  keyGenerator: (req) => `pubsearch:${ipKeyGenerator(req.ip ?? "")}`,
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
       error: "Too many search requests. Please wait a moment and try again.",
@@ -3124,7 +3124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalChunks: index.totalChunks,
         embeddingModel: index.embeddingModel,
         jobsLastIndexed: index.jobsLastIndexed ?? null,
-        pages: [...pageMap.values()].sort((a, b) => a.url.localeCompare(b.url)),
+        pages: Array.from(pageMap.values()).sort((a, b) => a.url.localeCompare(b.url)),
       });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -10790,12 +10790,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Sales Representatives", "Operations Specialists", "IT & Technical Support",
       ]);
 
-      function resolveCanonical(raw: string | null | undefined): string | null {
+      const resolveCanonical = (raw: string | null | undefined): string | null => {
         if (!raw) return null;
         const key = raw.trim().toLowerCase();
-        for (const cat of CANONICAL) { if (cat.toLowerCase() === key) return cat; }
+        for (const cat of Array.from(CANONICAL)) { if (cat.toLowerCase() === key) return cat; }
         return SERVER_BROWSE_ALIASES[key] ?? null;
-      }
+      };
 
       // ── Primary: real search query frequency ─────────────────────────────────
       // Threshold is stored in platform_settings (key: search_suggestion_threshold).
@@ -10841,7 +10841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         counts.set(canonical, (counts.get(canonical) ?? 0) + Number(row.cnt));
       }
 
-      const suggestions = [...counts.entries()]
+      const suggestions = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([category]) => ({ category }));
@@ -14320,7 +14320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({
         subject: subjectResult.resolved,
         bodyHtml: bodyResult.resolved,
-        unresolvedKeys: [...new Set([...subjectResult.unresolvedKeys, ...bodyResult.unresolvedKeys])],
+        unresolvedKeys: Array.from(new Set([...subjectResult.unresolvedKeys, ...bodyResult.unresolvedKeys])),
       });
     } catch (err: any) {
       console.error("POST /api/admin/job-applications/:id/email/preview error:", err);

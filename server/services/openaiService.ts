@@ -330,7 +330,7 @@ async function buildEnhancedInstructions(userMessage?: string): Promise<string> 
           });
         }
 
-        const ragUrls = [...new Set(siteHits.map(c => c.url))];
+        const ragUrls = Array.from(new Set(siteHits.map(c => c.url)));
         console.log(
           `🔍 RAG: ${knowledgeHits.length} knowledge + ${contentHits.length} content + ` +
           `${jobHits.length} job + ${siteHits.length} site chunk(s)` +

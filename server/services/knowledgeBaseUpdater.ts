@@ -75,10 +75,10 @@ function extractApiRouteGroups(content: string): {
   authRoutes: string[];
 } {
   const allRoutes: string[] = [];
-  for (const match of content.matchAll(/app\.(get|post|put|patch|delete)\s*\(\s*["'`]([^"'`]+)["'`]/g)) {
+  for (const match of Array.from(content.matchAll(/app\.(get|post|put|patch|delete)\s*\(\s*["'`]([^"'`]+)["'`]/g))) {
     allRoutes.push(`${match[1].toUpperCase()} ${match[2]}`);
   }
-  const unique = [...new Set(allRoutes)];
+  const unique = Array.from(new Set(allRoutes));
   return {
     clientRoutes: unique.filter(r => /\/(client|client-profile)/i.test(r)),
     talentRoutes: unique.filter(r => /\/(talent|candidate|resume)/i.test(r)),
@@ -88,7 +88,7 @@ function extractApiRouteGroups(content: string): {
 }
 
 function extractSchemaEntities(content: string): string[] {
-  return [...content.matchAll(/export const (\w+)\s*=\s*pgTable/g)].map(m => m[1]);
+  return Array.from(content.matchAll(/export const (\w+)\s*=\s*pgTable/g)).map(m => m[1]);
 }
 
 // ── Main generator ─────────────────────────────────────────────────────────────

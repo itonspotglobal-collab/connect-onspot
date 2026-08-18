@@ -50,7 +50,7 @@ export interface ObjectAclRule {
 // - key: "custom:aclPolicy"
 // - value: JSON string of the ObjectAclPolicy object.
 export interface ObjectAclPolicy {
-  owner: string;
+  owner?: string;
   visibility: "public" | "private";
   aclRules?: Array<ObjectAclRule>;
 }

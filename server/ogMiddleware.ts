@@ -295,7 +295,8 @@ export async function resolveOGMeta(
           const roleTitle = (job as any).professionalRoleName || job.title || "Open Role";
           const company = job.company || "a global employer";
           const location = job.location || "Remote";
-          const contractType = job.contractType ? ` · ${job.contractType}` : "";
+          const jobContractType = (job as any).contractType as string | undefined;
+          const contractType = jobContractType ? ` · ${jobContractType}` : "";
           return {
             title: `${roleTitle} at ${company} | OnSpot`,
             description: `Apply for ${roleTitle} at ${company}. ${location}${contractType}. Browse and apply for remote outsourcing jobs on OnSpot — no experience required, top Philippine talent welcome.`,
@@ -307,7 +308,7 @@ export async function resolveOGMeta(
                 <h2>${escapeHtml(roleTitle)}</h2>
                 <p><strong>Company:</strong> ${escapeHtml(company)}</p>
                 <p><strong>Location:</strong> ${escapeHtml(location)}</p>
-                ${contractType ? `<p><strong>Type:</strong> ${escapeHtml(job.contractType || "")}</p>` : ""}
+                ${contractType ? `<p><strong>Type:</strong> ${escapeHtml(jobContractType || "")}</p>` : ""}
                 <p>Apply now on <a href="${SITE}/jobs/${jobId}"</a>.</p>
               </section>`,
           };
