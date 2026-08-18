@@ -313,6 +313,19 @@ function requireTalentOwns(req: Request, res: Response, paramKey = "id"): boolea
   return true;
 }
 
+// ── Admin email domain enforcement ─────────────────────────────────────────────
+// Only @onspotglobal.com addresses may ever hold the 'admin' role.
+// Call this before every role='admin' assignment — signup, provisioning, role-flip.
+// No-ops for non-admin roles; throws on domain violation.
+function assertAdminEmailDomain(email: string, role: string): void {
+  if (role === "admin" && !email.toLowerCase().endsWith("@onspotglobal.com")) {
+    throw Object.assign(
+      new Error(`Admin role is restricted to @onspotglobal.com addresses. Received: ${email}`),
+      { statusCode: 403 }
+    );
+  }
+}
+
 // Role-Based Access Control Middleware
 const requireRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -1520,6 +1533,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("❌ admin_file_access_log migration failed:", adminLogErr.message);
   }
 
+  // ── admin_role_changes — permanent audit trail for every admin role assignment ──
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_role_changes (
+        id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id       varchar     NOT NULL,
+        email         text        NOT NULL,
+        previous_role text,
+        new_role      text        NOT NULL,
+        mechanism     text        NOT NULL,
+        changed_by    text        NOT NULL,
+        changed_at    timestamptz NOT NULL DEFAULT NOW(),
+        notes         text
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_admin_role_changes_user_id ON admin_role_changes(user_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_admin_role_changes_changed_at ON admin_role_changes(changed_at)`);
+    console.log("✅ Migration: admin_role_changes table ready");
+  } catch (err: any) {
+    console.error("❌ admin_role_changes migration failed:", err.message);
+  }
+
+  // ── One-time bootstrap: convert 5 internal @onspotglobal.com accounts to admin ──
+  // Guarded by platform_settings flag — runs exactly once per environment.
+  // Consequence acknowledged by Nur Amina 2026-08-18: each account loses its
+  // current Client/Talent portal access (role is exclusive, not additive).
+  try {
+    const bootstrapFlag = await query(
+      `SELECT value FROM platform_settings WHERE key = 'admin_bootstrap_v1_done' LIMIT 1`
+    );
+    if (bootstrapFlag.rows.length === 0 || bootstrapFlag.rows[0].value !== "true") {
+      const bootstrapAccounts = [
+        "val@onspotglobal.com",
+        "nur@onspotglobal.com",
+        "emmanuel@onspotglobal.com",
+        "odie.galang@onspotglobal.com",
+        "mark.apostol@onspotglobal.com",
+      ];
+      for (const acctEmail of bootstrapAccounts) {
+        const row = await query(
+          `SELECT id, email, role FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+          [acctEmail]
+        );
+        if (row.rows.length === 0) {
+          console.log(`⏭️  Admin bootstrap: ${acctEmail} not found in this environment — skipping`);
+          continue;
+        }
+        const { id, email: canonEmail, role: prevRole } = row.rows[0];
+        if (prevRole === "admin") {
+          console.log(`⏭️  Admin bootstrap: ${canonEmail} already admin — skipping`);
+          continue;
+        }
+        await query(`UPDATE users SET role = 'admin', updated_at = NOW() WHERE id = $1`, [id]);
+        await query(
+          `INSERT INTO admin_role_changes (user_id, email, previous_role, new_role, mechanism, changed_by, notes)
+           VALUES ($1, $2, $3, 'admin', 'startup_bootstrap_v1', 'system',
+                  'One-time internal account bootstrap — approved by Nur Amina 2026-08-18; role is exclusive, previous portal access acknowledged as lost')`,
+          [id, canonEmail, prevRole]
+        );
+        console.log(`✅ Admin bootstrap: ${canonEmail} elevated ${prevRole} → admin`);
+      }
+      await query(
+        `INSERT INTO platform_settings (key, value) VALUES ('admin_bootstrap_v1_done', 'true')
+         ON CONFLICT (key) DO UPDATE SET value = 'true'`
+      );
+      console.log("✅ Migration: admin bootstrap v1 complete");
+    } else {
+      console.log("⏭️  Migration: admin bootstrap v1 already applied — skipping");
+    }
+  } catch (err: any) {
+    console.error("❌ Admin bootstrap migration failed:", err.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -1706,6 +1792,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           requestId,
         });
       }
+      // Domain enforcement: admin role requires @onspotglobal.com (defense-in-depth;
+      // the allowlist above already blocks admin from public signup)
+      assertAdminEmailDomain(email, role);
 
       // Check if user already exists
       const existingUserQuery =
@@ -8940,6 +9029,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Validate role — only client and talent are allowed from the public signup form
+      const allowedSignupRoles = ["client", "talent"];
+      if (!allowedSignupRoles.includes(role)) {
+        console.error(`❌ Invalid role [${requestId}]: "${role}"`);
+        return res.status(400).json({
+          success: false,
+          message: "Invalid account type. Please select Client or Talent.",
+          requestId,
+        });
+      }
+      // Domain enforcement: admin role requires @onspotglobal.com (defense-in-depth)
+      assertAdminEmailDomain(email, role);
+
       // Check for existing user
       const existingUserQuery =
         "SELECT id, email, username FROM users WHERE email = $1 OR username = $2";
@@ -14733,6 +14835,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error("[crawl-preview] Error:", err);
       return res.status(500).json({ error: "Failed to resolve metadata" });
+    }
+  });
+
+  // ── POST /api/internal/promote-to-admin ──────────────────────────────────────
+  // Protected endpoint for promoting an existing @onspotglobal.com account to
+  // admin role. Requires X-Bootstrap-Token header matching BOOTSTRAP_SECRET env var.
+  // Use case: bootstrapping shared admin account (admin@onspotglobal.com) after
+  // signup, and any future one-offs before the invite-based provisioning tool ships.
+  // Domain rule enforced — non-@onspotglobal.com addresses are rejected outright.
+  app.post("/api/internal/promote-to-admin", async (req: Request, res: Response) => {
+    try {
+      const secret = process.env.BOOTSTRAP_SECRET;
+      if (!secret) {
+        return res.status(503).json({ error: "Endpoint not configured — BOOTSTRAP_SECRET env var not set" });
+      }
+      const provided = req.headers["x-bootstrap-token"];
+      if (!provided || provided !== secret) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const { email, notes } = req.body ?? {};
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "email is required in request body" });
+      }
+      // Enforce domain rule before touching DB
+      assertAdminEmailDomain(email.trim(), "admin");
+      const row = await query(
+        `SELECT id, email, role FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [email.trim()]
+      );
+      if (row.rows.length === 0) {
+        return res.status(404).json({ error: `No account found for ${email}` });
+      }
+      const { id, email: canonEmail, role: prevRole } = row.rows[0];
+      if (prevRole === "admin") {
+        return res.status(200).json({ message: `${canonEmail} is already admin — no change made` });
+      }
+      await query(`UPDATE users SET role = 'admin', updated_at = NOW() WHERE id = $1`, [id]);
+      await query(
+        `INSERT INTO admin_role_changes (user_id, email, previous_role, new_role, mechanism, changed_by, notes)
+         VALUES ($1, $2, $3, 'admin', 'internal_promote_endpoint', 'system', $4)`,
+        [id, canonEmail, prevRole, notes ?? null]
+      );
+      console.log(`✅ promote-to-admin: ${canonEmail} elevated ${prevRole} → admin`);
+      return res.status(200).json({
+        success: true,
+        userId: id,
+        email: canonEmail,
+        previousRole: prevRole,
+        newRole: "admin",
+      });
+    } catch (err: any) {
+      if (err.statusCode === 403) {
+        return res.status(403).json({ error: err.message });
+      }
+      console.error("promote-to-admin error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 
