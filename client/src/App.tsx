@@ -50,6 +50,7 @@ import TrustSafety from "@/pages/TrustSafety";
 import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminLogin from "@/pages/AdminLogin";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
@@ -213,6 +214,8 @@ function PublicRouter() {
           <Route path="/investors" component={InvestorsCorner} />
           <Route path="/powerapp" component={Powerapp} />
           <Route path="/operations-playbook" component={OperationsPlaybook} />
+          {/* Staff-only login — not linked from any customer-facing page */}
+          <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin/vanessa-responses" component={VanessaResponses} />
           <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
           <Route path="/admin/vanessa-rag" component={AdminVanessaRAG} />
