@@ -121,7 +121,7 @@ export function MatchedJobsList({ matches, isLoading }: { matches?: MatchedJob[]
                     </p>
                     {/* Match factors */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      {m.overlapSkills.slice(0, 4).map((skill) => (
+                      {(m.overlapSkills ?? []).slice(0, 4).map((skill) => (
                         <Badge key={skill} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
