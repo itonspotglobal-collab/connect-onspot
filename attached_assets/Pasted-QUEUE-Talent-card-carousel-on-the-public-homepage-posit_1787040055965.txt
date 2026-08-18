@@ -1,0 +1,41 @@
+QUEUE — Talent card carousel on the public homepage, positioned
+immediately after the Hero section.
+
+Scope this before building — a few real decisions embedded in "add a
+carousel," don't assume defaults:
+
+1. WHICH TALENT SHOW UP: this is public-facing (unauthenticated visitors),
+   so the same rules from the anonymous /hire-talent search path apply —
+   masked identity, sanitized fields only (reuse sanitizeSearchCandidate
+   or an equivalent allowlist, not a new unreviewed data path). Confirm
+   the selection logic: most recently active, highest match/completion
+   score, a curated/featured flag, or random sample from "available now"
+   Talent? Propose a default, don't assume.
+
+2. WHAT EACH CARD SHOWS: consistent with the card pattern already
+   established elsewhere (masked name, category, availability signal,
+   one-line description) — do NOT introduce a new card design/data shape
+   that diverges from the existing Preview/row pattern. Reuse the
+   existing sanitized fields.
+
+3. WHAT HAPPENS ON CLICK: does clicking a card in the carousel do the
+   same thing as clicking a result on /hire-talent (opens Preview modal,
+   or navigates into a search pre-filled with that Talent's category)?
+   Don't invent a new interaction pattern — connect it to the existing
+   flow.
+
+4. IS THIS DATA CACHED/STATIC OR LIVE: given this renders on every
+   homepage visit, confirm this doesn't create a new per-request DB load
+   pattern — propose whether this list is cached/refreshed periodically
+   (e.g., recomputed every N minutes) rather than querying fresh on every
+   single page load, especially since it's on the highest-traffic public
+   page.
+
+5. CAROUSEL MECHANICS: auto-advancing vs. manual-only, how many visible
+   at once (responsive across mobile/desktop), and whether it pauses on
+   hover/interaction — standard carousel UX, but state the choice rather
+   than defaulting silently.
+
+Audit first: confirm what data source/endpoint currently powers similar
+public-facing Talent displays (if any exist) before building a new one.
+Report proposed answers to 1-5 before implementing.
