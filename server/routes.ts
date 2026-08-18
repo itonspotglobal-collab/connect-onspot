@@ -1589,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await query(
           `INSERT INTO admin_role_changes (user_id, email, previous_role, new_role, mechanism, changed_by, notes)
            VALUES ($1, $2, $3, 'admin', 'startup_bootstrap_v1', 'system',
-                  'One-time internal account bootstrap — approved by Nur Amina 2026-08-18; role is exclusive, previous portal access acknowledged as lost')`,
+                  'One-time internal account bootstrap — approved by Nur Laminero 2026-08-18; role is exclusive, previous portal access acknowledged as lost')`,
           [id, canonEmail, prevRole]
         );
         console.log(`✅ Admin bootstrap: ${canonEmail} elevated ${prevRole} → admin`);
