@@ -1,0 +1,38 @@
+Approved. Proceed with both, Fix A first since it's the actual exposure:
+
+FIX A — Kill the bypass:
+1. Before flipping anything: grep the entire client codebase for every
+   usage of VITE_BYPASS_ADMIN_AUTH / bypassAdminAuth. Report every route
+   or component that reads it — I want to know the full blast radius
+   before this is called "fixed," the same way the admin job endpoints
+   turned out to be 11 routes, not 1.
+2. Set VITE_BYPASS_ADMIN_AUTH to false (or remove it) in the actual
+   environment this app runs in — confirm this is a real environment
+   variable change, not just a code default, since env vars have caused
+   exactly this kind of "looks fixed in code, still wrong at runtime" gap
+   before in this build.
+3. Remove the conditional bypass pattern from App.tsx (and anywhere else
+   found in step 1) — AdminProtectedRoute should apply unconditionally,
+   no env-var escape hatch left in the code at all. A flag that can
+   silently disable every admin guard should not exist in production
+   code, not even a "should be false" one.
+4. Close task #235 as resolved by this fix, and confirm whether the
+   separate dev_portal_role localStorage bypass in ProtectedRoute.tsx
+   needs any action — you noted it's narrower (role must match), but
+   confirm it's genuinely dev-only and not reachable in production before
+   leaving it as-is.
+
+FIX B — 403 ≠ empty state:
+Update AdminFindWork.tsx (and check if the same pattern exists on other
+admin pages you're aware of from this session's work) to explicitly
+handle a 403 response — show a clear access-denied state or redirect,
+never silently render empty/zero data as if it were a legitimate result.
+
+VERIFICATION before closing:
+1. Real test: a real Client session hits /admin/find-work post-fix and
+   gets redirected or shown access-denied — not the page shell.
+2. Confirm the actual VITE_BYPASS_ADMIN_AUTH value in the live environment
+   after the change, not just that the code no longer reads it as true.
+3. Re-run admin-auth-check to confirm nothing else regressed.
+
+Report back with real evidence for all of this before it closes.

@@ -84,7 +84,6 @@ timeoutMs = 120000
 
 [userenv.shared]
 BYPASS_ADMIN_AUTH = "true"
-VITE_BYPASS_ADMIN_AUTH = "true"
 APPLICATION_EMAIL_FROM = "careers@onspotglobal.com"
 APPLICATION_EMAIL_FROM_NAME = "OnSpot Careers"
 APPLICATION_EMAIL_REPLY_TO = "careers@onspotglobal.com"

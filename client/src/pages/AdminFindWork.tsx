@@ -790,7 +790,7 @@ export default function AdminFindWork() {
   }
 
   // ─── Queries ──────────────────────────────────────────────────────────────
-  const { data, isLoading } = useQuery<AdminJobsResponse>({
+  const { data, isLoading, isError, error } = useQuery<AdminJobsResponse>({
     queryKey: ["/api/admin/jobs", { page: currentPage, pageSize: PAGE_SIZE, tab: activeTab }],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -901,6 +901,34 @@ export default function AdminFindWork() {
   const totalPages = data?.meta?.totalPages ?? 1;
   const startItem = totalJobs === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const endItem = Math.min(currentPage * PAGE_SIZE, totalJobs);
+
+  // ─── Permission guard ─────────────────────────────────────────────────────
+  // Distinguish a 403/401 rejection from a genuine empty result set.
+  // Without this, a non-admin who reaches this route sees "0 jobs" instead of
+  // an explicit access-denied state.
+  if (isError) {
+    const msg = (error as Error)?.message ?? "";
+    const isPermissionError = msg.startsWith("403") || msg.startsWith("401");
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-950 p-8 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+          <svg className="h-7 w-7 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            {isPermissionError ? "Access denied" : "Failed to load jobs"}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {isPermissionError
+              ? "You don't have permission to view this page. Admin access is required."
+              : msg || "An unexpected error occurred. Please try again."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
