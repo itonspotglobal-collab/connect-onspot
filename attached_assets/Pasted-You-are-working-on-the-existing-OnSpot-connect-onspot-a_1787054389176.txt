@@ -1,0 +1,1075 @@
+You are working on the existing **OnSpot / connect-onspot** application.
+
+## PRIMARY TASK
+
+Perform a complete audit, repair, consolidation, and improvement of the existing **Client ↔ Talent messaging/chat system**.
+
+This feature is already implemented, but it is currently inconsistent and not fully reliable/accurate.
+
+Do **NOT** rebuild it blindly.
+
+Before changing anything, carefully trace every frontend component, backend route, database table, authentication flow, notification flow, invitation flow, talent/client entry point, unread/read-state implementation, privacy rule, and test connected to messaging.
+
+The goal is:
+
+> One reliable, consistent, secure messaging system that works correctly for BOTH Client and Talent users without breaking any existing connected feature.
+
+---
+
+# CRITICAL RULE: REGRESSION SAFETY
+
+Do not treat messaging as an isolated feature.
+
+If a connected feature needs to change, update it carefully on both frontend and backend so the complete flow remains compatible.
+
+Do NOT make a change that fixes one screen while silently breaking another screen, role, route, notification, invitation, or authentication flow.
+
+Before modifying a shared function, endpoint, table, type, auth helper, query key, schema, or component:
+
+1. Search the entire repository for all usages.
+2. Identify every caller and dependency.
+3. Determine which user roles use it.
+4. Preserve backward compatibility where practical.
+5. Update all dependent code if a contract intentionally changes.
+6. Update/add tests covering the changed behavior.
+7. Run the relevant tests and type/build checks after implementation.
+
+Do NOT delete an apparently redundant route/component until you confirm it is no longer used anywhere.
+
+Do NOT perform destructive database/schema changes unless absolutely required.
+
+Prefer additive/backward-compatible changes.
+
+---
+
+# FIRST: AUDIT THE EXISTING IMPLEMENTATION
+
+Before writing code, inspect the entire repository for:
+
+* `Messages`
+* `Inbox`
+* `message`
+* `messages`
+* `messageThreads`
+* `message_threads`
+* `threadId`
+* `participants`
+* `readBy`
+* `mark-read`
+* `new_message`
+* unread message logic
+* notification creation
+* notification reading
+* `message-talent`
+* invitation acceptance
+* `initiated_by`
+* `job_submissions`
+* talent/client JWT handling
+* candidate JWT → `users.id` resolution
+* PII detection
+* flagged messages
+* admin message review
+* navigation badges
+* message-related routes
+* message-related tests
+
+At minimum, carefully inspect these known connected files/features:
+
+### Frontend
+
+* `client/src/pages/Messages.tsx`
+* `client/src/pages/Inbox.tsx`
+* `client/src/pages/HireTalentPage.tsx`
+* `client/src/hooks/useUnreadMessagesCount.ts`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/components/ClientLayout.tsx`
+* `client/src/components/NotificationBell.tsx`
+* `client/src/App.tsx`
+* `client/src/lib/queryClient.ts`
+* `client/src/contexts/AuthContext.tsx`
+* Talent portal/login/auth helpers
+* Client talent search/profile components
+* Invitation UI
+* Any component linking to `/messages`, `/messages/:threadId`, or `/inbox`
+
+### Backend
+
+* `server/routes.ts`
+* `server/storage.ts`
+* `server/services/db_manager.ts` if messaging-related methods exist
+* authentication utilities/middleware
+* notification storage implementation
+* invitation-response handlers
+* client-to-talent direct messaging endpoint
+* admin flagged-message endpoints
+* `server/lib/piiPatterns.ts`
+
+### Shared/database
+
+* `shared/schema.ts`
+* `message_threads`
+* `messages`
+* `notifications`
+* `job_submissions`
+* `users`
+* `candidates`
+
+### Tests
+
+At minimum:
+
+* `server/tests/message-threads.test.ts`
+* `server/tests/message-threads-production.test.ts`
+* notification authorization tests
+* PII/message moderation tests
+* any invitation tests
+* any client/talent auth tests affected by messaging
+
+Also inspect existing `.agents/memory` notes about messaging, particularly:
+
+* messaging system rules
+* direct/pre-invite messaging
+
+Treat those documents as architectural context, but verify the CURRENT CODE rather than assuming the notes are perfectly current.
+
+---
+
+# IMPORTANT EXISTING PRODUCT RULES TO PRESERVE
+
+The current product has deliberate messaging/security behavior.
+
+Do not accidentally remove it.
+
+## 1. Participant-only access
+
+Only users who belong to a message thread may:
+
+* see the thread
+* read its messages
+* send messages
+* mark it read
+
+A third-party authenticated user must receive an appropriate 403/404 response and must not learn private thread/message information.
+
+---
+
+## 2. Server-controlled sender identity
+
+Never trust a frontend-provided `senderId`.
+
+The sender must always be derived from the authenticated identity.
+
+A malicious user submitting somebody else's `senderId` must not be able to spoof another participant.
+
+---
+
+## 3. Support both authentication paths
+
+Messaging must work correctly for:
+
+### Main account JWT
+
+Examples:
+
+* Client
+* Talent using normal user account
+
+### Talent portal/candidate authentication
+
+The candidate-oriented token may identify a candidate record rather than directly exposing the canonical `users.id`.
+
+The server must normalize the authenticated identity to the correct `users.id` before participant checks, notifications, read state, etc.
+
+Do not fix Client messaging while breaking Talent portal messaging.
+
+---
+
+# CLIENT → TALENT DIRECT MESSAGING
+
+There is an existing pre-invite direct messaging capability associated with:
+
+`POST /api/client/message-talent`
+
+Audit its CURRENT implementation.
+
+The intended behavior is:
+
+* authenticated Client can initiate a conversation with an eligible Talent
+* Talent must correspond to a valid account/candidate relationship
+* thread creation must be idempotent
+* repeatedly clicking Message must not create duplicate conversations
+* pre-invite messaging uses the established canonical thread behavior
+* preserve existing privacy/name-masking rules
+
+Do not create multiple conversations for the same Client/Talent relationship just because the user clicks Message repeatedly.
+
+---
+
+# INVITATION → MESSAGING FLOW
+
+There is also an existing formal invitation flow.
+
+When Talent accepts a Client-initiated invitation:
+
+* the invitation status must update correctly
+* a valid message thread must exist
+* if an appropriate Client/Talent thread already exists, REUSE it
+* do not create duplicate conversations unnecessarily
+* return the canonical `threadId`
+* UI should be able to navigate directly into that conversation
+* existing messages must not disappear
+* add the appropriate system/invitation message without duplicating it
+
+This needs to work whether:
+
+1. Client messaged Talent BEFORE inviting them.
+2. Client invited Talent before messaging them.
+3. Talent accepts the invitation more than once because of retries/double clicks/network retries.
+4. The conversation already exists.
+
+Keep the operation idempotent and transaction-safe.
+
+---
+
+# NAME PRIVACY / MASKING
+
+Pre-invite Talent privacy rules must remain intact.
+
+Do not expose full Talent names, email addresses, phone numbers, or other protected contact information through:
+
+* thread list
+* message header
+* notification
+* API response
+* fallback display names
+* subject
+* system message
+* participant information
+
+If the existing rules mask a Talent name until an invitation/relationship reaches a specific state, preserve that rule consistently across EVERY messaging endpoint.
+
+Do not fix masking only on one endpoint while another endpoint leaks the name.
+
+Client names should follow the current product rules.
+
+Never use email as the fallback display name.
+
+Use a safe fallback such as `Member` / `Talent Profile` if required.
+
+---
+
+# PII / OFF-PLATFORM CONTACT PROTECTION
+
+The current messaging system has PII detection.
+
+`server/lib/piiPatterns.ts` detects things such as:
+
+* email addresses
+* phone numbers
+* some obfuscated emails
+* some obfuscated phone numbers
+
+The intended current philosophy is:
+
+> FLAG suspicious messages for admin review; do not automatically block normal messaging unless existing product requirements explicitly require blocking.
+
+Preserve:
+
+* `messages.flagged_for_review`
+* admin flagged-message review flow
+* PII scanner
+* admin clear/review action
+
+Do not accidentally expose admin-only moderation state to ordinary Client/Talent users unless required.
+
+Review the scanner for obvious accuracy problems but avoid overengineering regexes that create unacceptable false positives.
+
+---
+
+# IMPORTANT: CONSOLIDATE THE TWO MESSAGING EXPERIENCES
+
+There currently appear to be overlapping messaging implementations, including:
+
+* `client/src/pages/Messages.tsx`
+* `client/src/pages/Inbox.tsx`
+
+These should NOT continue behaving like two unrelated chat systems.
+
+Audit exactly where each is routed and used.
+
+Determine which should be the canonical messaging implementation.
+
+Prefer **one underlying messaging contract and shared logic**.
+
+Possible acceptable implementation:
+
+* `/messages`
+* `/messages/:threadId`
+
+becomes the canonical messaging experience.
+
+If `/inbox` is still referenced by existing navigation/bookmarks/workflows, either:
+
+1. safely redirect `/inbox` to `/messages`, OR
+2. make Inbox a thin wrapper around the same canonical message components/data contract.
+
+Do NOT leave two independently maintained implementations with:
+
+* different APIs
+* different polling
+* different unread calculations
+* different participant names
+* different auth requirements
+* different message displays
+
+But before removing/redirecting anything, scan all routing and navigation references.
+
+Preserve external/internal links.
+
+---
+
+# MESSAGE THREAD LIST ACCURACY
+
+The conversation list must show accurate information.
+
+Each thread should consistently provide enough safe data for the frontend to display:
+
+* thread ID
+* participant(s)
+* safe display name of other participant
+* subject/job context when appropriate
+* last message preview if product policy allows
+* last message timestamp
+* unread count or unread state
+* optional job relationship/context
+* appropriate masked/unmasked identity state
+
+Sort conversations by most recent activity.
+
+`last_message_at` must update reliably whenever a new message is stored.
+
+Do not depend on stale client-side guesses for ordering.
+
+---
+
+# UNREAD / READ STATE — FIX PROPERLY
+
+Audit and repair the unread implementation.
+
+The current application has:
+
+* `messages.readBy`
+* `mark-read`
+* `new_message` notifications
+* `useUnreadMessagesCount.ts`
+* navigation badges
+* notification UI
+* more than one message screen
+
+These must agree.
+
+Do not calculate unread messages only from whichever thread happens to be loaded on the screen.
+
+Do not use fake/placeholder/global values.
+
+Create one clear source of truth.
+
+Required behavior:
+
+### When Person A sends to Person B
+
+* message is stored
+* sender should automatically count as having read their own message if that is the chosen model
+* recipient sees it as unread
+* recipient's messaging badge increments correctly
+* appropriate notification is created exactly once
+* thread becomes most recently active
+
+### When Person B opens the thread
+
+* messages are marked read for Person B
+* unread thread/message count updates
+* messaging badge updates promptly
+* associated `new_message` notification state should be reconciled appropriately
+* reloading the page must not bring the unread badge back incorrectly
+
+### Both Client and Talent
+
+Unread indicators must work for BOTH roles.
+
+Do not maintain a hook whose semantics say "unread messages" but silently returns zero for Clients if Clients are expected to receive messages.
+
+If different auth endpoints are necessary internally, hide that difference behind one reliable frontend/API abstraction.
+
+---
+
+# NOTIFICATIONS
+
+Audit:
+
+* notification creation
+* persistent DB storage
+* talent notification endpoint
+* user notification endpoint
+* `NotificationBell.tsx`
+* message unread hook
+* mark-notification-read behavior
+
+New messages should create notifications for **all thread participants except the sender**.
+
+Notification writes should be persistent in the DB, not an in-memory fallback.
+
+Prevent duplicate notifications caused by retries.
+
+Make sure notifications reference the correct canonical:
+
+* thread ID
+* message/thread related type
+* navigation destination
+
+Clicking a new-message notification should take the user to the correct conversation if that behavior exists/is appropriate.
+
+Do not break non-message notifications while improving message notifications.
+
+---
+
+# MESSAGE SENDING VALIDATION
+
+`POST /api/messages` must validate:
+
+* authenticated user
+* valid thread ID
+* caller is participant
+* content is a string
+* trimmed content is not empty
+* sensible maximum length
+* reject malformed payloads cleanly
+
+Protect against duplicate rapid submits as reasonably possible.
+
+Do not let the frontend alone enforce security.
+
+Update:
+
+`message_threads.last_message_at`
+
+within the same reliable write flow.
+
+PII detection should also occur server-side in this flow.
+
+Notification creation must use the saved message/thread information.
+
+---
+
+# MESSAGE FETCHING
+
+Messages should:
+
+* return only for an authorized participant
+* be ordered deterministically, normally oldest → newest
+* have stable timestamps
+* expose only necessary fields
+* include message type where required
+* correctly render `system` messages separately
+* not expose admin-only fields unnecessarily
+
+If pagination is warranted because history may become large, introduce it carefully and preserve the current user experience.
+
+Do not introduce pagination purely for complexity if the current scope does not need it.
+
+---
+
+# REAL-TIME / REFRESH BEHAVIOR
+
+The current UI relies on polling.
+
+Audit the application's existing infrastructure before deciding how to improve it.
+
+DO NOT introduce a large new WebSocket/Firebase architecture just because messaging normally uses realtime transport.
+
+If there is already a safe realtime infrastructure available, it may be reused.
+
+Otherwise improve polling intelligently:
+
+* active thread: short reasonable interval
+* background thread list: slower interval
+* refetch on focus
+* immediate cache update/invalidation after send/read
+* no unnecessary duplicate network calls
+* no endless polling for unauthenticated users
+* prevent race conditions
+
+Correctness is more important than pretending the app is realtime.
+
+If realtime transport would significantly increase regression risk, retain robust polling.
+
+---
+
+# FRONTEND UX IMPROVEMENTS
+
+Improve the existing UI without redesigning unrelated pages.
+
+Messaging should provide:
+
+* clear conversation list
+* correct participant display name
+* latest activity timestamp
+* unread indicator
+* selected conversation state
+* loading state
+* empty state
+* error state
+* send pending state
+* send failure feedback
+* responsive mobile behavior
+* Enter = send
+* Shift+Enter = newline
+* auto-scroll when appropriate
+* preserve user's scroll position when reading older messages
+* system-message treatment
+* on-platform communication reminder
+* protection against double-send
+* clear unauthorized/session-expired handling
+
+Do not automatically scroll the user to the bottom every few seconds if they intentionally scrolled upward to read older messages.
+
+Only auto-scroll if:
+
+* conversation is first opened, or
+* user was already near the bottom, or
+* the user sent the new message.
+
+---
+
+# MESSAGE ENTRY POINTS
+
+Search the entire app for every place a messaging conversation can be opened.
+
+Likely examples include:
+
+* Talent search / `HireTalentPage`
+* Talent profile modal
+* invitation acceptance
+* navigation/sidebar
+* inbox/messages links
+* notification links
+* client dashboard
+* talent dashboard
+
+All entry points must resolve to the SAME canonical thread.
+
+If a `threadId` already exists, navigate to:
+
+`/messages/:threadId`
+
+Do not create a new thread just to navigate.
+
+---
+
+# CLIENT/TALENT SEARCH CONNECTION
+
+Be especially careful with `HireTalentPage.tsx`.
+
+The Message CTA currently connects Talent discovery to direct messaging.
+
+Make sure:
+
+* only authenticated/eligible Clients can initiate the action
+* anonymous state retains existing sign-in behavior
+* invalid/unlinked Talent receives a clear error
+* double clicking does not create multiple threads
+* successful result returns canonical `threadId`
+* frontend navigates to the conversation
+* name masking remains consistent
+* invitation/shortlist functionality remains unchanged
+
+Do not break Talent search, profile preview, shortlist, invite, filtering, or matching while changing messaging.
+
+---
+
+# DATABASE / SCHEMA
+
+Review:
+
+`shared/schema.ts`
+
+Current messaging-related structures include approximately:
+
+### `message_threads`
+
+* id
+* jobId
+* contractId
+* participants
+* subject
+* lastMessageAt
+* createdAt
+
+### `messages`
+
+* id
+* threadId
+* senderId
+* content
+* attachments
+* messageType
+* readBy
+* flaggedForReview
+* createdAt
+
+Do not replace these tables unnecessarily.
+
+If a schema change is genuinely necessary:
+
+* make it minimal
+* add a proper migration
+* maintain backwards compatibility with existing rows
+* do not wipe existing conversations
+* do not recreate production tables
+* avoid non-idempotent migration behavior
+* add indexes only when justified
+
+Any new foreign-key behavior must account for existing user deletion/cleanup flows.
+
+---
+
+# AUTHORIZATION TEST MATRIX
+
+Explicitly test:
+
+| Scenario                                 | Expected                                              |
+| ---------------------------------------- | ----------------------------------------------------- |
+| No auth → list threads                   | 401                                                   |
+| No auth → read messages                  | 401                                                   |
+| No auth → send message                   | 401                                                   |
+| Participant → list own thread            | allowed                                               |
+| Participant → read own thread            | allowed                                               |
+| Participant → send                       | allowed                                               |
+| Outsider → read thread                   | denied                                                |
+| Outsider → send to thread                | denied                                                |
+| Client spoofs senderId                   | ignored/rejected; authenticated Client remains sender |
+| Talent spoofs senderId                   | ignored/rejected                                      |
+| Talent portal JWT → own thread           | allowed after identity resolution                     |
+| Client → another client's private thread | denied                                                |
+| Thread ID does not exist                 | 404                                                   |
+| Empty message                            | 400                                                   |
+| whitespace-only message                  | 400                                                   |
+
+---
+
+# THREAD CREATION TEST MATRIX
+
+Test:
+
+### Direct pre-invite messaging
+
+Client → Talent:
+
+* first click creates thread
+* second click reuses same thread
+* simultaneous/retried calls do not create duplicates
+
+### Invitation-based messaging
+
+Client invites Talent → Talent accepts:
+
+* canonical thread exists
+* returns `threadId`
+* system message appears appropriately
+
+### Direct message first, invite later
+
+Client messages Talent → Client sends invitation → Talent accepts:
+
+* existing direct thread is reused
+* message history remains
+* no duplicate thread
+* accepted system message appears once
+* privacy/name state graduates correctly
+
+### Declined invitation
+
+Declining should NOT accidentally destroy an existing legitimate pre-invite thread unless current product requirements specifically require that behavior.
+
+---
+
+# READ/NOTIFICATION TEST MATRIX
+
+Test this separately for:
+
+* Client sender → Talent receiver
+* Talent sender → Client receiver
+* main Talent JWT
+* Talent portal/candidate JWT
+
+Verify:
+
+1. Send message.
+2. Receiver's unread count increments.
+3. Notification appears once.
+4. Sender does not receive their own `new_message` notification.
+5. Receiver opens thread.
+6. Message becomes read.
+7. unread badge decreases.
+8. reload page.
+9. unread state stays correct.
+10. existing unrelated notification types remain unchanged.
+
+---
+
+# PRIVACY TEST MATRIX
+
+Verify no unauthorized personal information leaks through:
+
+* thread-list API
+* message API
+* direct-message creation response
+* invitation response
+* notification response
+* frontend thread name
+* empty/fallback states
+
+Before the product's accepted relationship threshold:
+
+Talent display name must follow existing masking rules.
+
+After the required relationship state:
+
+display name may graduate according to existing product requirements.
+
+Never use:
+
+* email
+* phone
+* private candidate record fields
+
+as a display-name fallback.
+
+---
+
+# PII MODERATION TESTS
+
+Add/retain coverage for:
+
+* normal text → not flagged
+* normal number/year/reference → not incorrectly treated as phone where existing rules exclude it
+* email → flagged
+* standard phone number → flagged
+* Philippine mobile number → flagged
+* international phone → flagged
+* basic obfuscated email → flagged
+* basic digit-word phone → flagged
+* message still sends while flagged, according to current product behavior
+* flagged record appears in Admin review
+* Admin can clear the review flag
+* clearing flag does NOT delete/edit the original message
+
+---
+
+# DUPLICATE CODE
+
+Avoid having authorization, canonical-user-id resolution, masking, or thread-participant logic implemented differently in several routes.
+
+Where safe, introduce small reusable helpers such as:
+
+* resolve authenticated messaging user ID
+* assert thread participant
+* get/create canonical direct thread
+* safe participant display-name resolution
+* create message notification
+* mark thread read
+
+Do NOT perform a huge architectural refactor unrelated to this task.
+
+Refactor only where it clearly reduces messaging inconsistencies and regression risk.
+
+---
+
+# API CONTRACT CONSISTENCY
+
+After the audit, choose one canonical API contract for the messaging UI.
+
+Prefer authenticated-user-oriented endpoints such as:
+
+`GET /api/me/message-threads`
+
+over trusting arbitrary user IDs from the frontend.
+
+If legacy endpoints such as:
+
+`GET /api/users/:userId/message-threads`
+
+are still used elsewhere, either:
+
+* migrate callers safely, or
+* retain them as secure wrappers with ownership checks
+
+Never allow a caller to substitute another `userId` and retrieve somebody else's conversation list.
+
+---
+
+# ERROR HANDLING
+
+Backend errors should be predictable:
+
+* 400 malformed request
+* 401 unauthenticated
+* 403 authenticated but unauthorized
+* 404 resource not found
+* 409 true state conflict where appropriate
+* 500 unexpected server/database failure
+
+Do not return stack traces or sensitive DB details.
+
+Frontend should display useful, non-technical errors.
+
+---
+
+# OBSERVABILITY
+
+Add useful server logs around messaging failures, but do NOT log message content containing potentially sensitive information.
+
+Safe examples:
+
+* request ID
+* thread ID
+* authenticated user ID
+* endpoint
+* operation result
+* error category
+
+Do not log emails, phones, JWTs, full message bodies, or private candidate fields.
+
+---
+
+# DO NOT BREAK THESE CONNECTED FEATURES
+
+While implementing messaging changes, explicitly regression-test:
+
+* Client login
+* Talent login
+* Talent portal login
+* talent search
+* Talent profile preview
+* shortlist
+* Client invitation creation
+* Talent invitation acceptance/decline
+* job submissions
+* candidate linking
+* navigation
+* notification bell
+* other notification types
+* admin flagged messages
+* Client dashboard
+* Talent dashboard
+* user role authorization
+
+If any of these need a shared-code change, update them carefully rather than assuming they are unrelated.
+
+---
+
+# IMPLEMENTATION APPROACH
+
+Work in this order.
+
+## Phase 1 — Audit
+
+Before editing:
+
+1. Map all messaging routes.
+2. Map all frontend consumers.
+3. Map auth mechanisms.
+4. Map thread-creation flows.
+5. Map unread/read flows.
+6. Map notifications.
+7. Map PII moderation.
+8. Map navigation/routes.
+9. Map DB tables/migrations.
+10. Map existing tests.
+
+Identify inconsistencies and probable root causes.
+
+Do not start by rewriting `Messages.tsx`.
+
+---
+
+## Phase 2 — Define canonical contracts
+
+Decide:
+
+* canonical messaging route/page
+* canonical list-thread endpoint
+* canonical message endpoint
+* canonical authenticated user resolution
+* canonical unread definition
+* canonical notification behavior
+* canonical direct-thread identity/reuse rule
+* canonical participant-display-name rule
+
+Preserve existing product requirements.
+
+---
+
+## Phase 3 — Backend correctness
+
+Fix authorization and canonical user resolution first.
+
+Then fix:
+
+* thread creation/reuse
+* thread listing
+* message listing
+* message creation
+* last-message timestamps
+* read state
+* unread counts
+* notifications
+* PII flags
+* invitation integration
+* direct-message integration
+
+The frontend should not compensate for incorrect backend data.
+
+---
+
+## Phase 4 — Frontend consolidation
+
+Then consolidate:
+
+* Messages
+* Inbox
+* navigation
+* unread badges
+* notification navigation
+* Hire Talent message CTA
+* invitation navigation
+
+Use one consistent data contract.
+
+---
+
+## Phase 5 — Tests
+
+Update existing messaging tests instead of replacing them.
+
+Add missing regression tests.
+
+Run the full relevant test suite.
+
+---
+
+## Phase 6 — Verification
+
+Manually verify BOTH directions:
+
+### Client → Talent
+
+Client:
+
+* finds Talent
+* opens profile
+* messages Talent
+* sees correct thread
+* sends message
+
+Talent:
+
+* sees unread indicator
+* opens same thread
+* sees Client message
+* replies
+
+Client:
+
+* receives unread indicator
+* sees reply
+
+### Talent → Client
+
+Repeat in reverse.
+
+Then verify the invitation graduation path:
+
+Client direct-message Talent → invite Talent → Talent accepts → SAME conversation continues.
+
+---
+
+# REQUIRED COMMANDS/CHECKS
+
+Use the project's existing package scripts.
+
+At minimum run whichever are available for:
+
+* TypeScript/type checking
+* relevant server tests
+* messaging tests
+* notification tests
+* PII tests
+* build
+
+Do not claim success if tests were not actually run.
+
+If an unrelated pre-existing test fails, clearly distinguish it from regressions introduced by this task.
+
+---
+
+# COMPLETION REPORT
+
+When finished, provide a concise but complete report containing:
+
+## Root causes found
+
+Explain why messaging was inaccurate/inconsistent.
+
+## Files changed
+
+List each modified file and why.
+
+## API changes
+
+Describe any contract changes.
+
+## Database changes
+
+State explicitly whether a migration was needed.
+
+If none:
+
+`No database migration was required.`
+
+## Regression protection
+
+List connected features checked.
+
+## Tests
+
+Give exact commands run and pass/fail results.
+
+## Remaining limitations
+
+Clearly state anything intentionally left unchanged.
+
+---
+
+# IMPORTANT FINAL CONSTRAINTS
+
+Do not:
+
+* replace the entire application architecture
+* break Talent search
+* break invitation flows
+* create duplicate threads
+* create duplicate notifications
+* expose private contact information
+* trust frontend sender/user IDs for authorization
+* remove candidate-token compatibility
+* store notifications only in memory
+* bypass existing PII moderation
+* delete old conversations
+* make destructive DB changes
+* hardcode users or roles
+* fake unread counts
+* leave `/inbox` and `/messages` behaving as independent messaging systems
+* mark the task complete based only on UI appearance
+
+The task is complete only when the **full Client ↔ Talent messaging lifecycle works from both sides, with authorization, privacy, notifications, read/unread state, direct messaging, invitation integration, and regression tests all agreeing with each other.**
