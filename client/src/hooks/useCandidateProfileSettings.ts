@@ -20,6 +20,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { queryClient } from "@/lib/queryClient";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { candidateQueryKeys } from "@/lib/candidateQueryKeys";
+import { invalidateCandidateQueries } from "@/lib/candidateCache";
 import {
   buildCompletionItems,
   calcCompletionPct,
@@ -135,7 +137,9 @@ export function useCandidateProfileSettings() {
   // Read talent auth every render (cheap localStorage read).
   // If the user is not logged in via the talent portal, talentAuth is null.
   const talentAuth = loadTalentAuth();
-  const candidateId = talentAuth?.candidateId ?? null;
+  // Normalise to string so the cache key always matches TalentProfile's URL-param
+  // string, regardless of whether the server returned the ID as a number or string.
+  const candidateId = talentAuth?.candidateId ? String(talentAuth.candidateId) : null;
 
   // ── Fetch candidate ──────────────────────────────────────────────────────────
   // GET /api/candidates/:id is public — no auth required.
@@ -144,7 +148,7 @@ export function useCandidateProfileSettings() {
     isLoading: candidateLoading,
     error: candidateError,
   } = useQuery({
-    queryKey: ["candidate-profile", candidateId],
+    queryKey: candidateQueryKeys.profile(candidateId ?? ""),
     queryFn: async () => {
       if (!candidateId) return null;
       const res = await fetch(`/api/candidates/${candidateId}`);
@@ -156,6 +160,9 @@ export function useCandidateProfileSettings() {
     },
     enabled: !!candidateId,
     staleTime: 30_000,
+    // Always re-verify against the server when Settings mounts — editable
+    // profile data must not silently show a stale cache entry.
+    refetchOnMount: "always",
   });
 
   // ── Available skills (from global skills table) ────────────────────────────
@@ -263,11 +270,8 @@ export function useCandidateProfileSettings() {
     onSuccess: () => {
       // Refresh all candidate query-key variants so Settings, TopNavigation,
       // TalentProfile, and FindBestMatches all see the updated row immediately.
-      queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
-      queryClient.invalidateQueries({ queryKey: ["candidate", candidateId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates/me"] });
       if (candidateId) {
-        queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] });
+        invalidateCandidateQueries(queryClient, candidateId);
       }
     },
     onError: (err: any) => {
@@ -306,7 +310,9 @@ export function useCandidateProfileSettings() {
     if (!data.success) throw new Error("Photo upload failed");
 
     // Refresh candidate query so avatar renders the persisted URL after refetch.
-    queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+    if (candidateId) {
+      queryClient.invalidateQueries({ queryKey: candidateQueryKeys.profile(candidateId) });
+    }
     return data.profilePhotoUrl; // "/objects/candidate-photos/..."
   };
 
@@ -326,7 +332,9 @@ export function useCandidateProfileSettings() {
       body: JSON.stringify({ profilePhotoUrl: null }),
     });
     if (!res.ok) throw new Error("Failed to remove photo");
-    queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] });
+    if (candidateId) {
+      queryClient.invalidateQueries({ queryKey: candidateQueryKeys.profile(candidateId) });
+    }
   };
 
   return {

@@ -20,6 +20,7 @@ import {
   saveTalentAuth,
   clearTalentAuth,
 } from "@/components/TalentLoginModal";
+import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -849,13 +850,12 @@ export default function TalentProfile() {
         const err = await res.json().catch(() => ({ error: "Upload failed" }));
         throw new Error(err.error || "Upload failed");
       }
-      // Invalidate ALL candidate query-key variants so ProfileSettings and GetHired
-      // reflect the new resume immediately without a hard refresh.
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["/api/candidates", id] }),
-        qc.invalidateQueries({ queryKey: ["candidate-profile", id] }),
-        qc.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
-      ]);
+      const result = await res.json();
+      // Immediately patch all candidate caches with the server-confirmed values so the
+      // new filename appears at once — prevents the "disappearing filename" during replace.
+      setCandidateResumeCache(qc, id, result);
+      // Background invalidation — triggers a server refetch without blocking the toast.
+      void invalidateCandidateQueries(qc, id);
       toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message || "Could not upload resume.", variant: "destructive" });

@@ -56,6 +56,7 @@ import {
 import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
 import { queryClient } from "@/lib/queryClient";
+import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -268,14 +269,12 @@ export default function ProfileSettings() {
       ? `Bearer ${talentAuth.token}`
       : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
 
-  /** Invalidate the candidate query so both Settings and TalentProfile reflect the change. */
+  /**
+   * Invalidate candidate query keys used by photo/video mutations (not resume —
+   * resume mutations use setCandidateResumeCache + invalidateCandidateQueries directly).
+   */
   const invalidateCandidate = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] }),
-      // TalentProfile uses a different query key — invalidate it too so the profile
-      // page reflects the change immediately without a hard refresh.
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] }),
-    ]);
+    candidateId ? invalidateCandidateQueries(queryClient, candidateId) : Promise.resolve();
 
   const uploadResume = async (file: File) => {
     if (!candidateId) return;
@@ -292,7 +291,12 @@ export default function ProfileSettings() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Upload failed");
       }
-      await invalidateCandidate();
+      const result = await res.json();
+      // Immediately patch all candidate caches with the confirmed server values so
+      // TalentProfile shows the new filename without a hard refresh.
+      setCandidateResumeCache(queryClient, candidateId, result);
+      // Background invalidation — triggers a server refetch for verification.
+      void invalidateCandidateQueries(queryClient, candidateId);
       toast({ title: "Resume saved", description: "Your resume has been updated." });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
@@ -313,7 +317,9 @@ export default function ProfileSettings() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Delete failed");
       }
-      await invalidateCandidate();
+      // Immediately clear resume from all caches so TalentProfile also shows "no resume".
+      setCandidateResumeCache(queryClient, candidateId, { resumeUrl: null, resumeFileName: null });
+      void invalidateCandidateQueries(queryClient, candidateId);
       toast({ title: "Resume removed." });
     } catch (err: any) {
       toast({ title: "Removal failed", description: err.message, variant: "destructive" });

@@ -19,6 +19,8 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
+import { candidateQueryKeys } from "@/lib/candidateQueryKeys";
 
 export interface CandidateResumeState {
   resumeUrl: string | null;
@@ -31,33 +33,17 @@ export interface CandidateResumeState {
   refreshResume: () => Promise<void>;
 }
 
-/**
- * Invalidate every query-key variant that carries candidate resume data.
- * Using the prefix form of invalidateQueries so a missing candidateId still
- * clears the right caches broadly.
- */
+/** @deprecated Use invalidateCandidateQueries from candidateCache instead. */
 export async function invalidateAllCandidateResumeKeys(candidateId?: string | null) {
-  const promises: Promise<void>[] = [
-    // Always clear the legacy resume-status key (used by GetHired / useTalentProfile)
-    queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
-  ];
-
   if (candidateId) {
-    promises.push(
-      // TalentProfile key
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidateId] }),
-      // ProfileSettings / useCandidateProfileSettings key
-      queryClient.invalidateQueries({ queryKey: ["candidate-profile", candidateId] }),
-    );
+    await invalidateCandidateQueries(queryClient, candidateId);
   } else {
-    // No specific ID — broadcast to all candidate queries so nothing stays stale
-    promises.push(
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] }),
       queryClient.invalidateQueries({ queryKey: ["candidate-profile"] }),
-    );
+    ]);
   }
-
-  await Promise.all(promises);
 }
 
 export function useCandidateResume(candidateId: string | null | undefined): CandidateResumeState {
@@ -99,7 +85,9 @@ export function useCandidateResume(candidateId: string | null | undefined): Cand
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || "Upload failed");
       }
-      await invalidateAllCandidateResumeKeys(candidateId);
+      const result = await res.json();
+      setCandidateResumeCache(queryClient, candidateId, result);
+      void invalidateCandidateQueries(queryClient, candidateId);
       toast({ title: "Resume saved", description: "Your resume has been updated." });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
@@ -121,7 +109,8 @@ export function useCandidateResume(candidateId: string | null | undefined): Cand
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || "Delete failed");
       }
-      await invalidateAllCandidateResumeKeys(candidateId);
+      setCandidateResumeCache(queryClient, candidateId, { resumeUrl: null, resumeFileName: null });
+      void invalidateCandidateQueries(queryClient, candidateId);
       toast({ title: "Resume removed." });
     } catch (err: any) {
       toast({ title: "Removal failed", description: err.message, variant: "destructive" });
@@ -131,7 +120,7 @@ export function useCandidateResume(candidateId: string | null | undefined): Cand
   };
 
   const refreshResume = async (): Promise<void> => {
-    await invalidateAllCandidateResumeKeys(candidateId);
+    if (candidateId) await invalidateCandidateQueries(queryClient, candidateId);
   };
 
   return {

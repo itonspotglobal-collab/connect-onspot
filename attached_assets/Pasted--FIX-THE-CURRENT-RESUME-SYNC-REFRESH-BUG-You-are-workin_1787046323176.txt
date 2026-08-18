@@ -1,0 +1,991 @@
+# FIX THE CURRENT RESUME SYNC / REFRESH BUG
+
+You are working inside the existing **OnSpot / connect-onspot** project.
+
+The candidate resume is already being persisted to the correct candidate record, but the frontend synchronization is currently broken.
+
+I tested the current implementation and found these reproducible issues:
+
+### Issue 1 — Talent Profile upload/replace
+
+On the **Talent Profile Page**:
+
+1. An existing resume is displayed.
+2. I click **Replace Resume**.
+3. The upload starts successfully.
+4. After the upload finishes, the attached resume can disappear from the UI.
+5. It only reliably appears again after manually refreshing the browser.
+
+This must not happen.
+
+After upload succeeds, the new resume filename should remain visible immediately.
+
+---
+
+### Issue 2 — Profile Settings does not see existing resume
+
+A resume already exists on the candidate and is visible on Talent Profile.
+
+But when opening:
+
+**Talent Profile Settings → Documents**
+
+it displays:
+
+> No resume uploaded yet.
+
+and asks the talent to upload another resume.
+
+This is incorrect.
+
+Talent Profile and Profile Settings belong to the same Candidate and must display the same candidate resume immediately.
+
+---
+
+# ROOT CAUSE TO FIX
+
+Inspect the current code before changing anything.
+
+Currently:
+
+`TalentProfile.tsx`
+
+fetches the candidate using a React Query key similar to:
+
+```ts
+["/api/candidates", id]
+```
+
+while:
+
+`useCandidateProfileSettings.ts`
+
+fetches the SAME candidate using:
+
+```ts
+["candidate-profile", candidateId]
+```
+
+with:
+
+```ts
+staleTime: 30_000
+```
+
+Talent Profile's current resume upload handler only invalidates:
+
+```ts
+qc.invalidateQueries({
+  queryKey: ["/api/candidates", id],
+});
+```
+
+It does NOT invalidate:
+
+```ts
+["candidate-profile", candidateId]
+```
+
+Therefore Profile Settings can continue displaying a stale cached candidate that has:
+
+```ts
+resumeUrl: null
+resumeFileName: null
+```
+
+even though the database candidate already has a resume.
+
+Fix this properly.
+
+---
+
+# 1. CREATE ONE SHARED CANDIDATE QUERY KEY SYSTEM
+
+Stop manually inventing different candidate query keys in each page.
+
+Create a small reusable query key helper, for example:
+
+```ts
+// client/src/lib/candidateQueryKeys.ts
+
+export const candidateQueryKeys = {
+  profile: (candidateId: string | number) =>
+    ["candidate-profile", String(candidateId)] as const,
+
+  detail: (candidateId: string | number) =>
+    ["/api/candidates", String(candidateId)] as const,
+
+  all: ["/api/candidates"] as const,
+};
+```
+
+If the project already has a better query-key helper, use it instead.
+
+Important:
+
+Normalize Candidate IDs.
+
+Do not sometimes use:
+
+```ts
+123
+```
+
+and sometimes:
+
+```ts
+"123"
+```
+
+inside query keys.
+
+Use a consistent string representation:
+
+```ts
+String(candidateId)
+```
+
+everywhere.
+
+---
+
+# 2. CREATE ONE SHARED INVALIDATION FUNCTION
+
+Create a helper that refreshes ALL active representations of the same candidate.
+
+For example:
+
+```ts
+export async function invalidateCandidateQueries(
+  queryClient: QueryClient,
+  candidateId: string | number,
+) {
+  const id = String(candidateId);
+
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: ["candidate-profile", id],
+    }),
+
+    queryClient.invalidateQueries({
+      queryKey: ["/api/candidates", id],
+    }),
+
+    queryClient.invalidateQueries({
+      queryKey: ["candidate", id],
+    }),
+
+    queryClient.invalidateQueries({
+      queryKey: ["/api/candidates/me"],
+    }),
+  ]);
+}
+```
+
+Only keep query keys that are actually used in the current application.
+
+Search the repository first.
+
+The important requirement is that:
+
+```text
+Talent Profile
+Profile Settings
+Create/Get Hired
+Top Navigation
+```
+
+cannot each maintain a stale version of the same candidate.
+
+---
+
+# 3. FIX TALENT PROFILE RESUME UPLOAD
+
+Inspect:
+
+```text
+client/src/pages/TalentProfile.tsx
+```
+
+Current logic effectively does:
+
+```ts
+const res = await fetch(`/api/candidates/${id}/resume`, ...);
+
+if (!res.ok) {
+  ...
+}
+
+await qc.invalidateQueries({
+  queryKey: ["/api/candidates", id],
+});
+```
+
+This is not sufficient.
+
+The upload endpoint already returns:
+
+```json
+{
+  "success": true,
+  "resumeUrl": "...",
+  "resumeFileName": "Legaspi_CV.pdf"
+}
+```
+
+USE THAT RESPONSE.
+
+After successful upload:
+
+```ts
+const result = await res.json();
+```
+
+Immediately update the currently displayed Candidate cache.
+
+Conceptually:
+
+```ts
+qc.setQueryData(
+  candidateQueryKeys.detail(id),
+  (old: Candidate | undefined) =>
+    old
+      ? {
+          ...old,
+          resumeUrl: result.resumeUrl,
+          resumeFileName: result.resumeFileName,
+        }
+      : old,
+);
+```
+
+Also update the Settings candidate cache if present:
+
+```ts
+qc.setQueryData(
+  candidateQueryKeys.profile(id),
+  (old: Candidate | undefined) =>
+    old
+      ? {
+          ...old,
+          resumeUrl: result.resumeUrl,
+          resumeFileName: result.resumeFileName,
+        }
+      : old,
+);
+```
+
+Then call the shared candidate invalidation helper.
+
+The order should be:
+
+```text
+POST resume
+     ↓
+response contains resumeUrl + resumeFileName
+     ↓
+immediately update React Query caches
+     ↓
+UI instantly displays new resume
+     ↓
+invalidate/refetch candidate queries in background
+```
+
+This prevents the resume filename from disappearing while synchronization occurs.
+
+---
+
+# 4. DO NOT CLEAR THE OLD RESUME WHILE REPLACING
+
+During replacement, keep the currently displayed resume visible.
+
+Current UX should behave like:
+
+```text
+Legaspi_CV.pdf
+
+[ Uploading... ]
+```
+
+Then after success:
+
+```text
+New_Resume.pdf
+
+[ Replace Resume ]
+```
+
+Do NOT temporarily render:
+
+```text
+No resume uploaded yet.
+```
+
+during upload/refetch.
+
+The previous resume should remain displayed until the backend confirms the replacement.
+
+---
+
+# 5. DO NOT DEPEND ONLY ON INVALIDATEQUERIES
+
+For mutations where the server returns the updated values, update the cache immediately using:
+
+```ts
+queryClient.setQueryData(...)
+```
+
+Then invalidate for server verification.
+
+This should apply to resume upload at minimum.
+
+This is much more reliable than:
+
+```ts
+upload
+→ invalidate
+→ hope the refetch completes before the UI renders stale state
+```
+
+---
+
+# 6. FIX PROFILE SETTINGS CANDIDATE CACHE
+
+Inspect:
+
+```text
+client/src/hooks/useCandidateProfileSettings.ts
+```
+
+Currently it uses:
+
+```ts
+queryKey: ["candidate-profile", candidateId]
+```
+
+and:
+
+```ts
+staleTime: 30_000
+```
+
+Make sure the query key uses the same normalized Candidate ID as Talent Profile.
+
+For example:
+
+```ts
+const normalizedCandidateId =
+  candidateId ? String(candidateId) : null;
+```
+
+Then:
+
+```ts
+queryKey: [
+  "candidate-profile",
+  normalizedCandidateId
+]
+```
+
+Do not allow:
+
+```ts
+["candidate-profile", 123]
+```
+
+to be treated differently from:
+
+```ts
+["candidate-profile", "123"]
+```
+
+---
+
+# 7. PROFILE SETTINGS MUST REFETCH WHEN OPENED
+
+Because Settings shows user-owned editable data, it should not display a stale resume merely because a cached candidate exists.
+
+Configure the candidate query appropriately.
+
+Recommended:
+
+```ts
+refetchOnMount: "always"
+```
+
+for the Settings candidate query.
+
+For example:
+
+```ts
+useQuery({
+  queryKey: candidateQueryKeys.profile(candidateId),
+
+  queryFn: ...,
+
+  enabled: !!candidateId,
+
+  staleTime: 30_000,
+
+  refetchOnMount: "always",
+});
+```
+
+This provides an additional safety layer.
+
+Even if another component forgot to invalidate something, opening Settings should verify the latest server Candidate.
+
+Do not rely only on the 30-second stale timeout for editable profile information.
+
+---
+
+# 8. FIX PROFILE SETTINGS DOCUMENT DISPLAY
+
+Inspect the Documents section inside:
+
+```text
+client/src/pages/ProfileSettings.tsx
+```
+
+Its resume UI must read directly from:
+
+```ts
+candidate?.resumeFileName
+candidate?.resumeUrl
+```
+
+Do NOT maintain another independent variable like:
+
+```ts
+settingsResume
+uploadedResume
+resumeDocument
+```
+
+as the source of truth.
+
+Use:
+
+```tsx
+{candidate?.resumeFileName ? (
+  // existing resume card
+) : (
+  // no resume state
+)}
+```
+
+The Settings page must not care WHERE the resume was uploaded.
+
+A resume uploaded from Talent Profile must appear exactly the same as one uploaded from Settings.
+
+---
+
+# 9. FIX SETTINGS UPLOAD CACHE TOO
+
+Profile Settings already invalidates both:
+
+```ts
+["candidate-profile", candidateId]
+
+["/api/candidates", candidateId]
+```
+
+but improve it so it also performs immediate cache updates from the upload response.
+
+Change:
+
+```ts
+const res = await fetch(...);
+
+await invalidateCandidate();
+```
+
+to:
+
+```ts
+const res = await fetch(...);
+
+if (!res.ok) {
+  ...
+}
+
+const result = await res.json();
+
+updateCandidateResumeCaches({
+  candidateId,
+  resumeUrl: result.resumeUrl,
+  resumeFileName: result.resumeFileName,
+});
+
+await invalidateCandidateQueries(queryClient, candidateId);
+```
+
+This guarantees Talent Profile and Settings have the same immediate state.
+
+---
+
+# 10. CREATE A SHARED RESUME CACHE UPDATE HELPER
+
+To avoid duplicating the same setQueryData logic, create something conceptually like:
+
+```ts
+export function setCandidateResumeCache(
+  queryClient: QueryClient,
+  candidateId: string | number,
+  resume: {
+    resumeUrl: string | null;
+    resumeFileName: string | null;
+  },
+) {
+  const id = String(candidateId);
+
+  const updater = (old: any) =>
+    old
+      ? {
+          ...old,
+          resumeUrl: resume.resumeUrl,
+          resumeFileName: resume.resumeFileName,
+        }
+      : old;
+
+  queryClient.setQueryData(
+    ["candidate-profile", id],
+    updater,
+  );
+
+  queryClient.setQueryData(
+    ["/api/candidates", id],
+    updater,
+  );
+
+  queryClient.setQueryData(
+    ["candidate", id],
+    updater,
+  );
+}
+```
+
+Only include actual active query keys after repository inspection.
+
+---
+
+# 11. DELETE SHOULD WORK THE SAME WAY
+
+When resume deletion succeeds:
+
+Immediately set:
+
+```ts
+resumeUrl: null
+resumeFileName: null
+```
+
+in all candidate caches.
+
+Example:
+
+```ts
+setCandidateResumeCache(queryClient, candidateId, {
+  resumeUrl: null,
+  resumeFileName: null,
+});
+```
+
+Then invalidate/refetch.
+
+Do not leave an old filename on another screen.
+
+---
+
+# 12. TALENT PROFILE UPLOAD SHOULD BECOME
+
+Conceptually, refactor:
+
+```ts
+async function handleResumeUpload(file: File) {
+  if (!id) return;
+
+  setResumeUploading(true);
+
+  try {
+    const formData = new FormData();
+    formData.append("resume", file);
+
+    const res = await fetch(
+      `/api/candidates/${id}/resume`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+        },
+        body: formData,
+      },
+    );
+
+    if (!res.ok) {
+      ...
+    }
+
+    const result = await res.json();
+
+    setCandidateResumeCache(qc, id, {
+      resumeUrl: result.resumeUrl,
+      resumeFileName: result.resumeFileName,
+    });
+
+    await invalidateCandidateQueries(qc, id);
+
+    toast({
+      title: "Resume uploaded",
+      description: "Your resume has been saved to your profile.",
+    });
+  } catch (...) {
+    ...
+  } finally {
+    setResumeUploading(false);
+  }
+}
+```
+
+Do not copy this literally without adapting to the actual project types/helpers.
+
+---
+
+# 13. IMPORTANT: DO NOT INTRODUCE LOCAL CANDIDATE STATE
+
+Talent Profile currently gets:
+
+```ts
+const { data: candidate } = useQuery(...)
+```
+
+Keep React Query as the candidate state.
+
+Do NOT try to fix this with:
+
+```ts
+const [candidate, setCandidate] = useState(...)
+```
+
+or:
+
+```ts
+const [resumeName, setResumeName] = useState(...)
+```
+
+That would add yet another synchronization layer.
+
+Use React Query cache updates.
+
+---
+
+# 14. VERIFY THE BACKEND RESPONSE
+
+The existing:
+
+```text
+POST /api/candidates/:id/resume
+```
+
+already persists:
+
+```ts
+resumeUrl
+resumeFileName
+```
+
+and returns both values.
+
+Do not rewrite the backend upload architecture unless testing reveals a backend bug.
+
+The backend currently follows:
+
+```text
+save file
+   ↓
+await updateCandidate(...)
+   ↓
+return resumeUrl + resumeFileName
+```
+
+Keep this.
+
+---
+
+# 15. CHECK GET /api/candidates/:id
+
+Verify the candidate GET endpoint always returns:
+
+```ts
+resumeUrl
+resumeFileName
+```
+
+to the authenticated profile owner.
+
+If sanitization is involved, make sure these fields are not accidentally stripped for the owner's Settings query.
+
+However, do NOT expose private resume URLs to unauthorized public visitors if the existing security design intentionally protects them.
+
+The owner-facing Talent Profile and Profile Settings must both receive the required resume metadata.
+
+---
+
+# 16. CHECK THAT BOTH PAGES USE THE SAME CANDIDATE ID
+
+While testing, temporarily log:
+
+```ts
+console.log("TalentProfile candidate", {
+  id,
+  resumeFileName: candidate?.resumeFileName,
+  resumeUrl: candidate?.resumeUrl,
+});
+```
+
+and:
+
+```ts
+console.log("ProfileSettings candidate", {
+  candidateId,
+  resumeFileName: candidate?.resumeFileName,
+  resumeUrl: candidate?.resumeUrl,
+});
+```
+
+Confirm:
+
+```text
+TalentProfile ID  === ProfileSettings candidateId
+```
+
+If not, stop and fix Candidate resolution.
+
+Remove debug logs afterward.
+
+---
+
+# 17. SPECIFIC BUG TEST
+
+Use this exact test case.
+
+Initial state:
+
+```text
+Talent Profile:
+Legaspi_CV.pdf
+
+Profile Settings:
+Legaspi_CV.pdf
+```
+
+Then from Talent Profile:
+
+1. Click **Replace Resume**.
+2. Select `Updated_Legaspi_CV.pdf`.
+3. While uploading:
+
+Expected:
+
+```text
+Legaspi_CV.pdf
+Uploading...
+```
+
+4. Upload finishes.
+
+Expected immediately, WITHOUT REFRESH:
+
+```text
+Updated_Legaspi_CV.pdf
+Replace Resume
+```
+
+5. Open Profile Settings.
+
+Expected immediately:
+
+```text
+Updated_Legaspi_CV.pdf
+```
+
+NOT:
+
+```text
+No resume uploaded yet.
+```
+
+---
+
+# 18. REVERSE TEST
+
+From Profile Settings:
+
+1. Upload `Resume_Three.pdf`.
+2. Upload finishes.
+
+Settings should immediately show:
+
+```text
+Resume_Three.pdf
+```
+
+3. Navigate to Talent Profile.
+
+Talent Profile should immediately show:
+
+```text
+Resume_Three.pdf
+```
+
+No browser refresh.
+
+---
+
+# 19. TEST EXISTING RESUME ON DIRECT SETTINGS LOAD
+
+Important test:
+
+1. Candidate already has a resume in the database.
+2. Completely refresh the browser.
+3. Navigate directly to `/settings`.
+4. Open Documents.
+
+Expected:
+
+```text
+Existing_Resume.pdf
+```
+
+If it still shows:
+
+```text
+No resume uploaded yet.
+```
+
+inspect the network response for:
+
+```text
+GET /api/candidates/:candidateId
+```
+
+and confirm whether:
+
+```json
+resumeUrl
+resumeFileName
+```
+
+are present.
+
+If they are present in the API response but not rendered:
+
+the bug is frontend mapping/rendering.
+
+If they are missing from the API response:
+
+the bug is candidate response sanitization or incorrect Candidate ID.
+
+Fix the actual source rather than adding another request.
+
+---
+
+# 20. DO NOT USE TIMEOUTS TO FIX THIS
+
+Do NOT implement:
+
+```ts
+setTimeout(() => {
+  refetch();
+}, 1000);
+```
+
+or similar hacks.
+
+Do not solve eventual UI consistency using delays.
+
+The upload endpoint already returns the authoritative persisted resume metadata.
+
+Use the response to update cache immediately.
+
+---
+
+# 21. DO NOT USE PAGE RELOADS
+
+Absolutely do not use:
+
+```ts
+window.location.reload();
+```
+
+The entire purpose of this fix is for React state/query synchronization to work correctly.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+The fix is complete only when:
+
+* [ ] Talent Profile shows existing resume.
+* [ ] Profile Settings shows the exact same existing resume.
+* [ ] Replacing a resume on Talent Profile does not make the filename disappear.
+* [ ] New filename appears immediately after upload success.
+* [ ] No manual browser refresh is required.
+* [ ] Navigating to Settings immediately shows the replacement.
+* [ ] Replacing from Settings immediately reflects on Talent Profile.
+* [ ] Resume URL and filename come from the Candidate.
+* [ ] Both pages use the same Candidate ID.
+* [ ] Query keys use normalized Candidate IDs.
+* [ ] All relevant candidate query keys are invalidated.
+* [ ] Successful mutations update caches immediately using the server response.
+* [ ] Delete clears all candidate resume caches.
+* [ ] Directly opening Settings with an existing resume displays it.
+* [ ] No duplicate resume state was introduced.
+* [ ] No `window.location.reload()`.
+* [ ] No `setTimeout()` refetch hack.
+* [ ] TypeScript passes.
+* [ ] Candidate media tests pass.
+
+---
+
+# FILES LIKELY TO CHANGE
+
+At minimum inspect/change:
+
+```text
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/hooks/useCandidateProfileSettings.ts
+```
+
+Potential new shared helper:
+
+```text
+client/src/lib/candidateQueryKeys.ts
+```
+
+or:
+
+```text
+client/src/lib/candidateCache.ts
+```
+
+Do not modify unrelated files.
+
+---
+
+# FINAL REPORT
+
+When finished, report:
+
+1. Exact root cause.
+2. Query keys that were conflicting.
+3. Whether Candidate IDs matched.
+4. How the resume cache is updated immediately now.
+5. How Profile Settings gets refreshed.
+6. Files changed.
+7. Test results.
+
+The key requirement is:
+
+**A resume mutation must immediately update every frontend representation of the same Candidate without requiring a browser refresh.**
