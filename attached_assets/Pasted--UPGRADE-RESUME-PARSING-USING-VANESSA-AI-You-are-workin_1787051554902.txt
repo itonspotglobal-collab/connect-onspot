@@ -1,0 +1,1836 @@
+# UPGRADE RESUME PARSING USING VANESSA AI
+
+You are working inside the existing **OnSpot / connect-onspot** project.
+
+The resume auto-fill feature is now working end-to-end, but the extracted profile information is not accurate enough.
+
+We need to improve resume interpretation by using **Vanessa AI's existing OpenAI functionality**.
+
+Do NOT create an unrelated second AI integration.
+
+Use the existing Vanessa/OpenAI infrastructure already present in the project.
+
+---
+
+# CURRENT PROBLEM
+
+The deterministic resume parser is incorrectly interpreting resume content.
+
+I have reproduced examples such as:
+
+### Experience incorrectly parsed
+
+Instead of a real experience entry, Talent Profile shows:
+
+```text
+frenzvallagahid81@gmail.com
+
+backend development of an HR Management System
+using C# and ASP.NET...
+```
+
+The email address is incorrectly being treated as a job/company/title.
+
+Other random paragraph fragments are becoming separate Experience records.
+
+---
+
+### Professional Title incorrectly parsed
+
+Profile Settings currently populated:
+
+```text
+Bachelor Of Science In Computer Engineering
+```
+
+as:
+
+**Professional Title**
+
+This is wrong.
+
+That value belongs to Education.
+
+Professional Title should instead be something such as:
+
+```text
+Software Developer
+Full Stack Developer
+Backend Developer
+IT Specialist
+```
+
+depending on what the resume actually indicates.
+
+---
+
+### Professional Bio includes HTML markup
+
+Current value contains:
+
+```html
+<p>To succeed and be a part of a competitive organization...</p>
+```
+
+The profile input must not display literal:
+
+```text
+<p>
+</p>
+```
+
+Resume AI should return clean text.
+
+---
+
+# MAIN GOAL
+
+Upgrade the resume import architecture to:
+
+```text
+Resume File
+    ↓
+Existing PDF/DOCX text extraction
+    ↓
+Vanessa Resume Intelligence
+    ↓
+Structured validated Candidate profile
+    ↓
+Fallback / validation
+    ↓
+Candidate database
+    ↓
+Talent Profile + Settings + Find Best Matches
+```
+
+Vanessa should interpret the **meaning and context** of the resume instead of relying only on regex and neighboring lines.
+
+---
+
+# IMPORTANT ARCHITECTURE
+
+There should still be:
+
+**ONE resume parser entry point.**
+
+Do not create:
+
+```text
+signupResumeParser
+settingsResumeParser
+talentProfileResumeParser
+findBestMatchesResumeParser
+```
+
+The existing shared:
+
+```text
+client/src/lib/resumeParser.ts
+```
+
+should eventually call or cooperate with a **server-side Vanessa resume analysis endpoint/service**.
+
+Every upload location must receive the same parsing behavior.
+
+---
+
+# 1. INSPECT VANESSA'S EXISTING AI INFRASTRUCTURE FIRST
+
+Before changing anything, inspect:
+
+```text
+server/services/openaiService.ts
+client/src/contexts/VanessaContext.tsx
+client/src/components/VanessaChat.tsx
+server/services/learningLoop.ts
+server/services/ragService.ts
+resources/vanessa_knowledge.txt
+```
+
+The project already has:
+
+```text
+OPENAI_API_KEY
+ASSISTANT_ID
+```
+
+and existing Vanessa/OpenAI infrastructure.
+
+Reuse it.
+
+Do NOT introduce:
+
+```text
+NEW_OPENAI_API_KEY
+RESUME_OPENAI_API_KEY
+another AI SDK
+another AI provider
+```
+
+unless there is an unavoidable technical reason.
+
+---
+
+# 2. DO NOT USE VANESSA'S NORMAL CHAT PROMPT DIRECTLY
+
+Vanessa's normal conversational persona is intended for chat and website assistance.
+
+Resume parsing has a completely different output contract.
+
+Do NOT send something like:
+
+```text
+"Vanessa, please read this resume"
+```
+
+through the normal chatbot API and then attempt to regex the conversational response.
+
+Instead create a dedicated server-side Vanessa capability such as:
+
+```text
+analyzeResumeWithVanessa()
+```
+
+or:
+
+```text
+VanessaResumeAnalyzer
+```
+
+using the SAME OpenAI infrastructure.
+
+Conceptually:
+
+```ts
+export async function analyzeResumeWithVanessa(
+  resumeText: string
+): Promise<VanessaResumeAnalysis>
+```
+
+This should use strict structured output.
+
+---
+
+# 3. SERVER-SIDE ONLY
+
+AI resume analysis must run on the server.
+
+Do NOT expose:
+
+```text
+OPENAI_API_KEY
+ASSISTANT_ID
+```
+
+to the React frontend.
+
+Expected:
+
+```text
+browser
+   ↓
+POST /api/resume/analyze
+   ↓
+server
+   ↓
+Vanessa/OpenAI
+   ↓
+validated JSON
+   ↓
+browser/candidate update
+```
+
+---
+
+# 4. USE STRUCTURED OUTPUT
+
+Vanessa's resume analyzer must return machine-readable structured data.
+
+Do NOT ask the AI to produce Markdown.
+
+Do NOT parse free-form prose.
+
+Use the project's currently installed OpenAI SDK capabilities for structured JSON/schema output where possible.
+
+Define a Zod/schema contract.
+
+Example concept:
+
+```ts
+const VanessaResumeSchema = z.object({
+  personalInfo: z.object({
+    fullName: z.string(),
+    email: z.string(),
+    phone: z.string(),
+    location: z.string(),
+    languages: z.array(z.string()),
+  }),
+
+  professional: z.object({
+    title: z.string(),
+    summary: z.string(),
+    yearsOfExperience: z.string(),
+    seniority: z.string(),
+  }),
+
+  skills: z.object({
+    core: z.array(z.string()),
+    secondary: z.array(z.string()),
+  }),
+
+  experience: z.array(
+    z.object({
+      jobTitle: z.string(),
+      company: z.string(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      duration: z.string().optional(),
+      responsibilities: z.array(z.string()),
+    })
+  ),
+
+  education: z.array(
+    z.object({
+      school: z.string(),
+      degree: z.string(),
+      fieldOfStudy: z.string().optional(),
+      startYear: z.string().optional(),
+      endYear: z.string().optional(),
+    })
+  ),
+
+  certifications: z.array(
+    z.object({
+      name: z.string(),
+      issuer: z.string().optional(),
+      date: z.string().optional(),
+    })
+  ),
+
+  confidence: z.object({
+    overall: z.number(),
+    title: z.number(),
+    summary: z.number(),
+    experience: z.number(),
+    education: z.number(),
+    skills: z.number(),
+  }),
+});
+```
+
+Adapt to the actual Candidate schema.
+
+Do not create unnecessary database columns.
+
+---
+
+# 5. GIVE VANESSA A RESUME-SPECIFIC SYSTEM INSTRUCTION
+
+Create dedicated instructions similar to:
+
+```text
+You are Vanessa Resume Intelligence, the resume interpretation
+capability of OnSpot's Vanessa AI.
+
+Your job is to transform resume text into an accurate structured
+candidate profile.
+
+You must interpret resume sections semantically, not merely based
+on neighboring lines.
+
+Never invent information.
+
+If a field cannot be confidently determined, return an empty value.
+```
+
+Then include strict rules below.
+
+---
+
+# 6. CRITICAL FIELD CLASSIFICATION RULES
+
+Vanessa must understand the difference between:
+
+```text
+contact information
+professional title
+objective/summary
+skills
+experience
+education
+certifications
+projects
+languages
+```
+
+These categories MUST NOT contaminate one another.
+
+---
+
+# EMAIL RULE
+
+An email address can NEVER become:
+
+```text
+jobTitle
+company
+degree
+school
+certification
+skill
+```
+
+For example:
+
+```text
+frenzvallagahid81@gmail.com
+```
+
+must ONLY map to:
+
+```ts
+personalInfo.email
+```
+
+Never Experience.
+
+---
+
+# PHONE RULE
+
+Phone numbers must only map to:
+
+```ts
+personalInfo.phone
+```
+
+Never experience/company/title.
+
+---
+
+# EDUCATION RULE
+
+Values such as:
+
+```text
+Bachelor of Science in Computer Engineering
+BS Computer Engineering
+Bachelor of Arts
+Master of Science
+Diploma in Information Technology
+```
+
+are degrees/education.
+
+They must NEVER automatically become:
+
+```text
+Professional Title
+```
+
+unless the resume explicitly identifies that phrase as the person's professional headline, which would be extremely unusual.
+
+For the example:
+
+```text
+Bachelor Of Science In Computer Engineering
+```
+
+Vanessa should return:
+
+```text
+education.degree = Bachelor of Science in Computer Engineering
+```
+
+NOT:
+
+```text
+professional.title
+```
+
+---
+
+# PROFESSIONAL TITLE RULE
+
+Professional Title should represent the candidate's actual career role.
+
+Determine it using this priority:
+
+1. Explicit professional headline beneath the candidate's name
+2. Explicit current professional title/profile heading
+3. Most recent valid work-experience job title
+4. Semantic inference from the person's actual professional experience and skills
+
+Examples:
+
+```text
+Software Developer
+Backend Developer
+Full Stack Developer
+Virtual Assistant
+Customer Support Specialist
+Accountant
+IT Administrator
+```
+
+Do NOT use:
+
+```text
+degree
+school
+email
+location
+objective sentence
+company
+section heading
+```
+
+as the professional title.
+
+If uncertain, return empty rather than inventing.
+
+---
+
+# 7. EXPERIENCE MUST BE SEMANTICALLY GROUPED
+
+This is one of the most important improvements.
+
+The current parser is fragmenting paragraphs into separate Experience entries.
+
+Vanessa should understand that an Experience entry normally contains:
+
+```text
+Job Title
+Company
+Dates
+Responsibilities / Achievements
+```
+
+Example:
+
+```text
+Software Developer
+Alliance Software Inc.
+2022 – 2024
+
+- Developed HR management functionality using C# and ASP.NET.
+- Built employee record and payroll modules.
+- Developed React interfaces.
+- Participated in code reviews and unit testing.
+```
+
+must become ONE entry:
+
+```json
+{
+  "jobTitle": "Software Developer",
+  "company": "Alliance Software Inc.",
+  "duration": "2022 – 2024",
+  "responsibilities": [
+    "Developed HR management functionality using C# and ASP.NET.",
+    "Built employee record and payroll modules.",
+    "Developed React interfaces.",
+    "Participated in code reviews and unit testing."
+  ]
+}
+```
+
+NOT four separate Experience records.
+
+---
+
+# 8. PROJECTS ARE NOT AUTOMATICALLY EXPERIENCE
+
+The resume may contain projects such as:
+
+```text
+3rd Year College: GaBus Online Booking System
+HR Management System
+Capstone Project
+```
+
+These should not automatically become employment Experience.
+
+If Candidate currently has no Projects field:
+
+* do not incorrectly save academic projects as work experience
+* they may contribute to skills/title inference
+* keep them out of `workHistory` unless the resume clearly describes them as professional employment
+
+If an existing Projects field exists, use it.
+
+Do not add a new schema solely for this task.
+
+---
+
+# 9. EXPERIENCE VALIDATION
+
+Before accepting an experience entry:
+
+At least one of the following should be true:
+
+```text
+valid job title + company
+valid job title + date range
+company + date range + clearly associated role
+```
+
+Reject entries that are just:
+
+```text
+email address
+single responsibility sentence
+About Me text
+skill list
+education sentence
+project description without employment context
+```
+
+---
+
+# 10. PROFESSIONAL SUMMARY / BIO
+
+Vanessa should identify:
+
+```text
+Professional Summary
+Summary
+Professional Profile
+Career Objective
+Objective
+About Me
+```
+
+and map it to:
+
+```ts
+candidate.summary
+```
+
+But return clean text.
+
+Example input:
+
+```html
+<p>To succeed and be a part of a competitive organization...</p>
+```
+
+Expected output:
+
+```text
+To succeed and be a part of a competitive organization...
+```
+
+Never store HTML tags from resume parsing.
+
+Run final sanitization:
+
+```ts
+stripHtml(...)
+trim()
+normalizeWhitespace()
+```
+
+before candidate persistence.
+
+---
+
+# 11. IMPROVE THE BIO WHEN APPROPRIATE, BUT DO NOT INVENT
+
+Vanessa may normalize awkward resume formatting and combine broken lines.
+
+For example:
+
+Input:
+
+```text
+To succeed and be a part of a competitive
+organization that provides possibilities for professional
+development.
+```
+
+Output:
+
+```text
+To succeed and be a part of a competitive organization that provides possibilities for professional development.
+```
+
+Good.
+
+But Vanessa must NOT fabricate experience, achievements, or credentials.
+
+---
+
+# 12. SKILLS SHOULD USE BOTH EXPLICIT AND CONTEXTUAL EVIDENCE
+
+Vanessa should first use explicit Skills sections.
+
+It may also identify strongly evidenced technical skills from professional experience.
+
+Example:
+
+```text
+Developed an HR Management System using C# and ASP.NET.
+Built responsive interfaces using React.js.
+```
+
+Evidence supports:
+
+```text
+C#
+ASP.NET
+React
+```
+
+Do not infer unsupported technologies.
+
+---
+
+# 13. SKILL NORMALIZATION
+
+Normalize:
+
+```text
+React.js
+ReactJS
+react
+```
+
+to one canonical skill where possible:
+
+```text
+React
+```
+
+Similar examples:
+
+```text
+NodeJS → Node.js
+Postgres → PostgreSQL
+ASP .NET → ASP.NET
+MS Excel → Microsoft Excel
+```
+
+Reuse the current deterministic skill alias dictionaries where helpful.
+
+The best architecture is:
+
+```text
+Vanessa semantic extraction
+        +
+existing known-skill normalization
+```
+
+not one replacing the other entirely.
+
+---
+
+# 14. EDUCATION
+
+Vanessa should correctly group:
+
+```text
+Degree
+School
+Dates
+```
+
+Example:
+
+```text
+Bachelor of Science in Computer Engineering
+Cebu Institute of Technology – University
+2018 – 2023
+```
+
+→
+
+```json
+{
+  "degree": "Bachelor of Science in Computer Engineering",
+  "school": "Cebu Institute of Technology – University",
+  "startYear": "2018",
+  "endYear": "2023"
+}
+```
+
+Do not make the degree the Professional Title.
+
+---
+
+# 15. CERTIFICATIONS
+
+Vanessa should identify actual certifications.
+
+Examples:
+
+```text
+AWS Certified Cloud Practitioner
+Microsoft Azure Fundamentals
+Google Analytics Certification
+Civil Service Eligibility
+```
+
+Do not classify:
+
+```text
+school degrees
+project names
+company training headings
+skills
+```
+
+as certifications unless the resume clearly indicates certification/training.
+
+---
+
+# 16. LANGUAGES
+
+Extract actual spoken/written languages.
+
+Examples:
+
+```text
+English — Fluent
+Filipino — Native
+Cebuano — Native
+Japanese — Basic
+```
+
+Store names using the existing:
+
+```ts
+candidate.preferences.languages
+```
+
+architecture unless the schema already supports proficiency.
+
+Do not mistake:
+
+```text
+Java
+Python
+C#
+```
+
+for human languages.
+
+---
+
+# 17. LOCATION
+
+Vanessa should distinguish the candidate's personal location/address from:
+
+```text
+company locations
+school locations
+project locations
+```
+
+Prefer contact/header information.
+
+For example:
+
+```text
+Dalaguete, Cebu
+```
+
+could be personal location.
+
+But:
+
+```text
+Alliance Software Inc. — Cebu City
+```
+
+must not automatically override it.
+
+---
+
+# 18. USE A TWO-STAGE / HYBRID PARSER
+
+Do NOT throw away the existing parser.
+
+Use a hybrid approach.
+
+Recommended:
+
+```text
+Stage 1
+Extract text deterministically
+PDF → pdfjs
+DOC/DOCX → mammoth
+
+Stage 2
+Vanessa semantic interpretation
+
+Stage 3
+Deterministic validation + normalization
+
+Stage 4
+Persist Candidate
+```
+
+The existing `resumeParser.ts` is still valuable for:
+
+```text
+PDF extraction
+DOCX extraction
+phone validation
+known skills
+skill aliases
+basic fallback parsing
+```
+
+Vanessa should improve semantic classification.
+
+---
+
+# 19. SERVER ENDPOINT
+
+Create an authenticated/server endpoint conceptually such as:
+
+```http
+POST /api/resume/analyze
+```
+
+Request should contain either:
+
+```json
+{
+  "resumeText": "..."
+}
+```
+
+or preferably operate directly from the already uploaded Candidate resume where appropriate.
+
+Do not expose the OpenAI API from the browser.
+
+Response:
+
+```json
+{
+  "success": true,
+  "source": "vanessa",
+  "profile": {
+    ...
+  }
+}
+```
+
+---
+
+# 20. CONSIDER SERVER-SIDE FILE ANALYSIS
+
+Since the canonical resume is already saved using:
+
+```http
+POST /api/candidates/:id/resume
+```
+
+the cleanest long-term flow may be:
+
+```text
+POST Candidate Resume
+        ↓
+server stores file
+        ↓
+extract text
+        ↓
+Vanessa analyzes
+        ↓
+server updates Candidate
+        ↓
+single response contains updated resume + profile
+```
+
+If this can be implemented cleanly without destabilizing uploads, prefer it.
+
+Otherwise keep upload and analysis as sequential server calls.
+
+---
+
+# 21. VANESSA OUTPUT CONFIDENCE
+
+Return confidence per major field.
+
+Example:
+
+```json
+{
+  "confidence": {
+    "overall": 0.91,
+    "professionalTitle": 0.88,
+    "summary": 0.95,
+    "experience": 0.93,
+    "education": 0.97,
+    "skills": 0.94,
+    "location": 0.82
+  }
+}
+```
+
+Use confidence to prevent bad auto-fill.
+
+---
+
+# 22. CONFIDENCE THRESHOLD
+
+Do not automatically persist questionable AI guesses.
+
+Example behavior:
+
+```text
+confidence >= 0.80
+→ safe to auto-fill empty fields
+
+0.60–0.79
+→ use only when strongly corroborated by deterministic parser / explicit section
+
+< 0.60
+→ do not auto-fill
+```
+
+Tune thresholds based on testing.
+
+The exact numbers can be adjusted, but there must be a confidence strategy.
+
+---
+
+# 23. FIELD-LEVEL EVIDENCE
+
+For debugging and future Vanessa improvement, internally return optional evidence.
+
+Example:
+
+```json
+{
+  "professionalTitle": {
+    "value": "Software Developer",
+    "confidence": 0.91,
+    "evidence": "Software Developer — Alliance Software Inc."
+  }
+}
+```
+
+Do NOT display raw evidence in normal UI.
+
+This is useful for testing parser accuracy.
+
+---
+
+# 24. ADD VALIDATION AFTER VANESSA
+
+AI output must never be trusted blindly.
+
+Run deterministic validation before persistence.
+
+Examples:
+
+### Professional title rejection
+
+Reject if title:
+
+* contains `@`
+* looks like phone number
+* is only a degree
+* matches a university
+* is a section heading
+* exceeds reasonable length
+
+---
+
+### Experience rejection
+
+Reject job title if it:
+
+```text
+contains @
+looks like phone
+looks like full paragraph
+equals "About Me"
+equals "Experience"
+equals "Education"
+```
+
+---
+
+### Email validation
+
+Use valid email formatting.
+
+---
+
+### Phone validation
+
+Use existing phone validation utilities.
+
+---
+
+### Arrays
+
+Deduplicate skills, education, certifications and languages.
+
+---
+
+# 25. FALLBACK TO CURRENT PARSER
+
+Vanessa/OpenAI might fail because of:
+
+```text
+network failure
+rate limits
+missing API configuration
+invalid AI response
+timeout
+```
+
+The feature must still work.
+
+Flow:
+
+```text
+try Vanessa
+    ↓
+valid structured result?
+    YES → use Vanessa + deterministic validation
+
+    NO
+    ↓
+use existing deterministic parseResumeFile()
+```
+
+Do not make resume uploads dependent on AI availability.
+
+---
+
+# 26. DO NOT BLOCK RESUME UPLOAD ON AI FAILURE
+
+Resume upload and Vanessa analysis are separate operations.
+
+If upload succeeds but Vanessa fails:
+
+keep the resume.
+
+Show:
+
+```text
+Resume uploaded successfully, but we couldn't automatically
+analyze all profile details. You can review your profile manually.
+```
+
+---
+
+# 27. PROCESSING UX
+
+When using Vanessa:
+
+```text
+Uploading resume...
+```
+
+then:
+
+```text
+Vanessa is analyzing your resume...
+```
+
+then:
+
+```text
+Vanessa analyzed your resume.
+Review your updated profile.
+```
+
+Do not expose technical details such as:
+
+```text
+OpenAI
+Assistant ID
+GPT
+JSON schema
+```
+
+in the talent-facing UI.
+
+Use Vanessa branding.
+
+---
+
+# 28. APPLY FROM EVERY UPLOAD LOCATION
+
+The same Vanessa analysis must run when resume is uploaded from:
+
+```text
+Talent Profile
+Talent Profile Settings
+Find Best Matches
+Signup/Create Talent Account
+Get Hired if active
+```
+
+Do not allow one entry point to use AI and another to keep the old parser only.
+
+---
+
+# 29. TALENT PROFILE MAPPING
+
+Map Vanessa results to:
+
+```text
+Resume Summary
+    ↓
+candidate.summary
+    ↓
+About
+
+Skills
+    ↓
+candidate.coreSkills / secondarySkills
+
+Experience
+    ↓
+candidate.workHistory
+
+Education
+    ↓
+candidate.education
+
+Certifications
+    ↓
+candidate.certifications
+```
+
+---
+
+# 30. PROFILE SETTINGS MAPPING
+
+Map:
+
+```text
+Phone
+    ↓
+candidate.phone
+    ↓
+Basic Information → Phone Number
+
+Location
+    ↓
+candidate.location
+    ↓
+Basic Information → Location
+
+Languages
+    ↓
+candidate.preferences.languages
+
+Professional Title
+    ↓
+candidate.targetPosition
+
+Professional Summary
+    ↓
+candidate.summary
+    ↓
+Professional Bio
+
+Skills
+    ↓
+candidate.coreSkills / secondarySkills
+```
+
+---
+
+# 31. VERY IMPORTANT — DO NOT OVERWRITE GOOD MANUAL CONTENT
+
+Vanessa is an assistant, not the authority over user-edited information.
+
+Use safe merging.
+
+For empty profile fields:
+
+```text
+Vanessa high-confidence value
+→ populate automatically
+```
+
+For existing manually edited fields:
+
+do not overwrite meaningful values unless the product explicitly intends replacement.
+
+Recommended rule:
+
+```text
+existing field empty
++ Vanessa confident
+→ fill
+
+existing field non-empty
++ Vanessa empty/low-confidence
+→ preserve
+
+existing manually curated bio
++ Vanessa new bio
+→ preserve manual bio by default
+```
+
+For structured resume-owned data such as Experience/Education, merge intelligently rather than blindly deleting existing entries.
+
+---
+
+# 32. RESUME REPLACEMENT
+
+When an existing user uploads a newer resume, Vanessa should identify new or updated information.
+
+Example:
+
+Old profile:
+
+```text
+Software Developer
+2022–2024
+```
+
+New resume:
+
+```text
+Senior Software Developer
+2024–Present
+```
+
+Do not duplicate identical historical experiences.
+
+Merge normalized entries.
+
+---
+
+# 33. HTML SANITIZATION
+
+Fix the existing:
+
+```text
+<p>...</p>
+```
+
+problem.
+
+Before Candidate persistence, normalize text fields.
+
+Create/reuse a helper such as:
+
+```ts
+function cleanResumeText(value: string): string {
+  return stripHtml(value)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+```
+
+For multiline responsibilities, preserve logical paragraphs/bullets rather than flattening everything unnecessarily.
+
+Do not store HTML generated from the resume.
+
+---
+
+# 34. DO NOT FEED PRIVATE RESUMES INTO VANESSA'S GLOBAL KNOWLEDGE BASE
+
+This is critical.
+
+Resume contents contain:
+
+```text
+names
+emails
+phone numbers
+addresses
+employment history
+education
+```
+
+Do NOT append candidate resumes to:
+
+```text
+resources/vanessa_knowledge.txt
+platform_knowledge.auto.txt
+RAG global knowledge
+website embeddings
+global Vanessa memory
+```
+
+Resume content should be used only for that candidate's parsing request.
+
+Vanessa must NOT later answer:
+
+```text
+"What is this candidate's phone number?"
+```
+
+based on globally learned resume content.
+
+Keep candidate PII isolated.
+
+---
+
+# 35. HOW VANESSA CAN IMPROVE SAFELY
+
+The user wants resume parsing to also help improve Vanessa.
+
+Implement improvement using **non-sensitive parsing feedback**, not raw candidate resumes.
+
+Good information to track:
+
+```text
+parser version
+field type corrected
+AI confidence
+whether user changed imported field
+generic error category
+classification mistake type
+```
+
+Examples:
+
+```json
+{
+  "field": "professionalTitle",
+  "issue": "degree_misclassified_as_title"
+}
+```
+
+or:
+
+```json
+{
+  "field": "experience",
+  "issue": "contact_info_misclassified_as_experience"
+}
+```
+
+Do NOT store:
+
+```text
+candidate email
+phone
+full address
+complete resume text
+private work history
+```
+
+in the global Vanessa learning system without an explicit product/privacy design.
+
+---
+
+# 36. OPTIONAL USER-CORRECTION SIGNAL
+
+A powerful future improvement:
+
+If Vanessa imports:
+
+```text
+Professional Title:
+Software Engineer
+```
+
+and the talent manually changes it to:
+
+```text
+Full Stack Developer
+```
+
+record a privacy-safe correction event such as:
+
+```json
+{
+  "feature": "resume_parser",
+  "field": "professionalTitle",
+  "wasCorrected": true,
+  "parserVersion": "vanessa-resume-v1"
+}
+```
+
+Potentially store anonymized category-level feedback.
+
+Do NOT globally store the person's actual sensitive resume details.
+
+---
+
+# 37. VERSION THE PARSER
+
+Add a parser version such as:
+
+```text
+vanessa-resume-v1
+```
+
+This makes accuracy improvements measurable.
+
+Future:
+
+```text
+vanessa-resume-v2
+```
+
+can be compared.
+
+---
+
+# 38. OBSERVABILITY
+
+In development/server logs record something like:
+
+```text
+Vanessa resume analysis
+candidateId: <id>
+parser: vanessa-resume-v1
+overallConfidence: 0.91
+fieldsExtracted:
+- professionalTitle
+- summary
+- skills
+- experience
+- education
+```
+
+Do NOT dump complete resume text or sensitive PII into production logs.
+
+---
+
+# 39. SPECIFIC REGRESSION TESTS
+
+Add tests for the exact bugs found.
+
+---
+
+## Test A — Email must not become Experience
+
+Resume contains:
+
+```text
+frenzvallagahid81@gmail.com
+```
+
+Expected:
+
+```ts
+email = "frenzvallagahid81@gmail.com"
+```
+
+Never:
+
+```ts
+experience[0].jobTitle =
+  "frenzvallagahid81@gmail.com"
+```
+
+---
+
+## Test B — Degree must not become Professional Title
+
+Resume contains:
+
+```text
+Bachelor of Science in Computer Engineering
+```
+
+Expected:
+
+```ts
+education[0].degree =
+  "Bachelor of Science in Computer Engineering"
+```
+
+Professional title must be obtained from actual career evidence.
+
+---
+
+## Test C — Responsibilities stay with correct Experience
+
+Input:
+
+```text
+Software Developer
+Alliance Software Inc.
+
+Backend development of an HR Management System using C# and ASP.NET.
+Designed responsive React interfaces.
+Participated in code reviews and unit testing.
+```
+
+Expected:
+
+ONE Experience entry containing all responsibilities.
+
+NOT three experiences.
+
+---
+
+## Test D — About Me isn't Experience
+
+Input:
+
+```text
+About Me
+
+Passionate about building reliable, user-focused software...
+```
+
+Expected:
+
+summary/About.
+
+Never Experience.
+
+---
+
+## Test E — No HTML in Professional Bio
+
+Input AI/parser output:
+
+```html
+<p>To succeed and be part of a competitive organization...</p>
+```
+
+Persisted Candidate:
+
+```text
+To succeed and be part of a competitive organization...
+```
+
+---
+
+# 40. TEST WITH DIFFERENT RESUME FORMATS
+
+Test at least:
+
+```text
+single-column resume
+two-column PDF
+modern Canva-style resume
+traditional chronological resume
+fresh graduate resume
+technical developer resume
+VA/customer support resume
+resume without explicit professional title
+resume without summary
+```
+
+Vanessa should degrade gracefully.
+
+---
+
+# 41. DON'T LET VANESSA INVENT JOB TITLES
+
+Important test:
+
+Fresh graduate resume contains:
+
+```text
+BS Computer Engineering
+Academic projects
+C#
+React
+Networking
+```
+
+but no employment title.
+
+Vanessa may infer a suggested target role only if clearly marked as inference.
+
+For automatic persisted Professional Title, prefer:
+
+```text
+empty
+```
+
+over falsely claiming:
+
+```text
+Senior Software Engineer
+```
+
+If product wants a suggested title, keep it separate from verified extracted data.
+
+---
+
+# 42. AI VS INFERENCE
+
+Distinguish:
+
+```text
+EXTRACTED
+```
+
+from:
+
+```text
+INFERRED
+```
+
+For fields like title.
+
+Conceptual:
+
+```ts
+{
+  value: "Backend Developer",
+  source: "inferred",
+  confidence: 0.78
+}
+```
+
+Where possible.
+
+High-risk inferred values should not automatically overwrite profile data.
+
+---
+
+# 43. FILES TO INSPECT
+
+At minimum inspect:
+
+```text
+server/services/openaiService.ts
+server/services/learningLoop.ts
+server/services/ragService.ts
+
+client/src/lib/resumeParser.ts
+client/src/pages/FindBestMatches.tsx
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+
+server/routes/candidateMedia.ts
+shared/schema.ts
+```
+
+Also search for existing:
+
+```text
+OpenAI
+ASSISTANT_ID
+Vanessa
+learning
+resume
+parseResumeFile
+ExtractedCandidateProfile
+updateCandidate
+```
+
+before implementing anything.
+
+---
+
+# 44. DO NOT MODIFY VANESSA'S NORMAL CHAT BEHAVIOR UNNECESSARILY
+
+Vanessa's existing chatbot should continue behaving normally.
+
+Do NOT change the normal Vanessa persona so that chatbot answers suddenly start returning JSON.
+
+Resume Intelligence should be a separate internal Vanessa capability.
+
+Conceptually:
+
+```text
+Vanessa
+├── Chat / Platform Assistant
+└── Resume Intelligence
+```
+
+Both can share the same underlying AI infrastructure.
+
+---
+
+# 45. ACCEPTANCE CRITERIA
+
+This task is complete only when:
+
+* [ ] Vanessa AI is used for semantic resume interpretation.
+* [ ] Existing deterministic extraction remains as extraction/fallback.
+* [ ] Email never becomes Experience.
+* [ ] Phone never becomes Experience.
+* [ ] Degree doesn't become Professional Title.
+* [ ] About Me doesn't become Experience.
+* [ ] Work responsibility paragraphs stay attached to correct job.
+* [ ] Projects aren't incorrectly treated as employment.
+* [ ] Professional Bio contains clean text, not `<p>` tags.
+* [ ] Skills are normalized and deduplicated.
+* [ ] Education is structured accurately.
+* [ ] Certifications are structured accurately.
+* [ ] Languages are extracted accurately.
+* [ ] Location distinguishes personal vs job/school location.
+* [ ] Vanessa returns validated structured output.
+* [ ] Low-confidence guesses are not blindly persisted.
+* [ ] Existing manually edited data is protected.
+* [ ] AI failure falls back to deterministic parsing.
+* [ ] Upload remains successful even if AI parsing fails.
+* [ ] Talent Profile updates immediately.
+* [ ] Profile Settings updates immediately.
+* [ ] Find Best Matches uses the same result.
+* [ ] Signup uses the same result.
+* [ ] Resume content is NOT added to global Vanessa RAG/knowledge.
+* [ ] No sensitive resume PII is written to global learning memory.
+* [ ] TypeScript passes.
+* [ ] Existing Vanessa chat still works.
+
+---
+
+# FINAL TARGET ARCHITECTURE
+
+```text
+                  Resume Upload
+                       │
+                       ▼
+              Canonical Candidate Resume
+                       │
+                       ▼
+          Deterministic Text Extraction
+            pdfjs / mammoth / fallback
+                       │
+                       ▼
+              VANESSA RESUME AI
+           semantic interpretation
+                       │
+                       ▼
+             Structured JSON Schema
+                       │
+                       ▼
+          Deterministic Validation
+          normalization / confidence
+                       │
+                       ▼
+               Safe Merge Logic
+                       │
+                       ▼
+                 CANDIDATE
+       ┌───────────────┼───────────────┐
+       ▼               ▼               ▼
+ Talent Profile    Profile Settings  Find Best Matches
+```
+
+The principle is:
+
+**Deterministic extraction reads the document.
+Vanessa understands the document.
+Validation protects the database.
+The Candidate remains the single source of truth.**
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. How Vanessa's existing OpenAI infrastructure was reused.
+2. New Vanessa resume analyzer/service created.
+3. AI model/API mechanism used.
+4. Structured schema used.
+5. Deterministic validation rules added.
+6. Confidence strategy.
+7. Fallback behavior.
+8. Exact fix for email-as-experience.
+9. Exact fix for degree-as-professional-title.
+10. Exact fix for fragmented Experience records.
+11. Exact fix for HTML in Professional Bio.
+12. Upload entry points using Vanessa Resume Intelligence.
+13. How candidate privacy/PII is protected.
+14. How correction metrics can improve Vanessa without storing resumes globally.
+15. Tests run and results.

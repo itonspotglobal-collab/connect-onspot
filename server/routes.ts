@@ -49,6 +49,7 @@ import {
 } from "./auth-utils";
 import { ghlService } from "./services/ghlService";
 import { sendMessageToAssistant, streamMessageToAssistant, streamWithAssistant } from "./services/openaiService";
+import { analyzeResumeWithVanessa } from "./services/vanessaResumeAnalyzer";
 import { ingestKnowledgeFiles, runLearningLoop } from "./services/learningLoop";
 import * as dbManager from "./services/db_manager";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
@@ -8934,6 +8935,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Resume parsing error:", error);
       res.status(500).json({ error: "Failed to parse resume" });
+    }
+  });
+
+  // ── Vanessa Resume Intelligence ───────────────────────────────────────────────
+  // Accepts plain-text resume content, runs it through Vanessa AI (OpenAI Chat
+  // Completions), returns a structured candidate profile. The OpenAI key is
+  // NEVER exposed to the browser. Resume content is not stored in Vanessa's
+  // global RAG / knowledge base.
+  app.post("/api/resume/analyze", async (req, res) => {
+    try {
+      const { resumeText, candidateId } = req.body as { resumeText?: string; candidateId?: string };
+
+      if (!resumeText || typeof resumeText !== "string" || !resumeText.trim()) {
+        return res.status(400).json({ success: false, error: "resumeText is required" });
+      }
+
+      const profile = await analyzeResumeWithVanessa(resumeText.trim(), candidateId);
+
+      return res.json({
+        success:       true,
+        source:        "vanessa",
+        parserVersion: profile.parserVersion,
+        profile: {
+          personalInfo: profile.personalInfo,
+          professional: profile.professional,
+          skills:        profile.skills,
+          experience:   profile.experience,
+          education:    profile.education,
+          certifications: profile.certifications,
+          confidence:   profile.confidence,
+        },
+      });
+    } catch (error: any) {
+      console.warn("⚠️ Vanessa Resume Analysis unavailable:", error?.message ?? error);
+      // Return 503 so the client can fall back to deterministic parsing gracefully
+      return res.status(503).json({
+        success: false,
+        source:  "error",
+        error:   "Vanessa Resume Intelligence is temporarily unavailable",
+      });
     }
   });
 

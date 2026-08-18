@@ -887,18 +887,19 @@ export default function TalentProfile() {
       if (parseError) {
         toast({
           title: "Resume uploaded",
-          description: "Your resume was saved, but we couldn't extract profile details. You can complete them manually.",
+          description: "Resume saved successfully. Vanessa couldn't extract all profile details — you can complete them manually.",
         });
       } else if (appliedFields.length > 0) {
+        const FIELD_LABELS: Record<string, string> = {
+          fullName: "Name", phone: "Phone", location: "Location",
+          targetPosition: "Title", summary: "About", coreSkills: "Core Skills",
+          secondarySkills: "Skills", workHistory: "Experience",
+          education: "Education", certifications: "Certifications",
+          languages: "Languages",
+        };
         toast({
-          title: "Profile updated from resume",
-          description: `Updated: ${appliedFields.map((f) => ({
-            fullName: "Name", phone: "Phone", location: "Location",
-            targetPosition: "Title", summary: "About", coreSkills: "Core Skills",
-            secondarySkills: "Skills", workHistory: "Experience",
-            education: "Education", certifications: "Certifications",
-            languages: "Languages",
-          }[f] ?? f)).filter(Boolean).join(", ")}`,
+          title: "Vanessa analyzed your resume",
+          description: `Review your updated profile. Fields updated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
         });
       } else {
         toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
@@ -1779,7 +1780,7 @@ export default function TalentProfile() {
                       {resumeUploading ? (
                         <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
                       ) : resumeAnalyzing ? (
-                        <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Analyzing resume…</>
+                        <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Vanessa is analyzing…</>
                       ) : (
                         <><Upload className="mr-1.5 h-3.5 w-3.5" />{(candidate as any).resumeFileName ? "Replace Resume" : "Upload Resume"}</>
                       )}

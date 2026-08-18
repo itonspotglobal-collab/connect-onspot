@@ -1,8 +1,18 @@
 /**
  * applyResumeToCandidate.ts
  *
- * Shared pipeline: parse a resume file → merge extracted data with existing
+ * Shared pipeline: analyze a resume file → merge extracted data with existing
  * Candidate → PATCH the Candidate → invalidate caches.
+ *
+ * Architecture (Vanessa hybrid):
+ *   1. Extract raw text client-side (pdfjs / mammoth).
+ *   2. POST text to /api/resume/analyze → Vanessa Resume Intelligence (server-side OpenAI).
+ *   3. Map structured Vanessa response → ExtractedCandidateProfile.
+ *   4. On ANY failure (network, Vanessa unavailable, parse error): fall back to
+ *      the deterministic parseResumeFile() — upload is never lost.
+ *   5. Merge extracted data with existing Candidate (non-destructive).
+ *   6. PATCH the Candidate.
+ *   7. Invalidate all candidate query caches.
  *
  * All resume upload entry points (TalentProfile, ProfileSettings, FindBestMatches,
  * Signup) call this after saving the resume file so that profile auto-fill is
@@ -12,12 +22,142 @@
 import type { QueryClient } from "@tanstack/react-query";
 import {
   parseResumeFile,
+  extractTextFromFile,
+  EMPTY_EXTRACTION,
   type ExtractedCandidateProfile,
   type WorkHistoryEntry,
   type EducationEntry,
   type CertificationEntry,
 } from "./resumeParser";
 import { invalidateCandidateQueries } from "./candidateCache";
+
+// ─── Server response shape ─────────────────────────────────────────────────────
+
+interface VanessaServerResponse {
+  success: boolean;
+  source: "vanessa" | "error";
+  parserVersion?: string;
+  error?: string;
+  profile?: {
+    personalInfo: { fullName: string; email: string; phone: string; location: string; languages: string[] };
+    professional:  { title: string; summary: string; yearsOfExperience: string; seniority: string };
+    skills:        { core: string[]; secondary: string[] };
+    experience: Array<{
+      jobTitle: string; company: string; duration?: string;
+      startDate?: string; endDate?: string; responsibilities: string[];
+    }>;
+    education: Array<{
+      school: string; degree: string; fieldOfStudy?: string;
+      startYear?: string; endYear?: string;
+    }>;
+    certifications: Array<{ name: string; issuer?: string; date?: string }>;
+    confidence: {
+      overall: number; professionalTitle: number; summary: number;
+      experience: number; education: number; skills: number; location: number;
+    };
+  };
+}
+
+// ─── Map Vanessa response → ExtractedCandidateProfile ─────────────────────────
+
+function vanessaToExtracted(v: NonNullable<VanessaServerResponse["profile"]>): ExtractedCandidateProfile {
+  const conf = v.confidence;
+  const overall = conf.overall ?? 0;
+  const confidenceLevel: "high" | "partial" | "low" =
+    overall >= 0.80 ? "high" : overall >= 0.60 ? "partial" : "low";
+
+  const extractedFields: string[] = [];
+  if (v.personalInfo.fullName)   extractedFields.push("fullName");
+  if (v.personalInfo.email)      extractedFields.push("email");
+  if (v.personalInfo.phone)      extractedFields.push("phone");
+  if (v.personalInfo.location)   extractedFields.push("location");
+  if (v.professional.title)      extractedFields.push("targetPosition");
+  if (v.professional.summary)    extractedFields.push("summary");
+  if (v.professional.yearsOfExperience) extractedFields.push("yearsOfExperience");
+  if (v.professional.seniority)  extractedFields.push("seniority");
+  if (v.skills.core.length)      extractedFields.push("coreSkills");
+  if (v.skills.secondary.length) extractedFields.push("secondarySkills");
+  if (v.personalInfo.languages.length) extractedFields.push("languages");
+  if (v.experience.length)       extractedFields.push("workHistory");
+  if (v.education.length)        extractedFields.push("education");
+  if (v.certifications.length)   extractedFields.push("certifications");
+
+  const workHistory: WorkHistoryEntry[] = v.experience.map(e => ({
+    jobTitle: e.jobTitle,
+    company:  e.company,
+    duration: e.duration || [e.startDate, e.endDate].filter(Boolean).join(" – ") || "",
+    responsibilities: e.responsibilities.join("\n"),
+  }));
+
+  const education: EducationEntry[] = v.education.map(e => ({
+    school:    e.school,
+    degree:    e.degree,
+    yearStart: e.startYear ?? "",
+    yearEnd:   e.endYear   ?? "",
+  }));
+
+  const certifications: CertificationEntry[] = v.certifications.map(c => ({
+    name:   c.name,
+    issuer: c.issuer ?? "",
+    date:   c.date   ?? "",
+    link:   "",
+  }));
+
+  return {
+    fullName:          v.personalInfo.fullName,
+    email:             v.personalInfo.email,
+    phone:             v.personalInfo.phone,
+    location:          v.personalInfo.location,
+    targetPosition:    v.professional.title,
+    jobCategory:       "",
+    summary:           v.professional.summary,
+    yearsOfExperience: v.professional.yearsOfExperience,
+    seniority:         v.professional.seniority,
+    coreSkills:        v.skills.core,
+    secondarySkills:   v.skills.secondary,
+    languages:         v.personalInfo.languages,
+    workHistory,
+    education,
+    certifications,
+    confidence:        confidenceLevel,
+    extractedFields,
+  };
+}
+
+// ─── Try Vanessa server endpoint ───────────────────────────────────────────────
+
+/**
+ * POST resume text to /api/resume/analyze.
+ * Returns Vanessa's parsed result mapped to ExtractedCandidateProfile,
+ * or null if the call fails or Vanessa is unavailable.
+ */
+async function tryVanessaAnalysis(
+  file: File,
+  token: string | null | undefined,
+): Promise<ExtractedCandidateProfile | null> {
+  try {
+    const resumeText = await extractTextFromFile(file);
+    if (!resumeText.trim()) return null;
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch("/api/resume/analyze", {
+      method:  "POST",
+      headers,
+      body:    JSON.stringify({ resumeText }),
+    });
+
+    if (!res.ok) return null;
+
+    const data: VanessaServerResponse = await res.json();
+    if (!data.success || !data.profile) return null;
+
+    return vanessaToExtracted(data.profile);
+  } catch {
+    return null;
+  }
+}
 
 // ─── Merge helpers ────────────────────────────────────────────────────────────
 
@@ -39,69 +179,37 @@ function normalizeStr(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/**
- * Merge work history entries — deduplicate by normalized jobTitle + company.
- * Existing entries are preserved; only truly new jobs from the resume are added.
- */
-function mergeWorkHistory(
-  existing: WorkHistoryEntry[],
-  incoming: WorkHistoryEntry[],
-): WorkHistoryEntry[] {
-  const keys = new Set(
-    existing.map((e) => `${normalizeStr(e.jobTitle)}|${normalizeStr(e.company)}`),
-  );
+function mergeWorkHistory(existing: WorkHistoryEntry[], incoming: WorkHistoryEntry[]): WorkHistoryEntry[] {
+  const keys = new Set(existing.map((e) => `${normalizeStr(e.jobTitle)}|${normalizeStr(e.company)}`));
   const result = [...existing];
   for (const entry of incoming) {
     const key = `${normalizeStr(entry.jobTitle)}|${normalizeStr(entry.company)}`;
-    if (!keys.has(key)) {
-      keys.add(key);
-      result.push(entry);
-    }
+    if (!keys.has(key)) { keys.add(key); result.push(entry); }
   }
   return result;
 }
 
-/**
- * Merge education entries — deduplicate by normalized school + degree.
- */
-function mergeEducation(
-  existing: EducationEntry[],
-  incoming: EducationEntry[],
-): EducationEntry[] {
-  const keys = new Set(
-    existing.map((e) => `${normalizeStr(e.school)}|${normalizeStr(e.degree)}`),
-  );
+function mergeEducation(existing: EducationEntry[], incoming: EducationEntry[]): EducationEntry[] {
+  const keys = new Set(existing.map((e) => `${normalizeStr(e.school)}|${normalizeStr(e.degree)}`));
   const result = [...existing];
   for (const entry of incoming) {
     const key = `${normalizeStr(entry.school)}|${normalizeStr(entry.degree)}`;
-    if (!keys.has(key)) {
-      keys.add(key);
-      result.push(entry);
-    }
+    if (!keys.has(key)) { keys.add(key); result.push(entry); }
   }
   return result;
 }
 
-/**
- * Merge certifications — deduplicate by normalized name.
- */
-function mergeCertifications(
-  existing: CertificationEntry[],
-  incoming: CertificationEntry[],
-): CertificationEntry[] {
+function mergeCertifications(existing: CertificationEntry[], incoming: CertificationEntry[]): CertificationEntry[] {
   const keys = new Set(existing.map((e) => normalizeStr(e.name)));
   const result = [...existing];
   for (const entry of incoming) {
     const key = normalizeStr(entry.name);
-    if (key && !keys.has(key)) {
-      keys.add(key);
-      result.push(entry);
-    }
+    if (key && !keys.has(key)) { keys.add(key); result.push(entry); }
   }
   return result;
 }
 
-// ─── Candidate field shape (minimal — only what we read/write) ────────────────
+// ─── Candidate field shape (minimal) ─────────────────────────────────────────
 
 interface CandidateSnapshot {
   phone?: string | null;
@@ -122,14 +230,11 @@ interface CandidateSnapshot {
  *
  * Rules:
  * - Scalar strings (phone, location, targetPosition): use extracted if non-empty.
- *   This allows a re-uploaded resume to refresh contact/title data.
- * - summary (rich user-edited field): only update when existing is empty.
- * - Skill arrays: union, deduped case-insensitively.
- * - Structured arrays (workHistory, education, certifications): add new entries,
- *   never remove existing ones. Duplicates are skipped.
- * - languages: stored inside preferences.languages — merged case-insensitively.
- *   All other preference keys are preserved unchanged.
- * - NEVER set a field to an empty/null value if the extracted value is blank.
+ * - summary: only update when existing is empty (preserve manual edits).
+ * - Skill arrays: case-insensitive union, deduped.
+ * - Structured arrays: additive (new entries only, never remove existing).
+ * - languages: merged inside preferences.languages; other preference keys preserved.
+ * - Never set a field to an empty/null value.
  */
 export function mergeResumeWithCandidate(
   existing: CandidateSnapshot,
@@ -137,91 +242,60 @@ export function mergeResumeWithCandidate(
 ): Partial<CandidateSnapshot & { preferences: Record<string, unknown> }> {
   const patch: Record<string, unknown> = {};
 
-  // ── Scalar fields ──────────────────────────────────────────────────────────
-  if (extracted.phone?.trim())
-    patch.phone = extracted.phone.trim();
+  if (extracted.phone?.trim())          patch.phone = extracted.phone.trim();
+  if (extracted.location?.trim())        patch.location = extracted.location.trim();
+  if (extracted.targetPosition?.trim())  patch.targetPosition = extracted.targetPosition.trim();
 
-  if (extracted.location?.trim())
-    patch.location = extracted.location.trim();
-
-  if (extracted.targetPosition?.trim())
-    patch.targetPosition = extracted.targetPosition.trim();
-
-  // summary: preserve existing manual edits — only fill when empty
+  // summary: preserve existing manual edits
   if (extracted.summary?.trim() && !existing.summary?.trim())
     patch.summary = extracted.summary.trim();
 
-  // ── Skill arrays ───────────────────────────────────────────────────────────
-  const mergedCore = mergeStringArrays(
-    existing.coreSkills ?? [],
-    extracted.coreSkills,
-  );
+  const mergedCore = mergeStringArrays(existing.coreSkills ?? [], extracted.coreSkills);
   if (mergedCore.length > 0) patch.coreSkills = mergedCore;
 
-  const mergedSecondary = mergeStringArrays(
-    existing.secondarySkills ?? [],
-    extracted.secondarySkills,
-  );
+  const mergedSecondary = mergeStringArrays(existing.secondarySkills ?? [], extracted.secondarySkills);
   if (mergedSecondary.length > 0) patch.secondarySkills = mergedSecondary;
 
-  // ── Structured arrays ──────────────────────────────────────────────────────
-  if (extracted.workHistory.length > 0) {
-    patch.workHistory = mergeWorkHistory(
-      (existing.workHistory as WorkHistoryEntry[] | undefined) ?? [],
-      extracted.workHistory,
-    );
-  }
+  if (extracted.workHistory.length > 0)
+    patch.workHistory = mergeWorkHistory(existing.workHistory ?? [], extracted.workHistory);
 
-  if (extracted.education.length > 0) {
-    patch.education = mergeEducation(
-      (existing.education as EducationEntry[] | undefined) ?? [],
-      extracted.education,
-    );
-  }
+  if (extracted.education.length > 0)
+    patch.education = mergeEducation(existing.education ?? [], extracted.education);
 
-  if (extracted.certifications.length > 0) {
-    patch.certifications = mergeCertifications(
-      (existing.certifications as CertificationEntry[] | undefined) ?? [],
-      extracted.certifications,
-    );
-  }
+  if (extracted.certifications.length > 0)
+    patch.certifications = mergeCertifications(existing.certifications ?? [], extracted.certifications);
 
-  // ── Languages (inside preferences) ─────────────────────────────────────────
   if (extracted.languages.length > 0) {
-    const existingPrefs = (existing.preferences as Record<string, unknown>) ?? {};
-    const existingLangs = Array.isArray(existingPrefs.languages)
-      ? (existingPrefs.languages as string[])
-      : [];
-    const mergedLangs = mergeStringArrays(existingLangs, extracted.languages);
-    patch.preferences = {
-      ...existingPrefs,
-      languages: mergedLangs,
-    };
+    const existingPrefs  = (existing.preferences as Record<string, unknown>) ?? {};
+    const existingLangs  = Array.isArray(existingPrefs.languages) ? (existingPrefs.languages as string[]) : [];
+    patch.preferences = { ...existingPrefs, languages: mergeStringArrays(existingLangs, extracted.languages) };
   }
 
   return patch as Partial<CandidateSnapshot & { preferences: Record<string, unknown> }>;
 }
 
-// ─── Main pipeline ────────────────────────────────────────────────────────────
+// ─── Public result type ────────────────────────────────────────────────────────
 
 export interface ApplyResumeResult {
   extracted: ExtractedCandidateProfile;
-  /** Server response from the PATCH call, or null if the PATCH failed. */
   updated: Record<string, unknown> | null;
-  /** Field names that were populated/changed by the import. */
   appliedFields: string[];
-  /** True when parsing produced a parseError (resume saved but profile not updated). */
   parseError?: string;
+  /** "vanessa" when AI was used, "deterministic" on fallback. */
+  analysisSource: "vanessa" | "deterministic";
 }
+
+// ─── Main pipeline ─────────────────────────────────────────────────────────────
 
 /**
  * Full pipeline called after a resume file has been saved to object storage.
  *
- * 1. Parse the file client-side.
- * 2. Fetch the current Candidate (with auth so we get the owner-privileged view).
- * 3. Merge extracted data with existing data (non-destructive).
- * 4. PATCH the Candidate.
- * 5. Invalidate all candidate query keys so the UI refreshes everywhere.
+ * 1. Try Vanessa Resume Intelligence (server-side OpenAI).
+ * 2. On any Vanessa failure, fall back to deterministic parseResumeFile().
+ * 3. Fetch the current Candidate (auth-privileged view).
+ * 4. Merge extracted data with existing data (non-destructive).
+ * 5. PATCH the Candidate.
+ * 6. Invalidate all candidate query keys so the UI refreshes everywhere.
  *
  * The caller is responsible for saving the resume file first
  * (POST /api/candidates/:id/resume) before invoking this.
@@ -237,26 +311,33 @@ export async function applyResumeToCandidate({
   token: string | null | undefined;
   queryClient: QueryClient;
 }): Promise<ApplyResumeResult> {
-  // Step 1 — Parse
+
+  // Step 1 — Try Vanessa, fall back to deterministic
   let extracted: ExtractedCandidateProfile;
-  try {
-    extracted = await parseResumeFile(file);
-  } catch {
-    return {
-      extracted: { ...EMPTY_EXTRACTION },
-      updated: null,
-      appliedFields: [],
-      parseError: "An unexpected error occurred while reading your resume.",
-    };
+  let analysisSource: "vanessa" | "deterministic" = "vanessa";
+
+  const vanessaResult = await tryVanessaAnalysis(file, token);
+
+  if (vanessaResult) {
+    extracted = vanessaResult;
+  } else {
+    // Vanessa unavailable or failed — fall back gracefully
+    analysisSource = "deterministic";
+    try {
+      extracted = await parseResumeFile(file);
+    } catch {
+      return {
+        extracted:      { ...EMPTY_EXTRACTION },
+        updated:        null,
+        appliedFields:  [],
+        parseError:     "An unexpected error occurred while reading your resume.",
+        analysisSource: "deterministic",
+      };
+    }
   }
 
   if (extracted.parseError) {
-    return {
-      extracted,
-      updated: null,
-      appliedFields: [],
-      parseError: extracted.parseError,
-    };
+    return { extracted, updated: null, appliedFields: [], parseError: extracted.parseError, analysisSource };
   }
 
   // Step 2 — Fetch current candidate (with auth to get privileged view)
@@ -267,22 +348,21 @@ export async function applyResumeToCandidate({
     });
     if (res.ok) existing = await res.json();
   } catch {
-    // Continue with empty existing — we'll still apply extracted values
+    // Continue with empty existing
   }
 
   // Step 3 — Merge
   const patch = mergeResumeWithCandidate(existing, extracted);
 
-  // Nothing to patch?
   if (Object.keys(patch).length === 0) {
-    return { extracted, updated: null, appliedFields: [] };
+    return { extracted, updated: null, appliedFields: [], analysisSource };
   }
 
   // Step 4 — PATCH
   let updated: Record<string, unknown> | null = null;
   try {
     const res = await fetch(`/api/candidates/${candidateId}`, {
-      method: "PATCH",
+      method:  "PATCH",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -305,19 +385,5 @@ export async function applyResumeToCandidate({
     (f) => f in patch || (f === "languages" && "preferences" in patch),
   );
 
-  return { extracted, updated, appliedFields };
+  return { extracted, updated, appliedFields, analysisSource };
 }
-
-// Re-export EMPTY_EXTRACTION for callers that need a blank result
-const EMPTY_EXTRACTION: ExtractedCandidateProfile = {
-  fullName: "", email: "", phone: "", location: "",
-  targetPosition: "", jobCategory: "",
-  yearsOfExperience: "", seniority: "",
-  coreSkills: [], secondarySkills: [],
-  summary: "",
-  languages: [],
-  workHistory: [],
-  education: [],
-  certifications: [],
-  confidence: "low", extractedFields: [],
-};

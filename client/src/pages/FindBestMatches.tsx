@@ -50,6 +50,7 @@ import type { Job } from "@shared/schema";
 import { usePostedJobs } from "@/hooks/usePostedJobs";
 import {
   parseResumeFile,
+  extractTextFromFile,
   type ExtractedCandidateProfile,
   type WorkHistoryEntry,
   type EducationEntry,
@@ -2087,8 +2088,71 @@ export default function FindBestMatches() {
     setExtractParseError(null);
 
     try {
-      const result = await parseResumeFile(file);
-
+      // Try Vanessa server-side analysis first; fall back to deterministic parser
+      let result: ReturnType<typeof parseResumeFile> extends Promise<infer T> ? T : never;
+      try {
+        const rawText = await extractTextFromFile(file);
+        if (rawText.trim()) {
+          const token = loadTalentAuth()?.token || getAuthToken();
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+          const res = await fetch("/api/resume/analyze", {
+            method:  "POST",
+            headers,
+            body:    JSON.stringify({ resumeText: rawText }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.profile) {
+              // Map Vanessa response to the local result shape
+              const p = data.profile;
+              result = {
+                fullName:          p.personalInfo.fullName,
+                email:             p.personalInfo.email,
+                phone:             p.personalInfo.phone,
+                location:          p.personalInfo.location,
+                targetPosition:    p.professional.title,
+                jobCategory:       "",
+                summary:           p.professional.summary,
+                yearsOfExperience: p.professional.yearsOfExperience,
+                seniority:         p.professional.seniority,
+                coreSkills:        p.skills.core,
+                secondarySkills:   p.skills.secondary,
+                languages:         p.personalInfo.languages,
+                workHistory: (p.experience ?? []).map((e: any) => ({
+                  jobTitle:         e.jobTitle,
+                  company:          e.company,
+                  duration:         e.duration || [e.startDate, e.endDate].filter(Boolean).join(" – ") || "",
+                  responsibilities: Array.isArray(e.responsibilities) ? e.responsibilities.join("\n") : (e.responsibilities ?? ""),
+                })),
+                education: (p.education ?? []).map((e: any) => ({
+                  school:    e.school,
+                  degree:    e.degree,
+                  yearStart: e.startYear ?? "",
+                  yearEnd:   e.endYear   ?? "",
+                })),
+                certifications: (p.certifications ?? []).map((c: any) => ({
+                  name:   c.name,
+                  issuer: c.issuer ?? "",
+                  date:   c.date   ?? "",
+                  link:   "",
+                })),
+                confidence:     p.confidence?.overall >= 0.80 ? "high" : p.confidence?.overall >= 0.60 ? "partial" : "low",
+                extractedFields: Object.keys(p.personalInfo ?? {}).concat(Object.keys(p.professional ?? {})),
+              } as any;
+            } else {
+              throw new Error("Vanessa unavailable");
+            }
+          } else {
+            throw new Error("Vanessa server error");
+          }
+        } else {
+          throw new Error("Empty text");
+        }
+      } catch {
+        // Fall back to local deterministic parser
+        result = await parseResumeFile(file);
+      }
       if (import.meta.env.DEV) {
         console.log("[FindBestMatches] Resume parse result:", {
           extractedLocation: result.location,

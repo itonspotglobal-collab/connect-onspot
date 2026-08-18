@@ -321,8 +321,8 @@ export default function ProfileSettings() {
 
       if (parseError) {
         toast({
-          title: "Resume saved",
-          description: "Your resume was uploaded, but we couldn't extract all profile details. You can complete them manually.",
+          title: "Resume uploaded",
+          description: "Resume saved successfully. Vanessa couldn't analyze all details — you can complete them manually.",
         });
       } else if (appliedFields.length > 0) {
         const FIELD_LABELS: Record<string, string> = {
@@ -332,14 +332,14 @@ export default function ProfileSettings() {
           certifications: "Certifications", languages: "Languages",
         };
         toast({
-          title: "Profile updated from resume",
-          description: `Fields populated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
+          title: "Vanessa analyzed your resume",
+          description: `Review your updated profile. Fields populated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
         });
       } else {
-        toast({ title: "Resume saved", description: "Your resume has been updated." });
+        toast({ title: "Resume uploaded", description: "Your resume has been saved." });
       }
     } catch {
-      toast({ title: "Resume saved", description: "Saved. Profile auto-fill encountered an issue — you can update fields manually." });
+      toast({ title: "Resume uploaded", description: "Saved. Profile auto-fill encountered an issue — you can update fields manually." });
     } finally {
       setResumeAnalyzing(false);
     }
@@ -1291,7 +1291,7 @@ export default function ProfileSettings() {
                         {resumeUploading
                           ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
                           : resumeAnalyzing
-                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Analyzing resume…</>
+                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Vanessa is analyzing…</>
                           : <><Upload style={{ width: 15, height: 15 }} /> {(candidate as any)?.resumeFileName ? "Replace Resume" : "Upload Resume (PDF, DOC, DOCX — max 10 MB)"}</>}
                       </button>
                     </div>
