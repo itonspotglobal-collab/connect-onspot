@@ -226,7 +226,15 @@ export default function GetHired() {
           ? "/api/talent/me/video-intro-url"
           : "/api/talent/me/resume-url";
         await authAPI.patch(endpoint, { fileUrl, fileName });
-        queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] });
+
+        // Invalidate ALL candidate query-key variants so TalentProfile and
+        // ProfileSettings reflect the new resume immediately without a hard refresh.
+        // Use the prefix form (no candidateId) so we don't need to resolve it here.
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
+          queryClient.invalidateQueries({ queryKey: ["/api/candidates"] }),
+          queryClient.invalidateQueries({ queryKey: ["candidate-profile"] }),
+        ]);
       } catch (saveErr: any) {
         console.error("Failed to persist uploaded file to candidate profile:", saveErr);
         toast({

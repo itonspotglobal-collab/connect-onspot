@@ -849,7 +849,13 @@ export default function TalentProfile() {
         const err = await res.json().catch(() => ({ error: "Upload failed" }));
         throw new Error(err.error || "Upload failed");
       }
-      await qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
+      // Invalidate ALL candidate query-key variants so ProfileSettings and GetHired
+      // reflect the new resume immediately without a hard refresh.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["/api/candidates", id] }),
+        qc.invalidateQueries({ queryKey: ["candidate-profile", id] }),
+        qc.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
+      ]);
       toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message || "Could not upload resume.", variant: "destructive" });

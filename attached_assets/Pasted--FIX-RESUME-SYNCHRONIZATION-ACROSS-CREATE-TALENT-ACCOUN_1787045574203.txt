@@ -1,0 +1,1041 @@
+# FIX RESUME SYNCHRONIZATION ACROSS CREATE TALENT ACCOUNT, TALENT PROFILE, AND PROFILE SETTINGS
+
+You are working inside the existing **OnSpot / connect-onspot** project.
+
+There is currently a synchronization bug with talent resumes.
+
+The following three areas belong to the **same Talent/Candidate account** and MUST use the exact same resume record:
+
+1. **Create Talent Account / Talent Signup**
+2. **Talent Profile Page**
+3. **Talent Profile Settings Page**
+
+Right now, uploading a resume from one page does not reliably appear on the other pages.
+
+Fix this permanently.
+
+---
+
+# Core Requirement
+
+There must be **ONE canonical resume per candidate**.
+
+All three pages must:
+
+* read the same resume
+* upload/replace the same resume
+* delete the same resume
+* display the same resume filename
+* display the same current resume state
+* refresh automatically after a change
+
+Do NOT create three different resume records.
+
+Do NOT maintain separate resume URLs for signup, Talent Profile, and Profile Settings.
+
+The database-backed **Candidate resume fields must be the single source of truth**.
+
+---
+
+# Expected Behavior
+
+## Scenario A — Upload During Create Talent Account
+
+When a new talent creates an account:
+
+```text
+Create Talent Account
+        ↓
+Upload Resume
+        ↓
+Create / resolve Candidate record
+        ↓
+Save resume to that Candidate
+        ↓
+Finish signup
+```
+
+After signup, when the talent opens:
+
+```text
+Talent Profile
+```
+
+the same uploaded resume must already be available.
+
+When they open:
+
+```text
+Talent Profile Settings
+```
+
+the exact same resume must also be shown.
+
+The user MUST NOT need to upload it again.
+
+---
+
+# Scenario B — Upload / Replace From Talent Profile
+
+If the talent uploads or replaces their resume from:
+
+```text
+Talent Profile
+```
+
+then:
+
+```text
+Talent Profile
+        ↓
+Candidate resume updated
+        ↓
+Talent Profile Settings shows new resume
+        ↓
+Create/Get Hired flow recognizes new resume
+```
+
+The old resume must not continue appearing anywhere.
+
+---
+
+# Scenario C — Upload / Replace From Talent Profile Settings
+
+If the talent uploads or replaces their resume from:
+
+```text
+Talent Profile Settings
+```
+
+then the same new resume must immediately be reflected in:
+
+```text
+Talent Profile
+Create Talent Account / onboarding state
+Get Hired where applicable
+```
+
+No hard refresh should be required.
+
+---
+
+# Scenario D — Delete Resume
+
+If resume deletion is available and the user deletes the resume from any supported page:
+
+```text
+Delete Resume
+      ↓
+Candidate resume becomes empty
+      ↓
+Talent Profile shows no resume
+      ↓
+Profile Settings shows no resume
+      ↓
+Get Hired/onboarding shows no resume
+```
+
+There must be no stale filename or stale URL.
+
+---
+
+# IMPORTANT: USE THE CANDIDATE RECORD AS SOURCE OF TRUTH
+
+Inspect the current Candidate schema.
+
+Search for fields such as:
+
+```text
+resumeUrl
+resumeFileName
+resumeFilename
+resume_url
+resume_file_name
+```
+
+Determine the actual existing canonical candidate resume fields.
+
+Use those fields everywhere.
+
+Do NOT create another field unless absolutely necessary.
+
+Do NOT use component state, `uploadedDocuments`, localStorage, or another profile table as the authoritative resume source.
+
+Local state can be used for temporary UI/loading behavior only.
+
+---
+
+# USE THE EXISTING CANDIDATE RESUME API
+
+There is already candidate resume functionality in the project.
+
+Inspect:
+
+```text
+server/routes/candidateMedia.ts
+```
+
+and the existing implementation inside:
+
+```text
+client/src/pages/ProfileSettings.tsx
+```
+
+Profile Settings already uses candidate-specific endpoints similar to:
+
+```http
+POST /api/candidates/:candidateId/resume
+DELETE /api/candidates/:candidateId/resume
+```
+
+Reuse this implementation.
+
+Do not create a second resume upload API for the Signup page or Talent Profile unless absolutely necessary.
+
+Ideally all three pages ultimately call the same backend service/API.
+
+---
+
+# FILES TO INSPECT FIRST
+
+Before writing code, inspect all related files.
+
+At minimum:
+
+```text
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/pages/GetHired.tsx
+
+client/src/hooks/useTalentProfile.ts
+client/src/hooks/useCandidateProfileSettings.ts
+
+client/src/components/TalentLoginModal.tsx
+client/src/components/ResumeParser.tsx
+
+server/routes/candidateMedia.ts
+shared/schema.ts
+```
+
+Also identify the actual **Create Talent Account / Signup component**.
+
+Search for:
+
+```text
+Create Talent Account
+Create Account
+talent signup
+talent register
+resume
+candidateId
+resumeUrl
+resumeFileName
+```
+
+Do not assume which signup component is active. Trace the actual route/component being rendered.
+
+---
+
+# 1. FIX CREATE TALENT ACCOUNT RESUME UPLOAD
+
+This is currently one of the main bugs.
+
+When the user uploads their resume during Talent signup, make sure the resume is associated with the **Candidate record belonging to the newly created talent account**.
+
+The correct logical sequence must be:
+
+```text
+User fills signup
+       ↓
+Talent account created
+       ↓
+Candidate record created/resolved
+       ↓
+Obtain Candidate ID
+       ↓
+Upload resume to that Candidate ID
+       ↓
+Candidate.resumeUrl / resumeFileName updated
+       ↓
+Store authentication
+       ↓
+Redirect
+```
+
+If the signup currently uploads the file BEFORE a Candidate ID exists, fix the sequencing.
+
+Do NOT leave the uploaded resume attached only to:
+
+* temporary object storage
+* temporary form state
+* signup state
+* user record
+* application record
+* parsed resume data
+
+The final uploaded resume MUST be linked to the created Candidate.
+
+---
+
+# CRITICAL SIGNUP RACE CONDITION
+
+Check whether this is currently happening:
+
+```text
+Upload resume
+     ↓
+temporary URL created
+
+Create account
+     ↓
+Candidate created
+
+Redirect
+```
+
+but the temporary resume URL is never copied into the Candidate.
+
+If so, this is the bug.
+
+Fix it by ensuring candidate creation/resolution happens before final resume persistence, or perform the candidate resume update immediately after Candidate creation.
+
+Do not redirect until resume persistence completes or fails in a handled way.
+
+---
+
+# 2. FIX TALENT PROFILE PAGE
+
+Inspect:
+
+```text
+client/src/pages/TalentProfile.tsx
+```
+
+The Talent Profile must fetch the Candidate belonging to the authenticated talent.
+
+The resume displayed/uploaded on this page must come from:
+
+```ts
+candidate.resumeUrl
+candidate.resumeFileName
+```
+
+or whatever the existing canonical fields actually are.
+
+Do NOT use a separate TalentProfile-specific resume state as the source of truth.
+
+If Talent Profile currently uploads through a different endpoint, consolidate it to the candidate resume API.
+
+After upload:
+
+```ts
+await uploadResume(...)
+await invalidateCandidateResumeQueries()
+```
+
+and update the UI immediately.
+
+---
+
+# 3. FIX TALENT PROFILE SETTINGS
+
+Inspect:
+
+```text
+client/src/pages/ProfileSettings.tsx
+```
+
+This page already appears to use candidate-backed resume storage.
+
+Treat this existing implementation as the reference implementation unless another newer canonical service exists.
+
+Do not break its existing:
+
+* resume upload
+* resume delete
+* authentication
+* video introduction
+* profile saving
+
+behavior.
+
+Refactor shared resume logic only if necessary.
+
+---
+
+# 4. CREATE A SHARED RESUME DATA LAYER
+
+Because the same functionality exists in multiple places, strongly prefer consolidating the behavior.
+
+Create a reusable hook/service if appropriate, for example:
+
+```text
+client/src/hooks/useCandidateResume.ts
+```
+
+Conceptually:
+
+```ts
+interface CandidateResumeState {
+  resumeUrl: string | null;
+  resumeFileName: string | null;
+
+  isUploading: boolean;
+  isDeleting: boolean;
+
+  uploadResume: (file: File) => Promise<void>;
+  deleteResume: () => Promise<void>;
+  refreshResume: () => Promise<void>;
+}
+```
+
+The hook should receive or resolve the authenticated talent's `candidateId`.
+
+Example usage:
+
+```ts
+const {
+  resumeUrl,
+  resumeFileName,
+  isUploading,
+  uploadResume,
+  deleteResume,
+} = useCandidateResume(candidateId);
+```
+
+Then use this same mechanism in:
+
+```text
+Talent Profile
+Talent Profile Settings
+Get Hired / onboarding
+```
+
+For Create Talent Account, after registration returns the Candidate ID, reuse the same backend endpoint/service.
+
+Do NOT over-engineer the hook if the existing architecture already provides an equivalent abstraction.
+
+---
+
+# 5. STANDARDIZE REACT QUERY KEYS
+
+Right now the application appears to use different Candidate query keys in different pages.
+
+Inspect all current candidate queries.
+
+Examples may include:
+
+```ts
+["candidate-profile", candidateId]
+
+["/api/candidates", candidateId]
+```
+
+and possibly others.
+
+This is a common reason one page stays stale after another page updates the resume.
+
+Create a shared query-key helper if appropriate.
+
+Example:
+
+```ts
+export const candidateKeys = {
+  profile: (candidateId: number | string) =>
+    ["candidate-profile", String(candidateId)] as const,
+
+  detail: (candidateId: number | string) =>
+    ["/api/candidates", String(candidateId)] as const,
+};
+```
+
+Or preferably consolidate pages to one canonical candidate query key if practical.
+
+---
+
+# 6. INVALIDATE ALL RELEVANT CACHES
+
+After:
+
+```text
+Upload Resume
+Replace Resume
+Delete Resume
+```
+
+invalidate/refetch the Candidate queries used across all talent pages.
+
+Conceptually:
+
+```ts
+await Promise.all([
+  queryClient.invalidateQueries({
+    queryKey: ["candidate-profile", candidateId],
+  }),
+
+  queryClient.invalidateQueries({
+    queryKey: ["/api/candidates", candidateId],
+  }),
+]);
+```
+
+Also invalidate any existing:
+
+```text
+/api/talent/me
+/api/profiles/me
+resume-status
+```
+
+queries ONLY if those are actually still used by active screens.
+
+Do not blindly add query keys.
+
+Search the repository and identify exactly which ones are active.
+
+---
+
+# 7. DO NOT USE window.location.reload()
+
+Do not fix synchronization with:
+
+```ts
+window.location.reload();
+```
+
+The application should update through React Query and shared state.
+
+Navigation between pages must automatically fetch/display the latest Candidate.
+
+---
+
+# 8. MAKE RESUME UI READ FROM SERVER STATE
+
+Each page should render based on the Candidate returned from the server.
+
+Example:
+
+```tsx
+{candidate?.resumeUrl ? (
+  <CurrentResume
+    fileName={candidate.resumeFileName}
+    url={candidate.resumeUrl}
+  />
+) : (
+  <ResumeUpload />
+)}
+```
+
+Do NOT determine whether there is a resume using stale local state such as:
+
+```ts
+const [uploadedResume, setUploadedResume] = useState(...)
+```
+
+unless that state is just an optimistic UI layer that is reconciled with the Candidate query.
+
+---
+
+# 9. REPLACEMENT MUST ACTUALLY REPLACE
+
+When uploading another resume:
+
+```text
+Resume A
+   ↓
+Upload Resume B
+   ↓
+Candidate now references Resume B
+```
+
+All pages must show Resume B.
+
+Resume A must not remain selected because of stale query cache or stale local component state.
+
+The Candidate should have ONE current resume.
+
+---
+
+# 10. FILE NAME MUST ALSO BE SYNCHRONIZED
+
+Do not synchronize only the URL.
+
+Both should come from the Candidate:
+
+```text
+resumeUrl
+resumeFileName
+```
+
+For example:
+
+```text
+Val_Legaspi_Resume_2026.pdf
+```
+
+should appear consistently in:
+
+```text
+Create/Get Hired
+Talent Profile
+Talent Profile Settings
+```
+
+when those pages display the current resume.
+
+---
+
+# 11. AUTHENTICATED CANDIDATE RESOLUTION
+
+A major potential cause of this issue is the app resolving different candidate records between pages.
+
+Audit this carefully.
+
+The logged-in Talent account must resolve to ONE Candidate ID.
+
+Verify:
+
+```text
+Talent auth user
+       ↓
+Candidate relationship
+       ↓
+same candidateId
+```
+
+across:
+
+```text
+Signup completion
+Talent Profile
+Profile Settings
+Get Hired
+```
+
+Logically, these should never resolve different Candidate records for the same account.
+
+Do NOT create a new Candidate every time one of these pages loads.
+
+---
+
+# 12. VERY IMPORTANT — CHECK DUPLICATE CANDIDATE CREATION
+
+Search the database/storage code and registration flow for candidate creation.
+
+Ensure signup does not accidentally create:
+
+```text
+Candidate A — resume from signup
+Candidate B — profile used by Talent Profile
+```
+
+because that would exactly cause this problem.
+
+For one Talent account there should be one correct Candidate profile.
+
+If duplicates can currently be created due to different auth identifiers, fix the lookup/create logic.
+
+Use the application's existing stable relationship, preferably:
+
+```text
+candidate.userId
+```
+
+or the existing talent-account-to-candidate foreign key.
+
+Do not rely purely on matching names.
+
+Avoid email matching as the primary relationship if a stable ID relationship already exists.
+
+---
+
+# 13. LEGACY DATA
+
+Existing accounts may already have resumes stored through older APIs.
+
+Search for old resume systems, especially:
+
+```text
+/api/talent/me/resume-url
+/api/talent/me/resume-status
+uploadedDocuments
+talent profile documents
+```
+
+Do not immediately delete these APIs if other features still consume them.
+
+But for current active Talent pages:
+
+**Candidate resume must be canonical.**
+
+If necessary, add a backwards-compatible fallback:
+
+```ts
+candidate.resumeUrl ?? legacyResumeUrl
+```
+
+only for reading legacy records.
+
+Once a new resume is uploaded, save it to the Candidate.
+
+Do not continue writing new uploads to two independent systems unless there is a very strong compatibility requirement.
+
+---
+
+# 14. CREATE TALENT ACCOUNT + RESUME PARSING
+
+If the Signup/Create Talent Account page also parses the uploaded resume to populate profile information, preserve that functionality.
+
+The desired signup flow is:
+
+```text
+Resume selected
+      ↓
+Account created / Candidate resolved
+      ↓
+Resume saved to Candidate
+      ↓
+Resume parsed
+      ↓
+Parsed profile information saved to SAME Candidate
+      ↓
+Redirect
+```
+
+Resume parsing must not create another profile/candidate entity.
+
+---
+
+# 15. RESUME PARSING FAILURE
+
+If:
+
+```text
+Resume upload succeeds
+Resume parsing fails
+```
+
+keep the resume.
+
+Do not undo the candidate resume upload.
+
+Notify the user that profile information may need manual review.
+
+Upload persistence and parsing are separate concerns.
+
+---
+
+# 16. TALENT PROFILE VIEW / DOWNLOAD
+
+If Talent Profile currently has a resume upload/view/download UI, make sure it references the Candidate resume URL.
+
+Use the same secure server route used elsewhere rather than constructing inconsistent object-storage URLs.
+
+Inspect:
+
+```text
+server/routes/candidateMedia.ts
+```
+
+and reuse the supported download/view mechanism.
+
+---
+
+# 17. PROFILE SETTINGS VIEW / DOWNLOAD
+
+Keep Profile Settings synchronized.
+
+When Settings loads:
+
+```ts
+candidate.resumeUrl
+candidate.resumeFileName
+```
+
+should determine whether the resume exists.
+
+It should NOT have to know where it was uploaded from.
+
+A resume uploaded during signup and a resume uploaded from Settings are exactly the same type of resource.
+
+---
+
+# 18. NO PAGE-SPECIFIC RESUME OWNERSHIP
+
+Do not think of the data as:
+
+```text
+signup resume
+profile resume
+settings resume
+```
+
+There should only be:
+
+```text
+Candidate Resume
+```
+
+The pages are simply three different user interfaces for viewing/modifying the same resource.
+
+---
+
+# ACCEPTANCE TESTS
+
+Do not consider this task finished until all of these pass.
+
+## Test 1 — Signup Upload
+
+1. Create a new Talent account.
+2. Upload `Resume-A.pdf` during Create Talent Account.
+3. Finish registration.
+4. Open Talent Profile.
+5. Verify `Resume-A.pdf` is present.
+6. Open Profile Settings.
+7. Verify `Resume-A.pdf` is present.
+
+Expected:
+
+```text
+Signup       = Resume-A.pdf
+Profile      = Resume-A.pdf
+Settings     = Resume-A.pdf
+```
+
+---
+
+## Test 2 — Replace From Talent Profile
+
+Starting state:
+
+```text
+Resume-A.pdf
+```
+
+From Talent Profile upload:
+
+```text
+Resume-B.pdf
+```
+
+Then check:
+
+```text
+Talent Profile        = Resume-B.pdf
+Profile Settings      = Resume-B.pdf
+Get Hired/onboarding  = Resume-B.pdf
+```
+
+There must be no Resume-A shown.
+
+---
+
+## Test 3 — Replace From Settings
+
+From Profile Settings upload:
+
+```text
+Resume-C.pdf
+```
+
+Verify:
+
+```text
+Talent Profile        = Resume-C.pdf
+Profile Settings      = Resume-C.pdf
+Get Hired/onboarding  = Resume-C.pdf
+```
+
+No hard refresh required.
+
+---
+
+## Test 4 — Page Navigation
+
+Upload resume on one page.
+
+Navigate to another Talent page normally.
+
+The next page must display the new resume.
+
+Do NOT rely on logout/login.
+
+---
+
+## Test 5 — Browser Refresh
+
+Upload resume.
+
+Refresh browser.
+
+The exact resume must still appear.
+
+This confirms the resume is actually persisted and not only stored in React state.
+
+---
+
+## Test 6 — Logout / Login
+
+Upload resume.
+
+Logout.
+
+Login again.
+
+Open:
+
+```text
+Talent Profile
+Profile Settings
+```
+
+The resume must still be present.
+
+---
+
+## Test 7 — Delete
+
+Delete the resume from a page where delete is supported.
+
+Verify all other pages show:
+
+```text
+No resume uploaded
+```
+
+There must be no stale filename.
+
+---
+
+## Test 8 — Same Candidate
+
+During testing, log/check Candidate ID for:
+
+```text
+Signup completion
+Talent Profile
+Profile Settings
+```
+
+They MUST be identical.
+
+For example:
+
+```text
+Signup Candidate ID:        123
+Talent Profile Candidate:   123
+Profile Settings Candidate: 123
+```
+
+If they differ, fix candidate account resolution before doing anything else.
+
+---
+
+# DEBUGGING TO ADD TEMPORARILY
+
+While fixing the issue, temporarily inspect/log:
+
+```ts
+console.log("Resume sync:", {
+  page: "TalentProfile",
+  candidateId,
+  resumeUrl: candidate?.resumeUrl,
+  resumeFileName: candidate?.resumeFileName,
+});
+```
+
+Do the same during signup and Settings while debugging.
+
+Remove unnecessary debug logging after verification.
+
+The values should clearly prove all pages are using the same Candidate ID and resume fields.
+
+---
+
+# DO NOT
+
+Do NOT:
+
+* create separate resume tables for each page
+* save signup resume only in temporary state
+* use localStorage as resume storage
+* solve synchronization with page reloads
+* create another Candidate on Talent Profile load
+* synchronize by copying files manually between pages
+* store three resume URLs
+* redesign the pages
+* change unrelated functionality
+* break video introduction upload
+* break job application resume attachment
+* break resume parsing
+* break Talent authentication
+
+---
+
+# IDEAL FINAL ARCHITECTURE
+
+The architecture should effectively be:
+
+```text
+                    ┌──────────────────────────┐
+                    │      candidates table    │
+                    │                          │
+                    │ candidate.id             │
+                    │ resumeUrl                │
+                    │ resumeFileName           │
+                    └────────────┬─────────────┘
+                                 │
+             ┌───────────────────┼────────────────────┐
+             │                   │                    │
+             ▼                   ▼                    ▼
+    Create Talent         Talent Profile      Profile Settings
+       Account                 Page                  Page
+             │                   │                    │
+             └───────────────────┼────────────────────┘
+                                 │
+                         SAME RESUME API
+```
+
+All upload actions should ultimately update:
+
+```text
+ONE Candidate
+ONE resumeUrl
+ONE resumeFileName
+```
+
+---
+
+# BEFORE FINISHING
+
+Run the project's available:
+
+```text
+TypeScript check
+tests
+candidate media tests
+build
+```
+
+Pay particular attention to:
+
+```text
+server/tests/candidate-media.test.ts
+```
+
+Add/update tests if necessary for the synchronization behavior.
+
+Then report:
+
+1. Root cause of the synchronization bug.
+2. Whether multiple Candidate IDs were involved.
+3. Files changed.
+4. Canonical resume fields used.
+5. Canonical API used.
+6. How Signup now links its resume to Candidate.
+7. How Talent Profile reads/updates resume.
+8. How Profile Settings reads/updates resume.
+9. Which React Query keys are invalidated.
+10. Confirmation that all acceptance scenarios were tested.
+
+**Do not stop after making the UI look synchronized. Verify that all three screens truly read and modify the exact same database-backed Candidate resume.**
