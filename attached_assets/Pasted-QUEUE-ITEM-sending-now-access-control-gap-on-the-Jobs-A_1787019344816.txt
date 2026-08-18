@@ -1,0 +1,39 @@
+QUEUE ITEM, sending now — access control gap on the Jobs Admin page.
+
+A logged-in CLIENT account can navigate to a page titled "Jobs Admin"
+(badge reads "ADMIN," shows Total Jobs/Open/Closed/Pending/Client Requests
+stat cards, Bulk Upload, Add Job, Pending Approvals/Approved/Declined
+tabs). This directly contradicts the earlier claim that
+"AdminProtectedRoute wraps all admin UI routes in production" — that
+needs to be re-verified specifically for THIS route, not assumed correct
+because it held for other admin pages.
+
+Two things, audit both — don't assume one explains the other:
+
+1. ACCESS CONTROL: identify the exact file and route path this page lives
+   at. Confirm whether it's wrapped in AdminProtectedRoute (or the
+   equivalent client-side guard) or not. If missing, this is the same
+   class of gap as the unauthenticated /api/admin/jobs endpoints from
+   earlier this session — just on the client-side routing layer instead
+   of the API layer. Given that incident already required TWO rounds to
+   fully close (the first fix got wiped by a stale merge), verify this
+   with real evidence — a real Client session hitting this exact route —
+   not a grep that assumes the guard exists.
+
+2. DATA DISPLAY: every stat and tab shows 0. Working theory: the
+   authenticateJWT/requireAdmin guards already added to /api/admin/jobs
+   endpoints this session now correctly reject a Client's requests, and
+   the frontend silently renders that rejection as "0 results" instead of
+   an access-denied state. Confirm with real evidence — the actual API
+   response this page receives for a Client session — before assuming
+   this theory is correct.
+
+FIX, once confirmed:
+- Add the missing route guard if absent — a Client should be redirected
+  or shown a clear "not authorized" message, never see this page's shell.
+- The frontend should distinguish "genuinely zero jobs" from "request
+  rejected due to insufficient permissions" — silently showing the same
+  UI for both is misleading regardless of who's looking.
+
+Report back with the real route/component identified and real API
+response evidence for both findings before implementing either fix.
