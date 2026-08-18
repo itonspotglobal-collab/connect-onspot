@@ -1496,6 +1496,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("❌ job_submissions.status CHECK constraint migration failed:", statusCheckErr.message);
   }
 
+  // ── admin_file_access_log — audit trail for scoped admin bypass on private hiring docs ──
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_file_access_log (
+        id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        object_path  text        NOT NULL,
+        accessed_by  text        NOT NULL REFERENCES users(id),
+        accessed_at  timestamptz NOT NULL DEFAULT NOW(),
+        context_note text
+      )
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_admin_file_access_log_accessed_by
+        ON admin_file_access_log(accessed_by)
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_admin_file_access_log_accessed_at
+        ON admin_file_access_log(accessed_at)
+    `);
+    console.log("✅ Migration: admin_file_access_log table ready");
+  } catch (adminLogErr: any) {
+    console.error("❌ admin_file_access_log migration failed:", adminLogErr.message);
+  }
+
   // Protected Dashboard Routes with Role-Based Access Control
   // These routes serve the dashboard content with server-side validation
   app.get(
@@ -3484,6 +3508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object Storage File Retrieval with ACL
   app.get("/api/objects/:objectPath(*)", authenticateJWT, async (req: any, res) => {
     const userId = req.user?.id || req.user?.claims?.sub;
+    const userRole = req.user?.role;
     const objectStorageService = new ObjectStorageService();
     try {
       // Get the path parameter (e.g., "uploads/123")
@@ -3497,8 +3522,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const canonicalPath = `/objects/${objectPath}`;
       
       console.log(`📁 File retrieval request [${req.requestId}]:`, { rawPath: req.params.objectPath, canonicalPath });
-      
+
       const objectFile = await objectStorageService.getObjectEntityFile(canonicalPath);
+
+      // ── Scoped admin bypass for hiring-pipeline documents ─────────────────
+      // Admins reviewing applications need read access to private resumes and
+      // video intros. This bypass is intentionally scoped to the two hiring-doc
+      // path prefixes only — all other private objects (profile photos, etc.)
+      // continue to use the standard canAccessObjectEntity check.
+      //
+      // IMPORTANT: the audit row is written BEFORE the file streams.
+      // A failed write blocks the download — access without a trace is not acceptable.
+      const isHiringDoc =
+        objectPath.startsWith("application-resumes/") ||
+        objectPath.startsWith("application-videos/");
+
+      if (isHiringDoc && userRole === "admin" && userId) {
+        await query(
+          `INSERT INTO admin_file_access_log (object_path, accessed_by, context_note)
+           VALUES ($1, $2, $3)`,
+          [canonicalPath, userId, "admin bypass — hiring pipeline document"],
+        );
+        console.log(`✅ Admin file access logged and granted [${req.requestId}]:`, { userId, path: canonicalPath });
+        await objectStorageService.downloadObject(objectFile, res);
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       const canAccess = await objectStorageService.canAccessObjectEntity({
         objectFile,
         userId: userId,
@@ -11506,7 +11556,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await objectFile.save(cvFile.buffer, {
             metadata: { contentType: cvFile.mimetype, metadata: { originalName: cvFile.originalname } },
           });
-          await setObjectAclPolicy(objectFile, { visibility: "private" });
+          await setObjectAclPolicy(objectFile, {
+            visibility: "private",
+            // earlyAuthedUser is resolved from the JWT before this block.
+            // Anonymous applicants (no account) have no owner yet — their files
+            // become accessible once the scoped admin-bypass is in place.
+            ...(earlyAuthedUser?.id ? { owner: earlyAuthedUser.id } : {}),
+          });
           cvResumeUrl = `/objects/application-resumes/${objectId}`;
           cvResumeFileName = cvFile.originalname;
         } catch (uploadErr: any) {
@@ -11535,7 +11591,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await objectVideoFile.save(videoFile.buffer, {
             metadata: { contentType: videoFile.mimetype, metadata: { originalName: videoFile.originalname } },
           });
-          await setObjectAclPolicy(objectVideoFile, { visibility: "private" });
+          await setObjectAclPolicy(objectVideoFile, {
+            visibility: "private",
+            ...(earlyAuthedUser?.id ? { owner: earlyAuthedUser.id } : {}),
+          });
           videoIntroUrl = `/objects/application-videos/${videoId}`;
           videoIntroFileName = videoFile.originalname;
         } catch (uploadErr: any) {
@@ -12352,9 +12411,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { applicationId } = req.params;
 
-      // Verify application exists
-      const existing = await query(`SELECT id FROM job_submissions WHERE id = $1`, [applicationId]);
+      // Verify application exists and fetch email so we can resolve the candidate owner
+      const existing = await query(
+        `SELECT id, email FROM job_submissions WHERE id = $1`,
+        [applicationId],
+      );
       if (existing.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
+      // Resolve the candidate's user_id — the file should be owned by the candidate,
+      // not the admin, so the candidate can later retrieve their own document.
+      const appEmail = existing.rows[0].email as string | null;
+      let candidateOwnerId: string | undefined;
+      if (appEmail) {
+        const ownerRow = await query(
+          `SELECT user_id FROM candidates WHERE LOWER(email) = LOWER($1) AND user_id IS NOT NULL LIMIT 1`,
+          [appEmail],
+        );
+        candidateOwnerId = ownerRow.rows[0]?.user_id ?? undefined;
+      }
 
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file uploaded" });
@@ -12385,7 +12459,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await objectFile.save(file.buffer, {
         metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
       });
-      await setObjectAclPolicy(objectFile, { visibility: "private" });
+      await setObjectAclPolicy(objectFile, {
+        visibility: "private",
+        ...(candidateOwnerId ? { owner: candidateOwnerId } : {}),
+      });
 
       const resumeUrl = `/objects/application-resumes/${objectId}`;
       await query(
