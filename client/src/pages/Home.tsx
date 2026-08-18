@@ -64,20 +64,25 @@ function slideBg(id: string) {
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TALENT CAROUSEL SECTION — public, unauthenticated
-// Placed immediately after the Hero. Shares the /api/candidates React Query
-// cache with Slide 4 (same query key = one fetch per session, no extra load).
 //
-// Minimum-count threshold:
-//   < 4 candidates → section hidden entirely (sparse roster / new instance)
-//   4–5            → loop: false  (no infinite repetition of ≤2 visible cards)
-//   6+             → loop: true   (full infinite carousel)
+// Design: LIGHT section (#F7F7FA) / DARK gradient cards — hero above is dark,
+// so a second dark section would break the alternating rhythm. Visual pop
+// comes from the cards themselves, not the wrapper.
 //
-// Auto-advance: 4-second interval, pauses on hover, resumes on mouse-leave.
+// Card surface: navy gradient. Gold pulsing ring reserved for "available now"
+// talent only (on their avatar). "Open to offers" gets a muted badge only.
+// Nav arrows: white circles with soft shadow — not translucent-on-dark.
+//
+// Thresholds:
+//   < 4 candidates → section hidden entirely
+//   4–5            → loop: false
+//   6+             → loop: true
+// Auto-advance: 4 s, pauses on hover.
 // ══════════════════════════════════════════════════════════════════════════════
 
-const CAROUSEL_POOL    = 12;  // max cards in rotation
-const CAROUSEL_MIN     = 4;   // hide section below this
-const CAROUSEL_LOOP_AT = 6;   // enable infinite loop at this count
+const CAROUSEL_POOL    = 12;
+const CAROUSEL_MIN     = 4;
+const CAROUSEL_LOOP_AT = 6;
 
 function talentCarouselInitials(name: string): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -86,12 +91,14 @@ function talentCarouselInitials(name: string): string {
 }
 
 function TalentCarouselSection() {
-  const [api, setApi]     = useState<CarouselApi>();
+  const [api, setApi]       = useState<CarouselApi>();
   const [hovered, setHovered] = useState(false);
-  const timerRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+  const timerRef            = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: rawCandidates } = useQuery<any[]>({
-    queryKey: ["/api/candidates"],        // shared with Hero Slide 4 — no extra fetch
+    queryKey: ["/api/candidates"],
     queryFn: async () => {
       const r = await fetch("/api/candidates");
       if (!r.ok) return [];
@@ -101,131 +108,186 @@ function TalentCarouselSection() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Filter, shuffle, cap — same logic as Slide 4
   const cards = useMemo(() => {
     const avail = (rawCandidates ?? []).filter((c: any) => c.availability !== "unavailable");
-    const shuffled = [...avail].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, CAROUSEL_POOL);
+    return [...avail].sort(() => Math.random() - 0.5).slice(0, CAROUSEL_POOL);
   }, [rawCandidates]);
 
   const useLoop = cards.length >= CAROUSEL_LOOP_AT;
 
-  // Auto-advance: 4 s, pause on hover
+  // Track scroll-ability for non-looping carousels
   useEffect(() => {
     if (!api) return;
-    const start = () => {
-      timerRef.current = setInterval(() => {
-        if (!hovered) api.scrollNext();
-      }, 4000);
+    const update = () => {
+      setCanPrev(api.canScrollPrev());
+      setCanNext(api.canScrollNext());
     };
-    start();
+    update();
+    api.on("select", update);
+    api.on("reInit", update);
+    return () => { api.off("select", update); };
+  }, [api]);
+
+  // Auto-advance: 4 s, pauses on hover
+  useEffect(() => {
+    if (!api) return;
+    timerRef.current = setInterval(() => {
+      if (!hovered) api.scrollNext();
+    }, 4000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [api, hovered]);
 
-  // Below threshold — hide entirely
   if (!rawCandidates || cards.length < CAROUSEL_MIN) return null;
 
+  const showPrev = useLoop || canPrev;
+  const showNext = useLoop || canNext;
+
   return (
-    <section
-      aria-label="Talent network preview"
-      style={{ background: "#FAFAFE", borderTop: "1px solid rgba(75,81,184,0.08)" }}
-      className="py-14 px-4"
-    >
+    <section aria-label="Talent network preview" style={{ background: "#F7F7FA" }} className="py-16 px-4">
+      {/* Gold pulsing-ring keyframe — scoped to this section */}
+      <style>{`
+        @keyframes talentRingPulse {
+          0%,100% { box-shadow: 0 0 0 3px rgba(255,174,33,0.85), 0 0 0 7px rgba(255,174,33,0.18); }
+          50%      { box-shadow: 0 0 0 3px rgba(255,174,33,0.55), 0 0 0 11px rgba(255,174,33,0.0); }
+        }
+      `}</style>
+
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-end justify-between mb-8">
+
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: C.indigoLight }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-1.5"
+              style={{ color: C.indigoLight }}
+            >
               The Talent Network
             </p>
-            <h2 className="text-2xl font-bold" style={{ color: C.charcoal, letterSpacing: "-0.02em" }}>
+            <h2
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ color: C.charcoal, letterSpacing: "-0.025em" }}
+            >
               Meet some of our talent
             </h2>
           </div>
           <Link
             href="/hire-talent"
-            className="hidden sm:inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
             style={{ color: C.indigo }}
           >
             Browse all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {/* Carousel */}
+        {/* ── Carousel + nav ───────────────────────────────────────────────── */}
         <div
+          className="relative"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          <Carousel
-            setApi={setApi}
-            opts={{
-              loop: useLoop,
-              align: "start",
-              slidesToScroll: 1,
-            }}
-          >
+          {/* Prev arrow — white circle, soft shadow */}
+          {showPrev && (
+            <button
+              onClick={() => api?.scrollPrev()}
+              aria-label="Previous talent"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+              style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.13)" }}
+            >
+              <ChevronLeft className="w-4 h-4" style={{ color: C.charcoal }} />
+            </button>
+          )}
+          {/* Next arrow */}
+          {showNext && (
+            <button
+              onClick={() => api?.scrollNext()}
+              aria-label="Next talent"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+              style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.13)" }}
+            >
+              <ChevronRight className="w-4 h-4" style={{ color: C.charcoal }} />
+            </button>
+          )}
+
+          <Carousel setApi={setApi} opts={{ loop: useLoop, align: "start", slidesToScroll: 1 }}>
             <CarouselContent className="-ml-4">
               {cards.map((c: any) => {
-                const rawName = c.displayName?.trim() || c.fullName?.trim() || "";
-                const name    = formatPublicTalentNameFromFull(rawName) || "Talent";
-                const role    = c.targetPosition || c.headline || "Professional";
-                const yrs     = c.experienceYears;
-                const skills  = (c.coreSkills ?? []).slice(0, 2) as string[];
-                const isAvail = c.availability === "available" || c.availability === "Available";
+                const rawName  = c.displayName?.trim() || c.fullName?.trim() || "";
+                const name     = formatPublicTalentNameFromFull(rawName) || "Talent";
+                const role     = c.targetPosition || c.headline || "Professional";
+                const yrs      = c.experienceYears;
+                const skills   = (c.coreSkills ?? []).slice(0, 2) as string[];
+                const isAvail  = c.availability === "available" || c.availability === "Available";
+                const initials = talentCarouselInitials(name);
 
                 return (
-                  <CarouselItem
-                    key={c.id}
-                    className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
-                  >
+                  <CarouselItem key={c.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                     <Link href={`/talent-profile/${c.id}`}>
+                      {/* Dark gradient card */}
                       <div
-                        className="rounded-[14px] p-5 h-full flex flex-col gap-3 transition-all duration-200 cursor-pointer group"
+                        className="rounded-2xl p-5 h-full flex flex-col gap-3 cursor-pointer"
                         style={{
-                          background: "#fff",
-                          border: "1px solid rgba(75,81,184,0.12)",
-                          boxShadow: "0 2px 8px rgba(75,81,184,0.05)",
+                          background: `linear-gradient(145deg, ${C.indigoDeep} 0%, ${C.dark2} 55%, ${C.dark3} 100%)`,
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          boxShadow: "0 4px 20px rgba(18,20,80,0.28)",
+                          transition: "box-shadow 0.2s ease, transform 0.2s ease",
                         }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(75,81,184,0.13)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(75,81,184,0.28)";
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.boxShadow = "0 14px 40px rgba(18,20,80,0.45)";
+                          el.style.transform = "translateY(-3px)";
                         }}
                         onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(75,81,184,0.05)";
-                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(75,81,184,0.12)";
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.boxShadow = "0 4px 20px rgba(18,20,80,0.28)";
+                          el.style.transform = "translateY(0)";
                         }}
                       >
-                        {/* Avatar + availability */}
-                        <div className="flex items-center justify-between">
+                        {/* Avatar row */}
+                        <div className="flex items-center justify-between gap-2">
+                          {/* Avatar — gold pulsing ring for "available now" only */}
                           <div
-                            className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                            style={{ background: C.indigo }}
-                          >
-                            {talentCarouselInitials(name)}
-                          </div>
-                          <span
-                            className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                            className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
                             style={{
-                              background: isAvail ? "rgba(46,186,107,0.10)" : "rgba(75,81,184,0.08)",
-                              color:      isAvail ? "#1a7d42"                : C.indigo,
-                              border:     `1px solid ${isAvail ? "rgba(46,186,107,0.25)" : "rgba(75,81,184,0.18)"}`,
+                              background: C.indigo,
+                              ...(isAvail
+                                ? { animation: "talentRingPulse 2s ease-in-out infinite" }
+                                : {}),
                             }}
                           >
-                            {isAvail ? "Ready now" : "Open to offers"}
-                          </span>
+                            {initials}
+                          </div>
+
+                          {/* Badge — only for "open to offers"; available talent's ring signals status */}
+                          {!isAvail && (
+                            <span
+                              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                              style={{
+                                background: "rgba(255,255,255,0.09)",
+                                color: "rgba(255,255,255,0.6)",
+                                border: "1px solid rgba(255,255,255,0.14)",
+                              }}
+                            >
+                              Open to offers
+                            </span>
+                          )}
                         </div>
 
                         {/* Name + role */}
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm leading-snug truncate" style={{ color: C.charcoal }}>
+                          <p className="font-semibold text-sm leading-snug truncate text-white">
                             {name}
                           </p>
-                          <p className="text-xs leading-snug truncate mt-0.5" style={{ color: C.gray }}>
-                            {role}
-                            {yrs ? ` · ${yrs} yr${Number(yrs) !== 1 ? "s" : ""}` : ""}
+                          <p
+                            className="text-xs leading-snug truncate mt-0.5"
+                            style={{ color: "rgba(255,255,255,0.55)" }}
+                          >
+                            {role}{yrs ? ` · ${yrs} yr${Number(yrs) !== 1 ? "s" : ""}` : ""}
                           </p>
                           {c.category && (
-                            <p className="text-[10px] mt-0.5 font-medium" style={{ color: C.indigoLight }}>
+                            <p
+                              className="text-[10px] mt-1 font-semibold"
+                              style={{ color: C.orangeLight }}
+                            >
                               {c.category}
                             </p>
                           )}
@@ -233,15 +295,15 @@ function TalentCarouselSection() {
 
                         {/* Skills */}
                         {skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-auto pt-1">
+                          <div className="flex flex-wrap gap-1.5 mt-auto pt-1">
                             {skills.map((s, i) => (
                               <span
                                 key={i}
-                                className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                className="rounded-full px-2.5 py-0.5 text-[10px] font-medium"
                                 style={{
-                                  background: "rgba(75,81,184,0.07)",
-                                  color: C.indigoDark,
-                                  border: "1px solid rgba(75,81,184,0.15)",
+                                  background: "rgba(255,255,255,0.09)",
+                                  color: "rgba(255,255,255,0.75)",
+                                  border: "1px solid rgba(255,255,255,0.13)",
                                 }}
                               >
                                 {s}
@@ -259,8 +321,12 @@ function TalentCarouselSection() {
         </div>
 
         {/* Mobile CTA */}
-        <div className="mt-6 text-center sm:hidden">
-          <Link href="/hire-talent" className="text-sm font-semibold hover:underline" style={{ color: C.indigo }}>
+        <div className="mt-8 text-center sm:hidden">
+          <Link
+            href="/hire-talent"
+            className="text-sm font-semibold hover:underline"
+            style={{ color: C.indigo }}
+          >
             Browse all talent <ArrowRight className="inline w-3.5 h-3.5" />
           </Link>
         </div>
