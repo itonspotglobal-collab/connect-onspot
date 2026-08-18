@@ -6650,6 +6650,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/jobs/client-options — authenticated minimal list for the job-creation client selector.
+  // This replaces the previous unauthed GET /api/admin/clients which was purpose-built only for
+  // this dropdown. JobFormModal.tsx calls this endpoint.
+  // NOTE: must be registered BEFORE GET /api/admin/jobs/:id to prevent Express swallowing
+  // the literal string "client-options" as a job ID parameter.
+  app.get("/api/admin/jobs/client-options", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const result = await query(`
+        SELECT u.id, u.email, cp.company_name
+        FROM   users u
+        LEFT JOIN client_profiles cp ON cp.user_id = u.id
+        WHERE  u.role = 'client'
+        ORDER BY COALESCE(cp.company_name, u.email)
+      `);
+      res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/jobs/client-options error:", err);
+      res.status(500).json({ error: "Failed to fetch client options" });
+    }
+  });
+
   // GET /api/admin/jobs/:id — fetch a single job for the edit page.
   app.get("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -6742,25 +6763,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error("PATCH /api/admin/platform-settings error:", err);
       res.status(500).json({ error: "Failed to update platform settings" });
-    }
-  });
-
-  // GET /api/admin/jobs/client-options — authenticated minimal list for the job-creation client selector.
-  // This replaces the previous unauthed GET /api/admin/clients which was purpose-built only for
-  // this dropdown. JobFormModal.tsx calls this endpoint.
-  app.get("/api/admin/jobs/client-options", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
-    try {
-      const result = await query(`
-        SELECT u.id, u.email, cp.company_name
-        FROM   users u
-        LEFT JOIN client_profiles cp ON cp.user_id = u.id
-        WHERE  u.role = 'client'
-        ORDER BY COALESCE(cp.company_name, u.email)
-      `);
-      res.json(result.rows);
-    } catch (err: any) {
-      console.error("GET /api/admin/jobs/client-options error:", err);
-      res.status(500).json({ error: "Failed to fetch client options" });
     }
   });
 
