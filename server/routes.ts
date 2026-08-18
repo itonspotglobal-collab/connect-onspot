@@ -6835,6 +6835,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/clients/:id — full client profile + all their jobs, each with a
+  // cross-reference applications array.
+  //
+  // CROSS-REFERENCE BOUNDARY (enforced at query + object-construction level):
+  // The nested applications array contains ONLY:
+  //   { applicationId, talentName, applicationStatus, submittedAt }
+  // No talent email, phone, resume URL, skills, rate, or any other profile field
+  // is selected by the query or placed into the response object.  The enforcement
+  // is double: the SQL SELECT names only those four values, and the JS push()
+  // explicitly constructs the object with only those four keys — no spread, no row
+  // passthrough.
+  //
+  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
+  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
+  //
+  // Route ordering note: registered AFTER exact GET /api/admin/clients so the list
+  // endpoint is not swallowed.  Express always prefers exact matches over :param
+  // routes regardless of registration order, but explicit ordering is maintained
+  // for readability.
+  app.get("/api/admin/clients/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    // Phase 5: requireAdminSubRole(['client_success']),
+    try {
+      const clientId = req.params.id;
+
+      // ── 1. Client profile ──────────────────────────────────────────────────
+      const profileResult = await query(`
+        SELECT
+          u.id,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.created_at,
+          cp.company_name,
+          cp.contact_person,
+          cp.phone_number,
+          cp.industry,
+          cp.location,
+          cp.website,
+          cp.company_size,
+          cp.about,
+          cp.timezone,
+          cp.updated_at AS profile_updated_at
+        FROM   users u
+        LEFT JOIN client_profiles cp ON cp.user_id = u.id
+        WHERE  u.id = $1
+          AND  u.role = 'client'
+      `, [clientId]);
+
+      if (profileResult.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const clientRow = profileResult.rows[0];
+
+      // ── 2. Jobs + cross-reference applications ─────────────────────────────
+      // The SELECT names ONLY the four cross-reference fields from the
+      // submission/user join.  No other talent-side column is fetched.
+      const jobsResult = await query(`
+        SELECT
+          j.id                                                          AS job_id,
+          COALESCE(j.professional_role_name, j.title)                  AS title,
+          j.status,
+          j.approval_status,
+          j.created_at                                                  AS job_created_at,
+          js.id                                                         AS application_id,
+          COALESCE(
+            NULLIF(TRIM(
+              COALESCE(u_t.first_name, '') || ' ' || COALESCE(u_t.last_name, '')
+            ), ''),
+            js.email
+          )                                                             AS talent_name,
+          js.status                                                     AS application_status,
+          js.submitted_at
+        FROM   jobs j
+        LEFT JOIN job_submissions js ON  js.job_id   = j.id
+        LEFT JOIN users           u_t ON u_t.id      = js.talent_id
+        WHERE  j.client_id = $1
+        ORDER BY j.created_at DESC, js.submitted_at DESC NULLS LAST
+      `, [clientId]);
+
+      // Group applications under their parent job.
+      // Object construction is explicit — no spread, no row passthrough.
+      const jobMap = new Map<string, any>();
+      for (const row of jobsResult.rows) {
+        if (!jobMap.has(row.job_id)) {
+          jobMap.set(row.job_id, {
+            id:             row.job_id,
+            title:          row.title,
+            status:         row.status,
+            approvalStatus: row.approval_status,
+            createdAt:      row.job_created_at,
+            applications:   [],
+          });
+        }
+        if (row.application_id) {
+          jobMap.get(row.job_id)!.applications.push({
+            applicationId:     row.application_id,
+            talentName:        row.talent_name,
+            applicationStatus: row.application_status,
+            submittedAt:       row.submitted_at,
+          });
+        }
+      }
+
+      res.json({
+        client: {
+          id:              clientRow.id,
+          email:           clientRow.email,
+          firstName:       clientRow.first_name,
+          lastName:        clientRow.last_name,
+          createdAt:       clientRow.created_at,
+          companyName:     clientRow.company_name,
+          contactPerson:   clientRow.contact_person,
+          phoneNumber:     clientRow.phone_number,
+          industry:        clientRow.industry,
+          location:        clientRow.location,
+          website:         clientRow.website,
+          companySize:     clientRow.company_size,
+          about:           clientRow.about,
+          timezone:        clientRow.timezone,
+          profileUpdatedAt: clientRow.profile_updated_at,
+        },
+        jobs: Array.from(jobMap.values()),
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/clients/:id error:", err);
+      res.status(500).json({ error: "Failed to fetch client detail" });
+    }
+  });
+
   app.post("/api/admin/jobs", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { clientId: rawClientId } = req.body;

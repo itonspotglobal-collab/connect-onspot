@@ -17,6 +17,7 @@ import {
   Loader2,
   RefreshCw,
   Shield,
+  ExternalLink,
 } from 'lucide-react';
 
 interface ClientRow {
@@ -146,14 +147,16 @@ export default function AdminClients() {
                   {clients.map((c) => (
                     <tr
                       key={c.id}
-                      className="border-b last:border-0 hover:bg-muted/30"
+                      className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                       data-testid={`client-row-${c.id}`}
+                      onClick={() => setLocation(`/admin/clients/${c.id}`)}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium">
+                        <div className="font-medium flex items-center gap-1.5">
                           {c.company_name ?? (
                             <span className="text-muted-foreground italic">No company</span>
                           )}
+                          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
                         </div>
                         {c.contact_person && (
                           <div className="text-xs text-muted-foreground">{c.contact_person}</div>

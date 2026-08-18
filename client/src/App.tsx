@@ -52,6 +52,7 @@ import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminClients from "@/pages/AdminClients";
+import AdminClientDetail from "@/pages/AdminClientDetail";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
@@ -218,6 +219,7 @@ function PublicRouter() {
           {/* Staff-only login — not linked from any customer-facing page */}
           <Route path="/admin/login" component={AdminLogin} />
           <Route path="/admin/clients" component={() => <AdminProtectedRoute><AdminClients /></AdminProtectedRoute>} />
+          <Route path="/admin/clients/:id" component={() => <AdminProtectedRoute><AdminClientDetail /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-responses" component={() => <AdminProtectedRoute><VanessaResponses /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-learning" component={() => <AdminProtectedRoute><VanessaLearningDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-rag" component={() => <AdminProtectedRoute><AdminVanessaRAG /></AdminProtectedRoute>} />
