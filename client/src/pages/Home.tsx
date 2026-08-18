@@ -4,6 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Pause, Play, Check, X, Star, Search, ArrowRight, FileText, Zap, Rocket, Users } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import { Footer } from "@/components/Footer";
+import {
+  type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import jakePhoto from "@assets/Jake_1780574815787.png";
 const nurPhoto = "/nur-ceo.jpeg";
 const markPhoto = "/mark-apostol.png";
@@ -56,11 +62,219 @@ function slideBg(id: string) {
   return `radial-gradient(ellipse at 85% 18%, rgba(71,78,173,0.09), transparent 50%), linear-gradient(145deg, ${C.lightBg} 0%, #f4f2ff 100%)`;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// TALENT CAROUSEL SECTION — public, unauthenticated
+// Placed immediately after the Hero. Shares the /api/candidates React Query
+// cache with Slide 4 (same query key = one fetch per session, no extra load).
+//
+// Minimum-count threshold:
+//   < 4 candidates → section hidden entirely (sparse roster / new instance)
+//   4–5            → loop: false  (no infinite repetition of ≤2 visible cards)
+//   6+             → loop: true   (full infinite carousel)
+//
+// Auto-advance: 4-second interval, pauses on hover, resumes on mouse-leave.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const CAROUSEL_POOL    = 12;  // max cards in rotation
+const CAROUSEL_MIN     = 4;   // hide section below this
+const CAROUSEL_LOOP_AT = 6;   // enable infinite loop at this count
+
+function talentCarouselInitials(name: string): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (name ?? "??").slice(0, 2).toUpperCase();
+}
+
+function TalentCarouselSection() {
+  const [api, setApi]     = useState<CarouselApi>();
+  const [hovered, setHovered] = useState(false);
+  const timerRef          = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: rawCandidates } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],        // shared with Hero Slide 4 — no extra fetch
+    queryFn: async () => {
+      const r = await fetch("/api/candidates");
+      if (!r.ok) return [];
+      const d = await r.json();
+      return Array.isArray(d) ? d : (d.items ?? []);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Filter, shuffle, cap — same logic as Slide 4
+  const cards = useMemo(() => {
+    const avail = (rawCandidates ?? []).filter((c: any) => c.availability !== "unavailable");
+    const shuffled = [...avail].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, CAROUSEL_POOL);
+  }, [rawCandidates]);
+
+  const useLoop = cards.length >= CAROUSEL_LOOP_AT;
+
+  // Auto-advance: 4 s, pause on hover
+  useEffect(() => {
+    if (!api) return;
+    const start = () => {
+      timerRef.current = setInterval(() => {
+        if (!hovered) api.scrollNext();
+      }, 4000);
+    };
+    start();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [api, hovered]);
+
+  // Below threshold — hide entirely
+  if (!rawCandidates || cards.length < CAROUSEL_MIN) return null;
+
+  return (
+    <section
+      aria-label="Talent network preview"
+      style={{ background: "#FAFAFE", borderTop: "1px solid rgba(75,81,184,0.08)" }}
+      className="py-14 px-4"
+    >
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: C.indigoLight }}>
+              The Talent Network
+            </p>
+            <h2 className="text-2xl font-bold" style={{ color: C.charcoal, letterSpacing: "-0.02em" }}>
+              Meet some of our talent
+            </h2>
+          </div>
+          <Link
+            href="/hire-talent"
+            className="hidden sm:inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+            style={{ color: C.indigo }}
+          >
+            Browse all <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Carousel */}
+        <div
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <Carousel
+            setApi={setApi}
+            opts={{
+              loop: useLoop,
+              align: "start",
+              slidesToScroll: 1,
+            }}
+          >
+            <CarouselContent className="-ml-4">
+              {cards.map((c: any) => {
+                const rawName = c.displayName?.trim() || c.fullName?.trim() || "";
+                const name    = formatPublicTalentNameFromFull(rawName) || "Talent";
+                const role    = c.targetPosition || c.headline || "Professional";
+                const yrs     = c.experienceYears;
+                const skills  = (c.coreSkills ?? []).slice(0, 2) as string[];
+                const isAvail = c.availability === "available" || c.availability === "Available";
+
+                return (
+                  <CarouselItem
+                    key={c.id}
+                    className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
+                  >
+                    <Link href={`/talent-profile/${c.id}`}>
+                      <div
+                        className="rounded-[14px] p-5 h-full flex flex-col gap-3 transition-all duration-200 cursor-pointer group"
+                        style={{
+                          background: "#fff",
+                          border: "1px solid rgba(75,81,184,0.12)",
+                          boxShadow: "0 2px 8px rgba(75,81,184,0.05)",
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(75,81,184,0.13)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(75,81,184,0.28)";
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(75,81,184,0.05)";
+                          (e.currentTarget as HTMLElement).style.borderColor = "rgba(75,81,184,0.12)";
+                        }}
+                      >
+                        {/* Avatar + availability */}
+                        <div className="flex items-center justify-between">
+                          <div
+                            className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                            style={{ background: C.indigo }}
+                          >
+                            {talentCarouselInitials(name)}
+                          </div>
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
+                            style={{
+                              background: isAvail ? "rgba(46,186,107,0.10)" : "rgba(75,81,184,0.08)",
+                              color:      isAvail ? "#1a7d42"                : C.indigo,
+                              border:     `1px solid ${isAvail ? "rgba(46,186,107,0.25)" : "rgba(75,81,184,0.18)"}`,
+                            }}
+                          >
+                            {isAvail ? "Ready now" : "Open to offers"}
+                          </span>
+                        </div>
+
+                        {/* Name + role */}
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm leading-snug truncate" style={{ color: C.charcoal }}>
+                            {name}
+                          </p>
+                          <p className="text-xs leading-snug truncate mt-0.5" style={{ color: C.gray }}>
+                            {role}
+                            {yrs ? ` · ${yrs} yr${Number(yrs) !== 1 ? "s" : ""}` : ""}
+                          </p>
+                          {c.category && (
+                            <p className="text-[10px] mt-0.5 font-medium" style={{ color: C.indigoLight }}>
+                              {c.category}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Skills */}
+                        {skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-auto pt-1">
+                            {skills.map((s, i) => (
+                              <span
+                                key={i}
+                                className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                style={{
+                                  background: "rgba(75,81,184,0.07)",
+                                  color: C.indigoDark,
+                                  border: "1px solid rgba(75,81,184,0.15)",
+                                }}
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+          </Carousel>
+        </div>
+
+        {/* Mobile CTA */}
+        <div className="mt-6 text-center sm:hidden">
+          <Link href="/hire-talent" className="text-sm font-semibold hover:underline" style={{ color: C.indigo }}>
+            Browse all talent <ArrowRight className="inline w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function Home() {
   return (
     <div>
       <HeroSection />
+      <TalentCarouselSection />
       <ProblemSection />
       <BetterWaySection />
       <EquationSection />

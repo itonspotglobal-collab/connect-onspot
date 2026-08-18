@@ -5688,10 +5688,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return false;
   }
 
+  // ── /api/candidates in-memory cache ──────────────────────────────────────────
+  // The public homepage (hero slide + talent carousel) fetches this endpoint on
+  // every cold page load. storage.getCandidates() does a full-table scan each
+  // time; caching the raw result for 10 minutes eliminates per-visitor DB hits
+  // on the highest-traffic public page.  Sanitization is applied per-request
+  // after the cache read so admin/TA callers still get their privileged view
+  // while sharing the same cached raw dataset.
+  const _candidatesCache: { data: any[] | null; expiry: number } = { data: null, expiry: 0 };
+  const CANDIDATES_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
   app.get("/api/candidates", async (req: any, res) => {
     try {
       const { page, pageSize } = parsePagination(req.query);
-      const all = await storage.getCandidates();
+
+      let all: any[];
+      const now = Date.now();
+      if (_candidatesCache.data && now < _candidatesCache.expiry) {
+        all = _candidatesCache.data;
+        res.setHeader("X-Candidates-Cache", "HIT");
+      } else {
+        all = await storage.getCandidates();
+        _candidatesCache.data   = all;
+        _candidatesCache.expiry = now + CANDIDATES_CACHE_TTL_MS;
+        res.setHeader("X-Candidates-Cache", "MISS");
+      }
       // Admin/TA get full data; everyone else gets public-safe records
       const token = (req.headers["authorization"] ?? "").split(" ")[1];
       let callerIsPrivileged = false;
