@@ -220,7 +220,7 @@ function TalentCarouselSection() {
                 const initials = talentCarouselInitials(name);
 
                 return (
-                  <CarouselItem key={c.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                  <CarouselItem key={c.id} className="pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/6">
                     <Link href={`/talent-profile/${c.id}`}>
                       {/* Dark gradient card */}
                       <div
