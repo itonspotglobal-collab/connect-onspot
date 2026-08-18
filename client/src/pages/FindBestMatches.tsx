@@ -51,6 +51,9 @@ import { usePostedJobs } from "@/hooks/usePostedJobs";
 import {
   parseResumeFile,
   type ExtractedCandidateProfile,
+  type WorkHistoryEntry,
+  type EducationEntry,
+  type CertificationEntry,
 } from "@/lib/resumeParser";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
@@ -60,12 +63,7 @@ import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
 
 type Phase = "flow" | "matching" | "results";
 
-interface WorkHistoryEntry {
-  jobTitle: string;
-  company: string;
-  duration: string;
-  responsibilities: string;
-}
+// WorkHistoryEntry is imported from resumeParser
 
 interface CandidateProfile {
   // Step 1 — Upload
@@ -86,6 +84,12 @@ interface CandidateProfile {
   coreSkills: string[]; // from skill chips
   secondarySkills: string[]; // from free-text tag input
   workHistory: WorkHistoryEntry[];
+  /** Parsed from resume — persisted to candidate.education at save time. */
+  education: EducationEntry[];
+  /** Parsed from resume — persisted to candidate.certifications at save time. */
+  certifications: CertificationEntry[];
+  /** Parsed from resume — stored in candidate.preferences.languages at save time. */
+  languages: string[];
   preferredSetup: string; // "Remote" | "Hybrid" | "On-site"
   preferredShift: string;
   preferredJobType: string; // "Full-time" | "Part-time"
@@ -117,6 +121,9 @@ const EMPTY_PROFILE: CandidateProfile = {
   coreSkills: [],
   secondarySkills: [],
   workHistory: [],
+  education: [],
+  certifications: [],
+  languages: [],
   preferredSetup: "",
   preferredShift: "",
   preferredJobType: "",
@@ -2016,6 +2023,16 @@ export default function FindBestMatches() {
           workHistory: p.workHistory.length > 0
             ? p.workHistory
             : (Array.isArray(data.workHistory) ? data.workHistory : []),
+          // Education, certifications, languages — only replace when form is empty
+          education: p.education.length > 0
+            ? p.education
+            : (Array.isArray(data.education) ? data.education : []),
+          certifications: p.certifications.length > 0
+            ? p.certifications
+            : (Array.isArray(data.certifications) ? data.certifications : []),
+          languages: p.languages.length > 0
+            ? p.languages
+            : (Array.isArray(prefs.languages) ? prefs.languages as string[] : []),
           // Preferences
           preferredSetup:   p.preferredSetup   || prefs.setup        || "",
           preferredShift:   p.preferredShift   || prefs.shift        || "",
@@ -2092,19 +2109,33 @@ export default function FindBestMatches() {
         // Hydrate profile with extracted values — suggestions only, never overwrite user edits
         setProfile((prev) => ({
           ...prev,
-          fullName: prev.fullName || result.fullName,
-          email: prev.email || result.email,
-          phone: prev.phone || result.phone,
-          location: prev.location || result.location,
-          targetPosition: prev.targetPosition || result.targetPosition,
-          jobCategory: prev.jobCategory || result.jobCategory,
+          fullName:         prev.fullName         || result.fullName,
+          email:            prev.email            || result.email,
+          phone:            prev.phone            || result.phone,
+          location:         prev.location         || result.location,
+          targetPosition:   prev.targetPosition   || result.targetPosition,
+          jobCategory:      prev.jobCategory      || result.jobCategory,
           yearsOfExperience: prev.yearsOfExperience || result.yearsOfExperience,
-          seniority: prev.seniority || result.seniority,
-          coreSkills: prev.coreSkills.length ? prev.coreSkills
+          seniority:        prev.seniority        || result.seniority,
+          summary:          prev.summary          || result.summary,
+          coreSkills: prev.coreSkills.length
+            ? prev.coreSkills
             : result.coreSkills.length ? result.coreSkills : prev.coreSkills,
-          secondarySkills: prev.secondarySkills.length ? prev.secondarySkills
+          secondarySkills: prev.secondarySkills.length
+            ? prev.secondarySkills
             : result.secondarySkills.length ? result.secondarySkills : prev.secondarySkills,
-          summary: prev.summary || result.summary,
+          workHistory: prev.workHistory.length
+            ? prev.workHistory
+            : result.workHistory.length ? result.workHistory : prev.workHistory,
+          education: prev.education.length
+            ? prev.education
+            : result.education.length ? result.education : prev.education,
+          certifications: prev.certifications.length
+            ? prev.certifications
+            : result.certifications.length ? result.certifications : prev.certifications,
+          languages: prev.languages.length
+            ? prev.languages
+            : result.languages.length ? result.languages : prev.languages,
         }));
       }
     } catch {
@@ -2237,11 +2268,14 @@ export default function FindBestMatches() {
           coreSkills:      profile.coreSkills,
           secondarySkills: profile.secondarySkills,
           workHistory:     profile.workHistory,
+          education:       profile.education.length > 0 ? profile.education : undefined,
+          certifications:  profile.certifications.length > 0 ? profile.certifications : undefined,
           preferences: {
             setup:       profile.preferredSetup,
             shift:       profile.preferredShift,
             jobType:     profile.preferredJobType,
             environment: profile.workEnvironment,
+            ...(profile.languages.length > 0 ? { languages: profile.languages } : {}),
           },
           summary:          profile.summary || null,
           profileCompleted: true,

@@ -7,6 +7,27 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface WorkHistoryEntry {
+  jobTitle: string;
+  company: string;
+  duration: string;
+  responsibilities: string;
+}
+
+export interface EducationEntry {
+  school: string;
+  degree: string;
+  yearStart?: string;
+  yearEnd?: string;
+}
+
+export interface CertificationEntry {
+  name: string;
+  issuer?: string;
+  date?: string;
+  link?: string;
+}
+
 export interface ExtractedCandidateProfile {
   fullName: string;
   email: string;
@@ -19,6 +40,10 @@ export interface ExtractedCandidateProfile {
   coreSkills: string[];
   secondarySkills: string[];
   summary: string;
+  languages: string[];
+  workHistory: WorkHistoryEntry[];
+  education: EducationEntry[];
+  certifications: CertificationEntry[];
   confidence: "high" | "partial" | "low";
   extractedFields: string[];
   parseError?: string;
@@ -30,6 +55,10 @@ export const EMPTY_EXTRACTION: ExtractedCandidateProfile = {
   yearsOfExperience: "", seniority: "",
   coreSkills: [], secondarySkills: [],
   summary: "",
+  languages: [],
+  workHistory: [],
+  education: [],
+  certifications: [],
   confidence: "low", extractedFields: [],
 };
 
@@ -309,8 +338,10 @@ export async function extractTextFromFile(file: File): Promise<string> {
 const SECTION_HEADERS: Record<string, RegExp> = {
   summary: /^(?:summary|professional\s+summary|objective[s]?|profile|about\s+me|professional\s+profile|career\s+objective)\s*:?\s*$/i,
   experience: /^(?:work\s+experience|experience|employment\s+history|professional\s+experience|work\s+history|career\s+history)\s*:?\s*$/i,
-  education: /^(?:education|academic|qualifications?|schooling)\s*:?\s*$/i,
+  education: /^(?:education|academic\s+background|educational\s+background|academic|qualifications?|schooling)\s*:?\s*$/i,
   skills: /^(?:skills?|technical\s+skills?|key\s+skills?|core\s+competencies|competencies|expertise|tools?\s*(?:&|and)?\s*technologies?|skills?\s*(?:&|and)\s*competencies|programming\s+languages?|frameworks?|technologies?|tools?\s+(?:used|&)|technical\s+competencies|technical\s+toolkit)\s*:?\s*$/i,
+  certifications: /^(?:certifications?|certificates?|licenses?\s*(?:&|and)?\s*certifications?|professional\s+certifications?|training\s*(?:&|and)?\s*certifications?|awards?\s*(?:&|and)?\s*certifications?)\s*:?\s*$/i,
+  languages: /^(?:languages?|language\s+proficiency|languages?\s+spoken|languages?\s+known)\s*:?\s*$/i,
 };
 
 interface ResumeSection { type: string; lines: string[]; }
@@ -873,6 +904,314 @@ function extractSummary(summarySection: ResumeSection | undefined): string {
   return sentences.slice(0, 3).join(" ").trim().slice(0, 350);
 }
 
+// ─── Work History extraction ──────────────────────────────────────────────────
+
+const RESP_BULLET_RX = /^[\-•·▪►→▸*]+\s*/;
+const DATE_LINE_RX = /\b(19|20)\d{2}\b/;
+const COMPANY_NOISE_RX = /^(?:at|@|with|for)\s+/i;
+
+// Lines that look like company names contain these suffixes
+const COMPANY_SUFFIX_RX = /\b(?:inc\.?|ltd\.?|corp\.?|llc\.?|co\.?|group|technologies|tech|solutions|services|systems|consulting|consultancy|agency|enterprises?|international|global|holdings?|partners?|associates?|pte\.?|sdn\.?)\b/i;
+
+function extractWorkHistory(expSection: ResumeSection | undefined): WorkHistoryEntry[] {
+  if (!expSection || expSection.lines.length === 0) return [];
+
+  type RawEntry = { titleLine: string; bodyLines: string[] };
+  const rawEntries: RawEntry[] = [];
+  let current: RawEntry | null = null;
+
+  for (const line of expSection.lines) {
+    const t = line.trim();
+    if (!t) continue;
+
+    // Pipe-separated: "Title | Company | 2022-2024" or "Title | Company"
+    const pipeMatch = /^([^|]+)\s*\|\s*([^|]+?)(?:\s*\|\s*(.+))?$/.exec(t);
+    if (pipeMatch && looksLikeTitle(pipeMatch[1].trim()) && !DATE_LINE_RX.test(pipeMatch[1])) {
+      if (current) rawEntries.push(current);
+      current = { titleLine: t, bodyLines: [] };
+      continue;
+    }
+
+    // Bullet point → belongs to current entry
+    if (RESP_BULLET_RX.test(t) && current) {
+      current.bodyLines.push(t);
+      continue;
+    }
+
+    // A title-looking line that isn't just a date and isn't a bullet
+    if (
+      looksLikeTitle(t) &&
+      !RESP_BULLET_RX.test(t) &&
+      // Don't treat a pure date range as a new job entry
+      !(DATE_LINE_RX.test(t) && t.split(/\s+/).length <= 5 && !t.match(/[a-z]{3,}/i))
+    ) {
+      if (current) rawEntries.push(current);
+      current = { titleLine: t, bodyLines: [] };
+      continue;
+    }
+
+    if (current) current.bodyLines.push(t);
+  }
+  if (current) rawEntries.push(current);
+
+  return rawEntries.slice(0, 10).map(({ titleLine, bodyLines }): WorkHistoryEntry => {
+    let jobTitle = titleLine;
+    let company = "";
+    let duration = "";
+
+    // Parse inline pipe format
+    const pipeMatch = /^([^|]+)\s*\|\s*([^|]+?)(?:\s*\|\s*(.+))?$/.exec(titleLine);
+    if (pipeMatch) {
+      jobTitle = pipeMatch[1].trim();
+      const part2 = pipeMatch[2].trim();
+      const part3 = pipeMatch[3]?.trim() ?? "";
+      if (DATE_LINE_RX.test(part2) && part2.split(/\s+/).length <= 5) {
+        duration = part2;
+      } else {
+        company = part2;
+        if (part3 && DATE_LINE_RX.test(part3)) duration = part3;
+      }
+    }
+
+    // Parse dash-separated: "Title – Company"
+    if (!company) {
+      const dashMatch = /^(.+?)\s*[-–—]\s*(.+)$/.exec(jobTitle);
+      if (dashMatch && !DATE_LINE_RX.test(dashMatch[2]) && !looksLikeTitle(dashMatch[2]) && COMPANY_SUFFIX_RX.test(dashMatch[2])) {
+        jobTitle = dashMatch[1].trim();
+        company = dashMatch[2].trim();
+      }
+    }
+
+    const respLines: string[] = [];
+    for (const bl of bodyLines) {
+      const bt = bl.trim();
+      if (!bt) continue;
+
+      // Date range line
+      if (DATE_LINE_RX.test(bt) && bt.split(/\s+/).length <= 7 && !bt.match(/[a-zA-Z]{4,}.*[a-zA-Z]{4,}/)) {
+        if (!duration) duration = bt;
+        continue;
+      }
+
+      // Potential company (short line before we have a company, not a bullet, not a date)
+      if (!company && !RESP_BULLET_RX.test(bt) && bt.split(/\s+/).length <= 8) {
+        company = bt.replace(COMPANY_NOISE_RX, "").trim();
+        continue;
+      }
+
+      // Everything else is a responsibility
+      respLines.push(bt.replace(RESP_BULLET_RX, "").trim());
+    }
+
+    return {
+      jobTitle: toTitleCase(jobTitle.trim()),
+      company: company.trim(),
+      duration: duration.trim(),
+      responsibilities: respLines.slice(0, 8).join("\n"),
+    };
+  }).filter((e) => e.jobTitle.length > 1);
+}
+
+// ─── Education extraction ─────────────────────────────────────────────────────
+
+const DEGREE_KEYWORDS_RX = /\b(?:bachelor|master|doctor|phd|ph\.d|bsc?|msc?|mba|ba\b|be\b|bs\b|btech|mtech|associate|diploma|certificate|degree|engineering|b\.s\.|m\.s\.|b\.a\.|m\.a\.)\b/i;
+const SCHOOL_KEYWORDS_RX = /\b(?:university|universities|college|institute|institution|school|academy|polytechnic|seminary)\b/i;
+const YEAR_RANGE_RX = /\b((?:19|20)\d{2})\b(?:.*?\b((?:19|20)\d{2}|present|current|ongoing)\b)?/i;
+
+function extractEducation(eduSection: ResumeSection | undefined): EducationEntry[] {
+  if (!eduSection || eduSection.lines.length === 0) return [];
+
+  const entries: EducationEntry[] = [];
+  let cur: Partial<EducationEntry> | null = null;
+
+  const save = () => {
+    if (cur && (cur.school || cur.degree)) {
+      entries.push({
+        school: cur.school ?? "",
+        degree: cur.degree ?? "",
+        yearStart: cur.yearStart,
+        yearEnd: cur.yearEnd,
+      });
+    }
+    cur = null;
+  };
+
+  for (const line of eduSection.lines) {
+    const t = line.trim();
+    if (!t) continue;
+
+    const hasYear = DATE_LINE_RX.test(t);
+    const hasDegreeKw = DEGREE_KEYWORDS_RX.test(t);
+    const hasSchoolKw = SCHOOL_KEYWORDS_RX.test(t);
+
+    // Year-only lines (e.g. "2018 - 2022" or "2022")
+    if (hasYear && t.split(/\s+/).length <= 5 && !t.match(/[a-zA-Z]{5,}/)) {
+      const m = YEAR_RANGE_RX.exec(t);
+      if (m) {
+        if (!cur) cur = {};
+        cur.yearStart = m[1];
+        const end = m[2];
+        if (end) cur.yearEnd = /^(?:present|current|ongoing)$/i.test(end) ? "Present" : end;
+      }
+      continue;
+    }
+
+    // Line contains degree keywords → new or current entry's degree
+    if (hasDegreeKw && t.split(/\s+/).length <= 14) {
+      // If we already have a complete entry, save it and start fresh
+      if (cur?.degree && cur?.school) save();
+      if (!cur) cur = {};
+      if (!cur.degree) {
+        cur.degree = toTitleCase(t);
+        // Extract inline year if present
+        if (hasYear) {
+          const m = YEAR_RANGE_RX.exec(t);
+          if (m && !cur.yearStart) {
+            cur.yearStart = m[1];
+            if (m[2]) cur.yearEnd = /^(?:present|current|ongoing)$/i.test(m[2]) ? "Present" : m[2];
+          }
+        }
+      }
+      continue;
+    }
+
+    // Line contains school keywords
+    if (hasSchoolKw && t.split(/\s+/).length <= 12) {
+      if (cur?.school && !cur?.degree) save(); // had school but no degree — save as-is and start new
+      if (!cur) cur = {};
+      cur.school = t;
+      if (hasYear) {
+        const m = YEAR_RANGE_RX.exec(t);
+        if (m && !cur.yearStart) {
+          cur.yearStart = m[1];
+          if (m[2]) cur.yearEnd = /^(?:present|current|ongoing)$/i.test(m[2]) ? "Present" : m[2];
+        }
+      }
+      continue;
+    }
+
+    // Short line without obvious degree/school keyword — attach to current entry
+    if (cur && t.split(/\s+/).length <= 10 && !hasYear) {
+      if (!cur.school) cur.school = t;
+      else if (!cur.degree) cur.degree = toTitleCase(t);
+    }
+  }
+  save();
+
+  return entries.slice(0, 6);
+}
+
+// ─── Certifications extraction ────────────────────────────────────────────────
+
+const CERT_ISSUER_RX = /\b(?:google|amazon|aws|microsoft|oracle|cisco|pmi|isaca|comptia|scrum|linkedin|coursera|udemy|ibm|salesforce|red\s+hat|tableau|adobe|hubspot)\b/i;
+const CERT_DATE_RX = /^(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*[,\s]+)?\d{4}$/i;
+
+function extractCertifications(certSection: ResumeSection | undefined): CertificationEntry[] {
+  if (!certSection || certSection.lines.length === 0) return [];
+
+  const entries: CertificationEntry[] = [];
+  let cur: CertificationEntry | null = null;
+
+  const save = () => {
+    if (cur && cur.name && cur.name.length >= 3) entries.push(cur);
+    cur = null;
+  };
+
+  for (const line of certSection.lines) {
+    const t = line.trim();
+    if (!t || NOISE_LINE_RX.test(t)) continue;
+
+    // URL line → attach to current cert
+    if (/^https?:\/\//i.test(t)) {
+      if (cur) cur.link = t;
+      continue;
+    }
+
+    // Pure date line → attach to current cert
+    if (CERT_DATE_RX.test(t)) {
+      if (cur) cur.date = t;
+      continue;
+    }
+
+    // Date embedded at end of a line: "Cert Name, 2022" or "Cert Name | Jun 2022"
+    const trailingDate = /[,|]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*[,\s]+\d{4}|\d{4})\s*$/i.exec(t);
+    if (trailingDate) {
+      const name = t.slice(0, t.length - trailingDate[0].length).trim();
+      if (name.length >= 3) {
+        save();
+        cur = { name, date: trailingDate[1].trim() };
+        continue;
+      }
+    }
+
+    // Issuer-looking short line → attach to current cert
+    if (cur && !cur.issuer && t.split(/\s+/).length <= 8 && CERT_ISSUER_RX.test(t)) {
+      cur.issuer = t;
+      continue;
+    }
+
+    // New certification name
+    save();
+    cur = { name: t };
+  }
+  save();
+
+  return entries.slice(0, 15);
+}
+
+// ─── Languages extraction ─────────────────────────────────────────────────────
+
+const KNOWN_LANGUAGES = new Set([
+  "English", "Filipino", "Tagalog", "Cebuano", "Bisaya", "Ilocano", "Waray", "Hiligaynon",
+  "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Dutch",
+  "Chinese", "Mandarin", "Cantonese", "Japanese", "Korean", "Arabic", "Hebrew",
+  "Hindi", "Bengali", "Urdu", "Punjabi", "Tamil", "Telugu", "Marathi", "Kannada",
+  "Thai", "Vietnamese", "Indonesian", "Malay", "Burmese",
+  "Swedish", "Norwegian", "Danish", "Finnish", "Polish", "Czech", "Slovak",
+  "Romanian", "Hungarian", "Greek", "Turkish", "Ukrainian", "Bulgarian",
+  "Serbian", "Croatian", "Catalan", "Persian", "Swahili", "Yoruba", "Hausa",
+]);
+
+function extractLanguages(langSection: ResumeSection | undefined, allText: string): string[] {
+  const found = new Set<string>();
+
+  // From explicit language section (most reliable)
+  if (langSection && langSection.lines.length > 0) {
+    const sectionText = langSection.lines.join("\n");
+    const tokens = sectionText
+      .split(/[\n•·,|;\/\t\u2022\u2023\u25E6\u2043\u2013\u2014]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 1 && t.length < 40);
+
+    for (const token of tokens) {
+      // Strip proficiency descriptors
+      const cleaned = token
+        .replace(/\s*[-–—]\s*(?:native|fluent|proficient|intermediate|basic|beginner|advanced|conversational|working|professional|elementary|mother\s+tongue|first\s+language)\s*$/i, "")
+        .replace(/\s*\(.*?\)\s*/g, "")
+        .trim();
+
+      if (KNOWN_LANGUAGES.has(cleaned)) {
+        found.add(cleaned);
+      } else if (/^[A-Za-z\u00C0-\u024F][\w\u00C0-\u024F\s'-]{1,23}$/.test(cleaned) && cleaned.split(/\s+/).length <= 2) {
+        // Could be a language we don't know — accept short single/two-word values
+        const titled = toTitleCase(cleaned);
+        if (titled.length >= 3) found.add(titled);
+      }
+    }
+  }
+
+  // Fall back to scanning the full text for known languages (only when section is absent)
+  if (found.size === 0) {
+    Array.from(KNOWN_LANGUAGES).forEach((lang) => {
+      if (new RegExp(`\\b${lang}\\b`, "i").test(allText.slice(0, 4000))) {
+        found.add(lang);
+      }
+    });
+  }
+
+  return Array.from(found).slice(0, 12);
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function parseResumeFile(file: File): Promise<ExtractedCandidateProfile> {
@@ -890,6 +1229,9 @@ export async function parseResumeFile(file: File): Promise<ExtractedCandidatePro
   const lines    = rawText.split("\n").map((l) => l.trim()).filter(Boolean);
   const sections = splitIntoSections(lines);
   const expSec   = sections.find((s) => s.type === "experience");
+  const eduSec   = sections.find((s) => s.type === "education");
+  const certSec  = sections.find((s) => s.type === "certifications");
+  const langSec  = sections.find((s) => s.type === "languages");
   const skillSec = sections.filter((s) => s.type === "skills");
   const summSec  = sections.find((s) => s.type === "summary");
 
@@ -940,6 +1282,26 @@ export async function parseResumeFile(file: File): Promise<ExtractedCandidatePro
   const summary = extractSummary(summSec);
   if (summary) { extracted.summary = summary; extractedFields.push("summary"); }
 
+  // Work History
+  const workHistory = extractWorkHistory(expSec);
+  extracted.workHistory = workHistory;
+  if (workHistory.length > 0) extractedFields.push("workHistory");
+
+  // Education
+  const education = extractEducation(eduSec);
+  extracted.education = education;
+  if (education.length > 0) extractedFields.push("education");
+
+  // Certifications
+  const certifications = extractCertifications(certSec);
+  extracted.certifications = certifications;
+  if (certifications.length > 0) extractedFields.push("certifications");
+
+  // Languages
+  const languages = extractLanguages(langSec, rawText);
+  extracted.languages = languages;
+  if (languages.length > 0) extractedFields.push("languages");
+
   // Confidence
   const keyCount = [
     extracted.fullName, extracted.targetPosition, extracted.jobCategory,
@@ -960,6 +1322,10 @@ export async function parseResumeFile(file: File): Promise<ExtractedCandidatePro
     console.log("years:", extracted.yearsOfExperience || "(none)");
     console.log("seniority:", extracted.seniority);
     console.log("coreSkills:", extracted.coreSkills);
+    console.log("workHistory:", extracted.workHistory?.length ?? 0, "entries");
+    console.log("education:", extracted.education?.length ?? 0, "entries");
+    console.log("certifications:", extracted.certifications?.length ?? 0, "entries");
+    console.log("languages:", extracted.languages);
     console.log("confidence:", confidence);
     console.groupEnd();
   }
@@ -976,6 +1342,10 @@ export async function parseResumeFile(file: File): Promise<ExtractedCandidatePro
     coreSkills:        extracted.coreSkills        ?? [],
     secondarySkills:   extracted.secondarySkills   ?? [],
     summary:           extracted.summary           ?? "",
+    workHistory:       extracted.workHistory       ?? [],
+    education:         extracted.education         ?? [],
+    certifications:    extracted.certifications    ?? [],
+    languages:         extracted.languages         ?? [],
     confidence,
     extractedFields,
   };

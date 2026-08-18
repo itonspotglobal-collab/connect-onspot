@@ -1,0 +1,1965 @@
+# AUTO-FILL TALENT PROFILE FROM RESUME UPLOADED ANYWHERE
+
+You are working inside the existing **OnSpot / connect-onspot** project.
+
+We have already been consolidating resume handling so the Candidate has one canonical resume.
+
+Now implement the next phase:
+
+## Whenever a Talent uploads or replaces a resume from ANY supported Talent flow, automatically parse that resume and use it to populate the Talent's Candidate Profile.
+
+Resume uploads can currently happen from areas such as:
+
+1. Create Talent Account / Signup
+2. Find Best Matches onboarding
+3. Talent Profile
+4. Talent Profile Settings
+5. Get Hired / onboarding if still active
+
+All of these must use the SAME parsing + profile update pipeline.
+
+Do NOT implement separate resume parsing logic for each page.
+
+---
+
+# Main Goal
+
+The desired architecture is:
+
+```text
+Upload Resume Anywhere
+        ↓
+Save canonical Candidate resume
+        ↓
+Parse Resume
+        ↓
+Extract structured professional information
+        ↓
+Merge into SAME Candidate record
+        ↓
+Invalidate/update Candidate caches
+        ↓
+Talent Profile prefilled
+        ↓
+Talent Profile Settings prefilled
+        ↓
+Find Best Matches uses same profile
+```
+
+The resume should not only be attached.
+
+It should automatically populate the candidate's actual professional profile.
+
+---
+
+# IMPORTANT PRODUCT BEHAVIOR
+
+When a resume contains information such as:
+
+```text
+Phone: +63...
+Location: Cebu City, Philippines
+Title: Full Stack Developer
+Summary: ...
+Skills: React, TypeScript, Node.js
+Experience: Software Developer — Company A
+Education: BS Computer Engineering — University X
+Certification: AWS Certified...
+Languages: English, Filipino
+```
+
+the Candidate should automatically receive those values.
+
+Then:
+
+**Talent Profile** should show them.
+
+**Talent Profile Settings** should show them.
+
+The user should only need to:
+
+> Review and correct the imported information.
+
+They should not have to manually type information already present in their CV.
+
+---
+
+# TARGET FIELDS
+
+## Talent Profile
+
+Resume parsing should populate these Talent Profile areas where data exists:
+
+### About / Goal
+
+Populate the Candidate field currently used by the Talent Profile's:
+
+```text
+About
+```
+
+section.
+
+This will likely map from:
+
+```text
+Professional Summary
+Career Objective
+Professional Profile
+About Me
+Summary
+```
+
+in the resume.
+
+Use the existing Candidate field used by Talent Profile, likely:
+
+```ts
+summary
+```
+
+Do not create a second About field.
+
+---
+
+### Skills
+
+Populate:
+
+```text
+Skills
+```
+
+using the existing Candidate fields:
+
+```ts
+coreSkills
+secondarySkills
+```
+
+or the current canonical skills architecture.
+
+Extract:
+
+* technical skills
+* tools/software
+* platforms
+* professional skills
+* relevant functional skills
+
+Examples:
+
+```text
+React
+TypeScript
+Node.js
+PostgreSQL
+SAP
+Microsoft Excel
+Customer Support
+Project Management
+```
+
+Normalize duplicates case-insensitively.
+
+For example:
+
+```text
+React
+react
+REACT
+```
+
+must become one skill.
+
+---
+
+### Experience
+
+Populate the existing Talent Profile:
+
+```text
+Experience
+```
+
+section.
+
+Use the existing candidate work-history structure.
+
+Do not invent another work experience system.
+
+Resume parser should extract structured entries similar to:
+
+```ts
+{
+  jobTitle: string;
+  company: string;
+  duration: string;
+  responsibilities: string;
+}
+```
+
+If the Candidate schema uses a slightly different structure, map into the existing schema instead.
+
+Extract where possible:
+
+* job title
+* company
+* start/end dates or duration
+* responsibilities
+* accomplishments
+
+---
+
+### Education
+
+Populate:
+
+```text
+Education
+```
+
+on Talent Profile.
+
+Extract structured data such as:
+
+```ts
+{
+  school: string;
+  degree: string;
+  yearStart?: string;
+  yearEnd?: string;
+}
+```
+
+or whatever structure is already used by the Candidate schema.
+
+Do NOT introduce another education table/field if Candidate already has one.
+
+---
+
+### Certifications
+
+Populate:
+
+```text
+Certifications
+```
+
+on Talent Profile.
+
+Extract:
+
+```ts
+{
+  name: string;
+  issuer?: string;
+  date?: string;
+  link?: string;
+}
+```
+
+where available.
+
+Use the Candidate's existing certifications field/structure.
+
+---
+
+# TALENT PROFILE SETTINGS TARGET FIELDS
+
+The parsed resume must also pre-fill the existing Settings form.
+
+## Basic Information
+
+### Phone Number
+
+Map resume:
+
+```text
+phone
+mobile
+contact number
+telephone
+```
+
+to the existing Candidate field:
+
+```ts
+phone
+```
+
+which Profile Settings currently exposes as:
+
+```ts
+phoneNumber
+```
+
+---
+
+### Location / Address
+
+Map parsed resume location/address into:
+
+```ts
+candidate.location
+```
+
+Profile Settings must then automatically display it.
+
+Do not create a separate settings-only location.
+
+---
+
+### Language
+
+Extract the Languages section when present.
+
+Examples:
+
+```text
+English
+Filipino
+Cebuano
+Spanish
+Japanese
+```
+
+Store languages using the existing Candidate preferences architecture.
+
+Profile Settings currently stores languages inside:
+
+```ts
+candidate.preferences.languages
+```
+
+Preserve this architecture.
+
+Do NOT add another Candidate language column just for resume parsing.
+
+---
+
+# Professional Details
+
+### Professional Title
+
+Extract the most appropriate current professional role/title.
+
+Examples:
+
+```text
+Full Stack Developer
+Software Engineer
+Virtual Assistant
+Customer Support Specialist
+Accountant
+```
+
+Persist to the Candidate field already used for the professional title:
+
+```ts
+targetPosition
+```
+
+Profile Settings already maps that field into:
+
+```ts
+title
+```
+
+Talent Profile must display the same value.
+
+---
+
+### Professional Bio
+
+Map resume professional summary/profile/objective into:
+
+```ts
+candidate.summary
+```
+
+Profile Settings maps this into:
+
+```ts
+bio
+```
+
+Talent Profile maps it into About.
+
+Therefore:
+
+```text
+Resume Professional Summary
+        ↓
+candidate.summary
+        ↓
+Talent Profile About
+        ↓
+Settings Professional Bio
+```
+
+ONE value.
+
+---
+
+# Skills & Expertise
+
+Populate the existing Settings Skills & Expertise area from:
+
+```ts
+candidate.coreSkills
+candidate.secondarySkills
+```
+
+The same parsed skills must show in Talent Profile.
+
+There must not be:
+
+```text
+Talent Profile skills
+```
+
+and a separate:
+
+```text
+Settings skills
+```
+
+They are views of the SAME Candidate skills.
+
+---
+
+# 1. EXPAND THE EXISTING RESUME PARSER
+
+Inspect:
+
+```text
+client/src/lib/resumeParser.ts
+```
+
+There is already:
+
+```ts
+parseResumeFile()
+```
+
+and:
+
+```ts
+ExtractedCandidateProfile
+```
+
+The parser currently handles fields including:
+
+```ts
+fullName
+email
+phone
+location
+targetPosition
+jobCategory
+yearsOfExperience
+seniority
+coreSkills
+secondarySkills
+summary
+```
+
+DO NOT create `resumeParser2.ts`.
+
+Expand the existing parser.
+
+Extend `ExtractedCandidateProfile` conceptually to include:
+
+```ts
+export interface ExtractedCandidateProfile {
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+
+  targetPosition: string;
+  jobCategory: string;
+  yearsOfExperience: string;
+  seniority: string;
+
+  coreSkills: string[];
+  secondarySkills: string[];
+
+  summary: string;
+
+  languages: string[];
+
+  workHistory: Array<{
+    jobTitle: string;
+    company: string;
+    duration: string;
+    responsibilities: string;
+  }>;
+
+  education: Array<{
+    school: string;
+    degree: string;
+    yearStart?: string;
+    yearEnd?: string;
+  }>;
+
+  certifications: Array<{
+    name: string;
+    issuer?: string;
+    date?: string;
+    link?: string;
+  }>;
+
+  confidence: "high" | "partial" | "low";
+  extractedFields: string[];
+}
+```
+
+Adapt types to the actual Candidate schema.
+
+Do not blindly create incompatible structures.
+
+---
+
+# 2. REUSE FIND BEST MATCHES PARSING
+
+Inspect:
+
+```text
+client/src/pages/FindBestMatches.tsx
+```
+
+Find Best Matches already imports:
+
+```ts
+parseResumeFile
+```
+
+and:
+
+```ts
+ExtractedCandidateProfile
+```
+
+It also already has candidate onboarding fields such as:
+
+```ts
+fullName
+phone
+location
+targetPosition
+coreSkills
+secondarySkills
+workHistory
+summary
+```
+
+Use this as the basis of the shared parsing behavior.
+
+Do NOT leave Find Best Matches as the only place where parsing fills candidate data.
+
+Move reusable behavior into a shared service/hook.
+
+---
+
+# 3. CREATE ONE SHARED "PARSE AND APPLY RESUME" PIPELINE
+
+Strongly prefer a reusable service such as:
+
+```text
+client/src/lib/applyResumeToCandidate.ts
+```
+
+or an appropriate shared hook/service.
+
+Conceptually:
+
+```ts
+async function parseAndApplyResumeToCandidate({
+  file,
+  candidateId,
+  token,
+}) {
+  const extracted = await parseResumeFile(file);
+
+  const candidate = await fetchCandidate(candidateId);
+
+  const merged = mergeResumeWithCandidate(
+    candidate,
+    extracted,
+  );
+
+  await updateCandidate(candidateId, merged);
+
+  return {
+    extracted,
+    candidate: merged,
+  };
+}
+```
+
+However, if server-side parsing already exists and is more reliable, move this pipeline to the server.
+
+Prefer one shared server/client flow rather than duplicating it.
+
+---
+
+# 4. PARSE AFTER EVERY SUCCESSFUL RESUME UPLOAD
+
+All upload entry points must trigger the shared pipeline.
+
+Examples:
+
+```text
+Talent Profile → Replace Resume
+```
+
+must do:
+
+```text
+Upload file
+↓
+Candidate resume persisted
+↓
+Parse file
+↓
+Apply extracted profile fields
+↓
+Refresh Candidate
+```
+
+Likewise:
+
+```text
+Profile Settings → Upload Resume
+```
+
+must do exactly the same.
+
+Likewise:
+
+```text
+Find Best Matches → Upload Resume
+```
+
+must use the same parser and Candidate field mapping.
+
+Likewise signup.
+
+---
+
+# 5. IMPORTANT MERGE RULE — DO NOT DESTROY EXISTING PROFILE DATA
+
+A resume replacement must NOT blindly erase high-quality existing profile data.
+
+Implement a safe merge strategy.
+
+## Empty Candidate field
+
+If Candidate field is empty:
+
+```text
+Candidate phone = empty
+Resume phone = +63...
+```
+
+then:
+
+```text
+candidate.phone = resume phone
+```
+
+---
+
+## Candidate already has data, resume also has data
+
+For onboarding/new account flow, parsed resume data can populate the field automatically.
+
+For an EXISTING Candidate replacing their resume, be careful.
+
+Do NOT automatically wipe manually curated profile content with empty parser results.
+
+At minimum:
+
+```ts
+parsed non-empty && existing empty
+    → use parsed
+
+parsed empty
+    → preserve existing
+```
+
+For existing non-empty fields, choose a consistent product behavior.
+
+Recommended:
+
+### Contact/title/basic structured fields
+
+A newly uploaded resume can update fields such as:
+
+```text
+phone
+location
+targetPosition
+skills
+experience
+education
+certifications
+```
+
+if the parser has a confident non-empty value.
+
+### Rich user-edited fields
+
+For:
+
+```text
+summary / About / Professional Bio
+```
+
+do not replace a meaningful existing manual profile with a low-confidence extraction.
+
+Prefer existing manually edited content unless:
+
+* existing field is empty, or
+* parser confidence is high and product intentionally wants resume replacement to refresh it.
+
+Document the chosen behavior.
+
+---
+
+# 6. NEVER REPLACE DATA WITH EMPTY VALUES
+
+This is mandatory.
+
+Bad:
+
+```ts
+candidate.phone = extracted.phone;
+```
+
+if:
+
+```ts
+extracted.phone === ""
+```
+
+because it would delete an existing phone number.
+
+Use merge behavior like:
+
+```ts
+phone:
+  extracted.phone?.trim()
+    ? extracted.phone.trim()
+    : candidate.phone
+```
+
+Apply the same principle everywhere.
+
+---
+
+# 7. STRUCTURED ARRAY MERGE
+
+For:
+
+```text
+skills
+experience
+education
+certifications
+languages
+```
+
+do not blindly create duplicate entries.
+
+---
+
+## Skills
+
+Deduplicate case-insensitively.
+
+Example:
+
+```text
+React
+react
+REACT
+```
+
+→
+
+```text
+React
+```
+
+---
+
+## Experience
+
+Avoid duplicating an identical job when a resume is re-uploaded.
+
+A practical identity can be:
+
+```text
+normalized job title
++ normalized company
+```
+
+and optionally overlapping dates.
+
+---
+
+## Education
+
+Avoid duplicates based on:
+
+```text
+school
++ degree
+```
+
+---
+
+## Certifications
+
+Avoid duplicates based on:
+
+```text
+certification name
++ issuer
+```
+
+---
+
+## Languages
+
+Deduplicate case-insensitively.
+
+---
+
+# 8. EXPERIENCE PARSING
+
+Expand the parser to identify common resume sections:
+
+```text
+Work Experience
+Professional Experience
+Employment History
+Career History
+Experience
+```
+
+Extract each job independently.
+
+Support common layouts such as:
+
+```text
+Software Developer
+Alliance Software Inc.
+2022 - 2024
+
+- Developed...
+- Worked with...
+```
+
+and:
+
+```text
+Software Developer | Alliance Software Inc.
+Jan 2022 – Aug 2024
+```
+
+Map into the existing Candidate workHistory field.
+
+---
+
+# 9. EDUCATION PARSING
+
+Support headings:
+
+```text
+Education
+Academic Background
+Educational Background
+Qualifications
+```
+
+Extract:
+
+```text
+Degree / Course
+School / University
+Start year
+End year / graduation year
+```
+
+Do not treat company names from experience as schools.
+
+---
+
+# 10. CERTIFICATION PARSING
+
+Support:
+
+```text
+Certifications
+Certificates
+Licenses & Certifications
+Professional Certifications
+Training & Certifications
+```
+
+Capture certification name first.
+
+Issuer/date are optional.
+
+Do not discard a certification merely because issuer/date cannot be extracted.
+
+---
+
+# 11. LANGUAGE PARSING
+
+Support:
+
+```text
+Languages
+Language Proficiency
+Languages Spoken
+```
+
+Examples:
+
+```text
+English — Fluent
+Filipino — Native
+Japanese — Basic
+```
+
+Candidate preferences currently only need the language names unless the existing schema supports proficiency.
+
+Store:
+
+```ts
+["English", "Filipino", "Japanese"]
+```
+
+If proficiency already has a supported structure, preserve it.
+
+Do not invent one unnecessarily.
+
+---
+
+# 12. ABOUT / GOAL PARSING
+
+The screenshot currently shows an empty:
+
+```text
+About
+```
+
+section.
+
+Extract from common headings:
+
+```text
+Professional Summary
+Summary
+Objective
+Career Objective
+Professional Profile
+About Me
+Profile
+```
+
+Persist into the Candidate field used by About:
+
+```ts
+summary
+```
+
+The same value must appear in Settings as:
+
+```text
+Professional Bio
+```
+
+---
+
+# 13. TITLE EXTRACTION
+
+Professional Title should prefer:
+
+1. explicit headline/title beneath the person's name
+2. resume professional title
+3. most recent job title
+4. inferred role only as fallback
+
+Avoid using:
+
+```text
+company name
+university
+section heading
+email
+address
+```
+
+as the title.
+
+Persist to:
+
+```ts
+candidate.targetPosition
+```
+
+---
+
+# 14. PHONE EXTRACTION
+
+Preserve the current phone parser improvements.
+
+Accept common formats including:
+
+```text
++63 917 123 4567
+0917 123 4567
+(032) ...
+```
+
+Persist in the existing Candidate phone field.
+
+Profile Settings must immediately show it.
+
+Do not reject a valid international number simply because it is not US format.
+
+---
+
+# 15. LOCATION EXTRACTION
+
+Extract actual candidate address/location.
+
+Prefer:
+
+```text
+City, Country
+City, Province
+full address
+```
+
+but avoid mistakenly extracting:
+
+```text
+company location
+school location
+job location
+```
+
+when a personal contact/address section exists.
+
+Persist into:
+
+```ts
+candidate.location
+```
+
+---
+
+# 16. SAVE EVERYTHING TO THE SAME CANDIDATE
+
+This is critical.
+
+Do NOT only populate local FindBestMatches state.
+
+Do NOT only populate React Hook Form values.
+
+The extracted values must be persisted to the Candidate.
+
+Conceptually:
+
+```ts
+PATCH /api/candidates/:candidateId
+```
+
+with the supported existing fields.
+
+Something conceptually like:
+
+```ts
+{
+  phone: extracted.phone,
+  location: extracted.location,
+  targetPosition: extracted.targetPosition,
+  summary: extracted.summary,
+
+  coreSkills: extracted.coreSkills,
+  secondarySkills: extracted.secondarySkills,
+
+  workHistory: extracted.workHistory,
+  education: extracted.education,
+  certifications: extracted.certifications,
+
+  preferences: {
+    ...existingPreferences,
+    languages: extracted.languages,
+  },
+}
+```
+
+IMPORTANT:
+
+Merge existing preferences.
+
+Do not overwrite:
+
+```text
+timezone
+rateAmount
+rateCurrency
+workSetup
+shift
+availability
+other preferences
+```
+
+when only updating languages.
+
+Use:
+
+```ts
+preferences: {
+  ...candidate.preferences,
+  languages: mergedLanguages,
+}
+```
+
+---
+
+# 17. MAP TO TALENT PROFILE SETTINGS
+
+The final candidate data should naturally map into the existing Settings fields:
+
+```text
+Candidate.phone
+    ↓
+Basic Information → Phone Number
+
+Candidate.location
+    ↓
+Basic Information → Location / Address
+
+Candidate.preferences.languages
+    ↓
+Basic Information → Languages
+
+Candidate.targetPosition
+    ↓
+Professional Details → Professional Title
+
+Candidate.summary
+    ↓
+Professional Details → Professional Bio
+
+Candidate.coreSkills / secondarySkills
+    ↓
+Skills & Expertise
+```
+
+Do not duplicate these values in another Settings-only storage system.
+
+---
+
+# 18. MAP TO TALENT PROFILE
+
+The same Candidate fields should render as:
+
+```text
+candidate.summary
+        ↓
+About
+
+candidate.coreSkills + secondarySkills
+        ↓
+Skills
+
+candidate.workHistory
+        ↓
+Experience
+
+candidate.education
+        ↓
+Education
+
+candidate.certifications
+        ↓
+Certifications
+```
+
+No second copy.
+
+---
+
+# 19. ABOUT / GOAL CLARIFICATION
+
+If Talent Profile has both:
+
+```text
+About
+More About Me
+```
+
+do NOT automatically dump the resume summary into both.
+
+Recommended mapping:
+
+```text
+Resume Summary / Objective
+        ↓
+About / candidate.summary
+```
+
+Keep:
+
+```text
+More About Me
+```
+
+as a separate manually authored field unless the resume contains a clearly corresponding field.
+
+Do not duplicate text.
+
+---
+
+# 20. FIND BEST MATCHES MUST USE THE SAME PERSISTED PROFILE
+
+Find Best Matches currently has its own `CandidateProfile` UI state.
+
+Keep that for the onboarding form UX, but the final accepted data must persist into the canonical Candidate.
+
+After parsing:
+
+```text
+resume
+↓
+prefill FindBestMatches Profile step
+```
+
+and when accepted/continued:
+
+```text
+FindBestMatches data
+↓
+Candidate persisted
+↓
+Talent Profile
+↓
+Profile Settings
+```
+
+If Find Best Matches already persists candidate fields, extend that mapping for:
+
+```text
+languages
+experience
+education
+certifications
+```
+
+where supported.
+
+---
+
+# 21. RESUME UPLOAD FROM TALENT PROFILE
+
+Current flow:
+
+```text
+Talent Profile
+→ Replace Resume
+```
+
+Extend it to:
+
+```text
+Replace Resume
+↓
+save resume
+↓
+show "Analyzing resume..."
+↓
+parse
+↓
+merge candidate
+↓
+refresh candidate
+↓
+Talent Profile sections update automatically
+```
+
+For example after upload:
+
+```text
+Skills: empty
+Experience: empty
+About: empty
+```
+
+may become:
+
+```text
+Skills:
+React
+TypeScript
+PostgreSQL
+
+Experience:
+Software Developer — Alliance Software Inc.
+
+About:
+Full Stack Developer with...
+```
+
+without a page refresh.
+
+---
+
+# 22. RESUME UPLOAD FROM PROFILE SETTINGS
+
+Same requirement.
+
+After:
+
+```text
+Settings → Documents → Upload/Replace Resume
+```
+
+automatically populate:
+
+```text
+Basic Information
+Professional Details
+Skills & Expertise
+```
+
+and the Talent Profile sections.
+
+Do not force the user to click Save merely to persist data that was already imported from the resume.
+
+The resume-import pipeline itself should persist extracted values.
+
+The user can then manually correct them afterward.
+
+---
+
+# 23. SIGNUP FLOW
+
+During Signup/Create Talent Account:
+
+```text
+Resume
+↓
+Candidate created/resolved
+↓
+Resume saved
+↓
+Resume parsed
+↓
+Candidate fields saved
+↓
+Talent account completed
+```
+
+When they first open Talent Profile:
+
+the information should already be there.
+
+When they first open Profile Settings:
+
+the fields should already be populated.
+
+---
+
+# 24. PROCESSING UI
+
+After resume upload, display a clear state:
+
+```text
+Uploading resume...
+```
+
+then:
+
+```text
+Analyzing your resume...
+```
+
+then on success:
+
+```text
+Resume analyzed successfully.
+Your profile has been updated.
+```
+
+Do not freeze the page.
+
+Do not show "No resume uploaded" during processing.
+
+---
+
+# 25. PARTIAL EXTRACTION IS OK
+
+Resume parsing does not need every field to succeed.
+
+Example:
+
+```text
+Phone ✓
+Location ✓
+Title ✓
+Skills ✓
+Experience ✓
+Education ✓
+Certifications ✗
+Languages ✗
+```
+
+Apply the fields that were extracted.
+
+Preserve existing data for the rest.
+
+Do not make the whole import fail because one section could not be parsed.
+
+---
+
+# 26. PARSING FAILURE MUST NOT REMOVE RESUME
+
+If:
+
+```text
+resume upload succeeds
+```
+
+but:
+
+```text
+resume parsing fails
+```
+
+keep the uploaded resume.
+
+Show:
+
+> Your resume was uploaded successfully, but we couldn't extract all profile details. You can complete them manually.
+
+Do not roll back the file upload.
+
+---
+
+# 27. PARSER QUALITY
+
+Do not use naive line-index assumptions.
+
+Resume formats vary heavily.
+
+Improve the existing parser's section detection and normalization.
+
+Use:
+
+```text
+section headings
+date patterns
+contact patterns
+known title patterns
+skill dictionaries
+context
+```
+
+to extract information.
+
+Reuse the existing `resumeParser.ts` architecture.
+
+Do not add a completely separate parser unless absolutely necessary.
+
+---
+
+# 28. EXISTING RESUME PARSER LIMITATION
+
+The current `ExtractedCandidateProfile` does not yet contain:
+
+```text
+languages
+education
+certifications
+structured work history
+```
+
+Expand it.
+
+This is necessary to support the full Talent Profile auto-fill requirement.
+
+---
+
+# 29. QUERY CACHE UPDATE
+
+After applying resume data, update/invalidate all active Candidate queries.
+
+Use the shared candidate query/cache mechanism implemented for resume synchronization.
+
+Make sure these pages update immediately:
+
+```text
+Talent Profile
+Profile Settings
+Find Best Matches
+Top Navigation profile strength
+Get Hired if active
+```
+
+Do not require:
+
+```ts
+window.location.reload()
+```
+
+---
+
+# 30. PROFILE COMPLETION MUST UPDATE
+
+Once fields are imported:
+
+```text
+Phone
+Location
+Headline
+Summary
+Skills
+Experience
+Education
+Resume
+```
+
+the Profile Strength percentage should automatically recalculate using the existing shared profile completion module.
+
+Do not manually increment the percentage.
+
+The Candidate data should drive it.
+
+---
+
+# 31. DO NOT MARK UNEXTRACTED DATA AS COMPLETE
+
+Example:
+
+Resume has no education.
+
+Do not create:
+
+```text
+Education: N/A
+```
+
+just to improve completion.
+
+Leave the actual field empty.
+
+Profile completion should remain accurate.
+
+---
+
+# 32. PRESERVE USER CHANGES
+
+A user may:
+
+1. upload resume
+2. manually improve their About
+3. manually add skills
+4. later replace resume
+
+The new resume import must not unnecessarily destroy manual improvements.
+
+Use non-destructive merging.
+
+Especially do not wipe:
+
+```text
+More About Me
+preferences
+manually added skills
+existing certifications
+existing experience
+```
+
+with empty or lower-quality parsed values.
+
+---
+
+# 33. FILES TO INSPECT
+
+Before implementation inspect at minimum:
+
+```text
+client/src/lib/resumeParser.ts
+client/src/pages/FindBestMatches.tsx
+client/src/pages/TalentProfile.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/pages/GetHired.tsx
+
+client/src/hooks/useCandidateProfileSettings.ts
+client/src/hooks/useTalentProfile.ts
+
+shared/schema.ts
+
+server/routes/candidateMedia.ts
+server candidate PATCH route
+server storage/updateCandidate implementation
+```
+
+Search for:
+
+```text
+workHistory
+education
+certifications
+coreSkills
+secondarySkills
+preferences
+languages
+summary
+targetPosition
+parseResumeFile
+ExtractedCandidateProfile
+resumeUrl
+resumeFileName
+```
+
+---
+
+# 34. DO NOT REDESIGN THE UI
+
+Keep existing:
+
+```text
+Talent Profile
+Profile Settings
+Find Best Matches
+Signup
+```
+
+visual designs.
+
+This is primarily a data flow + parsing feature.
+
+Only add:
+
+```text
+Analyzing resume...
+Profile updated
+```
+
+states where needed.
+
+---
+
+# 35. ACCEPTANCE TEST — EMPTY PROFILE
+
+Create or use a Candidate whose profile is mostly empty.
+
+Resume contains:
+
+```text
+Name: Test Candidate
+
+Phone:
++63 917 123 4567
+
+Location:
+Cebu City, Philippines
+
+Title:
+Full Stack Developer
+
+Professional Summary:
+Full Stack Developer with experience building web applications.
+
+Skills:
+React
+TypeScript
+Node.js
+PostgreSQL
+
+Experience:
+Software Developer
+ABC Software
+2023 - Present
+
+Education:
+BS Computer Engineering
+Example University
+2018 - 2022
+
+Certifications:
+AWS Certified Cloud Practitioner
+
+Languages:
+English
+Filipino
+```
+
+Upload the resume from **Talent Profile**.
+
+Expected Talent Profile:
+
+```text
+About
+Full Stack Developer with experience building web applications.
+
+Skills
+React
+TypeScript
+Node.js
+PostgreSQL
+
+Experience
+Software Developer — ABC Software
+
+Education
+BS Computer Engineering — Example University
+
+Certifications
+AWS Certified Cloud Practitioner
+```
+
+Expected Settings:
+
+```text
+Phone Number
++63 917 123 4567
+
+Location
+Cebu City, Philippines
+
+Languages
+English
+Filipino
+
+Professional Title
+Full Stack Developer
+
+Professional Bio
+Full Stack Developer with experience building web applications.
+
+Skills & Expertise
+React
+TypeScript
+Node.js
+PostgreSQL
+```
+
+No manual refresh.
+
+---
+
+# 36. ACCEPTANCE TEST — SETTINGS UPLOAD
+
+Start with empty profile.
+
+Upload the same resume through:
+
+```text
+Profile Settings → Documents
+```
+
+Expected:
+
+All fields listed above populate.
+
+Navigate to Talent Profile.
+
+They must already appear.
+
+---
+
+# 37. ACCEPTANCE TEST — FIND BEST MATCHES
+
+Upload the resume using:
+
+```text
+Find Best Matches
+```
+
+Expected:
+
+The Find Best Matches Profile step is prefilled.
+
+Complete onboarding.
+
+Open Talent Profile.
+
+Expected:
+
+```text
+About ✓
+Skills ✓
+Experience ✓
+Education ✓
+Certifications ✓
+```
+
+Open Settings.
+
+Expected:
+
+```text
+Phone ✓
+Location ✓
+Languages ✓
+Professional Title ✓
+Professional Bio ✓
+Skills ✓
+```
+
+---
+
+# 38. ACCEPTANCE TEST — SIGNUP
+
+Create a new Talent account and upload the resume during signup.
+
+After account creation:
+
+Open Talent Profile.
+
+The parsed information must already exist.
+
+Open Profile Settings.
+
+The same fields must already be populated.
+
+---
+
+# 39. ACCEPTANCE TEST — PRESERVE EXISTING MANUAL DATA
+
+Existing Candidate:
+
+```text
+About:
+A carefully written custom bio.
+
+Skill:
+React
+```
+
+New resume contains:
+
+```text
+React
+Node.js
+```
+
+and parser fails to extract summary.
+
+Expected:
+
+```text
+About:
+A carefully written custom bio.
+```
+
+must remain.
+
+Skills should become:
+
+```text
+React
+Node.js
+```
+
+No duplicate React.
+
+---
+
+# 40. ACCEPTANCE TEST — PROFILE STRENGTH
+
+Before upload:
+
+```text
+25%
+```
+
+After resume import populates valid fields:
+
+```text
+Summary
+Skills
+Experience
+Education
+etc.
+```
+
+the shared completion percentage should increase automatically according to the existing completion rules.
+
+Do not hardcode a new percentage.
+
+---
+
+# FINAL ARCHITECTURE
+
+The final system should conceptually be:
+
+```text
+                       RESUME
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+      Signup        Talent Profile       Settings
+        │                 │                 │
+        └─────────────────┼─────────────────┘
+                          │
+                  SAVE CANDIDATE RESUME
+                          │
+                          ▼
+                 SHARED RESUME PARSER
+                          │
+                          ▼
+               EXTRACTED PROFILE DATA
+                          │
+                          ▼
+                    SAME CANDIDATE
+             ┌────────────┼────────────┐
+             │            │            │
+          Summary       Skills      Experience
+          Phone         Location    Education
+          Title         Languages   Certifications
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+            Talent Profile + Settings
+```
+
+There must be:
+
+**ONE resume.
+ONE parser.
+ONE Candidate profile.
+Multiple pages displaying the same data.**
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. Fields added to `ExtractedCandidateProfile`.
+2. How experience parsing works.
+3. How education parsing works.
+4. How certifications parsing works.
+5. How languages parsing works.
+6. Exact Candidate fields each parsed value maps to.
+7. Merge strategy for existing manually entered data.
+8. Resume upload entry points now using the shared pipeline.
+9. Files changed.
+10. Tests run.
+11. Confirmation that uploading from Talent Profile updates Settings.
+12. Confirmation that uploading from Settings updates Talent Profile.
+13. Confirmation that Find Best Matches and signup use the same profile data.
+14. Confirmation that Profile Strength updates automatically.

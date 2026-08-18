@@ -57,6 +57,7 @@ import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
 import { queryClient } from "@/lib/queryClient";
 import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
+import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -239,6 +240,7 @@ export default function ProfileSettings() {
 
   // ── Resume & video (synced with Talent Profile via candidates table) ─────
   const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeAnalyzing, setResumeAnalyzing] = useState(false);
   const [resumeDeleting,  setResumeDeleting]  = useState(false);
   const [videoUploading,  setVideoUploading]  = useState(false);
   const [videoDeleting,   setVideoDeleting]   = useState(false);
@@ -279,12 +281,14 @@ export default function ProfileSettings() {
   const uploadResume = async (file: File) => {
     if (!candidateId) return;
     setResumeUploading(true);
+    let uploadedOk = false;
+    const token = getAuthHeader().replace(/^Bearer\s+/i, "");
     try {
       const fd = new FormData();
       fd.append("resume", file);
       const res = await fetch(`/api/candidates/${candidateId}/resume`, {
         method: "POST",
-        headers: { Authorization: getAuthHeader() },
+        headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
       if (!res.ok) {
@@ -295,13 +299,49 @@ export default function ProfileSettings() {
       // Immediately patch all candidate caches with the confirmed server values so
       // TalentProfile shows the new filename without a hard refresh.
       setCandidateResumeCache(queryClient, candidateId, result);
-      // Background invalidation — triggers a server refetch for verification.
-      void invalidateCandidateQueries(queryClient, candidateId);
-      toast({ title: "Resume saved", description: "Your resume has been updated." });
+      uploadedOk = true;
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      return;
     } finally {
       setResumeUploading(false);
+    }
+
+    if (!uploadedOk) return;
+
+    // ── Parse resume and apply extracted fields to the Candidate profile ────
+    setResumeAnalyzing(true);
+    try {
+      const { appliedFields, parseError } = await applyResumeToCandidate({
+        file,
+        candidateId,
+        token,
+        queryClient,
+      });
+
+      if (parseError) {
+        toast({
+          title: "Resume saved",
+          description: "Your resume was uploaded, but we couldn't extract all profile details. You can complete them manually.",
+        });
+      } else if (appliedFields.length > 0) {
+        const FIELD_LABELS: Record<string, string> = {
+          phone: "Phone", location: "Location", targetPosition: "Professional Title",
+          summary: "Bio", coreSkills: "Core Skills", secondarySkills: "Skills",
+          workHistory: "Experience", education: "Education",
+          certifications: "Certifications", languages: "Languages",
+        };
+        toast({
+          title: "Profile updated from resume",
+          description: `Fields populated: ${appliedFields.map((f) => FIELD_LABELS[f] ?? f).filter(Boolean).join(", ")}`,
+        });
+      } else {
+        toast({ title: "Resume saved", description: "Your resume has been updated." });
+      }
+    } catch {
+      toast({ title: "Resume saved", description: "Saved. Profile auto-fill encountered an issue — you can update fields manually." });
+    } finally {
+      setResumeAnalyzing(false);
     }
   };
 
@@ -1239,17 +1279,19 @@ export default function ProfileSettings() {
                       />
                       <button
                         type="button"
-                        disabled={resumeUploading}
+                        disabled={resumeUploading || resumeAnalyzing}
                         onClick={() => resumeFileInputRef.current?.click()}
                         className="w-full inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-60"
                         style={{
                           height: 44, borderRadius: 11, fontSize: 14,
                           border: `1.5px solid ${I}`, background: "transparent", color: I,
-                          cursor: resumeUploading ? "not-allowed" : "pointer",
+                          cursor: (resumeUploading || resumeAnalyzing) ? "not-allowed" : "pointer",
                         }}
                       >
                         {resumeUploading
                           ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
+                          : resumeAnalyzing
+                          ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Analyzing resume…</>
                           : <><Upload style={{ width: 15, height: 15 }} /> {(candidate as any)?.resumeFileName ? "Replace Resume" : "Upload Resume (PDF, DOC, DOCX — max 10 MB)"}</>}
                       </button>
                     </div>

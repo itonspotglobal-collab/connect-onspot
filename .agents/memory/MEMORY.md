@@ -18,3 +18,4 @@
 - [Hiring pipeline — Phase 2 (offers)](hiring-pipeline-phase2.md) — engagement snapshot from jobs, mismatch flag rules, talent expectation lives in candidates.preferences, ownership + race patterns.
 - [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — contract endpoints (admin-only create/sign/void + talent view); OnSpot countersign triggers hired; FK delete order on cleanup.
 - [Status rename audit](status-rename-audit.md) — 'submitted' → 'new' canonical rename; all write paths, name_reveal system, test files, and platform_settings migration fully closed.
+- [Resume auto-fill pipeline](resume-autofill-pipeline.md) — shared applyResumeToCandidate.ts calls after every upload; parser extended with workHistory/education/certifications/languages; merge is non-destructive (summary preserves manual edits).

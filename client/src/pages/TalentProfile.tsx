@@ -21,6 +21,7 @@ import {
   clearTalentAuth,
 } from "@/components/TalentLoginModal";
 import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
+import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -712,6 +713,7 @@ export default function TalentProfile() {
 
   // ── Resume & video upload state ───────────────────────────────────────────
   const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeAnalyzing, setResumeAnalyzing] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoDeleting, setVideoDeleting] = useState(false);
   // 'idle' | 'camera' | 'recording' | 'recorded'
@@ -844,15 +846,14 @@ export default function TalentProfile() {
   async function handleResumeUpload(file: File) {
     if (!id) return;
     setResumeUploading(true);
+    let uploadedOk = false;
+    const token = talentAuth?.token || localStorage.getItem("onspot_jwt_token") || "";
     try {
       const formData = new FormData();
       formData.append("resume", file);
-      const authHeader = talentAuth?.token
-        ? `Bearer ${talentAuth.token}`
-        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
       const res = await fetch(`/api/candidates/${id}/resume`, {
         method: "POST",
-        headers: { Authorization: authHeader },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       if (!res.ok) {
@@ -863,13 +864,49 @@ export default function TalentProfile() {
       // Immediately patch all candidate caches with the server-confirmed values so the
       // new filename appears at once — prevents the "disappearing filename" during replace.
       setCandidateResumeCache(qc, id, result);
-      // Background invalidation — triggers a server refetch without blocking the toast.
-      void invalidateCandidateQueries(qc, id);
-      toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
+      uploadedOk = true;
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message || "Could not upload resume.", variant: "destructive" });
+      return;
     } finally {
       setResumeUploading(false);
+    }
+
+    if (!uploadedOk) return;
+
+    // ── Parse resume and apply extracted fields to the Candidate profile ────
+    setResumeAnalyzing(true);
+    try {
+      const { appliedFields, parseError } = await applyResumeToCandidate({
+        file,
+        candidateId: id,
+        token,
+        queryClient: qc,
+      });
+
+      if (parseError) {
+        toast({
+          title: "Resume uploaded",
+          description: "Your resume was saved, but we couldn't extract profile details. You can complete them manually.",
+        });
+      } else if (appliedFields.length > 0) {
+        toast({
+          title: "Profile updated from resume",
+          description: `Updated: ${appliedFields.map((f) => ({
+            fullName: "Name", phone: "Phone", location: "Location",
+            targetPosition: "Title", summary: "About", coreSkills: "Core Skills",
+            secondarySkills: "Skills", workHistory: "Experience",
+            education: "Education", certifications: "Certifications",
+            languages: "Languages",
+          }[f] ?? f)).filter(Boolean).join(", ")}`,
+        });
+      } else {
+        toast({ title: "Resume uploaded", description: "Your resume has been saved to your profile." });
+      }
+    } catch {
+      toast({ title: "Resume uploaded", description: "Saved. Profile auto-fill encountered an issue — you can update fields manually." });
+    } finally {
+      setResumeAnalyzing(false);
     }
   }
 
@@ -1735,12 +1772,14 @@ export default function TalentProfile() {
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={resumeUploading}
+                      disabled={resumeUploading || resumeAnalyzing}
                       onClick={() => resumeInputRef.current?.click()}
                       className="h-8 w-full rounded-full border-[#474ead]/40 text-xs text-[#474ead] hover:bg-[#474ead]/5"
                     >
                       {resumeUploading ? (
                         <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                      ) : resumeAnalyzing ? (
+                        <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Analyzing resume…</>
                       ) : (
                         <><Upload className="mr-1.5 h-3.5 w-3.5" />{(candidate as any).resumeFileName ? "Replace Resume" : "Upload Resume"}</>
                       )}
