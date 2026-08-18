@@ -6965,6 +6965,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/talent — paginated, searchable list of all talent users.
+  //
+  // Route ordering note: registered here as the EXACT route so it cannot
+  // be shadowed by the future GET /api/admin/talent/:id parameterised route.
+  // The /:id detail route (Phase 4) MUST be registered AFTER this endpoint.
+  //
+  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
+  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
+  app.get("/api/admin/talent", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    // Phase 5: requireAdminSubRole(['talent_acquisition']),
+    try {
+      const page  = Math.max(1, parseInt(String(req.query.page  ?? 1), 10));
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? 50), 10)));
+      const search = String(req.query.search ?? "").trim();
+      const offset = (page - 1) * limit;
+      const pattern = `%${search}%`;
+
+      // Count query: pattern is $1 (if present).
+      // List query:  $1=limit, $2=offset, pattern is $3 (if present).
+      // Two separate where-clause strings keep parameter positions explicit.
+      const countWhere = search
+        ? `AND (
+             u.email        ILIKE $1
+          OR u.first_name   ILIKE $1
+          OR u.last_name    ILIKE $1
+          OR c.full_name    ILIKE $1
+          OR c.display_name ILIKE $1
+        )`
+        : "";
+      const listWhere = search
+        ? `AND (
+             u.email        ILIKE $3
+          OR u.first_name   ILIKE $3
+          OR u.last_name    ILIKE $3
+          OR c.full_name    ILIKE $3
+          OR c.display_name ILIKE $3
+        )`
+        : "";
+
+      const listParams: any[] = [limit, offset];
+      if (search) listParams.push(pattern);
+
+      const [countResult, listResult] = await Promise.all([
+        query(`
+          SELECT COUNT(*)::int AS total
+          FROM   users u
+          LEFT JOIN candidates c ON c.user_id = u.id
+          WHERE  u.role = 'talent'
+          ${countWhere}
+        `, search ? [pattern] : []),
+
+        query(`
+          SELECT
+            u.id,
+            u.email,
+            u.first_name,
+            u.last_name,
+            u.created_at,
+            c.id                AS candidate_id,
+            c.category,
+            c.profile_completed,
+            c.account_created,
+            c.location,
+            c.target_position,
+            c.seniority,
+            c.headline,
+            c.availability
+          FROM   users u
+          LEFT JOIN candidates c ON c.user_id = u.id
+          WHERE  u.role = 'talent'
+          ${listWhere}
+          ORDER BY u.created_at DESC
+          LIMIT  $1 OFFSET $2
+        `, listParams),
+      ]);
+
+      res.json({
+        total: countResult.rows[0]?.total ?? 0,
+        page,
+        limit,
+        items: listResult.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/talent error:", err);
+      res.status(500).json({ error: "Failed to fetch talent list" });
+    }
+  });
+
   app.post("/api/admin/jobs", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { clientId: rawClientId } = req.body;

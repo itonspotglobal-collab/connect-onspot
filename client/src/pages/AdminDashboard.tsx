@@ -553,7 +553,10 @@ export default function AdminDashboard() {
                 <Building2 className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Client Accounts
               </Button>
-              {/* Talent management — Phase 3 */}
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/talent')}>
+                <Users className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Talent Accounts
+              </Button>
             </CardContent>
           </Card>
 
