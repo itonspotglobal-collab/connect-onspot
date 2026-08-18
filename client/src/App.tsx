@@ -51,6 +51,7 @@ import LeadIntake from "@/pages/LeadIntake";
 import AdminCSVImport from "@/pages/AdminCSVImport";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminLogin from "@/pages/AdminLogin";
+import AdminClients from "@/pages/AdminClients";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
@@ -216,6 +217,7 @@ function PublicRouter() {
           <Route path="/operations-playbook" component={OperationsPlaybook} />
           {/* Staff-only login — not linked from any customer-facing page */}
           <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin/clients" component={() => <AdminProtectedRoute><AdminClients /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-responses" component={() => <AdminProtectedRoute><VanessaResponses /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-learning" component={() => <AdminProtectedRoute><VanessaLearningDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/vanessa-rag" component={() => <AdminProtectedRoute><AdminVanessaRAG /></AdminProtectedRoute>} />

@@ -6745,18 +6745,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/clients — list all users with role='client' for the admin job-creation selector
-  app.get("/api/admin/clients", async (req: Request, res: Response) => {
+  // GET /api/admin/jobs/client-options — authenticated minimal list for the job-creation client selector.
+  // This replaces the previous unauthed GET /api/admin/clients which was purpose-built only for
+  // this dropdown. JobFormModal.tsx calls this endpoint.
+  app.get("/api/admin/jobs/client-options", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
     try {
-      const { query: dbQuery } = await import('./db');
-      const result = await dbQuery(`
+      const result = await query(`
         SELECT u.id, u.email, cp.company_name
-        FROM users u
+        FROM   users u
         LEFT JOIN client_profiles cp ON cp.user_id = u.id
-        WHERE u.role = 'client'
-        ORDER BY u.email
+        WHERE  u.role = 'client'
+        ORDER BY COALESCE(cp.company_name, u.email)
       `);
       res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/jobs/client-options error:", err);
+      res.status(500).json({ error: "Failed to fetch client options" });
+    }
+  });
+
+  // GET /api/admin/clients — paginated, searchable client management list.
+  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
+  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
+  app.get("/api/admin/clients", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    // Phase 5: requireAdminSubRole(['client_success']),
+    try {
+      const search = (req.query.search as string) || null;
+      const page   = Math.max(1, parseInt(req.query.page  as string) || 1);
+      const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 25));
+      const offset = (page - 1) * limit;
+
+      const countResult = await query(`
+        SELECT COUNT(*)::int AS total
+        FROM   users u
+        LEFT JOIN client_profiles cp ON cp.user_id = u.id
+        WHERE  u.role = 'client'
+          AND ($1::text IS NULL
+            OR u.email        ILIKE '%' || $1 || '%'
+            OR cp.company_name ILIKE '%' || $1 || '%'
+            OR u.first_name    ILIKE '%' || $1 || '%'
+            OR u.last_name     ILIKE '%' || $1 || '%')
+      `, [search]);
+
+      const result = await query(`
+        SELECT
+          u.id,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.created_at,
+          cp.company_name,
+          cp.contact_person,
+          cp.phone_number,
+          cp.industry,
+          cp.location,
+          cp.website,
+          COUNT(j.id)::int                                               AS total_jobs,
+          COUNT(j.id) FILTER (WHERE j.status = 'open')::int              AS open_jobs,
+          COUNT(j.id) FILTER (WHERE j.status = 'closed')::int            AS closed_jobs,
+          COUNT(j.id) FILTER (WHERE j.approval_status = 'pending')::int  AS pending_jobs
+        FROM   users u
+        LEFT JOIN client_profiles cp ON cp.user_id = u.id
+        LEFT JOIN jobs j             ON j.client_id = u.id
+        WHERE  u.role = 'client'
+          AND ($1::text IS NULL
+            OR u.email        ILIKE '%' || $1 || '%'
+            OR cp.company_name ILIKE '%' || $1 || '%'
+            OR u.first_name    ILIKE '%' || $1 || '%'
+            OR u.last_name     ILIKE '%' || $1 || '%')
+        GROUP BY
+          u.id, u.email, u.first_name, u.last_name, u.created_at,
+          cp.company_name, cp.contact_person, cp.phone_number,
+          cp.industry, cp.location, cp.website
+        ORDER BY u.created_at DESC
+        LIMIT $2 OFFSET $3
+      `, [search, limit, offset]);
+
+      res.json({
+        total: countResult.rows[0]?.total ?? 0,
+        page,
+        limit,
+        items: result.rows,
+      });
     } catch (err: any) {
       console.error("GET /api/admin/clients error:", err);
       res.status(500).json({ error: "Failed to fetch clients" });

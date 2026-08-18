@@ -107,8 +107,8 @@ export function JobFormModal({ open, onClose, job, onSuccess, clientMode = false
 
   // Fetch client list for the admin job-creation selector
   const { data: clientList } = useQuery<ClientOption[]>({
-    queryKey: ["/api/admin/clients"],
-    queryFn: () => apiRequest("GET", "/api/admin/clients").then((r) => r.json()),
+    queryKey: ["/api/admin/jobs/client-options"],
+    queryFn: () => apiRequest("GET", "/api/admin/jobs/client-options").then((r) => r.json()),
     enabled: adminMode,
     staleTime: 60_000,
   });

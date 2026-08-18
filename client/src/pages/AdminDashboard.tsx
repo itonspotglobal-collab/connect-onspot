@@ -71,6 +71,7 @@ import {
   ClipboardList,
   Wrench,
   Database,
+  Building2,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -536,6 +537,23 @@ export default function AdminDashboard() {
                 <Database className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 RAG Index
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* People */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                People
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/clients')}>
+                <Building2 className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Client Accounts
+              </Button>
+              {/* Talent management — Phase 3 */}
             </CardContent>
           </Card>
 
