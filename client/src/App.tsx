@@ -216,12 +216,12 @@ function PublicRouter() {
           <Route path="/operations-playbook" component={OperationsPlaybook} />
           {/* Staff-only login — not linked from any customer-facing page */}
           <Route path="/admin/login" component={AdminLogin} />
-          <Route path="/admin/vanessa-responses" component={VanessaResponses} />
-          <Route path="/admin/vanessa-learning" component={VanessaLearningDashboard} />
-          <Route path="/admin/vanessa-rag" component={AdminVanessaRAG} />
-          <Route path="/admin/insights" component={AdminInsights} />
-          <Route path="/admin/insights/create" component={AdminInsightEditor} />
-          <Route path="/admin/insights/:id/edit" component={AdminInsightEditor} />
+          <Route path="/admin/vanessa-responses" component={() => <AdminProtectedRoute><VanessaResponses /></AdminProtectedRoute>} />
+          <Route path="/admin/vanessa-learning" component={() => <AdminProtectedRoute><VanessaLearningDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/vanessa-rag" component={() => <AdminProtectedRoute><AdminVanessaRAG /></AdminProtectedRoute>} />
+          <Route path="/admin/insights" component={() => <AdminProtectedRoute><AdminInsights /></AdminProtectedRoute>} />
+          <Route path="/admin/insights/create" component={() => <AdminProtectedRoute><AdminInsightEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/insights/:id/edit" component={() => <AdminProtectedRoute><AdminInsightEditor /></AdminProtectedRoute>} />
           {/* Admin routes — always protected by AdminProtectedRoute */}
           <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
@@ -463,8 +463,6 @@ function AppContent() {
       <Route path="/talent" component={PublicRouter} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
-      <Route path="/admin/vanessa-responses" component={PublicRouter} />
-      <Route path="/admin/vanessa-learning" component={PublicRouter} />
       
       {/* Client Protected Routes */}
       <Route path="/dashboard" component={ClientRouter} />

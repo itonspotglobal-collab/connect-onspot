@@ -1,0 +1,38 @@
+PART 1 — URGENT, fix now, same severity as prior access-control incidents:
+/admin/vanessa-responses, /admin/vanessa-learning, /admin/vanessa-rag,
+/admin/insights, /admin/insights/create, /admin/insights/:id/edit have NO
+AdminProtectedRoute guard — reachable by anyone who knows the URL, zero
+auth required. Add the guard to all 6, using the exact same pattern as
+every other protected admin route. Confirm with real evidence (an
+unauthenticated hit to each, before and after) the same way the
+/api/admin/jobs and BYPASS_ADMIN_AUTH incidents were verified this
+session. This is not a "your call on scope" item — fix it now.
+
+PART 2 — Ship now, trivial: add dashboard nav links for all 10
+existing-but-unlinked pages (Job Board Management, full Job Applications,
+Email Templates, Image Uploader, Inquiries & Payments, Scaffold Job
+Cleanup, Flagged Messages, CSV Import, and — once Part 1 lands — the 3
+Vanessa pages and Insights). Organize sensibly, don't just tack 10 flat
+links onto the existing 5 tabs without a coherent structure — propose a
+grouping (e.g., Jobs, Communications, Content, Tools) if 15 flat tabs
+would be unwieldy.
+
+PART 3 — DO NOT BUILD YET, scope only: Client and Talent profile
+management genuinely don't exist. This is real, staged scope, same
+discipline as Client Organizations and the Hiring Pipeline builds earlier
+this session — audit and propose first, don't implement.
+
+For each, report:
+1. What data an admin actually needs to see (search/list, profile detail,
+   activity — jobs posted for Client, applications/status for Talent).
+2. Given the object-storage access work just completed this session
+   (scoped admin bypass to application-resumes/videos, with audit
+   logging) — should this new Talent management page reuse that same
+   access pattern for viewing resumes/videos, or does it need its own?
+3. Whether GET /api/admin/clients (currently unauthenticated, built for a
+   different purpose) should be retired/replaced or extended — don't
+   silently repurpose an endpoint that was never meant to be an admin
+   management surface.
+4. A proposed phased build plan, not a single instruction.
+
+Do not implement Part 3 until this comes back and is reviewed.

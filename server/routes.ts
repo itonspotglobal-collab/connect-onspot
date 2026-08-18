@@ -2919,13 +2919,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/train/correct - Submit admin correction for Vanessa training (admin only)
-  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
-  // Temporarily open to all environments while the login flow is being built.
-  const trainCorrectMiddleware: any[] = [];
-  
   app.post(
     "/api/train/correct",
-    ...trainCorrectMiddleware,
+    authenticateJWT,
+    requireAdmin,
     validateRequest(
       z.object({
         logId: z.number().int().positive(),
@@ -2997,13 +2994,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/train/chat/stream - Stream conversational training with Vanessa (admin only)
-  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
-  // Temporarily open to all environments while the login flow is being built.
-  const trainChatStreamMiddleware: any[] = [];
-  
   app.post(
     "/api/train/chat/stream",
-    ...trainChatStreamMiddleware,
+    authenticateJWT,
+    requireAdmin,
     validateRequest(
       z.object({
         message: z.string().min(1, "Message is required"),
@@ -3083,12 +3077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // POST /api/site/reindex - Trigger manual site crawl (admin only)
-  // TODO: Re-add [authenticateJWT, requireAdmin] once the admin login/auth system is complete.
-  // Temporarily open to all environments while the login flow is being built.
-  // NOTE: This triggers a site crawl which is low-risk but should still be protected eventually.
-  const siteReindexMiddleware: any[] = [];
-  
-  app.post("/api/site/reindex", ...siteReindexMiddleware, async (req: any, res) => {
+  app.post("/api/site/reindex", authenticateJWT, requireAdmin, async (req: any, res) => {
     try {
       console.log(`🔁 Admin triggered manual site reindex [${req.requestId}]`);
 
@@ -10144,7 +10133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ======
 
   // GET /api/admin/posts - Admin endpoint to fetch all posts (draft + published)
-  app.get("/api/admin/posts", async (req: Request, res: Response) => {
+  app.get("/api/admin/posts", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
       console.log(`📰 [ADMIN] Fetching all posts [${requestId}]`);
@@ -10163,7 +10152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/posts - Admin create new post
-  app.post("/api/admin/posts", async (req: Request, res: Response) => {
+  app.post("/api/admin/posts", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
 
@@ -10220,7 +10209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/posts/:id - Admin get single post
-  app.get("/api/admin/posts/:id", async (req: Request, res: Response) => {
+  app.get("/api/admin/posts/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
       const { id } = req.params;
@@ -10253,7 +10242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/admin/posts/:id - Admin update post
-  app.put("/api/admin/posts/:id", async (req: Request, res: Response) => {
+  app.put("/api/admin/posts/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
       const { id } = req.params;
@@ -10322,7 +10311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/admin/posts/:id - Admin delete post
-  app.delete("/api/admin/posts/:id", async (req: Request, res: Response) => {
+  app.delete("/api/admin/posts/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const requestId = (req as any).requestId;
       const { id } = req.params;

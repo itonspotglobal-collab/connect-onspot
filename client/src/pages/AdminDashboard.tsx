@@ -62,6 +62,15 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertCircle,
+  Mail,
+  BookOpen,
+  DollarSign,
+  Bot,
+  Flag,
+  ImageIcon,
+  ClipboardList,
+  Wrench,
+  Database,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -414,6 +423,122 @@ export default function AdminDashboard() {
             <Shield className="w-3 h-3" />
             Admin Access Required
           </Badge>
+        </div>
+      </div>
+
+      {/* ── Tool Navigation ────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tool Navigation</p>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+
+          {/* Jobs & Hiring */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-primary" />
+                Jobs &amp; Hiring
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/find-work')}>
+                <Briefcase className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Job Board Management
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/job-applications')}>
+                <ClipboardList className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Full Applications View
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/scaffold-jobs')}>
+                <Wrench className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Scaffold Cleanup
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Communications */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Communications
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/email-templates')}>
+                <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Email Templates
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/flagged-messages')}>
+                <Flag className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Flagged Messages
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Content */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary" />
+                Content
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/insights')}>
+                <BookOpen className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Insights &amp; Blog
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/image-uploader')}>
+                <ImageIcon className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Image Uploader
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Operations */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-primary" />
+                Operations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/inquiries')}>
+                <DollarSign className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Inquiries &amp; Payments
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/csv-import')}>
+                <Upload className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                CSV Import
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* AI / Vanessa */}
+          <Card>
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Bot className="w-4 h-4 text-primary" />
+                AI / Vanessa
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 pb-4">
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/vanessa-responses')}>
+                <Bot className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Responses
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/vanessa-learning')}>
+                <TrendingUp className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Learning Dashboard
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/vanessa-rag')}>
+                <Database className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                RAG Index
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
 
