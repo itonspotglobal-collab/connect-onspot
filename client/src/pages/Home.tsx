@@ -65,24 +65,25 @@ function slideBg(id: string) {
 // ══════════════════════════════════════════════════════════════════════════════
 // TALENT CAROUSEL SECTION — public, unauthenticated
 //
-// Design: LIGHT section (#F7F7FA) / DARK gradient cards — hero above is dark,
-// so a second dark section would break the alternating rhythm. Visual pop
-// comes from the cards themselves, not the wrapper.
+// Design: LIGHT section (#F7F7FA) / WARM EARTH-TONE cards — alternating
+// mauve-taupe (#5C4F55→#493E42) and sandy-brown (#59503F→#463C2F) to ease
+// the eye after the dark Hero. Cards are warm and dark but NOT cold navy.
 //
-// Card surface: navy gradient. Gold pulsing ring reserved for "available now"
-// talent only (on their avatar). "Open to offers" gets a muted badge only.
-// Nav arrows: white circles with soft shadow — not translucent-on-dark.
+// Card layout: column — square avatar (border-radius 11px) → name/role →
+// availability badge at bottom. Gold pulsing DOT badge (bottom-right of avatar)
+// for "available now" only. "Open to offers" gets muted gray dot at bottom.
+// Nav arrows: white circles, move to header row; hover turns purple.
 //
 // Thresholds:
 //   < 4 candidates → section hidden entirely
-//   4–5            → loop: false
-//   6+             → loop: true
+//   4              → loop: false (4 cards exactly fill the 4-column grid)
+//   5+             → loop: true (cards exist off-screen)
 // Auto-advance: 4 s, pauses on hover.
 // ══════════════════════════════════════════════════════════════════════════════
 
 const CAROUSEL_POOL    = 12;
 const CAROUSEL_MIN     = 4;
-const CAROUSEL_LOOP_AT = 6;
+const CAROUSEL_LOOP_AT = 5;   // need >4 to have anything off-screen at 4-col
 
 function talentCarouselInitials(name: string): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -91,11 +92,11 @@ function talentCarouselInitials(name: string): string {
 }
 
 function TalentCarouselSection() {
-  const [api, setApi]       = useState<CarouselApi>();
+  const [api, setApi]         = useState<CarouselApi>();
   const [hovered, setHovered] = useState(false);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
-  const timerRef            = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef              = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: rawCandidates } = useQuery<any[]>({
     queryKey: ["/api/candidates"],
@@ -115,7 +116,7 @@ function TalentCarouselSection() {
 
   const useLoop = cards.length >= CAROUSEL_LOOP_AT;
 
-  // Track scroll-ability for non-looping carousels
+  // Track scroll-ability for arrow state
   useEffect(() => {
     if (!api) return;
     const update = () => {
@@ -142,175 +143,197 @@ function TalentCarouselSection() {
   const showPrev = useLoop || canPrev;
   const showNext = useLoop || canNext;
 
+  // Alternating warm earth-tone card gradients — exact values from mockup
+  const cardGradient = (i: number) =>
+    i % 2 === 0
+      ? "linear-gradient(165deg, #5C4F55 0%, #493E42 100%)"  // warm mauve-taupe
+      : "linear-gradient(165deg, #59503F 0%, #463C2F 100%)"; // warm sandy-brown
+
+  // Nav button shared hover handlers (purple fill on hover, white at rest)
+  const navEnter = (e: React.MouseEvent<HTMLButtonElement>, active: boolean) => {
+    if (!active) return;
+    const el = e.currentTarget;
+    el.style.background = C.indigo;
+    el.style.borderColor = C.indigo;
+    el.style.color = "#fff";
+  };
+  const navLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const el = e.currentTarget;
+    el.style.background = "#fff";
+    el.style.borderColor = "#E4E4EE";
+    el.style.color = "#12132B";
+  };
+
   return (
-    <section aria-label="Talent network preview" style={{ background: "#F7F7FA" }} className="py-16 px-4">
-      {/* Gold pulsing-ring keyframe — scoped to this section */}
+    <section aria-label="Talent network preview" style={{ background: "#F7F7FA" }} className="py-20 overflow-hidden relative">
+      {/* Subtle radial glow — mirrors mockup ::before overlay */}
+      <div style={{
+        position: "absolute", top: -220, right: -180,
+        width: 560, height: 560, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(71,78,173,0.07) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Gold dot pulse keyframe */}
       <style>{`
-        @keyframes talentRingPulse {
-          0%,100% { box-shadow: 0 0 0 3px rgba(255,174,33,0.85), 0 0 0 7px rgba(255,174,33,0.18); }
-          50%      { box-shadow: 0 0 0 3px rgba(255,174,33,0.55), 0 0 0 11px rgba(255,174,33,0.0); }
+        @keyframes talentDotPulse {
+          0%,100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.55); }
+          50%      { box-shadow: 0 0 0 6px rgba(245,166,35,0); }
         }
       `}</style>
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1200px] mx-auto px-8 relative">
 
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="flex items-end justify-between mb-10">
+        {/* ── Header ── */}
+        <div className="flex items-end justify-between mb-12 gap-6 flex-wrap">
           <div>
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-1.5"
-              style={{ color: C.indigoLight }}
+            {/* Eyebrow: gold dot + "Live on OnSpot" */}
+            <span
+              className="inline-flex items-center gap-2 mb-4"
+              style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: C.indigo }}
             >
-              The Talent Network
-            </p>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.orange, flexShrink: 0, display: "inline-block" }} />
+              Live on OnSpot
+            </span>
             <h2
-              className="text-2xl sm:text-3xl font-bold"
-              style={{ color: C.charcoal, letterSpacing: "-0.025em" }}
+              className="text-[clamp(28px,3.2vw,40px)] font-extrabold"
+              style={{ color: "#12132B", letterSpacing: "-0.02em", lineHeight: 1.1, maxWidth: 520 }}
             >
-              Meet some of our talent
+              Talent ready to join a team like yours.
             </h2>
           </div>
-          <Link
-            href="/hire-talent"
-            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
-            style={{ color: C.indigo }}
-          >
-            Browse all <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
 
-        {/* ── Carousel + nav ───────────────────────────────────────────────── */}
-        <div
-          className="relative"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
-          {/* Prev arrow — white circle, soft shadow */}
-          {showPrev && (
+          {/* Subtext + nav arrows — desktop */}
+          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+            <p style={{ color: "#5B5B6E", fontSize: 15.5, maxWidth: 280, lineHeight: 1.6, marginRight: 8 }}>
+              A sample of the professionals already on the platform.
+            </p>
             <button
               onClick={() => api?.scrollPrev()}
               aria-label="Previous talent"
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
-              style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.13)" }}
+              className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+              style={{
+                border: "1px solid #E4E4EE", background: "#fff", color: "#12132B",
+                boxShadow: "0 2px 8px -2px rgba(20,20,60,0.08)",
+                opacity: showPrev ? 1 : 0.35,
+                cursor: showPrev ? "pointer" : "default",
+              }}
+              onMouseEnter={e => navEnter(e, showPrev)}
+              onMouseLeave={navLeave}
             >
-              <ChevronLeft className="w-4 h-4" style={{ color: C.charcoal }} />
+              <ChevronLeft className="w-[18px] h-[18px]" />
             </button>
-          )}
-          {/* Next arrow */}
-          {showNext && (
             <button
               onClick={() => api?.scrollNext()}
               aria-label="Next talent"
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
-              style={{ background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.13)" }}
+              className="w-11 h-11 rounded-full flex items-center justify-center transition-all"
+              style={{
+                border: "1px solid #E4E4EE", background: "#fff", color: "#12132B",
+                boxShadow: "0 2px 8px -2px rgba(20,20,60,0.08)",
+                opacity: showNext ? 1 : 0.35,
+                cursor: showNext ? "pointer" : "default",
+              }}
+              onMouseEnter={e => navEnter(e, showNext)}
+              onMouseLeave={navLeave}
             >
-              <ChevronRight className="w-4 h-4" style={{ color: C.charcoal }} />
+              <ChevronRight className="w-[18px] h-[18px]" />
             </button>
-          )}
+          </div>
+        </div>
 
+        {/* ── Carousel ── */}
+        <div
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
           <Carousel setApi={setApi} opts={{ loop: useLoop, align: "start", slidesToScroll: 1 }}>
-            <CarouselContent className="-ml-4">
-              {cards.map((c: any) => {
+            <CarouselContent className="-ml-[18px]">
+              {cards.map((c: any, i: number) => {
                 const rawName  = c.displayName?.trim() || c.fullName?.trim() || "";
                 const name     = formatPublicTalentNameFromFull(rawName) || "Talent";
                 const role     = c.targetPosition || c.headline || "Professional";
-                const yrs      = c.experienceYears;
-                const skills   = (c.coreSkills ?? []).slice(0, 2) as string[];
                 const isAvail  = c.availability === "available" || c.availability === "Available";
                 const initials = talentCarouselInitials(name);
 
                 return (
-                  <CarouselItem key={c.id} className="pl-4 basis-1/2 sm:basis-1/3 lg:basis-1/6">
+                  <CarouselItem key={c.id} className="pl-[18px] basis-full sm:basis-1/2 lg:basis-1/4">
                     <Link href={`/talent-profile/${c.id}`}>
-                      {/* Dark gradient card */}
                       <div
-                        className="rounded-2xl p-5 h-full flex flex-col gap-3 cursor-pointer"
+                        className="rounded-2xl h-full flex flex-col cursor-pointer"
                         style={{
-                          background: `linear-gradient(145deg, ${C.indigoDeep} 0%, ${C.dark2} 55%, ${C.dark3} 100%)`,
-                          border: "1px solid rgba(255,255,255,0.07)",
-                          boxShadow: "0 4px 20px rgba(18,20,80,0.28)",
-                          transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                          background: cardGradient(i),
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          padding: "18px 16px",
+                          transition: "transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .35s ease",
                         }}
                         onMouseEnter={e => {
                           const el = e.currentTarget as HTMLElement;
-                          el.style.boxShadow = "0 14px 40px rgba(18,20,80,0.45)";
-                          el.style.transform = "translateY(-3px)";
+                          el.style.transform = "translateY(-5px)";
+                          el.style.boxShadow = "0 20px 40px -14px rgba(0,0,0,0.45), 0 0 0 1px rgba(245,166,35,0.15)";
+                          el.style.borderColor = "rgba(245,166,35,0.25)";
                         }}
                         onMouseLeave={e => {
                           const el = e.currentTarget as HTMLElement;
-                          el.style.boxShadow = "0 4px 20px rgba(18,20,80,0.28)";
                           el.style.transform = "translateY(0)";
+                          el.style.boxShadow = "none";
+                          el.style.borderColor = "rgba(255,255,255,0.06)";
                         }}
                       >
-                        {/* Avatar row */}
-                        <div className="flex items-center justify-between gap-2">
-                          {/* Avatar — gold pulsing ring for "available now" only */}
-                          <div
-                            className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
-                            style={{
-                              background: C.indigo,
-                              ...(isAvail
-                                ? { animation: "talentRingPulse 2s ease-in-out infinite" }
-                                : {}),
-                            }}
-                          >
-                            {initials}
+                        {/* Avatar + name/role column */}
+                        <div className="flex flex-col gap-2.5 mb-3">
+                          {/* Avatar — square rounded, gold dot badge for available */}
+                          <div style={{ position: "relative", flexShrink: 0, width: 42, height: 42 }}>
+                            <div style={{
+                              width: 42, height: 42, borderRadius: 11,
+                              background: "linear-gradient(135deg, #474EAD 0%, #363C87 100%)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontWeight: 700, fontSize: 13.5, color: "#fff",
+                            }}>
+                              {initials}
+                            </div>
+                            {isAvail && (
+                              <div style={{
+                                position: "absolute", bottom: -2, right: -2,
+                                width: 11, height: 11, borderRadius: "50%",
+                                background: "#F5A623",
+                                border: "2.5px solid #4F4448",
+                                animation: "talentDotPulse 2.4s ease-in-out infinite",
+                              }} />
+                            )}
                           </div>
 
-                          {/* Badge — only for "open to offers"; available talent's ring signals status */}
-                          {!isAvail && (
-                            <span
-                              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap"
-                              style={{
-                                background: "rgba(255,255,255,0.09)",
-                                color: "rgba(255,255,255,0.6)",
-                                border: "1px solid rgba(255,255,255,0.14)",
-                              }}
-                            >
-                              Open to offers
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Name + role */}
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm leading-snug truncate text-white">
-                            {name}
-                          </p>
-                          <p
-                            className="text-xs leading-snug truncate mt-0.5"
-                            style={{ color: "rgba(255,255,255,0.55)" }}
-                          >
-                            {role}{yrs ? ` · ${yrs} yr${Number(yrs) !== 1 ? "s" : ""}` : ""}
-                          </p>
-                          {c.category && (
-                            <p
-                              className="text-[10px] mt-1 font-semibold"
-                              style={{ color: C.orangeLight }}
-                            >
-                              {c.category}
+                          {/* Name + role */}
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{
+                              fontSize: 13.5, fontWeight: 700, color: "#fff",
+                              margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                            }}>
+                              {name}
                             </p>
-                          )}
+                            <p style={{
+                              fontSize: 11, color: "#9494BE",
+                              margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                            }}>
+                              {role}
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Skills */}
-                        {skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-auto pt-1">
-                            {skills.map((s, i) => (
-                              <span
-                                key={i}
-                                className="rounded-full px-2.5 py-0.5 text-[10px] font-medium"
-                                style={{
-                                  background: "rgba(255,255,255,0.09)",
-                                  color: "rgba(255,255,255,0.75)",
-                                  border: "1px solid rgba(255,255,255,0.13)",
-                                }}
-                              >
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {/* Availability badge — bottom, separated */}
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 5,
+                          fontSize: 10.5, fontWeight: 700,
+                          color: isAvail ? "#F5A623" : "#9494BE",
+                          paddingTop: 10,
+                          borderTop: "1px solid rgba(255,255,255,0.07)",
+                          marginTop: "auto",
+                        }}>
+                          <span style={{
+                            width: 5, height: 5, borderRadius: "50%",
+                            background: "currentColor", flexShrink: 0, display: "inline-block",
+                          }} />
+                          {isAvail ? "Available now" : "Open to offers"}
+                        </div>
                       </div>
                     </Link>
                   </CarouselItem>
@@ -320,8 +343,8 @@ function TalentCarouselSection() {
           </Carousel>
         </div>
 
-        {/* Mobile CTA */}
-        <div className="mt-8 text-center sm:hidden">
+        {/* Mobile: CTA link + nav arrows */}
+        <div className="mt-8 flex items-center justify-between sm:hidden">
           <Link
             href="/hire-talent"
             className="text-sm font-semibold hover:underline"
@@ -329,6 +352,30 @@ function TalentCarouselSection() {
           >
             Browse all talent <ArrowRight className="inline w-3.5 h-3.5" />
           </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={() => api?.scrollPrev()}
+              aria-label="Previous talent"
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{
+                border: "1px solid #E4E4EE", background: "#fff", color: "#12132B",
+                opacity: showPrev ? 1 : 0.35, cursor: showPrev ? "pointer" : "default",
+              }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => api?.scrollNext()}
+              aria-label="Next talent"
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{
+                border: "1px solid #E4E4EE", background: "#fff", color: "#12132B",
+                opacity: showNext ? 1 : 0.35, cursor: showNext ? "pointer" : "default",
+              }}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </section>
