@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Users,
   Search,
   ChevronLeft,
@@ -16,6 +23,7 @@ import {
   Shield,
   CheckCircle2,
   Circle,
+  X,
 } from 'lucide-react';
 
 interface TalentItem {
@@ -27,12 +35,14 @@ interface TalentItem {
   candidate_id: string | null;
   category: string | null;
   profile_completed: boolean | null;
-  account_created: boolean | null;
   location: string | null;
   target_position: string | null;
   seniority: string | null;
   headline: string | null;
   availability: string | null;
+  top_skills: string[] | null;
+  total_applications: number;
+  last_active_at: string | null;
 }
 
 interface TalentListResponse {
@@ -42,32 +52,68 @@ interface TalentListResponse {
   items: TalentItem[];
 }
 
+const APPLICATION_STATUSES = [
+  { value: 'new',            label: 'New' },
+  { value: 'invited',        label: 'Invited' },
+  { value: 'under_review',   label: 'Under Review' },
+  { value: 'reviewed',       label: 'Reviewed' },
+  { value: 'shortlisted',    label: 'Shortlisted' },
+  { value: 'interviewing',   label: 'Interviewing' },
+  { value: 'offer_extended', label: 'Offer Extended' },
+  { value: 'offer_accepted', label: 'Offer Accepted' },
+  { value: 'hired',          label: 'Hired' },
+  { value: 'rejected',       label: 'Rejected' },
+  { value: 'withdrawn',      label: 'Withdrawn' },
+  { value: 'declined',       label: 'Declined' },
+];
+
+function formatLastActive(ts: string | null): string {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const now = Date.now();
+  const diff = now - d.getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return d.toLocaleDateString();
+}
+
 export default function AdminTalent() {
   const [, setLocation] = useLocation();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [search, setSearch]                       = useState('');
+  const [debouncedSearch, setDebouncedSearch]     = useState('');
+  const [skillFilter, setSkillFilter]             = useState('');
+  const [debouncedSkill, setDebouncedSkill]       = useState('');
+  const [statusFilter, setStatusFilter]           = useState('');
+  const [page, setPage]                           = useState(1);
   const LIMIT = 50;
 
-  // Debounce search input
-  const handleSearchChange = (val: string) => {
-    setSearch(val);
-    clearTimeout((window as any).__talentSearchTimer);
-    (window as any).__talentSearchTimer = setTimeout(() => {
-      setDebouncedSearch(val);
-      setPage(1);
-    }, 300);
+  const debounce = (setter: (v: string) => void, delay = 350) => (val: string) => {
+    clearTimeout((window as any).__adminTalentTimer);
+    (window as any).__adminTalentTimer = setTimeout(() => { setter(val); setPage(1); }, delay);
   };
 
-  const queryKey = ['/api/admin/talent', debouncedSearch, page];
+  const handleSearch = (val: string) => { setSearch(val);      debounce(setDebouncedSearch)(val); };
+  const handleSkill  = (val: string) => { setSkillFilter(val); debounce(setDebouncedSkill)(val);  };
+  const handleStatus = (val: string) => { setStatusFilter(val); setPage(1); };
+
+  const clearFilters = () => {
+    setSearch(''); setDebouncedSearch('');
+    setSkillFilter(''); setDebouncedSkill('');
+    setStatusFilter('');
+    setPage(1);
+  };
+  const hasFilters = debouncedSearch || debouncedSkill || statusFilter;
+
   const { data, isLoading, error, refetch, isFetching } = useQuery<TalentListResponse>({
-    queryKey,
+    queryKey: ['/api/admin/talent', debouncedSearch, debouncedSkill, statusFilter, page],
     queryFn: () => {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(LIMIT),
-        ...(debouncedSearch ? { search: debouncedSearch } : {}),
-      });
+      const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (debouncedSkill)  params.set('skill',  debouncedSkill);
+      if (statusFilter)    params.set('applicationStatus', statusFilter);
       return authAPI.get(`/api/admin/talent?${params}`);
     },
   });
@@ -101,24 +147,58 @@ export default function AdminTalent() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or email…"
-          value={search}
-          onChange={e => handleSearchChange(e.target.value)}
-          className="pl-9"
-          data-testid="talent-search-input"
-        />
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-end">
+        {/* Name/email search */}
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search name or email…"
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
+            className="pl-9"
+            data-testid="talent-search-input"
+          />
+        </div>
+
+        {/* Skill filter */}
+        <div className="relative w-48">
+          <Input
+            placeholder="Filter by skill…"
+            value={skillFilter}
+            onChange={e => handleSkill(e.target.value)}
+            data-testid="talent-skill-filter"
+          />
+        </div>
+
+        {/* Application status filter */}
+        <Select value={statusFilter || '__all__'} onValueChange={v => handleStatus(v === '__all__' ? '' : v)}>
+          <SelectTrigger className="w-48" data-testid="talent-status-filter">
+            <SelectValue placeholder="Any application status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Any application status</SelectItem>
+            {APPLICATION_STATUSES.map(s => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Clear filters */}
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 h-9">
+            <X className="w-3.5 h-3.5" />
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Table card */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-muted-foreground font-normal">
-            {debouncedSearch
-              ? `Showing results for "${debouncedSearch}"`
+            {hasFilters
+              ? `Filtered results — ${total} match${total !== 1 ? 'es' : ''}`
               : 'All talent accounts · click a row to open profile'}
           </CardTitle>
         </CardHeader>
@@ -131,7 +211,7 @@ export default function AdminTalent() {
             <p className="text-sm text-destructive p-6">Failed to load talent list.</p>
           ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground p-6">
-              {debouncedSearch ? 'No talent accounts match your search.' : 'No talent accounts found.'}
+              {hasFilters ? 'No talent accounts match the current filters.' : 'No talent accounts found.'}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -141,17 +221,17 @@ export default function AdminTalent() {
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Position / Seniority</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Location</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Skills (top 3)</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Applications</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Profile</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Joined</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Last Active</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((t) => {
-                    const displayName = t.first_name || t.last_name
+                    const displayName = (t.first_name || t.last_name)
                       ? `${t.first_name ?? ''} ${t.last_name ?? ''}`.trim()
-                      : <span className="italic text-muted-foreground">No name</span>;
+                      : null;
                     return (
                       <tr
                         key={t.id}
@@ -160,9 +240,11 @@ export default function AdminTalent() {
                         onClick={() => setLocation(`/admin/talent/${t.id}`)}
                       >
                         <td className="px-4 py-3">
-                          <div className="font-medium">{displayName}</div>
-                          {t.headline && (
-                            <div className="text-xs text-muted-foreground truncate max-w-[180px]">{t.headline}</div>
+                          <div className="font-medium">
+                            {displayName ?? <span className="italic text-muted-foreground">No name</span>}
+                          </div>
+                          {t.target_position && (
+                            <div className="text-xs text-muted-foreground">{t.target_position}</div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{t.email}</td>
@@ -174,12 +256,21 @@ export default function AdminTalent() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <div>{t.target_position || <span className="text-muted-foreground">—</span>}</div>
-                          {t.seniority && (
-                            <div className="text-xs text-muted-foreground">{t.seniority}</div>
-                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {t.top_skills && t.top_skills.length > 0
+                              ? t.top_skills.map((s, i) => (
+                                  <Badge key={i} variant="secondary" className="text-xs font-normal">{s}</Badge>
+                                ))
+                              : <span className="text-muted-foreground">—</span>
+                            }
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{t.location || '—'}</td>
+                        <td className="px-4 py-3 text-center">
+                          {t.total_applications > 0
+                            ? <span className="font-medium">{t.total_applications}</span>
+                            : <span className="text-muted-foreground">0</span>
+                          }
+                        </td>
                         <td className="px-4 py-3">
                           {t.profile_completed ? (
                             <span className="flex items-center gap-1 text-green-600">
@@ -192,7 +283,7 @@ export default function AdminTalent() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs">
-                          {new Date(t.created_at).toLocaleDateString()}
+                          {formatLastActive(t.last_active_at)}
                         </td>
                       </tr>
                     );
@@ -207,22 +298,12 @@ export default function AdminTalent() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Page {page} of {totalPages} · {total.toLocaleString()} total
-          </span>
+          <span>Page {page} of {totalPages} · {total.toLocaleString()} total</span>
           <div className="flex gap-2">
-            <Button
-              variant="outline" size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button
-              variant="outline" size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>

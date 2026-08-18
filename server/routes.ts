@@ -6986,46 +6986,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/admin/talent — paginated, searchable talent list (talent_acquisition sub-role required)
+  // GET /api/admin/talent — paginated, searchable, filterable talent list.
+  //
+  // Query params:
+  //   search          — matches email, first_name, last_name, full_name
+  //   skill           — filter to talent whose core_skills or secondary_skills
+  //                     contain this value (case-sensitive array containment)
+  //   applicationStatus — filter to talent who have at least one submission
+  //                       with this status value
+  //   page, limit     — pagination
+  //
+  // Response item fields (all admin-accessible, none redacted):
+  //   id, email, first_name, last_name, created_at, candidate_id,
+  //   category, profile_completed, location, target_position, seniority,
+  //   headline, availability,
+  //   top_skills        — first 3 elements of core_skills (full array visible in detail)
+  //   total_applications — count of job_submissions where talent_id = u.id
+  //   last_active_at    — GREATEST(users.updated_at, latest submission.submitted_at)
+  //
+  // Note: profile_completed is the stored boolean; the full completion percentage
+  // is computed and shown on the talent detail page (Phase 4).
+  //
+  // Phase 5 (Task #271): requireAdminSubRole(['talent_acquisition']) is already
+  // present from the merged enforcement layer. NULL sub_role bypasses it (super-admin).
   app.get("/api/admin/talent", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
     try {
-      const search = (req.query.search as string) || null;
-      const page   = Math.max(1, parseInt(req.query.page  as string) || 1);
-      const limit  = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 25));
+      const search            = String(req.query.search            ?? "").trim();
+      const skill             = String(req.query.skill             ?? "").trim();
+      const applicationStatus = String(req.query.applicationStatus ?? "").trim();
+      const page   = Math.max(1, parseInt(String(req.query.page  ?? 1),  10));
+      const limit  = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? 50), 10)));
       const offset = (page - 1) * limit;
 
-      const countResult = await query(`
-        SELECT COUNT(*)::int AS total
-        FROM candidates c
-        WHERE ($1::text IS NULL
-          OR c.full_name  ILIKE '%' || $1 || '%'
-          OR c.email      ILIKE '%' || $1 || '%'
-          OR c.category   ILIKE '%' || $1 || '%')
-      `, [search]);
+      // Build WHERE clause dynamically so each filter is an independent
+      // optional condition and parameter indices stay correct.
+      const conditions: string[] = ["u.role = 'talent'"];
+      const filterParams: any[]  = [];
 
-      const result = await query(`
-        SELECT
-          c.id, c.full_name AS "fullName", c.email, c.category,
-          c.target_position AS "targetPosition", c.location,
-          c.availability, c.seniority, c.experience_years AS "experienceYears",
-          c.profile_completed AS "profileCompleted",
-          c.resume_url IS NOT NULL AS "hasResume",
-          c.video_intro_url IS NOT NULL AS "hasVideo",
-          c.created_at AS "createdAt"
-        FROM candidates c
-        WHERE ($1::text IS NULL
-          OR c.full_name  ILIKE '%' || $1 || '%'
-          OR c.email      ILIKE '%' || $1 || '%'
-          OR c.category   ILIKE '%' || $1 || '%')
-        ORDER BY c.created_at DESC
-        LIMIT $2 OFFSET $3
-      `, [search, limit, offset]);
+      if (search) {
+        filterParams.push(`%${search}%`);
+        const p = `$${filterParams.length}`;
+        conditions.push(
+          `(u.email ILIKE ${p} OR u.first_name ILIKE ${p} OR u.last_name ILIKE ${p} OR c.full_name ILIKE ${p})`
+        );
+      }
+
+      if (skill) {
+        filterParams.push(skill);
+        const p = `$${filterParams.length}`;
+        conditions.push(
+          `(c.core_skills @> ARRAY[${p}]::text[] OR c.secondary_skills @> ARRAY[${p}]::text[])`
+        );
+      }
+
+      if (applicationStatus) {
+        filterParams.push(applicationStatus);
+        const p = `$${filterParams.length}`;
+        conditions.push(
+          `EXISTS (SELECT 1 FROM job_submissions js2 WHERE js2.talent_id = u.id AND js2.status = ${p})`
+        );
+      }
+
+      const whereSQL   = `WHERE ${conditions.join(" AND ")}`;
+      const limitIdx   = filterParams.length + 1;
+      const offsetIdx  = filterParams.length + 2;
+      const listParams = [...filterParams, limit, offset];
+
+      const [countResult, listResult] = await Promise.all([
+        query(
+          `SELECT COUNT(*)::int AS total
+           FROM   users u
+           LEFT JOIN candidates c ON c.user_id = u.id
+           ${whereSQL}`,
+          filterParams
+        ),
+        query(
+          `SELECT
+             u.id,
+             u.email,
+             u.first_name,
+             u.last_name,
+             u.created_at,
+             c.id                    AS candidate_id,
+             c.category,
+             c.profile_completed,
+             c.location,
+             c.target_position,
+             c.seniority,
+             c.headline,
+             c.availability,
+             c.core_skills[1:3]      AS top_skills,
+             COALESCE(
+               (SELECT COUNT(*)::int FROM job_submissions js
+                WHERE js.talent_id = u.id),
+               0
+             )                       AS total_applications,
+             GREATEST(
+               u.updated_at,
+               (SELECT MAX(js.submitted_at) FROM job_submissions js
+                WHERE js.talent_id = u.id)
+             )                       AS last_active_at
+           FROM   users u
+           LEFT JOIN candidates c ON c.user_id = u.id
+           ${whereSQL}
+           ORDER BY u.created_at DESC
+           LIMIT  $${limitIdx} OFFSET $${offsetIdx}`,
+          listParams
+        ),
+      ]);
 
       res.json({
         total: countResult.rows[0]?.total ?? 0,
         page,
         limit,
-        items: result.rows,
+        items: listResult.rows,
       });
     } catch (err: any) {
       console.error("GET /api/admin/talent error:", err);
@@ -7115,94 +7189,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       console.error("GET /api/admin/talent/:id/video error:", err);
       if (!res.headersSent) res.status(500).json({ error: "Failed to serve video" });
-    }
-  });
-
-  // GET /api/admin/talent — paginated, searchable list of all talent users.
-  //
-  // Route ordering note: registered here as the EXACT route so it cannot
-  // be shadowed by the future GET /api/admin/talent/:id parameterised route.
-  // The /:id detail route (Phase 4) MUST be registered AFTER this endpoint.
-  //
-  // Phase 0: any admin (admin_sub_role = NULL bypasses sub-role check).
-  // Phase 5: uncomment requireAdminSubRole call below (Task #271).
-  app.get("/api/admin/talent", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
-    // Phase 5: requireAdminSubRole(['talent_acquisition']),
-    try {
-      const page  = Math.max(1, parseInt(String(req.query.page  ?? 1), 10));
-      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? 50), 10)));
-      const search = String(req.query.search ?? "").trim();
-      const offset = (page - 1) * limit;
-      const pattern = `%${search}%`;
-
-      // Count query: pattern is $1 (if present).
-      // List query:  $1=limit, $2=offset, pattern is $3 (if present).
-      // Two separate where-clause strings keep parameter positions explicit.
-      const countWhere = search
-        ? `AND (
-             u.email        ILIKE $1
-          OR u.first_name   ILIKE $1
-          OR u.last_name    ILIKE $1
-          OR c.full_name    ILIKE $1
-          OR c.display_name ILIKE $1
-        )`
-        : "";
-      const listWhere = search
-        ? `AND (
-             u.email        ILIKE $3
-          OR u.first_name   ILIKE $3
-          OR u.last_name    ILIKE $3
-          OR c.full_name    ILIKE $3
-          OR c.display_name ILIKE $3
-        )`
-        : "";
-
-      const listParams: any[] = [limit, offset];
-      if (search) listParams.push(pattern);
-
-      const [countResult, listResult] = await Promise.all([
-        query(`
-          SELECT COUNT(*)::int AS total
-          FROM   users u
-          LEFT JOIN candidates c ON c.user_id = u.id
-          WHERE  u.role = 'talent'
-          ${countWhere}
-        `, search ? [pattern] : []),
-
-        query(`
-          SELECT
-            u.id,
-            u.email,
-            u.first_name,
-            u.last_name,
-            u.created_at,
-            c.id                AS candidate_id,
-            c.category,
-            c.profile_completed,
-            c.account_created,
-            c.location,
-            c.target_position,
-            c.seniority,
-            c.headline,
-            c.availability
-          FROM   users u
-          LEFT JOIN candidates c ON c.user_id = u.id
-          WHERE  u.role = 'talent'
-          ${listWhere}
-          ORDER BY u.created_at DESC
-          LIMIT  $1 OFFSET $2
-        `, listParams),
-      ]);
-
-      res.json({
-        total: countResult.rows[0]?.total ?? 0,
-        page,
-        limit,
-        items: listResult.rows,
-      });
-    } catch (err: any) {
-      console.error("GET /api/admin/talent error:", err);
-      res.status(500).json({ error: "Failed to fetch talent list" });
     }
   });
 
