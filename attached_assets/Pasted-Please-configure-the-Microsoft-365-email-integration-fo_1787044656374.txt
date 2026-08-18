@@ -1,0 +1,41 @@
+Please configure the Microsoft 365 email integration for this Replit project.
+
+I do **not** want to manually create each secret through the Replit Secrets UI. Please use Replit's available secrets/environment-variable management functionality to create the required secrets for this project.
+
+Create/configure the following environment secrets:
+
+* `MICROSOFT_TENANT_ID`
+* `MICROSOFT_CLIENT_ID`
+* `MICROSOFT_CLIENT_SECRET`
+* `APPLICATION_EMAIL_FROM`
+* `APPLICATION_EMAIL_FROM_NAME`
+* `APPLICATION_EMAIL_REPLY_TO`
+* `PUBLIC_APP_URL`
+
+Use these values:
+
+```text
+MICROSOFT_TENANT_ID=<PASTE_TENANT_ID_HERE>
+MICROSOFT_CLIENT_ID=<PASTE_CLIENT_ID_HERE>
+MICROSOFT_CLIENT_SECRET=<PASTE_CLIENT_SECRET_HERE>
+APPLICATION_EMAIL_FROM=<PASTE_SHARED_MAILBOX_EMAIL_HERE>
+APPLICATION_EMAIL_FROM_NAME=OnSpot Talent
+APPLICATION_EMAIL_REPLY_TO=<PASTE_REPLY_TO_EMAIL_HERE>
+PUBLIC_APP_URL=<PASTE_REPLIT_APP_URL_HERE>
+```
+
+Important requirements:
+
+1. Store these as **Replit Secrets / environment variables**, not as hardcoded values in the application source code.
+2. Do not commit the actual secret values to Git.
+3. Do not create a `.env` file containing production credentials if it could be committed to the repository.
+4. `MICROSOFT_CLIENT_SECRET` must always remain secret and must never be exposed to frontend/client-side code.
+5. Make sure server-side code can access the values using the project's normal environment-variable mechanism, such as `process.env.MICROSOFT_TENANT_ID` for Node.js.
+6. `APPLICATION_EMAIL_REPLY_TO` is optional. If its value is blank, the application should simply omit the Reply-To configuration.
+7. For `PUBLIC_APP_URL`, use the application's actual public/deployment URL if Replit can determine it automatically.
+8. After configuring the secrets, verify that all required environment variables are available to the backend without printing their actual secret values.
+9. Do not display `MICROSOFT_CLIENT_SECRET` in logs, console output, API responses, or frontend code.
+
+If Replit requires explicit permission from me before modifying project Secrets, request that permission and then perform the configuration rather than asking me to manually create each secret one by one.
+
+After completing the setup, tell me which secret names were successfully configured, but mask all sensitive values.
