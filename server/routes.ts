@@ -8675,9 +8675,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notifications", async (req, res) => {
+  // POST /api/notifications — requires authentication; caller may only create
+  // notifications for themselves (admin may create for any user).
+  // Note: internal server-side notification creation (e.g. from POST /api/messages)
+  // calls storage.createNotification() directly and is not affected by this gate.
+  app.post("/api/notifications", authenticateJWT, async (req: any, res) => {
     try {
       const validated = insertNotificationSchema.parse(req.body);
+      const authedUser = req.user;
+      if (authedUser.role !== "admin" && validated.userId !== authedUser.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const notification = await storage.createNotification(validated);
       res.status(201).json(notification);
     } catch (error) {

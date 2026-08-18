@@ -66,17 +66,22 @@ async function fetchUnreadMessageCount(
 
 /**
  * Returns the count of unread new_message notifications for the currently
- * authenticated talent (covers both talent-portal JWT and main JWT paths).
- * Returns 0 for non-talent sessions.
+ * authenticated user — covers talent-portal JWT, main-JWT talent, and
+ * main-JWT client roles (clients receive messages too).
+ * Returns 0 for unauthenticated or admin sessions.
  */
 export function useUnreadMessagesCount(): number {
   const { user } = useAuth();
   const talentAuth = loadTalentAuth();
 
   // Talent-portal sessions use /api/talent/notifications (no userId needed).
-  // Main-JWT talent sessions use the user's actual users.id.
+  // Main-JWT talent AND client sessions use the user's actual users.id via
+  // GET /api/users/:userId/notifications so that both roles see their badge.
   const isTalentPortal = !!talentAuth;
-  const userId = user?.role === "talent" ? (user?.id ?? null) : null;
+  const userId =
+    user?.role === "talent" || user?.role === "client"
+      ? (user?.id ?? null)
+      : null;
 
   const { data: count = 0 } = useQuery<number>({
     queryKey: ["unread-messages-count", isTalentPortal, userId],
@@ -90,13 +95,16 @@ export function useUnreadMessagesCount(): number {
   return count;
 }
 
-/** Invalidates the unread-messages badge — call after the talent reads a thread. */
+/** Invalidates the unread-messages badge — call after any user reads a thread. */
 export function useInvalidateUnreadMessages(): () => void {
   const qc = useQueryClient();
   const { user } = useAuth();
   const talentAuth = loadTalentAuth();
   const isTalentPortal = !!talentAuth;
-  const userId = user?.role === "talent" ? (user?.id ?? null) : null;
+  const userId =
+    user?.role === "talent" || user?.role === "client"
+      ? (user?.id ?? null)
+      : null;
   return () =>
     qc.invalidateQueries({ queryKey: ["unread-messages-count", isTalentPortal, userId] });
 }
