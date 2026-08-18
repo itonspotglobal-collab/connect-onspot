@@ -151,7 +151,14 @@ export function useCandidateProfileSettings() {
     queryKey: candidateQueryKeys.profile(candidateId ?? ""),
     queryFn: async () => {
       if (!candidateId) return null;
-      const res = await fetch(`/api/candidates/${candidateId}`);
+      // Always send the talent JWT so the server returns the owner-privileged response,
+      // which includes resumeUrl, resumeFileName, videoIntroUrl, videoIntroFileName.
+      // Without this header the server returns publicSanitizeCandidate() which strips
+      // those fields, causing the resume to disappear after every background refetch.
+      const auth = loadTalentAuth();
+      const res = await fetch(`/api/candidates/${candidateId}`, {
+        headers: auth?.token ? { Authorization: `Bearer ${auth.token}` } : {},
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || `Failed to load candidate (${res.status})`);

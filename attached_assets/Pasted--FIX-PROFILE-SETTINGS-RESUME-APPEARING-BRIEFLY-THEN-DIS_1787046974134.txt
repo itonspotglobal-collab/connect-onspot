@@ -1,0 +1,883 @@
+# FIX PROFILE SETTINGS RESUME APPEARING BRIEFLY THEN DISAPPEARING
+
+There is still a specific resume synchronization bug in the Talent Profile / Profile Settings flow.
+
+Do NOT make another broad refactor.
+
+Investigate and fix this exact behavior.
+
+---
+
+# Reproducible Bug
+
+The Candidate already has a resume.
+
+It is visible correctly on:
+
+**Talent Profile**
+
+Example:
+
+```text
+Legaspi_CV.pdf
+```
+
+But on:
+
+**Profile Settings → Documents**
+
+it shows:
+
+```text
+No resume uploaded yet.
+```
+
+There is an even more important clue:
+
+When a resume is uploaded/replaced, the resume may briefly appear inside Profile Settings for a few seconds and then disappear again.
+
+This indicates that the upload/candidate cache is initially correct, but a later server refetch is overwriting the cache with Candidate data that does not contain:
+
+```ts
+resumeUrl
+resumeFileName
+```
+
+Fix the actual refetch/data-response problem.
+
+---
+
+# LIKELY FAILURE SEQUENCE
+
+The current flow appears to behave like this:
+
+```text
+POST /api/candidates/:id/resume
+          ↓
+backend saves resumeUrl + resumeFileName
+          ↓
+frontend updates React Query cache
+          ↓
+resume appears correctly
+          ↓
+candidate query is invalidated
+          ↓
+GET /api/candidates/:id refetches
+          ↓
+response does not contain resume metadata
+          ↓
+React Query replaces cached Candidate
+          ↓
+resume disappears
+```
+
+That is why the resume briefly shows and then becomes:
+
+```text
+No resume uploaded yet.
+```
+
+Do not patch over this with local state.
+
+Find out why the Candidate refetch loses the resume fields.
+
+---
+
+# 1. INSPECT THE ACTUAL NETWORK RESPONSE FIRST
+
+Before editing UI code, inspect the response from:
+
+```http
+GET /api/candidates/:candidateId
+```
+
+when called from **Profile Settings**.
+
+Specifically inspect:
+
+```json
+{
+  "id": "...",
+  "resumeUrl": "...",
+  "resumeFileName": "..."
+}
+```
+
+Determine whether:
+
+```ts
+resumeUrl
+resumeFileName
+```
+
+are present in the response.
+
+Test it:
+
+1. Candidate has `Legaspi_CV.pdf`.
+2. Open Profile Settings.
+3. Inspect Network.
+4. Open the response for:
+
+```http
+GET /api/candidates/:candidateId
+```
+
+Report exactly whether:
+
+```text
+resumeUrl exists?
+resumeFileName exists?
+```
+
+---
+
+# 2. PROFILE SETTINGS MUST FETCH THE CANDIDATE AS THE AUTHENTICATED OWNER
+
+Inspect:
+
+```text
+client/src/hooks/useCandidateProfileSettings.ts
+```
+
+The current candidate query uses:
+
+```ts
+fetch(`/api/candidates/${candidateId}`)
+```
+
+but apparently does not send the Talent JWT.
+
+This is suspicious.
+
+Profile Settings is an **owner/private screen**.
+
+The request should identify the logged-in talent so the server can return private owner fields.
+
+Change the Settings candidate query to use the authenticated Talent token.
+
+Conceptually:
+
+```ts
+const auth = loadTalentAuth();
+
+const res = await fetch(`/api/candidates/${candidateId}`, {
+  headers: auth?.token
+    ? {
+        Authorization: `Bearer ${auth.token}`,
+      }
+    : undefined,
+  credentials: "include",
+});
+```
+
+Do not blindly copy this if the project has a shared authenticated fetch helper.
+
+Use the existing supported authentication architecture.
+
+---
+
+# 3. CHECK THE SERVER CANDIDATE SANITIZATION LOGIC
+
+Search the server for:
+
+```text
+GET /api/candidates/:id
+sanitizeCandidate
+public candidate
+resumeUrl
+resumeFileName
+videoIntroUrl
+email
+phone
+```
+
+The server may intentionally sanitize private Candidate data for public visitors.
+
+That is correct for public users.
+
+But the authenticated Candidate owner must receive the resume metadata necessary for:
+
+```text
+Talent Profile
+Profile Settings
+```
+
+Do NOT expose private resume information publicly.
+
+Instead, ensure owner-aware sanitization behaves like:
+
+```text
+Unauthenticated public visitor
+    → public-safe candidate fields
+
+Authenticated talent owner
+    → public fields + owner-private fields
+    → includes resume metadata
+
+Admin / authorized internal role
+    → appropriate privileged fields
+```
+
+---
+
+# 4. DO NOT MAKE RESUME URL PUBLIC JUST TO FIX SETTINGS
+
+Important security requirement:
+
+Do NOT simply modify the public Candidate API so everyone gets:
+
+```ts
+resumeUrl
+```
+
+if resume access is intended to be private.
+
+Instead, detect the authenticated owner.
+
+A safer response for the owner can include:
+
+```ts
+resumeUrl
+resumeFileName
+videoIntroUrl
+videoIntroFileName
+```
+
+while the public version can continue hiding private media fields.
+
+---
+
+# 5. VERIFY AUTH RESOLUTION
+
+Profile Settings currently gets the candidate ID from:
+
+```ts
+loadTalentAuth()
+```
+
+Confirm the query also uses that same auth token.
+
+Expected:
+
+```ts
+const talentAuth = loadTalentAuth();
+
+candidateId = talentAuth.candidateId
+Authorization = Bearer talentAuth.token
+```
+
+This proves the request is from the owner of the same Candidate.
+
+---
+
+# 6. FIX THE REFRESH THAT OVERWRITES THE GOOD CACHE
+
+Do NOT disable refetching just to hide the issue.
+
+The server refetch must return the correct data.
+
+Bad workaround:
+
+```ts
+staleTime: Infinity
+```
+
+or:
+
+```ts
+refetchOnMount: false
+```
+
+or removing:
+
+```ts
+invalidateQueries(...)
+```
+
+That would only hide the bug.
+
+The correct behavior is:
+
+```text
+upload response
+      ↓
+cache updated
+      ↓
+refetch
+      ↓
+server returns same persisted resume metadata
+      ↓
+cache remains correct
+```
+
+---
+
+# 7. PROFILE SETTINGS QUERY SHOULD LOOK CONCEPTUALLY LIKE THIS
+
+Refactor:
+
+```ts
+useQuery({
+  queryKey: ["candidate-profile", candidateId],
+
+  queryFn: async () => {
+    if (!candidateId) return null;
+
+    const auth = loadTalentAuth();
+
+    const res = await fetch(
+      `/api/candidates/${candidateId}`,
+      {
+        headers: auth?.token
+          ? {
+              Authorization: `Bearer ${auth.token}`,
+            }
+          : {},
+        credentials: "include",
+      },
+    );
+
+    if (!res.ok) {
+      ...
+    }
+
+    return res.json();
+  },
+});
+```
+
+Again, use a project-wide helper if one already exists.
+
+Do not introduce another authentication implementation.
+
+---
+
+# 8. TALENT PROFILE SHOULD ALSO USE OWNER AUTH WHEN THE OWNER IS VIEWING
+
+Inspect:
+
+```text
+client/src/pages/TalentProfile.tsx
+```
+
+The current Candidate query also uses something equivalent to:
+
+```ts
+fetch(`/api/candidates/${id}`)
+```
+
+without an Authorization header.
+
+But the page conditionally renders private owner sections such as:
+
+```text
+Resume & Video
+```
+
+Therefore, when the authenticated talent is viewing their own profile, the Candidate fetch should also identify them as the owner.
+
+Otherwise this can produce the same bug:
+
+```text
+cache initially contains private media data
+↓
+public refetch occurs
+↓
+private fields disappear
+```
+
+For owner view:
+
+```ts
+Authorization: Bearer talentAuth.token
+```
+
+For ordinary public profile viewing:
+
+do not require auth and keep public-safe behavior.
+
+---
+
+# 9. IMPORTANT: TALENTPROFILE AUTH LOAD TIMING
+
+TalentProfile currently restores `talentAuth` after component mount.
+
+Check this carefully.
+
+Possible race:
+
+```text
+Render
+   ↓
+talentAuth = null
+   ↓
+candidate GET fires as public
+   ↓
+public sanitized candidate cached
+   ↓
+talentAuth loads
+```
+
+If so, make the owner/private candidate query respond correctly when auth becomes available.
+
+Possible solution:
+
+Include owner-auth state in the query behavior or explicitly refetch once `talentAuth` is restored.
+
+Do not create an infinite query loop.
+
+A conceptual approach:
+
+```ts
+const ownerToken =
+  talentAuth?.candidateId === id
+    ? talentAuth.token
+    : null;
+```
+
+Then the query function sends auth when available.
+
+If necessary:
+
+```ts
+useEffect(() => {
+  if (ownerToken) {
+    qc.invalidateQueries({
+      queryKey: ["/api/candidates", id],
+    });
+  }
+}, [ownerToken, id]);
+```
+
+Only do this if the current query architecture requires it.
+
+---
+
+# 10. PROFILE SETTINGS SHOULD NOT USE A PUBLIC CANDIDATE RESPONSE
+
+This is a private Settings screen.
+
+The data pipeline should effectively be:
+
+```text
+Profile Settings
+      ↓
+Talent JWT
+      ↓
+GET authenticated Candidate
+      ↓
+same Candidate row
+      ↓
+resumeUrl + resumeFileName
+      ↓
+Documents section
+```
+
+NOT:
+
+```text
+Profile Settings
+      ↓
+public Candidate endpoint
+      ↓
+sanitized Candidate
+      ↓
+resume metadata missing
+```
+
+---
+
+# 11. VERIFY DATABASE BEFORE CHANGING BACKEND
+
+Before modifying schema/storage, confirm the Candidate row already contains the resume.
+
+The Talent Profile currently displays it, and the candidate media upload route already does:
+
+```ts
+await updateCandidate(id, {
+  resumeUrl,
+  resumeFileName: file.originalname,
+});
+```
+
+Therefore do NOT add another resume table or field.
+
+Verify the current row first.
+
+---
+
+# 12. TEST THE UPLOAD API RESPONSE
+
+The upload route:
+
+```http
+POST /api/candidates/:id/resume
+```
+
+already returns:
+
+```json
+{
+  "success": true,
+  "resumeUrl": "...",
+  "resumeFileName": "Legaspi_CV.pdf"
+}
+```
+
+Keep using that result for immediate cache update.
+
+But the subsequent authenticated GET must return matching values.
+
+Test:
+
+### POST result
+
+```text
+resumeFileName = Legaspi_CV.pdf
+```
+
+Then immediately call:
+
+```http
+GET /api/candidates/:id
+Authorization: Bearer <talent token>
+```
+
+Expected:
+
+```text
+resumeFileName = Legaspi_CV.pdf
+```
+
+If that GET returns null/missing, fix the server response/auth logic.
+
+---
+
+# 13. ADD TEMPORARY DEBUG LOGGING
+
+Temporarily log in the Settings query:
+
+```ts
+console.log("SETTINGS candidate response", {
+  candidateId,
+  resumeUrl: data?.resumeUrl,
+  resumeFileName: data?.resumeFileName,
+});
+```
+
+After upload:
+
+```ts
+console.log("UPLOAD response", {
+  resumeUrl: uploadResult.resumeUrl,
+  resumeFileName: uploadResult.resumeFileName,
+});
+```
+
+Expected:
+
+```text
+UPLOAD response:
+Legaspi_CV.pdf
+
+SETTINGS candidate response:
+Legaspi_CV.pdf
+```
+
+If instead:
+
+```text
+UPLOAD response:
+Legaspi_CV.pdf
+
+SETTINGS candidate response:
+undefined
+```
+
+you have proven the exact problem.
+
+Remove debug logs when done.
+
+---
+
+# 14. CHECK CAMELCASE / DATABASE MAPPING
+
+Also verify the API response field names.
+
+The UI reads:
+
+```ts
+candidate.resumeUrl
+candidate.resumeFileName
+```
+
+Make sure the GET endpoint doesn't return:
+
+```text
+resume_url
+resume_file_name
+```
+
+or another variation.
+
+The Candidate API should consistently expose:
+
+```ts
+resumeUrl
+resumeFileName
+```
+
+to the frontend.
+
+---
+
+# 15. PROFILE SETTINGS UI MUST CONTINUE USING THE CANDIDATE
+
+Keep the Documents section driven by:
+
+```ts
+candidate?.resumeFileName
+```
+
+and:
+
+```ts
+candidate?.resumeUrl
+```
+
+Do not introduce:
+
+```ts
+const [resumeName, setResumeName]
+```
+
+as a permanent fix.
+
+React Query Candidate data must remain the source of truth.
+
+---
+
+# 16. REMOVE ANY EFFECT THAT RESETS RESUME STATE
+
+Search `ProfileSettings.tsx` for effects such as:
+
+```ts
+useEffect(...)
+```
+
+that may reset local state when:
+
+```ts
+candidate
+form
+candidateId
+```
+
+changes.
+
+Ensure no effect is doing something equivalent to:
+
+```ts
+setResume(...)
+```
+
+based on an incomplete candidate response.
+
+The key problem is likely the server/refetch response, but verify there is no second reset issue.
+
+---
+
+# 17. SAME FIX FOR VIDEO METADATA
+
+Since Resume and Video use the same Candidate media architecture, inspect:
+
+```ts
+videoIntroUrl
+videoIntroFileName
+```
+
+If the public Candidate sanitizer strips those too, owner Settings/Profile requests should receive those values as well.
+
+Do not wait for the exact same bug to happen with video.
+
+---
+
+# EXACT ACCEPTANCE TEST
+
+Use candidate with:
+
+```text
+Legaspi_CV.pdf
+```
+
+## Test A — Existing resume
+
+1. Confirm Talent Profile displays:
+
+```text
+Legaspi_CV.pdf
+```
+
+2. Open Profile Settings.
+3. Open Documents.
+4. Wait at least 30 seconds.
+
+Expected the entire time:
+
+```text
+Legaspi_CV.pdf
+```
+
+It must NOT change to:
+
+```text
+No resume uploaded yet.
+```
+
+---
+
+## Test B — Replace from Talent Profile
+
+1. Upload:
+
+```text
+Legaspi_CV_Updated.pdf
+```
+
+2. Talent Profile immediately shows:
+
+```text
+Legaspi_CV_Updated.pdf
+```
+
+3. Wait for all React Query refetches.
+
+It must still show:
+
+```text
+Legaspi_CV_Updated.pdf
+```
+
+4. Open Settings.
+
+Expected:
+
+```text
+Legaspi_CV_Updated.pdf
+```
+
+5. Wait 30+ seconds.
+
+It must remain visible.
+
+---
+
+## Test C — Replace from Settings
+
+Upload:
+
+```text
+Legaspi_Final.pdf
+```
+
+Settings should immediately show:
+
+```text
+Legaspi_Final.pdf
+```
+
+Wait for the candidate refetch.
+
+It must remain:
+
+```text
+Legaspi_Final.pdf
+```
+
+Then Talent Profile must also show:
+
+```text
+Legaspi_Final.pdf
+```
+
+---
+
+## Test D — Compare API responses
+
+After upload, verify:
+
+```text
+POST /resume response
+        =
+authenticated GET Candidate response
+        =
+Profile Settings UI
+        =
+Talent Profile UI
+```
+
+for both:
+
+```text
+resumeUrl
+resumeFileName
+```
+
+---
+
+# DO NOT ACCEPT THIS AS FIXED IF
+
+Do not consider the task complete if:
+
+* the resume appears only before the refetch
+* the resume returns only after browser refresh
+* Settings uses a separate local resume state
+* refetching is disabled to hide the issue
+* staleTime is increased to hide the issue
+* page reload is used
+* the public API is changed to expose private resumes to everyone
+* Talent Profile and Settings still receive different Candidate shapes
+
+---
+
+# MOST IMPORTANT REQUIREMENT
+
+**The authenticated Candidate GET response must contain the same canonical resume metadata that was just persisted by the resume upload endpoint.**
+
+The final stable flow must be:
+
+```text
+Candidate database:
+resumeFileName = Legaspi_CV.pdf
+              ↓
+Authenticated Talent Profile fetch
+              ↓
+Legaspi_CV.pdf
+              ↓
+Authenticated Settings fetch
+              ↓
+Legaspi_CV.pdf
+```
+
+No flash.
+
+No disappearance.
+
+No refresh required.
+
+No duplicate resume state.
+
+---
+
+# FINAL REPORT
+
+After fixing, report:
+
+1. What the POST resume endpoint returned.
+2. What the Settings GET Candidate endpoint returned before the fix.
+3. Whether resume fields were being stripped by sanitization/auth.
+4. Whether TalentProfile was fetching Candidate before Talent auth loaded.
+5. Files changed.
+6. Exact owner-auth logic used.
+7. Confirmation that resume remains visible after all refetches.

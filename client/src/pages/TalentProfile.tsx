@@ -771,7 +771,16 @@ export default function TalentProfile() {
   const { data: candidate, isLoading, isError } = useQuery<Candidate>({
     queryKey: ["/api/candidates", id],
     queryFn: async () => {
-      const res = await fetch(`/api/candidates/${id}`);
+      // Read auth directly from localStorage (not from talentAuth state) so the
+      // owner token is available on the very first render, before the useEffect
+      // that sets talentAuth state has fired.  Without the token the server returns
+      // publicSanitizeCandidate() which strips resumeUrl/resumeFileName/videoIntroUrl.
+      const auth = loadTalentAuth();
+      const headers: Record<string, string> = {};
+      if (auth?.token && String(auth.candidateId) === String(id)) {
+        headers["Authorization"] = `Bearer ${auth.token}`;
+      }
+      const res = await fetch(`/api/candidates/${id}`, { headers });
       if (!res.ok) throw new Error("Not found");
       return res.json();
     },
