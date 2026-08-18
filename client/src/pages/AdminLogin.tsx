@@ -41,19 +41,11 @@ export default function AdminLogin() {
       const success = await login(email.trim(), password, null);
 
       if (success) {
-        if (user?.role !== "admin") {
-          // Logged in but not an admin account
-          toast({
-            title: "Access denied",
-            description: "This login is for OnSpot staff only.",
-            variant: "destructive",
-          });
-          // Log them back out
-          setEmail("");
-          setPassword("");
-        } else {
-          window.location.href = "/admin/dashboard";
-        }
+        // Redirect to admin dashboard — AdminProtectedRoute enforces the role
+        // check server-side and will bounce non-admins to /login. We don't
+        // read user.role here because the AuthContext state update is async
+        // and the value may still be stale in this closure.
+        window.location.href = "/admin/dashboard";
       } else {
         toast({
           title: "Login failed",

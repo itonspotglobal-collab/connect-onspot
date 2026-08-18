@@ -2838,21 +2838,6 @@ export function TopNavigation() {
                         </Card>
                       </div>
 
-                      {/* Admin Portal Footer Button */}
-                      <div className="mt-6 flex justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setShowPortal(false);
-                            window.location.href = "/admin/dashboard";
-                          }}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-                          data-testid="button-admin-portal"
-                        >
-                          🔑 Admin Portal
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 )}
