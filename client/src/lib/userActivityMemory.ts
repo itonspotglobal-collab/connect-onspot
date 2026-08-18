@@ -78,7 +78,7 @@ function extractTerms(activity: UserActivity): string[] {
     ...(Array.isArray(activity.tags) ? activity.tags : []),
     ...(Array.isArray(activity.skills) ? activity.skills : []),
   ];
-  return [...new Set(raw.map(normalizeTerm).filter(Boolean))];
+  return Array.from(new Set(raw.map(normalizeTerm).filter(Boolean)));
 }
 
 // ─── Core CRUD ────────────────────────────────────────────────────────────────

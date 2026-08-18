@@ -352,7 +352,7 @@ const prompts = [
   "Social media assistant with flexible schedule",
 ];
 
-function StatPill({ icon: Icon, label, value }) {
+function StatPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
   return (
     <div className="rounded-full border border-white/15 bg-white/70 px-4 py-3 backdrop-blur dark:bg-white/5">
       <div className="flex items-center gap-3">
@@ -377,6 +377,7 @@ function StatPill({ icon: Icon, label, value }) {
 type Role = (typeof roles)[number];
 
 function RoleModal({ role, onClose }: { role: Role; onClose: () => void }) {
+  const [, navigate] = useLocation();
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -621,6 +622,7 @@ function JobCard({
   role: Role;
   onViewDetails: (r: Role) => void;
 }) {
+  const [, navigate] = useLocation();
   return (
     <motion.div
       layout
@@ -737,7 +739,8 @@ function DbJobCard({
   job: Job;
   onNavigate: (id: string) => void;
 }) {
-  const pay = buildRateDisplayWithCode(job);
+  const [, navigate] = useLocation();
+  const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo(job.createdAt);
   const tags = (job.skillTags ?? []).slice(0, 4);
@@ -1120,7 +1123,7 @@ export default function OnSpotFindWorkRedesign() {
                       const role = item as Role;
 
                       const title = isDbJob ? job.title : role.title;
-                      const pay = isDbJob ? buildRateDisplayWithCode(job) : role.pay;
+                      const pay = isDbJob ? buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined }) : role.pay;
                       const shift = isDbJob
                         ? (job.engagementType ?? "Full-Time")
                         : role.shift;

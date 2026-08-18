@@ -72,6 +72,8 @@ export const defaultFormData = {
   isFeatured: false,
   // Urgently Hiring flag (manual, not auto-calculated)
   urgentlyHiring: false,
+  // Resume requirement
+  requiresResume: false,
   // Require video introduction from applicants
   requiresVideoIntro: false,
   // Company visibility
@@ -149,6 +151,8 @@ export function jobToFormData(job: Job): JobFormData {
     isFeatured: (job as any).isFeatured ?? false,
     // Urgently Hiring flag
     urgentlyHiring: (job as any).urgentlyHiring ?? false,
+    // Resume requirement
+    requiresResume: (job as any).requiresResume ?? false,
     // Require video introduction from applicants
     requiresVideoIntro: (job as any).requiresVideoIntro ?? false,
     // Company visibility

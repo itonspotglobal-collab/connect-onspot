@@ -35,7 +35,7 @@ import {
   Globe,
   Heart,
   Lightbulb,
-  Magic
+  Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTalentProfile } from "@/hooks/useTalentProfile";

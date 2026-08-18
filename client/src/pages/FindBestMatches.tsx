@@ -1031,9 +1031,9 @@ function computeDomainPenalty(
   jobDomain: Domain,
 ): number {
   let minPenalty = Infinity;
-  for (const cd of candidateDomains) {
+  for (const cd of Array.from(candidateDomains)) {
     if (cd === jobDomain) return 0;
-    const p = DOMAIN_PENALTY[cd]?.[jobDomain] ?? 0;
+    const p = (DOMAIN_PENALTY as any)[cd]?.[jobDomain] ?? 0;
     minPenalty = Math.min(minPenalty, p);
   }
   return minPenalty === Infinity ? 0 : minPenalty;

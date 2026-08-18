@@ -110,7 +110,7 @@ export default function ResumeParser({ onParseComplete, onSkip, className }: Res
         userId: user?.id 
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setParsedData(data.parsedData);
       setParseStep('preview');
       toast({

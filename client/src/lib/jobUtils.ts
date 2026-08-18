@@ -241,10 +241,6 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
   // while preserving relative order within each group.
   let sorted: any[];
   switch (sortBy) {
-    case "recently-posted": // unreachable — handled above, kept for exhaustive switch
-      sorted = list.sort((a, b) => toMs(b) - toMs(a));
-      break;
-
     case "most-applied":
       sorted = list.sort((a, b) => (b.proposalCount || 0) - (a.proposalCount || 0));
       break;

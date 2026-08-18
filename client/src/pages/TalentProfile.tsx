@@ -971,7 +971,7 @@ export default function TalentProfile() {
         throw new Error(err.error || "Failed to delete video");
       }
       // Clear videoIntroUrl in local candidate state so the preview disappears
-      setCandidate((prev: any) => prev ? { ...prev, videoIntroUrl: null, videoIntroFileName: null } : prev);
+      qc.setQueryData(["/api/candidates", id], (prev: any) => prev ? { ...prev, videoIntroUrl: null, videoIntroFileName: null } : prev);
       toast({ title: "Video deleted", description: "Your video introduction has been removed." });
     } catch (err: any) {
       toast({ title: "Delete failed", description: err.message || "Could not delete video.", variant: "destructive" });

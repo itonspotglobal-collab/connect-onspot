@@ -173,8 +173,8 @@ function titleSimilarity(a: string, b: string): number {
   if (na === nb) return 1;
   const wa = new Set(na.split(" "));
   const wb = new Set(nb.split(" "));
-  const intersection = [...wa].filter(w => wb.has(w) && w.length > 2);
-  const union = new Set([...wa, ...wb]);
+  const intersection = Array.from(wa).filter(w => wb.has(w) && w.length > 2);
+  const union = new Set([...Array.from(wa), ...Array.from(wb)]);
   return intersection.length / Math.max(union.size, 1);
 }
 
@@ -238,7 +238,7 @@ function AdminJobRow({
 }) {
   const badges = getJobBadges(job as any);
   const isOpen = job.status === "open";
-  const pay = buildRateDisplayWithCode(job);
+  const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
   const approvalCfg = APPROVAL_CONFIG[approvalStatus] ?? APPROVAL_CONFIG.pending;
@@ -484,7 +484,7 @@ function PendingApprovalCard({
   isApproving: boolean;
   isRejecting: boolean;
 }) {
-  const pay = buildRateDisplayWithCode(job);
+  const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const timeAgo = getTimeAgo(job.createdAt);
   const duplicates = findDuplicates(job, allJobs);
   const hasDuplicates = duplicates.length > 0;
@@ -1534,7 +1534,7 @@ export default function AdminFindWork() {
       {viewDetailJobId && (() => {
         const dj = enrichedJobs.find((j) => j.id === viewDetailJobId);
         if (!dj) return null;
-        const pay = buildRateDisplayWithCode(dj);
+        const pay = buildRateDisplayWithCode({ ...dj, engagementType: dj.engagementType ?? undefined });
         const dups = findDuplicates(dj, enrichedJobs);
         return (
           <Dialog open={!!viewDetailJobId} onOpenChange={(open) => { if (!open) setViewDetailJobId(null); }}>

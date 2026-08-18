@@ -640,7 +640,7 @@ export default function WhyOnSpotAbout() {
               >
                 {/* Photo */}
                 <div style={{ height: 220, background: (l as any).photoBg ?? "#f0eff4", overflow: "hidden", position: "relative" }}>
-                  <div style={{ position: "absolute", inset: 0, transform: l.imgScale || "none", transformOrigin: "50% 42%" }}>
+                  <div style={{ position: "absolute", inset: 0, transform: (l as any).imgScale || "none", transformOrigin: "50% 42%" }}>
                     <img
                       src={l.photo}
                       alt={l.name}

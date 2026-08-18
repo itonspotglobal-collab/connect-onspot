@@ -752,7 +752,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
         </div>
 
         {/* Talent rows */}
-        <div className="divide-y" style={{ divideColor: "#EEEDFB" }}>
+        <div className="divide-y" style={{ borderColor: "#EEEDFB" }}>
           {isLoading ? (
             // Skeleton rows — preserve card height while loading
             Array.from({ length: 4 }).map((_, i) => (
@@ -925,7 +925,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
         </div>
 
         {/* Job rows */}
-        <div className="divide-y" style={{ divideColor: "#F0F0F5" }}>
+        <div className="divide-y" style={{ borderColor: "#F0F0F5" }}>
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center justify-between px-5 py-3.5 animate-pulse">

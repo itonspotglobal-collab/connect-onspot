@@ -581,7 +581,7 @@ function DbJobDetail({
   job: Job;
   navigate: (path: string) => void;
 }) {
-  const pay = buildRateDisplayWithCode(job);
+  const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
 
@@ -1744,7 +1744,7 @@ function DbSimilarCard({
   job: Job;
   navigate: (p: string) => void;
 }) {
-  const pay = buildRateDisplay(job);
+  const pay = buildRateDisplay({ ...job, engagementType: job.engagementType ?? undefined });
   const displayTitle = (job as any).professionalRoleName || job.title;
   const functionBadge = (job as any).jobFunction || job.category;
   const companyName = getPublicCompanyName(job as any);

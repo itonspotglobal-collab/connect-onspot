@@ -287,7 +287,7 @@ export default function EnhancedProfileOnboarding({
   };
 
   const handleStepComplete = (stepIndex: number) => {
-    setCompletedSteps(prev => new Set([...prev, stepIndex]));
+    setCompletedSteps(prev => new Set([...Array.from(prev), stepIndex]));
     
     // Show achievement if first time completing step
     if (!completedSteps.has(stepIndex)) {
@@ -864,7 +864,7 @@ export default function EnhancedProfileOnboarding({
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {skills.map((userSkill) => (
+                    {skills.map((userSkill: any) => (
                       <Badge key={userSkill.id} variant="default" className="text-sm py-2 px-3">
                         {userSkill.skill?.name} 
                         <span className="ml-1 opacity-70">({userSkill.level})</span>
@@ -884,8 +884,8 @@ export default function EnhancedProfileOnboarding({
                 <h4 className="font-medium">Add More Skills</h4>
                 {availableSkills && availableSkills.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {availableSkills.slice(0, 12).map((skill) => {
-                      const isSelected = skills?.some(us => us.skillId === skill.id);
+                    {availableSkills.slice(0, 12).map((skill: any) => {
+                      const isSelected = skills?.some((us: any) => us.skillId === skill.id);
                       return (
                         <Button
                           key={skill.id}

@@ -103,7 +103,7 @@ export default function AdminEmailTemplates() {
   });
 
   // Derived / filtered
-  const categories = [...new Set(templates.map(t => t.category))].sort();
+  const categories = Array.from(new Set(templates.map(t => t.category))).sort();
   const visible = templates.filter(t => {
     if (catFilter && t.category !== catFilter) return false;
     if (search.trim()) {

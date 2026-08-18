@@ -188,7 +188,7 @@ function JobCard({
 }) {
   const [, navigate] = useLocation();
   const featured = (job as any).isFeatured === true;
-  const pay = buildRateDisplayWithCode(job);
+  const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const badges = getJobBadges(job);
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const allTags = (job.skillTags ?? []) as string[];
@@ -697,7 +697,7 @@ export default function FindWorkAllJobs() {
   function resetFilters() {
     setCategory("All Categories");
     setLocation("All Locations");
-    setContractType("All Types");
+    setEngagementType("All Types");
     setSalary("Any pay");
   }
 
@@ -1009,7 +1009,7 @@ export default function FindWorkAllJobs() {
                     {CONTRACT_TYPES.map((t) => (
                       <button
                         key={t}
-                        onClick={() => setContractType(t)}
+                        onClick={() => setEngagementType(t)}
                         className={`rounded-full px-3 py-1.5 text-xs capitalize transition ${
                           engagementType === t
                             ? "bg-[#474ead] text-white"

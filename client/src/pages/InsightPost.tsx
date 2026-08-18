@@ -68,8 +68,9 @@ export default function InsightPost() {
   });
 
   const likeMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      return apiRequest("POST", `/api/posts/${postId}/like`);
+    mutationFn: async (postId: string): Promise<{ success: boolean; likes: number }> => {
+      const res = await apiRequest("POST", `/api/posts/${postId}/like`);
+      return res.json();
     },
     onSuccess: (data: { success: boolean; likes: number }) => {
       if (data.success) {
@@ -229,7 +230,7 @@ export default function InsightPost() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {formatDate(publishedAt)}
+                  {formatDate(publishedAt ?? null)}
                 </span>
                 {post.readTime && (
                   <span className="flex items-center gap-1">

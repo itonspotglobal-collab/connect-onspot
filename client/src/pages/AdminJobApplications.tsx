@@ -1235,7 +1235,7 @@ export default function AdminJobApplications() {
           <div className="mb-3 flex items-center gap-3 rounded-lg bg-[#474ead]/10 border border-[#474ead]/20 px-4 py-2.5 text-sm">
             <span className="font-medium text-[#474ead]">{selected.size} selected</span>
             <Button size="sm" variant="outline" className="h-7 text-xs"
-              onClick={() => bulkMutation.mutate({ ids: [...selected], status: "under_review" })}>
+              onClick={() => bulkMutation.mutate({ ids: Array.from(selected), status: "under_review" })}>
               Mark Under Review
             </Button>
             <Button size="sm" variant="outline" className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
@@ -1492,7 +1492,7 @@ export default function AdminJobApplications() {
         open={bulkAction === "rejected"}
         count={selected.size}
         action="rejected"
-        onConfirm={() => bulkMutation.mutate({ ids: [...selected], status: "rejected" })}
+        onConfirm={() => bulkMutation.mutate({ ids: Array.from(selected), status: "rejected" })}
         onCancel={() => setBulkAction(null)}
       />
       <DeleteConfirmDialog

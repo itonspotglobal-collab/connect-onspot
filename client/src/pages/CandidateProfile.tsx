@@ -472,9 +472,8 @@ export default function CandidateProfile() {
           </Card>
         )}
 
-        {/* Skills */}
-        {((candidate.coreSkills ?? []).length > 0 ||
-          (candidate.secondarySkills ?? []).length > 0) && (
+        {((candidate.coreSkills as string[] | null)?.length ?? 0) > 0 ||
+        ((candidate.secondarySkills as string[] | null)?.length ?? 0) > 0 ? (
           <Card className="border-slate-200">
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -482,12 +481,12 @@ export default function CandidateProfile() {
                 Skills
               </div>
               <SkillsSection
-                coreSkills={candidate.coreSkills}
-                secondarySkills={candidate.secondarySkills}
+                coreSkills={candidate.coreSkills as string[] | null}
+                secondarySkills={candidate.secondarySkills as string[] | null}
               />
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         {/* Work History */}
         {hasWorkHistory && (
@@ -503,7 +502,7 @@ export default function CandidateProfile() {
         )}
 
         {/* Work Preferences */}
-        {candidate.preferences && (
+        {!!candidate.preferences && (
           <Card className="border-slate-200">
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">

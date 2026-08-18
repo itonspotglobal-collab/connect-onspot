@@ -18,6 +18,7 @@ import {
   Star,
   Clock,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Eye,
   Lock,

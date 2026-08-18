@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Sparkles, BriefcaseBusiness, Clock3, Globe2,
+  Search, SearchX, Sparkles, BriefcaseBusiness, Clock3, Globe2,
   ChevronRight, Star, BadgeCheck, DollarSign, Brain,
   TrendingUp, Plus, Minus, X, CheckCircle2, Gift,
   ListChecks, Award, ArrowRight, ArrowLeft, Maximize2,
@@ -448,6 +448,7 @@ function ModalSection({
 // tab: "summary" = compact highlight view; "full" = complete job posting
 
 function RoleDetailModal({ role, onClose }: { role: Role; onClose: () => void }) {
+  const [, navigate] = useLocation();
   const [tab, setTab] = useState<"summary" | "full">("summary");
 
   // Reset to summary whenever the role changes
@@ -801,6 +802,7 @@ function RoleRow({
   onToggle: () => void;
   onViewDetails: (role: Role) => void;
 }) {
+  const [, navigate] = useLocation();
   return (
     <motion.div
       layout

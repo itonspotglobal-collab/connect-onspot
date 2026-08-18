@@ -106,10 +106,7 @@ export default function PortfolioManagement({ talentId }: PortfolioManagementPro
   // Create portfolio item mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertPortfolioItem) => {
-      return apiRequest(`/api/portfolio`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', `/api/portfolio`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/talents', userId, 'portfolio'] });
@@ -132,10 +129,7 @@ export default function PortfolioManagement({ talentId }: PortfolioManagementPro
   // Update portfolio item mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertPortfolioItem> }) => {
-      return apiRequest(`/api/portfolio/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('PATCH', `/api/portfolio/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/talents', userId, 'portfolio'] });
@@ -158,9 +152,7 @@ export default function PortfolioManagement({ talentId }: PortfolioManagementPro
   // Delete portfolio item mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/portfolio/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/portfolio/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/talents', userId, 'portfolio'] });
@@ -628,7 +620,7 @@ function PortfolioForm({
               </Select>
               {field.value.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {field.value.map((skill, index) => (
+                  {field.value.map((skill: string, index: number) => (
                     <Badge key={index} variant="secondary" className="gap-1">
                       {skill}
                       <X
@@ -698,7 +690,7 @@ function PortfolioForm({
 
           {watchedImages.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {watchedImages.map((imageUrl, index) => (
+              {watchedImages.map((imageUrl: string, index: number) => (
                 <div key={index} className="relative group">
                   <img
                     src={imageUrl}

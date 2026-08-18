@@ -628,17 +628,17 @@ export function TopNavigation() {
                 (item.path === "/find-work/jobs" &&
                   (location.startsWith("/find-work") || location.startsWith("/jobs/"))) ||
                 (hasMegaMenu &&
-                  item.services &&
-                  Object.values(item.services).some(
-                    (service) => location === service.path,
+                  (item as any).services &&
+                  Object.values((item as any).services).some(
+                    (service: any) => location === service.path,
                   )) ||
                 (hasMegaMenu &&
-                  item.categories &&
+                  (item as any).categories &&
                   location === "/find-work") ||
                 (hasMegaMenu &&
-                  item.whyOnSpot &&
-                  Object.values(item.whyOnSpot).some(
-                    (section) => location === section.path,
+                  (item as any).whyOnSpot &&
+                  Object.values((item as any).whyOnSpot).some(
+                    (section: any) => location === section.path,
                   ));
               
               return (
@@ -1434,7 +1434,7 @@ export function TopNavigation() {
                         }}
                       >
                         {/* Services dropdown */}
-                        {item.services && Object.entries(item.services).map(([key, service]) => (
+                        {(item as any).services && Object.entries((item as any).services).map(([key, service]: [string, any]) => (
                           <Link
                             key={key}
                             href={service.path}
@@ -1450,7 +1450,7 @@ export function TopNavigation() {
                         ))}
                         
                         {/* Work categories dropdown */}
-                        {item.categories && Object.entries(item.categories).map(([key, category]) => (
+                        {(item as any).categories && Object.entries((item as any).categories).map(([key, category]: [string, any]) => (
                           <Link
                             key={key}
                             href={category.path}
@@ -1466,7 +1466,7 @@ export function TopNavigation() {
                         ))}
                         
                         {/* Why OnSpot dropdown */}
-                        {item.whyOnSpot && Object.entries(item.whyOnSpot).map(([key, section]) => (
+                        {(item as any).whyOnSpot && Object.entries((item as any).whyOnSpot).map(([key, section]: [string, any]) => (
                           <Link
                             key={key}
                             href={section.path}

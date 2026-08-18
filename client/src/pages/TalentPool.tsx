@@ -212,7 +212,7 @@ function computeMatch(
   }
 
   // Dedupe matched skills
-  const uniqueSkills = [...new Set(matchedSkills)].slice(0, 4);
+  const uniqueSkills = Array.from(new Set(matchedSkills)).slice(0, 4);
 
   // Compute label
   let label: string | null = null;

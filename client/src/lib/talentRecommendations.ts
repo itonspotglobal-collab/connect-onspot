@@ -34,7 +34,7 @@ export function buildTalentRecProfile(candidate: Candidate): TalentRecProfile {
     if (t?.trim()) terms.add(t.trim());
   });
 
-  const keywords = [...terms]
+  const keywords = Array.from(terms)
     .map((t) => t.trim())
     .filter((t) => t.length > 1 && !GENERIC_TERMS.has(t.toLowerCase()))
     .slice(0, 20);

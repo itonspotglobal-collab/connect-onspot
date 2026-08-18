@@ -75,7 +75,7 @@ export function buildClientRecProfile(
   tokenize(clientProfile?.about ?? "").forEach((t) => add(t, 2));
 
   // Sort by weight descending, take top 25 most relevant terms
-  const keywords = [...terms.entries()]
+  const keywords = Array.from(terms.entries())
     .sort((a, b) => b[1] - a[1])
     .map(([term]) => term)
     .slice(0, 25);
@@ -159,6 +159,6 @@ export function scoreTalentForClient(
 
   return {
     score,
-    matchedSkills: [...matchedSkillSet].slice(0, 4),
+    matchedSkills: Array.from(matchedSkillSet).slice(0, 4),
   };
 }

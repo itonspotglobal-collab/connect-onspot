@@ -81,7 +81,7 @@ export default function LinkedInImport({ onImportComplete, onSkip, className }: 
     mutationFn: async () => {
       return apiRequest('POST', '/api/linkedin/connect', { userId: user?.id });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.status === 'connected' || data.status === 'already_connected') {
         setImportStep('preview');
         setPreviewData(data.linkedinProfile);
@@ -106,7 +106,7 @@ export default function LinkedInImport({ onImportComplete, onSkip, className }: 
     mutationFn: async () => {
       return apiRequest('POST', '/api/linkedin/import-profile', { userId: user?.id });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setImportStep('complete');
       queryClient.invalidateQueries({ queryKey: ['/api/profiles/user', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['/api/users', user?.id, 'skills'] });
