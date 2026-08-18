@@ -5357,12 +5357,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SECURITY: redact the employer identity for confidential jobs before the
       // payload leaves the server — same guard as public job search.
+      // Also normalise overlapSkills to always be a string[] so clients never
+      // receive undefined and crash on .slice() / .map().
       const redacted = matches.map((m: any) => {
         const job = m.job;
+        const normalised = {
+          ...m,
+          overlapSkills: Array.isArray(m.overlapSkills) ? m.overlapSkills : [],
+        };
         if (job?.isCompanyConfidential) {
-          return { ...m, job: { ...job, company: null, companyName: null, companyOverview: null } };
+          return { ...normalised, job: { ...job, company: null, companyName: null, companyOverview: null } };
         }
-        return m;
+        return normalised;
       });
 
       res.json(redacted);
