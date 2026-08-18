@@ -5882,6 +5882,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updated) return res.status(404).json({ error: "Candidate not found" });
       res.json(sanitizeCandidate(updated));
 
+      // Invalidate the homepage candidates cache whenever availability changes so
+      // the carousel never shows a stale "Ready now" / "Unavailable" state.
+      if (candidateUpdates.availability !== undefined) {
+        _candidatesCache.data   = null;
+        _candidatesCache.expiry = 0;
+        console.log(`🔄 _candidatesCache invalidated — availability updated for candidate ${profileId}`);
+      }
+
       // Option C trigger A: recompute job matches after candidate preferences update.
       setImmediate(() => {
         (storage as any).recomputeMatchesForTalent(profileId)
