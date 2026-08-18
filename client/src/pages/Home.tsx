@@ -242,7 +242,9 @@ function TalentCarouselSection() {
         </div>
 
         {/* ── Carousel ── */}
+        {/* py-5: breathing room so hover shadow/transform isn't clipped vertically */}
         <div
+          className="py-5"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
