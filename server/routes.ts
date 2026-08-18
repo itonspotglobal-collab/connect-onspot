@@ -374,6 +374,52 @@ const requireClientOrTalent = requireRole(["client", "talent"]);
 const requireAnyRole = requireRole(["client", "talent", "admin"]);
 
 /**
+ * Sub-role middleware for admin-only endpoints that are further scoped to a
+ * specific internal function (e.g. 'talent_acquisition', 'client_success').
+ *
+ * Bypass rule: if the admin's admin_sub_role is NULL they are treated as a
+ * super-admin and always pass, regardless of the allowed list.  This means all
+ * current bootstrapped admins (who have no sub_role assigned yet) continue to
+ * reach every endpoint until Phase 5 sub-role assignments are made.
+ *
+ * Usage on a route:
+ *   app.get('/api/admin/clients', authenticateJWT, requireAdmin,
+ *     // Phase 5: requireAdminSubRole(['client_success']),
+ *     async (req, res) => { ... });
+ *
+ * Task #271 tracks the exact call sites that need to be uncommented in Phase 5.
+ */
+const requireAdminSubRole = (allowed: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const requestId = (req as any).requestId;
+    const user = (req as any).user;
+
+    // requireAdmin must have already run — user and role are guaranteed here.
+    const subRole: string | null = user?.admin_sub_role ?? null;
+
+    // NULL == super-admin: bypass sub-role check entirely.
+    if (subRole === null) {
+      return next();
+    }
+
+    if (!allowed.includes(subRole)) {
+      console.error(
+        `❌ Sub-role check failed [${requestId}]:`,
+        { userId: user?.id, subRole, allowed },
+      );
+      return res.status(403).json({
+        error: "Insufficient permissions",
+        message: `Access denied. Required sub-role: ${allowed.join(" or ")}`,
+        requestId,
+      });
+    }
+
+    console.log(`✅ Sub-role check passed [${requestId}]:`, { userId: user?.id, subRole, allowed });
+    next();
+  };
+};
+
+/**
  * Flexible admin auth middleware — accepts either:
  *   1. JWT Bearer token in Authorization header (portal / Access Portal login)
  *   2. Valid Replit Auth session where the DB user has role = "admin"
@@ -1553,6 +1599,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("✅ Migration: admin_role_changes table ready");
   } catch (err: any) {
     console.error("❌ admin_role_changes migration failed:", err.message);
+  }
+
+  // ── Phase 0: admin_sub_role column on users ───────────────────────────────
+  // Values: NULL = super-admin (bypass), 'talent_acquisition', 'client_success'.
+  // All current admins default to NULL — no behavioral change until Phase 5
+  // sub-role assignments are confirmed and requireAdminSubRole is uncommented
+  // at the 6 call sites tracked in Task #271.
+  try {
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_sub_role VARCHAR`);
+    console.log("✅ Migration: users.admin_sub_role column ready");
+  } catch (err: any) {
+    console.error("❌ admin_sub_role migration failed:", err.message);
   }
 
   // ── One-time bootstrap: convert 5 internal @onspotglobal.com accounts to admin ──
