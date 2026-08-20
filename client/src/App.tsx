@@ -277,6 +277,20 @@ function MessagesRoute() {
   }
   return <ClientRouter />;
 }
+
+function ClientTalentRoute() {
+  const { isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  // `/talent` remains publicly available, but authenticated Clients enter it
+  // through the Client portal shell so the existing sidebar and TopNavigation
+  // stay consistent with the rest of their workspace.
+  return user?.role === "client" ? <ClientRouter /> : <PublicRouter />;
+}
+
 function ClientRouter() {
   return (
     <ClientProtectedRoute>
@@ -470,7 +484,7 @@ function AppContent() {
       <Route path="/inquiry/:id/payment" component={PublicRouter} />
       <Route path="/inquiry/:id/success" component={PublicRouter} />
       <Route path="/investors" component={PublicRouter} />
-      <Route path="/talent" component={PublicRouter} />
+      <Route path="/talent" component={ClientTalentRoute} />
       <Route path="/operations-playbook" component={PublicRouter} />
       <Route path="/powerapp" component={PublicRouter} />
       

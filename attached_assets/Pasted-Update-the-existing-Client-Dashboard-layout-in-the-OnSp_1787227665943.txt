@@ -1,0 +1,609 @@
+Update the existing **Client Dashboard layout** in the OnSpot / `connect-onspot` application.
+
+## GOAL
+
+I want the Client Dashboard to use BOTH:
+
+1. the existing blue/purple **`TopNavigation`** used in the Client Profile pages
+2. the existing Client Portal **left sidebar**
+
+The desired structure is:
+
+```text
+┌──────────────────────────────────────────────┐
+│ Existing blue/purple TopNavigation           │
+│ OnSpot | Hire Talent | Bell | Client Profile │
+├───────────────┬──────────────────────────────┤
+│               │                              │
+│ Client Portal │ Dashboard page content       │
+│ Sidebar       │                              │
+│               │                              │
+│ Dashboard     │ Home Dashboard               │
+│ OnSpot Talent │ VA details                   │
+│ Messages      │ Attendance                   │
+│ Client        │ Financial Overview           │
+│ Projects      │ Communication                │
+│ Performance   │ Requests                     │
+│ ...           │                              │
+│               │                              │
+└───────────────┴──────────────────────────────┘
+```
+
+## VERY IMPORTANT
+
+Do NOT use the white Client Portal header/navigation currently shown with:
+
+* `OnSpot`
+* `Client Portal`
+* user avatar/name
+* theme icon
+* Logout
+
+I do NOT want that white header.
+
+The header must remain the existing **blue/purple `TopNavigation`** currently used on the Client Profile experience.
+
+Reuse the real existing component:
+
+`client/src/components/TopNavigation.tsx`
+
+Do not recreate a fake copy of it.
+
+---
+
+# TARGET VISUAL BEHAVIOR
+
+The final Client Dashboard should look like this conceptually:
+
+### Top
+
+Full-width blue/purple OnSpot header.
+
+Keep the existing TopNavigation features such as:
+
+* OnSpot logo
+* Hire Talent
+* notification bell
+* Client Profile dropdown
+* existing authentication/profile behavior
+
+### Below TopNavigation
+
+Split the viewport into:
+
+```text
+[ Client Sidebar ] [ Main Dashboard Content ]
+```
+
+The sidebar should start BELOW the blue header.
+
+It must not cover or replace TopNavigation.
+
+---
+
+# LEFT SIDEBAR
+
+Use the existing Client Portal sidebar design.
+
+Expected navigation sections/items include the existing Client navigation such as:
+
+### Core Modules
+
+* Dashboard
+* OnSpot Talent
+* Messages
+* Client Projects
+* Performance
+
+### Management
+
+* Client Management
+* Contracts
+* Payments
+* ROI Analytics
+
+### System
+
+* Settings
+
+Preserve the actual existing routes and permissions.
+
+Do NOT hardcode fake links.
+
+Search the existing sidebar/Client layout component and reuse its navigation definitions where possible.
+
+---
+
+# IMPORTANT: DO NOT DUPLICATE NAVIGATION LOGIC
+
+The current project appears to have more than one Client layout/navigation implementation.
+
+Audit before changing anything.
+
+Search for:
+
+* `ClientLayout`
+* `TopNavigation`
+* Client sidebar
+* `Dashboard.tsx`
+* client routes
+* Client Portal
+* Client Profile
+* `/dashboard`
+* `/messages`
+* `/hire-talent`
+* `/client`
+* `App.tsx`
+
+Determine where:
+
+1. the blue `TopNavigation` is currently mounted
+2. the white Client Portal header is generated
+3. the left sidebar is generated
+
+Then reuse only the needed pieces.
+
+Do NOT render two headers.
+
+---
+
+# REMOVE ONLY THE WHITE HEADER
+
+If the sidebar currently lives inside a component such as:
+
+`ClientLayout`
+
+and that component also generates the white header, refactor it carefully.
+
+Preferred architecture:
+
+```tsx
+<TopNavigation />
+
+<div className="client-shell">
+  <ClientSidebar />
+
+  <main>
+    {children}
+  </main>
+</div>
+```
+
+NOT:
+
+```tsx
+<ClientLayout>
+  <TopNavigation />
+</ClientLayout>
+```
+
+if `ClientLayout` itself produces another header.
+
+The end result must have:
+
+* ONE top header
+* ONE sidebar
+* ONE main content area
+
+No duplicates.
+
+---
+
+# PRESERVE TOPNAVIGATION EXACTLY
+
+Do not redesign `TopNavigation`.
+
+Do not change its colors, menu behavior, authentication, notification bell, or Client Profile dropdown unless absolutely necessary for layout compatibility.
+
+It should remain visually consistent with the existing Client Profile page.
+
+The user should still see the blue header similar to:
+
+```text
+OnSpot                         Hire Talent   Bell   Client Profile
+```
+
+Keep its existing responsive behavior.
+
+---
+
+# DASHBOARD CONTENT MUST REMAIN
+
+Do NOT rebuild or remove the existing dashboard cards.
+
+Preserve the current dashboard content, including existing sections such as:
+
+* Home Dashboard
+* VA profile/details
+* Today's Overview
+* Attendance Dashboard
+* Financial Overview
+* Communication
+* Requests
+* invoice history
+* schedule/attendance data
+
+This task is primarily a **layout/navigation consolidation**.
+
+Do not change business logic or fake any data.
+
+---
+
+# MAIN CONTENT WIDTH
+
+Once the sidebar is added, the main content should correctly account for its width.
+
+For desktop, use a layout similar to:
+
+```text
+TopNavigation
+└── flex
+    ├── Sidebar: fixed width
+    └── Main content: flex-1
+```
+
+Avoid:
+
+* content hidden under sidebar
+* horizontal overlap
+* dashboard cards overflowing viewport
+* header width ending at sidebar
+* sidebar starting above TopNavigation
+
+The TopNavigation must span the FULL viewport width.
+
+---
+
+# HEIGHT / SCROLLING
+
+The page should use:
+
+```text
+viewport height
+minus TopNavigation height
+```
+
+for the sidebar/main section.
+
+Example architecture:
+
+```tsx
+<div className="min-h-screen">
+  <TopNavigation />
+
+  <div className="flex">
+    <ClientSidebar />
+    <main className="flex-1">
+      ...
+    </main>
+  </div>
+</div>
+```
+
+The sidebar may be sticky/fixed beneath the header if that matches the existing design.
+
+Do not allow it to cover the blue header.
+
+---
+
+# RESPONSIVE BEHAVIOR
+
+Desktop:
+
+* sidebar visible
+* dashboard content beside sidebar
+* TopNavigation full width
+
+Tablet/mobile:
+
+Use the existing sidebar mobile behavior if available.
+
+If none exists, make the sidebar collapsible using a menu button.
+
+Do NOT make mobile users horizontally scroll through a fixed desktop sidebar.
+
+Preserve the existing TopNavigation mobile behavior.
+
+---
+
+# ACTIVE NAV ITEM
+
+The active sidebar item should correctly correspond to the current route.
+
+Examples:
+
+`/dashboard`
+→ Dashboard highlighted
+
+`/messages`
+→ Messages highlighted
+
+Talent browsing route
+→ OnSpot Talent highlighted
+
+Do not hardcode Dashboard as always active.
+
+---
+
+# IMPORTANT ROUTE SAFETY
+
+Do not move or rename existing routes unless necessary.
+
+The dashboard should still resolve at its current URL.
+
+Messages must still work.
+
+The recently repaired Client ↔ Talent messaging feature must NOT regress.
+
+Verify the sidebar's Messages item navigates to the canonical messaging page.
+
+Do not restore an old `/inbox` implementation accidentally.
+
+---
+
+# NOTIFICATION BELL
+
+Because TopNavigation contains the notification bell, ensure it still works after being moved into the Client Dashboard layout.
+
+Verify:
+
+* Client application notifications
+* withdrawal notifications
+* message notifications
+* unread badge
+* dropdown
+* notification navigation
+
+Do not duplicate the notification bell in the sidebar/header.
+
+---
+
+# CLIENT PROFILE
+
+The Client Profile dropdown in TopNavigation must remain fully functional.
+
+Do not replace it with the white header's:
+
+* Val Client avatar section
+* theme button
+* Logout button
+
+Use the existing TopNavigation profile menu behavior instead.
+
+If Logout/theme/settings already exist inside the profile dropdown, preserve them there.
+
+---
+
+# SEARCH FOR DUPLICATE DASHBOARD LAYOUTS
+
+The screenshots indicate there may be two different Client page shells.
+
+Find out why.
+
+Audit:
+
+`client/src/pages/Dashboard.tsx`
+
+plus any other Client dashboard page/component.
+
+Check whether the app currently uses different layouts depending on:
+
+* route
+* auth state
+* Client role
+* old/new portal
+* Replit preview vs production
+* Client Profile vs Client Dashboard
+
+Do NOT simply style one screenshot to resemble the other.
+
+Resolve the layout inconsistency at the shared layout level.
+
+---
+
+# RECOMMENDED COMPONENT STRUCTURE
+
+Where practical, produce something similar to:
+
+```text
+ClientPortalShell
+├── TopNavigation
+└── ClientBody
+    ├── ClientSidebar
+    └── Page Content
+```
+
+For example:
+
+```tsx
+export function ClientPortalShell({ children }) {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <TopNavigation />
+
+      <div className="flex">
+        <ClientSidebar />
+
+        <main className="min-w-0 flex-1">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+Reuse existing components/styles rather than blindly creating new ones.
+
+---
+
+# DO NOT BREAK OTHER CLIENT PAGES
+
+If this layout is intended to become the common Client Portal shell, carefully test:
+
+* Dashboard
+* OnSpot Talent
+* Messages
+* Client Projects
+* Performance
+* Client Management
+* Contracts
+* Payments
+* ROI Analytics
+* Settings
+
+If a page already uses `TopNavigation` internally, do not render it twice.
+
+Either:
+
+* let the shared Client shell provide it, or
+* leave that page outside the shell
+
+Choose one consistent ownership model.
+
+---
+
+# AVOID DOUBLE TOPNAVIGATION
+
+This is critical.
+
+Some pages in the repository already import:
+
+`TopNavigation`
+
+directly.
+
+Before placing TopNavigation in a shared Client layout, search all Client pages for:
+
+```tsx
+<TopNavigation />
+```
+
+If the layout now owns TopNavigation, remove page-level duplicates only from pages placed inside that layout.
+
+Do not globally delete TopNavigation from unrelated public/Talent pages.
+
+---
+
+# MESSAGING PAGE
+
+The Messages page should ultimately appear as:
+
+```text
+Blue TopNavigation
+------------------------------------
+Sidebar | Messages
+        |
+        | conversation list
+        | active conversation
+```
+
+Do not change the messaging APIs or delivery logic for this layout task.
+
+Only update its surrounding page shell if required.
+
+---
+
+# VISUAL CONSISTENCY
+
+Match the existing application design.
+
+Use:
+
+* existing spacing tokens/classes
+* existing sidebar styles
+* existing TopNavigation colors
+* existing icons
+* existing typography
+* existing hover/active states
+
+Do not introduce a separate design system.
+
+---
+
+# REGRESSION SAFETY
+
+Before changing a shared layout component:
+
+1. Search all usages.
+2. List which routes use it.
+3. Check whether each route already includes TopNavigation.
+4. Update those callers safely.
+5. Run the app and test all affected Client routes.
+
+Do not break Talent or Admin layouts.
+
+---
+
+# TEST / VERIFY
+
+Manually verify:
+
+## Dashboard
+
+* blue TopNavigation visible
+* sidebar visible below it
+* NO white Client Portal header
+* dashboard cards intact
+
+## Messages
+
+* same blue TopNavigation
+* sidebar visible
+* messaging still works
+
+## OnSpot Talent
+
+* same layout
+* search/talent profile still works
+
+## Client Profile
+
+* TopNavigation behaves exactly as before
+
+## Notification Bell
+
+* opens
+* unread count works
+* notifications navigate correctly
+
+## Client Profile Dropdown
+
+* opens
+* existing actions still work
+
+## Responsive
+
+* desktop correct
+* tablet usable
+* mobile usable
+
+---
+
+# ACCEPTANCE CRITERIA
+
+The change is complete only when:
+
+* the Client Dashboard uses the existing blue/purple `TopNavigation`
+* the left Client sidebar is displayed beneath it
+* the old white Client Portal header is gone
+* TopNavigation spans the full width of the screen
+* sidebar does not overlap TopNavigation
+* main dashboard content remains unchanged
+* active sidebar navigation works
+* Client Profile menu still works
+* notification bell still works
+* Messages still works
+* OnSpot Talent still works
+* Client routes still work
+* no duplicate headers
+* no duplicate sidebars
+* no duplicated notification UI
+* mobile layout remains usable
+* build/type checks pass
+
+Do not redesign the Dashboard.
+
+The required result is specifically:
+
+**Existing blue `TopNavigation` + existing Client sidebar + existing Dashboard content.**

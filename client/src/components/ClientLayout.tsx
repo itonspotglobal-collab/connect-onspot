@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { 
   BarChart3, 
   Briefcase, 
@@ -9,16 +8,10 @@ import {
   Settings, 
   Users,
   Target,
-  TrendingUp,
-  LogOut,
-  User,
-  Loader2,
   Shield,
   Upload,
   MessageSquare
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -31,9 +24,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
+import { TopNavigation } from "@/components/TopNavigation";
 
 // Core Modules
 const coreModules = [
@@ -109,9 +102,11 @@ const adminItems = [
 function ClientSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const isActiveRoute = (url: string) =>
+    location === url || (url !== "/dashboard" && location.startsWith(`${url}/`));
 
   return (
-    <Sidebar>
+    <Sidebar className="top-[var(--nav-h)] h-[calc(100svh-var(--nav-h))]">
       <SidebarContent>
         {/* Core Modules */}
         <SidebarGroup>
@@ -120,7 +115,7 @@ function ClientSidebar() {
             <SidebarMenu>
               {coreModules.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                     <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
@@ -139,7 +134,7 @@ function ClientSidebar() {
             <SidebarMenu>
               {managementItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                     <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
@@ -158,7 +153,7 @@ function ClientSidebar() {
             <SidebarMenu>
               {systemItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                     <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
@@ -181,7 +176,7 @@ function ClientSidebar() {
               <SidebarMenu>
                 {adminItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                       <Link href={item.url} data-testid={`nav-admin-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
@@ -199,102 +194,29 @@ function ClientSidebar() {
 }
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout, isLoading } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
   const sidebarStyle = {
     "--sidebar-width": "18rem",
     "--sidebar-width-icon": "4rem",
   } as React.CSSProperties;
-  
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      console.log('✅ User logged out successfully from client layout');
-    } catch (error) {
-      console.error('❌ Logout failed:', error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
-    <SidebarProvider style={sidebarStyle}>
-      <div className="flex h-screen w-full">
+    <div className="min-h-screen bg-slate-50">
+      <TopNavigation />
+      <SidebarProvider
+        style={sidebarStyle}
+        className="min-h-[calc(100svh-var(--nav-h))]"
+      >
         <ClientSidebar />
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <div className="font-semibold text-lg text-primary">OnSpot</div>
-                <div className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded">
-                  Client Portal
-                </div>
-              </Link>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* User Information */}
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-loading">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Loading...</span>
-                </div>
-              ) : user ? (
-                <div className="flex items-center gap-2 text-sm" data-testid="user-info">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : 
-                       user.firstName || user.username || user.email.split('@')[0]}
-                    </span>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {user.userType || user.role}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="user-not-found">
-                  <User className="w-4 h-4" />
-                  <span>User not found</span>
-                </div>
-              )}
-              
-              <ThemeToggle />
-              
-              {/* Logout Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                disabled={isLoggingOut || isLoading}
-                data-testid="button-logout"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Logging out...
-                  </>
-                ) : (
-                  <>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </>
-                )}
-              </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
+          <div className="mb-4 flex md:hidden">
+            <SidebarTrigger
+              data-testid="button-sidebar-toggle"
+              aria-label="Open client navigation"
+            />
+          </div>
+          {children}
+        </main>
+      </SidebarProvider>
+    </div>
   );
 }

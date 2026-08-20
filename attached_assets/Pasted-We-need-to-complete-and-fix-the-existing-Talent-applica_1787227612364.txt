@@ -1,0 +1,1093 @@
+We need to complete and fix the existing **Talent application withdrawal flow** in the OnSpot / `connect-onspot` application.
+
+## CURRENT BEHAVIOR
+
+I tested the application workflow.
+
+### Working
+
+Talent can go to **My Applications** and click:
+
+`Withdraw`
+
+The Talent side correctly changes the displayed application status to:
+
+`Withdrawn`
+
+The existing frontend currently calls:
+
+`PATCH /api/talent/applications/:applicationId/withdraw`
+
+and then updates/refetches the Talent application list.
+
+### Not working
+
+After Talent withdraws:
+
+1. The **Client is NOT notified** that the Talent withdrew.
+2. The Client's **Job Submissions / Applications view does not reliably reflect `Withdrawn`** for that same application.
+
+This must be fixed end-to-end.
+
+---
+
+# PRIMARY REQUIREMENT
+
+When a Talent withdraws an application:
+
+### Talent side
+
+* application status becomes `withdrawn`
+* UI immediately reflects `Withdrawn`
+* application remains visible under the appropriate completed/withdrawn state
+* Talent cannot withdraw the same application again
+
+### Client side
+
+The Client who owns the job/application must:
+
+* receive a persistent notification
+* see the SAME submission/application status become `WITHDRAWN`
+* no longer be able to move that withdrawn application forward through normal hiring actions
+* see the correct status after refresh and after logging out/back in
+
+The Client notification should clearly communicate something like:
+
+**Application withdrawn**
+
+`{Talent Display Name} withdrew their application for {Job Title}.`
+
+Use the application's existing notification design/style and data conventions.
+
+Do not invent a second notification system.
+
+---
+
+# IMPORTANT: UPDATE THE SAME APPLICATION RECORD
+
+Do NOT create a new application row.
+
+Do NOT create a separate Client-side status.
+
+Do NOT only modify frontend state.
+
+There must be ONE canonical application/submission record.
+
+The existing application appears to be backed by:
+
+`job_submissions`
+
+Audit and confirm this before making changes.
+
+When Talent withdraws, update the canonical row:
+
+`job_submissions.status = 'withdrawn'`
+
+Then both Client and Talent views must derive their status from that SAME record.
+
+This is critical.
+
+---
+
+# FIRST — AUDIT THE COMPLETE WITHDRAWAL FLOW
+
+Before modifying code, search the entire repository for:
+
+* `withdraw`
+* `withdrawn`
+* `/withdraw`
+* `talent/applications`
+* `job_submissions`
+* `applicationStatus`
+* `submissionStatuses`
+* `STATUS_PIPELINE`
+* `ACTIVE_STATUSES`
+* `COMPLETED_STATUSES`
+* Client Job Submissions
+* Client applications
+* Client dashboard application queries
+* notification creation
+* `createNotification`
+* application notifications
+* `application_update`
+* status history
+* job application status history
+
+At minimum inspect:
+
+### Talent frontend
+
+* `client/src/pages/TalentApplications.tsx`
+* `client/src/hooks/useTalentApplications.ts`
+* `client/src/lib/applicationStatus.ts`
+
+### Shared status definitions
+
+* `shared/submissionStatuses.ts`
+* `shared/schema.ts`
+
+### Backend
+
+* `server/routes.ts`
+* `server/storage.ts`
+* any application/submission service
+* notification storage implementation
+* Talent authentication helpers
+* Client application/submission routes
+
+### Client frontend
+
+Find the exact component producing:
+
+**Job Submissions**
+
+on the Client dashboard shown in the current application.
+
+Also inspect:
+
+* Client dashboard
+* Client job detail
+* applicant/submission detail modal
+* Client application list
+* any status filter/count
+* Offer action
+* status update action
+
+### Notifications
+
+Inspect:
+
+* `NotificationBell.tsx`
+* Client notification API
+* notification persistence
+* application notification types
+
+---
+
+# TRACE THE EXACT WITHDRAW ENDPOINT
+
+Audit:
+
+`PATCH /api/talent/applications/:id/withdraw`
+
+Do not create a replacement endpoint unless there is a compelling reason.
+
+Determine exactly what it currently does.
+
+The correct backend flow should be approximately:
+
+1. Authenticate Talent.
+2. Resolve Talent authentication to canonical identity.
+3. Load application/submission by application ID.
+4. Verify that application belongs to authenticated Talent.
+5. Verify application is in a state that is allowed to be withdrawn.
+6. Obtain:
+
+   * application ID
+   * job ID
+   * Client user ID
+   * Talent user ID
+   * job title
+   * safe Talent display name
+   * previous application status
+7. Update canonical application status to:
+   `withdrawn`
+8. Update `updated_at`.
+9. Write application status history if this project already uses status history.
+10. Create a notification for the owning Client.
+11. Commit.
+12. Return the updated canonical application/submission.
+
+Where possible, make status change + history + notification transactionally consistent.
+
+---
+
+# AUTHORIZATION
+
+Talent must only be able to withdraw THEIR OWN application.
+
+Do not trust:
+
+* Talent ID supplied from frontend
+* Client ID supplied from frontend
+* applicant email supplied from frontend
+
+Resolve ownership server-side.
+
+Required:
+
+`application.talent_id` or its canonical linked Talent identity must match the authenticated Talent.
+
+If not:
+
+`403 Forbidden`
+
+or `404` if the product intentionally hides resource existence.
+
+---
+
+# VALID WITHDRAWAL STATES
+
+Audit current application status definitions before deciding the exact list.
+
+A Talent should generally only be able to withdraw an application that is still active.
+
+Examples might include:
+
+* `new`
+* `submitted`
+* `under_review`
+* `reviewed`
+* `shortlisted`
+* `interview`
+
+depending on the project's canonical status system.
+
+Do NOT allow withdrawal from terminal states such as:
+
+* `withdrawn`
+* `rejected`
+* `hired`
+* other completed/terminal states
+
+If the application has already been withdrawn, make the endpoint idempotent or return an appropriate state conflict.
+
+Do NOT generate duplicate Client notifications when the Talent double-clicks Withdraw or retries the request.
+
+---
+
+# CLIENT NOTIFICATION
+
+When withdrawal succeeds, create ONE persistent notification for:
+
+`job_submissions.client_id`
+
+or the canonical Client owner derived from the related Job if necessary.
+
+Do not notify the Talent about their own action unless an existing product requirement explicitly does that.
+
+Use the existing DB-backed notification system.
+
+Suggested semantic notification data:
+
+### Type
+
+Use the project's established naming convention.
+
+Prefer something specific like:
+
+`application_withdrawn`
+
+if adding a new type is safe.
+
+If the system intentionally uses a generic application update type, retain that architecture but include enough metadata to distinguish withdrawal.
+
+### Title
+
+`Application withdrawn`
+
+### Message
+
+`{Talent Display Name} withdrew their application for {Job Title}.`
+
+### Related ID
+
+Use the application/submission ID if notifications navigate to an application.
+
+OR use Job ID if the existing Client application notification UX expects job-level navigation.
+
+Follow the CURRENT notification navigation contract instead of inventing an incompatible one.
+
+### Related type
+
+Follow existing conventions, for example:
+
+`application`
+
+or:
+
+`job_submission`
+
+Do not introduce an arbitrary string if a canonical value already exists.
+
+---
+
+# NOTIFICATION MUST BE PERSISTENT
+
+Make sure the notification is saved in the existing:
+
+`notifications`
+
+database table.
+
+Do not rely on `MemStorage`.
+
+Previous work in this application already established that notifications should be DB-backed.
+
+After server restart, the notification must still exist.
+
+---
+
+# CLIENT NOTIFICATION BELL
+
+After Talent withdraws, Client's notification bell should update using the existing refresh/refetch behavior.
+
+Expected Client notification:
+
+**Application withdrawn**
+
+`Valu Testu withdrew their application for Social Media Manager.`
+
+Use whatever safe/display name is appropriate according to existing privacy conventions.
+
+The unread notification badge should increment.
+
+Opening the notification dropdown should show it.
+
+After marking/read-opening according to existing behavior, the badge should decrease properly.
+
+Do not break:
+
+* new application notifications
+* application status update notifications
+* message notifications
+* offer notifications
+* any other notification type
+
+---
+
+# CLIENT JOB SUBMISSIONS STATUS
+
+The screenshot shows the Client dashboard has a:
+
+**Job Submissions**
+
+table.
+
+After Talent withdraws, the SAME row should display:
+
+`WITHDRAWN`
+
+instead of:
+
+`NEW`
+
+`SHORTLISTED`
+
+or its previous status.
+
+Do NOT delete the row.
+
+The Client should retain historical visibility that the Talent applied and then withdrew.
+
+Correct behavior:
+
+`Valu Testu | Social Media Manager | Aug 20, 2026 | WITHDRAWN`
+
+or equivalent existing styling.
+
+---
+
+# IMPORTANT: REMOVE INVALID ACTIONS
+
+Once an application is withdrawn, Client-side actions that would move the applicant forward must not remain actionable.
+
+For a withdrawn application, review actions such as:
+
+* Shortlist
+* Interview
+* Offer
+* Hire
+* move status forward
+
+These should be disabled/hidden according to existing UI conventions.
+
+The **View** action may remain so the Client can inspect the historical submission.
+
+Do not allow the Client to accidentally send an Offer to a withdrawn application.
+
+Also enforce this SERVER-SIDE.
+
+Do not rely only on hiding buttons.
+
+---
+
+# SERVER-SIDE STATUS TRANSITION PROTECTION
+
+Audit all Client endpoints that modify application/submission status.
+
+If a submission is:
+
+`withdrawn`
+
+normal hiring pipeline transitions should reject attempts to change it back into active hiring states unless there is an explicitly supported restore/reapply workflow.
+
+For example:
+
+Withdrawn → Shortlisted
+
+should NOT happen through a normal Client status update.
+
+Return an appropriate:
+
+`409 Conflict`
+
+or validation error.
+
+This prevents stale Client pages from acting on withdrawn applications.
+
+---
+
+# CLIENT QUERY MUST USE CANONICAL STATUS
+
+Find the exact API powering the Client:
+
+`Job Submissions`
+
+table.
+
+Verify that it reads the current:
+
+`job_submissions.status`
+
+and does not:
+
+* cache the original application status permanently
+* derive status from a second table
+* map unknown `withdrawn` to `new`
+* exclude `withdrawn` unexpectedly
+* use outdated enum/status mappings
+
+Make sure `withdrawn` is recognized through all status layers.
+
+---
+
+# SHARED STATUS DEFINITIONS
+
+Audit:
+
+`shared/submissionStatuses.ts`
+
+and:
+
+`client/src/lib/applicationStatus.ts`
+
+The repository already contains explicit handling of `withdrawn` on the Talent side.
+
+Do not introduce inconsistent spelling such as:
+
+* `withdraw`
+* `withdrawed`
+* `cancelled`
+* `canceled`
+
+Canonical DB/API status must remain:
+
+`withdrawn`
+
+Make sure both:
+
+Client label:
+`Withdrawn`
+
+Talent label:
+`Withdrawn`
+
+map to:
+
+`withdrawn`
+
+internally.
+
+---
+
+# FILTERS / COUNTS
+
+The Talent screenshot has:
+
+* All
+* Active
+* Interview
+* Completed
+
+The Client has submission counts.
+
+After withdrawal:
+
+### Talent
+
+The application should stop counting as Active.
+
+It should count under Completed/terminal if that matches current UX.
+
+### Client
+
+The total historical application/submission count should generally remain unchanged.
+
+Do not subtract a withdrawn application from total submissions unless the existing product definition explicitly means "active applications."
+
+If active counts exist, withdrawn should no longer count as active.
+
+Audit all counts instead of fixing just the badge.
+
+---
+
+# STATUS HISTORY
+
+The project has an application status history concept.
+
+If the withdrawal flow uses the same canonical application status history table, add a history entry:
+
+Previous:
+`shortlisted`
+
+New:
+`withdrawn`
+
+Changed by:
+authenticated Talent user
+
+Timestamp:
+current server time
+
+This allows the timeline to accurately show that the application was withdrawn.
+
+Do not create a parallel history mechanism.
+
+If the existing withdrawal endpoint already writes this history correctly, preserve it.
+
+---
+
+# TALENT UI
+
+The existing Talent frontend already performs:
+
+`PATCH /api/talent/applications/${app.id}/withdraw`
+
+then optimistically updates:
+
+`applicationStatus: "withdrawn"`
+
+and invalidates:
+
+`["talent-applications"]`
+
+Preserve this good behavior unless refactoring is necessary.
+
+Improve error handling if needed.
+
+If backend withdrawal fails:
+
+* do not falsely display Withdrawn
+* show a user-friendly error/toast
+
+If it succeeds:
+
+* status should immediately become Withdrawn
+* Withdraw button should disappear/be disabled
+* refresh should preserve Withdrawn
+
+---
+
+# CLIENT UI REFRESH
+
+After the Client receives withdrawal, their page should eventually reflect the updated state without requiring logout.
+
+Use the app's existing React Query patterns.
+
+Options:
+
+* invalidate/refetch Client submission query on window focus
+* reasonable polling if already used
+* notification-triggered invalidation if existing infrastructure supports it
+
+Do NOT introduce WebSockets just for this.
+
+A normal refresh must always show the correct DB status.
+
+Correctness first.
+
+---
+
+# DO NOT COUPLE THIS TO MESSAGING
+
+The messaging feature was recently fixed.
+
+Do not change its canonical identity, thread, unread, or notification behavior unless a shared notification helper genuinely requires a safe update.
+
+Withdrawal notification is an **application notification**, not a chat message.
+
+Do NOT:
+
+* automatically create a message thread because someone withdrew
+* send an automatic chat message unless this is already a documented product requirement
+* close/delete an existing Client↔Talent thread
+* delete existing conversation history
+
+If the Talent and Client already have a conversation, withdrawal should not destroy it.
+
+---
+
+# DIRECT APPLICATION VS INVITED TALENT
+
+Audit how withdrawal should behave for different application origins.
+
+`job_submissions` includes application origin concepts such as:
+
+`initiated_by`
+
+Ensure withdrawal behavior is valid for:
+
+### Talent-initiated application
+
+Talent applied to Client job.
+
+Withdrawal should:
+
+* status → withdrawn
+* Client notified
+
+### Client-initiated invitation that Talent accepted
+
+If this becomes the same active application record, confirm whether Talent is allowed to withdraw later.
+
+If yes:
+
+* same status/notification behavior
+
+If no, preserve the existing product rule.
+
+Do not accidentally change invitation acceptance/decline semantics while implementing ordinary withdrawal.
+
+---
+
+# DUPLICATE APPLICATIONS
+
+The screenshot shows multiple submissions for the same Talent/job can exist in some situations.
+
+Do NOT update all applications matching:
+
+Talent + Job
+
+unless that is explicitly the canonical uniqueness rule.
+
+The withdraw endpoint receives a specific:
+
+`applicationId`
+
+Only that exact canonical submission should transition to:
+
+`withdrawn`.
+
+Client table must update that corresponding row only.
+
+Do not accidentally mark another application withdrawn.
+
+---
+
+# TRANSACTION / RACE SAFETY
+
+Protect against this scenario:
+
+1. Client moves application to Shortlisted.
+2. Talent presses Withdraw at nearly the same moment.
+
+Use an atomic status transition where practical.
+
+For example, update only if current status belongs to the allowed-withdraw states.
+
+Then return the final updated row.
+
+Do not:
+
+* fetch status
+* wait
+* blindly overwrite later
+
+if a conditional SQL update can safely handle the transition.
+
+Likewise prevent:
+
+double click Withdraw
+
+from generating two notifications.
+
+---
+
+# SUGGESTED BACKEND FLOW
+
+Conceptually:
+
+```text
+BEGIN
+
+resolve authenticated Talent user
+
+SELECT application + job + client
+FOR UPDATE
+
+verify Talent owns application
+
+verify current status is withdrawable
+
+if already withdrawn:
+    return existing result without creating duplicate notification
+
+UPDATE job_submissions
+SET status = 'withdrawn',
+    updated_at = NOW()
+WHERE id = applicationId
+RETURNING ...
+
+INSERT application status history
+(previous_status, new_status='withdrawn', changed_by=talentUserId)
+
+INSERT client notification
+(type='application_withdrawn', ...)
+
+COMMIT
+```
+
+Adapt this to the project's existing helpers/storage abstractions.
+
+Do NOT copy this literally if the repository already has reusable functions for status transitions or notifications.
+
+---
+
+# NOTIFICATION NAVIGATION
+
+When Client clicks the withdrawal notification, navigate to the most useful existing destination.
+
+Prefer:
+
+* relevant application/submission detail
+* relevant Client job/application list
+
+Do not create a broken URL.
+
+Search how:
+
+`New application received`
+
+notifications currently navigate.
+
+Reuse that routing pattern for withdrawal.
+
+For example, if current application notifications navigate to the Client's application area, withdrawal should do the same.
+
+---
+
+# TEST MATRIX
+
+Add backend and frontend/route-level tests where the project supports them.
+
+## Test 1 — Normal withdrawal
+
+Given:
+
+* Talent owns application
+* application status = `new`
+* Client owns job
+
+When:
+
+Talent withdraws
+
+Then:
+
+* response succeeds
+* DB application status = `withdrawn`
+* updated_at changes
+* Client notification created
+* notification recipient = correct Client users.id
+* exactly one notification exists
+
+---
+
+## Test 2 — Withdraw from shortlisted
+
+Given:
+
+status = `shortlisted`
+
+Talent withdraws.
+
+Expected:
+
+status = `withdrawn`
+
+Client sees withdrawn.
+
+Client receives withdrawal notification.
+
+---
+
+## Test 3 — Unauthorized Talent
+
+Talent B tries to withdraw Talent A's application.
+
+Expected:
+
+403/404
+
+Status unchanged.
+
+No notification.
+
+---
+
+## Test 4 — Double withdrawal
+
+Talent calls withdraw twice.
+
+Expected:
+
+application remains withdrawn.
+
+No duplicate Client notification.
+
+---
+
+## Test 5 — Client stale action after withdrawal
+
+Application is withdrawn.
+
+Client attempts:
+
+Shortlist / Offer / another active transition.
+
+Expected:
+
+rejected server-side.
+
+Application remains withdrawn.
+
+---
+
+## Test 6 — Client list
+
+After withdrawal:
+
+Client submission endpoint returns:
+
+`status: "withdrawn"`
+
+for exact submission.
+
+---
+
+## Test 7 — Talent list
+
+Talent application endpoint returns:
+
+`applicationStatus: "withdrawn"`
+
+after page reload.
+
+---
+
+## Test 8 — Notification persistence
+
+Restart/re-query storage.
+
+Withdrawal notification remains in DB.
+
+---
+
+## Test 9 — Existing notifications
+
+Verify normal:
+
+* new application
+* application status update
+* message notifications
+
+still work.
+
+---
+
+# MANUAL END-TO-END TEST
+
+Reproduce this exact scenario using TWO sessions.
+
+## Session A — Talent
+
+1. Apply to:
+   `Social Media Manager`
+2. Confirm application appears.
+3. Client moves it to Shortlisted.
+4. Talent receives `Application update`.
+5. Talent clicks `Withdraw`.
+6. Confirm Talent UI shows:
+   `Withdrawn`
+
+## Session B — Client
+
+WITHOUT modifying the DB manually:
+
+1. Notification bell should show a new notification.
+2. Open notifications.
+3. See:
+   `Application withdrawn`
+4. Message should indicate which Talent and job.
+5. Open Client dashboard / Job Submissions.
+6. Exact submission now displays:
+   `WITHDRAWN`
+7. Refresh browser.
+8. Status remains:
+   `WITHDRAWN`
+9. Offer/Shortlist/advance actions are no longer available for that row.
+10. View remains available for history if intended.
+
+Then log out and log back in.
+
+The withdrawn state and notification must still be correct.
+
+---
+
+# REGRESSION CHECKS
+
+Do not mark complete until you verify no regressions in:
+
+* Talent application submission
+* Talent My Applications
+* application withdrawal
+* Client Job Submissions
+* Client application detail
+* Client status changes
+* Shortlist
+* Interview
+* Offer
+* Hire
+* application timeline
+* new application notification
+* Talent application-update notification
+* Client notification bell
+* Talent notification bell
+* messaging
+* invitation workflow
+* authentication
+* Talent candidate-token identity resolution
+* Client auth
+* Admin application views if they share statuses
+
+---
+
+# IMPORTANT STATUS RULE
+
+After withdrawal, `withdrawn` is a terminal application state.
+
+Normal active workflow should not silently convert it back to:
+
+* new
+* under_review
+* reviewed
+* shortlisted
+* interview
+* offered
+* hired
+
+unless a future explicit restore/reapply workflow is implemented.
+
+This must be enforced on the backend, not only represented in the UI.
+
+---
+
+# DATABASE SAFETY
+
+Do NOT add a migration unless genuinely needed.
+
+The application already recognizes:
+
+`withdrawn`
+
+so first determine whether any schema change is necessary.
+
+Most likely this can be fixed using the existing:
+
+* `job_submissions.status`
+* notifications table
+* application status history
+
+If no migration is needed, explicitly state:
+
+`No database migration was required.`
+
+Do not alter or delete existing application records.
+
+---
+
+# COMPLETION REPORT
+
+When finished, provide:
+
+## 1. Root cause
+
+Explain why Talent could see Withdrawn but Client remained on the old status / was not notified.
+
+## 2. Files changed
+
+List exact files and purpose.
+
+## 3. Withdrawal transaction
+
+Explain what happens server-side when Talent withdraws.
+
+## 4. Client synchronization
+
+Explain how Client receives canonical `withdrawn` status.
+
+## 5. Notification
+
+Give:
+
+* type
+* recipient logic
+* title
+* related ID/type
+* navigation destination
+
+## 6. Status-transition protection
+
+Explain how withdrawn applications are protected from further Client pipeline actions.
+
+## 7. Tests
+
+List exact commands and pass/fail results.
+
+## 8. Database changes
+
+Explicitly say whether migration/data repair was required.
+
+## 9. Regression checks
+
+List connected features verified.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+This task is complete only when:
+
+* Talent can withdraw own application.
+* Canonical DB status becomes `withdrawn`.
+* Talent sees Withdrawn.
+* Client sees SAME submission as Withdrawn.
+* Client receives exactly one persistent withdrawal notification.
+* Client unread notification badge updates.
+* Notification identifies correct application/job.
+* Client cannot advance withdrawn submission through normal hiring pipeline.
+* Refresh preserves withdrawn status.
+* Logout/login preserves withdrawn status.
+* Other application statuses still work.
+* Existing notification types still work.
+* Messaging remains working.
+* Invitation flow remains working.
+* No duplicate notifications are produced.
+* No unrelated submissions are modified.
+* Relevant tests pass.
+* Application builds successfully.
+
+Do not solve this only with frontend optimistic state.
+
+The **database application status, Client application view, Talent application view, notification system, and status-transition rules must all agree on the same canonical `withdrawn` state.**
