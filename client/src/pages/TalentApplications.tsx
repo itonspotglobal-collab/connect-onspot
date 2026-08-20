@@ -17,6 +17,7 @@ import { useMatchedJobs, MatchedJobsList } from "@/components/MatchedJobs";
 import {
   useTalentApplications, TalentApplication, ApplicationAnswer, getTalentAppsLastViewedKey,
 } from "@/hooks/useTalentApplications";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
@@ -998,6 +999,7 @@ export default function TalentApplications() {
   const talentAuth = loadTalentAuth();
   const talentSessionId = user?.role === "talent" ? user.id : talentAuth?.candidateId ?? null;
   const hasTalentSession = user?.role === "talent" || (!user && !!talentAuth);
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
 
@@ -1085,6 +1087,14 @@ export default function TalentApplications() {
           >
             <MessageSquare className="h-4 w-4" />
             Messages
+            {unreadMessagesCount > 0 && (
+              <span
+                aria-label={`${unreadMessagesCount} unread messages`}
+                className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+              >
+                {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+              </span>
+            )}
           </button>
         </div>
 

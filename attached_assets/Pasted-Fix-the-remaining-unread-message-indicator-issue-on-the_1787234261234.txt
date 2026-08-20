@@ -1,0 +1,394 @@
+Fix the remaining unread-message indicator issue on the Talent **My Applications** page.
+
+## CURRENT STATE
+
+The unread message count is already working in other places, including:
+
+* Notification Bell
+* Client sidebar
+* Client dropdown
+* Talent dropdown
+
+But the page-level **Messages** button on:
+
+`/my-applications`
+
+still does not display the unread count.
+
+The button currently appears as:
+
+`Messages`
+
+with no badge, even when unread messages exist.
+
+Do NOT create a new unread-count system.
+
+Reuse the exact same canonical unread message count that already powers the working Talent dropdown badge.
+
+---
+
+# TARGET RESULT
+
+If Talent has:
+
+1 unread message
+
+the button should display visually like:
+
+`Messages  1`
+
+If Talent has:
+
+4 unread messages:
+
+`Messages  4`
+
+If unread count is zero:
+
+show only:
+
+`Messages`
+
+Do not show `0`.
+
+---
+
+# FILE TO FIX
+
+Inspect:
+
+`client/src/pages/TalentApplications.tsx`
+
+The screenshot shows the existing Messages button there.
+
+Find the exact page-level button near the My Applications heading.
+
+It currently looks conceptually like:
+
+```tsx
+<button>
+  <MessageSquare />
+  Messages
+</button>
+```
+
+or equivalent.
+
+Wire the shared unread count into THIS button.
+
+---
+
+# REUSE EXISTING HOOK
+
+Use the existing shared:
+
+`useUnreadMessagesCount()`
+
+or whichever canonical hook was recently updated to support both Client and Talent.
+
+Do NOT:
+
+* fetch notifications again directly
+* call another endpoint from this button
+* calculate unread locally
+* use Bell count
+* create component state for unread
+
+The same unread value shown in:
+
+Talent dropdown → Messages badge
+
+must drive:
+
+Talent My Applications → Messages button badge
+
+---
+
+# IMPORTANT — MESSAGE COUNT, NOT BELL COUNT
+
+The Bell may contain:
+
+* application updates
+* offers
+* messages
+
+The Messages button must show only unread messages.
+
+Example:
+
+Bell = `4`
+
+because there are:
+
+* 3 application notifications
+* 1 unread message
+
+Messages button should show:
+
+`1`
+
+NOT `4`.
+
+---
+
+# EXPECTED COMPONENT LOGIC
+
+Conceptually:
+
+```tsx
+const unreadMessagesCount = useUnreadMessagesCount();
+```
+
+Then:
+
+```tsx
+<Button ...>
+  <MessageSquare className="..." />
+  <span>Messages</span>
+
+  {unreadMessagesCount > 0 && (
+    <span
+      aria-label={`${unreadMessagesCount} unread messages`}
+      className="..."
+    >
+      {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+    </span>
+  )}
+</Button>
+```
+
+Adapt to the existing button/UI classes.
+
+Do not blindly copy this if the project already has a shared Badge component/style.
+
+---
+
+# VISUAL STYLE
+
+Match the same small red unread badge already used in:
+
+* Talent dropdown Messages
+* notification indicators
+
+Preferred appearance:
+
+small red circular/pill badge with white text.
+
+Example:
+
+```text
+[ icon  Messages  4 ]
+```
+
+Keep it compact.
+
+Do not resize the whole header/button awkwardly.
+
+---
+
+# BUTTON LAYOUT
+
+The current button is compact.
+
+Make sure the badge does not:
+
+* overlap the text
+* push the button outside its container
+* clip at smaller widths
+* break mobile layout
+
+Use:
+
+`inline-flex`
+`items-center`
+`gap`
+
+or the project's existing equivalent.
+
+---
+
+# NAVIGATION MUST REMAIN
+
+Clicking anywhere on the Messages button, including the badge, must still navigate to:
+
+`/messages`
+
+Do not make the badge a separate clickable element.
+
+---
+
+# COUNT MUST UPDATE
+
+When a new message arrives:
+
+button count should update using the same polling/refetch behavior as the Talent dropdown.
+
+Example:
+
+`Messages 1`
+→ new incoming message
+→ `Messages 2`
+
+When Talent opens and reads the thread:
+
+invalidate unread message query.
+
+Button should promptly become:
+
+`Messages`
+
+or reduce to the remaining unread total.
+
+Do not require a page refresh.
+
+---
+
+# DO NOT USE APPLICATION COUNT
+
+The My Applications page already has counts like:
+
+* Total
+* Under Review
+* Shortlisted
+* Interviews
+
+Do NOT accidentally bind the Messages badge to any application counter.
+
+It must use unread messaging count only.
+
+---
+
+# AUTH SUPPORT
+
+The Talent page can be accessed through:
+
+* Talent main JWT
+* Talent profile/candidate JWT
+
+The badge must work in both cases.
+
+Reuse the already-fixed auth-aware unread hook.
+
+Do not add Talent-auth branching inside this button unless the shared hook requires it.
+
+---
+
+# TEST CASES
+
+## Test 1 — One unread
+
+Client sends Talent one message.
+
+Expected:
+
+* Bell shows new notification
+* Talent dropdown Messages shows `1`
+* page-level Messages button shows `1`
+
+---
+
+## Test 2 — Multiple unread
+
+Client sends 3 unread messages.
+
+Expected:
+
+page button:
+
+`Messages 3`
+
+---
+
+## Test 3 — Read thread
+
+Talent clicks Messages.
+
+Opens the unread thread.
+
+Expected:
+
+mark-read runs.
+
+Return to My Applications.
+
+Page button no longer shows those unread messages.
+
+---
+
+## Test 4 — Other notifications
+
+Talent has:
+
+* 3 application notifications
+* 1 unread message
+
+Expected:
+
+Bell may show `4`.
+
+Messages button:
+
+`1`
+
+---
+
+## Test 5 — Refresh
+
+Unread exists.
+
+Refresh My Applications.
+
+Badge remains.
+
+---
+
+# DO NOT BREAK
+
+Do not change:
+
+* messaging backend
+* thread creation
+* message notifications
+* application notifications
+* offer notifications
+* Reach the Client
+* Talent dropdown
+* Client sidebar
+* Client dropdown
+* Delivered / Read
+* mark-read logic
+
+This is a targeted UI wiring fix.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Talent My Applications Messages button shows unread count
+* count matches Talent dropdown Messages count
+* count only includes unread messages
+* count increases with new messages
+* count decreases when messages are read
+* zero hides badge
+* 99+ handled cleanly if needed
+* both Talent auth modes work
+* clicking button still opens `/messages`
+* no duplicate fetch/unread implementation added
+* build/type check passes
+
+---
+
+# FINAL REPORT
+
+After fixing, report:
+
+1. file changed
+2. hook/data source used
+3. badge component/style used
+4. how zero and 99+ are handled
+5. how query invalidation updates the badge
+6. tests run
+
+This should be a small targeted change.
