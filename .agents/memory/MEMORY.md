@@ -9,6 +9,7 @@
 - [Search-to-Shortlist feature](search-to-shortlist.md) — scaffold job pattern, rankTalentForJob, invited/declined statuses, TALENT_BROWSE_CATEGORIES canonical list, two known mistagged jobs.
 - [Search-to-Shortlist PII audit](search-to-shortlist-pii-audit.md) — contact fields never returned to client at any stage; name/contact are independent axes; three endpoints fixed; messaging gap flagged.
 - [Messaging system](messaging-system.md) — client↔talent threads auto-created on invitation accept; all endpoints auth-gated; senderId forced server-side; contact PII warning in UI.
+- [Grouped message alerts](message-notification-grouping.md) — Bell `new_message` alerts group by recipient/thread; persisted message `readBy` remains the unread source of truth.
 - [Client↔talent messaging gate](client-talent-messaging.md) — threads only after accepted client-initiated invitation; conditional UPDATE + advisory lock for accepts; tests need --test-concurrency=1.
 - [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
 - [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.

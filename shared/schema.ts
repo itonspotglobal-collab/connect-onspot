@@ -610,6 +610,7 @@ export const notifications = pgTable("notifications", {
   message: text("message").notNull(),
   relatedId: varchar("related_id"), // ID of related entity (job, contract, etc.)
   relatedType: text("related_type"), // job, contract, payment, etc.
+  messageCount: integer("message_count").notNull().default(1),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -856,6 +857,7 @@ export const insertMatchingProfileSchema = createInsertSchema(matchingProfiles).
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
+  messageCount: true,
   isRead: true,
   createdAt: true,
 });

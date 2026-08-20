@@ -876,6 +876,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   console.log("🔗 Registering API routes...");
 
+  // ── One-time safe migration: structured counts for grouped message alerts ──
+  try {
+    await query(
+      `ALTER TABLE notifications
+       ADD COLUMN IF NOT EXISTS message_count integer NOT NULL DEFAULT 1`,
+    );
+    await query(
+      `CREATE INDEX IF NOT EXISTS notifications_unread_message_group_idx
+         ON notifications (user_id, related_id, created_at DESC)
+       WHERE type = 'new_message' AND is_read = false`,
+    );
+  } catch (migErr: any) {
+    console.warn("⚠️  message notification grouping migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: set application_method = 'built_in_form' for
   // approved/open jobs that have no valid external apply link (empty, null, or
   // pointing at the old LeadConnector placeholder URL).
@@ -7925,6 +7940,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const getAuthedUserId = (req: Request): string | undefined =>
     (req as any).user?.id;
 
+  const resolveSafeMessageSenderName = async (
+    senderId: string,
+    recipientId: string,
+  ): Promise<string> => {
+    const result = await query(
+      `SELECT
+         TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS raw_name,
+         (u.role = 'talent' OR EXISTS (
+           SELECT 1 FROM candidates c WHERE c.user_id = u.id
+         )) AS is_talent,
+         EXISTS (
+           SELECT 1
+             FROM job_submissions js
+            WHERE ((js.client_id = $2 AND js.talent_id = u.id)
+                OR (js.client_id = u.id AND js.talent_id = $2))
+              AND js.initiated_by = 'client'
+              AND js.status IN (
+                'new', 'under_review', 'reviewed', 'shortlisted', 'interviewing',
+                'offer_extended', 'offer_accepted', 'contract_sent', 'hired'
+              )
+         ) AS name_revealed
+       FROM users u
+      WHERE u.id = $1
+      LIMIT 1`,
+      [senderId, recipientId],
+    );
+    const row = result.rows[0];
+    if (!row) return "A participant";
+
+    const raw = (row.raw_name ?? "").trim();
+    if (row.is_talent && !row.name_revealed) {
+      const parts = raw.split(/\s+/).filter(Boolean);
+      if (!parts.length) return "Talent Profile";
+      return parts.length === 1
+        ? `${parts[0][0]}${"•".repeat(4)}`
+        : `${parts[0]} ${parts[1][0]}.`;
+    }
+    return raw || "A participant";
+  };
+
   const APPLICATION_CHAT_STARTABLE_STATUSES = new Set([
     "new",
     "submitted",
@@ -8299,27 +8354,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const message = await storage.createMessage(validated);
 
-      // Canonical threads have one other participant. Create exactly one
-      // recipient notification after persistence; the message body and contact
+      // Canonical threads have one other participant. Group unread notifications
+      // by recipient/thread after persistence; the message body and contact
       // details never enter the notification payload.
       const recipientId = thread.participants.find((p) => p !== userId);
       if (recipientId) {
-        storage
-          .createNotification({
-            userId: recipientId,
-            type: "new_message",
-            title: "New message",
-            message: "You have a new message.",
-            relatedId: message.threadId,
-            relatedType: "message_thread",
-          })
-          .catch((notifErr) =>
-            console.error(
-              "[notify] message notification failed for",
-              recipientId,
-              notifErr,
-            ),
-          );
+        void (async () => {
+          const senderName = await resolveSafeMessageSenderName(userId, recipientId);
+          await storage.upsertMessageNotification({
+            recipientId,
+            threadId: message.threadId,
+            senderName,
+            messageId: message.id,
+          });
+        })().catch((notifErr) =>
+          console.error(
+            "[notify] message notification failed for",
+            recipientId,
+            notifErr,
+          ),
+        );
       }
 
       // PII detection: runs post-save so it never blocks delivery.
@@ -8433,14 +8487,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
       await storage.markMessagesAsRead(req.params.threadId, userId);
-      // Also mark any new_message notification for this thread as read so the
-      // unread badge in the talent nav clears when the thread is opened.
+      // Also mark any grouped new_message notification for this thread as read
+      // so the unread badge in the talent nav clears when the thread is opened.
       try {
-        const notifs = await storage.listNotificationsByUser(userId, true);
-        const threadNotifs = notifs.filter(
-          (n) => n.relatedId === req.params.threadId && n.type === "new_message",
-        );
-        await Promise.all(threadNotifs.map((n) => storage.markNotificationAsRead(n.id)));
+        await storage.markMessageNotificationsAsRead(userId, req.params.threadId);
       } catch {
         // Non-critical — badge will self-correct on next poll
       }

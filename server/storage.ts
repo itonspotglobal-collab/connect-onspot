@@ -46,7 +46,7 @@ import {
   notifications as notificationsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { db, query as dbQuery } from "./db";
+import { db, pool, query as dbQuery } from "./db";
 import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
 
 // Type for creating user with password
@@ -57,6 +57,45 @@ export interface CreateUserData {
   lastName: string;
   role: "client" | "talent";
   company?: string; // Optional for clients
+}
+
+export interface MessageNotificationInput {
+  recipientId: string;
+  threadId: string;
+  senderName: string;
+  messageId?: string;
+}
+
+function messageNotificationCopy(senderName: string, count: number): {
+  title: string;
+  message: string;
+} {
+  const safeSenderName = senderName.trim() || "A participant";
+  if (count === 1) {
+    return {
+      title: `New message from ${safeSenderName}`,
+      message: `${safeSenderName} sent you a new message.`,
+    };
+  }
+  return {
+    title: `${count} new messages from ${safeSenderName}`,
+    message: `${safeSenderName} sent you ${count} new messages.`,
+  };
+}
+
+function notificationFromRow(row: any): Notification {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    title: row.title,
+    message: row.message,
+    relatedId: row.related_id ?? null,
+    relatedType: row.related_type ?? null,
+    messageCount: Number(row.message_count ?? 1),
+    isRead: row.is_read ?? false,
+    createdAt: row.created_at ?? null,
+  };
 }
 
 // modify the interface with any CRUD methods
@@ -203,8 +242,10 @@ export interface IStorage {
   // Notifications
   getNotification(id: string): Promise<Notification | undefined>;
   createNotification(notification: InsertNotification): Promise<Notification>;
+  upsertMessageNotification(input: MessageNotificationInput): Promise<Notification | undefined>;
   listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<boolean>;
+  markMessageNotificationsAsRead(userId: string, threadId: string): Promise<void>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
 
   // Enhanced job methods with skills
@@ -2106,11 +2147,46 @@ export class MemStorage implements IStorage {
       id,
       relatedId: insertNotification.relatedId ?? null,
       relatedType: insertNotification.relatedType ?? null,
+      messageCount: 1,
       isRead: false,
       createdAt: new Date()
     };
     this.notifications.set(id, notification);
     return notification;
+  }
+
+  async upsertMessageNotification(input: MessageNotificationInput): Promise<Notification | undefined> {
+    if (input.messageId) {
+      const message = this.messages.get(input.messageId);
+      if (message?.readBy?.includes(input.recipientId)) return undefined;
+    }
+
+    const existing = Array.from(this.notifications.values())
+      .filter((notification) =>
+        notification.userId === input.recipientId &&
+        notification.type === "new_message" &&
+        notification.relatedId === input.threadId &&
+        !notification.isRead,
+      )
+      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0))[0];
+    const messageCount = (existing?.messageCount ?? 0) + 1;
+    const copy = messageNotificationCopy(input.senderName, messageCount);
+    if (existing) {
+      existing.messageCount = messageCount;
+      existing.title = copy.title;
+      existing.message = copy.message;
+      existing.createdAt = new Date();
+      this.notifications.set(existing.id, existing);
+      return existing;
+    }
+    return this.createNotification({
+      userId: input.recipientId,
+      type: "new_message",
+      title: copy.title,
+      message: copy.message,
+      relatedId: input.threadId,
+      relatedType: "message_thread",
+    });
   }
 
   async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
@@ -2131,6 +2207,20 @@ export class MemStorage implements IStorage {
     notification.isRead = true;
     this.notifications.set(id, notification);
     return true;
+  }
+
+  async markMessageNotificationsAsRead(userId: string, threadId: string): Promise<void> {
+    for (const notification of Array.from(this.notifications.values())) {
+      if (
+        notification.userId === userId &&
+        notification.type === "new_message" &&
+        notification.relatedId === threadId &&
+        !notification.isRead
+      ) {
+        notification.isRead = true;
+        this.notifications.set(notification.id, notification);
+      }
+    }
   }
 
   async markAllNotificationsAsRead(userId: string): Promise<void> {
@@ -4073,6 +4163,77 @@ export class DbStorage extends MemStorage {
     return notification;
   }
 
+  async upsertMessageNotification(input: MessageNotificationInput): Promise<Notification | undefined> {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialize sends for one recipient/thread without blocking unrelated conversations.
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1))",
+        [`new_message:${input.recipientId}:${input.threadId}`],
+      );
+
+      if (input.messageId) {
+        const messageState = await client.query(
+          `SELECT $1 = ANY(COALESCE(read_by, '{}'::text[])) AS is_read
+             FROM messages
+            WHERE id = $2
+            LIMIT 1`,
+          [input.recipientId, input.messageId],
+        );
+        if (messageState.rows[0]?.is_read) {
+          await client.query("COMMIT");
+          return undefined;
+        }
+      }
+
+      const existing = await client.query(
+        `SELECT id, user_id, type, title, message, related_id, related_type,
+                message_count, is_read, created_at
+           FROM notifications
+          WHERE user_id = $1
+            AND type = 'new_message'
+            AND related_id = $2
+            AND is_read = false
+          ORDER BY created_at DESC
+          LIMIT 1
+          FOR UPDATE`,
+        [input.recipientId, input.threadId],
+      );
+
+      const messageCount = Number(existing.rows[0]?.message_count ?? 0) + 1;
+      const copy = messageNotificationCopy(input.senderName, messageCount);
+      const result = existing.rows[0]
+        ? await client.query(
+            `UPDATE notifications
+                SET title = $1,
+                    message = $2,
+                    message_count = $3,
+                    created_at = NOW()
+              WHERE id = $4
+              RETURNING id, user_id, type, title, message, related_id, related_type,
+                        message_count, is_read, created_at`,
+            [copy.title, copy.message, messageCount, existing.rows[0].id],
+          )
+        : await client.query(
+            `INSERT INTO notifications
+                    (user_id, type, title, message, related_id, related_type, message_count)
+             VALUES ($1, 'new_message', $2, $3, $4, 'message_thread', $5)
+             RETURNING id, user_id, type, title, message, related_id, related_type,
+                       message_count, is_read, created_at`,
+            [input.recipientId, copy.title, copy.message, input.threadId, messageCount],
+          );
+
+      await client.query("COMMIT");
+      return notificationFromRow(result.rows[0]);
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
     const rows = await db
       .select()
@@ -4092,6 +4253,20 @@ export class DbStorage extends MemStorage {
       .set({ isRead: true })
       .where(eq(notificationsTable.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async markMessageNotificationsAsRead(userId: string, threadId: string): Promise<void> {
+    await db
+      .update(notificationsTable)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(notificationsTable.userId, userId),
+          eq(notificationsTable.type, "new_message"),
+          eq(notificationsTable.relatedId, threadId),
+          eq(notificationsTable.isRead, false),
+        ),
+      );
   }
 }
 
