@@ -4,10 +4,12 @@
  * Route-level integration tests for the client↔talent messaging authorization
  * model (same middleware chain + SQL as the production handlers in routes.ts):
  *
+ *   POST /api/applications/:applicationId/message-thread — owned application bridge
  *   POST /api/message-threads                       — gated on accepted invitation
  *   GET  /api/me/message-threads                    — own threads only
  *   GET  /api/message-threads/:threadId/messages    — participants only
  *   POST /api/messages                              — participants only, sender forced
+ *   POST /api/message-threads/:threadId/mark-read   — participant-only read state
  *   POST /api/talent/invitations/:id/respond accept — creates thread transactionally
  *
  * Coverage:
@@ -67,6 +69,50 @@ function buildMessagingTestApp(): Express {
   };
 
   const uid = (req: Request) => (req as any).user?.id as string;
+
+  // POST /api/applications/:applicationId/message-thread — mirrors the
+  // application-scoped canonical bridge in production. The submission itself
+  // determines both participants; callers never provide another user's ID.
+  app.post("/api/applications/:applicationId/message-thread", auth, async (req, res) => {
+    const userId = uid(req);
+    const role = (req as any).user?.role;
+    if (role !== "client" && role !== "talent") {
+      return res.status(403).json({ error: "Conversation is not available for this application." });
+    }
+    const application = await query(
+      `SELECT id, job_id, client_id, talent_id, status
+       FROM job_submissions
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.applicationId],
+    );
+    if (!application.rows.length) {
+      return res.status(404).json({ error: "Conversation is not available for this application." });
+    }
+    const row = application.rows[0];
+    if ((role === "client" && row.client_id !== userId) || (role === "talent" && row.talent_id !== userId)) {
+      return res.status(403).json({ error: "Conversation is not available for this application." });
+    }
+    if (!["new", "submitted", "under_review", "reviewed", "shortlisted", "interviewing", "offer_extended"].includes(row.status)) {
+      return res.status(409).json({ error: "Conversation is not available for this application." });
+    }
+    const existing = await query(
+      `SELECT id FROM message_threads
+       WHERE participants @> ARRAY[$1, $2]::text[]
+         AND participants <@ ARRAY[$1, $2]::text[]
+         AND job_id = $3
+       LIMIT 1`,
+      [row.client_id, row.talent_id, row.job_id],
+    );
+    if (existing.rows.length) return res.json({ threadId: existing.rows[0].id, isNew: false });
+    const created = await query(
+      `INSERT INTO message_threads (job_id, participants, subject)
+       VALUES ($1, ARRAY[$2, $3]::text[], 'Msgtest Job')
+       RETURNING id`,
+      [row.job_id, row.client_id, row.talent_id],
+    );
+    return res.status(201).json({ threadId: created.rows[0].id, isNew: true });
+  });
 
   // POST /api/message-threads — mirrors production gating
   app.post("/api/message-threads", auth, async (req, res) => {
@@ -144,7 +190,41 @@ function buildMessagingTestApp(): Express {
        RETURNING id, sender_id AS "senderId", content`,
       [threadId, userId, content],
     );
+    for (const participantId of t.rows[0].participants as string[]) {
+      if (participantId !== userId) {
+        await query(
+          `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+           VALUES ($1, 'new_message', 'New message', 'You have a new message.', $2, 'message_thread')`,
+          [participantId, threadId],
+        );
+      }
+    }
     res.status(201).json(created.rows[0]);
+  });
+
+  // POST /api/message-threads/:threadId/mark-read — mirrors the production
+  // message read state and matching new_message notification cleanup.
+  app.post("/api/message-threads/:threadId/mark-read", auth, async (req, res) => {
+    const userId = uid(req);
+    const t = await query(`SELECT participants FROM message_threads WHERE id = $1`, [req.params.threadId]);
+    if (!t.rows.length) return res.status(404).json({ error: "Thread not found" });
+    if (!t.rows[0].participants.includes(userId)) {
+      return res.status(403).json({ error: "Not a participant" });
+    }
+    await query(
+      `UPDATE messages
+       SET read_by = array_append(COALESCE(read_by, '{}'::text[]), $1)
+       WHERE thread_id = $2
+         AND NOT ($1 = ANY(COALESCE(read_by, '{}'::text[])))`,
+      [userId, req.params.threadId],
+    );
+    await query(
+      `UPDATE notifications
+       SET is_read = true
+       WHERE user_id = $1 AND type = 'new_message' AND related_id = $2`,
+      [userId, req.params.threadId],
+    );
+    return res.status(204).send();
   });
 
   // POST /api/talent/invitations/:id/respond — mirrors production accept transaction
@@ -268,6 +348,7 @@ function request(
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────
 async function cleanup() {
+  await query(`DELETE FROM notifications WHERE user_id IN ($1, $2, $3)`, [CLIENT_ID, TALENT_ID, OUTSIDER_ID]);
   await query(
     `DELETE FROM messages WHERE thread_id IN (
        SELECT id FROM message_threads WHERE participants && ARRAY[$1, $2, $3]::text[])`,
@@ -328,11 +409,117 @@ describe("messaging authorization model", () => {
   it("(a) rejects every messaging endpoint without a token", async () => {
     assert.equal((await request(srv, "GET", "/api/me/message-threads")).status, 401);
     assert.equal((await request(srv, "POST", "/api/message-threads", undefined, { participants: [CLIENT_ID, TALENT_ID] })).status, 401);
+    assert.equal((await request(srv, "POST", "/api/applications/missing/message-thread")).status, 401);
     assert.equal((await request(srv, "POST", "/api/messages", undefined, { threadId: "x", content: "hi" })).status, 401);
+    assert.equal((await request(srv, "POST", "/api/message-threads/missing/mark-read")).status, 401);
   });
 
-  it("(b2) an ordinary talent application does NOT open a messaging channel", async () => {
-    // A talent-initiated, submitted application between the same pair must not count
+  it("(a1) reuses one application conversation for Client and Talent", async () => {
+    const application = await query(
+      `INSERT INTO job_submissions
+         (id, job_id, client_id, applicant_name, first_name, last_name, email, status, initiated_by, talent_id, registration_status)
+       VALUES
+         (gen_random_uuid(), $1, $2, 'Msg Talent', 'Msg', 'Talent', 'msgtest-talent@example.com', 'new', 'talent', $3, 'linked')
+       RETURNING id`,
+      [JOB_ID, CLIENT_ID, TALENT_ID],
+    );
+    const applicationId = application.rows[0].id;
+
+    const openedByClient = await request(
+      srv,
+      "POST",
+      `/api/applications/${applicationId}/message-thread`,
+      clientTok,
+    );
+    assert.equal(openedByClient.status, 201);
+    assert.ok(openedByClient.json.threadId);
+    const threadId = openedByClient.json.threadId;
+
+    const openedByTalent = await request(
+      srv,
+      "POST",
+      `/api/applications/${applicationId}/message-thread`,
+      talentTok,
+    );
+    assert.equal(openedByTalent.status, 200);
+    assert.equal(openedByTalent.json.threadId, threadId);
+
+    const repeatedByClient = await request(
+      srv,
+      "POST",
+      `/api/applications/${applicationId}/message-thread`,
+      clientTok,
+    );
+    assert.equal(repeatedByClient.status, 200);
+    assert.equal(repeatedByClient.json.threadId, threadId);
+
+    const thread = await query(`SELECT participants FROM message_threads WHERE id = $1`, [threadId]);
+    assert.deepEqual(new Set(thread.rows[0].participants), new Set([CLIENT_ID, TALENT_ID]));
+
+    assert.equal(
+      (await request(srv, "POST", "/api/messages", clientTok, {
+        threadId,
+        content: "Hi, thanks for applying.",
+      })).status,
+      201,
+    );
+    const talentMessages = await request(srv, "GET", `/api/message-threads/${threadId}/messages`, talentTok);
+    assert.equal(talentMessages.status, 200);
+    assert.ok(talentMessages.json.some((message: any) => message.content === "Hi, thanks for applying."));
+    const unreadNotification = await query(
+      `SELECT is_read FROM notifications
+       WHERE user_id = $1 AND type = 'new_message' AND related_id = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [TALENT_ID, threadId],
+    );
+    assert.equal(unreadNotification.rows[0].is_read, false);
+    assert.equal(
+      (await request(srv, "POST", `/api/message-threads/${threadId}/mark-read`, talentTok)).status,
+      204,
+    );
+    const readState = await query(
+      `SELECT read_by FROM messages
+       WHERE thread_id = $1 AND sender_id = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [threadId, CLIENT_ID],
+    );
+    assert.ok(readState.rows[0].read_by.includes(TALENT_ID));
+    const readNotification = await query(
+      `SELECT is_read FROM notifications
+       WHERE user_id = $1 AND type = 'new_message' AND related_id = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [TALENT_ID, threadId],
+    );
+    assert.equal(readNotification.rows[0].is_read, true);
+
+    assert.equal(
+      (await request(srv, "POST", "/api/messages", talentTok, {
+        threadId,
+        content: "Thank you. I am happy to discuss the role.",
+      })).status,
+      201,
+    );
+    const clientMessages = await request(srv, "GET", `/api/message-threads/${threadId}/messages`, clientTok);
+    assert.equal(clientMessages.status, 200);
+    assert.ok(clientMessages.json.some((message: any) => message.content === "Thank you. I am happy to discuss the role."));
+
+    const outsiderOpen = await request(
+      srv,
+      "POST",
+      `/api/applications/${applicationId}/message-thread`,
+      outsiderTok,
+    );
+    assert.equal(outsiderOpen.status, 403);
+
+    await query(`DELETE FROM messages WHERE thread_id = $1`, [threadId]);
+    await query(`DELETE FROM notifications WHERE related_id = $1`, [threadId]);
+    await query(`DELETE FROM message_threads WHERE id = $1`, [threadId]);
+    await query(`DELETE FROM job_submissions WHERE id = $1`, [applicationId]);
+  });
+
+  it("(b2) an ordinary talent application does NOT weaken generic thread creation", async () => {
+    // The application-scoped bridge is intentional; the generic endpoint must
+    // still refuse the same relationship before an invitation is accepted.
     const r = await query(
       `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, first_name, last_name, email, status, initiated_by, talent_id, registration_status)
        VALUES (gen_random_uuid(), $1, $2, 'Msg Talent', 'Msg', 'Talent', 'msgtest-talent@example.com', 'new', 'talent', $3, 'linked')

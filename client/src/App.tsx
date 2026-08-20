@@ -285,11 +285,13 @@ function PublicRouter() {
 }
 
 function MessagesRoute() {
-  // Talent users authenticate with a talent token and don't get the client sidebar;
-  // client users are routed through ClientRouter (which includes /messages routes).
+  // Talent sessions use the standalone Messages page. Client sessions stay in the
+  // Client shell, which includes the sidebar. A main JWT always takes precedence
+  // over a stale talent-portal token because apiRequest uses that same precedence.
+  const { isLoading, user } = useAuth();
   const talentAuth = loadTalentAuth();
-  const hasLegacyJwt = !!localStorage.getItem("onspot_jwt_token");
-  if (talentAuth && !hasLegacyJwt) {
+  if (isLoading) return null;
+  if (user?.role === "talent" || (!user && talentAuth)) {
     return (
       <>
         <TopNavigation />

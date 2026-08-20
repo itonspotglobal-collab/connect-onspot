@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/queryClient";
 
 export interface ApplicationAnswer {
   questionId?: string;
@@ -26,12 +28,7 @@ export interface TalentApplication {
 }
 
 async function fetchTalentApplications(): Promise<TalentApplication[]> {
-  const auth = loadTalentAuth();
-  if (!auth) return [];
-  const res = await fetch("/api/talent/applications", {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const res = await apiRequest("GET", "/api/talent/applications");
   return res.json();
 }
 
@@ -45,11 +42,14 @@ async function fetchTalentApplications(): Promise<TalentApplication[]> {
  * leaks one candidate's data into another's badge or application list.
  */
 export function useTalentApplications() {
-  const auth = loadTalentAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const talentAuth = loadTalentAuth();
+  const isTalent = user?.role === "talent" || (!user && !!talentAuth);
+  const identityKey = user?.role === "talent" ? user.id : talentAuth?.candidateId ?? null;
   return useQuery<TalentApplication[]>({
-    queryKey: ["talent-applications", auth?.candidateId ?? null],
+    queryKey: ["talent-applications", identityKey],
     queryFn: fetchTalentApplications,
-    enabled: !!auth,
+    enabled: !authLoading && isTalent,
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     staleTime: 10_000,
@@ -63,10 +63,12 @@ export function useTalentApplications() {
  */
 export function useInvalidateTalentApplications() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const auth = loadTalentAuth();
+  const identityKey = user?.role === "talent" ? user.id : auth?.candidateId ?? null;
   return () =>
     qc.invalidateQueries({
-      queryKey: ["talent-applications", auth?.candidateId ?? null],
+      queryKey: ["talent-applications", identityKey],
     });
 }
 
@@ -78,10 +80,12 @@ export function useInvalidateTalentApplications() {
  *  - the talent has never visited My Applications (no baseline to compare against)
  */
 export function useUnreadApplicationsCount(): number {
+  const { user } = useAuth();
   const auth = loadTalentAuth();
   const { data: applications } = useTalentApplications();
-  if (!auth || !applications || applications.length === 0) return 0;
-  const raw = localStorage.getItem(getTalentAppsLastViewedKey(auth.candidateId));
+  const identityKey = user?.role === "talent" ? user.id : auth?.candidateId ?? null;
+  if (!identityKey || !applications || applications.length === 0) return 0;
+  const raw = localStorage.getItem(getTalentAppsLastViewedKey(identityKey));
   if (!raw) return 0; // never visited — no unread baseline
   const lastViewedMs = new Date(raw).getTime();
   return applications.filter(

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -276,12 +279,25 @@ function SubmissionDrawer({ app, onClose }: { app: TalentApplication; onClose: (
 
 function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; onViewSubmission: () => void }) {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
   const qc = useQueryClient();
   const jobOpen = app.job.status === "open" || !app.job.status;
   const meta = getStatusMeta(app.applicationStatus);
   const canWithdraw = !meta.isTerminal;
+  const canOpenChat = new Set([
+    "new",
+    "submitted",
+    "under_review",
+    "reviewed",
+    "shortlisted",
+    "interviewing",
+    "offer_extended",
+    "offer_accepted",
+    "contract_sent",
+  ]).has(app.applicationStatus);
 
   const submittedDate = app.submittedAt
     ? new Date(app.submittedAt).toLocaleDateString("en-US", {
@@ -290,26 +306,43 @@ function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; on
     : null;
 
   async function handleWithdraw() {
-    const auth = loadTalentAuth();
-    if (!auth) return;
     setWithdrawing(true);
     try {
-      const res = await fetch(`/api/talent/applications/${app.id}/withdraw`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        console.error("Withdraw failed:", body);
-        return;
-      }
+      await apiRequest("PATCH", `/api/talent/applications/${app.id}/withdraw`);
       // Optimistic update: flip status immediately then refetch
       qc.setQueryData<TalentApplication[]>(["talent-applications"], (old) =>
         old?.map((a) => a.id === app.id ? { ...a, applicationStatus: "withdrawn" } : a) ?? old,
       );
       qc.invalidateQueries({ queryKey: ["talent-applications"] });
+    } catch (error) {
+      console.error("Withdraw failed:", error);
+      toast({
+        title: "Unable to withdraw application",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setWithdrawing(false);
+    }
+  }
+
+  async function handleOpenChat() {
+    if (openingChat) return;
+    setOpeningChat(true);
+    try {
+      const res = await apiRequest("POST", `/api/applications/${app.id}/message-thread`);
+      const data = await res.json() as { threadId?: string };
+      if (!data.threadId) throw new Error("No thread returned");
+      navigate(`/messages/${data.threadId}`);
+    } catch (error) {
+      console.error("Open application conversation failed:", error);
+      toast({
+        title: "Unable to open conversation",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningChat(false);
     }
   }
 
@@ -348,7 +381,7 @@ function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; on
             ) : (
               <span className="text-xs text-slate-400 italic">Job closed</span>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 onClick={onViewSubmission}
                 className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5"
@@ -364,6 +397,20 @@ function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; on
                 {expanded ? "Hide" : "Timeline"}
                 <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
               </button>
+              {canOpenChat && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">·</span>
+                  <button
+                    onClick={handleOpenChat}
+                    disabled={openingChat}
+                    className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5 disabled:opacity-50"
+                    data-testid={`button-reach-client-${app.id}`}
+                  >
+                    {openingChat ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                    {openingChat ? "Opening…" : "Reach the Client"}
+                  </button>
+                </>
+              )}
             </div>
             {canWithdraw && (
               <AlertDialog>
@@ -934,7 +981,10 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
 
 export default function TalentApplications() {
   const [, navigate] = useLocation();
-  const auth = loadTalentAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const talentAuth = loadTalentAuth();
+  const talentSessionId = user?.role === "talent" ? user.id : talentAuth?.candidateId ?? null;
+  const hasTalentSession = user?.role === "talent" || (!user && !!talentAuth);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
 
@@ -943,14 +993,29 @@ export default function TalentApplications() {
   // Stamp the per-candidate "last viewed" timestamp so the nav badge resets on visit.
   // Must be scoped by candidateId so one talent's visit doesn't clear another's baseline.
   useEffect(() => {
-    if (auth?.candidateId) {
-      localStorage.setItem(getTalentAppsLastViewedKey(auth.candidateId), new Date().toISOString());
+    if (talentSessionId) {
+      localStorage.setItem(getTalentAppsLastViewedKey(talentSessionId), new Date().toISOString());
     }
-  }, [auth?.candidateId]);
+  }, [talentSessionId]);
 
-  // Redirect unauthenticated visitors to the portal login
-  if (!auth) {
-    navigate("/portal-login?portal=talent&returnTo=/my-applications");
+  useEffect(() => {
+    if (!authLoading && !hasTalentSession) {
+      navigate("/portal-login?portal=talent&returnTo=/my-applications");
+    }
+  }, [authLoading, hasTalentSession, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#060816]">
+        <TopNavigation />
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasTalentSession) {
     return null;
   }
 
@@ -985,7 +1050,7 @@ export default function TalentApplications() {
             </p>
           </div>
           <button
-            onClick={() => navigate("/inbox")}
+            onClick={() => navigate("/messages")}
             className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <MessageSquare className="h-4 w-4" />

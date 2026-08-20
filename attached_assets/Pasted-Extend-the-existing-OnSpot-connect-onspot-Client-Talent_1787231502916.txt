@@ -1,0 +1,914 @@
+Extend the existing OnSpot / `connect-onspot` Client ↔ Talent messaging system with **application-based chat entry points on both sides**.
+
+The underlying messaging feature already exists and works.
+
+Do NOT build a second chat system.
+
+Do NOT create separate messages for applications.
+
+Everything must reuse the existing canonical:
+
+* `message_threads`
+* `messages`
+* `/messages`
+* `/messages/:threadId`
+* participant authorization
+* unread/read state
+* message notifications
+* Talent candidate/profile auth resolution
+* Client auth resolution
+
+The goal is to make it easy for both Client and Talent to start or open the SAME conversation directly from an application/submission.
+
+---
+
+# REQUIRED CLIENT-SIDE CHANGE
+
+On the Client Portal, in the existing:
+
+**Job Submissions**
+
+table, each applicable Talent submission should get a messaging action.
+
+Current actions include things such as:
+
+* Offer
+* View
+
+Add a button such as:
+
+**Message**
+
+or:
+
+**Talk to Talent**
+
+Preferred label:
+
+`Message`
+
+with a `MessageSquare` icon.
+
+Example:
+
+```text
+APPLICANT      POSITION               STATUS          ACTIONS
+
+Valu Testu     Social Media Manager   NEW             Message  View
+```
+
+or:
+
+```text
+Valu Testu     Social Media Manager   REVIEWED        Offer  Message  View
+```
+
+Use the existing button styling.
+
+Do not redesign the table.
+
+---
+
+# CLIENT MESSAGE BUTTON BEHAVIOR
+
+When Client clicks:
+
+`Message`
+
+on a specific submission:
+
+1. Authenticate Client.
+2. Identify the exact `job_submission`.
+3. Resolve the exact Talent linked to that submission.
+4. Resolve canonical Client `users.id`.
+5. Resolve canonical Talent `users.id`.
+6. Find the existing canonical conversation between those participants in the correct application/job context.
+7. If one exists, reuse it.
+8. If none exists, create it idempotently.
+9. Return canonical `threadId`.
+10. Navigate Client to:
+
+`/messages/:threadId`
+
+Do NOT create another thread every time the button is clicked.
+
+---
+
+# IMPORTANT — CLIENT MUST MESSAGE THE EXACT APPLICANT
+
+The Client table may contain multiple applications, possibly even multiple submissions from the same Talent.
+
+The Message action must use the exact selected:
+
+`applicationId`
+
+Do not guess based only on Talent name.
+
+Do not search by email from the frontend.
+
+Derive the Client/Talent relationship server-side from the canonical submission/job records.
+
+---
+
+# REQUIRED TALENT-SIDE CHANGE
+
+On the Talent:
+
+**My Applications**
+
+page, add a messaging action inside each eligible job/application card.
+
+Use a label such as:
+
+**Reach the Client**
+
+Preferred wording:
+
+`Reach the Client`
+
+with a `MessageSquare` icon.
+
+Example:
+
+```text
+Social Media Manager
+OnSpot · Remote
+
+Submitted · Applied Aug 20, 2026
+
+View submission · Timeline · Reach the Client
+                              Withdraw
+```
+
+or align it neatly with the existing actions.
+
+Do not remove:
+
+* View Job
+* View submission
+* Timeline
+* Withdraw
+
+---
+
+# TALENT BUTTON BEHAVIOR
+
+When Talent clicks:
+
+`Reach the Client`
+
+for a specific application:
+
+1. Authenticate Talent.
+2. Support BOTH:
+
+   * main Talent JWT
+   * Talent candidate/profile JWT
+3. Resolve authenticated Talent to canonical `users.id`.
+4. Load that exact application.
+5. Confirm Talent owns the application.
+6. Resolve the Client who owns the job.
+7. Find/reuse existing canonical thread.
+8. If none exists and contact is allowed, create it idempotently.
+9. Return canonical `threadId`.
+10. Navigate to:
+
+`/messages/:threadId`
+
+The Talent must land in the SAME conversation the Client sees.
+
+---
+
+# TALENT NOTIFICATION CLICK FLOW
+
+Current Talent notifications such as:
+
+`Application update`
+
+redirect Talent to:
+
+`/my-applications`
+
+Keep that behavior.
+
+Do NOT change every application notification to open Messages.
+
+Instead:
+
+1. Talent clicks application notification.
+2. Talent arrives at `/my-applications`.
+3. Relevant application card is visible.
+4. That card includes:
+   `Reach the Client`
+5. Talent can then open the chat directly.
+
+This is the intended UX.
+
+---
+
+# OPTIONAL APPLICATION HIGHLIGHT AFTER NOTIFICATION
+
+If the existing notification includes an application/submission ID, improve the UX by passing it through navigation.
+
+For example:
+
+`/my-applications?application=<id>`
+
+or equivalent existing routing style.
+
+Then on the Talent application page:
+
+* scroll/highlight the relevant card briefly
+* do not break normal direct `/my-applications` access
+
+This is optional but preferred if safely supported.
+
+Do not create fragile routing just for animation.
+
+---
+
+# USE ONE CANONICAL APPLICATION-CHAT BACKEND FLOW
+
+Do not implement Client and Talent thread creation separately with different rules.
+
+Prefer a shared helper.
+
+Conceptually:
+
+```ts
+getOrCreateApplicationMessageThread({
+  applicationId,
+  authenticatedUserId,
+  role
+})
+```
+
+or reusable lower-level helpers such as:
+
+```text
+resolveMessagingUserId
+resolveApplicationParticipants
+getOrCreateCanonicalThread
+assertApplicationParticipant
+```
+
+The important point is:
+
+Client and Talent must resolve to the SAME thread.
+
+---
+
+# SUGGESTED ENDPOINT DESIGN
+
+First inspect existing messaging routes.
+
+Reuse an existing secure route if possible.
+
+If new endpoints are needed, use application-scoped routes such as:
+
+### Client
+
+`POST /api/client/applications/:applicationId/message-thread`
+
+### Talent
+
+`POST /api/talent/applications/:applicationId/message-thread`
+
+Both should internally call the SAME canonical thread helper.
+
+OR use a single endpoint:
+
+`POST /api/applications/:applicationId/message-thread`
+
+and infer role from authentication.
+
+Choose whichever best fits the existing API architecture.
+
+Do not trust role/user IDs supplied from frontend.
+
+---
+
+# THREAD PARTICIPANTS
+
+Thread participants must contain canonical:
+
+* Client `users.id`
+* Talent `users.id`
+
+Never:
+
+* candidate ID
+* application ID
+* email
+* profile ID
+
+The application/job is context, not participant identity.
+
+---
+
+# THREAD REUSE RULE
+
+This is critical.
+
+Before creating a thread, check for an appropriate existing thread created by:
+
+* Client direct messaging
+* accepted invitation
+* existing application chat
+* previous Message click
+* previous Reach the Client click
+
+Do not create duplicates.
+
+Repeated:
+
+`Message`
+
+or:
+
+`Reach the Client`
+
+must return the same thread ID.
+
+---
+
+# JOB / APPLICATION CONTEXT
+
+If the existing messaging model supports:
+
+`job_id`
+
+or subject,
+
+use the application job as context.
+
+For example:
+
+subject:
+
+`Social Media Manager`
+
+Do not overwrite a valid existing thread's context unnecessarily.
+
+If the current architecture uses one direct Client↔Talent thread regardless of job, preserve that rule.
+
+Do not invent a new identity rule without checking current messaging behavior.
+
+---
+
+# CLIENT MESSAGES PAGE
+
+After Client clicks Message:
+
+```text
+Client Job Submissions
+       ↓
+Message
+       ↓
+/messages/:threadId
+```
+
+The existing Client messaging page must remain inside:
+
+* blue TopNavigation
+* Client sidebar
+
+Do not break the current Client shell.
+
+---
+
+# TALENT MESSAGES PAGE
+
+After Talent clicks Reach the Client:
+
+```text
+My Applications
+       ↓
+Reach the Client
+       ↓
+/messages/:threadId
+```
+
+Talent Messages must use:
+
+* blue TopNavigation
+* NO Client sidebar
+
+Do not accidentally wrap Talent in the Client Portal shell.
+
+---
+
+# TALENT ACCOUNT DROPDOWN
+
+Also ensure Talent can reach Messages generally.
+
+In the Talent Profile dropdown, include:
+
+`Messages`
+
+with `MessageSquare` icon.
+
+Desired ordering:
+
+```text
+Talent Profile
+Finish Profile Setup
+Find Work
+My Applications
+Messages
+Settings
+----------------
+Sign Out
+```
+
+Audit all Talent auth/render branches first.
+
+Messages must appear for:
+
+* Talent main JWT
+* Talent candidate/profile session
+
+Do not add duplicate menu items.
+
+---
+
+# CLIENT STATUS RULES
+
+The Message button should generally be available for valid applications.
+
+Audit status rules.
+
+Likely eligible statuses include:
+
+* new
+* submitted
+* under_review
+* reviewed
+* shortlisted
+* interview
+* offered
+
+If an application is:
+
+`withdrawn`
+
+do not automatically delete an existing conversation.
+
+Historical messages should remain.
+
+You may either:
+
+* keep Message available for existing relationships, or
+* disable starting a brand-new conversation after withdrawal
+
+depending on current product rules.
+
+Preserve existing conversations.
+
+---
+
+# TALENT STATUS RULES
+
+Likewise:
+
+`Reach the Client`
+
+should appear for active applications.
+
+For withdrawn/rejected/terminal applications:
+
+do not destroy the conversation.
+
+If a thread already exists, preserve access according to current messaging rules.
+
+Do not couple application deletion/status to message deletion.
+
+---
+
+# CLIENT → TALENT TEST FLOW
+
+Test:
+
+1. Client logs in.
+2. Client opens dashboard.
+3. Under Job Submissions, finds:
+   `Valu Testu — Social Media Manager`
+4. Clicks:
+   `Message`
+5. Thread opens.
+6. Client sends:
+   `Hi, thanks for applying.`
+7. Talent receives unread message notification.
+8. Talent opens Messages.
+9. Same message appears.
+
+---
+
+# TALENT → CLIENT TEST FLOW
+
+Test:
+
+1. Talent logs in.
+2. Opens notification:
+   `Application update`
+3. Redirects to:
+   `/my-applications`
+4. Finds:
+   `Social Media Manager`
+5. Clicks:
+   `Reach the Client`
+6. SAME thread opens.
+7. Talent sends:
+   `Thank you. I’m happy to discuss the role.`
+8. Client gets unread notification.
+9. Client opens Messages.
+10. Same thread/message appears.
+
+---
+
+# SAME THREAD VERIFICATION
+
+This is mandatory.
+
+Client clicks:
+
+`Message`
+
+Talent clicks:
+
+`Reach the Client`
+
+Expected:
+
+```text
+Client threadId === Talent threadId
+```
+
+Do not consider the task finished unless verified.
+
+---
+
+# MULTIPLE CLICKS
+
+Test:
+
+Client clicks Message 5 times.
+
+Expected:
+
+one thread.
+
+Talent clicks Reach the Client 5 times.
+
+Expected:
+
+same thread.
+
+No duplicates.
+
+---
+
+# MULTIPLE APPLICATIONS
+
+If the same Talent has multiple applications:
+
+do not update/open the wrong one.
+
+Each button must use the exact application ID.
+
+If messaging architecture is job-specific:
+
+different jobs may have different threads.
+
+If messaging architecture is relationship-specific:
+
+reuse the same thread.
+
+Respect the current canonical rule.
+
+---
+
+# NOTIFICATIONS
+
+When either participant sends a message:
+
+* notify every other thread participant
+* do not notify sender
+* notification persists in DB
+* unread count updates
+* clicking message notification opens correct thread
+
+Do not mix application-update notifications with message notifications.
+
+---
+
+# CLIENT APPLICATION NOTIFICATIONS
+
+Do not break:
+
+* new application received
+* withdrawal notifications
+* status updates
+
+The new Message button is independent from those notification types.
+
+---
+
+# TALENT APPLICATION NOTIFICATIONS
+
+Preserve:
+
+* Application update
+* offer notifications
+* other Talent alerts
+
+Application notification should still bring Talent to My Applications.
+
+The new Reach the Client button is the action from there.
+
+---
+
+# SECURITY
+
+Client must not be able to message a Talent through an application they do not own.
+
+Talent must not be able to message a Client through another Talent's application.
+
+Third-party users must not access the created thread.
+
+Required server checks:
+
+### Client
+
+* authenticated
+* role Client
+* application belongs to Client's job
+
+### Talent
+
+* authenticated
+* application belongs to Talent
+
+Do not rely only on frontend visibility.
+
+---
+
+# CANONICAL IDENTITY RESOLUTION
+
+Talent auth may use candidate token.
+
+Always normalize to:
+
+`users.id`
+
+before:
+
+* thread lookup
+* thread creation
+* participant checks
+* notifications
+
+Do not reintroduce the earlier Client→Talent delivery bug.
+
+---
+
+# UI DESIGN — CLIENT
+
+In Job Submissions, keep the action area compact.
+
+Examples:
+
+```text
+[Offer] [Message] [View]
+```
+
+or:
+
+```text
+Message   View
+```
+
+Use existing Button variants.
+
+Do not make the row significantly taller unless required.
+
+---
+
+# UI DESIGN — TALENT
+
+For My Applications, use a text-link/button matching:
+
+* View submission
+* Timeline
+
+Example:
+
+```text
+View submission · Timeline · Reach the Client
+```
+
+Use responsive wrapping.
+
+Do not overlap Withdraw.
+
+---
+
+# LOADING / ERROR UX
+
+When either chat action is clicked:
+
+* disable button
+* show spinner/loading state
+* prevent double submit
+
+On success:
+
+navigate.
+
+On failure:
+
+show toast:
+
+`Unable to open conversation. Please try again.`
+
+Do not silently fail.
+
+---
+
+# EMPTY CLIENT/TALENT LINK
+
+If an old application does not have a resolvable Client/Talent account relationship:
+
+do not crash.
+
+Return a clear server error.
+
+Frontend should show:
+
+`Conversation is not available for this application.`
+
+Do not expose internal IDs.
+
+---
+
+# DO NOT BREAK MESSAGING
+
+Do not modify message delivery behavior unless required.
+
+Regression test:
+
+* Client → Talent
+* Talent → Client
+* unread
+* mark read
+* notification
+* PII moderation
+* thread authorization
+
+---
+
+# DO NOT BREAK WITHDRAWAL
+
+Preserve:
+
+* Talent Withdraw
+* Client withdrawal notification
+* Client submission becomes Withdrawn
+* terminal transition protection
+
+---
+
+# DO NOT BREAK OFFERS
+
+Preserve:
+
+* Offer button
+* offer_received notification
+* accept/decline behavior
+* offer unread count
+
+---
+
+# DO NOT BREAK CLIENT SIDEBAR
+
+Preserve the new canonical Client portal:
+
+* TopNavigation
+* sidebar
+* dashboard
+* messages
+
+Do not bring back `/client-dashboard` legacy layout.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+### Client frontend
+
+* Client profile/dashboard page containing Job Submissions
+* `client/src/pages/ClientProfile.tsx`
+* `client/src/pages/Dashboard.tsx`
+* shared Client layout/sidebar components
+
+### Talent frontend
+
+* `client/src/pages/TalentApplications.tsx`
+* `client/src/components/TopNavigation.tsx`
+
+### Messaging frontend
+
+* `client/src/pages/Messages.tsx`
+
+### Backend
+
+* `server/routes.ts`
+* `server/storage.ts`
+* messaging helpers
+* application routes
+
+### Shared
+
+* `shared/schema.ts`
+
+### Tests
+
+* message thread tests
+* application tests
+* auth tests
+
+Search repository-wide before editing.
+
+---
+
+# REGRESSION TEST TO ADD
+
+Add one end-to-end/route-level test:
+
+## Application messaging bridge
+
+1. Create Client.
+2. Create Talent user.
+3. Create linked candidate.
+4. Create Client job.
+5. Create Talent application.
+6. Client calls application message-thread endpoint.
+7. Thread returned.
+8. Talent calls Talent application message-thread endpoint.
+9. SAME thread returned.
+10. Participants are correct canonical user IDs.
+11. Client sends message.
+12. Talent can fetch it.
+13. Talent replies.
+14. Client can fetch reply.
+15. outsider denied.
+
+This test is mandatory.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client Job Submissions has Message button
+* Message opens chat with exact applicant
+* Talent My Applications has Reach the Client
+* Reach the Client opens chat with job-owning Client
+* Talent notification still redirects to My Applications
+* Messages exists in Talent dropdown
+* Client and Talent land in SAME thread
+* no duplicate threads
+* messages work both directions
+* unread works
+* notifications work
+* auth works for both Talent login modes
+* Client sidebar remains intact
+* withdrawal still works
+* offers still work
+* application notifications still work
+* security checks pass
+* tests/build pass
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. Client button added and file
+2. Talent button added and file
+3. Talent Messages dropdown update
+4. endpoint/helper used
+5. thread reuse logic
+6. application→participant resolution
+7. notification behavior
+8. auth behavior
+9. tests run
+10. regression results
+
+Do not create two conversation systems.
+
+The final product should make the existing messaging system feel directly connected to the application lifecycle from BOTH Client and Talent sides.

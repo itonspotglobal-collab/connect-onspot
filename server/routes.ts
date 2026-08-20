@@ -5361,24 +5361,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/talent/applications", authenticateTalentJWT, async (req: any, res) => {
+  app.get("/api/talent/applications", authenticateJWT, async (req: any, res) => {
     try {
-      const { candidateId, email: jwtEmail } = req.talentAuth;
-
-      // Resolve the candidate's email (authoritative source: candidates table)
-      const candRow = await query(
-        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
-        [candidateId],
-      );
-      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
-      const candidateEmail = candRow.rows[0].email as string;
-
-      // Resolve the linked users.id (talent_id in job_submissions stores users.id)
-      const userRow = await query(
-        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-        [candidateEmail],
-      );
-      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+      const user = req.user as { id?: string; email?: string; role?: string } | undefined;
+      if (!user?.id || user.role !== "talent") return res.status(403).json({ error: "Talent access required" });
+      const linkedUserId = user.id;
+      const candidateEmail = user.email ?? "";
 
       // Fetch applications where:
       //   - talent_id explicitly matches the linked users.id (preferred / secure), OR
@@ -5443,25 +5431,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Verifies the authenticated talent owns that submission before serving.
    * Never exposes other applicants' files.
    */
-  app.get("/api/talent/applications/:id/resume", authenticateTalentJWT, async (req: any, res) => {
+  app.get("/api/talent/applications/:id/resume", authenticateJWT, async (req: any, res) => {
     try {
-      const { candidateId, email: jwtEmail } = req.talentAuth;
+      const user = req.user as { id?: string; email?: string; role?: string } | undefined;
+      if (!user?.id || user.role !== "talent") return res.status(403).json({ error: "Talent access required" });
       const applicationId = req.params.id;
-
-      // Resolve canonical email from candidates table
-      const candRow = await query(
-        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
-        [candidateId],
-      );
-      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
-      const candidateEmail = candRow.rows[0].email as string;
-
-      // Resolve linked users.id
-      const userRow = await query(
-        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-        [candidateEmail],
-      );
-      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+      const linkedUserId = user.id;
+      const candidateEmail = user.email ?? "";
 
       // Fetch only the submission the talent owns
       const subResult = await query(
@@ -5503,25 +5479,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
    * Allows the authenticated talent to withdraw one of their own applications.
    * Only non-terminal applications (not hired/rejected/withdrawn) can be withdrawn.
    */
-  app.patch("/api/talent/applications/:id/withdraw", authenticateTalentJWT, async (req: any, res) => {
+  app.patch("/api/talent/applications/:id/withdraw", authenticateJWT, async (req: any, res) => {
     try {
-      const { candidateId, email: jwtEmail } = req.talentAuth;
+      const user = req.user as { id?: string; email?: string; role?: string } | undefined;
+      if (!user?.id || user.role !== "talent") return res.status(403).json({ error: "Talent access required" });
       const applicationId = req.params.id;
-
-      // Resolve the candidate's email
-      const candRow = await query(
-        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
-        [candidateId],
-      );
-      if (!candRow.rows.length) return res.status(404).json({ error: "Candidate not found" });
-      const candidateEmail = candRow.rows[0].email as string;
-
-      // Resolve linked users.id
-      const userRow = await query(
-        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-        [candidateEmail],
-      );
-      const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
+      const linkedUserId = user.id;
+      const candidateEmail = user.email ?? "";
 
       // Fetch the application, verifying ownership
       const appRow = await query(
@@ -5557,7 +5521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [applicationId],
       );
 
-      console.log(`✅ Talent ${candidateEmail} withdrew application ${applicationId}`);
+       console.log(`✅ Talent ${linkedUserId} withdrew application ${applicationId}`);
       return res.json(updated.rows[0]);
     } catch (error: any) {
       console.error("PATCH /api/talent/applications/:id/withdraw error:", error);
@@ -7961,6 +7925,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const getAuthedUserId = (req: Request): string | undefined =>
     (req as any).user?.id;
 
+  const APPLICATION_CHAT_STARTABLE_STATUSES = new Set([
+    "new",
+    "submitted",
+    "under_review",
+    "reviewed",
+    "shortlisted",
+    "interviewing",
+    "offer_extended",
+    "offer_accepted",
+    "contract_sent",
+  ]);
+
+  type ApplicationThreadResult =
+    | { threadId: string; isNew: boolean }
+    | { error: string; status: 403 | 404 | 409 };
+
+  /**
+   * Resolves a single job submission to the canonical client/talent user IDs and
+   * opens the one matching conversation. Both application entry points call this
+   * helper so a Client and Talent always converge on the same thread.
+   */
+  const getOrCreateApplicationMessageThread = async ({
+    applicationId,
+    authenticatedUserId,
+    role,
+  }: {
+    applicationId: string;
+    authenticatedUserId: string;
+    role: "client" | "talent";
+  }): Promise<ApplicationThreadResult> => {
+    const application = await query(
+      `SELECT
+         js.id,
+         js.job_id,
+         js.client_id,
+         js.status,
+         js.talent_id,
+         js.email AS applicant_email,
+         j.client_id AS job_owner_id,
+         j.title AS job_title,
+         COALESCE(talent_by_id.id, talent_by_email.id) AS talent_user_id
+       FROM job_submissions js
+       JOIN jobs j ON j.id = js.job_id
+       LEFT JOIN users talent_by_id ON talent_by_id.id = js.talent_id
+       LEFT JOIN users talent_by_email ON lower(talent_by_email.email) = lower(js.email)
+       WHERE js.id = $1
+       LIMIT 1`,
+      [applicationId],
+    );
+    if (!application.rows.length) {
+      return { status: 404, error: "Conversation is not available for this application." };
+    }
+
+    const submission = application.rows[0];
+    const clientId = submission.job_owner_id ?? submission.client_id;
+    const talentUserId = submission.talent_user_id as string | null;
+    const jobId = submission.job_id as string | null;
+
+    if (!clientId || !talentUserId || !jobId || clientId === talentUserId) {
+      return { status: 404, error: "Conversation is not available for this application." };
+    }
+    if (role === "client" && clientId !== authenticatedUserId) {
+      return { status: 403, error: "Conversation is not available for this application." };
+    }
+    if (role === "talent" && talentUserId !== authenticatedUserId) {
+      return { status: 403, error: "Conversation is not available for this application." };
+    }
+
+    const txClient = await pool.connect();
+    try {
+      await txClient.query("BEGIN");
+      await txClient.query(
+        `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || $3))`,
+        [clientId, talentUserId, jobId],
+      );
+
+      // Job-specific application threads take precedence. A pre-existing direct
+      // or invitation thread is the established relationship-level channel and
+      // is reused next, rather than creating a second conversation for the pair.
+      const existingForJob = await txClient.query(
+        `SELECT id FROM message_threads
+         WHERE participants @> ARRAY[$1, $2]::text[]
+           AND participants <@ ARRAY[$1, $2]::text[]
+           AND job_id = $3
+         LIMIT 1`,
+        [clientId, talentUserId, jobId],
+      );
+      const existingDirect = existingForJob.rows.length
+        ? existingForJob
+        : await txClient.query(
+            `SELECT id FROM message_threads
+             WHERE participants @> ARRAY[$1, $2]::text[]
+               AND participants <@ ARRAY[$1, $2]::text[]
+               AND job_id IS NULL
+             LIMIT 1`,
+            [clientId, talentUserId],
+          );
+
+      if (existingDirect.rows.length) {
+        await txClient.query("COMMIT");
+        return { threadId: existingDirect.rows[0].id, isNew: false };
+      }
+
+      if (!APPLICATION_CHAT_STARTABLE_STATUSES.has(submission.status)) {
+        await txClient.query("ROLLBACK");
+        return { status: 409, error: "Conversation is not available for this application." };
+      }
+
+      const created = await txClient.query(
+        `INSERT INTO message_threads (job_id, participants, subject)
+         VALUES ($1, ARRAY[$2, $3]::text[], $4)
+         RETURNING id`,
+        [jobId, clientId, talentUserId, submission.job_title ?? null],
+      );
+      await txClient.query("COMMIT");
+      return { threadId: created.rows[0].id, isNew: true };
+    } catch (error) {
+      await txClient.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      txClient.release();
+    }
+  };
+
   app.get("/api/message-threads/:id", authenticateJWT, async (req, res) => {
     try {
       const userId = getAuthedUserId(req);
@@ -8069,6 +8157,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "Validation failed", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create message thread" });
+    }
+  });
+
+  // Opens the canonical conversation for one application. IDs and participant
+  // roles are always derived from the owned submission — the browser submits only
+  // the application path parameter.
+  app.post("/api/applications/:applicationId/message-thread", authenticateJWT, async (req, res) => {
+    try {
+      const user = (req as any).user as { id?: string; role?: string } | undefined;
+      if (!user?.id) return res.status(401).json({ error: "Unauthorized" });
+      if (user.role !== "client" && user.role !== "talent") {
+        return res.status(403).json({ error: "Conversation is not available for this application." });
+      }
+
+      const result = await getOrCreateApplicationMessageThread({
+        applicationId: req.params.applicationId,
+        authenticatedUserId: user.id,
+        role: user.role,
+      });
+      if ("error" in result) {
+        return res.status(result.status).json({ error: result.error });
+      }
+      return res.status(result.isNew ? 201 : 200).json({ threadId: result.threadId });
+    } catch (error) {
+      console.error("POST /api/applications/:applicationId/message-thread error:", error);
+      return res.status(500).json({ error: "Unable to open conversation. Please try again." });
     }
   });
 

@@ -65,6 +65,7 @@ import {
   Inbox,
   Search,
   MessageSquare,
+  Loader2,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 
@@ -1073,6 +1074,8 @@ function JobSubmissionsSection({
   onExtendOffer: (sub: JobSubmission) => void;
   nameRevealThreshold?: string;
 }) {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
   const { data: submissions = [], isLoading } = useQuery<JobSubmission[]>({
     queryKey: ["/api/client/job-submissions"],
     queryFn: async () => {
@@ -1090,6 +1093,20 @@ function JobSubmissionsSection({
       queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
       queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
     },
+  });
+
+  const openMessageMutation = useMutation({
+    mutationFn: async (applicationId: string) => {
+      const res = await apiRequest("POST", `/api/applications/${applicationId}/message-thread`);
+      return res.json() as Promise<{ threadId: string }>;
+    },
+    onSuccess: ({ threadId }) => navigate(`/messages/${threadId}`),
+    onError: () =>
+      toast({
+        title: "Unable to open conversation",
+        description: "Please try again.",
+        variant: "destructive",
+      }),
   });
 
   return (
@@ -1227,6 +1244,23 @@ function JobSubmissionsSection({
                             <span className="hidden sm:inline">Offer</span>
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          disabled={openMessageMutation.isPending}
+                          onClick={() => openMessageMutation.mutate(sub.id)}
+                          data-testid={`button-message-submission-${sub.id}`}
+                        >
+                          {openMessageMutation.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <MessageSquare className="h-3.5 w-3.5" />
+                          )}
+                          <span className="hidden sm:inline">
+                            {openMessageMutation.isPending ? "Opening…" : "Message"}
+                          </span>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

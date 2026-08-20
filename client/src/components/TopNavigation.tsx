@@ -888,6 +888,17 @@ export function TopNavigation() {
                         </button>
                       </RadixDropdown.Item>
                       <RadixDropdown.Item asChild>
+                        <button onClick={() => navigate("/messages")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                          <MessageSquare style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Messages</span>
+                          {unreadMsgsCount > 0 && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18, borderRadius: 99, background: '#E5484D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '0 5px', flexShrink: 0 }}>
+                              {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
+                            </span>
+                          )}
+                        </button>
+                      </RadixDropdown.Item>
+                      <RadixDropdown.Item asChild>
                         <button onClick={() => navigate("/settings")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
                           <Settings style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
                           <span style={{ flex: 1 }}>Settings</span>
