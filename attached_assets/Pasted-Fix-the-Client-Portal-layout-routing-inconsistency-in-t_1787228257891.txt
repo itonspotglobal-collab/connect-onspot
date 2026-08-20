@@ -1,0 +1,720 @@
+Fix the Client Portal layout/routing inconsistency in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT BUG
+
+The Client experience currently behaves inconsistently.
+
+### Scenario 1 — Client opens Messages
+
+When I visit:
+
+`/messages`
+
+the Client sidebar appears correctly underneath the blue/purple `TopNavigation`.
+
+This is the desired layout.
+
+### Scenario 2 — Client clicks the OnSpot logo
+
+The blue `TopNavigation` currently has the logo hardcoded to:
+
+```tsx
+<Link href="/">
+```
+
+So clicking the OnSpot logo redirects the Client to `/`.
+
+That route renders the old/default Home Dashboard WITHOUT the Client sidebar.
+
+This causes the Client to bounce between two different Client layouts.
+
+That must be fixed.
+
+---
+
+# TARGET RESULT
+
+For an authenticated Client, all Client Portal pages should use ONE consistent shell:
+
+```text
+Blue TopNavigation
+────────────────────────────────────
+Client Sidebar | Client Page Content
+```
+
+The sidebar must remain visible across Client pages including:
+
+* Dashboard
+* OnSpot Talent
+* Messages
+* Client Projects
+* Performance
+* Client Management
+* Contracts
+* Payments
+* ROI Analytics
+* Settings
+
+The user should not lose the sidebar just because they clicked the OnSpot logo.
+
+---
+
+# PRIMARY FIX 1 — MAKE THE ONSPOT LOGO ROLE-AWARE
+
+Audit:
+
+`client/src/components/TopNavigation.tsx`
+
+The logo currently does this:
+
+```tsx
+<Link href="/">
+  <img ... />
+</Link>
+```
+
+Do NOT leave this hardcoded for authenticated users.
+
+Create a role-aware home route.
+
+Conceptually:
+
+```tsx
+const getHomeRoute = () => {
+  if (user?.role === "client") return "/dashboard";
+  if (user?.role === "admin") return "/admin/dashboard";
+  if (user?.role === "talent" || talentAuth) return "/my-applications";
+  return "/";
+};
+```
+
+Use the actual canonical routes from the existing application.
+
+Then:
+
+```tsx
+<Link href={getHomeRoute()}>
+```
+
+The exact Talent route may differ based on existing product behavior, so verify before changing it.
+
+## REQUIRED CLIENT BEHAVIOR
+
+Authenticated Client clicking OnSpot logo:
+
+```text
+OnSpot Logo
+     ↓
+/dashboard
+     ↓
+Client Portal shell with sidebar
+```
+
+NOT:
+
+```text
+OnSpot Logo
+     ↓
+/
+     ↓
+legacy/default dashboard without sidebar
+```
+
+Do not break unauthenticated homepage navigation.
+
+Unauthenticated visitors should still be able to go to `/`.
+
+---
+
+# PRIMARY FIX 2 — MAKE THE SIDEBAR PART OF THE CLIENT SHELL
+
+Do not solve this only by changing the logo.
+
+The underlying issue is that the sidebar appears only on some routes.
+
+Create or cleanly reuse a shared Client Portal shell.
+
+Target architecture:
+
+```tsx
+<ClientPortalShell>
+  <Page />
+</ClientPortalShell>
+```
+
+Where:
+
+```tsx
+function ClientPortalShell({ children }) {
+  return (
+    <div className="min-h-screen">
+      <TopNavigation />
+
+      <div className="flex">
+        <ClientSidebar />
+        <main className="min-w-0 flex-1">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+Do NOT introduce another white header.
+
+The blue `TopNavigation` remains the only top navigation.
+
+---
+
+# IMPORTANT — AUDIT CURRENT LAYOUT COMPONENTS
+
+Search for:
+
+* `ClientLayout`
+* `ClientSidebar`
+* `TopNavigation`
+* `Dashboard.tsx`
+* `/dashboard`
+* `/messages`
+* `/client-profile`
+* `App.tsx`
+* route wrappers
+* route groups
+* nested layouts
+
+Identify:
+
+1. which routes currently use `ClientLayout`
+2. which routes render `TopNavigation`
+3. which routes render the Client sidebar
+4. which routes render the dashboard directly
+5. which route `/` resolves to
+6. which route `/dashboard` resolves to
+
+Do not make assumptions.
+
+---
+
+# REMOVE THE WHITE HEADER FROM CLIENT PORTAL SHELL
+
+If the existing `ClientLayout` contains BOTH:
+
+* white Client Portal header
+* sidebar
+
+split those responsibilities.
+
+For example:
+
+Current:
+
+```text
+ClientLayout
+├── White Header
+├── Sidebar
+└── Content
+```
+
+Refactor toward:
+
+```text
+ClientPortalShell
+├── TopNavigation
+├── ClientSidebar
+└── Content
+```
+
+Do not retain both headers.
+
+---
+
+# PRESERVE THE BLUE TOPNAVIGATION
+
+Use the existing:
+
+`client/src/components/TopNavigation.tsx`
+
+Do not recreate it.
+
+Preserve:
+
+* OnSpot logo
+* Hire Talent
+* notification bell
+* Client Profile dropdown
+* auth/session behavior
+* responsive behavior
+
+Only make routing/layout changes required for Client consistency.
+
+---
+
+# DASHBOARD ROUTE MUST USE THE CLIENT SHELL
+
+The Client dashboard route should render:
+
+```text
+TopNavigation
+Sidebar
+Home Dashboard content
+```
+
+The existing Home Dashboard content must remain unchanged.
+
+Do not remove:
+
+* VA profile
+* Today's Overview
+* Attendance Dashboard
+* Financial Overview
+* Communication
+* Requests
+* invoice history
+
+Only change its surrounding layout.
+
+---
+
+# MESSAGES ROUTE MUST USE THE SAME SHELL
+
+Current `/messages` behavior is closer to the desired result because the sidebar appears.
+
+Make sure Messages continues to render as:
+
+```text
+TopNavigation
+Sidebar
+Messages
+```
+
+Do NOT break the recently fixed Client ↔ Talent messaging logic.
+
+Do not change:
+
+* message delivery
+* thread identity
+* unread counts
+* notifications
+* API routes
+
+unless directly required by routing.
+
+---
+
+# SIDEBAR NAVIGATION
+
+Use the existing Client sidebar items and routes.
+
+Expected sections:
+
+### Core Modules
+
+* Dashboard
+* OnSpot Talent
+* Messages
+* Client Projects
+* Performance
+
+### Management
+
+* Client Management
+* Contracts
+* Payments
+* ROI Analytics
+
+### System
+
+* Settings
+
+Do not invent new routes.
+
+The active menu item must follow the current route.
+
+Examples:
+
+```text
+/dashboard → Dashboard active
+/messages → Messages active
+```
+
+---
+
+# CLIENT PROFILE
+
+Audit `/client-profile`.
+
+The Client Profile page currently uses the blue `TopNavigation`.
+
+Decide whether Client Profile should also display the Client sidebar.
+
+Preferred consistency:
+
+```text
+TopNavigation
+Sidebar
+Client Profile
+```
+
+if this is considered part of the Client Portal.
+
+If existing product requirements intentionally make profile a standalone page, preserve that only if necessary.
+
+But do not reintroduce the white header.
+
+---
+
+# ROOT "/" ROUTE
+
+Audit what `/` currently renders for authenticated Clients.
+
+If `/` is a public/general homepage or old dashboard, do not rely on it as the Client home.
+
+Preferred behavior:
+
+* unauthenticated → `/`
+* authenticated Client → `/dashboard`
+* authenticated Admin → admin dashboard
+* authenticated Talent → appropriate Talent home
+
+Do not create redirect loops.
+
+---
+
+# OPTIONAL SAFE REDIRECT
+
+If an authenticated Client manually navigates to:
+
+`/`
+
+consider redirecting them to:
+
+`/dashboard`
+
+ONLY if that matches the intended application behavior.
+
+Do not redirect public users.
+
+Use existing auth-loading state carefully to avoid flicker.
+
+---
+
+# DO NOT BREAK ADMIN
+
+The screenshot suggests `/` or another route may still be tied to an old/default/admin-oriented dashboard.
+
+Do not globally wrap Admin pages in the Client sidebar.
+
+Admin must keep its own layout.
+
+Role boundaries should remain:
+
+```text
+Client → Client Portal shell
+Talent → Talent shell
+Admin → Admin shell
+Public → public layout
+```
+
+---
+
+# DO NOT BREAK TALENT
+
+The TopNavigation is shared with Talent pages too.
+
+When modifying logo routing, make it role-aware.
+
+Do not hardcode:
+
+```tsx
+href="/dashboard"
+```
+
+for everyone.
+
+Client:
+`/dashboard`
+
+Admin:
+existing admin dashboard
+
+Talent:
+existing Talent home
+
+Public:
+`/`
+
+Verify actual routes before implementation.
+
+---
+
+# DO NOT DUPLICATE TOPNAVIGATION
+
+Some pages may already contain:
+
+```tsx
+<TopNavigation />
+```
+
+If a shared Client shell now owns TopNavigation, remove page-level duplicates only for those Client routes inside the shell.
+
+Do not globally remove it from:
+
+* Talent pages
+* public pages
+* Admin pages
+
+unless those layouts already provide it.
+
+---
+
+# ROUTE OWNERSHIP
+
+Prefer a clean route architecture.
+
+Conceptually:
+
+```tsx
+<ClientRoute path="/dashboard">
+  <ClientPortalShell>
+    <Dashboard />
+  </ClientPortalShell>
+</ClientRoute>
+
+<ClientRoute path="/messages">
+  <ClientPortalShell>
+    <Messages />
+  </ClientPortalShell>
+</ClientRoute>
+```
+
+Or use whatever routing abstraction already exists.
+
+Avoid copy-pasting:
+
+```tsx
+<TopNavigation />
+<ClientSidebar />
+```
+
+into every page individually.
+
+Shared shell preferred.
+
+---
+
+# SCROLL / HEIGHT
+
+TopNavigation is fixed and already inserts its own navigation spacer.
+
+Respect the existing:
+
+`--nav-h`
+
+behavior.
+
+Do not add another fake spacer that causes excessive blank space.
+
+Sidebar should begin below TopNavigation.
+
+Desktop:
+
+```text
+Top nav: fixed full width
+Sidebar: below nav, left
+Main: beside sidebar
+```
+
+Avoid overlap.
+
+---
+
+# SPECIFIC BUG REPRODUCTION TEST
+
+Test this exact sequence.
+
+### Client session
+
+1. Log in as Client.
+2. Visit `/dashboard`.
+3. Confirm sidebar visible.
+4. Click `Messages`.
+5. Confirm sidebar still visible.
+6. Click OnSpot logo in blue TopNavigation.
+7. Confirm route goes to Client dashboard.
+8. Confirm sidebar REMAINS visible.
+9. Click Messages again.
+10. Sidebar remains.
+11. Click Dashboard sidebar item.
+12. Sidebar remains.
+
+At no point should the Client return to a dashboard without the sidebar.
+
+---
+
+# DIRECT URL TESTS
+
+Manually open:
+
+* `/dashboard`
+* `/messages`
+* `/hire-talent`
+* `/client-profile`
+* `/client-projects` or actual route
+* `/performance`
+* `/contracts`
+* `/payments`
+* `/settings`
+
+For every Client Portal route that is supposed to belong to the shell:
+
+* blue TopNavigation present
+* sidebar present
+* no white header
+* page content present
+
+---
+
+# NAV LOGO TEST MATRIX
+
+## Logged-out
+
+Click logo:
+
+`/`
+
+## Client
+
+Click logo:
+
+canonical Client dashboard route
+
+## Talent
+
+Click logo:
+
+canonical Talent landing/home route
+
+## Admin
+
+Click logo:
+
+canonical Admin dashboard
+
+Do not send every role to the same route.
+
+---
+
+# PRESERVE NOTIFICATIONS
+
+TopNavigation includes notification behavior.
+
+After refactor verify:
+
+* notification bell loads
+* unread count appears
+* message notifications work
+* application withdrawal notifications work
+* dropdown navigation works
+
+Do not duplicate the notification bell.
+
+---
+
+# PRESERVE MESSAGING
+
+Regression-test:
+
+Client → Talent message
+
+Talent → Client message
+
+No sidebar/layout refactor should change message delivery.
+
+---
+
+# PRESERVE CLIENT DASHBOARD DATA
+
+The dashboard should use the exact same data/query logic.
+
+Do not replace real content with dummy values.
+
+Layout only.
+
+---
+
+# EXPECTED FINAL VISUAL
+
+The target is:
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ OnSpot               Hire Talent   Bell   Client Profile │
+│              BLUE TOPNAVIGATION                         │
+├────────────────┬─────────────────────────────────────────┤
+│ Core Modules   │ Home Dashboard                          │
+│ Dashboard      │                                         │
+│ OnSpot Talent  │ existing cards                          │
+│ Messages       │                                         │
+│ Projects       │                                         │
+│ Performance    │                                         │
+│                │                                         │
+│ Management     │                                         │
+│ ...            │                                         │
+│                │                                         │
+│ Settings       │                                         │
+└────────────────┴─────────────────────────────────────────┘
+```
+
+NOT:
+
+```text
+Blue TopNavigation
+Dashboard content only
+```
+
+and NOT:
+
+```text
+White Client Header
+Sidebar
+Dashboard
+```
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client dashboard always shows sidebar
+* Messages shows sidebar
+* navigating between Client routes keeps sidebar
+* clicking OnSpot logo as Client returns to Client dashboard WITH sidebar
+* blue TopNavigation remains
+* white Client header is removed
+* no duplicate headers
+* no duplicate sidebars
+* active sidebar item works
+* Client Profile dropdown works
+* notification bell works
+* messaging still works
+* Admin routing still works
+* Talent routing still works
+* unauthenticated logo still goes to public home
+* browser refresh on Client routes keeps layout
+* direct URLs keep layout
+* build/type checks pass
+
+## FINAL REPORT
+
+After the fix, explain:
+
+1. why the sidebar disappeared before
+2. which route `/` was rendering
+3. which Client route is now canonical
+4. how TopNavigation logo routing became role-aware
+5. which shared Client shell owns the sidebar
+6. which files changed
+7. which Client routes were tested
+8. whether any regressions were found

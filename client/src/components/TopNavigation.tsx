@@ -237,6 +237,12 @@ export function TopNavigation() {
   // Both items are visible to unauthenticated visitors and admins.
   const isTalentLoggedIn = !!(talentAuth || user?.role === "talent");
   const isClientLoggedIn = !!(user?.role === "client");
+  const getHomeRoute = () => {
+    if (user?.role === "client") return "/dashboard";
+    if (user?.role === "admin") return "/admin/dashboard";
+    if (user?.role === "talent" || talentAuth) return "/my-applications";
+    return "/";
+  };
   const visibleNavItems = [
     ...navigationItems.filter((item) => {
       if (isTalentLoggedIn && item.path === "/hire-talent") return false;
@@ -589,7 +595,7 @@ export function TopNavigation() {
         >
           {/* Zone 1: Logo — anchored left */}
           <Link
-            href="/"
+            href={getHomeRoute()}
             className="flex shrink-0 items-center relative z-10"
             data-testid="logo-home"
           >

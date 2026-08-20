@@ -176,7 +176,6 @@ function PublicRouter() {
           <Route path="/hire-talent" component={HireTalentPage} />
           <Route path="/client/jobs/new" component={() => <ClientProtectedRoute><JobFormPage mode="client" /></ClientProtectedRoute>} />
           <Route path="/client/jobs/:jobId/edit" component={() => <ClientProtectedRoute><JobFormPage mode="client" /></ClientProtectedRoute>} />
-          <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
           <Route path="/client-search" component={ClientSearchRedirect} />
           <Route path="/pilot/:pilotId" component={PilotDashboard} />
@@ -298,6 +297,7 @@ function ClientRouter() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent" component={TalentSearch} />
           <Route path="/projects" component={() => <div className="p-6">Projects Module - Coming Soon</div>} />
           <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />
@@ -489,6 +489,7 @@ function AppContent() {
       <Route path="/powerapp" component={PublicRouter} />
       
       {/* Client Protected Routes */}
+      <Route path="/client-profile" component={ClientRouter} />
       <Route path="/dashboard" component={ClientRouter} />
       <Route path="/projects" component={ClientRouter} />
       <Route path="/performance" component={ClientRouter} />
