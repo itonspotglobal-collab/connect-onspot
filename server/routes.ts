@@ -15583,7 +15583,16 @@ export async function registerRoutes(
               r.requested_status AS "requestedStatus", r.reason, r.created_at AS "createdAt",
               js.email, js.first_name AS "firstName", js.last_name AS "lastName", js.applicant_name AS "applicantName",
               js.status AS "actualStatus", j.title AS "jobTitle",
-              COALESCE(u.first_name || ' ' || u.last_name, u.company, u.email) AS "clientName"
+               COALESCE(u.first_name || ' ' || u.last_name, u.company, u.email) AS "clientName",
+               EXISTS (
+                 SELECT 1
+                   FROM job_application_emails e
+                  WHERE e.application_id = r.application_id
+                    AND e.status = 'sent'
+                    AND e.is_test = false
+                    AND e.status_update = r.requested_status
+                    AND e.status_previous = r.current_status
+               ) AS "emailAlreadySent"
        FROM application_status_change_requests r
        JOIN job_submissions js ON js.id = r.application_id
        JOIN jobs j ON j.id = js.job_id
@@ -15618,6 +15627,219 @@ export async function registerRoutes(
     } catch (err) { await dbClient.query("ROLLBACK").catch(() => {}); return res.status(500).json({ error: "Unable to reject request." }); }
     finally { dbClient.release(); }
   });
+
+  // Finalizes a request whose matching applicant email was already delivered by
+  // an earlier attempt that could not commit its database transaction. This
+  // path intentionally never sends email.
+  app.post(
+    "/api/admin/status-change-requests/:id/finalize",
+    authenticateAdminFlexible,
+    requireAdmin,
+    requireAdminSubRole(["talent_acquisition"]),
+    async (req: any, res: Response) => {
+      const dbClient = await getClient();
+      let step = "lock_status_request";
+      try {
+        const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
+          await import("../shared/submissionStatuses");
+        await dbClient.query("BEGIN");
+
+        const requestResult = await dbClient.query(
+          `SELECT id, application_id, requested_by_user_id, current_status, requested_status, status
+             FROM application_status_change_requests
+            WHERE id = $1
+            FOR UPDATE`,
+          [req.params.id],
+        );
+        const request = requestResult.rows[0];
+        if (!request || request.status !== "pending") {
+          await dbClient.query("ROLLBACK");
+          return res.status(409).json({ error: "This request is no longer pending." });
+        }
+        if (!CLIENT_SETTABLE_STATUSES.includes(request.requested_status)) {
+          await dbClient.query("ROLLBACK");
+          return res.status(400).json({ error: "This request has an invalid target status." });
+        }
+
+        step = "lock_application";
+        const applicationResult = await dbClient.query(
+          `SELECT id, job_id, talent_id, first_name, last_name, applicant_name, email, status
+             FROM job_submissions
+            WHERE id = $1
+            FOR UPDATE`,
+          [request.application_id],
+        );
+        const application = applicationResult.rows[0];
+        if (!application) {
+          throw new Error(`Application ${request.application_id} is missing`);
+        }
+        if (application.status !== request.current_status) {
+          await dbClient.query(
+            `UPDATE application_status_change_requests
+                SET status = 'cancelled',
+                    admin_note = 'Application status changed before approval could be finalized.',
+                    reviewed_by_user_id = $1,
+                    reviewed_at = NOW(),
+                    updated_at = NOW()
+              WHERE id = $2 AND status = 'pending'`,
+            [req.user.id, request.id],
+          );
+          await dbClient.query("COMMIT");
+          return res.status(409).json({ error: "The request is stale because the application status has changed." });
+        }
+
+        step = "verify_sent_email";
+        const sentEmail = await dbClient.query(
+          `SELECT id
+             FROM job_application_emails
+            WHERE application_id = $1
+              AND status = 'sent'
+              AND is_test = false
+              AND status_update = $2
+              AND status_previous = $3
+            ORDER BY sent_at DESC
+            LIMIT 1`,
+          [application.id, request.requested_status, request.current_status],
+        );
+        if (!sentEmail.rows[0]) {
+          await dbClient.query("ROLLBACK");
+          return res.status(409).json({
+            error: "No delivered applicant email matches this pending request. Send an approval email instead.",
+          });
+        }
+
+        step = "load_job";
+        const jobResult = await dbClient.query(
+          `SELECT title FROM jobs WHERE id = $1`,
+          [application.job_id],
+        );
+        const jobTitle = jobResult.rows[0]?.title || "a job";
+
+        step = "update_application";
+        const applicationUpdate = await dbClient.query(
+          `UPDATE job_submissions
+              SET status = $1, updated_at = NOW()
+            WHERE id = $2 AND status = $3
+          RETURNING *`,
+          [request.requested_status, application.id, request.current_status],
+        );
+        if (applicationUpdate.rows.length !== 1) {
+          throw new Error(`Application ${application.id} did not update from ${request.current_status}`);
+        }
+
+        const historyNote = `Client status request ${request.id}: Finalized after previously delivered applicant email`;
+        step = "write_status_history";
+        await dbClient.query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           SELECT $1, $2, $3, $4, $5
+            WHERE NOT EXISTS (
+              SELECT 1 FROM job_application_status_history
+               WHERE application_id = $6 AND note = $7
+            )`,
+          [
+            application.id,
+            request.current_status,
+            request.requested_status,
+            historyNote,
+            req.user.id,
+            application.id,
+            historyNote,
+          ],
+        );
+
+        step = "resolve_talent_user";
+        const talentUser = await dbClient.query(
+          `SELECT u.id
+             FROM users u
+             LEFT JOIN candidates c ON c.user_id = u.id
+            WHERE u.role = 'talent'
+              AND (u.id = $1 OR lower(u.email) = lower($2) OR lower(c.email) = lower($2))
+            ORDER BY CASE WHEN u.id = $1 THEN 0 ELSE 1 END
+            LIMIT 1`,
+          [application.talent_id, application.email],
+        );
+        if (talentUser.rows[0]) {
+          step = "create_talent_notification";
+          const talentName = [application.first_name, application.last_name].filter(Boolean).join(" ") ||
+            application.applicant_name || "the Talent";
+          const talentMessage = request.requested_status === "rejected"
+            ? `Your application for ${jobTitle} was not selected.`
+            : `Your application for ${jobTitle} is now ${submissionStatusLabel(request.requested_status)}.`;
+          await dbClient.query(
+            `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+             SELECT $1::varchar, 'job_application_status_changed', 'Application update', $2::text, $3::varchar, 'job_submission'
+              WHERE NOT EXISTS (
+                SELECT 1 FROM notifications
+                 WHERE user_id = $4::varchar
+                   AND type = 'job_application_status_changed'
+                   AND related_id = $5::varchar
+                   AND message = $6::text
+              )`,
+            [
+              talentUser.rows[0].id,
+              talentMessage,
+              application.id,
+              talentUser.rows[0].id,
+              application.id,
+              talentMessage,
+            ],
+          );
+        } else if (application.talent_id) {
+          throw new Error(`Linked Talent user ${application.talent_id} could not be resolved for notification`);
+        } else {
+          console.warn(
+            `[APPROVAL_COMMIT_STEP=resolve_talent_user] Finalized ${request.id}, but no linked Talent account exists.`,
+          );
+        }
+
+        step = "approve_status_request";
+        const requestUpdate = await dbClient.query(
+          `UPDATE application_status_change_requests
+              SET status = 'approved',
+                  reviewed_by_user_id = $1,
+                  reviewed_at = NOW(),
+                  admin_note = 'Finalized after previously delivered applicant email.',
+                  updated_at = NOW()
+            WHERE id = $2 AND status = 'pending'`,
+          [req.user.id, request.id],
+        );
+        if (requestUpdate.rowCount !== 1) {
+          throw new Error(`Status request ${request.id} was not marked approved`);
+        }
+
+        step = "create_client_notification";
+        const talentName = [application.first_name, application.last_name].filter(Boolean).join(" ") ||
+          application.applicant_name || "the Talent";
+        await dbClient.query(
+          `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+           SELECT $1::varchar, 'application_status_change_approved', 'Status change request approved',
+                  $2::text, $3::varchar, 'application_status_change_request'
+            WHERE NOT EXISTS (
+              SELECT 1 FROM notifications
+               WHERE user_id = $4::varchar
+                 AND type = 'application_status_change_approved'
+                 AND related_id = $5::varchar
+            )`,
+          [
+            request.requested_by_user_id,
+            `Your request to change ${talentName}'s application for ${jobTitle} to ${submissionStatusLabel(request.requested_status)} was approved.`,
+            request.id,
+            request.requested_by_user_id,
+            request.id,
+          ],
+        );
+        await dbClient.query("COMMIT");
+        return res.json({ success: true, application: applicationUpdate.rows[0], finalizedEmailId: sentEmail.rows[0].id });
+      } catch (err: any) {
+        await dbClient.query("ROLLBACK").catch(() => {});
+        console.error(`POST /api/admin/status-change-requests/:id/finalize failed (APPROVAL_COMMIT_STEP=${step}):`, err);
+        return res.status(500).json({ error: "Unable to finalize the approved status request." });
+      } finally {
+        dbClient.release();
+      }
+    },
+  );
 
   // ── Application Email Routes ──────────────────────────────────────────────────
   // TODO: Protect all application email routes with admin authorization before production.
@@ -15764,6 +15986,18 @@ export async function registerRoutes(
     const sentBy: string | null = req.user?.id ?? null;
     const dbClient = await getClient();
     let emailDelivered = false;
+    let approvalCommitStep = "validate_request";
+    let deliveredEmailRecord: {
+      templateId: string | null;
+      subject: string;
+      bodyHtml: string;
+      sentTo: string;
+      statusUpdate: string | null;
+      statusPrevious: string | null;
+      statusNote: string | null;
+      senderEmail: string;
+      senderName: string;
+    } | null = null;
 
     const rollbackQuietly = async () => {
       try {
@@ -15824,6 +16058,31 @@ export async function registerRoutes(
         [`admin-status-email:${id}`],
       );
 
+      // Lock the request independently before the submission. This avoids
+      // nullable joins in FOR UPDATE and gives the approval its event identity.
+      let approvedRequest: any = null;
+      if (statusChangeRequestId) {
+        approvalCommitStep = "lock_status_request";
+        const requestRow = await dbClient.query(
+          `SELECT id, application_id, requested_by_user_id, current_status, requested_status, status
+             FROM application_status_change_requests
+            WHERE id = $1
+            FOR UPDATE`,
+          [statusChangeRequestId],
+        );
+        if (!requestRow.rows[0] || requestRow.rows[0].application_id !== id || requestRow.rows[0].status !== "pending") {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "This status change request is no longer pending." });
+        }
+        approvedRequest = requestRow.rows[0];
+        updateStage = LEGACY_STATUS_ALIASES[approvedRequest.requested_status] ?? approvedRequest.requested_status;
+        if (!GENERIC_ADMIN_EMAIL_STATUSES.includes(updateStage)) {
+          await rollbackQuietly();
+          return res.status(400).json({ error: "The requested status is not valid for the approval workflow." });
+        }
+      }
+
+      approvalCommitStep = "lock_application";
       const appRow = await dbClient.query(
         `SELECT js.id, js.job_id, js.client_id, js.first_name, js.last_name,
                 js.applicant_name, js.email, js.phone, js.talent_id,
@@ -15854,21 +16113,9 @@ export async function registerRoutes(
       app_.job_company = jobRow.rows[0].company;
       app_.job_location = jobRow.rows[0].location;
 
-      let approvedRequest: any = null;
-      if (statusChangeRequestId) {
-        const requestRow = await dbClient.query(
-          `SELECT id, requested_by_user_id, current_status, requested_status, status
-             FROM application_status_change_requests
-            WHERE id = $1 AND application_id = $2
-            FOR UPDATE`,
-          [statusChangeRequestId, id],
-        );
-        if (!requestRow.rows[0] || requestRow.rows[0].status !== "pending") {
-          await rollbackQuietly();
-          return res.status(409).json({ error: "This status change request is no longer pending." });
-        }
-        approvedRequest = requestRow.rows[0];
+      if (approvedRequest) {
         if (app_.status !== approvedRequest.current_status) {
+          approvalCommitStep = "cancel_stale_request";
           await dbClient.query(
             `UPDATE application_status_change_requests
              SET status = 'cancelled', admin_note = 'Application status changed before approval.',
@@ -15882,7 +16129,6 @@ export async function registerRoutes(
             message: "This request can no longer be approved because the application's status has changed since it was submitted.",
           });
         }
-        updateStage = approvedRequest.requested_status;
       }
 
       if (updateStage && updateStage === app_.status) {
@@ -15982,6 +16228,19 @@ export async function registerRoutes(
         });
       }
       emailDelivered = true;
+      // If a later transactional write fails, the catch block persists this
+      // evidence after rollback so Admin can finalize without sending again.
+      deliveredEmailRecord = {
+        templateId: resolvedTemplateId,
+        subject: resolvedSubject,
+        bodyHtml: resolvedBody,
+        sentTo: app_.email,
+        statusUpdate: updateStage,
+        statusPrevious: updateStage ? app_.status : null,
+        statusNote: updateStage ? (note?.trim() || "Status updated with applicant email sent") : null,
+        senderEmail: resolvedSenderEmail,
+        senderName: resolvedSenderName,
+      };
 
       await dbClient.query(
         `INSERT INTO job_application_emails
@@ -16006,6 +16265,7 @@ export async function registerRoutes(
 
       let updatedApplication = app_;
       if (updateStage) {
+        approvalCommitStep = "update_application";
         const updated = await dbClient.query(
           `UPDATE job_submissions
               SET status = $1, updated_at = NOW()
@@ -16018,24 +16278,37 @@ export async function registerRoutes(
         }
         updatedApplication = updated.rows[0];
 
+        approvalCommitStep = "write_status_history";
+        const historyNote = approvedRequest
+          ? `Client status request ${approvedRequest.id}: ${note?.trim() || "Approved after applicant email delivery"}`
+          : note?.trim() || "Status updated with applicant email sent";
         await dbClient.query(
           `INSERT INTO job_application_status_history
              (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, $3, $4, $5)`,
+            SELECT $1, $2, $3, $4, $5
+             WHERE NOT EXISTS (
+               SELECT 1 FROM job_application_status_history
+                WHERE application_id = $6 AND note = $7
+             )`,
           [
             id,
             app_.status,
             updateStage,
-            note?.trim() || "Status updated with applicant email sent",
+            historyNote,
             sentBy,
+            id,
+            historyNote,
           ],
         );
 
+        approvalCommitStep = "resolve_talent_user";
         const talentUser = await dbClient.query(
-          `SELECT id
-             FROM users
-            WHERE role = 'talent'
-              AND (id = $1 OR lower(email) = lower($2))
+          `SELECT u.id
+             FROM users u
+             LEFT JOIN candidates c ON c.user_id = u.id
+            WHERE u.role = 'talent'
+              AND (u.id = $1 OR lower(u.email) = lower($2) OR lower(c.email) = lower($2))
+            ORDER BY CASE WHEN u.id = $1 THEN 0 ELSE 1 END
             LIMIT 1`,
           [app_.talent_id, app_.email],
         );
@@ -16044,19 +16317,33 @@ export async function registerRoutes(
             updateStage === "rejected"
               ? `Your application for ${app_.job_title || "your application"} was not selected.`
               : `Your application for ${app_.job_title || "your application"} is now ${submissionStatusLabel(updateStage)}.`;
+          approvalCommitStep = "create_talent_notification";
           await dbClient.query(
             `INSERT INTO notifications
                (user_id, type, title, message, related_id, related_type)
-             SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
+             SELECT $1::varchar, 'job_application_status_changed', 'Application update', $2::text, $3::varchar, 'job_submission'
               WHERE NOT EXISTS (
                 SELECT 1
                   FROM notifications
-                 WHERE user_id = $1
+                 WHERE user_id = $4::varchar
                    AND type = 'job_application_status_changed'
-                   AND related_id = $4
-                   AND message = $2
+                   AND related_id = $5::varchar
+                   AND message = $6::text
               )`,
-            [talentUser.rows[0].id, talentMessage, id, id],
+            [
+              talentUser.rows[0].id,
+              talentMessage,
+              id,
+              talentUser.rows[0].id,
+              id,
+              talentMessage,
+            ],
+          );
+        } else if (app_.talent_id) {
+          throw new Error(`Linked Talent user ${app_.talent_id} could not be resolved for status notification`);
+        } else {
+          console.warn(
+            `[APPROVAL_COMMIT_STEP=resolve_talent_user] Email was delivered for ${id}, but no linked Talent account exists; no in-app notification was created.`,
           );
         }
 
@@ -16095,22 +16382,40 @@ export async function registerRoutes(
           );
         }
         if (approvedRequest) {
-          await dbClient.query(
+          approvalCommitStep = "approve_status_request";
+          const requestUpdate = await dbClient.query(
             `UPDATE application_status_change_requests
              SET status = 'approved', reviewed_by_user_id = $1, reviewed_at = NOW(),
                  admin_note = $2, updated_at = NOW()
              WHERE id = $3 AND status = 'pending'`,
             [sentBy, note?.trim() || null, approvedRequest.id],
           );
+          if (requestUpdate.rowCount !== 1) {
+            throw new Error(`Status request ${approvedRequest.id} was not marked approved`);
+          }
+          approvalCommitStep = "create_client_notification";
           await dbClient.query(
             `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
-             VALUES ($1, 'application_status_change_approved', 'Status change request approved',
-                     'Your requested application status change was approved.', $2, 'application_status_change_request')`,
-            [approvedRequest.requested_by_user_id, approvedRequest.id],
+             SELECT $1::varchar, 'application_status_change_approved', 'Status change request approved',
+                    $2::text, $3::varchar, 'application_status_change_request'
+              WHERE NOT EXISTS (
+                SELECT 1 FROM notifications
+                 WHERE user_id = $4::varchar
+                   AND type = 'application_status_change_approved'
+                   AND related_id = $5::varchar
+              )`,
+            [
+              approvedRequest.requested_by_user_id,
+              `Your request to change ${[app_.first_name, app_.last_name].filter(Boolean).join(" ") || app_.applicant_name || "the Talent"}'s application for ${app_.job_title || "a job"} to ${submissionStatusLabel(updateStage)} was approved.`,
+              approvedRequest.id,
+              approvedRequest.requested_by_user_id,
+              approvedRequest.id,
+            ],
           );
         }
       }
 
+      approvalCommitStep = "commit";
       await dbClient.query("COMMIT");
       return res.json({
         success: true,
@@ -16121,11 +16426,52 @@ export async function registerRoutes(
       await rollbackQuietly();
       if (emailDelivered) {
         console.error(
-          `[CRITICAL] Applicant email delivered but status transaction failed for ${id}:`,
+          `[CRITICAL] APPROVAL_COMMIT_STEP=${approvalCommitStep}; applicant email delivered but status transaction failed for ${id}:`,
           err,
         );
+        if (deliveredEmailRecord) {
+          try {
+            await query(
+              `INSERT INTO job_application_emails
+                 (application_id, template_id, subject, body_html, sent_to, sent_by,
+                  sender_email, sender_name, status, error_message, is_test,
+                  status_update, status_previous, status_note)
+               SELECT $1, $2, $3, $4, $5, $6, $7, $8, 'sent',
+                      'Status transaction failed after provider delivery; finalize the pending approval without resending.',
+                      false, $9, $10, $11
+                WHERE NOT EXISTS (
+                  SELECT 1
+                    FROM job_application_emails
+                   WHERE application_id = $1
+                     AND status = 'sent'
+                     AND is_test = false
+                     AND subject = $3
+                     AND status_update IS NOT DISTINCT FROM $9
+                     AND status_previous IS NOT DISTINCT FROM $10
+                )`,
+              [
+                id,
+                deliveredEmailRecord.templateId,
+                deliveredEmailRecord.subject,
+                deliveredEmailRecord.bodyHtml,
+                deliveredEmailRecord.sentTo,
+                sentBy,
+                deliveredEmailRecord.senderEmail,
+                deliveredEmailRecord.senderName,
+                deliveredEmailRecord.statusUpdate,
+                deliveredEmailRecord.statusPrevious,
+                deliveredEmailRecord.statusNote,
+              ],
+            );
+          } catch (recordErr: any) {
+            console.error(
+              `[CRITICAL] Could not persist recovery evidence for delivered applicant email on ${id}:`,
+              recordErr,
+            );
+          }
+        }
       } else {
-        console.error("POST /api/admin/job-applications/:id/email/send error:", err);
+        console.error(`POST /api/admin/job-applications/:id/email/send error (APPROVAL_COMMIT_STEP=${approvalCommitStep}):`, err);
       }
       return res.status(emailDelivered ? 500 : 500).json({
         error: emailDelivered

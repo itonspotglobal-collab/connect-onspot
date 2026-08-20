@@ -1087,6 +1087,21 @@ export default function AdminJobApplications() {
       toast({ title: "Status change request declined" });
     },
   });
+  const finalizeStatusRequestMutation = useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/admin/status-change-requests/${id}/finalize`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/status-change-requests"] });
+      queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
+      setReviewRequest(null);
+      toast({ title: "Approval finalized", description: "The status, history, and notifications were saved without sending another email." });
+    },
+    onError: (err: any) => toast({
+      title: "Could not finalize approval",
+      description: err.message,
+      variant: "destructive",
+    }),
+  });
 
   // Fetch ALL jobs for the filter dropdown using a dedicated lightweight endpoint.
   // /api/admin/jobs is paginated (25/page), so we must NOT use it here or the
@@ -1519,9 +1534,23 @@ export default function AdminJobApplications() {
             <p><span className="text-slate-500">Talent</span><br /><strong>{reviewRequest.applicantName || `${reviewRequest.firstName ?? ""} ${reviewRequest.lastName ?? ""}`}</strong></p>
             <p><span className="text-slate-500">Position</span><br /><strong>{reviewRequest.jobTitle}</strong></p>
             <div className="rounded-md bg-slate-50 p-3"><strong>{STATUS_CFG[reviewRequest.currentStatus]?.label ?? reviewRequest.currentStatus} → {STATUS_CFG[reviewRequest.requestedStatus]?.label ?? reviewRequest.requestedStatus}</strong></div>
+            {reviewRequest.emailAlreadySent && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900">
+                An applicant email matching this request was already delivered. You can finalize the status update without sending another email.
+              </div>
+            )}
           </div>}
           <DialogFooter>
             <Button variant="outline" onClick={() => reviewRequest && rejectStatusRequestMutation.mutate(reviewRequest.id)} disabled={rejectStatusRequestMutation.isPending}>Reject Request</Button>
+            {reviewRequest?.emailAlreadySent && (
+              <Button
+                variant="outline"
+                onClick={() => finalizeStatusRequestMutation.mutate(reviewRequest.id)}
+                disabled={finalizeStatusRequestMutation.isPending}
+              >
+                {finalizeStatusRequestMutation.isPending ? "Finalizing…" : "Finalize Approval"}
+              </Button>
+            )}
             <Button className="bg-[#474ead] text-white" onClick={() => {
               if (!reviewRequest) return;
               setPendingStatusChange({ applicationId: reviewRequest.applicationId, previousStatus: reviewRequest.currentStatus, newStatus: reviewRequest.requestedStatus });

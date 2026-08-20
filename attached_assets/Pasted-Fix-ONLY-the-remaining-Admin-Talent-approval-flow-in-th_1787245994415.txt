@@ -1,0 +1,729 @@
+Fix ONLY the remaining Admin → Talent approval flow in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT STATE
+
+The Client → Admin request flow is already working.
+
+Client can:
+
+* request a status change
+* see `Pending Admin Approval`
+* Admin can see the request
+
+DO NOT change that flow anymore.
+
+The broken part is what happens AFTER Admin approves.
+
+Current problem:
+
+* Admin receives and reviews the request
+* Admin approves it
+* Talent may receive the email
+* BUT the canonical application status does not update correctly
+* Client still sees the request as pending
+* Talent does not reliably receive the in-app status notification
+
+Fix only this part.
+
+---
+
+# PRIMARY GOAL
+
+When Admin approves a Client status-change request, the system must complete these actions successfully:
+
+```text
+Admin approves request
+        ↓
+Update canonical job_submissions.status
+        ↓
+Mark status request approved
+        ↓
+Write status history
+        ↓
+Notify Talent
+        ↓
+Notify Client that request was approved
+        ↓
+Refresh Admin/Client/Talent views
+```
+
+The email workflow can remain as already implemented.
+
+Do NOT redesign the Client request system.
+
+---
+
+# IMPORTANT SOURCE OF TRUTH
+
+The real application status is:
+
+`job_submissions.status`
+
+That is the ONLY canonical application status.
+
+The approval request is just a request record.
+
+Do NOT use:
+
+`status_change_request.requested_status`
+
+as if it were the actual application status until Admin approval commits it.
+
+---
+
+# CURRENT BUG EXAMPLE
+
+Current Client view shows:
+
+```text
+Current status:
+New
+
+Status change request:
+New → Under Review
+
+Pending Admin Approval
+```
+
+After Admin approval this should become:
+
+```text
+Current status:
+Under Review
+```
+
+and the pending request box should disappear.
+
+It must NOT remain:
+
+`New + Pending Admin Approval`
+
+after Admin has approved.
+
+---
+
+# STEP 1 — TRACE THE ADMIN APPROVE ENDPOINT
+
+Find the exact backend endpoint called when Admin approves the request.
+
+Search for:
+
+* `Approve & Email Applicant`
+* status request approval
+* `application_status_change_requests`
+* `approved`
+* `requested_status`
+* `job_submissions`
+* Client status request
+* Talent notification
+* Client approval notification
+
+Identify the exact service/helper.
+
+Do not create another approval endpoint unless necessary.
+
+---
+
+# STEP 2 — FIX THE ACTUAL APPLICATION STATUS UPDATE
+
+Inside the Admin approval flow, after successful approval/email handling:
+
+update the EXACT application row:
+
+```sql
+UPDATE job_submissions
+SET
+  status = <request.requested_status>,
+  updated_at = NOW()
+WHERE id = <request.application_id>
+RETURNING *;
+```
+
+Use actual ORM syntax.
+
+Do not update by:
+
+* Talent name
+* job title
+* candidate ID
+* email
+
+Use exact `application_id`.
+
+---
+
+# NORMALIZE STATUS VALUE
+
+This is critical.
+
+UI may display:
+
+`Under Review`
+
+Database likely expects:
+
+`under_review`
+
+Before update:
+
+normalize requested status through the existing canonical shared status helper.
+
+Do not write:
+
+`Under Review`
+
+directly to DB.
+
+Use:
+
+`under_review`
+
+if that is the canonical value.
+
+Audit:
+
+`shared/submissionStatuses.ts`
+
+or current shared status definitions.
+
+---
+
+# STEP 3 — MARK REQUEST APPROVED
+
+After application status updates successfully:
+
+update the request:
+
+```text
+status = approved
+reviewed_by = Admin users.id
+reviewed_at = current server time
+updated_at = current server time
+```
+
+Use actual schema field names.
+
+The request must no longer remain:
+
+`pending`.
+
+---
+
+# IMPORTANT TRANSACTION
+
+The following DB operations should happen in ONE transaction:
+
+```text
+BEGIN
+
+1. lock request
+2. lock job_submission
+3. verify request is still pending
+4. verify current application status matches expected current status
+5. update job_submissions.status
+6. update request → approved
+7. insert status history
+8. insert Talent notification
+9. insert Client approval notification
+
+COMMIT
+```
+
+If any required operation fails:
+
+ROLL BACK.
+
+---
+
+# LOCK SAFELY
+
+Do NOT use `FOR UPDATE` across nullable LEFT JOINs.
+
+Lock directly:
+
+```sql
+SELECT *
+FROM application_status_change_requests
+WHERE id = $1
+FOR UPDATE;
+```
+
+Then separately:
+
+```sql
+SELECT *
+FROM job_submissions
+WHERE id = $2
+FOR UPDATE;
+```
+
+Fetch related Talent/Client/job data separately.
+
+---
+
+# STEP 4 — STATUS HISTORY
+
+Insert exactly one application status history row.
+
+Example:
+
+```text
+applicationId: ...
+previousStatus: new
+newStatus: under_review
+changedBy: Admin users.id
+changedByRole: admin
+origin: client_status_request
+requestId: ...
+```
+
+Adapt to current schema.
+
+Do not duplicate history on retry.
+
+---
+
+# STEP 5 — TALENT NOTIFICATION
+
+This is mandatory for linked Talent.
+
+After the status update succeeds:
+
+create ONE persistent notification for Talent.
+
+Suggested:
+
+Title:
+
+`Application update`
+
+Message:
+
+`Your application for Social Media Manager is now Under Review.`
+
+Type:
+
+reuse existing:
+
+`application_update`
+
+Recipient:
+
+canonical Talent `users.id`
+
+Related ID:
+
+application/submission ID
+
+Related type:
+
+existing application convention.
+
+---
+
+# RESOLVE TALENT USER CORRECTLY
+
+Talent may be linked through candidate/profile records.
+
+Resolve:
+
+```text
+application
+→ candidate/talent record
+→ canonical users.id
+```
+
+Do NOT use:
+
+* candidate ID
+* application ID
+* email
+
+as the notification `user_id`.
+
+If Admin UI says Talent is linked:
+
+failure to resolve canonical Talent user ID should be treated as a bug and logged.
+
+---
+
+# STEP 6 — CLIENT APPROVAL NOTIFICATION
+
+The Client who made the request should receive:
+
+Title:
+
+`Status change request approved`
+
+Message:
+
+`Your request to change Valu Testu's application for Social Media Manager to Under Review was approved.`
+
+Recipient:
+
+the exact requesting Client's canonical `users.id`.
+
+Do not notify the approving Admin about their own action.
+
+---
+
+# STEP 7 — CLIENT PENDING REQUEST MUST CLEAR
+
+After approval:
+
+Client Application Details must no longer show:
+
+```text
+Pending Admin Approval
+```
+
+The request should be excluded from pending request query because:
+
+`request.status = approved`.
+
+Client should instead see:
+
+```text
+Under Review
+```
+
+as the actual application status.
+
+---
+
+# STEP 8 — ADMIN REQUEST LIST MUST CLEAR
+
+Admin currently has:
+
+`Status Requests (3)`
+
+After approving one:
+
+expected:
+
+`Status Requests (2)`
+
+The approved request should disappear from the pending list.
+
+Do not require a page reload.
+
+Invalidate/refetch the pending request query.
+
+---
+
+# STEP 9 — TALENT MY APPLICATIONS
+
+After approval:
+
+Talent endpoint must return:
+
+```text
+applicationStatus: under_review
+```
+
+or canonical equivalent.
+
+Talent My Applications should display:
+
+`Under Review`
+
+after refresh/refetch.
+
+Do NOT derive Talent status from the request table.
+
+Use `job_submissions.status`.
+
+---
+
+# FRONTEND INVALIDATION
+
+After successful Admin approval, invalidate/refetch:
+
+## Admin
+
+* pending status requests
+* Admin Job Applications
+* application summary counts
+
+## Client
+
+* Job Submissions
+* application detail
+* pending status requests
+
+## Talent
+
+Talent will receive notification; on next query/refetch My Applications should return updated status.
+
+If the app supports cross-window polling/refetch-on-focus, preserve it.
+
+---
+
+# DO NOT SEND DUPLICATE EMAIL
+
+The email part is already working.
+
+Do not send another email while repairing the status commit.
+
+If the approval request already has proof that the email was sent:
+
+do NOT resend it.
+
+Complete only the missing DB commit/notifications.
+
+---
+
+# RECOVERY FOR CURRENT STUCK REQUESTS
+
+We already have requests where:
+
+* email was sent
+* request remains pending
+* application status did not change
+
+Add a safe recovery path.
+
+If the system can verify:
+
+```text
+email already sent for request
+AND request is still pending
+```
+
+allow Admin to:
+
+`Finalize Approval`
+
+or automatically retry only the DB commit.
+
+Do NOT send another email.
+
+---
+
+# IDEMPOTENCY
+
+If Admin retries approval:
+
+do not create:
+
+* duplicate status history
+* duplicate Talent notification
+* duplicate Client notification
+* duplicate email
+
+Use request ID + transition as the event identity.
+
+---
+
+# DO NOT TOUCH CLIENT REQUEST CREATION
+
+Client request creation already works.
+
+Do not change:
+
+* Client request modal
+* Pending Admin Approval state before approval
+* request creation endpoint
+* Client authorization
+* Client cancellation
+
+Only fix the Admin approval completion.
+
+---
+
+# DO NOT TOUCH MESSAGING
+
+Do not change:
+
+* Client/Talent messages
+* grouped message notifications
+* unread badges
+* Delivered/Read
+* Message buttons
+
+This task is only application approval/status.
+
+---
+
+# EXACT TEST FLOW
+
+Use one application:
+
+Talent:
+`Valu Testu`
+
+Position:
+`Social Media Manager`
+
+Current:
+`New`
+
+Client requests:
+
+`Under Review`
+
+Expected BEFORE Admin approval:
+
+```text
+job_submissions.status = new
+request.status = pending
+```
+
+Admin approves.
+
+Expected AFTER approval:
+
+```text
+job_submissions.status = under_review
+request.status = approved
+```
+
+Also:
+
+* one status history row
+* one Talent notification
+* one Client approval notification
+
+---
+
+# TALENT TEST
+
+Login as the exact Talent.
+
+Verify:
+
+1. Bell gets red dot.
+2. Notification dropdown shows:
+   `Application update`
+3. message says Under Review.
+4. click notification.
+5. `/my-applications`
+6. status shows Under Review.
+7. refresh.
+8. still Under Review.
+9. logout/login.
+10. still Under Review.
+
+---
+
+# CLIENT TEST
+
+After Admin approval:
+
+Client opens Application Details.
+
+Expected:
+
+```text
+Under Review
+```
+
+No:
+
+`Pending Admin Approval`
+
+No stale request card.
+
+---
+
+# ADMIN TEST
+
+After approval:
+
+* pending request disappears
+* Admin application's row status becomes Under Review
+* summary counts update
+
+---
+
+# TEST CURRENT STUCK REQUEST
+
+This is mandatory.
+
+Take one request where email was already sent but status stayed pending.
+
+Do NOT resend email.
+
+Run/finalize the DB commit only.
+
+Expected:
+
+* application status updates
+* request becomes approved
+* Talent notification created
+* Client notification created
+
+---
+
+# ERROR LOGGING
+
+If approval commit fails:
+
+log the exact failing DB operation.
+
+Do not return only:
+
+`Failed to update status`.
+
+Include a server-side operation marker, such as:
+
+```text
+APPROVAL_COMMIT_STEP=update_application
+```
+
+or:
+
+```text
+APPROVAL_COMMIT_STEP=create_talent_notification
+```
+
+so the actual failure can be identified immediately.
+
+Frontend should still receive a safe error.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client request creation still works
+* Admin approval updates `job_submissions.status`
+* request changes from pending → approved
+* status history is written once
+* Talent gets exactly one notification
+* Client gets exactly one approval notification
+* Admin pending request list updates
+* Client no longer sees Pending Admin Approval
+* Talent My Applications shows new status
+* no duplicate email
+* stuck already-emailed request can be finalized without resending
+* no 500
+* build/tests pass
+
+---
+
+# FINAL REPORT
+
+Report:
+
+1. exact Admin approval endpoint
+2. exact reason status was not updating
+3. exact failing DB operation
+4. application status update logic
+5. request approval update logic
+6. Talent users.id resolution
+7. Talent notification verification
+8. Client notification verification
+9. status history verification
+10. pending-request query fix
+11. recovery behavior for already-sent email
+12. files changed
+13. tests run/results
+14. migration status
+
+Do NOT modify the Client → Admin request flow.
+
+The only target is:
+
+**Admin approval must successfully commit the requested status and notify the Talent.**
