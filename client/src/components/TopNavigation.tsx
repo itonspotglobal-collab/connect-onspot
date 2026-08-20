@@ -32,14 +32,6 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -124,6 +116,7 @@ export function TopNavigation() {
   const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
   const [talentDropdownOpen, setTalentDropdownOpen] = useState(false);
+  const [clientAdminDropdownOpen, setClientAdminDropdownOpen] = useState(false);
   // Talent sign-in — password setup flow (for existing candidates without a password)
   const [signinNeedsSetup, setSigninNeedsSetup] = useState(false);
   const [setupPassword, setSetupPassword] = useState("");
@@ -269,11 +262,12 @@ export function TopNavigation() {
     if (user?.role === "admin") return "Admin Dashboard";
     return "Talent Profile";
   };
-  const getProfileIcon = () => {
-    if (user?.role === "client") return <Building className="w-4 h-4" />;
-    if (user?.role === "admin") return <Shield className="w-4 h-4" />;
-    return <User className="w-4 h-4" />;
-  };
+  const accountNameParts = [user?.firstName, user?.lastName].filter(Boolean) as string[];
+  const accountDisplayName = user?.role === "client"
+    ? accountNameParts.join(" ") || user?.company || user?.email?.split("@")[0] || "Client"
+    : accountNameParts.join(" ") || "Admin";
+  const accountInitials = accountNameParts.map((part) => part[0]).join("").toUpperCase();
+  const AccountFallbackIcon = user?.role === "client" ? Building : Shield;
 
   // ── Role-based dropdown items ──────────────────────────────────────────────
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
@@ -910,54 +904,104 @@ export function TopNavigation() {
                   </RadixDropdown.Portal>
                 </RadixDropdown.Root>
               ) : (
-                /* ── General JWT client / admin session — existing compact dropdown ── */
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                /* ── General JWT client / admin session — premium account panel ── */
+                <RadixDropdown.Root open={clientAdminDropdownOpen} onOpenChange={setClientAdminDropdownOpen}>
+                  <RadixDropdown.Trigger asChild>
                     <button
-                      className="relative group hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-300 hover:scale-105"
+                      className="relative group hidden md:flex items-center gap-2 px-4 font-semibold text-sm text-white whitespace-nowrap overflow-hidden transition-all duration-200"
                       style={{
+                        height: 44,
+                        borderRadius: 11,
                         background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)',
-                        boxShadow: '0 4px 15px rgba(58, 58, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                        boxShadow: clientAdminDropdownOpen
+                          ? '0 6px 22px rgba(58,58,248,0.55), inset 0 1px 0 rgba(255,255,255,0.22)'
+                          : '0 3px 12px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
                       }}
                       data-testid="account-dropdown-trigger"
                     >
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)', animation: 'shimmer 2s infinite' }} />
-                      <div className="absolute inset-0 rounded-lg opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #7F3DF4 100%)', animation: 'portal-breathe 3s ease-in-out infinite', zIndex: -1 }} />
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)', animation: 'shimmer 2s infinite' }}
+                      />
                       <span className="relative z-10 flex items-center gap-2">
-                        {getProfileIcon()}
+                        <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                          {accountInitials || <AccountFallbackIcon style={{ width: 13, height: 13 }} />}
+                        </span>
                         {getProfileLabel()}
-                        <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                        <ChevronDown style={{ width: 14, height: 14, opacity: 0.8, transform: clientAdminDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }} />
                       </span>
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuLabel className="font-normal">
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {getDropdownItems().map(({ label, route, icon: Icon }) => (
-                      <DropdownMenuItem key={route} onClick={() => navigate(route)} className="cursor-pointer gap-2">
-                        <Icon className="w-4 h-4 text-muted-foreground" />
-                        <span className="flex-1">{label}</span>
-                        {label === "Job Applications" && submittedCount > 0 && (
-                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
-                            {submittedCount > 99 ? "99+" : submittedCount}
-                          </span>
-                        )}
-                        {label === "Hire Talent" && unreadOfferCount > 0 && (
-                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] px-1">
-                            {unreadOfferCount > 99 ? "99+" : unreadOfferCount}
-                          </span>
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} disabled={isLoggingOut} className="cursor-pointer gap-2 text-red-500 focus:text-red-500">
-                      {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
-                      {isLoggingOut ? "Signing out…" : "Sign Out"}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </RadixDropdown.Trigger>
+
+                  <RadixDropdown.Portal>
+                    <RadixDropdown.Content
+                      align="end"
+                      side="bottom"
+                      sideOffset={10}
+                      collisionPadding={16}
+                      style={{ width: 320, maxWidth: 'min(92vw, 320px)', background: '#FFFFFF', border: '1px solid rgba(75,81,184,0.12)', borderRadius: 16, boxShadow: '0 20px 50px rgba(18,23,65,0.20), 0 4px 12px rgba(18,23,65,0.08)', zIndex: 9999, padding: 10, outline: 'none' }}
+                    >
+                      <div style={{ padding: '14px 14px 12px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FAFAFF 100%)', borderRadius: 10, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: '#FFFFFF', boxShadow: '0 3px 10px rgba(75,81,184,0.3)', overflow: 'hidden' }}>
+                            {accountInitials || <AccountFallbackIcon style={{ width: 22, height: 22 }} />}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {accountDisplayName}
+                            </div>
+                            <div style={{ fontSize: 12, color: '#777B8C', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {getDropdownItems().map(({ label, route, icon: Icon }) => (
+                        <RadixDropdown.Item key={route} asChild>
+                          <button
+                            onClick={() => navigate(route)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                            onFocus={(e) => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                            onBlur={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                          >
+                            <Icon style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>{label}</span>
+                            {label === "Job Applications" && submittedCount > 0 && (
+                              <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: '#2563EB', color: '#FFFFFF', fontSize: 10, fontWeight: 700, lineHeight: 1, minWidth: 18, height: 18, padding: '0 4px' }}>
+                                {submittedCount > 99 ? "99+" : submittedCount}
+                              </span>
+                            )}
+                            {label === "Hire Talent" && unreadOfferCount > 0 && (
+                              <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: '#EF4444', color: '#FFFFFF', fontSize: 10, fontWeight: 700, lineHeight: 1, minWidth: 18, height: 18, padding: '0 4px' }}>
+                                {unreadOfferCount > 99 ? "99+" : unreadOfferCount}
+                              </span>
+                            )}
+                            <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                          </button>
+                        </RadixDropdown.Item>
+                      ))}
+
+                      <div style={{ height: 1, background: 'rgba(75,81,184,0.1)', margin: '6px 0' }} />
+                      <RadixDropdown.Item asChild>
+                        <button
+                          onClick={handleSignOut}
+                          disabled={isLoggingOut}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#E5484D', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', transition: 'background 150ms ease', outline: 'none' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#FFF1F2'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          onFocus={(e) => { e.currentTarget.style.background = '#FFF1F2'; }}
+                          onBlur={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          {isLoggingOut ? <Loader2 style={{ width: 18, height: 18, color: '#E5484D', flexShrink: 0 }} className="animate-spin" /> : <LogOut style={{ width: 18, height: 18, color: '#E5484D', flexShrink: 0 }} />}
+                          <span style={{ flex: 1 }}>{isLoggingOut ? 'Signing out…' : 'Sign Out'}</span>
+                        </button>
+                      </RadixDropdown.Item>
+                    </RadixDropdown.Content>
+                  </RadixDropdown.Portal>
+                </RadixDropdown.Root>
               )
             ) : talentAuth ? (
               /* ── Talent-only session — raw Radix (bypasses shadcn class overrides) ── */

@@ -1,0 +1,335 @@
+# Replit Prompt — FIX THE ACTUAL Client/Admin Dropdown Branch in TopNavigation.tsx
+
+The previous dropdown redesign request did NOT take effect.
+
+I verified in the browser that both Client and Admin still render the old compact dropdown.
+
+Do not redesign generally. Fix the exact branch that is currently rendering.
+
+## Exact file
+
+```text
+client/src/components/TopNavigation.tsx
+```
+
+## Exact current problem
+
+Inside the authenticated account dropdown logic, Talent uses a custom `RadixDropdown.Root` premium panel.
+
+But Client/Admin still use the old shadcn branch:
+
+```tsx
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    ...
+  </DropdownMenuTrigger>
+
+  <DropdownMenuContent align="end" className="w-52">
+    ...
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+This is the branch that MUST be replaced.
+
+Do not modify some other dropdown component.
+Do not create a new unused component.
+Do not only change CSS.
+Do not only change the trigger.
+
+The currently rendered Client/Admin dropdown markup must stop using `DropdownMenuContent className="w-52"`.
+
+---
+
+# REQUIRED IMPLEMENTATION
+
+Replace the Client/Admin branch with the same raw Radix dropdown structure already used by Talent.
+
+Use:
+
+```tsx
+<RadixDropdown.Root>
+<RadixDropdown.Trigger asChild>
+<RadixDropdown.Portal>
+<RadixDropdown.Content>
+<RadixDropdown.Item>
+```
+
+for Client/Admin as well.
+
+The goal is to guarantee Client/Admin use the same rendering system as Talent.
+
+---
+
+# TARGET PANEL STYLE
+
+Use the exact Talent panel dimensions/styles already present in this file:
+
+```tsx
+width: 320
+maxWidth: 'min(92vw, 320px)'
+background: '#FFFFFF'
+border: '1px solid rgba(75,81,184,0.12)'
+borderRadius: 16
+boxShadow: '0 20px 50px rgba(18,23,65,0.20), 0 4px 12px rgba(18,23,65,0.08)'
+zIndex: 9999
+padding: 10
+outline: 'none'
+```
+
+Also use:
+
+```tsx
+align="end"
+side="bottom"
+sideOffset={10}
+collisionPadding={16}
+```
+
+Do not use:
+
+```text
+w-52
+rounded-md
+p-1
+```
+
+for Client/Admin anymore.
+
+---
+
+# ADD ACCOUNT HEADER
+
+Client/Admin need the same visual header card style as Talent:
+
+```text
+48x48 avatar/icon
+name
+email
+light purple gradient header card
+rounded corners
+```
+
+Do NOT add Talent profile completion.
+
+Client header:
+
+* use client/user name if available
+* email underneath
+* fallback label: `Client`
+
+Admin header:
+
+* use firstName + lastName if available
+* email underneath
+* fallback label: `Admin`
+
+---
+
+# CLIENT ITEMS — KEEP CONTENT EXACTLY
+
+Keep these Client routes/items:
+
+```text
+Client Profile
+Hire Talent
+Settings
+Sign Out
+```
+
+Only restyle.
+
+---
+
+# ADMIN ITEMS — KEEP CONTENT EXACTLY
+
+Keep these Admin items:
+
+```text
+Admin Dashboard
+Find Work
+Job Applications
+Email Templates
+Insights
+Flagged Messages
+Settings
+Sign Out
+```
+
+Preserve the Job Applications numeric badge.
+
+---
+
+# ROW STYLE
+
+Use the exact same menu item visual style as Talent:
+
+```tsx
+height: 48
+padding: '0 12px'
+width: '100%'
+fontSize: 14
+fontWeight: 500
+color: '#1E2330'
+borderRadius: 10
+background: 'transparent'
+gap: 12
+```
+
+Icons:
+
+```tsx
+width: 18
+height: 18
+color: '#4D55C7'
+```
+
+Hover/focus:
+
+```text
+background: #F3F3FF
+text: #4D55C7
+```
+
+Add right `ChevronRight` icons to navigation rows.
+
+Do not add one to Sign Out.
+
+---
+
+# SIGN OUT
+
+Use the same Talent styling:
+
+```text
+red icon
+red text
+separator above
+48px row
+pale red hover background
+```
+
+Preserve:
+
+```text
+handleSignOut
+isLoggingOut
+Signing out…
+Loader2 spinner
+```
+
+---
+
+# TRIGGER STYLE
+
+Client/Admin trigger should also use the Talent trigger dimensions:
+
+```text
+height 44px
+borderRadius 11px
+same purple gradient
+same shadow
+same small 26px avatar/icon circle
+same chevron rotation
+```
+
+Keep labels:
+
+```text
+Client Profile
+Admin Dashboard
+```
+
+---
+
+# IMPORTANT — REMOVE OLD BRANCH
+
+After implementation, the authenticated non-talent branch must NOT contain:
+
+```tsx
+<DropdownMenuContent align="end" className="w-52">
+```
+
+Search the file after editing.
+
+If that exact old Client/Admin dropdown markup remains in the active branch, the task is NOT complete.
+
+---
+
+# BROWSER VERIFICATION
+
+After editing:
+
+1. Restart/reload the app.
+2. Log in as Client.
+3. Open Client Profile dropdown.
+4. Verify width is ~320px, not ~208px.
+5. Verify profile header card appears.
+6. Verify large 48px menu rows.
+7. Verify purple icons and chevrons.
+8. Verify Sign Out row matches Talent styling.
+
+Then:
+
+1. Log in as Admin.
+2. Open Admin Dashboard dropdown.
+3. Verify same premium panel.
+4. Verify Job Applications badge still appears.
+5. Verify all admin routes still work.
+
+---
+
+# DOM VERIFICATION
+
+Open DevTools after the change.
+
+The active Client/Admin dropdown should NOT show a shadcn element with classes like:
+
+```text
+w-52
+rounded-md
+p-1
+```
+
+The rendered dropdown should instead reflect the raw Radix style object:
+
+```text
+width: 320px
+border-radius: 16px
+padding: 10px
+z-index: 9999
+```
+
+This DOM check is required.
+
+---
+
+# NO UNRELATED CHANGES
+
+Do not modify:
+
+* auth
+* routes
+* Talent dropdown logic
+* notification logic
+* mobile nav
+* API calls
+
+Only fix the Client/Admin account dropdown rendering branch.
+
+---
+
+# FINAL REPORT
+
+Report:
+
+1. Exact lines/components changed.
+2. Confirmation Client/Admin no longer use `DropdownMenuContent className="w-52"`.
+3. Confirmation raw `RadixDropdown` is now used for Client/Admin.
+4. Confirmation Client panel width is 320px.
+5. Confirmation Admin panel width is 320px.
+6. Confirmation header card added.
+7. Confirmation no Talent-specific content was copied.
+8. Confirmation Admin badge still works.
+9. Confirmation browser DOM shows new styles.
+10. Include screenshots of both updated dropdowns.
