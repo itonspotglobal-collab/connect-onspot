@@ -3,6 +3,8 @@ import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useInvalidateUnreadMessages } from "@/hooks/useUnreadMessagesCount";
+import { useAuth } from "@/contexts/AuthContext";
+import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageSquare, Send, ArrowLeft } from "lucide-react";
@@ -217,6 +219,12 @@ export default function Messages() {
   const [, navigate] = useLocation();
   const [matched, params] = useRoute("/messages/:threadId");
   const activeThreadId = matched ? params?.threadId : undefined;
+  const { user } = useAuth();
+  const isTalent = user?.role === "talent" || Boolean(loadTalentAuth());
+
+  const handlePageBack = () => {
+    navigate(isTalent ? "/my-applications" : "/dashboard");
+  };
 
   const { data, isLoading, isError } = useQuery<ThreadsResponse>({
     queryKey: ["my-message-threads"],
@@ -237,9 +245,21 @@ export default function Messages() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <div className="mb-4 flex items-center gap-2">
-        <MessageSquare className="h-5 w-5 text-[#474ead]" />
-        <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Messages</h1>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 gap-1.5 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+          onClick={handlePageBack}
+          data-testid="button-messages-page-back"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-[#474ead]" />
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Messages</h1>
+        </div>
       </div>
       <p className="mb-4 text-xs text-slate-400">
         Use messages to coordinate next steps like interview scheduling. Please keep all

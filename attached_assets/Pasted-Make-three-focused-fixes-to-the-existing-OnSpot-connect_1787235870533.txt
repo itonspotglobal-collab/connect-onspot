@@ -1,0 +1,701 @@
+Make three focused fixes to the existing OnSpot / `connect-onspot` Client Portal and messaging UX.
+
+The messaging backend already works.
+
+Do NOT rebuild messaging.
+
+Do NOT change message delivery, thread creation, notifications, Delivered/Read logic, or application workflow unless directly required.
+
+The remaining tasks are:
+
+1. Fix the Client sidebar looking cut when `TopNavigation` hides/reappears.
+2. Add `Messages` to the Client Profile dropdown.
+3. Add a proper page-level Back button on Messages for BOTH roles, with role-correct fallback destinations.
+
+---
+
+# 1. FIX CLIENT SIDEBAR LOOKING CUT DURING TOPNAVIGATION SCROLL
+
+## CURRENT PROBLEM
+
+The blue `TopNavigation`:
+
+* is fixed
+* hides when scrolling down
+* reappears when scrolling up
+
+The Client sidebar stays in place, but visually its top edge/layout looks clipped/cut when the TopNavigation is hidden.
+
+Do NOT animate the sidebar.
+
+Do NOT make the sidebar follow the TopNavigation transform.
+
+Do NOT remove the existing TopNavigation scroll behavior.
+
+Fix the page shell/layout only.
+
+---
+
+# ROOT CAUSE TO AUDIT
+
+Inspect:
+
+* `client/src/components/ClientLayout.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/components/ui/sidebar.tsx`
+* Client route wrappers in `client/src/App.tsx`
+
+The current Client sidebar was historically designed around a full-height ClientLayout with its own header.
+
+The app now uses the blue fixed TopNavigation instead.
+
+Make sure the sidebar is no longer relying on old header/full-screen assumptions.
+
+---
+
+# REQUIRED STRUCTURE
+
+The layout should conceptually be:
+
+```text
+TopNavigation spacer / reserved area
+────────────────────────────────────
+
+Client Sidebar | Main Content
+Client Sidebar | Main Content
+Client Sidebar | Main Content
+```
+
+The TopNavigation may visually translate upward, but the shell underneath must keep its geometry.
+
+There should be NO layout jump when TopNavigation hides.
+
+---
+
+# IMPORTANT — SIDEBAR SHOULD BEGIN AT STABLE SHELL TOP
+
+Do not dynamically alter sidebar:
+
+* `top`
+* `margin-top`
+* `translateY`
+* height
+
+based on TopNavigation visibility.
+
+The header's hide/show transform is visual only.
+
+The Client shell should always use the same reserved `--nav-h` geometry.
+
+---
+
+# USE ONLY ONE NAV HEIGHT RESERVATION
+
+`TopNavigation` already inserts a spacer based on:
+
+`var(--nav-h)`
+
+Do not reserve the header height twice.
+
+Audit where `<TopNavigation />` is mounted.
+
+Final geometry should have exactly one logical reserved nav-height area.
+
+---
+
+# RECOMMENDED LAYOUT
+
+Adapt the current implementation toward:
+
+```tsx
+<div className="min-h-screen bg-slate-50">
+  <TopNavigation />
+
+  <div className="flex min-h-[calc(100vh-var(--nav-h))]">
+    <ClientSidebar />
+
+    <main className="min-w-0 flex-1">
+      {children}
+    </main>
+  </div>
+</div>
+```
+
+If TopNavigation is rendered outside ClientLayout, then ClientLayout itself should NOT add another `var(--nav-h)` top offset.
+
+Determine ownership before coding.
+
+---
+
+# SIDEBAR HEIGHT
+
+Do not use a sidebar whose effective height becomes:
+
+`100vh + nav height`
+
+Prefer:
+
+```text
+calc(100vh - var(--nav-h))
+```
+
+when using sticky/fixed positioning.
+
+Or let it naturally fill the shell beneath TopNavigation.
+
+Avoid arbitrary negative margins.
+
+---
+
+# SIDEBAR POSITION
+
+If sticky:
+
+```text
+top: var(--nav-h)
+height: calc(100vh - var(--nav-h))
+```
+
+is acceptable ONLY if this matches the existing shell structure.
+
+When TopNavigation hides:
+
+the sidebar should intentionally keep that logical top offset.
+
+It should NOT jump upward.
+
+This prevents the visual “cut” effect.
+
+---
+
+# BACKGROUND / VISUAL CONTINUITY
+
+The screenshot suggests the sidebar's light gray background can appear abruptly clipped.
+
+Ensure the sidebar container owns a continuous background for its full logical height.
+
+Do not rely on individual SidebarGroups to paint the background.
+
+The full ClientSidebar column should have the expected background from its top to bottom.
+
+---
+
+# MAIN CONTENT MUST NOT BE COVERED
+
+After fixing sidebar geometry verify:
+
+* sidebar never overlays main content
+* main content starts beside sidebar
+* header never covers first content row
+* no hidden top content
+* no horizontal page shift when nav hides
+
+Use:
+
+`min-w-0`
+
+on the main flex child.
+
+---
+
+# TEST TOPNAV SCROLL
+
+On `/dashboard`:
+
+1. start at top
+2. sidebar looks complete
+3. scroll down
+4. TopNavigation hides
+5. sidebar remains visually complete
+6. no clipped top
+7. no blank/glitch strip
+8. no overlap
+9. scroll up
+10. TopNavigation returns
+11. sidebar still unchanged
+
+Repeat on:
+
+* `/messages`
+* `/hire-talent`
+* `/client-profile`
+
+where applicable.
+
+---
+
+# 2. ADD MESSAGES TO CLIENT PROFILE DROPDOWN
+
+## CURRENT ISSUE
+
+The Client Profile dropdown currently shows approximately:
+
+* Client Profile
+* Hire Talent
+* Settings
+* Sign Out
+
+It is missing:
+
+`Messages`
+
+Add it.
+
+---
+
+# FILE
+
+Audit:
+
+`client/src/components/TopNavigation.tsx`
+
+The Client dropdown branch currently needs a Messages entry.
+
+Add:
+
+```tsx
+{
+  label: "Messages",
+  route: "/messages",
+  icon: MessageSquare
+}
+```
+
+Use the existing `MessageSquare` icon import.
+
+Do not create a new dropdown component.
+
+---
+
+# REQUIRED CLIENT DROPDOWN ORDER
+
+Use something like:
+
+```text
+Client Profile
+Hire Talent
+Messages
+Settings
+----------------
+Sign Out
+```
+
+Keep current visual styling.
+
+---
+
+# CLIENT MESSAGES UNREAD BADGE
+
+The Client dropdown `Messages` item must also keep/display the existing unread-message count if unread badge functionality has already been implemented.
+
+Example:
+
+```text
+Messages                         2
+```
+
+Use the SAME shared unread message count as:
+
+Client sidebar → Messages.
+
+Do not add another API request.
+
+Do not use the Bell total.
+
+---
+
+# ZERO UNREAD
+
+If zero:
+
+```text
+Messages
+```
+
+No badge.
+
+---
+
+# CLICK DESTINATION
+
+Clicking Client dropdown:
+
+`Messages`
+
+must open:
+
+`/messages`
+
+inside the Client layout:
+
+```text
+TopNavigation
+Client sidebar
+Messages page
+```
+
+Do not open `/inbox`.
+
+---
+
+# DO NOT CHANGE TALENT DROPDOWN
+
+Talent already has Messages in the dropdown.
+
+Do not remove or duplicate it.
+
+---
+
+# 3. ADD PAGE-LEVEL BACK BUTTON TO MESSAGES
+
+## IMPORTANT ROLE DISTINCTION
+
+There are TWO roles using the same `/messages` page.
+
+Back behavior must be role-aware.
+
+### Talent fallback
+
+`/my-applications`
+
+### Client fallback
+
+Use the canonical Client area.
+
+Preferred fallback:
+
+`/dashboard`
+
+because Job Submissions and other Client entry points are accessible through the Client Portal.
+
+DO NOT send a Client to `/my-applications`.
+
+`/my-applications` is Talent-specific.
+
+---
+
+# PAGE-LEVEL BACK BUTTON
+
+Add a clear button near the Messages heading:
+
+```text
+← Back    Messages
+```
+
+This is different from the existing MOBILE thread back button.
+
+Do not confuse them.
+
+---
+
+# EXISTING MOBILE BACK BUTTON
+
+`Messages.tsx` already has an `ArrowLeft` button inside an active thread for mobile.
+
+That button means:
+
+```text
+conversation
+→ thread list
+```
+
+Keep it.
+
+The NEW page Back button means:
+
+```text
+Messages page
+→ previous application/dashboard/profile page
+```
+
+Both must coexist.
+
+---
+
+# ROLE-AWARE BACK LOGIC
+
+Preferred behavior:
+
+First, if browser history has a meaningful same-origin previous app page:
+
+go back.
+
+Otherwise fallback based on authenticated role.
+
+Conceptually:
+
+```ts
+if (canSafelyGoBackWithinApp()) {
+  history.back();
+} else if (isTalent) {
+  navigate("/my-applications");
+} else if (isClient) {
+  navigate("/dashboard");
+}
+```
+
+Do not use brittle logic that may send users outside the application.
+
+If determining safe history is messy, use deterministic role fallback instead.
+
+---
+
+# CLIENT ENTRY FLOW
+
+Examples:
+
+### Client from Job Submissions
+
+```text
+/dashboard
+→ Message
+→ /messages/:threadId
+→ Back
+→ /dashboard
+```
+
+### Client from Client Profile
+
+```text
+/client-profile
+→ Message
+→ /messages/:threadId
+→ Back
+→ /client-profile
+```
+
+If preserving actual previous route is reliable, use it.
+
+Otherwise `/dashboard` fallback is acceptable.
+
+---
+
+# TALENT ENTRY FLOW
+
+Example:
+
+```text
+/my-applications
+→ Reach the Client
+→ /messages/:threadId
+→ Back
+→ /my-applications
+```
+
+This is the role where `/my-applications` is correct.
+
+---
+
+# BUTTON VISUAL STYLE
+
+Use existing:
+
+* `Button`
+* `ArrowLeft`
+
+Example:
+
+```tsx
+<Button variant="ghost" ...>
+  <ArrowLeft />
+  Back
+</Button>
+```
+
+Keep it compact.
+
+Do not create a giant CTA.
+
+---
+
+# MESSAGES HEADING LAYOUT
+
+Recommended:
+
+```text
+← Back   💬 Messages
+
+Use messages to coordinate...
+```
+
+Make it responsive.
+
+---
+
+# CLIENT SIDEBAR REMAINS PRESENT
+
+When Client is on Messages:
+
+* TopNavigation visible/hide-on-scroll behavior remains
+* sidebar remains
+* Messages item active
+* unread badge works
+* page Back button visible
+
+---
+
+# TALENT MESSAGES REMAINS SIDEBAR-FREE
+
+When Talent is on Messages:
+
+* TopNavigation
+* no Client sidebar
+* page Back button visible
+* Talent Messages behavior intact
+
+---
+
+# DO NOT BREAK READ STATE
+
+Opening the conversation must continue to:
+
+* mark messages read
+* clear unread counts
+* update Delivered → Read for sender
+
+Do not put mark-read logic inside Back button.
+
+---
+
+# REGRESSION TESTS
+
+## Client dropdown
+
+1. Login as Client.
+2. Open Client Profile dropdown.
+3. Confirm:
+
+   * Client Profile
+   * Hire Talent
+   * Messages
+   * Settings
+4. Send Client an unread Talent message.
+5. Confirm Messages shows unread count.
+6. Click Messages.
+7. `/messages` opens.
+
+---
+
+## Client Back
+
+1. From `/dashboard`, open a Job Submission Message.
+2. Chat opens.
+3. Click page Back.
+4. Return to `/dashboard`.
+5. Client sidebar remains.
+
+---
+
+## Talent Back
+
+1. From `/my-applications`, click Reach the Client.
+2. Chat opens.
+3. Click page Back.
+4. Return to `/my-applications`.
+
+---
+
+## Sidebar scroll test
+
+1. `/dashboard`
+2. scroll down until TopNavigation hides
+3. sidebar must not appear cut
+4. scroll up
+5. no layout jump
+
+Repeat on Messages.
+
+---
+
+# DO NOT BREAK
+
+Preserve:
+
+* OnSpot Talent → `/hire-talent`
+* Client sidebar route fixes
+* numeric message badges
+* Bell red-dot-only behavior
+* message notifications
+* Client ↔ Talent delivery
+* Delivered / Read
+* Reach the Client
+* Job Submission Message
+* application notifications
+* withdrawal
+* offers
+* Client dashboard
+* Talent My Applications
+
+---
+
+# FILES LIKELY TO CHANGE
+
+Audit before editing, likely:
+
+* `client/src/components/ClientLayout.tsx`
+* `client/src/components/ui/sidebar.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/pages/Messages.tsx`
+* possibly `client/src/App.tsx` if shell ownership requires adjustment
+
+Keep changes minimal.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+### Sidebar
+
+* no cut appearance when TopNavigation hides
+* no cut appearance when it reappears
+* no sidebar animation added
+* sidebar does not overlap content
+* sidebar background remains continuous
+* main content remains accessible
+
+### Client dropdown
+
+* Messages item exists
+* Messages navigates to `/messages`
+* unread message badge works
+* Client Profile/Hire Talent/Settings remain
+
+### Messages Back
+
+* page-level Back exists
+* Client does NOT fallback to `/my-applications`
+* Client fallback is `/dashboard`
+* Talent fallback is `/my-applications`
+* existing mobile thread-list Back still works
+* layout is role-correct
+
+### Regression
+
+* messaging works both ways
+* notification Bell remains dot-only
+* numeric message badges remain numeric
+* Delivered/Read remains working
+* build/type checks pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. sidebar root cause
+2. exact CSS/layout fix
+3. Client dropdown change
+4. unread badge wiring
+5. page Back implementation
+6. Client fallback route
+7. Talent fallback route
+8. files changed
+9. tests run
+10. regression results
+
+Do not redesign anything.
+
+These are targeted layout/navigation fixes only.

@@ -277,6 +277,7 @@ export function TopNavigation() {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
       { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
+      { label: "Messages",       route: "/messages",        icon: MessageSquare },
       { label: "Settings",       route: "/settings",       icon: Settings },
     ];
     if (user?.role === "admin") return [
@@ -991,6 +992,11 @@ export function TopNavigation() {
                             {label === "Hire Talent" && unreadNotificationCount > 0 && (
                               <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: '#EF4444', color: '#FFFFFF', fontSize: 10, fontWeight: 700, lineHeight: 1, minWidth: 18, height: 18, padding: '0 4px' }}>
                                 {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                              </span>
+                            )}
+                            {label === "Messages" && unreadMsgsCount > 0 && (
+                              <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: '#E5484D', color: '#FFFFFF', fontSize: 10, fontWeight: 700, lineHeight: 1, minWidth: 18, height: 18, padding: '0 5px', flexShrink: 0 }}>
+                                {unreadMsgsCount > 99 ? "99+" : unreadMsgsCount}
                               </span>
                             )}
                             <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
