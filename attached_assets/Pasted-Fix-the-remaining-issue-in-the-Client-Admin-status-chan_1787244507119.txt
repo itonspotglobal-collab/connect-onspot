@@ -1,0 +1,1007 @@
+Fix the remaining issue in the Client → Admin status-change approval workflow in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT STATE
+
+The new approval workflow now works up to this point:
+
+1. Client requests an application status change.
+2. Admin sees the pending Status Change Request.
+3. Admin opens Review Request.
+4. Admin sees:
+
+   * Client
+   * Talent
+   * Position
+   * current → requested status
+5. Admin clicks:
+   `Approve & Email Applicant`
+
+This correctly opens the existing Applicant Email interface.
+
+HOWEVER, opening/rendering the email composer now triggers a runtime error overlay.
+
+The browser console stack points through:
+
+* `RichTextEditor.tsx`
+* `ApplicantEmailComposer.tsx`
+* `AdminJobApplications.tsx`
+
+There is also a React warning involving deprecated:
+
+`findDOMNode`
+
+Do NOT undo the working approval-request workflow.
+
+Fix the email composer/runtime issue and then make the complete approval flow reliable.
+
+---
+
+# PRIMARY GOALS
+
+This task has TWO mandatory outcomes:
+
+## A. Fix Email Applicant runtime crash
+
+The Admin must be able to open:
+
+`Approve & Email Applicant`
+
+without any runtime overlay/error.
+
+The rich text editor must render and work normally.
+
+## B. Guarantee approval completion behavior
+
+When Admin approves the Client request and successfully sends the email:
+
+* Talent MUST receive the email
+* Talent MUST receive an in-app notification
+* canonical application status MUST update
+* status request MUST become approved
+* status history MUST be written
+* Client MUST receive approval notification
+
+Do not mark the task complete after merely hiding the React error.
+
+---
+
+# PART 1 — TRACE THE CURRENT RUNTIME ERROR
+
+Inspect the actual stack shown in the browser.
+
+Audit:
+
+* `client/src/components/RichTextEditor.tsx`
+* `client/src/components/ApplicantEmailComposer.tsx`
+* `client/src/pages/AdminJobApplications.tsx`
+
+Do not guess.
+
+Reproduce:
+
+```text
+Admin Job Applications
+→ Status Requests
+→ Review Request
+→ Approve & Email Applicant
+```
+
+Then capture the FIRST actual runtime exception.
+
+The console currently shows a stack around:
+
+```text
+RichTextEditor
+ApplicantEmailComposer
+AdminJobApplications
+```
+
+Identify the exact exception and line.
+
+---
+
+# FINDDOMNODE WARNING
+
+The browser also reports:
+
+`findDOMNode is deprecated`
+
+Audit whether the current rich-text editor library relies on:
+
+`ReactDOM.findDOMNode`
+
+or an older ReactQuill/Quill wrapper.
+
+Do NOT simply suppress the warning.
+
+Determine whether it is related to the actual runtime crash.
+
+If the editor library is incompatible with the current React version:
+
+fix the integration safely.
+
+Preferred options:
+
+1. upgrade/use the already-installed compatible editor version
+2. use a direct DOM ref instead of `findDOMNode`
+3. replace the incompatible wrapper with a small existing-compatible implementation
+
+Do NOT rewrite the whole email system.
+
+---
+
+# DO NOT REMOVE RICH TEXT CAPABILITIES
+
+The current Applicant Email interface includes formatting such as:
+
+* paragraph styles
+* bold
+* italic
+* underline
+* strike
+* alignment/list controls
+* link
+* image
+* quote/code
+* clear formatting
+
+Preserve existing functionality where possible.
+
+Do not replace it with a plain textarea purely to silence the error unless absolutely necessary as a safe fallback.
+
+---
+
+# SAFE FALLBACK
+
+If the rich editor cannot initialize for a specific browser/environment:
+
+the email composer should fail gracefully rather than crash the entire page.
+
+A controlled fallback textarea is acceptable as a runtime fallback ONLY.
+
+Example:
+
+```text
+Rich-text editor unavailable.
+A plain-text editor has been loaded instead.
+```
+
+But the main supported path should remain rich text.
+
+---
+
+# EDITOR MOUNTING
+
+Audit whether the editor is being rendered while:
+
+* Dialog is closed
+* DOM target is missing
+* component is being mounted/unmounted rapidly
+* SSR/window is unavailable
+* `document`/DOM is not ready
+
+If necessary, render editor only when composer/dialog is actually open and browser DOM is available.
+
+Do not create editors against detached nodes.
+
+---
+
+# REFS
+
+If `RichTextEditor` currently finds its DOM node indirectly:
+
+replace deprecated node lookup with an explicit:
+
+```tsx
+useRef(...)
+```
+
+and attach it directly to the editor container/component where supported.
+
+Avoid:
+
+`findDOMNode(this)`
+
+---
+
+# CLEANUP
+
+Make sure editor teardown cleans:
+
+* event listeners
+* Quill/editor instances
+* mutation observers
+* DOM references
+
+The screenshot also contains many browser/Replit aborted-request warnings; those are not necessarily the root issue.
+
+Focus on the actual application exception first.
+
+---
+
+# APPLICANT EMAIL COMPOSER MUST OPEN RELIABLY
+
+After fixing:
+
+Admin clicks:
+
+`Approve & Email Applicant`
+
+Expected:
+
+Email Applicant modal opens.
+
+No runtime overlay.
+
+Admin can use:
+
+* Compose
+* Preview
+* History
+* From
+* Template
+* Subject
+* Message
+* Preview
+* Send Email
+
+---
+
+# DO NOT LOSE STATUS REQUEST CONTEXT
+
+When opening `ApplicantEmailComposer` from a Client Status Change Request, preserve:
+
+```text
+requestId
+applicationId
+currentStatus
+requestedStatus
+clientUserId
+talent/applicant identity
+job information
+```
+
+Do not open it as a generic unrelated email.
+
+---
+
+# DISPLAY APPROVAL CONTEXT
+
+Add a small non-editable context near the email heading if useful:
+
+```text
+Status request:
+Submitted → Under Review
+
+Requested by:
+Val Client
+```
+
+This helps Admin know what is being approved.
+
+Do not overload the UI.
+
+---
+
+# TEMPLATE SELECTION
+
+Admin must still be able to select an email template.
+
+Do not auto-send.
+
+Flow remains:
+
+```text
+Approve & Email Applicant
+→ choose template
+→ review/edit
+→ Send Email & Approve
+```
+
+---
+
+# IMPORTANT BUTTON LABEL
+
+For this approval workflow, prefer:
+
+`Send Email & Approve`
+
+instead of generic:
+
+`Send Email`
+
+so Admin knows that successful sending finalizes the status request.
+
+If `ApplicantEmailComposer` is reused in ordinary email-only contexts, make this label configurable.
+
+Do NOT rename the button globally for unrelated email workflows.
+
+---
+
+# CRITICAL APPROVAL CONTRACT
+
+For a CLIENT status request:
+
+The request is NOT considered approved until email delivery has succeeded.
+
+Correct sequence:
+
+```text
+Admin presses Send Email & Approve
+        ↓
+server validates everything
+        ↓
+send Talent email
+        ↓
+email provider reports success
+        ↓
+DB transaction:
+    lock application/request
+    revalidate request
+    update application status
+    write application status history
+    mark request approved
+    create Talent notification
+    create Client approval notification
+        ↓
+commit
+        ↓
+return success
+```
+
+---
+
+# VALIDATE BEFORE EMAIL
+
+Before actually sending the email:
+
+validate:
+
+* Admin authenticated
+* Admin authorized
+* request exists
+* request is `pending`
+* application exists
+* requested transition still valid
+* application current status still equals request expected/current status
+* applicant email is valid
+* template is valid/permitted
+* subject is non-empty
+* message/body is non-empty
+
+If any fails:
+
+DO NOT send email.
+
+---
+
+# EMAIL DELIVERY MUST BE REAL SUCCESS
+
+Do not consider this successful merely because:
+
+`sendEmail()` was called.
+
+Require the existing email provider/service to return its successful result.
+
+Capture:
+
+* provider message ID if available
+* sent timestamp
+* recipient
+
+Do not log raw email body unnecessarily.
+
+---
+
+# IF EMAIL FAILS
+
+Expected:
+
+```text
+request remains pending
+application status remains unchanged
+no Talent status notification
+no Client approval notification
+no status history
+```
+
+Show Admin:
+
+`Email could not be sent. The status request was not approved.`
+
+Allow retry.
+
+---
+
+# AFTER EMAIL SUCCESS — LOCK AND REVALIDATE
+
+Since email delivery happens before DB commit, protect against the application changing during the email operation.
+
+After email succeeds:
+
+begin DB transaction.
+
+Lock:
+
+* status change request row
+* `job_submissions` application row
+
+using safe direct row locking.
+
+Recheck:
+
+```text
+request.status === pending
+application.status === request.currentStatus
+```
+
+If state changed unexpectedly:
+
+do NOT blindly apply stale transition.
+
+Record/log a consistency error requiring Admin attention.
+
+Since the email has already been sent, surface this clearly to Admin rather than claiming success.
+
+---
+
+# TALENT NOTIFICATION IS MANDATORY
+
+When DB commit succeeds, linked Talent MUST get an in-app notification.
+
+Use the existing persistent notification system.
+
+Suggested:
+
+Type:
+
+`application_update`
+
+Title:
+
+`Application update`
+
+Message:
+
+`Your application for Social Media Manager is now Under Review.`
+
+Related ID:
+
+application/submission ID
+
+Related type:
+
+existing canonical application type.
+
+---
+
+# RESOLVE TALENT USER CORRECTLY
+
+This is critical.
+
+The applicant may exist through:
+
+* candidate/profile record
+* canonical `users.id`
+* Talent Portal linkage
+
+Resolve the applicant to canonical Talent:
+
+`users.id`
+
+before creating the notification.
+
+Do NOT save notification recipient using:
+
+* candidate ID
+* email
+* job submission ID
+
+If application has a linked Talent account:
+
+notification creation is mandatory.
+
+If no linked Talent account exists:
+
+email may still be sent, but log clearly:
+
+`Talent has no linked in-app account; email sent but in-app notification could not be created.`
+
+Do not falsely claim notification success.
+
+---
+
+# REQUIRE NOTIFICATION SUCCESS FOR LINKED TALENT
+
+For a linked Talent user:
+
+do not silently swallow notification insertion errors.
+
+If notification creation fails inside the DB transaction:
+
+ROLL BACK:
+
+* application status change
+* request approval
+* history
+* Client approval notification
+
+Then show Admin a consistency error.
+
+The email has already been sent, so log this as a high-priority failure requiring retry/manual reconciliation.
+
+This protects against falsely approving the request without notifying the Talent in-app.
+
+---
+
+# TALENT EMAIL RECIPIENT
+
+The email recipient must be resolved from the canonical application/applicant data.
+
+Prefer the application/candidate email source already used by `ApplicantEmailComposer`.
+
+Do not trust an arbitrary email sent from the frontend.
+
+Server should validate that the email corresponds to the selected application.
+
+---
+
+# TALENT EMAIL CONTENT
+
+The selected Admin template should produce the final email.
+
+It should accurately reflect:
+
+* applicant/Talent
+* position/job title
+* requested/approved status
+* company/OnSpot context
+
+Do not send a second automatic status email after the Admin-composed one.
+
+Exactly one approval email.
+
+---
+
+# TALENT NOTIFICATION + EMAIL MUST AGREE
+
+Example request:
+
+```text
+Submitted → Under Review
+```
+
+Email must say Under Review.
+
+Notification must say Under Review.
+
+Talent My Applications must show Under Review.
+
+Status history must say:
+
+Submitted → Under Review.
+
+There must be ONE `requestedStatus` source used by all four.
+
+---
+
+# CLIENT APPROVAL NOTIFICATION
+
+After successful approval:
+
+notify the requesting Client.
+
+Title:
+
+`Status change request approved`
+
+Message:
+
+`Your request to change Valu Testu's application for Social Media Manager to Under Review was approved.`
+
+Related ID:
+
+request/application according to existing navigation design.
+
+---
+
+# DO NOT NOTIFY ADMIN ABOUT OWN APPROVAL
+
+Admin initiated the approval.
+
+Do not create a Bell notification to that same Admin saying they approved it.
+
+Other Admin audit/notification behavior may remain if explicitly required elsewhere.
+
+---
+
+# STATUS REQUEST
+
+After success:
+
+```text
+request.status = approved
+reviewedBy = admin user id
+reviewedAt = server timestamp
+```
+
+Store actual approving Admin.
+
+---
+
+# STATUS HISTORY
+
+Write exactly one application status history event.
+
+Example:
+
+```text
+Submitted → Under Review
+Changed by: Admin User
+Origin: Client status request
+Requested by: Val Client
+Request ID: ...
+```
+
+Use metadata if schema supports it.
+
+Do not write status history when the Client originally submits the request.
+
+---
+
+# EMAIL HISTORY
+
+The sent approval email must appear in the existing Applicant Email History.
+
+Preserve:
+
+* From
+* recipient
+* template
+* subject
+* timestamp
+* provider result/reference
+
+Do not create a disconnected email audit table if the application already has email history.
+
+---
+
+# AFTER SUCCESS — UI
+
+Admin should see a success message:
+
+`Email sent and application status updated to Under Review.`
+
+Then:
+
+* close email composer
+* close/reload Status Change Request modal
+* remove request from Pending Status Requests
+* update Admin application row/status
+* refresh summary counts
+
+---
+
+# TALENT UX TEST
+
+After Admin approval:
+
+Talent logs in or already has page open.
+
+Expected:
+
+1. Bell red dot appears.
+2. Notification dropdown contains:
+   `Application update`
+3. Notification says correct new status.
+4. Talent clicks notification.
+5. goes to `/my-applications`
+6. application shows the new status.
+7. Talent's email inbox receives the Admin-composed email.
+
+Do not mark complete without manually testing this end-to-end.
+
+---
+
+# EMAIL VERIFICATION
+
+Use the project's configured email test/development transport.
+
+Do not merely verify server logs saying:
+
+`send called`.
+
+Verify whichever concrete success signal is available:
+
+* provider message ID
+* test inbox capture
+* email history success row
+
+In production-capable tests, do not send spam to arbitrary real addresses.
+
+Use controlled test recipient data.
+
+---
+
+# CLIENT UX TEST
+
+Client submitted request.
+
+After Admin approval:
+
+Client Bell gets red dot.
+
+Notification says request approved.
+
+Application row reflects new canonical status when refreshed/refetched.
+
+Client must no longer see:
+
+`Pending Admin Approval`
+
+for that request.
+
+---
+
+# APPROVAL REQUEST DUPLICATE-SEND PROTECTION
+
+If Admin double-clicks:
+
+`Send Email & Approve`
+
+do not:
+
+* send two emails
+* approve twice
+* create duplicate notifications
+* create duplicate history rows
+
+Disable button while pending and protect server-side with idempotency/request state.
+
+---
+
+# RETRY AFTER FAILURE
+
+Email provider fails:
+
+Admin retries.
+
+Expected:
+
+only successful retry produces:
+
+* one delivered email
+* one approval
+* one history event
+* one Talent notification
+* one Client notification
+
+---
+
+# RUNTIME ERROR TEST
+
+Mandatory regression test:
+
+1. Admin opens Job Applications.
+2. Open Client Status Request.
+3. Click Approve & Email Applicant.
+4. Rich editor renders.
+5. No Vite runtime overlay.
+6. No unhandled React exception.
+7. Select template.
+8. Edit body.
+9. Preview.
+10. Send.
+
+---
+
+# RICHTEXTEDITOR TESTS
+
+Test:
+
+* mount
+* unmount
+* reopen dialog
+* open/close several times
+* switching templates
+* Preview tab
+* History tab
+* empty initial value
+* pre-filled template
+* StrictMode/dev mode
+
+Do not allow the editor to crash on second modal open.
+
+---
+
+# DO NOT DISABLE VITE ERROR OVERLAY
+
+Do NOT solve the screenshot by setting:
+
+`server.hmr.overlay = false`
+
+That only hides the error.
+
+Fix the underlying component.
+
+---
+
+# DO NOT SUPPRESS CONSOLE ERRORS GLOBALLY
+
+Do not monkey-patch:
+
+`console.error`
+
+or suppress React warnings globally.
+
+Fix the editor integration.
+
+---
+
+# ERROR BOUNDARY
+
+If the app already has an error boundary pattern, wrapping the rich editor with a small localized error boundary is acceptable as extra protection.
+
+But do not use the boundary as a substitute for fixing the root issue.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+* `client/src/components/RichTextEditor.tsx`
+* `client/src/components/ApplicantEmailComposer.tsx`
+* `client/src/pages/AdminJobApplications.tsx`
+* Admin status request UI
+* status-request approve endpoint
+* email service/provider
+* email template rendering
+* application status transition service
+* notification service
+* application status history
+* Talent identity/account resolution
+* notification tests
+* email tests
+
+The current runtime stack specifically implicates the rich-editor/email-composer path, so start there.
+
+---
+
+# TEST MATRIX
+
+## Test A — Composer render
+
+Open approval composer.
+
+No runtime error.
+
+---
+
+## Test B — Cancel
+
+Open composer then Cancel.
+
+Request remains pending.
+
+Status unchanged.
+
+No email.
+
+No notification.
+
+---
+
+## Test C — Approval success
+
+Send valid email.
+
+Expected:
+
+* email success
+* application status updated
+* request approved
+* history created
+* Talent notification created
+* Client approval notification created
+
+---
+
+## Test D — Email failure
+
+Expected:
+
+* request pending
+* application unchanged
+* no status notification
+
+---
+
+## Test E — Linked Talent
+
+Expected Talent in-app notification definitely created.
+
+Verify recipient is canonical Talent `users.id`.
+
+---
+
+## Test F — No linked Talent
+
+Expected:
+
+* email still works when valid applicant email exists
+* no fake in-app success
+* structured warning/report
+
+---
+
+## Test G — Double submit
+
+One email/approval only.
+
+---
+
+## Test H — stale request
+
+If current application status differs from request expected status:
+
+do not send/approve stale request.
+
+---
+
+## Test I — reopen editor
+
+Open/close/reopen several times.
+
+No RichTextEditor crash.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Approve & Email Applicant opens without runtime error
+* RichTextEditor works
+* runtime overlay is gone because root error is fixed
+* Admin can choose template
+* Admin can preview/edit
+* Send Email & Approve works
+* email success is confirmed
+* status changes ONLY after email succeeds
+* request becomes approved
+* Talent receives exactly one email
+* linked Talent receives exactly one in-app notification
+* Talent notification has correct new status
+* Client receives approval notification
+* application history is written once
+* no duplicate email/notifications
+* failure leaves request pending/status unchanged
+* Talent My Applications displays approved status
+* build/typecheck/tests pass
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. exact RichTextEditor runtime error
+2. root cause
+3. whether `findDOMNode` was involved
+4. editor fix made
+5. files changed
+6. approval endpoint/service
+7. email success verification method
+8. Talent email recipient resolution
+9. Talent notification recipient resolution
+10. notification insertion verification
+11. status commit ordering
+12. failure behavior
+13. duplicate-submit protection
+14. tests run/results
+15. database migration status
+
+Do not report success unless the complete scenario was tested:
+
+**Client requests → Admin approves → Admin sends email → status changes → Talent gets email → Talent gets notification.**

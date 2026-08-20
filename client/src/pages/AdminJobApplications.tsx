@@ -965,6 +965,7 @@ export default function AdminJobApplications() {
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);
   const [reviewRequest, setReviewRequest] = useState<any | null>(null);
   const [statusChangeRequestId, setStatusChangeRequestId] = useState<string | null>(null);
+  const [approvalRequestContext, setApprovalRequestContext] = useState<{ requestedBy: string; requestId: string } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     applicationId: string;
     previousStatus: string;
@@ -1005,6 +1006,7 @@ export default function AdminJobApplications() {
       setEmailDialog(null);
       setPendingStatusChange(null);
       setStatusChangeRequestId(null);
+      setApprovalRequestContext(null);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/status-change-requests"] });
     },
     onError: (err: any) => {
@@ -1524,6 +1526,7 @@ export default function AdminJobApplications() {
               if (!reviewRequest) return;
               setPendingStatusChange({ applicationId: reviewRequest.applicationId, previousStatus: reviewRequest.currentStatus, newStatus: reviewRequest.requestedStatus });
               setStatusChangeRequestId(reviewRequest.id);
+              setApprovalRequestContext({ requestedBy: reviewRequest.clientName, requestId: reviewRequest.id });
               setEmailDialog({ id: reviewRequest.applicationId, jobId: "", jobTitle: reviewRequest.jobTitle, firstName: reviewRequest.firstName, lastName: reviewRequest.lastName, applicantName: reviewRequest.applicantName, email: reviewRequest.email, status: reviewRequest.actualStatus, registrationStatus: "" });
               setReviewRequest(null);
             }}>Approve & Email Applicant</Button>
@@ -1567,6 +1570,8 @@ export default function AdminJobApplications() {
            }}
           onRequestSend={handleEmailSendRequest}
           isSendingEmail={sendEmailMutation.isPending}
+          sendButtonLabel={statusChangeRequestId ? "Send Email & Approve" : "Send Email"}
+          approvalContext={approvalRequestContext ?? undefined}
         />
       </Suspense>
 

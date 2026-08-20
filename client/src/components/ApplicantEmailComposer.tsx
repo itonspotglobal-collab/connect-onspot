@@ -72,6 +72,9 @@ interface Props {
   onRequestSend: (payload: { subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string }) => void;
   /** True while the parent is sending — keeps the Send button disabled during the API call. */
   isSendingEmail: boolean;
+  /** Optional workflow-specific copy; ordinary emails retain the generic label. */
+  sendButtonLabel?: string;
+  approvalContext?: { requestedBy: string; requestId: string };
 }
 
 // ─── Sender options ───────────────────────────────────────────────────────────
@@ -633,7 +636,10 @@ function TestSendDialog({
 
 // ─── Main Composer ────────────────────────────────────────────────────────────
 
-export default function ApplicantEmailComposer({ application, open, onClose, onRequestSend, isSendingEmail, pendingStatus }: Props) {
+export default function ApplicantEmailComposer({
+  application, open, onClose, onRequestSend, isSendingEmail, pendingStatus,
+  sendButtonLabel = "Send Email", approvalContext,
+}: Props) {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("compose");
@@ -715,9 +721,8 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
             </DialogTitle>
             {pendingStatus && (
               <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-800">
-                This email is required before the application can move from{" "}
-                <strong>{pendingStatus.previousStatus}</strong> to{" "}
-                <strong>{pendingStatus.newStatus}</strong>.
+                Status request: <strong>{pendingStatus.previousStatus}</strong> → <strong>{pendingStatus.newStatus}</strong>.
+                {approvalContext && <span className="block mt-1">Requested by: <strong>{approvalContext.requestedBy}</strong></span>}
               </div>
             )}
           </DialogHeader>
@@ -803,7 +808,7 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
               >
                 {isSendingEmail
                   ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Sending…</>
-                  : <><Send className="mr-1.5 h-3.5 w-3.5" /> Send Email</>
+                  : <><Send className="mr-1.5 h-3.5 w-3.5" /> {sendButtonLabel}</>
                 }
               </Button>
             </div>

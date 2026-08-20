@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 
 // ── Extended Image Blot: preserves class + style attributes ───────────────────
-const BaseImage = (Quill as any).import("formats/image");
+// Quill is loaded by react-quill in the browser. Keep registration defensive:
+// HMR/StrictMode can evaluate this module while the wrapper is being replaced.
+const BaseImage = (Quill as any)?.import?.("formats/image") ?? class {};
 
 class ExtendedImageBlot extends BaseImage {
   static create(value: string | Record<string, string>) {
@@ -173,7 +175,7 @@ interface RichTextEditorProps {
   linkedInStyle?: boolean;
 }
 
-export default function RichTextEditor({
+function RichTextEditorImpl({
   value,
   onChange,
   placeholder,
@@ -517,7 +519,7 @@ export default function RichTextEditor({
   const activePosOpt = POS_OPTIONS.find((o) => o.className === insertPos);
 
   // ── Resize overlay portal ──────────────────────────────────────────────────
-  const resizePortal = resizeOverlay
+  const resizePortal = resizeOverlay && typeof document !== "undefined"
     ? createPortal(
         <div
           style={{
@@ -880,3 +882,47 @@ export default function RichTextEditor({
     </div>
   );
 }
+
+type RichTextEditorBoundaryProps = RichTextEditorProps;
+type RichTextEditorBoundaryState = { failed: boolean };
+
+/**
+ * Quill is a third-party DOM editor and can fail during a rapid Dialog
+ * mount/unmount or browser extension DOM mutation. Keep that failure local to
+ * the email field instead of letting it trigger the Vite/React app overlay.
+ */
+class RichTextEditorBoundary extends Component<
+  RichTextEditorBoundaryProps,
+  RichTextEditorBoundaryState
+> {
+  state: RichTextEditorBoundaryState = { failed: false };
+
+  static getDerivedStateFromError(): RichTextEditorBoundaryState {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("RichTextEditor failed to initialize; using fallback editor.", error);
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="space-y-2">
+          <p className="text-xs text-amber-700">
+            Rich-text editor unavailable. A plain-text editor has been loaded instead.
+          </p>
+          <textarea
+            value={this.props.value}
+            onChange={(event) => this.props.onChange(event.target.value)}
+            placeholder={this.props.placeholder || "Write your content here..."}
+            className="min-h-48 w-full rounded-md border border-slate-200 p-3 text-sm"
+          />
+        </div>
+      );
+    }
+    return <RichTextEditorImpl {...this.props} />;
+  }
+}
+
+export default RichTextEditorBoundary;
