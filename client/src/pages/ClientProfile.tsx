@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { JobFormModal } from "@/components/JobFormModal";
 import { buildRateDisplay, getTimeAgo } from "@/lib/jobUtils";
 import {
   Building2,
@@ -603,8 +602,6 @@ export default function ClientProfile() {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<ClientProfile>>({});
-  const [jobModalOpen, setJobModalOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
   const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
@@ -784,7 +781,7 @@ export default function ClientProfile() {
                 </div>
               </div>
               <Button
-                onClick={() => { setEditingJob(null); setJobModalOpen(true); }}
+                onClick={() => navigate("/client/jobs/new")}
                 className="bg-[#474ead] text-white shadow-[0_4px_16px_rgba(71,78,173,0.4)] hover:bg-[#3d439c]"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -959,7 +956,7 @@ export default function ClientProfile() {
               <Button
                 size="sm"
                 className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                onClick={() => { setEditingJob(null); setJobModalOpen(true); }}
+                onClick={() => navigate("/client/jobs/new")}
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                 Post a Job
@@ -985,7 +982,7 @@ export default function ClientProfile() {
                 </p>
                 <Button
                   className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                  onClick={() => { setEditingJob(null); setJobModalOpen(true); }}
+                  onClick={() => navigate("/client/jobs/new")}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Post Your First Job
@@ -998,7 +995,7 @@ export default function ClientProfile() {
                 <ClientJobRow
                   key={job.id}
                   job={job}
-                  onEdit={() => { setEditingJob(job); setJobModalOpen(true); }}
+                  onEdit={() => navigate(`/client/jobs/${job.id}/edit`)}
                   onToggle={() =>
                     toggleStatusMutation.mutate({
                       id: job.id,
@@ -1030,16 +1027,6 @@ export default function ClientProfile() {
           </div>
         )}
       </div>
-
-      {/* ── Job form modal (client-scoped) ───────────────────────────────────── */}
-      <JobFormModal
-        open={jobModalOpen}
-        onClose={() => { setJobModalOpen(false); setEditingJob(null); }}
-        job={editingJob}
-        onSuccess={() => { setJobModalOpen(false); setEditingJob(null); }}
-        clientMode={true}
-        defaultCompany={profile?.companyName || user?.company || ""}
-      />
 
       {/* ── Job preview dialog (owner-aware — works for draft/closed/pending) ── */}
       <ClientJobPreviewDialog

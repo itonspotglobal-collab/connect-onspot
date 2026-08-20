@@ -57,7 +57,7 @@ import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db, pool } from "./db.ts";
-import { eq, desc, sql as sqlOp } from "drizzle-orm";
+import { and, eq, desc, sql as sqlOp } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
@@ -1396,7 +1396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     // Step 0: normalize legacy engagement_type values in the jobs table.
     // 'full-time' and 'part-time' (lowercase) were written by an older version of
-    // JobFormModal before ENGAGEMENT_TYPE_OPTIONS was standardised to 'Full-Time'/'Half-Day'.
+    // The legacy job form before ENGAGEMENT_TYPE_OPTIONS was standardised to 'Full-Time'/'Half-Day'.
     const ftMigration = await query(`
       UPDATE jobs SET engagement_type = 'Full-Time', updated_at = NOW()
       WHERE  engagement_type = 'full-time'
@@ -6723,7 +6723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // GET /api/admin/jobs/client-options — authenticated minimal list for the job-creation client selector.
   // This replaces the previous unauthed GET /api/admin/clients which was purpose-built only for
-  // this dropdown. JobFormModal.tsx calls this endpoint.
+  // this dropdown. The guided JobFormPage calls this endpoint.
   // NOTE: must be registered BEFORE GET /api/admin/jobs/:id to prevent Express swallowing
   // the literal string "client-options" as a job ID parameter.
   app.get("/api/admin/jobs/client-options", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
@@ -7373,17 +7373,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate the clientId is a real user
+      // Validate the selected owner is an actual client account. The admin UI
+      // only lists clients, but this server check also protects direct requests.
       const clientUser = await db
         .select({ id: usersTable.id })
         .from(usersTable)
-        .where(eq(usersTable.id, rawClientId))
+        .where(and(eq(usersTable.id, rawClientId), eq(usersTable.role, "client")))
         .limit(1);
 
       if (clientUser.length === 0) {
         return res.status(400).json({
           error: "Invalid client",
-          message: "The selected client does not exist.",
+          message: "The selected account is not an active client.",
         });
       }
 
@@ -11165,7 +11166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     updatedAt: row.updated_at,
   });
 
-  app.get("/api/client-profile/me", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/client-profile/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11187,7 +11188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/client-profile/me", authenticateJWT, async (req: Request, res: Response) => {
+  app.put("/api/client-profile/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11235,7 +11236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Client Jobs ───────────────────────────────────────────────────────────
-  app.get("/api/client/jobs", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/client/jobs", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11260,7 +11261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // to let clients see their own draft, pending, and closed jobs.
   // 404s for: (a) scaffold jobs, (b) another client's job, (c) non-existent job.
   // 401s for any unauthenticated request.
-  app.get("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/client/jobs/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11280,7 +11281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/client/jobs", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/jobs", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11307,7 +11308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/client/jobs/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11351,7 +11352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/client/jobs/:jobId/status", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/client/jobs/:jobId/status", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11393,7 +11394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // dashboard. "Delete" must mean gone. Blocks with 409 if any business data references
   // this job (submissions, applications, proposals, contracts, message threads).
   // job_skills rows are cleaned up first (NO ACTION FK). job_matches auto-cascade.
-  app.delete("/api/client/jobs/:jobId", authenticateJWT, async (req: Request, res: Response) => {
+  app.delete("/api/client/jobs/:jobId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });

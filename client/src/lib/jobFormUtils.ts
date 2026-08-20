@@ -1,7 +1,7 @@
 /**
  * Shared utilities and default data for the Job Form (create / edit).
- * Extracted from JobFormModal so steps can import without pulling in the
- * full modal component and its Dialog dependencies.
+ * Shared by the guided Admin and Client job pages so step components can
+ * remain independent of routing and role-specific API behavior.
  */
 import type { Job } from "@shared/schema";
 

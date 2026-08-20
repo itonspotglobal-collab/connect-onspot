@@ -4,6 +4,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft, X } from "lucide-react";
 import {
   AlertDialog,
@@ -44,13 +52,31 @@ const normalizeUrl = (url: string): string => {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 };
 
+type JobFormMode = "admin" | "client";
+
+interface JobFormPageProps {
+  mode?: JobFormMode;
+}
+
+interface ClientOption {
+  id: string;
+  email: string;
+  company_name: string | null;
+}
+
+interface ClientCompanyProfile {
+  companyName?: string | null;
+}
 
 // ─── Main page component ──────────────────────────────────────────────────────
-export default function JobFormPage() {
+export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   const { jobId } = useParams<{ jobId?: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const isEditing = !!jobId;
+  const isClientMode = mode === "client";
+  const apiBase = isClientMode ? "/api/client/jobs" : "/api/admin/jobs";
+  const returnPath = isClientMode ? "/client-profile" : "/admin/find-work";
 
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<JobFormData>(defaultFormData);
@@ -59,14 +85,16 @@ export default function JobFormPage() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientSelectionError, setClientSelectionError] = useState("");
 
   const contentRef = useRef<HTMLDivElement>(null);
 
   // ─── Load existing job in edit mode ────────────────────────────────────────
   const { data: existingJob, isLoading: isJobLoading, isError: isJobError } = useQuery<Job>({
-    queryKey: ["/api/admin/jobs", jobId],
+    queryKey: [apiBase, jobId],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/admin/jobs/${jobId}`);
+      const res = await apiRequest("GET", `${apiBase}/${jobId}`);
       if (!res.ok) throw new Error(`Failed to load job (HTTP ${res.status})`);
       return res.json();
     },
@@ -82,6 +110,45 @@ export default function JobFormPage() {
     }
   }, [existingJob]);
 
+  // Admins must choose the client that will own a newly created job. The API
+  // validates this server-side; the page keeps the old modal's required selector.
+  const { data: clientOptions = [] } = useQuery<ClientOption[]>({
+    queryKey: ["/api/admin/jobs/client-options"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/jobs/client-options");
+      if (!res.ok) throw new Error("Failed to load client options");
+      return res.json();
+    },
+    enabled: !isClientMode && !isEditing,
+    staleTime: 60_000,
+  });
+
+  // Client creation keeps the legacy modal's company prefill. Edit mode always
+  // uses the job's saved company, and a user-entered value is never overwritten.
+  const { data: clientProfile } = useQuery<ClientCompanyProfile>({
+    queryKey: ["/api/client-profile/me"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/client-profile/me");
+      if (!res.ok) throw new Error("Failed to load client profile");
+      return res.json();
+    },
+    enabled: isClientMode && !isEditing,
+    staleTime: 5 * 60_000,
+  });
+
+  useEffect(() => {
+    const companyName = clientProfile?.companyName?.trim();
+    if (
+      isClientMode &&
+      !isEditing &&
+      !isDirty &&
+      companyName &&
+      formData.company === defaultFormData.company
+    ) {
+      setFormData((previous) => ({ ...previous, company: companyName }));
+    }
+  }, [clientProfile, formData.company, isClientMode, isDirty, isEditing]);
+
 
   // ─── Mutations ─────────────────────────────────────────────────────────────
   const invalidate = () => {
@@ -91,11 +158,11 @@ export default function JobFormPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/admin/jobs", data),
+    mutationFn: (data: any) => apiRequest("POST", apiBase, data),
     onSuccess: () => {
       invalidate();
       toast({ title: "Job posting created — submitted for approval" });
-      navigate("/admin/find-work");
+      navigate(returnPath);
     },
     onError: (err: any) =>
       toast({
@@ -107,11 +174,11 @@ export default function JobFormPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PATCH", `/api/admin/jobs/${id}`, data),
+      apiRequest("PATCH", `${apiBase}/${id}`, data),
     onSuccess: () => {
       invalidate();
       toast({ title: "Job posting updated" });
-      navigate("/admin/find-work");
+      navigate(returnPath);
     },
     onError: (err: any) => {
       const detail = err?.message ?? "Unknown error";
@@ -151,6 +218,10 @@ export default function JobFormPage() {
   };
 
   const handleContinue = () => {
+    if (step === 0 && !isClientMode && !isEditing && !selectedClientId) {
+      setClientSelectionError("Please select the client this job is for");
+      return;
+    }
     const errs = validateStep(step, formData, isEditing);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -185,6 +256,12 @@ export default function JobFormPage() {
       return;
     }
 
+    if (!isClientMode && !isEditing && !selectedClientId) {
+      setClientSelectionError("Please select the client this job is for");
+      goToStep(0);
+      return;
+    }
+
     // Run all-step validation before final submit
     const allErrors: Partial<Record<keyof JobFormData, string>> = {};
     for (let s = 0; s < 3; s++) {
@@ -203,7 +280,8 @@ export default function JobFormPage() {
       return;
     }
 
-    const payload = buildPayload(formData, isEditing);
+    const payload = buildPayload(formData);
+    if (!isClientMode && !isEditing) payload.clientId = selectedClientId;
 
     if (isEditing && jobId) {
       updateMutation.mutate({ id: jobId, data: payload });
@@ -217,7 +295,7 @@ export default function JobFormPage() {
     if (isDirty) {
       setShowExitDialog(true);
     } else {
-      navigate("/admin/find-work");
+      navigate(returnPath);
     }
   };
 
@@ -244,13 +322,13 @@ export default function JobFormPage() {
             There was a problem fetching the job record. No changes have been made.
           </p>
           <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => navigate("/admin/find-work")}>
+            <Button variant="outline" onClick={() => navigate(returnPath)}>
               Back to jobs
             </Button>
             <Button
               className="bg-[#474ead] text-white hover:bg-[#3d439c]"
               onClick={() => {
-                queryClient.resetQueries({ queryKey: ["/api/admin/jobs", jobId] });
+                queryClient.resetQueries({ queryKey: [apiBase, jobId] });
               }}
             >
               Retry
@@ -275,7 +353,7 @@ export default function JobFormPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/admin/find-work")}>
+            <AlertDialogAction onClick={() => navigate(returnPath)}>
               Leave
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -408,11 +486,49 @@ export default function JobFormPage() {
           {/* Step card */}
           <div className="mt-5 rounded-2xl border border-border bg-card shadow-sm p-5 sm:p-8">
             {step === 0 && (
-              <JobBasicsStep
-                formData={formData}
-                updateField={updateField}
-                errors={errors}
-              />
+              <>
+                {!isClientMode && !isEditing && (
+                  <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
+                    <Label htmlFor="admin-client-select" className="text-sm font-semibold">
+                      Post on behalf of <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Select the client that will own this job posting.
+                    </p>
+                    <Select
+                      value={selectedClientId}
+                      onValueChange={(value) => {
+                        setSelectedClientId(value);
+                        setClientSelectionError("");
+                      }}
+                    >
+                      <SelectTrigger
+                        id="admin-client-select"
+                        className={`mt-3 ${clientSelectionError ? "border-red-500" : ""}`}
+                      >
+                        <SelectValue placeholder="Select a client…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clientOptions.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name
+                              ? `${client.company_name} — ${client.email}`
+                              : client.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {clientSelectionError && (
+                      <p className="mt-1.5 text-xs text-red-500">{clientSelectionError}</p>
+                    )}
+                  </div>
+                )}
+                <JobBasicsStep
+                  formData={formData}
+                  updateField={updateField}
+                  errors={errors}
+                />
+              </>
             )}
             {step === 1 && (
               <JobDescriptionStep
@@ -535,7 +651,7 @@ function validateStep(
   return errors;
 }
 
-function buildPayload(formData: JobFormData, isEditing: boolean): any {
+function buildPayload(formData: JobFormData): any {
   const payload: any = {
     professionalRoleName: formData.professionalRoleName.trim(),
     title: formData.professionalRoleName.trim(),
@@ -559,7 +675,6 @@ function buildPayload(formData: JobFormData, isEditing: boolean): any {
         : null,
   };
 
-  if (!isEditing) payload.clientId = "admin-system";
   payload.salaryDisplay = formData.salaryDisplay.trim() || null;
   payload.duration = formData.duration || null;
 

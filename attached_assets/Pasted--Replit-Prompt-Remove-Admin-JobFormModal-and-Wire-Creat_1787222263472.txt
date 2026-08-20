@@ -1,0 +1,722 @@
+# Replit Prompt — Remove Admin JobFormModal and Wire Create/Edit to Dedicated Job Pages
+
+The Admin Job Posting redesign has already been implemented as dedicated full-page Create/Edit pages, but the `/admin/find-work` dashboard is still opening the legacy `JobFormModal` popup.
+
+This task is to remove the modal-based Create/Edit flow from the Admin dashboard and wire all Admin job actions to the new page routes.
+
+## Existing dedicated Admin routes
+
+These already exist and should be used:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+The new full-page form is already implemented in:
+
+```text
+client/src/pages/JobFormPage.tsx
+```
+
+Do NOT rebuild or redesign the job form.
+
+The issue is specifically that `/admin/find-work` is still opening:
+
+```text
+JobFormModal.tsx
+```
+
+instead of navigating to the new routes.
+
+---
+
+# AUDIT FIRST
+
+Inspect:
+
+```text
+client/src/pages/AdminFindWork.tsx
+client/src/components/JobFormModal.tsx
+client/src/pages/JobFormPage.tsx
+client/src/App.tsx
+```
+
+Search the entire codebase for:
+
+```text
+JobFormModal
+jobFormOpen
+setJobFormOpen
+editingJob
+selectedJob
+setEditingJob
+setSelectedJob
+Add New Job
+Add Job
+Edit Job
+Pencil
+```
+
+Before changing anything, identify:
+
+1. Every Admin "Add New Job" / "Add Job" button.
+2. Every Admin Edit button/action.
+3. Which state currently controls `JobFormModal`.
+4. Where `JobFormModal` is rendered inside `AdminFindWork.tsx`.
+5. Whether any other Admin page still legitimately uses `JobFormModal`.
+
+---
+
+# REQUIRED CREATE FLOW
+
+Current incorrect behavior:
+
+```text
+/admin/find-work
+→ Add New Job
+→ JobFormModal opens
+```
+
+Required behavior:
+
+```text
+/admin/find-work
+→ Add New Job
+→ navigate to /admin/find-work/jobs/new
+→ full-page JobFormPage renders
+```
+
+Replace modal-opening logic such as:
+
+```ts
+setJobFormOpen(true);
+setSelectedJob(null);
+setEditingJob(null);
+```
+
+or equivalent with the project's existing Wouter navigation.
+
+For example:
+
+```ts
+const [, navigate] = useLocation();
+
+navigate("/admin/find-work/jobs/new");
+```
+
+Use the routing style already used in the app.
+
+Do not use `window.location.href` unless absolutely necessary.
+
+---
+
+# REQUIRED EDIT FLOW
+
+Current incorrect behavior:
+
+```text
+/admin/find-work
+→ Edit
+→ JobFormModal opens
+```
+
+Required behavior:
+
+```text
+/admin/find-work
+→ Edit
+→ navigate to /admin/find-work/jobs/{jobId}/edit
+→ full-page JobFormPage renders
+→ existing job data loads
+```
+
+Replace handlers such as:
+
+```ts
+setSelectedJob(job);
+setEditingJob(job);
+setJobFormOpen(true);
+```
+
+with:
+
+```ts
+navigate(`/admin/find-work/jobs/${job.id}/edit`);
+```
+
+Use the actual job ID field used by the current `Job` type.
+
+---
+
+# UPDATE EVERY CREATE ENTRY POINT
+
+There may be more than one Add button on `/admin/find-work`.
+
+The screenshot shows multiple possible entry points such as:
+
+```text
+Add Job
+Add New Job
+```
+
+Search the entire `AdminFindWork.tsx` file and make sure ALL Admin Create buttons navigate to:
+
+```text
+/admin/find-work/jobs/new
+```
+
+Do not leave one hidden/mobile/secondary button still opening the modal.
+
+---
+
+# UPDATE EVERY EDIT ENTRY POINT
+
+Search all job cards, tables, menus, dropdowns, and actions inside the Admin Job Management page.
+
+Every Edit action must navigate to:
+
+```text
+/admin/find-work/jobs/:jobId/edit
+```
+
+No Admin Edit action should open `JobFormModal`.
+
+---
+
+# REMOVE JobFormModal FROM ADMIN RENDER TREE
+
+Once all Admin Create/Edit handlers use navigation:
+
+Remove this type of render logic from `AdminFindWork.tsx`:
+
+```tsx
+<JobFormModal
+  open={...}
+  job={...}
+  adminMode={true}
+  ...
+/>
+```
+
+Remove the import:
+
+```ts
+import { JobFormModal } from "@/components/JobFormModal";
+```
+
+ONLY after confirming it is no longer needed in `AdminFindWork.tsx`.
+
+---
+
+# CLEAN UP MODAL-ONLY STATE
+
+After removing the modal, remove state that exists only for it.
+
+Examples may include:
+
+```ts
+const [jobFormOpen, setJobFormOpen] = useState(false);
+const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+const [editingJob, setEditingJob] = useState<Job | null>(null);
+```
+
+Remove only variables that are no longer used anywhere else.
+
+Do not remove shared job-selection state if it is still used by:
+
+* Preview
+* Delete
+* Approval actions
+* job details
+* another dialog
+
+Audit each variable before deleting it.
+
+---
+
+# VERIFY ROUTES
+
+Confirm these routes are registered in `client/src/App.tsx`:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+They should render `JobFormPage` inside `AdminProtectedRoute`.
+
+Expected structure:
+
+```tsx
+<Route
+  path="/admin/find-work/jobs/new"
+  component={() => (
+    <AdminProtectedRoute>
+      <JobFormPage />
+    </AdminProtectedRoute>
+  )}
+/>
+
+<Route
+  path="/admin/find-work/jobs/:jobId/edit"
+  component={() => (
+    <AdminProtectedRoute>
+      <JobFormPage />
+    </AdminProtectedRoute>
+  )}
+/>
+```
+
+If these routes already exist, do not duplicate them.
+
+If they are missing or incorrectly ordered, fix them.
+
+---
+
+# IMPORTANT ROUTE ORDER CHECK
+
+Because the app uses Wouter, verify route matching does not allow:
+
+```text
+/admin/find-work
+```
+
+to swallow:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+If necessary, place the more specific routes before the general `/admin/find-work` route.
+
+Do not change unrelated routes.
+
+---
+
+# DIRECT REFRESH MUST WORK
+
+Test directly opening:
+
+```text
+/admin/find-work/jobs/new
+```
+
+and:
+
+```text
+/admin/find-work/jobs/{existingJobId}/edit
+```
+
+Refresh the browser.
+
+Both pages must still load correctly.
+
+The new/edit page must not depend on first visiting `/admin/find-work`.
+
+---
+
+# BROWSER BACK
+
+Test:
+
+```text
+/admin/find-work
+→ Add New Job
+→ /admin/find-work/jobs/new
+→ Browser Back
+→ /admin/find-work
+```
+
+and:
+
+```text
+/admin/find-work
+→ Edit
+→ /admin/find-work/jobs/{id}/edit
+→ Browser Back
+→ /admin/find-work
+```
+
+Navigation should behave naturally.
+
+---
+
+# DO NOT CHANGE JOB BUSINESS LOGIC
+
+Do not modify:
+
+* Admin create API
+* Admin update API
+* job schema
+* approval workflow
+* validation
+* salary logic
+* company/client assignment
+* job ownership
+* public job display
+* application behavior
+* database columns
+
+The dedicated `JobFormPage.tsx` already handles the new form experience.
+
+This task is primarily routing and cleanup.
+
+---
+
+# ADMIN CLIENT SELECTOR
+
+The old modal currently supports Admin posting on behalf of a Client.
+
+The new full-page Admin form must continue supporting the same business rule.
+
+Before removing the modal, verify that `JobFormPage.tsx` already provides equivalent Admin Client selection behavior.
+
+If the new page is currently missing the "Post on behalf of / Client" selector shown in the modal:
+
+DO NOT restore the old modal.
+
+Instead, add the missing Admin Client selector to the new `JobFormPage`/Basics step using the existing:
+
+```text
+/api/admin/jobs/client-options
+```
+
+or the exact existing endpoint used by `JobFormModal`.
+
+Preserve the same requirement:
+
+```text
+Admin create
+→ select Client
+→ clientId included in Admin create payload
+```
+
+Do not allow Admin job creation to silently lose the selected Client relationship.
+
+For Edit mode, preserve the existing client relationship unless the current business logic explicitly allows changing it.
+
+---
+
+# IMPORTANT: FEATURE PARITY CHECK
+
+Before completely removing the Admin modal from the dashboard, compare:
+
+```text
+JobFormModal.tsx
+```
+
+against:
+
+```text
+JobFormPage.tsx
+```
+
+Confirm the new full-page flow contains every required existing Admin capability.
+
+Specifically audit:
+
+* Client selector
+* Professional Role Name
+* Original Role
+* Work Setup
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Company
+* confidentiality
+* description
+* responsibilities
+* qualifications
+* preferred qualifications
+* system requirements
+* tools/equipment
+* schedule
+* salary
+* currency
+* benefits
+* commission
+* equity
+* application method
+* external apply link
+* Featured Job
+* Urgently Hiring
+* Resume requirement
+* Video Introduction requirement
+* status
+* approval behavior
+
+If a field exists in `JobFormModal` but is missing from the new full-page flow, do NOT keep the old modal as a workaround.
+
+Move/add that existing field into the appropriate step of the new page using the same underlying data property.
+
+Do not create duplicate database fields.
+
+---
+
+# SUBMISSION
+
+Create page should continue using:
+
+```text
+POST /api/admin/jobs
+```
+
+Edit page should continue using:
+
+```text
+PATCH /api/admin/jobs/:jobId
+```
+
+Create should continue the existing approval behavior.
+
+Edit should continue the current update behavior.
+
+Do not change API semantics.
+
+---
+
+# SUCCESS NAVIGATION
+
+After successful Create:
+
+```text
+navigate("/admin/find-work")
+```
+
+After successful Edit:
+
+```text
+navigate("/admin/find-work")
+```
+
+Preserve existing toast messages.
+
+---
+
+# DELETE / PREVIEW / APPROVAL ACTIONS
+
+Do NOT alter unrelated Admin job actions.
+
+These should continue working as they do today:
+
+* View / Preview
+* Delete
+* Approve
+* Reject
+* Open / Close
+* Refresh
+* job filtering/search
+
+Only replace Create/Edit modal behavior.
+
+---
+
+# JobFormModal FILE
+
+Do NOT automatically delete:
+
+```text
+client/src/components/JobFormModal.tsx
+```
+
+After Admin is migrated, search the entire repo for remaining callers.
+
+If the Client section still uses it, keep the file.
+
+If both Admin and Client have been migrated and no callers remain, then it can be safely removed.
+
+Report whether there are remaining usages.
+
+---
+
+# ACCEPTANCE TESTS
+
+## Add New Job
+
+From:
+
+```text
+/admin/find-work
+```
+
+click every:
+
+```text
+Add Job
+Add New Job
+```
+
+button.
+
+Expected:
+
+```text
+URL → /admin/find-work/jobs/new
+full-page job form renders
+NO modal
+```
+
+Inspect the DOM.
+
+There should be no active Radix Dialog corresponding to `JobFormModal`.
+
+---
+
+## Edit Job
+
+From an existing job:
+
+```text
+Edit
+```
+
+Expected:
+
+```text
+URL → /admin/find-work/jobs/{id}/edit
+full-page job form renders
+existing job values populate
+NO modal
+```
+
+---
+
+## Create Submission
+
+Complete the new job form.
+
+Expected:
+
+```text
+POST /api/admin/jobs
+job created
+approval workflow preserved
+success toast
+return to /admin/find-work
+```
+
+---
+
+## Edit Submission
+
+Edit an existing job.
+
+Expected:
+
+```text
+PATCH /api/admin/jobs/{id}
+job updates
+success toast
+return to /admin/find-work
+```
+
+---
+
+## Client Assignment
+
+Create a job on behalf of a Client.
+
+Expected:
+
+```text
+selected Client is preserved
+correct clientId is submitted
+job belongs to selected Client
+```
+
+This is critical.
+
+Do not consider the migration complete if Admin Client selection was lost.
+
+---
+
+## Refresh
+
+Directly open and refresh:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/{id}/edit
+```
+
+Both should continue working.
+
+---
+
+## Regression
+
+Verify:
+
+```text
+/admin/find-work
+```
+
+still supports:
+
+* listing jobs
+* filters
+* preview
+* delete
+* approval actions
+* status actions
+* refresh
+
+No regressions.
+
+---
+
+# EXPECTED FINAL ARCHITECTURE
+
+Before:
+
+```text
+AdminFindWork
+├── Add Job
+│   └── JobFormModal
+└── Edit Job
+    └── JobFormModal
+```
+
+After:
+
+```text
+AdminFindWork
+├── Add Job
+│   └── /admin/find-work/jobs/new
+│       └── JobFormPage
+└── Edit Job
+    └── /admin/find-work/jobs/:jobId/edit
+        └── JobFormPage
+```
+
+`JobFormModal` must no longer be rendered by `AdminFindWork`.
+
+---
+
+# FINAL REPORT
+
+After implementation, report:
+
+1. Exact files changed.
+2. Every Add Job handler that was updated.
+3. Every Edit handler that was updated.
+4. Old Create behavior.
+5. New Create behavior.
+6. Old Edit behavior.
+7. New Edit behavior.
+8. Confirmation `/admin/find-work/jobs/new` is registered.
+9. Confirmation `/admin/find-work/jobs/:jobId/edit` is registered.
+10. Confirmation both routes work on direct refresh.
+11. Confirmation Admin Client selector still works.
+12. Confirmation Admin create still posts to `/api/admin/jobs`.
+13. Confirmation Admin edit still patches `/api/admin/jobs/:jobId`.
+14. Confirmation `JobFormModal` is no longer in the `AdminFindWork` render tree.
+15. Remaining `JobFormModal` callers anywhere else in the repo.
+16. Any modal-only state/imports removed from `AdminFindWork.tsx`.
+17. Confirmation Preview/Delete/Approval features were not affected.
+18. Confirmation no database/API fields were renamed.
+
+Do not redesign the job form. Do not create another page. The new pages already exist. Fix the Admin dashboard wiring so Create/Edit exclusively use the dedicated routes.

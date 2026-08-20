@@ -174,6 +174,8 @@ function PublicRouter() {
           {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
           <Route path="/talent-dashboard" component={RedirectToHome} />
           <Route path="/hire-talent" component={HireTalentPage} />
+          <Route path="/client/jobs/new" component={() => <ClientProtectedRoute><JobFormPage mode="client" /></ClientProtectedRoute>} />
+          <Route path="/client/jobs/:jobId/edit" component={() => <ClientProtectedRoute><JobFormPage mode="client" /></ClientProtectedRoute>} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/talent-pool" component={TalentPool} />
           <Route path="/client-search" component={ClientSearchRedirect} />
@@ -232,9 +234,9 @@ function PublicRouter() {
           <Route path="/admin/insights/:id/edit" component={() => <AdminProtectedRoute><AdminInsightEditor /></AdminProtectedRoute>} />
           {/* Admin routes — always protected by AdminProtectedRoute */}
           <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-          <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
           <Route path="/admin/find-work/jobs/new" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/find-work/jobs/:jobId/edit" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
+          <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
           <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
