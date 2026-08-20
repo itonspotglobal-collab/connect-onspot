@@ -52,11 +52,13 @@ import {
   candidateSettingsSchema,
   CandidateSettingsFormData,
   candidatePhotoSrc,
+  candidateToFormValues,
 } from "@/hooks/useCandidateProfileSettings";
 import { CheckCircle2 } from "lucide-react";
 import { validatePhone, validatePhoneTimezoneMatch, countryFromTimezone } from "@/lib/phoneValidation";
 import { queryClient } from "@/lib/queryClient";
 import { setCandidateResumeCache, invalidateCandidateQueries } from "@/lib/candidateCache";
+import { candidateQueryKeys } from "@/lib/candidateQueryKeys";
 import { applyResumeToCandidate, type ResumeReviewField } from "@/lib/applyResumeToCandidate";
 import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
 import { cn } from "@/lib/utils";
@@ -318,7 +320,7 @@ export default function ProfileSettings() {
     // ── Parse resume and apply extracted fields to the Candidate profile ────
     setResumeAnalyzing(true);
     try {
-      const { appliedFields, reviewFields, parseError, analysisSource } = await applyResumeToCandidate({
+      const { appliedFields, reviewFields, parseError, analysisSource, updated } = await applyResumeToCandidate({
         file,
         candidateId,
         token,
@@ -331,6 +333,18 @@ export default function ProfileSettings() {
           description: "Resume saved successfully. Vanessa couldn't analyze all details — you can complete them manually.",
         });
       } else if (appliedFields.length > 0) {
+        // Sync the form immediately with the server-confirmed data so that
+        // clicking "Edit" in the review panel sees the freshly imported values,
+        // not stale pre-upload values that were in the form when it first rendered.
+        if (updated) {
+          // Write into the query cache synchronously so React Query and the
+          // useEffect form-reset both see the same fresh data.
+          queryClient.setQueryData(candidateQueryKeys.profile(candidateId), (old: any) =>
+            old ? { ...old, ...updated } : updated,
+          );
+          // Reset form in-place without waiting for the background refetch.
+          form.reset(candidateToFormValues(updated));
+        }
         // Open the review panel so the talent can confirm or correct each field
         setResumeReview({ fields: reviewFields, source: analysisSource });
       } else {
