@@ -765,18 +765,30 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
     );
     if (tpl.rows.length === 0) return; // no published template — skip silently
 
-    const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+    const { buildEmailContext, renderApplicantEmail } = await import("./services/emailVariableResolver.ts");
     const ctx = buildEmailContext({
       firstName: row.first_name, lastName: row.last_name,
       applicantName: row.applicant_name, email: row.email, phone: row.phone,
       jobTitle: row.job_title, jobCompany: row.job_company, jobLocation: row.job_location,
       status: row.status, submittedAt: row.submitted_at,
     });
-    const resolvedSubject = resolveVariables(tpl.rows[0].subject, ctx).resolved;
-    const resolvedBody = resolveVariables(tpl.rows[0].body_html, ctx).resolved;
+    const rendered = renderApplicantEmail({
+      subject: tpl.rows[0].subject,
+      bodyHtml: tpl.rows[0].body_html,
+    }, ctx);
+    if (rendered.unresolvedKeys.length > 0) {
+      console.error(
+        `fireAutoApplicationEmail: blocked template ${tpl.rows[0].id} for ${submissionId}; unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+      );
+      return;
+    }
 
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-    const sendResult = await sendApplicantEmail({ to: row.email, subject: resolvedSubject, bodyHtml: resolvedBody });
+    const sendResult = await sendApplicantEmail({
+      to: row.email,
+      subject: rendered.subject,
+      bodyHtml: rendered.bodyHtml,
+    });
 
     await query(
       `INSERT INTO job_application_emails
@@ -784,7 +796,7 @@ async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
        VALUES ($1, $2, $3, $4, $5, $6, $7, false)`,
       [
         submissionId, tpl.rows[0].id,
-        resolvedSubject, resolvedBody, row.email,
+        rendered.subject, rendered.bodyHtml, row.email,
         sendResult.success ? "sent" : "failed",
         sendResult.success ? null : sendResult.error,
       ],
@@ -805,18 +817,8 @@ async function fireInvitationEmail(opts: {
   try {
     if (!opts.talentEmail) return;
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-
-    const rawBase =
-      process.env.PUBLIC_APP_URL ??
-      process.env.APP_URL ??
-      process.env.PUBLIC_BASE_URL ??
-      (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : null);
-    if (!rawBase) {
-      console.warn("fireInvitationEmail: no absolute base URL configured (PUBLIC_APP_URL / APP_URL / PUBLIC_BASE_URL / REPLIT_DOMAINS) — skipping email to avoid broken links");
-      return;
-    }
-    const baseUrl = rawBase.replace(/\/$/, "");
-    const appsUrl = `${baseUrl}/my-applications`;
+    const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
+      await import("./services/emailVariableResolver.ts");
 
     const safeName  = escHtml(opts.talentName);
     const safeTitle = escHtml(opts.jobTitle);
@@ -826,8 +828,7 @@ async function fireInvitationEmail(opts: {
       : "";
 
     const subject = `You've been invited to a role: ${opts.jobTitle}`;
-    const bodyHtml = `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+    const contentHtml = `
   <h2 style="color:#1a1a2e;margin-bottom:8px;">You've been invited to a role</h2>
   <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${safeName},</p>
   <p style="color:#444;font-size:15px;margin:12px 0;">
@@ -836,18 +837,36 @@ async function fireInvitationEmail(opts: {
   <h3 style="color:#1a1a2e;margin:8px 0;">${safeTitle}</h3>
   ${descriptionHtml}
   <p style="margin:24px 0;">
-    <a href="${escHtml(appsUrl)}"
+    <a href="{{portal_url}}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       View Invitation
     </a>
   </p>
   <p style="color:#888;font-size:13px;">
     You can accept or decline the invitation from your
-    <a href="${escHtml(appsUrl)}" style="color:#4f46e5;">My Applications</a> page.
+    <a href="{{portal_url}}" style="color:#4f46e5;">My Applications</a> page.
   </p>
-</div>`.trim();
+`.trim();
+    const rendered = renderApplicantEmail(
+      { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+      buildEmailContext({
+        applicantName: opts.talentName,
+        email: opts.talentEmail,
+        jobTitle: opts.jobTitle,
+      }),
+    );
+    if (rendered.unresolvedKeys.length > 0) {
+      console.warn(
+        `fireInvitationEmail: blocked email for ${opts.submissionId}; unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+      );
+      return;
+    }
 
-    await sendApplicantEmail({ to: opts.talentEmail, subject, bodyHtml });
+    await sendApplicantEmail({
+      to: opts.talentEmail,
+      subject: rendered.subject,
+      bodyHtml: rendered.bodyHtml,
+    });
     console.log(`✅ Invitation email sent to ${opts.talentEmail} for submission ${opts.submissionId}`);
   } catch (e: any) {
     console.warn("fireInvitationEmail (non-fatal):", e?.message);
@@ -14502,28 +14521,15 @@ export async function registerRoutes(
 
           const { sendApplicantEmail, isEmailServiceConfigured } =
             await import("./services/microsoftGraphEmailService.ts");
+          const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
+            await import("./services/emailVariableResolver.ts");
           if (!isEmailServiceConfigured()) {
             console.warn("POST /api/client/offers — email service not configured; skipping offer email");
             return;
           }
 
-          const rawBase =
-            process.env.PUBLIC_APP_URL ??
-            process.env.APP_URL ??
-            process.env.PUBLIC_BASE_URL ??
-            (process.env.REPLIT_DOMAINS
-              ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-              : null);
-          if (!rawBase) {
-            console.warn("POST /api/client/offers — no base URL configured; skipping offer email");
-            return;
-          }
-          const baseUrl = rawBase.replace(/\/$/, "");
-          const portalUrl = `${baseUrl}/my-applications`;
-
           const subject = "You have a new offer — review it in your portal";
-          const bodyHtml = `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          const contentHtml = `
   <h2 style="color:#1a1a2e;margin-bottom:8px;">You have a new offer</h2>
   <p style="color:#444;font-size:15px;margin:12px 0;">
     A client has extended a formal offer for one of your applications.
@@ -14532,18 +14538,38 @@ export async function registerRoutes(
     Log in to your portal to review the offer details and respond before it expires.
   </p>
   <p style="margin:24px 0;">
-    <a href="${portalUrl}"
+    <a href="{{portal_url}}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       Review Offer
     </a>
   </p>
   <p style="color:#888;font-size:13px;">
     You can accept or decline the offer from your
-    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
+    <a href="{{portal_url}}" style="color:#4f46e5;">My Applications</a> page.
   </p>
-</div>`.trim();
+`.trim();
+          const rendered = renderApplicantEmail(
+            { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+            buildEmailContext({
+              firstName: submission.first_name,
+              lastName: submission.last_name,
+              applicantName: submission.applicant_name,
+              email: talentEmail,
+              jobTitle: submission.job_title,
+            }),
+          );
+          if (rendered.unresolvedKeys.length > 0) {
+            console.warn(
+              `POST /api/client/offers — blocked offer email for ${offer.id}; unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+            );
+            return;
+          }
 
-          const result = await sendApplicantEmail({ to: talentEmail, subject, bodyHtml });
+          const result = await sendApplicantEmail({
+            to: talentEmail,
+            subject: rendered.subject,
+            bodyHtml: rendered.bodyHtml,
+          });
           if (result.success) {
             console.log(`✅ Offer notification email sent to ${talentEmail} for offer ${offer.id}`);
           } else {
@@ -15879,7 +15905,7 @@ export async function registerRoutes(
 
       if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
 
-      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const { buildEmailContext, renderApplicantEmail } = await import("./services/emailVariableResolver.ts");
       const ctx = buildEmailContext({
         firstName: app_.first_name, lastName: app_.last_name,
         applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
@@ -15892,13 +15918,15 @@ export async function registerRoutes(
         submittedAt: app_.submitted_at,
       });
 
-      const subjectResult = resolveVariables(subjectRaw ?? "", ctx);
-      const bodyResult = resolveVariables(bodyRaw, ctx);
+      const rendered = renderApplicantEmail({
+        subject: subjectRaw ?? "",
+        bodyHtml: bodyRaw,
+      }, ctx);
 
       return res.json({
-        subject: subjectResult.resolved,
-        bodyHtml: bodyResult.resolved,
-        unresolvedKeys: Array.from(new Set([...subjectResult.unresolvedKeys, ...bodyResult.unresolvedKeys])),
+        subject: rendered.subject,
+        bodyHtml: rendered.bodyHtml,
+        unresolvedKeys: rendered.unresolvedKeys,
       });
     } catch (err: any) {
       console.error("POST /api/admin/job-applications/:id/email/preview error:", err);
@@ -15938,7 +15966,7 @@ export async function registerRoutes(
       }
       if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
 
-      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const { buildEmailContext, renderApplicantEmail } = await import("./services/emailVariableResolver.ts");
       const ctx = buildEmailContext({
         firstName: app_.first_name, lastName: app_.last_name,
         applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
@@ -15950,14 +15978,25 @@ export async function registerRoutes(
         jobPostingId: app_.job_id,
         submittedAt: app_.submitted_at,
       });
-      const resolvedSubject = `[TEST] ${resolveVariables(subjectRaw ?? "", ctx).resolved}`;
-      const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
+      const rendered = renderApplicantEmail({
+        subject: subjectRaw ?? "",
+        bodyHtml: bodyRaw,
+      }, ctx);
+      if (rendered.unresolvedKeys.length > 0) {
+        console.error(
+          `POST /api/admin/job-applications/${id}/email/test blocked unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+        );
+        return res.status(422).json({
+          error: "Email was not sent because its template has unresolved variables.",
+          unresolvedKeys: rendered.unresolvedKeys,
+        });
+      }
 
       const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
       const sendResult = await sendApplicantEmail({
         to: testRecipient.trim(),
-        subject: resolvedSubject,
-        bodyHtml: resolvedBody,
+        subject: `[TEST] ${rendered.subject}`,
+        bodyHtml: rendered.bodyHtml,
       });
 
       if (!sendResult.success) {
@@ -16170,7 +16209,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "subject is required" });
       }
 
-      const { buildEmailContext, resolveVariables } =
+      const { buildEmailContext, renderApplicantEmail } =
         await import("./services/emailVariableResolver.ts");
       const ctx = buildEmailContext({
         firstName: app_.first_name,
@@ -16188,8 +16227,22 @@ export async function registerRoutes(
         jobPostingId: app_.job_id,
         submittedAt: app_.submitted_at,
       });
-      const resolvedSubject = resolveVariables(subjectRaw, ctx).resolved;
-      const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
+      const rendered = renderApplicantEmail({
+        subject: subjectRaw,
+        bodyHtml: bodyRaw,
+      }, ctx);
+      if (rendered.unresolvedKeys.length > 0) {
+        await rollbackQuietly();
+        console.error(
+          `POST /api/admin/job-applications/${id}/email/send blocked template ${resolvedTemplateId ?? "custom"}; unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+        );
+        return res.status(422).json({
+          error: "Email was not sent because its template has unresolved variables.",
+          unresolvedKeys: rendered.unresolvedKeys,
+        });
+      }
+      const resolvedSubject = rendered.subject;
+      const resolvedBody = rendered.bodyHtml;
 
       const { sendApplicantEmail } =
         await import("./services/microsoftGraphEmailService.ts");
@@ -16605,6 +16658,22 @@ export async function registerRoutes(
         prev.sender_email && SENDER_ALLOWLIST[prev.sender_email]
           ? prev.sender_email
           : "careers@onspotglobal.com";
+
+      const { findUnresolvedTemplateVariables } = await import("./services/emailVariableResolver.ts");
+      const unresolvedKeys = Array.from(new Set([
+        ...findUnresolvedTemplateVariables(prev.subject),
+        ...findUnresolvedTemplateVariables(prev.body_html),
+      ]));
+      if (unresolvedKeys.length > 0) {
+        await rollbackQuietly();
+        console.error(
+          `POST /api/admin/job-applications/${id}/email/${emailId}/retry blocked unresolved variables: ${unresolvedKeys.join(", ")}`,
+        );
+        return res.status(409).json({
+          error: "This failed email contains unresolved template variables. Create a new email from a corrected template instead of retrying it.",
+          unresolvedKeys,
+        });
+      }
 
       const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
       const sendResult = await sendApplicantEmail({

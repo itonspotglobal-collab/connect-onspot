@@ -79,12 +79,16 @@ const VARIABLES = [
   { key: "applicant_email",      label: "Email" },
   { key: "applicant_phone",      label: "Phone" },
   { key: "job_title",            label: "Job Title" },
-  { key: "job_company",          label: "Company" },
+  { key: "company_name",         label: "Company" },
   { key: "job_location",         label: "Job Location" },
   { key: "application_status",   label: "App Status" },
+  { key: "previous_application_status", label: "Previous Status" },
+  { key: "new_application_status", label: "New Status" },
   { key: "submitted_date",       label: "Submitted Date" },
   { key: "portal_url",           label: "Portal URL" },
-  { key: "company_name",         label: "Our Company" },
+  { key: "logo_url",             label: "OnSpot Logo URL" },
+  { key: "application_id",       label: "Application ID" },
+  { key: "job_posting_id",       label: "Job Posting ID" },
 ];
 
 // ─── Main Page ────────────────────────────────────────────────────────────────

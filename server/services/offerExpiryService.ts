@@ -13,6 +13,10 @@ import {
   sendApplicantEmail,
   isEmailServiceConfigured,
 } from './microsoftGraphEmailService';
+import {
+  renderApplicantEmail,
+  renderBrandedEmailLayout,
+} from './emailVariableResolver';
 import { storage } from '../storage';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -28,9 +32,40 @@ function getBaseUrl(): string | null {
   return raw ? raw.replace(/\/$/, '') : null;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderScheduledApplicantEmail(contentHtml: string, portalUrl: string): string {
+  const baseUrl = getBaseUrl();
+  const rendered = renderApplicantEmail(
+    {
+      subject: 'OnSpot applicant update',
+      bodyHtml: renderBrandedEmailLayout(contentHtml),
+    },
+    {
+      companyName: 'OnSpot',
+      portalUrl,
+      logoUrl: process.env.ONSPOT_EMAIL_LOGO_URL ?? (
+        baseUrl ? `${baseUrl}/new-onspot.png` : undefined
+      ),
+    },
+  );
+  if (rendered.unresolvedKeys.length > 0) {
+    throw new Error(
+      `Scheduled applicant email has unresolved variables: ${rendered.unresolvedKeys.join(', ')}`,
+    );
+  }
+  return rendered.bodyHtml;
+}
+
 function buildTalentExpiryEmailHtml(portalUrl: string): string {
-  return `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  return renderScheduledApplicantEmail(`
   <h2 style="color:#1a1a2e;margin-bottom:8px;">Your offer has expired</h2>
   <p style="color:#444;font-size:15px;margin:12px 0;">
     A client offer you received has now passed its expiry date without a response,
@@ -41,16 +76,16 @@ function buildTalentExpiryEmailHtml(portalUrl: string): string {
     please reach out to us directly.
   </p>
   <p style="margin:24px 0;">
-    <a href="${portalUrl}"
+    <a href="{{portal_url}}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       View My Applications
     </a>
   </p>
   <p style="color:#888;font-size:13px;">
     You can review your application history in your
-    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
+    <a href="{{portal_url}}" style="color:#4f46e5;">My Applications</a> page.
   </p>
-</div>`.trim();
+`.trim(), portalUrl);
 }
 
 /** Format a UTC timestamp as a human-readable deadline in Philippine Time (UTC+8). */
@@ -73,10 +108,9 @@ function buildReminderEmailHtml(
   firstName: string | null,
 ): string {
   const deadlineStr = formatDeadline(expiresAt);
-  const greeting = firstName ? `Hi ${firstName},` : 'Hi,';
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hi,';
 
-  return `
-<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  return renderScheduledApplicantEmail(`
   <h2 style="color:#1a1a2e;margin-bottom:8px;">⏰ Your offer expires soon — action needed</h2>
   <p style="color:#444;font-size:15px;margin:12px 0;">${greeting}</p>
   <p style="color:#444;font-size:15px;margin:12px 0;">
@@ -85,7 +119,7 @@ function buildReminderEmailHtml(
     Please log in to your portal to accept or decline before that deadline.
   </p>
   <p style="margin:24px 0;">
-    <a href="${portalUrl}"
+    <a href="{{portal_url}}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
       View &amp; Respond to Offer
     </a>
@@ -93,9 +127,9 @@ function buildReminderEmailHtml(
   <p style="color:#888;font-size:13px;">
     If you no longer wish to respond, no action is needed and the offer will expire automatically.
     You can always review your application history in your
-    <a href="${portalUrl}" style="color:#4f46e5;">My Applications</a> page.
+     <a href="{{portal_url}}" style="color:#4f46e5;">My Applications</a> page.
   </p>
-</div>`.trim();
+`.trim(), portalUrl);
 }
 
 // ─── core logic ───────────────────────────────────────────────────────────────

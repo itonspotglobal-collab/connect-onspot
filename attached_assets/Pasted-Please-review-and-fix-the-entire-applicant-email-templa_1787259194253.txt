@@ -1,0 +1,502 @@
+Please review and fix the entire applicant email template system in this project.
+
+## Goal
+
+I want all applicant emails to:
+
+1. Render template variables correctly.
+2. Never expose raw placeholders such as `{{job_company}}`, `{{company_name}}`, `{{job_title}}`, etc. to recipients.
+3. Have consistent professional OnSpot branding.
+4. Include the OnSpot logo at the top.
+5. Use a clean, modern, email-client-safe HTML layout.
+6. Work properly in Gmail, Outlook, Apple Mail, and common mobile email clients.
+7. Fix both the default templates in source code AND templates that have already been seeded into the database.
+
+Please inspect the relevant codebase first instead of only editing the template seed file.
+
+## 1. Fix the template-variable rendering bug
+
+There is currently an issue where an actual email renders text similar to:
+
+`Thank you for applying for the Data Entry position{{job_company}} at OnSpot{{job_company}}.`
+
+This is incorrect.
+
+The intended result should be similar to:
+
+`Thank you for applying for the Data Entry position at OnSpot.`
+
+Find where email-template variables are assembled and replaced before the email is sent.
+
+Search the entire project for:
+
+* `job_company`
+* `company_name`
+* `job_title`
+* `applicant_first_name`
+* `portal_url`
+* template replacement functions
+* email rendering functions
+* email sending functions
+* `bodyHtml`
+* `body_html`
+* `{{`
+* `}}`
+
+Determine exactly why `{{job_company}}` is being appended to rendered values.
+
+Do NOT solve this by blindly removing text from one template. Fix the underlying variable-mapping/rendering logic.
+
+## 2. Standardize supported template variables
+
+Use one canonical naming convention throughout the email system.
+
+At minimum, support:
+
+* `{{applicant_first_name}}`
+* `{{job_title}}`
+* `{{company_name}}`
+* `{{portal_url}}`
+* `{{submitted_date}}`
+* `{{logo_url}}`
+
+If `{{job_company}}` exists somewhere in older code or database templates, either:
+
+* migrate it to `{{company_name}}`, or
+* support it temporarily as a backwards-compatible alias for `company_name`.
+
+Do not allow the renderer to append placeholder strings to actual values.
+
+Create a single centralized variable map rather than manually performing inconsistent replacements in different email flows.
+
+For example, conceptually:
+
+```ts
+const templateVariables = {
+  applicant_first_name: applicantFirstName,
+  job_title: jobTitle,
+  company_name: companyName || "OnSpot",
+  portal_url: portalUrl,
+  submitted_date: submittedDate,
+  logo_url: logoUrl,
+};
+```
+
+Use the actual project data structures and field names after inspecting the code. Do not assume the example property names above are correct.
+
+## 3. Make the template renderer safe
+
+Create or improve a reusable template interpolation function.
+
+It should correctly process placeholders such as:
+
+```text
+{{job_title}}
+{{ job_title }}
+```
+
+It must never transform:
+
+```text
+Data Entry
+```
+
+into:
+
+```text
+Data Entry{{job_company}}
+```
+
+or any similar malformed output.
+
+Before sending an email, detect unresolved template variables using a pattern such as:
+
+```regex
+/{{\s*[^}]+\s*}}/
+```
+
+If unresolved placeholders remain:
+
+* log a clear warning/error identifying the template and unresolved variables;
+* do not silently send malformed emails;
+* preferably replace optional unresolved values safely or prevent sending if the missing variable is required.
+
+Do not expose raw Mustache-style variables to applicants.
+
+## 4. Redesign ALL default applicant email templates
+
+Apply the same branded HTML email shell to all existing applicant templates, including:
+
+1. Application Received
+2. Application Under Review
+3. Applicant Shortlisted
+4. Interview Invitation
+5. Interview Confirmed
+6. Offer Extended
+7. Welcome to the Team
+8. Application Not Progressing
+9. Post-Interview — Not Progressing
+10. Application Withdrawal Acknowledged
+11. Follow-Up Request
+12. Document Request
+13. Reference Check Notice
+14. General Application Update
+
+Do not change their category/stage/default behavior unless necessary.
+
+Preserve the intent and wording of each email while improving its presentation.
+
+## 5. Create a reusable branded email layout
+
+Instead of duplicating a huge amount of HTML unnecessarily, create a reusable email-layout/helper if the project architecture allows it.
+
+The rendered email should look approximately like this:
+
+```text
+              [ OnSpot Logo ]
+
+Hi Frenzy,
+
+Thank you for applying for the Data Entry
+position at OnSpot.
+
+We have received your application and our
+team will review it shortly...
+
+        [ View Application Status ]
+
+Thank you again for your interest!
+
+Warm regards,
+The OnSpot Team
+
+------------------------------------------
+© OnSpot
+```
+
+Use email-safe HTML with inline styles.
+
+Suggested container:
+
+```html
+<div style="
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333333;
+  line-height: 1.6;
+">
+```
+
+Keep the content responsive and readable on mobile.
+
+Do not depend on external CSS files because many email clients strip them.
+
+## 6. Add OnSpot logo/branding
+
+Add an OnSpot logo area at the top of every email.
+
+Support a variable:
+
+```text
+{{logo_url}}
+```
+
+Example output:
+
+```html
+<img
+  src="{{logo_url}}"
+  alt="OnSpot"
+  width="150"
+  style="
+    display: block;
+    max-width: 150px;
+    height: auto;
+    margin: 0 auto;
+    border: 0;
+  "
+/>
+```
+
+The logo URL must be an absolute HTTPS URL accessible by email clients.
+
+Do not use paths such as:
+
+```text
+/assets/logo.png
+./logo.png
+localhost:...
+```
+
+inside outgoing email HTML.
+
+Find whether this project already has:
+
+* a hosted OnSpot logo,
+* an application base URL,
+* a frontend public asset URL,
+* object storage,
+* CDN storage,
+* or a branding configuration.
+
+Reuse the existing infrastructure if available.
+
+If no hosted logo exists yet, implement the code so that `logo_url` can be configured from an environment variable/configuration value instead of hardcoding an environment-specific domain.
+
+For example:
+
+```text
+ONSPOT_EMAIL_LOGO_URL
+```
+
+Only introduce a new environment variable if the project does not already have an appropriate configuration mechanism.
+
+## 7. Improve the Application Received email
+
+The final email should render approximately like:
+
+```text
+Hi {{applicant_first_name}},
+
+Thank you for applying for the {{job_title}} position at {{company_name}}.
+
+We have received your application and our team will review it shortly. We'll be in touch if your profile is a strong match.
+
+In the meantime, you can track your application status through the OnSpot Talent Portal.
+
+[View Application Status]
+
+Thank you again for your interest!
+
+Warm regards,
+The {{company_name}} Team
+```
+
+Use `{{portal_url}}` for the CTA button.
+
+Example button styling:
+
+```html
+<a
+  href="{{portal_url}}"
+  style="
+    display: inline-block;
+    padding: 12px 24px;
+    background: #0f766e;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+  "
+>
+  View Application Status
+</a>
+```
+
+Reuse the project's actual OnSpot brand color if one already exists rather than blindly using this example color.
+
+## 8. Use context-appropriate CTAs
+
+Do not add the same portal button unnecessarily to every email.
+
+Use appropriate calls to action where relevant.
+
+Examples:
+
+* Application Received → `View Application Status`
+* Under Review → portal/status button if appropriate
+* Shortlisted → portal/status button if appropriate
+* Interview Invitation → instructions/reply CTA
+* Interview Confirmed → interview details if available
+* Offer Extended → offer details/reply action if available
+* Rejection emails → no aggressive CTA required
+* Document Request → reply/send documents
+* General Update → optional portal link
+
+Only use template variables for data that actually exists in the current application.
+
+Do not invent unsupported interview URLs, offer URLs, or document upload URLs.
+
+## 9. Fix already-seeded database templates
+
+Important: the current seeding logic skips a template when a template with the same name already exists.
+
+Therefore, editing only `DEFAULT_TEMPLATES` will NOT update existing database records.
+
+Implement a safe strategy so existing default templates receive these fixes too.
+
+Choose the safest architecture for this project, such as:
+
+* a one-time migration;
+* an explicit default-template migration/version;
+* an `UPDATE` targeting known built-in/default template records;
+* or another migration approach consistent with the existing project.
+
+Do NOT overwrite user-created/custom templates.
+
+Do NOT overwrite templates that users intentionally customized unless the application already has a reliable way to distinguish built-in templates from custom versions.
+
+If the database structure cannot reliably distinguish customized defaults, explain that in your implementation summary and choose the safest non-destructive approach.
+
+## 10. Populate template variable metadata correctly
+
+The current seed inserts:
+
+```text
+variables = '[]'
+```
+
+Review how the `variables` field is used elsewhere in the application.
+
+If it is intended to describe the variables supported by a template, populate it correctly for each template.
+
+For example, Application Received could require:
+
+```json
+[
+  "applicant_first_name",
+  "job_title",
+  "company_name",
+  "portal_url",
+  "logo_url"
+]
+```
+
+Different templates should only list variables they actually use.
+
+Do not change this field blindly if another part of the application expects a different structure. Inspect its usage first.
+
+## 11. Avoid duplicated branding HTML if possible
+
+If emails are rendered immediately before sending, preferably structure this as:
+
+```ts
+renderEmailLayout({
+  content,
+  companyName,
+  logoUrl,
+  ...
+});
+```
+
+and keep each template focused mainly on its unique body content.
+
+However, if these templates are intended to remain fully editable HTML records in the database, preserve that requirement and create the cleanest implementation compatible with the existing template editor.
+
+Do not refactor the architecture in a way that breaks admin editing of templates.
+
+## 12. Email compatibility
+
+Use conservative email HTML.
+
+Avoid relying on:
+
+* CSS Grid
+* Flexbox for essential layout
+* JavaScript
+* external CSS
+* unsupported modern CSS
+* SVG if the existing logo can be PNG/WebP/JPEG
+* relative image paths
+
+Use inline styles.
+
+Make sure:
+
+* body text is readable;
+* links work;
+* buttons have adequate padding;
+* logo maintains aspect ratio;
+* email width is approximately 600px;
+* layout works on desktop and mobile;
+* URLs are valid;
+* HTML is properly escaped where necessary.
+
+## 13. Test all templates
+
+Add or update tests where appropriate.
+
+At minimum, verify that every default template can render using representative test data such as:
+
+```text
+applicant_first_name = Frenzy
+job_title = Data Entry
+company_name = OnSpot
+portal_url = https://example.com/talent
+logo_url = https://example.com/onspot-logo.png
+submitted_date = August 20, 2026
+```
+
+After rendering every subject and body, assert that none contains an unresolved placeholder matching:
+
+```regex
+/{{\s*[^}]+\s*}}/
+```
+
+Specifically test the bug that previously resulted in:
+
+```text
+Data Entry position{{job_company}} at OnSpot{{job_company}}
+```
+
+That output must never occur.
+
+Expected:
+
+```text
+Data Entry position at OnSpot
+```
+
+## 14. Check both subject and HTML body
+
+Run variable interpolation against BOTH:
+
+```ts
+template.subject
+template.bodyHtml
+```
+
+or their actual equivalents in this project.
+
+Do not fix body variables while leaving subject variables unresolved.
+
+## 15. Preserve security
+
+Do not introduce HTML/script injection vulnerabilities.
+
+If applicant/job/company values can contain user-controlled input, make sure textual variables are safely escaped before inserting them into HTML.
+
+URLs used in `href` or `src` must be handled safely.
+
+Do not escape the complete email HTML after rendering because that would destroy legitimate template markup. Escape variable values according to context.
+
+## 16. Final verification
+
+Before considering the task complete:
+
+* Inspect every place that sends applicant emails.
+* Ensure they all use the same corrected rendering system.
+* Ensure no email flow has a separate broken replacement implementation.
+* Ensure all 14 default templates render successfully.
+* Ensure no raw `{{...}}` placeholders remain.
+* Ensure `company_name` resolves to the correct company name or a sensible configured fallback such as `OnSpot`.
+* Ensure `job_title` contains only the job title.
+* Ensure the logo loads using an absolute HTTPS URL.
+* Ensure the portal button points to the correct applicant portal URL.
+* Ensure already-existing seeded templates are handled safely.
+* Ensure custom templates are not unintentionally overwritten.
+
+After implementing the changes, give me a concise summary containing:
+
+1. Root cause of the `{{job_company}}` rendering bug.
+2. Files changed.
+3. How template variables are now resolved.
+4. How the logo URL is configured.
+5. How existing seeded templates were updated.
+6. Whether any database migration was added.
+7. Any environment variable I need to configure.
+8. Confirmation that all 14 templates were tested.
+9. Show me the final rendered HTML/output for the "Application Received" template using sample data before finishing.
+
+Do not just explain what should be changed. Make the code changes in the project.
