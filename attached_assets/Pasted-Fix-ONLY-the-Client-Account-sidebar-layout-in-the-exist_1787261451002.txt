@@ -1,0 +1,719 @@
+Fix ONLY the Client Account sidebar layout in the existing OnSpot / `connect-onspot` application.
+
+## DO NOT TOUCH OTHER FEATURES
+
+This is a layout-only task.
+
+Do NOT modify:
+
+* application status requests
+* Admin approval workflow
+* Talent notifications
+* email workflow
+* messaging
+* message badges
+* notification Bell
+* Client/Talent/Admin auth
+* TopNavigation routing
+* TopNavigation hide/show behavior
+* dashboard business data
+
+The only target is the Client sidebar.
+
+---
+
+# CURRENT BUG
+
+The Client sidebar still looks visually cut/broken when the blue `TopNavigation` hides while scrolling down.
+
+The TopNavigation:
+
+* is fixed at the top
+* hides by translating upward while scrolling down
+* returns when scrolling upward
+
+The Client sidebar uses the shared ShadCN Sidebar implementation which is itself positioned as a fixed viewport element.
+
+This causes the sidebar and TopNavigation to use incompatible positioning systems.
+
+The result is the sidebar looking:
+
+* clipped
+* cut at the top
+* detached
+* incorrectly sized
+* visually broken when the header hides
+
+Do not solve this with more scroll animation.
+
+---
+
+# IMPORTANT CURRENT CODE
+
+Audit:
+
+`client/src/components/ClientLayout.tsx`
+
+and:
+
+`client/src/components/ui/sidebar.tsx`
+
+The shared Sidebar currently generates desktop geometry similar to:
+
+```text
+fixed
+inset-y-0
+h-svh
+w-[--sidebar-width]
+```
+
+The Client layout is also accounting for:
+
+`var(--nav-h)`
+
+These competing assumptions are the root layout issue.
+
+---
+
+# GOAL
+
+The Client sidebar should look like ONE continuous sidebar column regardless of whether TopNavigation is visible or translated offscreen.
+
+It must never appear visually cut.
+
+---
+
+# IMPORTANT DESIGN DECISION
+
+Do NOT move or animate the sidebar when TopNavigation hides.
+
+Instead:
+
+* keep the sidebar's viewport column/background continuous
+* reserve the navigation height for the sidebar CONTENT
+* let TopNavigation overlay the top part of the sidebar column when visible
+
+Conceptually:
+
+```text
+TOP NAV VISIBLE:
+
+┌─────────────────────────────┐
+│ TopNavigation               │
+├──────────┬──────────────────┤
+│ Sidebar  │ Main content     │
+│ content  │                  │
+│          │                  │
+
+
+TOP NAV HIDDEN:
+
+┌──────────┬──────────────────┐
+│ sidebar  │ main page        │
+│ bg       │                  │
+│──────────│                  │
+│ Sidebar  │                  │
+│ content  │                  │
+```
+
+There should not be a white/transparent broken strip.
+
+---
+
+# BEST FIX: FULL-HEIGHT SIDEBAR BACKGROUND + CONTENT OFFSET
+
+The sidebar COLUMN may stay:
+
+```text
+top: 0
+bottom: 0
+height: 100svh
+```
+
+so its background fills the entire left edge.
+
+But the navigational CONTENT should begin below:
+
+`var(--nav-h)`
+
+on desktop.
+
+This is preferable to making the entire sidebar begin below the header.
+
+Why:
+
+If the full sidebar itself starts at:
+
+```text
+top: var(--nav-h)
+```
+
+then when TopNavigation hides, a visible empty gap remains above the sidebar.
+
+That is exactly the visual problem we want to eliminate.
+
+---
+
+# CLIENT-SPECIFIC SIDEBAR STRUCTURE
+
+Refactor the Client sidebar toward:
+
+```tsx
+<Sidebar className="client-sidebar">
+  <div className="client-sidebar-offset">
+    <SidebarContent>
+      ...
+    </SidebarContent>
+  </div>
+</Sidebar>
+```
+
+Desktop concept:
+
+```css
+.client-sidebar {
+  top: 0;
+  bottom: 0;
+  height: 100svh;
+}
+
+.client-sidebar-offset {
+  padding-top: var(--nav-h);
+  height: 100%;
+  overflow: hidden;
+}
+```
+
+Then the actual navigation list may scroll within the remaining space.
+
+Use Tailwind equivalents if preferred.
+
+---
+
+# SIDEBAR BACKGROUND MUST FILL FROM Y=0
+
+This is critical.
+
+The outer Sidebar must have its normal sidebar background all the way from:
+
+```text
+top: 0
+```
+
+to:
+
+```text
+bottom: 0
+```
+
+TopNavigation can cover the top portion when visible.
+
+When TopNavigation slides away, the exposed area should still be the sidebar background, NOT:
+
+* white
+* transparent
+* body background
+* clipped empty space
+
+---
+
+# SIDEBAR CONTENT SHOULD REMAIN STABLE
+
+The navigation items themselves should NOT animate.
+
+Core Modules should remain in a stable logical position.
+
+Do NOT implement:
+
+```ts
+if (navVisible) {
+  sidebarTop = navHeight;
+} else {
+  sidebarTop = 0;
+}
+```
+
+No scroll listener for sidebar.
+
+No transform synchronization.
+
+---
+
+# IMPORTANT — REMOVE CONFLICTING HEIGHT RULES
+
+Inspect the current ClientLayout.
+
+Do not combine contradictory rules such as:
+
+```text
+h-svh
+height: calc(100svh - var(--nav-h))
+inset-y-0
+top: var(--nav-h)
+bottom: 0
+```
+
+on the SAME sidebar element.
+
+Pick one geometry.
+
+Recommended:
+
+### Outer sidebar
+
+```text
+fixed
+top-0
+bottom-0
+h-svh
+```
+
+### Inner sidebar content area
+
+```text
+pt-[var(--nav-h)]
+h-full
+```
+
+This is much cleaner.
+
+---
+
+# SIDEBARCONTENT
+
+The screenshot shows:
+
+`SidebarContent`
+
+using:
+
+```text
+flex
+min-h-0
+flex-1
+flex-col
+gap-2
+overflow-auto
+```
+
+Preserve that scrolling behavior.
+
+But put it inside a wrapper that correctly accounts for the nav offset.
+
+Example:
+
+```tsx
+<div className="flex h-full min-h-0 flex-col pt-[var(--nav-h)]">
+  <SidebarContent className="min-h-0 flex-1 overflow-y-auto">
+    ...
+  </SidebarContent>
+</div>
+```
+
+Adapt to current components.
+
+---
+
+# DO NOT USE MARGIN-TOP ON THE FIXED SIDEBAR
+
+Avoid:
+
+```text
+mt-[var(--nav-h)]
+```
+
+on the entire fixed Sidebar.
+
+That increases effective vertical size and can cause bottom overflow.
+
+Prefer inner padding.
+
+---
+
+# DO NOT USE NEGATIVE MARGINS
+
+Do not use:
+
+```text
+-mt-...
+top-[-...]
+translate-y-...
+```
+
+to visually patch the sidebar.
+
+Fix the actual layout model.
+
+---
+
+# MAIN CONTENT
+
+The main Client content should remain beside the sidebar.
+
+Preserve:
+
+```text
+min-w-0
+flex-1
+```
+
+The sidebar must never cover:
+
+* Job Postings
+* Job Submissions
+* dashboard cards
+* Messages
+* Client Profile
+
+---
+
+# SIDEBAR WIDTH
+
+Preserve the existing desktop width:
+
+`18rem`
+
+Do not change width.
+
+---
+
+# SIDEBAR GAP / RAIL
+
+Audit the shared ShadCN sidebar structure.
+
+The sidebar component often contains TWO desktop elements:
+
+1. an invisible/sidebar-gap element used to reserve horizontal width
+2. the fixed sidebar container
+
+Only the fixed container needs the full-height background/content correction.
+
+Do NOT alter the gap element vertically.
+
+Do not break horizontal spacing.
+
+---
+
+# CLIENT-ONLY FIX
+
+This must not globally break other Sidebars.
+
+If `ui/sidebar.tsx` is shared with Admin or other pages:
+
+prefer passing a Client-specific class/variant from:
+
+`ClientLayout.tsx`
+
+rather than globally rewriting Sidebar geometry.
+
+Example:
+
+```tsx
+<Sidebar className="client-portal-sidebar">
+```
+
+or introduce a controlled prop like:
+
+```tsx
+<Sidebar topNavOffset />
+```
+
+Only if necessary.
+
+Do not change all application sidebars just to fix Client.
+
+---
+
+# TOPNAVIGATION MUST REMAIN UNCHANGED
+
+Do NOT change:
+
+* scroll listener
+* translate animation
+* `--nav-h`
+* fixed positioning
+* transition duration
+* logo
+* Bell
+* Client Profile menu
+
+We are adapting the Client sidebar to coexist with it.
+
+---
+
+# DESKTOP TEST — NAV VISIBLE
+
+At top of `/dashboard`:
+
+Expected:
+
+* blue TopNavigation across full width
+* sidebar begins visually beneath it
+* no sidebar content hidden behind TopNavigation
+* no overlap
+* no gap
+
+---
+
+# DESKTOP TEST — NAV HIDDEN
+
+Scroll downward until TopNavigation hides.
+
+Expected:
+
+* sidebar left column still looks continuous
+* no white strip
+* no clipped/cut top
+* no sudden jump
+* sidebar navigation does not animate
+* main content does not move
+
+The area previously occupied by the TopNavigation may reveal the sidebar's background.
+
+That is fine.
+
+It must NOT look broken.
+
+---
+
+# DESKTOP TEST — NAV RETURNS
+
+Scroll upward.
+
+Expected:
+
+TopNavigation overlays/returns normally.
+
+Sidebar:
+
+* does not move
+* does not resize
+* does not flash
+* does not jump
+* content remains below its logical nav offset
+
+---
+
+# TEST LONG PAGE
+
+Use the exact Client Profile / Job Submissions page shown in the screenshot.
+
+Scroll all the way down.
+
+Verify:
+
+* Settings remains reachable
+* sidebar background continues to bottom
+* sidebar does not stop early
+* no giant transparent section
+* no double vertical scrollbar unless intentionally needed
+
+---
+
+# SIDEBAR CONTENT HEIGHT
+
+The Client navigation list should have usable height:
+
+```text
+100svh - var(--nav-h)
+```
+
+but achieve this via the inner content wrapper, not by shrinking the outer background column.
+
+Conceptually:
+
+```css
+outer:
+height: 100svh
+
+inner:
+height: calc(100svh - var(--nav-h))
+margin/padding-top: var(--nav-h)
+```
+
+Using flex layout is preferable:
+
+```tsx
+<div className="h-svh">
+  <div className="h-[var(--nav-h)] shrink-0" />
+  <SidebarContent className="min-h-0 flex-1" />
+</div>
+```
+
+This is very robust.
+
+---
+
+# PREFERRED IMPLEMENTATION
+
+An especially clean implementation:
+
+```tsx
+function ClientSidebar() {
+  return (
+    <Sidebar className="h-svh">
+      <div className="flex h-full min-h-0 flex-col">
+        <div
+          className="hidden shrink-0 md:block"
+          style={{ height: "var(--nav-h)" }}
+          aria-hidden="true"
+        />
+
+        <SidebarContent className="min-h-0 flex-1">
+          ...
+        </SidebarContent>
+      </div>
+    </Sidebar>
+  );
+}
+```
+
+The sidebar's own background then fills the whole fixed panel.
+
+Do not blindly copy if the Sidebar primitive already provides an equivalent inner wrapper.
+
+---
+
+# MOBILE
+
+Do not apply the desktop TopNavigation offset blindly to the mobile Sheet/sidebar.
+
+Mobile drawer should:
+
+* open correctly
+* be full usable height
+* not have unnecessary giant blank header space
+* remain above/below TopNavigation according to existing mobile design
+
+Use:
+
+`md:` responsive classes for desktop-specific fixed sidebar offset behavior.
+
+---
+
+# ALSO VERIFY ROUTE FIX IS NOT REGRESSED
+
+While touching `ClientLayout.tsx`, confirm:
+
+`OnSpot Talent`
+
+still routes to:
+
+`/hire-talent`
+
+Do NOT restore the older:
+
+`/talent`
+
+route.
+
+The repository version previously had `/talent`, so make sure the latest live implementation keeps the corrected canonical route.
+
+---
+
+# DO NOT RESTORE THE OLD WHITE CLIENT HEADER
+
+The older `ClientLayout.tsx` contained its own white header with:
+
+* OnSpot
+* Client Portal
+* avatar
+* theme
+* Logout
+
+Do NOT bring this back.
+
+The blue `TopNavigation` remains the only header.
+
+---
+
+# FILES TO CHANGE
+
+Prefer only:
+
+* `client/src/components/ClientLayout.tsx`
+
+Change:
+
+* `client/src/components/ui/sidebar.tsx`
+
+ONLY if the Sidebar component cannot accept a safe Client-specific geometry override.
+
+Do not modify unrelated pages.
+
+---
+
+# SCREENSHOT REPRODUCTION
+
+Use the same scenario:
+
+Client Profile / Job Submissions.
+
+Open DevTools if needed.
+
+Inspect the sidebar outer container.
+
+Expected final desktop CSS geometry:
+
+```text
+outer fixed sidebar:
+top = 0
+bottom = 0
+height = 100svh
+
+inner navigation:
+top logical offset = var(--nav-h)
+remaining height scrollable
+```
+
+There should not be a fixed sidebar element whose entire top is:
+
+`var(--nav-h)`
+
+while TopNavigation is independently being translated away.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Do not mark complete until:
+
+* sidebar no longer looks cut when TopNavigation hides
+* sidebar background fills full left viewport height
+* navigation content is not covered by visible TopNavigation
+* sidebar content does not jump when TopNavigation hides/returns
+* no sidebar animation was added
+* no white/transparent gap appears above sidebar
+* sidebar does not cover main content
+* main content does not shift during TopNavigation animation
+* Settings remains reachable
+* sidebar works on Dashboard
+* sidebar works on Client Profile
+* sidebar works on Messages
+* sidebar works on `/hire-talent`
+* mobile still works
+* old white Client header does not return
+* no business logic changed
+* build/typecheck passes
+
+---
+
+# FINAL REPORT
+
+After fixing, tell me:
+
+1. exact sidebar positioning before
+2. root cause of the cut appearance
+3. exact outer sidebar geometry after
+4. exact inner content offset after
+5. whether `ui/sidebar.tsx` was changed
+6. whether fix is Client-only
+7. desktop scroll test result
+8. mobile test result
+9. `/hire-talent` route verification
+10. files changed
+11. build/typecheck result
+
+Do not make another temporary visual patch.
+
+Fix the Client sidebar's **outer background geometry and inner content offset** so it works permanently with the existing translating TopNavigation.
