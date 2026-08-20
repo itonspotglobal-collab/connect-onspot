@@ -13,6 +13,8 @@ interface MessageThread {
   participants: string[];
   subject: string | null;
   lastMessageAt: string | null;
+  latestMessageAt?: string | null;
+  unreadCount: number;
   createdAt: string | null;
 }
 
@@ -20,6 +22,7 @@ interface ThreadsResponse {
   userId: string;
   threads: MessageThread[];
   participantNames: Record<string, string>;
+  unreadMessageCount: number;
 }
 
 interface ThreadMessage {
@@ -28,6 +31,7 @@ interface ThreadMessage {
   senderId: string;
   content: string;
   messageType: string | null;
+  readBy: string[];
   createdAt: string | null;
 }
 
@@ -47,11 +51,13 @@ function ThreadView({
   thread,
   meId,
   otherName,
+  otherParticipantId,
   onBack,
 }: {
   thread: MessageThread;
   meId: string;
   otherName: string;
+  otherParticipantId: string;
   onBack: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -71,8 +77,17 @@ function ThreadView({
   // Mark thread as read when opened — also clears the unread-messages nav badge
   useEffect(() => {
     apiRequest("POST", `/api/message-threads/${thread.id}/mark-read`, {})
-      .then(() => invalidateUnreadMessages())
+      .then(() => {
+        invalidateUnreadMessages();
+        queryClient.invalidateQueries({ queryKey: ["my-message-threads"] });
+        queryClient.invalidateQueries({ queryKey: ["thread-messages", thread.id] });
+        queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
+      })
       .catch(() => {});
+    // The invalidation callback is intentionally not a dependency: the hook
+    // returns a closure and would otherwise rerun this idempotent write on
+    // every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread.id]);
 
   useEffect(() => {
@@ -147,6 +162,11 @@ function ThreadView({
                     }`}
                   >
                     {formatTime(m.createdAt)}
+                    {m.senderId === meId && (
+                      <span className="ml-1.5">
+                        {m.readBy?.includes(otherParticipantId) ? "Read" : "Delivered"}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -259,12 +279,19 @@ export default function Messages() {
                 data-testid={`thread-item-${t.id}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                  <p className={`truncate text-sm ${t.unreadCount > 0 ? "font-bold" : "font-medium"} text-slate-900 dark:text-white`}>
                     {nameOf(t)}
                   </p>
-                  <span className="shrink-0 text-[10px] text-slate-400">
-                    {formatTime(t.lastMessageAt)}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400">
+                      {formatTime(t.latestMessageAt ?? t.lastMessageAt)}
+                    </span>
+                    {t.unreadCount > 0 && (
+                      <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {t.unreadCount > 99 ? "99+" : t.unreadCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {t.subject && (
                   <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
@@ -283,6 +310,7 @@ export default function Messages() {
               thread={activeThread}
               meId={meId}
               otherName={nameOf(activeThread)}
+              otherParticipantId={otherOf(activeThread)}
               onBack={() => navigate("/messages")}
             />
           ) : (

@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { TopNavigation } from "@/components/TopNavigation";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 
 // Core Modules
 const coreModules = [
@@ -102,6 +103,7 @@ const adminItems = [
 function ClientSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const isActiveRoute = (url: string) =>
     location === url || (url !== "/dashboard" && location.startsWith(`${url}/`));
 
@@ -118,7 +120,12 @@ function ClientSidebar() {
                   <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                     <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
+                      <span className="flex-1">{item.title}</span>
+                      {item.title === "Messages" && unreadMessagesCount > 0 && (
+                        <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                          {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

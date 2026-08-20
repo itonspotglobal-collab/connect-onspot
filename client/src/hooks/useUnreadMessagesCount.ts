@@ -2,13 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 
-interface NotificationRow {
-  id: string;
-  type: string;
-  isRead: boolean;
-  relatedId: string | null;
-}
-
 /** Replicates the getBearerToken() logic from queryClient.ts without importing it. */
 function getBearerToken(): string | null {
   const jwtToken = localStorage.getItem("onspot_jwt_token");
@@ -26,16 +19,9 @@ function getBearerToken(): string | null {
 }
 
 /**
- * Fetches the count of unread new_message notifications.
- *
- * Talent-portal sessions (talentAuth present): uses GET /api/talent/notifications
- * which resolves candidateId → linked users.id server-side, ensuring the correct
- * account's notifications are returned even though the candidate-token JWT carries
- * a candidateId rather than a users.id.
- *
- * Main-JWT sessions (client/admin/talent with a full user account): uses
- * GET /api/users/:userId/notifications, which now requires the bearer token and
- * verifies the caller owns the requested userId.
+ * Fetches the canonical persisted message unread count. The endpoint accepts
+ * both main JWTs and candidate/talent JWTs and calculates unread state from
+ * incoming messages' readBy arrays, not from notification rows.
  */
 async function fetchUnreadMessageCount(
   isTalentPortal: boolean,
@@ -45,27 +31,15 @@ async function fetchUnreadMessageCount(
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  if (isTalentPortal) {
-    // Talent-portal JWT: use the authenticated endpoint that resolves the
-    // correct users.id server-side so no 403 is returned.
-    const res = await fetch("/api/talent/notifications?unread_only=true", { headers });
-    if (!res.ok) return 0;
-    const data: NotificationRow[] = await res.json();
-    return data.filter((n) => n.type === "new_message").length;
-  }
-
-  if (!userId) return 0;
-  const res = await fetch(
-    `/api/users/${userId}/notifications?unread_only=true`,
-    { headers },
-  );
+  if (!isTalentPortal && !userId) return 0;
+  const res = await fetch("/api/me/message-threads", { headers });
   if (!res.ok) return 0;
-  const data: NotificationRow[] = await res.json();
-  return data.filter((n) => n.type === "new_message").length;
+  const data = await res.json() as { unreadMessageCount?: number };
+  return Math.max(0, Number(data.unreadMessageCount ?? 0));
 }
 
 /**
- * Returns the count of unread new_message notifications for the currently
+ * Returns the persisted unread incoming-message count for the currently
  * authenticated user — covers talent-portal JWT, main-JWT talent, and
  * main-JWT client roles (clients receive messages too).
  * Returns 0 for unauthenticated or admin sessions.

@@ -155,6 +155,10 @@ export interface IStorage {
   getMessageThread(id: string): Promise<MessageThread | undefined>;
   createMessageThread(thread: InsertMessageThread): Promise<MessageThread>;
   listMessageThreadsByUser(userId: string): Promise<MessageThread[]>;
+  listMessageThreadsByUserWithUnread(userId: string): Promise<Array<MessageThread & {
+    unreadCount: number;
+    latestMessageAt: Date | null;
+  }>>;
   getMessage(id: string): Promise<Message | undefined>;
   createMessage(message: InsertMessage): Promise<Message>;
   listMessagesByThread(threadId: string): Promise<Message[]>;
@@ -1799,6 +1803,29 @@ export class MemStorage implements IStorage {
       .sort((a, b) => (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0));
   }
 
+  async listMessageThreadsByUserWithUnread(userId: string): Promise<Array<MessageThread & {
+    unreadCount: number;
+    latestMessageAt: Date | null;
+  }>> {
+    return (await this.listMessageThreadsByUser(userId)).map((thread) => {
+      const threadMessages = Array.from(this.messages.values())
+        .filter((message) => message.threadId === thread.id);
+      return {
+        ...thread,
+        unreadCount: threadMessages.filter((message) =>
+          message.senderId !== userId && !(message.readBy ?? []).includes(userId),
+        ).length,
+        latestMessageAt: threadMessages.reduce<Date | null>(
+          (latest, message) =>
+            !latest || (message.createdAt && message.createdAt > latest)
+              ? message.createdAt
+              : latest,
+          thread.lastMessageAt,
+        ),
+      };
+    });
+  }
+
   async getMessage(id: string): Promise<Message | undefined> {
     return this.messages.get(id);
   }
@@ -1837,7 +1864,7 @@ export class MemStorage implements IStorage {
       .filter(message => message.threadId === threadId);
 
     for (const message of messages) {
-      if (message.readBy && !message.readBy.includes(userId)) {
+      if (message.senderId !== userId && message.readBy && !message.readBy.includes(userId)) {
         message.readBy.push(userId);
         this.messages.set(message.id, message);
       }
@@ -3871,6 +3898,42 @@ export class DbStorage extends MemStorage {
       .orderBy(desc(messageThreadsTable.lastMessageAt));
   }
 
+  async listMessageThreadsByUserWithUnread(userId: string): Promise<Array<MessageThread & {
+    unreadCount: number;
+    latestMessageAt: Date | null;
+  }>> {
+    const result = await dbQuery(
+      `SELECT
+         mt.id,
+         mt.job_id AS "jobId",
+         mt.contract_id AS "contractId",
+         mt.participants,
+         mt.subject,
+         mt.last_message_at AS "lastMessageAt",
+         mt.created_at AS "createdAt",
+         COALESCE(stats.unread_count, 0)::int AS "unreadCount",
+         COALESCE(stats.latest_message_at, mt.last_message_at) AS "latestMessageAt"
+       FROM message_threads mt
+       LEFT JOIN LATERAL (
+         SELECT
+           COUNT(*) FILTER (
+             WHERE m.sender_id <> $1
+               AND NOT ($1 = ANY(COALESCE(m.read_by, '{}'::text[])))
+           ) AS unread_count,
+           MAX(m.created_at) AS latest_message_at
+         FROM messages m
+         WHERE m.thread_id = mt.id
+       ) stats ON TRUE
+       WHERE $1 = ANY(mt.participants)
+       ORDER BY COALESCE(stats.latest_message_at, mt.last_message_at) DESC NULLS LAST`,
+      [userId],
+    );
+    return result.rows as Array<MessageThread & {
+      unreadCount: number;
+      latestMessageAt: Date | null;
+    }>;
+  }
+
   async getMessage(id: string): Promise<Message | undefined> {
     const [msg] = await db
       .select()
@@ -3916,11 +3979,13 @@ export class DbStorage extends MemStorage {
   }
 
   async markMessagesAsRead(threadId: string, userId: string): Promise<void> {
-    // Append userId to readBy array only where it isn't already present
+    // Append only to incoming messages; reading a thread must not mark sent
+    // messages as read by their own sender.
     await dbQuery(
       `UPDATE messages
        SET read_by = array_append(read_by, $1)
        WHERE thread_id = $2
+         AND sender_id <> $1
          AND NOT ($1 = ANY(COALESCE(read_by, '{}'::text[])))`,
       [userId, threadId],
     );

@@ -11,6 +11,7 @@ interface NotificationRow {
 export const TALENT_NOTIFICATION_TYPES = [
   "offer_received",
   "job_application_status_changed",
+  "new_message",
 ] as const;
 
 export const CLIENT_NOTIFICATION_TYPES = [
@@ -18,6 +19,7 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "offer_declined",
   "offer_expired",
   "job_application_received",
+  "new_message",
 ] as const;
 
 export function notificationTypesForRole(isTalent: boolean): readonly string[] {

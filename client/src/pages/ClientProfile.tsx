@@ -68,6 +68,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -601,6 +602,7 @@ export default function ClientProfile() {
   const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const unreadMessagesCount = useUnreadMessagesCount();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<ClientProfile>>({});
@@ -747,6 +749,11 @@ export default function ClientProfile() {
               <button className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Messages
+                {unreadMessagesCount > 0 && (
+                  <span className="inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                    {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                  </span>
+                )}
               </button>
             </Link>
           </div>
@@ -1085,6 +1092,22 @@ function JobSubmissionsSection({
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
+  const { data: messageThreadData } = useQuery<{
+    threads: Array<{ jobId: string | null; unreadCount: number }>;
+  }>({
+    queryKey: ["my-message-threads"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/me/message-threads");
+      return res.json();
+    },
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const unreadByJobId = new Map(
+    (messageThreadData?.threads ?? [])
+      .filter((thread) => thread.jobId)
+      .map((thread) => [thread.jobId as string, thread.unreadCount]),
+  );
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -1260,6 +1283,11 @@ function JobSubmissionsSection({
                           <span className="hidden sm:inline">
                             {openMessageMutation.isPending ? "Opening…" : "Message"}
                           </span>
+                          {(unreadByJobId.get(sub.jobId) ?? 0) > 0 && (
+                            <span className="inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                              {(unreadByJobId.get(sub.jobId) ?? 0) > 99 ? "99+" : unreadByJobId.get(sub.jobId)}
+                            </span>
+                          )}
                         </Button>
                         <Button
                           variant="ghost"

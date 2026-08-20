@@ -277,7 +277,15 @@ function SubmissionDrawer({ app, onClose }: { app: TalentApplication; onClose: (
 
 // ─── Application Card ─────────────────────────────────────────────────────────
 
-function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; onViewSubmission: () => void }) {
+function ApplicationCard({
+  app,
+  onViewSubmission,
+  unreadMessageCount = 0,
+}: {
+  app: TalentApplication;
+  onViewSubmission: () => void;
+  unreadMessageCount?: number;
+}) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
@@ -408,6 +416,11 @@ function ApplicationCard({ app, onViewSubmission }: { app: TalentApplication; on
                   >
                     {openingChat ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
                     {openingChat ? "Opening…" : "Reach the Client"}
+                    {unreadMessageCount > 0 && (
+                      <span className="ml-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
                   </button>
                 </>
               )}
@@ -989,6 +1002,18 @@ export default function TalentApplications() {
   const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
 
   const { data: applications, isLoading, isError, refetch } = useTalentApplications();
+  const { data: messageThreadData } = useQuery<{
+    threads: Array<{ jobId: string | null; unreadCount: number }>;
+  }>({
+    queryKey: ["my-message-threads"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/me/message-threads");
+      return res.json();
+    },
+    enabled: hasTalentSession,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
 
   // Stamp the per-candidate "last viewed" timestamp so the nav badge resets on visit.
   // Must be scoped by candidateId so one talent's visit doesn't clear another's baseline.
@@ -1020,6 +1045,11 @@ export default function TalentApplications() {
   }
 
   const apps = applications ?? [];
+  const unreadByJobId = new Map(
+    (messageThreadData?.threads ?? [])
+      .filter((thread) => thread.jobId)
+      .map((thread) => [thread.jobId as string, thread.unreadCount]),
+  );
   const filtered = filterApplications(apps, filter);
   const appliedJobIds = new Set(apps.map((a) => a.job.id));
 
@@ -1166,6 +1196,7 @@ export default function TalentApplications() {
                   key={app.id}
                   app={app}
                   onViewSubmission={() => setDrawerApp(app)}
+                  unreadMessageCount={unreadByJobId.get(app.job.id) ?? 0}
                 />
               ))}
             </div>

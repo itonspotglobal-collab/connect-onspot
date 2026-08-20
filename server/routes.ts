@@ -8192,7 +8192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getAuthedUserId(req);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const threads = await storage.listMessageThreadsByUser(userId);
+      const threads = await storage.listMessageThreadsByUserWithUnread(userId);
       // Enrich with participant display names.
       // Talent participants whose identity has NOT yet been revealed (no accepted
       // client-initiated invitation) are masked as "Jane S." — the same format used
@@ -8237,7 +8237,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      res.json({ userId, threads, participantNames: names });
+      res.json({
+        userId,
+        threads,
+        unreadMessageCount: threads.reduce((total, thread) => total + thread.unreadCount, 0),
+        participantNames: names,
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to get message threads" });
     }
@@ -8250,7 +8255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.params.userId !== userId) {
         return res.status(403).json({ error: "Cannot view another user's threads" });
       }
-      const threads = await storage.listMessageThreadsByUser(userId);
+      const threads = await storage.listMessageThreadsByUserWithUnread(userId);
       res.json(threads);
     } catch (error) {
       res.status(500).json({ error: "Failed to get user message threads" });
@@ -8266,9 +8271,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!thread.participants.includes(userId)) {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
-      const messages = await storage.listMessagesByThread(req.params.threadId);
+       const messages = await storage.listMessagesByThread(req.params.threadId);
       // Strip admin-only field before returning to participants
-      res.json(messages.map(({ flaggedForReview: _omit, ...m }) => m));
+       res.json(messages.map(({ flaggedForReview: _omit, readBy, ...m }) => ({
+         ...m,
+         // A participant may see read state only for canonical thread
+         // participants; never echo arbitrary IDs stored in historical data.
+         readBy: (readBy ?? []).filter((readerId) => thread.participants.includes(readerId)),
+       })));
     } catch (error) {
       res.status(500).json({ error: "Failed to get thread messages" });
     }
@@ -8289,10 +8299,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const message = await storage.createMessage(validated);
 
-      // Notify every other participant (fire-and-forget; never blocks delivery).
-      // This is the platform-wide fix for message notifications — see tracked task.
-      const recipientIds = thread.participants.filter((p) => p !== userId);
-      for (const recipientId of recipientIds) {
+      // Canonical threads have one other participant. Create exactly one
+      // recipient notification after persistence; the message body and contact
+      // details never enter the notification payload.
+      const recipientId = thread.participants.find((p) => p !== userId);
+      if (recipientId) {
         storage
           .createNotification({
             userId: recipientId,

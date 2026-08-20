@@ -12,7 +12,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList, Loader2, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import {
@@ -111,6 +111,13 @@ const TYPE_CONFIG: Record<
     bg: "#EDE9FE",
     label: "Application Update",
     route: "/my-applications",
+  },
+  new_message: {
+    icon: MessageSquare,
+    color: "#4D55C7",
+    bg: "#EEF2FF",
+    label: "New Message",
+    route: "/messages",
   },
 };
 
@@ -219,7 +226,11 @@ export function NotificationBell() {
     }
 
     const cfg = TYPE_CONFIG[n.type];
-    if (cfg) navigate(cfg.route);
+    if (n.type === "new_message" && n.relatedId) {
+      navigate(`/messages/${encodeURIComponent(n.relatedId)}`);
+    } else if (cfg) {
+      navigate(cfg.route);
+    }
   }
 
   return (

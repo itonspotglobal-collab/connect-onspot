@@ -14,3 +14,5 @@ Clients and talent coordinate (schedule interviews, clarify requirements) in-pla
 - **Server-controlled identity:** `senderId` is always forced to the authenticated user; client-supplied sender ids are ignored.
 - **No contact PII:** messages and thread metadata must never expose email/phone; display names never fall back to email. The compose UI reminds users not to share contact details.
 - **Idempotency:** accepting again (or explicitly creating a thread) for the same client/talent/job reuses the existing thread rather than creating duplicates.
+- **Unread/read source of truth:** unread counts come from incoming messages missing the viewer's persisted `readBy` entry; `new_message` notifications are a synchronized alert/deep-link, not a second unread model.
+- **Delivery labels:** sent human messages are Delivered after persistence and Read only when the other canonical participant is present in `readBy`; system messages never receive either label.
