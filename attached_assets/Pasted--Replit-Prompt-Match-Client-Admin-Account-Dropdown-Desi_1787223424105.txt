@@ -1,0 +1,712 @@
+# Replit Prompt — Match Client & Admin Account Dropdown Design to Talent Profile Dropdown
+
+Update the account dropdown UI for:
+
+* Client Profile
+* Admin Dashboard / Admin account
+
+so their dropdowns use the **same visual design language as the existing Talent Profile dropdown**.
+
+IMPORTANT:
+
+This is a **design-only / presentation refactor**.
+
+DO NOT copy the Talent dropdown's contents, routes, profile completion logic, menu options, badges, or talent-specific behavior into Client/Admin.
+
+The Client and Admin dropdowns must keep their existing contents and functionality.
+
+---
+
+# PRIMARY FILE
+
+Inspect:
+
+```text
+client/src/components/TopNavigation.tsx
+```
+
+The Talent account dropdown already contains the target design.
+
+The Client/Admin dropdown currently uses the older compact implementation:
+
+```tsx
+<DropdownMenu>
+  ...
+  <DropdownMenuContent align="end" className="w-52">
+```
+
+with small menu rows.
+
+Replace/refactor the Client/Admin dropdown presentation so it visually matches the existing Talent Profile dropdown.
+
+---
+
+# DESIGN REFERENCE
+
+Use the existing Talent Profile dropdown in `TopNavigation.tsx` as the source of truth.
+
+Do NOT approximate the design from scratch if the styles already exist in the component.
+
+The target visual characteristics include:
+
+```text
+Width: ~320px
+White background
+Rounded ~16px outer panel
+Soft purple/indigo border
+Large elevated shadow
+~10px internal padding
+Premium floating-card appearance
+```
+
+Use approximately the same:
+
+```text
+background
+border
+borderRadius
+boxShadow
+padding
+sideOffset
+collisionPadding
+z-index
+```
+
+already used by the Talent dropdown.
+
+Do not create a visually different interpretation.
+
+---
+
+# ACCOUNT TRIGGER
+
+Also align the Client/Admin dropdown trigger styling with the Talent Profile trigger.
+
+The Talent trigger currently uses:
+
+* 44px height
+* ~11px border radius
+* purple/blue gradient
+* subtle inset highlight
+* shadow
+* avatar/icon circle at the left
+* profile label
+* animated chevron
+* hover shimmer
+
+Client/Admin should visually use the same trigger treatment.
+
+However, KEEP their existing labels:
+
+Client:
+
+```text
+Client Profile
+```
+
+Admin:
+
+```text
+Admin Dashboard
+```
+
+Do not rename them to Talent Profile.
+
+---
+
+# CLIENT DROPDOWN CONTENT
+
+KEEP the existing Client menu contents.
+
+Current Client items are approximately:
+
+```text
+Client Profile
+Hire Talent
+Settings
+Sign Out
+```
+
+These items, routes, and behavior must remain unchanged.
+
+Do not add Talent-specific items such as:
+
+```text
+Finish Profile Setup
+My Applications
+Messages
+Find Work
+Profile completion
+Recommended
+```
+
+unless they already belong to the Client account independently.
+
+---
+
+# ADMIN DROPDOWN CONTENT
+
+KEEP the existing Admin menu contents.
+
+Current Admin items include:
+
+```text
+Admin Dashboard
+Find Work
+Job Applications
+Email Templates
+Insights
+Flagged Messages
+Settings
+Sign Out
+```
+
+Keep all routes and existing behavior.
+
+Do NOT remove or rename any item.
+
+Keep existing notification/count badges such as the Job Applications badge.
+
+Only update their visual treatment.
+
+---
+
+# PROFILE HEADER CARD
+
+Add a top profile/account identity card to Client and Admin using the same visual style as Talent.
+
+Target style:
+
+```text
+light purple / off-white gradient card
+rounded corners
+larger circular avatar/icon
+name / account identity
+email underneath
+```
+
+### Client
+
+Use available Client/user data.
+
+Prefer:
+
+```text
+client/user display name or company/contact name
+email
+```
+
+If no useful display name exists, use a sensible existing value such as:
+
+```text
+Client
+```
+
+or the user's email-derived name.
+
+Do not introduce a new API request solely to fill decorative content unless necessary.
+
+### Admin
+
+Use available authenticated admin data:
+
+```text
+firstName + lastName if available
+email
+```
+
+Fallback:
+
+```text
+Admin
+```
+
+Do not show fake sample names.
+
+---
+
+# AVATAR / ICON
+
+Match the Talent header avatar dimensions and style:
+
+```text
+48x48
+circle
+purple gradient
+white initials/icon
+subtle shadow
+```
+
+For the top navbar trigger, use the smaller equivalent:
+
+```text
+~26x26
+```
+
+For Client:
+
+* use initials if name is available, OR
+* use the existing Building icon
+
+For Admin:
+
+* use initials if available, OR
+* use the existing Shield icon
+
+Do not invent profile images.
+
+---
+
+# DO NOT ADD PROFILE COMPLETION TO CLIENT/ADMIN
+
+The Talent dropdown currently contains:
+
+```text
+Profile completion
+67%
+progress bar
+```
+
+Do NOT copy this to Client or Admin unless those roles already have a real, supported completion metric.
+
+For this task, omit the progress section.
+
+The visual header should therefore be:
+
+```text
+Avatar
+Name
+Email
+```
+
+with appropriate spacing.
+
+The instruction "same design as Talent" means same:
+
+* panel
+* spacing
+* typography
+* avatar treatment
+* menu row style
+* hover behavior
+* separators
+* Sign Out treatment
+
+NOT identical content.
+
+---
+
+# MENU ROW DESIGN
+
+Make Client/Admin rows visually match Talent menu rows.
+
+Target style:
+
+```text
+height: ~48px
+horizontal padding: ~12px
+icon size: ~18px
+gap: ~12px
+font-size: ~14px
+medium weight
+rounded ~10px
+dark text
+purple icon
+```
+
+Normal state:
+
+```text
+transparent background
+dark text
+purple/indigo icon
+```
+
+Hover/focus state:
+
+```text
+very light purple background
+purple/indigo text
+```
+
+Use the same colors already used by the Talent implementation, such as the existing:
+
+```text
+#F3F3FF
+#4D55C7
+#1E2330
+#ABAFD4
+```
+
+or reuse/refactor the actual existing values rather than duplicating slightly different ones.
+
+---
+
+# CHEVRONS
+
+The Talent dropdown uses right-facing chevrons on navigational rows.
+
+Apply the same design to appropriate Client/Admin navigation items:
+
+```text
+Label                      >
+```
+
+Do NOT put a chevron after:
+
+```text
+Sign Out
+```
+
+For rows containing a numeric badge such as Admin `Job Applications`, keep the badge visible.
+
+Arrange it cleanly, for example:
+
+```text
+Job Applications        17   >
+```
+
+or omit the chevron on badge rows if spacing becomes cramped.
+
+Do not remove the badge.
+
+---
+
+# SIGN OUT DESIGN
+
+Match the Talent Sign Out treatment.
+
+Required:
+
+* separator above Sign Out
+* red icon
+* red label
+* 48px-style menu row
+* rounded hover area
+* pale red hover/focus background
+
+Preserve:
+
+```text
+isLoggingOut
+Signing out…
+spinner
+handleSignOut
+```
+
+Do not change logout functionality.
+
+---
+
+# DROPDOWN PANEL POSITIONING
+
+Match Talent behavior:
+
+```tsx
+align="end"
+side="bottom"
+sideOffset={10}
+collisionPadding={16}
+```
+
+Ensure the dropdown:
+
+* aligns with the trigger
+* does not overflow the viewport
+* remains usable on laptop widths
+* remains above page content
+* does not get clipped by navigation containers
+
+Use the existing Talent dropdown z-index behavior.
+
+---
+
+# IMPORTANT: DO NOT CHANGE MENU CONTENT
+
+This requirement is critical.
+
+### Client must remain:
+
+```text
+Client-specific account information
+Client Profile
+Hire Talent
+Settings
+Sign Out
+```
+
+### Admin must remain:
+
+```text
+Admin-specific account information
+Admin Dashboard
+Find Work
+Job Applications
+Email Templates
+Insights
+Flagged Messages
+Settings
+Sign Out
+```
+
+Do not copy:
+
+```text
+Talent Profile
+Finish Profile Setup
+My Applications
+Messages
+Find Work
+Recommended
+Profile completion
+```
+
+just because they appear in the visual reference.
+
+The third screenshot is a **STYLE reference only**.
+
+---
+
+# PREFER SHARED COMPONENTS
+
+Currently `TopNavigation.tsx` contains repeated dropdown UI.
+
+Refactor where practical so the visual design does not drift again.
+
+A good architecture could be:
+
+```tsx
+<AccountDropdown
+  role="client"
+  label="Client Profile"
+  user={user}
+  items={clientItems}
+/>
+
+<AccountDropdown
+  role="admin"
+  label="Admin Dashboard"
+  user={user}
+  items={adminItems}
+/>
+```
+
+with shared pieces such as:
+
+```text
+AccountDropdownTrigger
+AccountDropdownPanel
+AccountDropdownHeader
+AccountDropdownItem
+AccountDropdownSignOut
+```
+
+Talent can remain as-is if refactoring it would introduce unnecessary risk.
+
+But ideally reuse the same presentational styles/constants for Client/Admin and Talent.
+
+Do not perform a large unrelated rewrite of `TopNavigation.tsx`.
+
+---
+
+# MAINTAIN EXISTING LOGIC
+
+Do not change:
+
+* role detection
+* authentication
+* routes
+* `getDropdownItems()`
+* notification counts
+* unread offer counts
+* Job Applications badge
+* logout behavior
+* protected routes
+* navigation visibility logic
+* mobile navigation
+* Talent dropdown functionality
+
+This task should not affect authentication or routing.
+
+---
+
+# CLIENT ACCEPTANCE TEST
+
+Log in as a Client.
+
+Navbar trigger should still say:
+
+```text
+Client Profile
+```
+
+Open dropdown.
+
+Expected appearance:
+
+```text
+┌──────────────────────────────┐
+│  [avatar] Client Name        │
+│           client@email.com   │
+│                              │
+│  ◉  Client Profile       >   │
+│  ◉  Hire Talent          >   │
+│  ◉  Settings             >   │
+│  ─────────────────────────   │
+│  ↪  Sign Out                 │
+└──────────────────────────────┘
+```
+
+Visual styling should closely match Talent Profile:
+
+* same width
+* same radius
+* same shadow
+* same internal spacing
+* same menu row height
+* same purple icons
+* same hover state
+* same red Sign Out treatment
+
+Do NOT display Talent Profile completion.
+
+---
+
+# ADMIN ACCEPTANCE TEST
+
+Log in as Admin.
+
+Navbar trigger should still say:
+
+```text
+Admin Dashboard
+```
+
+Open dropdown.
+
+Expected appearance:
+
+```text
+┌──────────────────────────────┐
+│  [avatar] Admin Name         │
+│           admin@email.com    │
+│                              │
+│  ◉  Admin Dashboard      >   │
+│  ◉  Find Work            >   │
+│  ◉  Job Applications  17 >   │
+│  ◉  Email Templates      >   │
+│  ◉  Insights             >   │
+│  ◉  Flagged Messages     >   │
+│  ◉  Settings             >   │
+│  ─────────────────────────   │
+│  ↪  Sign Out                 │
+└──────────────────────────────┘
+```
+
+Keep the actual existing count instead of hardcoding `17`.
+
+---
+
+# TALENT REGRESSION TEST
+
+After implementing Client/Admin changes, verify Talent dropdown is unchanged.
+
+Test:
+
+```text
+Talent Profile trigger
+Talent profile header
+Profile completion
+Finish Profile Setup
+My Applications
+Messages
+Find Work
+Settings
+Sign Out
+```
+
+All existing Talent functionality must still work.
+
+---
+
+# RESPONSIVE TESTING
+
+Test at:
+
+```text
+1440px desktop
+1366px laptop
+1024px
+mobile
+```
+
+Do not allow the dropdown to overflow off-screen.
+
+Keep:
+
+```text
+maxWidth: min(92vw, 320px)
+```
+
+or the existing Talent equivalent.
+
+Do not modify the existing mobile menu unless required for a genuine regression.
+
+---
+
+# ACCESSIBILITY
+
+Preserve Radix keyboard behavior.
+
+Test:
+
+```text
+Enter / Space opens trigger
+Arrow keys navigate
+Escape closes dropdown
+Tab navigation works
+Focus styles visible
+```
+
+Hover and focus should receive equivalent visual treatment.
+
+Do not replace accessible Radix behavior with a custom uncontrolled popup.
+
+---
+
+# CLEANUP
+
+After implementation:
+
+* remove unused shadcn dropdown imports only if they genuinely have no remaining usage
+* remove duplicated style code where safe
+* do not remove components used by other navigation menus
+* do not change unrelated navigation styling
+
+---
+
+# FINAL REPORT
+
+After implementation, report:
+
+1. Exact files changed.
+2. How Client dropdown looked before.
+3. How Admin dropdown looked before.
+4. Which Talent dropdown styles were reused.
+5. Whether Client/Admin now use the same ~320px panel design.
+6. How the Client profile header is populated.
+7. How the Admin profile header is populated.
+8. Confirmation no profile-completion UI was copied to Client/Admin.
+9. Confirmation all Client menu contents/routes are unchanged.
+10. Confirmation all Admin menu contents/routes are unchanged.
+11. Confirmation Admin notification badges still work.
+12. Confirmation Sign Out behavior is unchanged.
+13. Confirmation Talent dropdown was not functionally changed.
+14. Whether shared dropdown components/styles were extracted.
+15. Screenshots of Client, Admin, and Talent dropdowns after the change.
+
+IMPORTANT:
+
+Follow the Talent Profile dropdown for **visual design only**.
+
+Do not copy its contents or talent-specific functionality into Client/Admin.
