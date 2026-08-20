@@ -1,6 +1,6 @@
 // Firebase authentication integration for OnSpot - Professional Social Login
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from "firebase/auth";
+import { initializeApp } from "@firebase/app";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from "@firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 
 const firebaseConfig = {
