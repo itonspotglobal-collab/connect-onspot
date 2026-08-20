@@ -467,6 +467,35 @@ app.use((req, res, next) => {
     await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_note text`);
     await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_application_id ON job_application_emails(application_id)`);
     await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_sent_at         ON job_application_emails(sent_at)`);
+
+    // Client requests are intentionally separate from the canonical application
+    // state. Only an Admin approval can update job_submissions.status.
+    await dbQuery(`
+      CREATE TABLE IF NOT EXISTS application_status_change_requests (
+        id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id       varchar NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
+        requested_by_user_id varchar NOT NULL REFERENCES users(id),
+        requested_by_role    text NOT NULL CHECK (requested_by_role IN ('client')),
+        current_status       text NOT NULL,
+        requested_status     text NOT NULL,
+        reason               text,
+        status               text NOT NULL DEFAULT 'pending'
+                             CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+        reviewed_by_user_id  varchar REFERENCES users(id),
+        reviewed_at          timestamp,
+        admin_note           text,
+        created_at           timestamp NOT NULL DEFAULT now(),
+        updated_at           timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_ascr_application_id ON application_status_change_requests(application_id)`);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_ascr_requested_by ON application_status_change_requests(requested_by_user_id)`);
+    await dbQuery(`CREATE INDEX IF NOT EXISTS idx_ascr_status_created_at ON application_status_change_requests(status, created_at DESC)`);
+    await dbQuery(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_ascr_one_pending_per_application
+      ON application_status_change_requests(application_id)
+      WHERE status = 'pending'
+    `);
   } catch (migErr: any) {
     console.warn("⚠️  Email tables early migration skipped:", migErr.message);
   }

@@ -69,7 +69,6 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
-import ApplicantEmailComposer from "@/components/ApplicantEmailComposer";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -145,24 +144,29 @@ function ViewSubmissionModal({
   const { toast } = useToast();
   const statusInfo = SUBMISSION_STATUS_LABELS[submission.status] ?? SUBMISSION_STATUS_LABELS.new;
 
-  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
-  const statusEmailMutation = useMutation({
-    mutationFn: (payload: {
-      subject: string; bodyHtml: string; templateId: string; senderEmail: string;
-    }) =>
-      apiRequest("POST", `/api/client/job-submissions/${submission.id}/status-with-email`, {
-        ...payload,
-        updateStage: pendingStatus,
-      }),
+  const [requestedStatus, setRequestedStatus] = useState<string>("");
+  const [requestConfirmOpen, setRequestConfirmOpen] = useState(false);
+  const { data: pendingRequest, refetch: refetchPendingRequest } = useQuery<any>({
+    queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"],
+    queryFn: async () => (await apiRequest("GET", `/api/client/job-submissions/${submission.id}/status-change-request`)).json(),
+  });
+  const requestStatusMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/client/job-submissions/${submission.id}/status-change-requests`, {
+      requestedStatus,
+    }),
     onSuccess: () => {
-      if (pendingStatus) onStatusChange(submission.id, pendingStatus);
-      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+      refetchPendingRequest();
       queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
-      toast({ title: "Application status updated and email sent" });
-      setPendingStatus(null);
+      toast({ title: "Status change request sent", description: "An administrator will review it before the application status changes." });
+      setRequestedStatus("");
+      setRequestConfirmOpen(false);
     },
     onError: (err: any) =>
-      toast({ title: "Email could not be sent. Status was not changed.", description: err.message, variant: "destructive" }),
+      toast({ title: "Request could not be sent", description: err.message, variant: "destructive" }),
+  });
+  const cancelRequestMutation = useMutation({
+    mutationFn: () => apiRequest("PATCH", `/api/client/status-change-requests/${pendingRequest.id}/cancel`),
+    onSuccess: () => { refetchPendingRequest(); toast({ title: "Status change request cancelled" }); },
   });
 
   const handleResumeDownload = () => {
@@ -189,7 +193,7 @@ function ViewSubmissionModal({
             {submission.jobCompany && <p className="text-xs text-slate-500">{submission.jobCompany}</p>}
           </div>
 
-          {/* Status + update */}
+          {/* Status + Admin approval request */}
           <div className="flex flex-wrap items-center gap-3">
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusInfo.color}`}>
               {statusInfo.label}
@@ -207,28 +211,28 @@ function ViewSubmissionModal({
             {/* Only allow status changes once the talent has accepted (submitted or later).
                 Pending and declined invitations are locked — only the talent's respond
                 endpoint may transition those rows. */}
-            {!isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
-              <Select
-                value={submission.status}
-                onValueChange={setPendingStatus}
-                disabled={statusEmailMutation.isPending}
-              >
-                <SelectTrigger className="h-8 w-40 text-xs">
-                  <SelectValue placeholder="Update status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* Only include statuses the PATCH /api/client/job-submissions/:id/status
-                      endpoint accepts (CLIENT_SETTABLE_STATUSES): under_review | reviewed |
-                      shortlisted | rejected. 'hired' is reached only via the contract workflow. */}
-                  {(["under_review", "reviewed", "shortlisted", "rejected"] as const).map((val) => (
-                    <SelectItem key={val} value={val}>
-                      {SUBMISSION_STATUS_LABELS[val]?.label ?? val}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
           </div>
+          {!isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+            pendingRequest ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+                <p className="font-semibold text-amber-900">Status change request</p>
+                <p className="mt-1 text-amber-800">{SUBMISSION_STATUS_LABELS[pendingRequest.currentStatus]?.label ?? pendingRequest.currentStatus} → {SUBMISSION_STATUS_LABELS[pendingRequest.requestedStatus]?.label ?? pendingRequest.requestedStatus}</p>
+                <p className="mt-1 text-xs text-amber-700">Pending Admin Approval</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => cancelRequestMutation.mutate()} disabled={cancelRequestMutation.isPending}>Cancel Request</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Request status change</Label>
+                <div className="flex gap-2">
+                  <Select value={requestedStatus} onValueChange={setRequestedStatus}>
+                    <SelectTrigger className="h-9 flex-1"><SelectValue placeholder="Choose a requested status" /></SelectTrigger>
+                    <SelectContent>{(["under_review", "reviewed", "shortlisted", "rejected"] as const).filter(v => v !== submission.status).map(v => <SelectItem key={v} value={v}>{SUBMISSION_STATUS_LABELS[v]?.label ?? v}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button disabled={!requestedStatus} onClick={() => setRequestConfirmOpen(true)}>Request Status Change</Button>
+                </div>
+              </div>
+            )
+          )}
 
           {/* Applicant details */}
           {isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
@@ -317,17 +321,15 @@ function ViewSubmissionModal({
             </div>
           )}
         </div>
-        <ApplicantEmailComposer
-          application={submission}
-          open={!!pendingStatus}
-          onClose={() => setPendingStatus(null)}
-          pendingStatus={pendingStatus ? {
-            previousStatus: submission.status,
-            newStatus: pendingStatus,
-          } : undefined}
-          onRequestSend={statusEmailMutation.mutate}
-          isSendingEmail={statusEmailMutation.isPending}
-        />
+        <AlertDialog open={requestConfirmOpen} onOpenChange={setRequestConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Request status change?</AlertDialogTitle><AlertDialogDescription>
+              This request will be sent to an administrator for approval. The application will remain {statusInfo.label} until it is approved and the applicant email is sent.
+            </AlertDialogDescription></AlertDialogHeader>
+            <div className="text-sm space-y-1"><p><strong>Talent:</strong> {submission.applicantName}</p><p><strong>Position:</strong> {submission.jobTitle}</p><p><strong>Requested status:</strong> {SUBMISSION_STATUS_LABELS[requestedStatus]?.label}</p></div>
+            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => requestStatusMutation.mutate()} disabled={requestStatusMutation.isPending}>Send Request</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

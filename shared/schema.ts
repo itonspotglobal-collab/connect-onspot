@@ -733,6 +733,33 @@ export const jobApplicationStatusHistory = pgTable(
   ],
 );
 
+// Client-initiated approval requests. This is deliberately not an application
+// status: Admin approval and successful applicant email are required before the
+// canonical job_submissions.status changes.
+export const applicationStatusChangeRequests = pgTable(
+  "application_status_change_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: varchar("application_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
+    requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
+    requestedByRole: text("requested_by_role").notNull(),
+    currentStatus: text("current_status").notNull(),
+    requestedStatus: text("requested_status").notNull(),
+    reason: text("reason"),
+    status: text("status").notNull().default("pending"),
+    reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at"),
+    adminNote: text("admin_note"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_ascr_application_id").on(table.applicationId),
+    index("idx_ascr_requested_by").on(table.requestedByUserId),
+    index("idx_ascr_status_created_at").on(table.status, table.createdAt),
+  ],
+);
+
 export const insertJobSubmissionSchema = createInsertSchema(jobSubmissions).omit({
   id: true,
   submittedAt: true,

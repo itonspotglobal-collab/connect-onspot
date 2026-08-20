@@ -963,6 +963,8 @@ export default function AdminJobApplications() {
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);
+  const [reviewRequest, setReviewRequest] = useState<any | null>(null);
+  const [statusChangeRequestId, setStatusChangeRequestId] = useState<string | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     applicationId: string;
     previousStatus: string;
@@ -989,6 +991,7 @@ export default function AdminJobApplications() {
         senderEmail: emailPendingPayload?.senderEmail,
         updateStage: emailConfirmStage || undefined,
         note: pendingStatusChange?.note,
+        statusChangeRequestId: statusChangeRequestId || undefined,
       }),
     }),
     onSuccess: () => {
@@ -1001,6 +1004,8 @@ export default function AdminJobApplications() {
       }
       setEmailDialog(null);
       setPendingStatusChange(null);
+      setStatusChangeRequestId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/status-change-requests"] });
     },
     onError: (err: any) => {
       setEmailConfirmOpen(false);
@@ -1068,6 +1073,18 @@ export default function AdminJobApplications() {
     queryFn: () => apiFetch("/api/admin/job-applications/summary"),
     staleTime: 30_000,
   });
+  const { data: pendingStatusRequests = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/status-change-requests"],
+    queryFn: () => apiFetch("/api/admin/status-change-requests"),
+  });
+  const rejectStatusRequestMutation = useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/admin/status-change-requests/${id}/reject`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/status-change-requests"] });
+      setReviewRequest(null);
+      toast({ title: "Status change request declined" });
+    },
+  });
 
   // Fetch ALL jobs for the filter dropdown using a dedicated lightweight endpoint.
   // /api/admin/jobs is paginated (25/page), so we must NOT use it here or the
@@ -1134,6 +1151,26 @@ export default function AdminJobApplications() {
         <div className="mb-6">
           <SummaryCards summary={summary} loading={summaryLoading} />
         </div>
+        {pendingStatusRequests.length > 0 && (
+          <Card className="mb-4 border-indigo-200 bg-indigo-50/40">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-indigo-950">Status Requests ({pendingStatusRequests.length})</p>
+                  <p className="text-sm text-indigo-800">Client requests require your approval and applicant email before a status changes.</p>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {pendingStatusRequests.slice(0, 5).map((request) => (
+                  <div key={request.id} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm">
+                    <span><strong>{request.applicantName || `${request.firstName ?? ""} ${request.lastName ?? ""}`}</strong> · {request.jobTitle} · {STATUS_CFG[request.currentStatus]?.label ?? request.currentStatus} → {STATUS_CFG[request.requestedStatus]?.label ?? request.requestedStatus}</span>
+                    <Button size="sm" onClick={() => setReviewRequest(request)}>Review Request</Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filter toolbar */}
         <Card className="mb-4 shadow-sm">
@@ -1472,6 +1509,27 @@ export default function AdminJobApplications() {
 
       {/* Dialogs */}
       <DetailDialog applicationId={detailId} open={!!detailId} onClose={() => setDetailId(null)} />
+      <Dialog open={!!reviewRequest} onOpenChange={(open) => !open && setReviewRequest(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Status Change Request</DialogTitle><DialogDescription>Client request — the application has not changed yet.</DialogDescription></DialogHeader>
+          {reviewRequest && <div className="space-y-3 text-sm">
+            <p><span className="text-slate-500">Client</span><br /><strong>{reviewRequest.clientName}</strong></p>
+            <p><span className="text-slate-500">Talent</span><br /><strong>{reviewRequest.applicantName || `${reviewRequest.firstName ?? ""} ${reviewRequest.lastName ?? ""}`}</strong></p>
+            <p><span className="text-slate-500">Position</span><br /><strong>{reviewRequest.jobTitle}</strong></p>
+            <div className="rounded-md bg-slate-50 p-3"><strong>{STATUS_CFG[reviewRequest.currentStatus]?.label ?? reviewRequest.currentStatus} → {STATUS_CFG[reviewRequest.requestedStatus]?.label ?? reviewRequest.requestedStatus}</strong></div>
+          </div>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => reviewRequest && rejectStatusRequestMutation.mutate(reviewRequest.id)} disabled={rejectStatusRequestMutation.isPending}>Reject Request</Button>
+            <Button className="bg-[#474ead] text-white" onClick={() => {
+              if (!reviewRequest) return;
+              setPendingStatusChange({ applicationId: reviewRequest.applicationId, previousStatus: reviewRequest.currentStatus, newStatus: reviewRequest.requestedStatus });
+              setStatusChangeRequestId(reviewRequest.id);
+              setEmailDialog({ id: reviewRequest.applicationId, jobId: "", jobTitle: reviewRequest.jobTitle, firstName: reviewRequest.firstName, lastName: reviewRequest.lastName, applicantName: reviewRequest.applicantName, email: reviewRequest.email, status: reviewRequest.actualStatus, registrationStatus: "" });
+              setReviewRequest(null);
+            }}>Approve & Email Applicant</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <StatusDialog
         applicationId={statusDialog?.id ?? null}
         currentStatus={statusDialog?.current ?? ""}

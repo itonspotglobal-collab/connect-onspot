@@ -13835,9 +13835,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      return res.status(409).json({
+      return res.status(403).json({
         error: "status_email_required",
-        message: "Client application status changes must be sent through the Email Applicant workflow.",
+        message: "Clients must request an Admin-approved status change.",
       });
       /*
       const { id } = req.params;
@@ -15500,6 +15500,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Client status-change approval requests ─────────────────────────────────────
+  // These routes never mutate job_submissions.status. The actual transition is
+  // performed by the Admin email workflow below after delivery succeeds.
+  app.get("/api/client/job-submissions/:id/status-change-request", authenticateJWT, requireClient, async (req: any, res: Response) => {
+    const result = await query(
+      `SELECT r.id, r.current_status AS "currentStatus", r.requested_status AS "requestedStatus",
+              r.status, r.reason, r.admin_note AS "adminNote", r.created_at AS "createdAt"
+       FROM application_status_change_requests r
+       JOIN jobs j ON j.id = (SELECT job_id FROM job_submissions WHERE id = r.application_id)
+       WHERE r.application_id = $1 AND j.client_id = $2 AND r.status = 'pending'
+       LIMIT 1`,
+      [req.params.id, req.user.id],
+    );
+    return res.json(result.rows[0] ?? null);
+  });
+
+  app.post("/api/client/job-submissions/:id/status-change-requests", authenticateJWT, requireClient, async (req: any, res: Response) => {
+    const { requestedStatus, reason } = req.body ?? {};
+    const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } = await import("../shared/submissionStatuses");
+    if (!CLIENT_SETTABLE_STATUSES.includes(requestedStatus)) {
+      return res.status(400).json({ error: "This status cannot be requested through the approval workflow." });
+    }
+    const dbClient = await getClient();
+    try {
+      await dbClient.query("BEGIN");
+      await dbClient.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`status-request:${req.params.id}`]);
+      const appResult = await dbClient.query(
+        `SELECT js.id, js.job_id, js.status, js.talent_id, js.first_name, js.last_name, js.applicant_name,
+                j.title AS job_title
+         FROM job_submissions js JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND j.client_id = $2 FOR UPDATE OF js`,
+        [req.params.id, req.user.id],
+      );
+      if (!appResult.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(403).json({ error: "Application not found or not owned by you." }); }
+      const application = appResult.rows[0];
+      if (application.status === requestedStatus) { await dbClient.query("ROLLBACK"); return res.status(409).json({ error: "Application already has that status." }); }
+      const inserted = await dbClient.query(
+        `INSERT INTO application_status_change_requests
+           (application_id, requested_by_user_id, requested_by_role, current_status, requested_status, reason)
+         VALUES ($1, $2, 'client', $3, $4, $5)
+         RETURNING id, current_status AS "currentStatus", requested_status AS "requestedStatus", status, created_at AS "createdAt"`,
+        [application.id, req.user.id, application.status, requestedStatus, reason?.trim() || null],
+      );
+      const requester = await dbClient.query(`SELECT first_name, last_name, company FROM users WHERE id = $1`, [req.user.id]);
+      const name = [requester.rows[0]?.first_name, requester.rows[0]?.last_name].filter(Boolean).join(" ") || requester.rows[0]?.company || "A Client";
+      const talent = [application.first_name, application.last_name].filter(Boolean).join(" ") || application.applicant_name || "a Talent";
+      const message = `${name} requested to change ${talent}'s application for ${application.job_title || "a job"} from ${submissionStatusLabel(application.status)} to ${submissionStatusLabel(requestedStatus)}.`;
+      await dbClient.query(
+        `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+         SELECT u.id, 'application_status_change_requested', 'Application status change requested', $1, $2, 'application_status_change_request'
+         FROM users u WHERE u.role = 'admin'`,
+        [message, inserted.rows[0].id],
+      );
+      await dbClient.query("COMMIT");
+      return res.status(201).json(inserted.rows[0]);
+    } catch (err: any) {
+      await dbClient.query("ROLLBACK").catch(() => {});
+      if (err?.code === "23505") return res.status(409).json({ error: "A status change request is already pending for this application." });
+      console.error("Create status change request failed:", err);
+      return res.status(500).json({ error: "Unable to create status change request." });
+    } finally { dbClient.release(); }
+  });
+
+  app.patch("/api/client/status-change-requests/:id/cancel", authenticateJWT, requireClient, async (req: any, res: Response) => {
+    const result = await query(
+      `UPDATE application_status_change_requests r SET status = 'cancelled', updated_at = NOW()
+       FROM job_submissions js JOIN jobs j ON j.id = js.job_id
+       WHERE r.id = $1 AND r.application_id = js.id AND j.client_id = $2 AND r.status = 'pending'
+       RETURNING r.id`,
+      [req.params.id, req.user.id],
+    );
+    if (!result.rows[0]) return res.status(409).json({ error: "This request can no longer be cancelled." });
+    return res.json({ success: true });
+  });
+
+  app.get("/api/admin/status-change-requests", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (_req: any, res: Response) => {
+    const result = await query(
+      `SELECT r.id, r.application_id AS "applicationId", r.current_status AS "currentStatus",
+              r.requested_status AS "requestedStatus", r.reason, r.created_at AS "createdAt",
+              js.email, js.first_name AS "firstName", js.last_name AS "lastName", js.applicant_name AS "applicantName",
+              js.status AS "actualStatus", j.title AS "jobTitle",
+              COALESCE(u.first_name || ' ' || u.last_name, u.company, u.email) AS "clientName"
+       FROM application_status_change_requests r
+       JOIN job_submissions js ON js.id = r.application_id
+       JOIN jobs j ON j.id = js.job_id
+       JOIN users u ON u.id = r.requested_by_user_id
+       WHERE r.status = 'pending'
+       ORDER BY r.created_at DESC`,
+    );
+    return res.json(result.rows);
+  });
+
+  app.post("/api/admin/status-change-requests/:id/reject", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    const dbClient = await getClient();
+    try {
+      await dbClient.query("BEGIN");
+      const result = await dbClient.query(
+        `UPDATE application_status_change_requests
+         SET status = 'rejected', reviewed_by_user_id = $1, reviewed_at = NOW(), admin_note = $2, updated_at = NOW()
+         WHERE id = $3 AND status = 'pending'
+         RETURNING application_id, requested_by_user_id, current_status, requested_status`,
+        [req.user.id, req.body?.adminNote?.trim() || null, req.params.id],
+      );
+      if (!result.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(409).json({ error: "This request is no longer pending." }); }
+      const r = result.rows[0];
+      await dbClient.query(
+        `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+         VALUES ($1, 'application_status_change_rejected', 'Status change request declined',
+                 'Your application status change request was declined.', $2, 'application_status_change_request')`,
+        [r.requested_by_user_id, req.params.id],
+      );
+      await dbClient.query("COMMIT");
+      return res.json({ success: true });
+    } catch (err) { await dbClient.query("ROLLBACK").catch(() => {}); return res.status(500).json({ error: "Unable to reject request." }); }
+    finally { dbClient.release(); }
+  });
+
   // ── Application Email Routes ──────────────────────────────────────────────────
   // TODO: Protect all application email routes with admin authorization before production.
 
@@ -15640,6 +15757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updateStage: rawUpdateStage,
       note,
       senderEmail: rawSenderEmail,
+      statusChangeRequestId,
     } = req.body ?? {};
     const sentBy: string | null = req.user?.id ?? null;
     const dbClient = await getClient();
@@ -15656,13 +15774,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { ADMIN_SETTABLE_STATUSES, CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
         await import("../shared/submissionStatuses");
-      const isClientActor = req.user?.role === "client";
+      const isClientActor = false;
       const LEGACY_STATUS_ALIASES: Record<string, string> = {
         submitted: "new",
         interview: "interviewing",
         offered: "offer_extended",
       };
-      const updateStage = rawUpdateStage
+      let updateStage = rawUpdateStage
         ? LEGACY_STATUS_ALIASES[rawUpdateStage] ?? rawUpdateStage
         : null;
 
@@ -15733,6 +15851,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       app_.job_title = jobRow.rows[0].title;
       app_.job_company = jobRow.rows[0].company;
       app_.job_location = jobRow.rows[0].location;
+
+      let approvedRequest: any = null;
+      if (statusChangeRequestId) {
+        const requestRow = await dbClient.query(
+          `SELECT id, requested_by_user_id, current_status, requested_status, status
+             FROM application_status_change_requests
+            WHERE id = $1 AND application_id = $2
+            FOR UPDATE`,
+          [statusChangeRequestId, id],
+        );
+        if (!requestRow.rows[0] || requestRow.rows[0].status !== "pending") {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "This status change request is no longer pending." });
+        }
+        approvedRequest = requestRow.rows[0];
+        if (app_.status !== approvedRequest.current_status) {
+          await dbClient.query(
+            `UPDATE application_status_change_requests
+             SET status = 'cancelled', admin_note = 'Application status changed before approval.',
+                 reviewed_by_user_id = $1, reviewed_at = NOW(), updated_at = NOW()
+             WHERE id = $2`,
+            [sentBy, statusChangeRequestId],
+          );
+          await dbClient.query("COMMIT");
+          return res.status(409).json({
+            error: "stale_status_change_request",
+            message: "This request can no longer be approved because the application's status has changed since it was submitted.",
+          });
+        }
+        updateStage = approvedRequest.requested_status;
+      }
 
       if (updateStage && updateStage === app_.status) {
         await rollbackQuietly();
@@ -15943,6 +16092,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             [adminMessage, id, id],
           );
         }
+        if (approvedRequest) {
+          await dbClient.query(
+            `UPDATE application_status_change_requests
+             SET status = 'approved', reviewed_by_user_id = $1, reviewed_at = NOW(),
+                 admin_note = $2, updated_at = NOW()
+             WHERE id = $3 AND status = 'pending'`,
+            [sentBy, note?.trim() || null, approvedRequest.id],
+          );
+          await dbClient.query(
+            `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
+             VALUES ($1, 'application_status_change_approved', 'Status change request approved',
+                     'Your requested application status change was approved.', $2, 'application_status_change_request')`,
+            [approvedRequest.requested_by_user_id, approvedRequest.id],
+          );
+        }
       }
 
       await dbClient.query("COMMIT");
@@ -15976,12 +16140,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     authenticateAdminFlexible,
     requireAdmin,
     requireAdminSubRole(["talent_acquisition"]),
-    handleApplicationStatusEmail,
-  );
-  app.post(
-    "/api/client/job-submissions/:id/status-with-email",
-    authenticateJWT,
-    requireClient,
     handleApplicationStatusEmail,
   );
 

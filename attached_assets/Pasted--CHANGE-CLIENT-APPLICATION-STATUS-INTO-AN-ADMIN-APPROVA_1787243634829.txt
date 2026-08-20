@@ -1,0 +1,1009 @@
+# CHANGE CLIENT APPLICATION STATUS INTO AN ADMIN APPROVAL WORKFLOW
+
+Stop allowing Client accounts to directly update a Talent's application status.
+
+The Client should only be able to **request** a status change.
+
+The Admin remains the authority that actually:
+
+1. approves the requested change
+2. chooses the email template
+3. sends the email to the Talent
+4. updates the canonical application status
+5. creates the application status history
+6. sends the Talent notification
+
+This replaces the currently broken Client-side direct status PATCH workflow.
+
+---
+
+# NEW WORKFLOW
+
+The complete workflow should be:
+
+```text
+CLIENT
+Application Details
+      ↓
+Select desired status
+      ↓
+Request Status Change
+      ↓
+Status Change Request created
+      ↓
+Admin receives notification
+
+ADMIN
+opens request
+      ↓
+Reviews:
+Current Status → Requested Status
+      ↓
+Approve / Reject Request
+      ↓
+If Approve:
+Email Applicant
+      ↓
+Choose template
+      ↓
+Edit / Preview
+      ↓
+Send Email
+      ↓
+ONLY AFTER EMAIL SUCCEEDS
+      ↓
+Update application status
+      ↓
+Complete request
+      ↓
+Talent receives notification
+```
+
+The Client must NEVER directly PATCH `job_submissions.status`.
+
+---
+
+# 1. CLIENT APPLICATION DETAILS
+
+Keep the status dropdown in the Client's Application Details modal, but change its purpose.
+
+It is now a REQUEST selector.
+
+Example:
+
+```text
+APPLICATION DETAILS
+
+POSITION
+Social Media Manager
+
+CURRENT STATUS
+New
+
+REQUEST STATUS CHANGE
+
+[ Under Review ▼ ]
+
+[ Request Status Change ]
+```
+
+Do not immediately change the application status when the Client selects something.
+
+---
+
+# 2. CONFIRMATION
+
+When Client clicks:
+
+`Request Status Change`
+
+show confirmation:
+
+```text
+Request status change?
+
+Talent:
+Valu Testu
+
+Position:
+Social Media Manager
+
+Current Status:
+New
+
+Requested Status:
+Under Review
+
+This request will be sent to an administrator for approval.
+
+[Cancel] [Send Request]
+```
+
+---
+
+# 3. CREATE STATUS CHANGE REQUEST
+
+Create a dedicated status-change-request record.
+
+Prefer a table conceptually like:
+
+```text
+application_status_change_requests
+```
+
+Suggested fields:
+
+```text
+id
+application_id
+requested_by_user_id
+requested_by_role
+current_status
+requested_status
+reason nullable
+status
+reviewed_by_user_id nullable
+reviewed_at nullable
+admin_note nullable
+created_at
+updated_at
+```
+
+Request status should use something like:
+
+```text
+pending
+approved
+rejected
+cancelled
+```
+
+Do NOT store this request as the actual application status.
+
+The canonical application remains in:
+
+`job_submissions.status`
+
+---
+
+# 4. CLIENT REQUEST MUST NOT MODIFY APPLICATION
+
+Example:
+
+Application currently:
+
+`New`
+
+Client requests:
+
+`Shortlisted`
+
+Database should remain:
+
+```text
+job_submissions.status = new
+```
+
+and create:
+
+```text
+status_change_request:
+current_status = new
+requested_status = shortlisted
+status = pending
+```
+
+This distinction is critical.
+
+---
+
+# 5. AUTHORIZATION
+
+Client may only create a request for an application belonging to one of the Client's own job postings.
+
+Validate server-side:
+
+```text
+application
+→ job posting
+→ client ownership
+→ authenticated Client
+```
+
+Never trust a `clientId` supplied by the frontend.
+
+---
+
+# 6. ADMIN NOTIFICATION
+
+When Client submits a request, notify Admin accounts.
+
+Example:
+
+Title:
+
+`Application status change requested`
+
+Message:
+
+`Val Client requested to change Valu Testu's application for Social Media Manager from New to Under Review.`
+
+Metadata should include:
+
+```text
+requestId
+applicationId
+jobId
+clientUserId
+talentUserId if available
+currentStatus
+requestedStatus
+```
+
+Clicking the notification should take Admin to the relevant request/application.
+
+---
+
+# 7. ADMIN STATUS REQUEST UI
+
+Add a way for Admin to see pending Client status requests.
+
+Prefer integrating it into the existing:
+
+`Admin Job Applications`
+
+feature rather than building a disconnected system.
+
+For an application with a pending request show something like:
+
+```text
+Valu Testu
+Social Media Manager
+
+Current: New
+
+CLIENT REQUEST
+New → Under Review
+
+Requested by:
+Val Client
+
+[Review Request]
+```
+
+Also provide a filter/badge such as:
+
+`Status Requests (3)`
+
+if appropriate.
+
+---
+
+# 8. ADMIN REVIEW MODAL
+
+Clicking `Review Request` should show:
+
+```text
+STATUS CHANGE REQUEST
+
+Client
+Val Client
+
+Talent
+Valu Testu
+
+Position
+Social Media Manager
+
+Current Status
+New
+
+Requested Status
+Under Review
+
+Requested
+August 20, 2026
+
+[Reject Request]
+
+[Approve & Email Applicant]
+```
+
+Admin must clearly see that this is a CLIENT REQUEST and not an already-applied status.
+
+---
+
+# 9. APPROVE & EMAIL APPLICANT
+
+When Admin clicks:
+
+`Approve & Email Applicant`
+
+open the EXISTING:
+
+`ApplicantEmailComposer`
+
+Do not create another email editor.
+
+Pass:
+
+```text
+application
+currentStatus
+requestedStatus
+requestId
+```
+
+into the existing workflow.
+
+---
+
+# 10. ADMIN CHOOSES TEMPLATE
+
+Admin must choose which email/template is appropriate.
+
+Example:
+
+```text
+Email Applicant — Valu Testu
+
+Status Change:
+New → Under Review
+
+From:
+OnSpot Careers <careers@onspotglobal.com>
+
+Template:
+[ Application Under Review ▼ ]
+
+Subject:
+Your application status has been updated
+
+Message:
+...
+
+[Preview] [Send Email & Approve]
+```
+
+Admin remains responsible for the email.
+
+---
+
+# 11. CRITICAL TRANSACTION RULE
+
+The request must NOT be approved and application status must NOT change until the Talent email succeeds.
+
+Correct order:
+
+```text
+validate request
+↓
+validate Admin
+↓
+validate transition
+↓
+validate applicant email
+↓
+send email
+↓
+email succeeds
+↓
+DB transaction:
+    update application status
+    create status history
+    mark request approved
+    create Talent notification
+↓
+commit
+```
+
+Do NOT do:
+
+```text
+approve request
+↓
+change status
+↓
+try email
+```
+
+---
+
+# 12. EMAIL FAILURE
+
+If email fails:
+
+Application status stays unchanged.
+
+Request stays:
+
+`pending`
+
+Display:
+
+`Email could not be sent. The status change request remains pending.`
+
+Admin should be able to try again.
+
+Do not force the Client to create another request.
+
+---
+
+# 13. ADMIN REJECT REQUEST
+
+Admin can choose:
+
+`Reject Request`
+
+Optionally allow:
+
+```text
+Reason / Admin note
+```
+
+Example:
+
+`Candidate must complete the initial interview before being shortlisted.`
+
+Then:
+
+```text
+request.status = rejected
+reviewed_by = adminUserId
+reviewed_at = now()
+```
+
+Application status DOES NOT change.
+
+No Talent email should be sent.
+
+---
+
+# 14. CLIENT NOTIFICATION AFTER REJECTION
+
+Notify the Client:
+
+Title:
+
+`Status change request declined`
+
+Message:
+
+`Your request to change Valu Testu's application for Social Media Manager from New to Shortlisted was declined.`
+
+If an Admin reason exists, make it available in request details.
+
+Do NOT notify the Talent about a rejected internal Client request because their actual application status never changed.
+
+---
+
+# 15. CLIENT NOTIFICATION AFTER APPROVAL
+
+Once Admin successfully sends the email and commits the status:
+
+notify Client:
+
+Title:
+
+`Status change request approved`
+
+Message:
+
+`Your request to change Valu Testu's application for Social Media Manager to Under Review was approved.`
+
+---
+
+# 16. TALENT NOTIFICATION
+
+Only after Admin approval + successful email + status commit:
+
+Talent receives:
+
+Title:
+
+`Application update`
+
+Message:
+
+`Your application for Social Media Manager is now Under Review.`
+
+Talent also receives the email composed by Admin.
+
+---
+
+# 17. DO NOT EXPOSE INTERNAL APPROVAL PROCESS TO TALENT
+
+Talent does not need notifications saying:
+
+`Val Client requested...`
+
+or:
+
+`Admin approved Val Client's request...`
+
+From the Talent perspective this is simply:
+
+`Your application status has been updated.`
+
+Keep the Client/Admin approval workflow internal.
+
+---
+
+# 18. PENDING REQUEST ON CLIENT
+
+Once a Client has submitted a request, Application Details should show:
+
+```text
+CURRENT STATUS
+New
+
+STATUS CHANGE REQUEST
+New → Under Review
+
+Pending Admin Approval
+
+Requested Aug 20, 2026
+```
+
+Disable another conflicting status request while this one is pending.
+
+---
+
+# 19. DO NOT ALLOW DUPLICATE PENDING REQUESTS
+
+There should only be ONE active pending status-change request per application.
+
+If Client clicks twice or refreshes:
+
+do not create duplicates.
+
+Enforce this server-side, preferably with a database constraint/index where appropriate.
+
+---
+
+# 20. CLIENT MAY CANCEL PENDING REQUEST
+
+If practical, allow:
+
+`Cancel Request`
+
+only while:
+
+`status = pending`
+
+After Admin begins/completes approval, Client cannot cancel it.
+
+Cancellation must NOT change the application status.
+
+---
+
+# 21. STALE REQUEST PROTECTION
+
+This is important.
+
+Suppose:
+
+```text
+Application = New
+
+Client requests:
+New → Under Review
+```
+
+Before Admin approves it, Admin independently changes the application:
+
+```text
+New → Reviewed
+```
+
+The Client request is now stale.
+
+When Admin tries to approve it, detect:
+
+```text
+actual current status !== request.current_status
+```
+
+Do NOT automatically apply the old request.
+
+Show:
+
+`This request can no longer be approved because the application's status has changed since the request was submitted.`
+
+Mark it:
+
+`cancelled`
+
+or:
+
+`superseded`
+
+depending on existing conventions.
+
+---
+
+# 22. ADMIN CAN STILL DIRECTLY CHANGE STATUS
+
+This new permission workflow applies to CLIENTS.
+
+Do NOT remove Admin's ability to initiate application status changes directly.
+
+Admin can still:
+
+```text
+Admin selects status
+→ Email Applicant
+→ Send
+→ Commit status
+```
+
+The difference is:
+
+CLIENT:
+
+```text
+Request
+→ Admin approval
+→ Admin email
+→ Commit
+```
+
+ADMIN:
+
+```text
+Select
+→ Admin email
+→ Commit
+```
+
+Both ultimately use the same canonical Admin status-transition service.
+
+---
+
+# 23. ONE FINAL STATUS ENGINE
+
+Architecture should now be:
+
+```text
+CLIENT
+   ↓
+StatusChangeRequest
+   ↓
+ADMIN APPROVAL
+   ↓
+ApplicationStatusService
+   ↓
+Email + status + history + notifications
+```
+
+Direct Admin changes:
+
+```text
+ADMIN
+   ↓
+ApplicationStatusService
+   ↓
+Email + status + history + notifications
+```
+
+There should no longer be:
+
+`ClientApplicationStatusService`
+
+that directly changes `job_submissions.status`.
+
+---
+
+# 24. REMOVE BROKEN CLIENT PATCH
+
+The current Client PATCH returning HTTP 500 should no longer be called from Client UI.
+
+Do not merely hide its error.
+
+Search for the mutation responsible for:
+
+```text
+PATCH /.../status
+```
+
+from Client Profile.
+
+Remove the Client UI caller.
+
+If the endpoint is Client-specific and no other legitimate callers remain:
+
+remove/deprecate it safely.
+
+A Client must not be able to bypass the Admin approval workflow by manually calling the old API.
+
+Return:
+
+`403 Forbidden`
+
+for unauthorized direct Client status mutations.
+
+---
+
+# 25. BACKEND SECURITY IS REQUIRED
+
+Do not implement this only by disabling the dropdown/frontend.
+
+Even if a Client manually calls:
+
+```text
+PATCH application/status
+```
+
+the backend must reject the direct status update.
+
+Only Admin may execute the actual transition.
+
+---
+
+# 26. APPLICATION HISTORY
+
+Do NOT add application status history when Client requests a change.
+
+A request is not an application status change.
+
+Only add history after Admin approves + email succeeds.
+
+History should record Admin as the actor performing the actual transition.
+
+If supported, metadata may additionally contain:
+
+```text
+requestedByClientUserId
+statusChangeRequestId
+```
+
+so the audit trail shows that the change originated from a Client request.
+
+---
+
+# 27. REQUEST AUDIT HISTORY
+
+The request itself should preserve:
+
+```text
+Requested by:
+Val Client
+
+Requested:
+New → Under Review
+
+Reviewed by:
+Admin Name
+
+Decision:
+Approved
+
+Final application transition:
+New → Under Review
+```
+
+This provides a clean audit trail.
+
+---
+
+# 28. NOTIFICATION GROUPING
+
+Do NOT mix these notifications with message notification grouping.
+
+Use dedicated notification types such as:
+
+```text
+application_status_change_requested
+application_status_change_approved
+application_status_change_rejected
+application_status_changed
+```
+
+Bell remains red-dot-only according to existing UI rules.
+
+---
+
+# 29. SPECIAL STATUSES
+
+Continue respecting:
+
+`shared/submissionStatuses.ts`
+
+Client must not be allowed to request impossible/forbidden transitions.
+
+Also do not allow Client to bypass dedicated workflows for:
+
+* offers
+* contracts
+* hired
+* withdrawn
+* other terminal/special statuses
+
+The backend must validate requested transitions.
+
+---
+
+# 30. MIGRATION
+
+If a new table is necessary, create a proper database migration.
+
+Do NOT rely on runtime table creation.
+
+Add indexes for:
+
+```text
+application_id
+requested_by_user_id
+status
+created_at
+```
+
+Also enforce one active pending request per application where supported.
+
+---
+
+# 31. ACCEPTANCE TEST — CLIENT REQUEST
+
+Starting application:
+
+```text
+Valu Testu
+Social Media Manager
+Status: New
+```
+
+Client selects:
+
+`Under Review`
+
+Expected:
+
+* NO PATCH to application status
+* application remains New
+* request created
+* Admin receives notification
+* Client sees Pending Admin Approval
+
+---
+
+# 32. ACCEPTANCE TEST — ADMIN APPROVES
+
+Admin opens request.
+
+Admin clicks:
+
+`Approve & Email Applicant`
+
+Admin selects template.
+
+Admin sends email successfully.
+
+Expected:
+
+```text
+request = approved
+application = under_review
+```
+
+And:
+
+* one Talent email
+* one Talent notification
+* one Client approval notification
+* one application status history record
+* no duplicate notifications
+
+---
+
+# 33. ACCEPTANCE TEST — ADMIN REJECTS
+
+Client requests:
+
+`New → Shortlisted`
+
+Admin rejects.
+
+Expected:
+
+```text
+application = New
+request = rejected
+```
+
+Client gets rejection notification.
+
+Talent gets nothing.
+
+---
+
+# 34. ACCEPTANCE TEST — EMAIL FAILURE
+
+Admin approves request but email provider fails.
+
+Expected:
+
+```text
+application = New
+request = pending
+```
+
+No Talent notification.
+
+No Client approval notification.
+
+Admin can retry.
+
+---
+
+# 35. ACCEPTANCE TEST — SECURITY
+
+Authenticated Client manually calls the direct application-status endpoint.
+
+Expected:
+
+`403`
+
+No DB status change.
+
+No email.
+
+No notification.
+
+---
+
+# 36. ACCEPTANCE TEST — STALE REQUEST
+
+Client requests:
+
+`New → Under Review`
+
+Admin independently changes:
+
+`New → Reviewed`
+
+Then tries to approve Client request.
+
+Expected:
+
+request cannot be applied because its expected current status was New.
+
+No email should be sent for the stale request.
+
+---
+
+# 37. FINAL REPORT
+
+After implementation report:
+
+1. old broken Client status endpoint
+2. exact cause of its 500 if identifiable
+3. how direct Client status changes were disabled
+4. new status request table/schema
+5. Client request endpoint
+6. Admin pending-request endpoint
+7. Admin approve endpoint
+8. Admin reject endpoint
+9. shared final application status service
+10. email composer integration
+11. Talent notifications
+12. Client approval/rejection notifications
+13. Admin request notifications
+14. duplicate-request protection
+15. stale-request protection
+16. authorization rules
+17. migration created
+18. files changed
+19. tests performed
+20. build/typecheck result
+
+# FINAL PRODUCT RULE
+
+**Clients request application status changes.**
+
+**Admins approve or reject those requests.**
+
+**Only Admins actually change the canonical application status.**
+
+**When approved, Admin chooses the email template and sends the Talent's email.**
+
+**The status is committed only after that email succeeds.**
