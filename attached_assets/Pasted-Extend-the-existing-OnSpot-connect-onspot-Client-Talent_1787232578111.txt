@@ -1,0 +1,1369 @@
+Extend the existing OnSpot / `connect-onspot` Client ↔ Talent messaging feature.
+
+## CURRENT STATE
+
+Messaging now works correctly in BOTH directions:
+
+* Client can send to Talent.
+* Talent receives the message.
+* Talent can reply.
+* Client receives the reply.
+* Both participants use the same persisted conversation.
+
+Do NOT rebuild messaging.
+
+Do NOT change the canonical thread architecture.
+
+The next task is to add:
+
+1. **New-message notifications for BOTH Client and Talent**
+2. **Unread badges on all messaging entry points**
+3. **Unread indicators inside the conversation list**
+4. **Notification Bell entries for incoming messages**
+5. **Delivered / Read message status**
+6. Proper clearing of unread state when the receiver opens the conversation
+
+Everything must remain consistent across Client and Talent.
+
+---
+
+# PRIMARY UX GOAL
+
+When Person A sends a message to Person B:
+
+Person B should immediately/shortly see indicators in:
+
+* Notification Bell
+* Messages navigation item
+* Messages account dropdown item
+* relevant application messaging button where appropriate
+* conversation/thread list
+
+When Person B opens the conversation:
+
+* unread indicators clear
+* associated message notification becomes read
+* Person A eventually sees:
+  `Read`
+
+under their sent message
+
+Before Person B reads it:
+
+Person A sees:
+`Delivered`
+
+---
+
+# IMPORTANT DEFINITIONS
+
+For this application, define status accurately.
+
+## Delivered
+
+`Delivered` means:
+
+> The message was successfully persisted by the OnSpot backend/database and is available to the recipient.
+
+Do NOT claim device-level push delivery because this application does not currently have that infrastructure.
+
+After:
+
+`POST /api/messages`
+
+successfully commits the message:
+
+sender may display:
+
+`Delivered`
+
+## Read
+
+`Read` means:
+
+> The other participant has opened/read the conversation and their canonical `users.id` exists in the message's `readBy` state.
+
+Do not fake Read based on elapsed time.
+
+---
+
+# PRESERVE EXISTING DATA MODEL
+
+Audit current schema first.
+
+Messages already support concepts such as:
+
+* `senderId`
+* `threadId`
+* `readBy`
+* `createdAt`
+* `messageType`
+
+Reuse them.
+
+Do NOT add a second:
+
+* `isRead`
+* `delivered`
+* `seen`
+
+column unless genuinely necessary.
+
+The existing `readBy` model should be the source of truth for Read status.
+
+---
+
+# FIRST — AUDIT CURRENT IMPLEMENTATION
+
+Before changing code, inspect:
+
+### Messaging frontend
+
+* `client/src/pages/Messages.tsx`
+* any remaining `Inbox.tsx`
+* application Message / Reach the Client actions
+
+### Unread logic
+
+* `client/src/hooks/useUnreadMessagesCount.ts`
+* all usages of that hook
+
+### Navigation
+
+* `client/src/components/TopNavigation.tsx`
+* Client sidebar / Client layout
+* Talent Profile dropdown
+
+### Notifications
+
+* `client/src/components/NotificationBell.tsx`
+* notification APIs
+* notification storage methods
+
+### Backend
+
+* `POST /api/messages`
+* `GET /api/me/message-threads`
+* `GET /api/message-threads/:threadId/messages`
+* `POST /api/message-threads/:threadId/mark-read`
+
+### Database
+
+* `message_threads`
+* `messages`
+* `notifications`
+
+### Tests
+
+* message thread tests
+* notification auth tests
+* messaging production tests
+
+Do not implement separate competing unread calculations.
+
+---
+
+# IMPORTANT CURRENT ISSUE — UNREAD HOOK
+
+Audit:
+
+`client/src/hooks/useUnreadMessagesCount.ts`
+
+It currently behaves primarily as a Talent unread hook.
+
+That is no longer sufficient.
+
+Convert this into a **role-neutral unread messaging hook** that works for:
+
+* Client main JWT
+* Talent main JWT
+* Talent profile/candidate JWT
+
+Conceptually:
+
+```ts
+useUnreadMessagesCount()
+```
+
+should return the logged-in user's unread message count regardless of whether they are Client or Talent.
+
+Do not return zero simply because:
+
+`user.role === "client"`
+
+---
+
+# ONE SOURCE OF TRUTH FOR UNREAD
+
+Do not calculate unread based only on notification rows if actual message read state can disagree.
+
+Preferred canonical definition:
+
+A message is unread for user X when:
+
+```text
+X belongs to thread
+AND message.senderId != X
+AND X is NOT in message.readBy
+```
+
+Ideally expose server-calculated unread counts from:
+
+`GET /api/me/message-threads`
+
+or a dedicated authenticated unread endpoint.
+
+For example, each thread may return:
+
+```json
+{
+  "id": "...",
+  "unreadCount": 2
+}
+```
+
+and optionally response-level:
+
+```json
+{
+  "totalUnreadCount": 3
+}
+```
+
+Then navigation badges can use the same canonical value.
+
+If the current notification system remains the source of the global badge, ensure it is reconciled perfectly with message read state.
+
+Do not have two independent counts that disagree.
+
+---
+
+# CLIENT SIDEBAR — MESSAGES BADGE
+
+The Client sidebar currently contains:
+
+`Messages`
+
+Add a badge when Client has unread messages.
+
+Example:
+
+```text
+Messages                         2
+```
+
+or a red circular badge:
+
+`2`
+
+If count > 99:
+
+`99+`
+
+If zero:
+
+show no badge.
+
+Use the existing visual system.
+
+Do not permanently show a zero.
+
+---
+
+# TALENT PROFILE DROPDOWN — MESSAGES BADGE
+
+The Talent Profile dropdown now contains:
+
+`Messages`
+
+Add the same unread indicator.
+
+Example:
+
+```text
+Messages                         2
+```
+
+This must work for BOTH:
+
+* Talent main JWT
+* Talent profile/candidate auth
+
+The badge should update after reading messages.
+
+---
+
+# TOP MESSAGE BUTTON
+
+The Talent My Applications page has a page-level:
+
+`Messages`
+
+button.
+
+If unread messages exist, show a badge there too.
+
+Example:
+
+```text
+[ Messages  2 ]
+```
+
+Do not create another unread query just for this button.
+
+Reuse the shared hook/state.
+
+---
+
+# APPLICATION-LEVEL BUTTONS
+
+Current application messaging actions include things such as:
+
+Client:
+`Message`
+
+Talent:
+`Reach the Client`
+
+If there is an unread message specifically associated with that application's canonical thread, add a small dot/count.
+
+Examples:
+
+```text
+Message  •
+```
+
+or:
+
+```text
+Message  1
+```
+
+Talent:
+
+```text
+Reach the Client  •
+```
+
+IMPORTANT:
+
+Do NOT put the global unread count on every application row.
+
+Only show an application-level badge when the thread tied to THAT application has unread messages.
+
+If application → thread mapping is not reliable, skip the per-application count rather than display incorrect information.
+
+---
+
+# CONVERSATION LIST — UNREAD INDICATOR
+
+Inside `/messages`, every thread should show unread status.
+
+Example:
+
+```text
+Val Client                        9:20 PM
+Social Media Manager                   2
+```
+
+or:
+
+```text
+● Val Client                      9:20 PM
+  Social Media Manager
+```
+
+Unread threads should be visually distinguishable using:
+
+* bold participant name
+* unread dot
+* count badge
+
+Do not overly redesign the UI.
+
+---
+
+# THREAD SORTING
+
+New incoming messages should bring the thread to the top.
+
+Sort by:
+
+`lastMessageAt DESC`
+
+server-side or reliably before rendering.
+
+Do not rely on stale original creation order.
+
+---
+
+# NOTIFICATION BELL — NEW MESSAGE
+
+When Client sends a message to Talent:
+
+Talent Notification Bell should receive:
+
+**New message**
+
+`Val Client sent you a message.`
+
+or include job context:
+
+`Val Client sent you a message about Social Media Manager.`
+
+When Talent sends to Client:
+
+Client receives:
+
+**New message**
+
+`Valu Testu sent you a message.`
+
+Use safe display names.
+
+Never include:
+
+* email
+* phone
+* message body containing potential PII
+
+in the notification preview.
+
+---
+
+# NOTIFICATION TYPE
+
+Reuse existing:
+
+`new_message`
+
+if already implemented.
+
+Do NOT create:
+
+* `message_received`
+* `chat_message`
+* `new_chat`
+
+in parallel if `new_message` already exists.
+
+One canonical message notification type.
+
+---
+
+# NOTIFICATION RECIPIENT
+
+When sending:
+
+notify every thread participant EXCEPT the sender.
+
+For a normal Client↔Talent thread:
+
+one recipient.
+
+Recipient must be canonical:
+
+`users.id`
+
+Do not use:
+
+* candidate ID
+* email
+* application ID
+
+as notification owner.
+
+---
+
+# NOTIFICATION RELATED ID
+
+The notification should point to the canonical:
+
+`threadId`
+
+Prefer:
+
+```text
+type: new_message
+relatedType: message_thread
+relatedId: threadId
+```
+
+or retain the existing equivalent contract.
+
+Clicking notification should navigate directly to:
+
+`/messages/:threadId`
+
+---
+
+# NOTIFICATION CLICK
+
+When user clicks:
+
+**New message**
+
+in Notification Bell:
+
+1. mark notification read according to current notification behavior
+2. navigate:
+   `/messages/:threadId`
+3. open exact conversation
+4. mark conversation messages read
+5. clear/update unread message badge
+
+Do not send them only to generic `/messages` if a valid thread ID exists.
+
+---
+
+# DO NOT CREATE DUPLICATE MESSAGE NOTIFICATIONS
+
+Each successfully stored message should generate at most ONE notification per recipient.
+
+Protect against:
+
+* send retries
+* React mutation retries
+* duplicate requests
+* DB retries
+
+Do not generate another notification merely because the recipient polls the thread.
+
+Notification creation belongs to successful message creation.
+
+---
+
+# MARK READ
+
+Audit:
+
+`POST /api/message-threads/:threadId/mark-read`
+
+When receiver opens a thread:
+
+for all messages in that thread where:
+
+```text
+senderId != currentUserId
+AND currentUserId NOT in readBy
+```
+
+add:
+
+`currentUserId`
+
+to `readBy`.
+
+Do not modify sender identity.
+
+Do not remove existing readers.
+
+Make operation idempotent.
+
+Calling mark-read 5 times should not duplicate the user ID.
+
+---
+
+# MARK RELATED NOTIFICATIONS READ
+
+When the thread is marked read:
+
+also reconcile corresponding unread:
+
+`new_message`
+
+notifications for that same:
+
+`threadId`
+
+for that recipient.
+
+Do not mark unrelated message threads read.
+
+Do not mark:
+
+* application updates
+* offers
+* withdrawals
+
+as read.
+
+---
+
+# IMPORTANT CURRENT FRONTEND CHANGE
+
+Audit:
+
+`Messages.tsx`
+
+Its message DTO must expose:
+
+```ts
+readBy: string[] | null
+```
+
+or equivalent.
+
+Without that field the sender cannot know whether the recipient has read the message.
+
+Make sure:
+
+`GET /api/message-threads/:threadId/messages`
+
+returns this authorized read-state information.
+
+Do not expose unnecessary private fields.
+
+---
+
+# MESSAGE BUBBLE — DELIVERED / READ
+
+For messages sent by the current user:
+
+show status below timestamp.
+
+Example:
+
+```text
+Test
+9:20 PM · Delivered
+```
+
+Then after recipient opens thread:
+
+```text
+Test
+9:20 PM · Read
+```
+
+Only show this on the current user's own messages.
+
+Do not show:
+
+`Delivered`
+
+under incoming messages.
+
+---
+
+# VISUAL STYLE
+
+Keep subtle.
+
+Suggested styles:
+
+Delivered:
+small muted text
+
+Read:
+small accent text or check icon
+
+Example:
+
+```text
+9:20 PM · Delivered
+```
+
+```text
+9:20 PM · Read
+```
+
+Do not use giant badges.
+
+---
+
+# OPTIONAL CHECK ICONS
+
+If desired:
+
+Delivered:
+
+`✓ Delivered`
+
+Read:
+
+`✓✓ Read`
+
+But keep wording visible for clarity/accessibility.
+
+Do not rely only on icon color.
+
+---
+
+# READ STATUS LOGIC
+
+For a two-party Client↔Talent thread:
+
+```ts
+const otherParticipantId =
+  thread.participants.find(id => id !== meId);
+
+const isRead =
+  !!otherParticipantId &&
+  message.readBy?.includes(otherParticipantId);
+```
+
+Then:
+
+```text
+isRead ? "Read" : "Delivered"
+```
+
+Adapt this to existing backend response.
+
+Do not simply check:
+
+`readBy.length > 1`
+
+if there are system/group cases where that would be inaccurate.
+
+---
+
+# SYSTEM MESSAGES
+
+Do not display Delivered/Read under:
+
+`messageType === "system"`
+
+Only human participant messages.
+
+---
+
+# IMMEDIATE SEND UX
+
+After user sends:
+
+show the message immediately if safe using optimistic update.
+
+Possible lifecycle:
+
+```text
+Sending…
+↓
+Delivered
+↓
+Read
+```
+
+At minimum:
+
+successful POST → Delivered.
+
+Do not show Delivered before backend confirms persistence.
+
+If send fails:
+
+show error and allow retry.
+
+---
+
+# READ STATUS REFRESH
+
+The sender needs to see status change from:
+
+Delivered → Read
+
+after receiver opens conversation.
+
+Because app currently uses polling, do not introduce WebSockets just for this.
+
+Active thread may refetch every:
+
+3–5 seconds
+
+or use current reasonable interval.
+
+When receiver marks read:
+
+sender eventually receives updated `readBy`.
+
+Also use:
+
+`refetchOnWindowFocus: true`
+
+---
+
+# CLEAR BADGES PROMPTLY
+
+When user opens an unread thread:
+
+do not wait 30 seconds for navigation badges to disappear.
+
+After successful mark-read:
+
+invalidate/refetch:
+
+* active thread messages
+* message thread list
+* total unread message count
+* Notification Bell query
+
+Use shared React Query invalidation.
+
+---
+
+# CLIENT NAVIGATION BADGE
+
+Ensure Client layout/sidebar can consume:
+
+`useUnreadMessagesCount()`
+
+without Talent-specific assumptions.
+
+The Client should see:
+
+```text
+Messages   1
+```
+
+when Talent sends one unread message.
+
+---
+
+# TALENT NAVIGATION BADGE
+
+When Client sends one:
+
+Talent dropdown should show:
+
+```text
+Messages   1
+```
+
+and notification bell should increment.
+
+---
+
+# NOTIFICATION BELL COUNT
+
+The global Bell count may include OTHER notification types.
+
+Do not replace it with the unread-message count.
+
+Example Talent has:
+
+* 2 application updates
+* 1 new message
+
+Bell may show:
+
+`3`
+
+Messages entry should show:
+
+`1`
+
+Keep these concepts separate.
+
+---
+
+# CLIENT EXAMPLE
+
+Talent sends:
+
+`Hello, I wanted to follow up.`
+
+Expected Client state BEFORE opening:
+
+### Bell
+
+`1`
+
+### Notification
+
+```text
+New message
+Valu Testu sent you a message about Social Media Manager.
+```
+
+### Client sidebar
+
+```text
+Messages   1
+```
+
+### Job Submission Message button
+
+```text
+Message   •
+```
+
+### Conversation list
+
+Valu Testu thread marked unread.
+
+After Client opens conversation:
+
+* Bell message notification becomes read
+* Messages badge becomes 0/disappears
+* thread unread dot disappears
+* Talent sees Client has `Read` the message
+
+---
+
+# TALENT EXAMPLE
+
+Client sends:
+
+`Test`
+
+Expected Talent BEFORE opening:
+
+### Bell
+
+increment
+
+### Notification
+
+```text
+New message
+Val Client sent you a message about Social Media Manager.
+```
+
+### Talent dropdown
+
+```text
+Messages   1
+```
+
+### My Applications
+
+```text
+Reach the Client   •
+```
+
+### Messages thread
+
+unread indicator
+
+After Talent opens:
+
+everything clears.
+
+Client eventually sees:
+
+`Read`
+
+under `Test`.
+
+---
+
+# DELIVERED EXAMPLE
+
+Client sends:
+
+`Test`
+
+POST succeeds.
+
+Client immediately sees:
+
+```text
+Test
+9:20 PM · Delivered
+```
+
+Talent has not opened thread yet.
+
+After Talent opens it:
+
+Client sees:
+
+```text
+Test
+9:20 PM · Read
+```
+
+after next refresh/refetch.
+
+---
+
+# CLIENT/TALENT AUTH
+
+Do not regress identity handling.
+
+Unread/read/notification logic must work for:
+
+### Client
+
+main JWT
+
+### Talent
+
+main JWT
+
+### Talent
+
+candidate/profile JWT
+
+Normalize Talent session to canonical:
+
+`users.id`
+
+before:
+
+* unread calculation
+* `readBy`
+* notification recipient
+* participant checks
+
+---
+
+# SECURITY
+
+Never allow a client-supplied:
+
+`userId`
+
+to determine who is marking messages read.
+
+The server derives reader from authenticated identity.
+
+A malicious user cannot mark another person's messages read.
+
+Participant-only authorization remains mandatory.
+
+---
+
+# MESSAGE NOTIFICATION PRIVACY
+
+Do not put the raw message body into Bell notification if it can contain:
+
+* email
+* phone
+* personal data
+
+Safer:
+
+`Valu Testu sent you a new message.`
+
+Job title may be included if allowed.
+
+---
+
+# DATABASE SAFETY
+
+Prefer existing:
+
+`readBy`
+
+and:
+
+`notifications`
+
+storage.
+
+Most likely no schema migration should be needed.
+
+If no migration is required, report:
+
+`No database migration was required.`
+
+Do not rewrite historical messages.
+
+---
+
+# EXISTING HISTORICAL MESSAGES
+
+For old messages where sender is not currently represented in `readBy`, handle gracefully.
+
+Do not mark all old history as unread automatically if that would cause massive fake badges.
+
+Audit current data behavior.
+
+If necessary, calculate unread using existing notification/read records or introduce a safe compatibility rule.
+
+Do not bulk mutate production data without explicit need.
+
+---
+
+# THREAD LIST API RESPONSE
+
+Preferred response shape:
+
+```json
+{
+  "userId": "...",
+  "totalUnreadCount": 2,
+  "participantNames": {},
+  "threads": [
+    {
+      "id": "...",
+      "unreadCount": 2,
+      "lastMessageAt": "...",
+      "subject": "Social Media Manager"
+    }
+  ]
+}
+```
+
+Adapt existing contract instead of creating a redundant API if possible.
+
+---
+
+# TEST MATRIX — CLIENT → TALENT
+
+1. Client and Talent share thread.
+2. Client sends message.
+3. DB message persisted.
+4. Talent receives exactly one `new_message` notification.
+5. Talent Bell increments.
+6. Talent Messages menu badge increments.
+7. thread unread count increments.
+8. Client sees Delivered.
+9. Talent opens thread.
+10. mark-read succeeds.
+11. Talent badges clear.
+12. notification is read.
+13. message `readBy` contains Talent canonical users.id.
+14. Client sees Read.
+
+---
+
+# TEST MATRIX — TALENT → CLIENT
+
+Repeat exact flow reverse:
+
+Talent sends.
+
+Client:
+
+* Bell notification
+* sidebar Messages badge
+* application Message badge if applicable
+* unread thread
+
+Talent:
+
+* Delivered before Client reads
+* Read after Client opens
+
+---
+
+# TEST — MULTIPLE MESSAGES
+
+Sender sends:
+
+```text
+Message 1
+Message 2
+Message 3
+```
+
+Receiver has not opened conversation.
+
+Expected:
+
+unread message count = 3
+
+You may create one notification per message if that is current product behavior.
+
+If batching notifications is introduced, do so only deliberately.
+
+Do NOT accidentally create duplicates.
+
+When thread opens:
+
+all three become read.
+
+Sender sees each as Read.
+
+---
+
+# TEST — MULTIPLE THREADS
+
+Talent receives:
+
+2 unread from Client A
+1 unread from Client B
+
+Expected:
+
+global Messages badge:
+
+`3`
+
+Thread A:
+
+`2`
+
+Thread B:
+
+`1`
+
+Opening Thread A:
+
+global → `1`
+
+Thread A → no unread
+
+Thread B → `1`
+
+Do not clear every thread globally.
+
+---
+
+# TEST — OWN MESSAGE
+
+Sender's own message must never increase sender unread count.
+
+Do not send `new_message` notification to sender.
+
+---
+
+# TEST — REFRESH
+
+After receiver reads thread:
+
+refresh page.
+
+Unread must remain cleared.
+
+After sender refreshes:
+
+Read status must remain.
+
+No frontend-only state.
+
+---
+
+# TEST — LOGOUT / LOGIN
+
+After receiver reads:
+
+logout/login.
+
+Still read.
+
+After unread message:
+
+logout/login before reading.
+
+Unread still exists.
+
+Persistent DB state required.
+
+---
+
+# NOTIFICATION CLICK TEST
+
+Click Bell:
+
+`New message`
+
+Expected:
+
+exact:
+
+`/messages/:threadId`
+
+Conversation selected.
+
+Thread marked read.
+
+Badge clears.
+
+---
+
+# REGRESSION CHECKS
+
+Do not mark complete until verifying:
+
+* Client dashboard sidebar
+* Talent dropdown
+* Client Messages
+* Talent Messages
+* Message button
+* Reach the Client
+* application notifications
+* withdrawal notifications
+* offer notifications
+* application statuses
+* messaging PII moderation
+* message authorization
+* Client/Talent auth
+* no duplicate threads
+* no duplicate notifications
+
+---
+
+# FILES LIKELY TO CHANGE
+
+Audit before editing, but likely:
+
+### Frontend
+
+* `client/src/pages/Messages.tsx`
+* `client/src/hooks/useUnreadMessagesCount.ts`
+* `client/src/components/NotificationBell.tsx`
+* `client/src/components/TopNavigation.tsx`
+* Client sidebar/layout component
+* Client application/submission component
+* `client/src/pages/TalentApplications.tsx`
+
+### Backend
+
+* messaging routes
+* notification creation
+* thread listing/unread aggregation
+* mark-read endpoint
+
+### Tests
+
+* message thread tests
+* notification tests
+* read-state tests
+
+Do not change unrelated business features.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client receives message notification
+* Talent receives message notification
+* Client Messages sidebar has unread badge
+* Talent Messages dropdown has unread badge
+* Talent page Messages button has unread badge
+* relevant Message/Reach Client actions can indicate thread unread state
+* thread list displays unread state
+* Notification Bell displays New message
+* Bell click opens correct thread
+* opening thread clears correct unread state
+* other notification types stay untouched
+* sender sees Delivered after successful save
+* sender sees Read after recipient opens
+* Read persists after refresh
+* unread persists until recipient reads
+* Client main JWT works
+* Talent main JWT works
+* Talent profile JWT works
+* no duplicate notifications
+* no duplicate threads
+* build/tests pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. unread source of truth
+2. Client badge implementation
+3. Talent badge implementation
+4. Notification Bell implementation
+5. notification type/related ID
+6. Delivered definition
+7. Read definition
+8. `readBy` behavior
+9. mark-read behavior
+10. files changed
+11. tests run
+12. regression results
+13. whether migration was needed
+
+Do not fake Delivered or Read.
+
+The database message state, unread badges, Notification Bell, and message bubble status must all agree.
