@@ -1,0 +1,430 @@
+Update the existing OnSpot / `connect-onspot` notification bell UI.
+
+## GOAL
+
+Change the unread notification indicator on the **Notification Bell only**.
+
+Current behavior:
+
+```text
+Bell icon + red badge with number
+Example:
+4
+```
+
+Desired behavior:
+
+```text
+Bell icon + small red dot
+```
+
+No number.
+
+The red dot should simply indicate:
+
+> There is at least one unread notification.
+
+This change must apply to BOTH:
+
+* Client
+* Talent
+
+---
+
+# VERY IMPORTANT SCOPE
+
+This change is ONLY for the Notification Bell.
+
+Do NOT change numeric unread badges anywhere else.
+
+Keep numeric counts on:
+
+* Client sidebar → Messages
+* Client Profile dropdown → Messages
+* Talent Profile dropdown → Messages
+* Talent My Applications → Messages button
+* `Message` buttons in Job Submissions
+* `Reach the Client`
+* conversation/thread unread counts
+* any other message-specific unread counters
+
+Those should remain numeric.
+
+Only the Bell becomes a dot.
+
+---
+
+# EXPECTED BEHAVIOR
+
+## Zero unread notifications
+
+Show:
+
+```text
+Bell icon
+```
+
+No red dot.
+
+## One or more unread notifications
+
+Show:
+
+```text
+Bell icon + red dot
+```
+
+Whether there is:
+
+* 1
+* 2
+* 4
+* 25
+
+the Bell should look exactly the same.
+
+Do NOT display the number.
+
+---
+
+# FILES TO AUDIT
+
+Inspect the existing notification Bell implementation, especially:
+
+`client/src/components/NotificationBell.tsx`
+
+Also check whether:
+
+`TopNavigation.tsx`
+
+renders its own notification badge or passes unread count into NotificationBell.
+
+Search for:
+
+* unread notification count
+* `NotificationBell`
+* Bell icon
+* badge classes
+* absolute red badge
+* `unreadCount`
+* `notifications.length`
+* `99+`
+
+Do not modify unrelated notification logic.
+
+---
+
+# DO NOT CHANGE NOTIFICATION DATA
+
+Keep all existing notification behavior exactly the same.
+
+Do NOT change:
+
+* notification creation
+* notification database storage
+* unread/read state
+* notification API
+* Client notifications
+* Talent notifications
+* message notifications
+* application update notifications
+* offer notifications
+* withdrawal notifications
+* click navigation
+* notification dropdown contents
+
+Only change how the Bell indicates unread notifications.
+
+---
+
+# IMPLEMENTATION
+
+If the current code does something like:
+
+```tsx
+{unreadCount > 0 && (
+  <span className="...">
+    {unreadCount}
+  </span>
+)}
+```
+
+change it conceptually to:
+
+```tsx
+{unreadCount > 0 && (
+  <span
+    className="absolute rounded-full bg-red-500"
+    aria-label="Unread notifications"
+  />
+)}
+```
+
+Adapt to the existing component/classes.
+
+Do not hardcode the exact example if the design system already has a shared notification indicator style.
+
+---
+
+# DOT SIZE
+
+Keep it small.
+
+Suggested approximate dimensions:
+
+```text
+6px–8px
+```
+
+or:
+
+```text
+w-2 h-2
+```
+
+Use whatever looks visually balanced with the existing Bell.
+
+Do not make it large enough to look like a button.
+
+---
+
+# DOT POSITION
+
+Place the red dot near the upper-right corner of the Bell icon.
+
+Example:
+
+```text
+      ●
+    🔔
+```
+
+It should not:
+
+* cover most of the Bell
+* shift the Bell position
+* change TopNavigation height
+* affect neighboring buttons
+
+Use absolute positioning inside a relative Bell container.
+
+---
+
+# ACCESSIBILITY
+
+Because the number is no longer visible, preserve an accessible indication.
+
+For example:
+
+```tsx
+aria-label={
+  unreadCount > 0
+    ? `${unreadCount} unread notifications`
+    : "Notifications"
+}
+```
+
+The visual dot should not be the only information available to screen readers.
+
+The tooltip/dropdown may still show actual notification details.
+
+---
+
+# CLIENT
+
+Test Client TopNavigation.
+
+If Client has unread notifications:
+
+show red dot.
+
+Examples:
+
+Client has:
+
+* 1 message notification
+* 2 application-related notifications
+
+Bell:
+
+red dot only.
+
+Do NOT display:
+
+`3`
+
+---
+
+# TALENT
+
+Same behavior for Talent.
+
+Talent may have:
+
+* Application update
+* Offer
+* New message
+
+If any notification is unread:
+
+show one red dot.
+
+No number.
+
+---
+
+# WHEN NOTIFICATIONS ARE READ
+
+If all notifications become read:
+
+remove the red dot.
+
+If at least one remains unread:
+
+keep red dot.
+
+Do not clear the dot just because the dropdown was opened unless the existing product already marks everything read when opening.
+
+Preserve existing read semantics.
+
+---
+
+# NOTIFICATION DROPDOWN
+
+Do not modify the contents of the dropdown.
+
+It may continue displaying:
+
+* notification cards
+* unread dots on individual notification rows
+* `1 new`, `3 new`, etc. inside the dropdown if that is part of the current design
+
+The request is specifically for the **Bell icon badge only**.
+
+Do not remove counts from inside the notification panel unless they are literally the Bell badge.
+
+---
+
+# TOPNAVIGATION
+
+Do not change:
+
+* Client Profile
+* Talent Profile
+* Hire Talent
+* Find Work
+* TopNavigation scroll behavior
+* layout
+* dropdowns
+* logo
+
+Only Bell indicator rendering.
+
+---
+
+# DO NOT TOUCH MESSAGE BADGES
+
+This is critical.
+
+Examples that must remain numeric:
+
+```text
+Client sidebar:
+Messages 3
+
+Talent dropdown:
+Messages 2
+
+Talent page:
+Messages 2
+
+Job Submission:
+Message 1
+
+Application:
+Reach the Client 1
+```
+
+Do not convert these to dots.
+
+---
+
+# TEST CASES
+
+## Test 1 — zero notifications
+
+Expected:
+
+Bell only.
+
+No dot.
+
+---
+
+## Test 2 — one unread
+
+Expected:
+
+Bell + red dot.
+
+No `1`.
+
+---
+
+## Test 3 — four unread
+
+Expected:
+
+Bell + same red dot.
+
+No `4`.
+
+---
+
+## Test 4 — mixed notifications
+
+Client/Talent has:
+
+* application notification
+* message notification
+* offer notification
+
+Expected:
+
+one red dot.
+
+---
+
+## Test 5 — mark all read
+
+After all notifications become read:
+
+dot disappears.
+
+---
+
+## Test 6 — message counters
+
+Confirm separately:
+
+numeric message unread indicators remain unchanged.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client Bell uses red dot only
+* Talent Bell uses red dot only
+* no number appears on Bell
+* dot appears whenever unreadCount > 0
+* dot disappears when unreadCount === 0
+* notification dropdown still works
+* notification types remain unchanged
+* message numeric badges remain unchanged
+* application/message/offer notification functionality is untouched
+* accessibility label remains meaningful
+* build/type checks pass
+
+This is a targeted visual change only.
