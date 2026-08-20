@@ -1,0 +1,1002 @@
+Improve the existing OnSpot / `connect-onspot` notification system so repeated chat messages do not spam the Notification Bell.
+
+## CURRENT PROBLEM
+
+Messaging works correctly, but every individual incoming chat message currently creates its own Bell notification.
+
+Example:
+
+Talent sends Client 5 messages in a short period.
+
+Current Bell:
+
+```text id="flq9xb"
+New message
+You have a new message.
+
+New message
+You have a new message.
+
+New message
+You have a new message.
+
+New message
+You have a new message.
+
+New message
+You have a new message.
+```
+
+This is noisy and looks like notification spam.
+
+---
+
+# REQUIRED RESULT
+
+Compress consecutive/recent unread message notifications from the SAME conversation into ONE notification card.
+
+Example:
+
+Talent sends Client 3 messages.
+
+Instead of 3 notification cards, show:
+
+```text id="uu6n3z"
+New messages
+Valu Testu sent 3 messages.
+```
+
+or:
+
+```text id="48gqdt"
+3 new messages
+Valu Testu sent you 3 messages.
+```
+
+If job context is available:
+
+```text id="favwvo"
+New messages
+Valu Testu sent 3 messages about Social Media Manager.
+```
+
+Use safe display names.
+
+---
+
+# IMPORTANT SCOPE
+
+This change applies to message-notification aggregation for:
+
+* Client accounts
+* Talent accounts
+* Admin accounts IF Admin receives normal `new_message` notifications as a participant
+
+Do NOT alter unrelated notification types.
+
+Examples that must remain independent:
+
+* Application update
+* New application received
+* Application withdrawn
+* Offer received
+* Offer accepted
+* Offer declined
+* Admin alerts
+* other system notifications
+
+Only aggregate repeated:
+
+`new_message`
+
+notifications.
+
+---
+
+# DO NOT AGGREGATE THE ACTUAL MESSAGES
+
+This is critical.
+
+If a user sends:
+
+```text id="pjj6yj"
+Hello
+Are you available?
+Can we discuss the role?
+```
+
+the messages table must still contain THREE messages.
+
+The receiver's unread message count must still be:
+
+`3`
+
+The thread should still display all three messages.
+
+Delivered / Read state must still work per message.
+
+Only the **Bell notification representation** should be compressed.
+
+---
+
+# KEEP MESSAGE BADGES NUMERIC
+
+Do not change:
+
+* Client sidebar Messages count
+* Client dropdown Messages count
+* Talent dropdown Messages count
+* Talent page Messages count
+* Job Submission Message count
+* Reach the Client count
+* thread unread count
+
+If 3 messages are unread:
+
+those message-specific indicators should still show:
+
+`3`
+
+Even if the Bell contains only ONE grouped notification card.
+
+---
+
+# BELL RED DOT
+
+The Bell itself was intentionally changed to a red dot instead of a number.
+
+Preserve that.
+
+If one or more unread notifications exist:
+
+show red dot.
+
+Do not bring back a number on the Bell icon.
+
+---
+
+# AGGREGATION KEY
+
+Group message notifications by:
+
+1. recipient
+2. canonical message thread
+3. notification type = `new_message`
+
+Do NOT group different threads together.
+
+Example:
+
+Client A sends 3 messages in Thread A.
+
+Client B sends 2 messages in Thread B.
+
+Talent should see TWO Bell cards:
+
+```text id="bcn59v"
+Client A sent 3 messages.
+Client B sent 2 messages.
+```
+
+NOT:
+
+```text id="h43sfr"
+You have 5 new messages.
+```
+
+unless product design intentionally wants a global summary.
+
+For this task, preserve thread/person context.
+
+---
+
+# SAME PERSON, DIFFERENT JOB THREADS
+
+If the same Talent/Client has two separate valid threads:
+
+Thread A:
+Social Media Manager
+
+Thread B:
+Virtual Assistant
+
+Do NOT blindly combine them by sender name.
+
+Aggregate by canonical `threadId`.
+
+This prevents unrelated job conversations from being mixed.
+
+---
+
+# TIME / UNREAD WINDOW
+
+Aggregation should primarily apply while the previous message notification for that thread is still unread.
+
+Preferred behavior:
+
+When a new message arrives:
+
+1. find existing unread `new_message` notification for:
+
+   * same recipient
+   * same thread
+2. if found:
+   update that notification instead of inserting another row
+3. increment grouped message count
+4. refresh notification timestamp
+5. keep it unread
+6. move it to the top of the notification list
+
+If no unread grouped notification exists:
+
+create a new one.
+
+---
+
+# AFTER USER READS THE THREAD
+
+Once the recipient opens the thread and the corresponding message notification is marked read:
+
+future messages should create a NEW notification group.
+
+Example:
+
+Client sends 3 messages.
+
+Notification:
+
+`Client sent 3 messages.`
+
+Talent opens and reads thread.
+
+Notification becomes read.
+
+Later Client sends 2 more messages.
+
+Create a new unread notification:
+
+`Client sent 2 messages.`
+
+Do not update the old read notification.
+
+---
+
+# AFTER USER READS ONLY THE NOTIFICATION
+
+Audit current Notification Bell behavior.
+
+If clicking the notification opens the message thread and marks the thread read:
+
+group becomes read as part of that flow.
+
+If notification can be manually marked read without opening the thread:
+
+follow existing read semantics carefully.
+
+Do not let a read notification continue accumulating future messages.
+
+Only aggregate into an existing UNREAD message notification.
+
+---
+
+# BACKEND-FIRST IMPLEMENTATION
+
+Do not solve this only by visually grouping duplicate rows in React.
+
+Preferred:
+
+aggregate at notification creation/persistence time.
+
+This gives consistent behavior across:
+
+* Client
+* Talent
+* Admin
+* refresh
+* logout/login
+* multiple devices
+
+The database should ideally contain one current unread notification group per recipient/thread.
+
+---
+
+# AUDIT CURRENT MESSAGE SEND FLOW
+
+Inspect:
+
+`POST /api/messages`
+
+Find where it currently creates:
+
+`new_message`
+
+notification(s).
+
+Current conceptual behavior may be:
+
+```ts id="y2gxu8"
+await createNotification({
+  userId: recipientId,
+  type: "new_message",
+  title: "New message",
+  message: "You have a new message.",
+  relatedId: threadId,
+  relatedType: "message_thread",
+});
+```
+
+Change this to use an aggregation/upsert helper.
+
+---
+
+# RECOMMENDED HELPER
+
+Create a reusable backend helper conceptually like:
+
+```ts id="465xqk"
+upsertNewMessageNotification({
+  recipientUserId,
+  senderUserId,
+  threadId,
+  senderDisplayName,
+  subject,
+})
+```
+
+This helper should:
+
+1. search for an existing unread `new_message` notification
+2. same recipient
+3. same `threadId`
+4. if found:
+
+   * increment message count
+   * update text
+   * update timestamp
+5. otherwise:
+
+   * create first notification with count = 1
+
+Use the application's existing storage abstraction.
+
+Do not duplicate SQL in multiple routes.
+
+---
+
+# WHERE TO STORE THE GROUP COUNT
+
+Audit the existing notifications schema.
+
+Prefer the least invasive compatible option.
+
+Possible safe approaches:
+
+### Option A — metadata/json field already exists
+
+If notifications already support metadata, store:
+
+```json id="n4hzug"
+{
+  "messageCount": 3,
+  "threadId": "...",
+  "senderUserId": "..."
+}
+```
+
+Preferred if available.
+
+### Option B — derive count from structured notification data
+
+If there is an existing metadata/data column, use it.
+
+### Option C — minimal schema addition
+
+Only if no suitable metadata exists, add a minimal nullable integer such as:
+
+`group_count`
+
+or similar.
+
+Do NOT add schema changes unless necessary.
+
+Do not encode core logic by parsing human-readable notification text.
+
+---
+
+# DO NOT PARSE "sent 3 messages"
+
+Do not determine the next count by regex-parsing the notification message string.
+
+Bad:
+
+```text id="fgy7tg"
+parse "Valu sent 3 messages"
+then +1
+```
+
+Use structured data.
+
+---
+
+# NOTIFICATION TEXT
+
+For count = 1:
+
+```text id="iz0za5"
+New message
+Valu Testu sent you a message.
+```
+
+For count > 1:
+
+```text id="oxjgul"
+New messages
+Valu Testu sent you 3 messages.
+```
+
+Optional job context:
+
+```text id="n9qdjx"
+Valu Testu sent you 3 messages about Social Media Manager.
+```
+
+Use pluralization correctly.
+
+---
+
+# PRIVACY
+
+Do NOT include raw message content in the Bell summary.
+
+The actual message may contain:
+
+* email
+* phone number
+* private information
+
+Safe notification:
+
+`Valu Testu sent you 3 messages.`
+
+Not:
+
+`Valu Testu: here is my email...`
+
+Preserve existing PII protections.
+
+---
+
+# SENDER DISPLAY NAME
+
+Use existing safe participant display-name resolution.
+
+Never use:
+
+* email
+* UUID
+* candidate ID
+
+as Bell display name.
+
+Respect Talent masking/privacy rules if applicable.
+
+---
+
+# NOTIFICATION ORDER
+
+When the existing group is updated with another incoming message:
+
+move it to the top by updating:
+
+`updatedAt`
+
+or whichever sortable timestamp the Bell uses.
+
+Example:
+
+8:00 PM:
+Valu sent 1 message
+
+8:05 PM:
+Valu sends another
+
+Notification should now show:
+
+`Valu Testu sent you 2 messages.`
+`Just now`
+
+and be at top.
+
+---
+
+# CONCURRENT MESSAGES / RACE SAFETY
+
+Protect against rapid sends.
+
+Example:
+
+3 messages arrive almost simultaneously.
+
+Do not accidentally create:
+
+* group count 1
+* group count 1
+* group count 1
+
+Use an atomic update/upsert or transaction/locking strategy where practical.
+
+Final result:
+
+ONE notification with count = 3.
+
+---
+
+# DUPLICATE REQUEST SAFETY
+
+If the same message POST is retried and existing message-creation logic prevents duplicate messages:
+
+do not increment grouped notification twice.
+
+Aggregation should correspond to successfully persisted unique message events.
+
+Do not let transport retries inflate the count.
+
+---
+
+# MESSAGE READ FLOW
+
+When recipient opens the thread:
+
+existing:
+
+`POST /api/message-threads/:threadId/mark-read`
+
+should continue to:
+
+* mark incoming messages read
+* clear message unread count
+* reconcile the grouped `new_message` notification for that thread
+
+The grouped Bell notification should become read.
+
+Do not leave:
+
+`Valu sent 5 messages`
+
+as unread after the user has read those messages.
+
+---
+
+# MULTIPLE THREAD TEST
+
+Talent has:
+
+Client A thread:
+3 unread messages
+
+Client B thread:
+2 unread messages
+
+Expected Bell:
+
+```text id="v9j18c"
+New messages
+Client A sent you 3 messages.
+
+New messages
+Client B sent you 2 messages.
+```
+
+Expected Talent Messages count:
+
+`5`
+
+Bell has two cards.
+
+Messages badge has five unread messages.
+
+This distinction is important.
+
+---
+
+# CLIENT TEST
+
+Talent sends Client:
+
+```text id="0kejew"
+Message 1
+Message 2
+Message 3
+Message 4
+```
+
+Expected:
+
+Client Bell:
+
+ONE notification:
+
+`Talent Name sent you 4 messages.`
+
+Client sidebar Messages:
+
+`4`
+
+Client dropdown Messages:
+
+`4`
+
+Job Submission Message:
+
+`4`
+
+All four chat bubbles exist.
+
+---
+
+# TALENT TEST
+
+Client sends Talent 3 messages.
+
+Expected:
+
+Talent Bell:
+
+ONE notification:
+
+`Client Name sent you 3 messages.`
+
+Talent dropdown Messages:
+
+`3`
+
+Talent page Messages:
+
+`3`
+
+Reach the Client:
+
+`3`
+
+---
+
+# ADMIN TEST
+
+If Admin participates in a message thread and receives standard message notifications:
+
+multiple messages from same thread should also aggregate.
+
+Example:
+
+User sends Admin 4 messages.
+
+Admin Bell:
+
+ONE grouped notification.
+
+If Admin does NOT normally receive participant chat notifications:
+
+do not invent them.
+
+Only apply aggregation to Admin's existing `new_message` notification path.
+
+---
+
+# DIFFERENT NOTIFICATION TYPES MUST NOT MERGE
+
+Example Talent has:
+
+* Application update
+* Offer received
+* 3 new chat messages
+
+Bell should contain:
+
+```text id="77zgbn"
+Application update
+
+You have a new offer
+
+New messages
+Client Name sent you 3 messages.
+```
+
+Do not merge these into one generic notification.
+
+---
+
+# NOTIFICATION PANEL "NEW" COUNT
+
+The Bell icon stays dot-only.
+
+Inside the dropdown, if the header currently says:
+
+`3 new`
+
+that may represent unread NOTIFICATION GROUPS.
+
+After aggregation:
+
+3 unread messages in one thread = 1 unread notification group.
+
+So the dropdown header may say:
+
+`1 new`
+
+This is acceptable and preferred.
+
+Do not make that header represent raw unread message count unless it already intentionally does.
+
+Message-specific badges elsewhere still show raw unread messages.
+
+---
+
+# HISTORICAL DUPLICATE NOTIFICATIONS
+
+Do NOT automatically mutate all old notification rows unless needed.
+
+The fix should apply to new incoming messages going forward.
+
+If easy and safe, the NotificationBell UI may visually collapse historical duplicate unread `new_message` rows by thread, but backend aggregation is the priority.
+
+Do not perform a destructive cleanup migration without explicit need.
+
+---
+
+# FRONTEND NOTIFICATIONBELL
+
+Audit:
+
+`client/src/components/NotificationBell.tsx`
+
+Make sure it can render grouped message notification text.
+
+Do not add special duplicated grouping logic if backend already returns the grouped notification.
+
+The frontend should mostly display the notification record it receives.
+
+---
+
+# NOTIFICATION NAVIGATION
+
+Clicking grouped message notification:
+
+`Valu Testu sent you 4 messages.`
+
+should open:
+
+`/messages/:threadId`
+
+Same as a normal message notification.
+
+Do not lose `relatedId`.
+
+---
+
+# ACCESSIBILITY
+
+Grouped notification text should be readable by screen readers.
+
+Example:
+
+`Valu Testu sent you 4 messages.`
+
+No reliance only on badge/count graphics.
+
+---
+
+# SCHEMA / INDEX
+
+If doing backend lookup such as:
+
+```text id="cmw48p"
+recipient + type + relatedId + unread
+```
+
+ensure it is efficient.
+
+If needed, consider an index on relevant notification lookup columns.
+
+Do not add unnecessary indexes.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+* `server/routes.ts`
+* notification creation/storage implementation
+* `shared/schema.ts`
+* `client/src/components/NotificationBell.tsx`
+* message notification tests
+* notification auth tests
+* message thread tests
+
+Search repository-wide for:
+
+* `new_message`
+* `createNotification`
+* `relatedId`
+* `relatedType`
+* `isRead`
+* notification storage methods
+
+---
+
+# TEST MATRIX
+
+## Test 1 — one message
+
+One incoming message.
+
+Expected:
+
+one notification:
+`X sent you a message.`
+
+---
+
+## Test 2 — three consecutive messages
+
+Same sender/thread sends 3 unread messages.
+
+Expected:
+
+one notification:
+`X sent you 3 messages.`
+
+---
+
+## Test 3 — another message
+
+Same unread group receives fourth message.
+
+Expected same row updated:
+
+`X sent you 4 messages.`
+
+Not a second notification.
+
+---
+
+## Test 4 — read then new message
+
+Recipient reads thread.
+
+Old notification becomes read.
+
+Sender sends another message.
+
+Expected NEW notification:
+
+`X sent you a message.`
+
+---
+
+## Test 5 — two threads
+
+Thread A = 3 messages.
+
+Thread B = 2 messages.
+
+Expected two notification cards.
+
+---
+
+## Test 6 — unread message badges
+
+Thread has 5 unread messages.
+
+Expected:
+
+Bell:
+1 grouped notification card.
+
+Messages unread count:
+5.
+
+Do not accidentally turn message count into 1.
+
+---
+
+## Test 7 — rapid concurrent sends
+
+Send several messages quickly.
+
+Expected one notification with correct count.
+
+---
+
+## Test 8 — different notification types
+
+Message + application + offer.
+
+Expected three separate notification categories/cards.
+
+---
+
+## Test 9 — Client
+
+Run grouping flow for Client recipient.
+
+---
+
+## Test 10 — Talent
+
+Run grouping flow for Talent recipient including Talent profile-token auth.
+
+---
+
+## Test 11 — Admin
+
+If Admin has messaging notification support, verify same grouping behavior.
+
+---
+
+# REGRESSION SAFETY
+
+Do not break:
+
+* message sending
+* message ordering
+* unread message counters
+* Delivered/Read
+* mark-read
+* Bell red-dot-only UI
+* Client sidebar Messages count
+* Talent Messages count
+* Client dropdown
+* Talent dropdown
+* Message button counts
+* Reach the Client counts
+* application notifications
+* offers
+* withdrawal notifications
+* admin notifications
+* participant authorization
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* repeated messages in same unread thread produce one Bell notification
+* grouped text shows correct message count
+* count increments as more messages arrive
+* different threads remain separate
+* read group is not reused for future messages
+* raw messages remain separate
+* unread message counts remain exact
+* Bell remains red-dot-only
+* notification click opens correct thread
+* Client works
+* Talent works
+* Admin works where applicable
+* unrelated notification types do not aggregate with messages
+* race/duplicate requests do not create notification spam
+* build/tests pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. previous spam root cause
+2. aggregation key
+3. backend helper/storage change
+4. where group count is stored
+5. notification text rules
+6. read/reset behavior
+7. Client verification
+8. Talent verification
+9. Admin verification
+10. database migration status
+11. tests run
+12. regression results
+
+The key rule is:
+
+**Aggregate Bell notification cards, not the actual chat messages or unread message counts.**
