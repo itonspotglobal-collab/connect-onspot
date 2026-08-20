@@ -38,7 +38,7 @@ const coreModules = [
   },
   {
     title: "OnSpot Talent",
-    url: "/talent",
+    url: "/hire-talent",
     icon: Search,
   },
   {
@@ -108,7 +108,7 @@ function ClientSidebar() {
     location === url || (url !== "/dashboard" && location.startsWith(`${url}/`));
 
   return (
-    <Sidebar className="top-[var(--nav-h)] h-[calc(100svh-var(--nav-h))]">
+    <Sidebar className="md:!top-[var(--nav-h)] md:!bottom-auto md:!h-[calc(100svh-var(--nav-h))]">
       <SidebarContent>
         {/* Core Modules */}
         <SidebarGroup>
@@ -211,10 +211,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       <TopNavigation />
       <SidebarProvider
         style={sidebarStyle}
-        className="min-h-[calc(100svh-var(--nav-h))]"
+        className="min-h-[calc(100svh-var(--nav-h))] items-stretch"
       >
         <ClientSidebar />
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
+        <main className="min-h-[calc(100svh-var(--nav-h))] min-w-0 flex-1 p-4 sm:p-6">
           <div className="mb-4 flex md:hidden">
             <SidebarTrigger
               data-testid="button-sidebar-toggle"

@@ -1,0 +1,734 @@
+Fix the existing **Client Portal sidebar navigation and layout** in the OnSpot / `connect-onspot` application.
+
+There are TWO things to address in this task:
+
+1. Correct the Client sidebar routes.
+2. Fix the sidebar layout so the existing blue `TopNavigation` hide/show-on-scroll behavior does not make the sidebar look cut off or cause content overlap.
+
+Do NOT redesign the sidebar.
+
+Do NOT add sidebar animations.
+
+Do NOT change the TopNavigation scroll animation unless absolutely necessary.
+
+The goal is a stable layout.
+
+---
+
+# PART 1 — FIX SIDEBAR ROUTES
+
+Audit:
+
+`client/src/components/ClientLayout.tsx`
+
+The current sidebar includes:
+
+```ts
+{
+  title: "OnSpot Talent",
+  url: "/talent",
+  icon: Search,
+}
+```
+
+This is incorrect.
+
+The canonical OnSpot Talent page is:
+
+`/hire-talent`
+
+Change:
+
+```text
+/talent
+```
+
+to:
+
+```text
+/hire-talent
+```
+
+The Client sidebar item:
+
+`OnSpot Talent`
+
+must always open the same Hire Talent page used by TopNavigation.
+
+---
+
+# IMPORTANT — AUDIT EVERY SIDEBAR ROUTE
+
+Do not fix only OnSpot Talent.
+
+Search `App.tsx` and confirm every Client sidebar route actually exists and points to the intended current page.
+
+Current sidebar definitions include approximately:
+
+### Core Modules
+
+```text
+Dashboard       /dashboard
+OnSpot Talent   /talent
+Messages        /messages
+Client Projects /projects
+Performance     /performance
+```
+
+### Management
+
+```text
+Client Management /clients
+Contracts         /contracts
+Payments          /payments
+ROI Analytics     /roi
+```
+
+### System
+
+```text
+Settings /settings
+```
+
+Verify all of these against CURRENT App.tsx route definitions.
+
+If any sidebar route points to:
+
+* legacy page
+* old alias
+* unrelated page
+* NotFound
+* redirect to outdated feature
+
+update it to the canonical route.
+
+Do not invent routes.
+
+---
+
+# ONSPOT TALENT MUST BE
+
+```text
+OnSpot Talent
+     ↓
+/hire-talent
+```
+
+Expected page:
+
+the current Hire Talent / talent matching page with:
+
+* search input
+* AI talent matches
+* Preview
+* Shortlist
+* Hire Talent action
+
+NOT the legacy `/talent` page.
+
+---
+
+# ACTIVE SIDEBAR STATE
+
+Because OnSpot Talent now points to:
+
+`/hire-talent`
+
+the active state must also work there.
+
+When user is on:
+
+```text
+/hire-talent
+```
+
+highlight:
+
+`OnSpot Talent`
+
+If related canonical Hire Talent subroutes exist, consider whether they should keep this item active too.
+
+For example:
+
+```text
+/hire-talent
+/talent-pool
+```
+
+only if those routes represent the same module.
+
+Do not use strict equality blindly if it breaks valid subroutes.
+
+---
+
+# PART 2 — FIX SIDEBAR + TOPNAVIGATION LAYOUT
+
+The blue `TopNavigation` currently:
+
+* is fixed to top
+* hides when scrolling down
+* reappears when scrolling up
+* uses the existing `--nav-h` spacer system
+
+Keep this behavior.
+
+Do NOT add a sidebar animation to follow it.
+
+The sidebar should remain structurally stable.
+
+---
+
+# CURRENT VISUAL BUG
+
+When TopNavigation hides while scrolling:
+
+the sidebar appears to be cut off at the top or visually detached.
+
+The sidebar should NOT:
+
+* slide up with TopNavigation
+* leave a weird clipped section
+* overlap page content
+* cover the TopNavigation
+* cover dashboard content
+* depend on TopNavigation transform state
+
+---
+
+# DESIRED LAYOUT
+
+Desktop structure should be:
+
+```text
+TopNavigation
+────────────────────────────────────
+
+Sidebar       Main Content
+Sidebar       Main Content
+Sidebar       Main Content
+```
+
+The sidebar begins below the TopNavigation's normal reserved layout position.
+
+When TopNavigation visually hides on scroll:
+
+```text
+[TopNavigation translated upward]
+
+Sidebar       Main Content
+Sidebar       Main Content
+```
+
+The content/sidebar layout itself should NOT jump.
+
+---
+
+# DO NOT ANIMATE SIDEBAR
+
+Do not add:
+
+* translateY animation
+* scroll listener
+* fade
+* transition synced with nav
+* sticky animation
+
+The sidebar position should be determined purely by layout/CSS.
+
+---
+
+# IMPORTANT — USE NAV SPACER CORRECTLY
+
+`TopNavigation.tsx` already inserts a spacer:
+
+```tsx
+<div style={{ height: "var(--nav-h)" }} aria-hidden="true" />
+```
+
+and the nav itself is:
+
+```text
+fixed top-0
+```
+
+Respect this.
+
+Do NOT add another full `padding-top: var(--nav-h)` if TopNavigation's spacer already exists at the shell level, or you may create double spacing.
+
+Determine where TopNavigation is mounted relative to the Client shell.
+
+There must be exactly ONE reserved nav-height area.
+
+---
+
+# RECOMMENDED CLIENT SHELL
+
+Preferred structure:
+
+```tsx
+<div className="min-h-screen bg-slate-50">
+  <TopNavigation />
+
+  <div className="flex min-h-[calc(100vh-var(--nav-h))]">
+    <ClientSidebar />
+
+    <main className="min-w-0 flex-1">
+      {children}
+    </main>
+  </div>
+</div>
+```
+
+Adapt this to the existing SidebarProvider implementation.
+
+The key rules are:
+
+* TopNavigation full width
+* sidebar below nav's reserved space
+* sidebar does not overlap main
+* main uses remaining width
+* no second white header
+
+---
+
+# CURRENT CLIENTLAYOUT ISSUE
+
+`ClientLayout.tsx` currently uses approximately:
+
+```tsx
+<div className="flex h-screen w-full">
+  <ClientSidebar />
+
+  <div className="flex flex-col flex-1">
+    <header>...</header>
+
+    <main className="flex-1 overflow-auto p-6">
+      {children}
+    </main>
+  </div>
+</div>
+```
+
+This was designed for the OLD white Client header.
+
+Since Client Portal now uses the blue TopNavigation:
+
+do NOT keep layout assumptions tied to that old header.
+
+Refactor ClientLayout so it owns only:
+
+* SidebarProvider
+* ClientSidebar
+* main content shell
+
+unless TopNavigation is intentionally owned there.
+
+Remove old white-header spacing/layout code if it is still active or dead.
+
+---
+
+# DO NOT BRING BACK WHITE HEADER
+
+Do not reintroduce:
+
+```text
+OnSpot | Client Portal | user | Logout
+```
+
+white header.
+
+The only top header should remain:
+
+`TopNavigation`
+
+---
+
+# SIDEBAR HEIGHT
+
+Desktop sidebar should use available viewport height without covering the header.
+
+Preferred behavior:
+
+```css
+height: calc(100vh - var(--nav-h));
+```
+
+if the sidebar is independently sticky/fixed below nav.
+
+OR allow it to naturally fill the shell beneath the TopNavigation spacer.
+
+Do not use bare:
+
+```css
+height: 100vh;
+```
+
+starting below a reserved nav height, because that can extend past the viewport.
+
+---
+
+# IF SIDEBAR IS STICKY
+
+If the existing Sidebar component supports sticky positioning:
+
+use something conceptually like:
+
+```text
+top: var(--nav-h)
+height: calc(100vh - var(--nav-h))
+```
+
+BUT:
+
+only if TopNavigation always occupies that logical reserved height.
+
+Remember: TopNavigation hiding visually should NOT change the sidebar's top position.
+
+That is intentional.
+
+No jump.
+
+---
+
+# MAIN CONTENT
+
+Main content must:
+
+* remain fully visible
+* not slide underneath sidebar
+* not be covered by TopNavigation
+* retain full scroll access
+* not gain a second scrollbar unless already intentional
+
+Avoid nested full-height scroll containers if unnecessary.
+
+The browser page scroll should remain natural unless the existing portal intentionally uses internal scroll.
+
+---
+
+# FIX HORIZONTAL OVERFLOW
+
+The dashboard screenshot shows internal horizontal scroll bars inside cards/tables.
+
+Do not accidentally worsen this.
+
+For the shell, ensure:
+
+```text
+main:
+min-width: 0
+flex: 1
+```
+
+This is important for flex children containing tables.
+
+Do not let the sidebar force the dashboard wider than viewport.
+
+---
+
+# SIDEBAR WIDTH
+
+Preserve current:
+
+```text
+--sidebar-width: 18rem
+```
+
+unless existing design now uses a different canonical value.
+
+Do not resize the sidebar as part of this task unless necessary.
+
+---
+
+# TOPNAVIGATION HIDE/SHOW TEST
+
+Test this exact sequence:
+
+1. Open `/dashboard`.
+2. Sidebar visible.
+3. Scroll down.
+4. TopNavigation hides.
+5. Sidebar stays stable.
+6. Sidebar top does not jump.
+7. Sidebar does not appear cut.
+8. Main content does not move sideways/up unexpectedly.
+9. Scroll up.
+10. TopNavigation reappears.
+11. Sidebar still stays stable.
+12. No overlap occurs.
+
+---
+
+# DASHBOARD CONTENT TEST
+
+Test the dashboard while TopNavigation hides/reappears.
+
+Verify:
+
+* VA profile card
+* Today's Overview
+* Attendance Dashboard
+* Financial Overview
+* Documents
+* Communication
+* Requests
+
+remain accessible.
+
+Do not cover the first row of content.
+
+---
+
+# SIDEBAR ROUTE TEST MATRIX
+
+Test every item.
+
+## Dashboard
+
+Click:
+
+`Dashboard`
+
+Expected:
+
+canonical `/dashboard`
+
+---
+
+## OnSpot Talent
+
+Click:
+
+`OnSpot Talent`
+
+Expected:
+
+`/hire-talent`
+
+Must show the Hire Talent page.
+
+This is mandatory.
+
+---
+
+## Messages
+
+Click:
+
+`Messages`
+
+Expected:
+
+`/messages`
+
+Messaging must still work.
+
+Unread badge must remain if already implemented.
+
+---
+
+## Client Projects
+
+Verify actual canonical route.
+
+Do not assume `/projects` is correct.
+
+---
+
+## Performance
+
+Verify actual canonical route.
+
+---
+
+## Client Management
+
+Verify actual canonical route.
+
+---
+
+## Contracts
+
+Verify actual canonical route.
+
+---
+
+## Payments
+
+Verify actual canonical route.
+
+---
+
+## ROI Analytics
+
+Verify actual canonical route.
+
+---
+
+## Settings
+
+Verify actual canonical route.
+
+---
+
+# DO NOT DELETE LEGACY ROUTES YET
+
+If `/talent` is still used elsewhere by:
+
+* public pages
+* admin
+* old bookmarks
+
+do not delete it only because the Client sidebar stops using it.
+
+Just point Client sidebar to canonical `/hire-talent`.
+
+Only remove legacy routes if separately confirmed unused.
+
+---
+
+# CLIENT/TALENT ROLE SAFETY
+
+This sidebar is Client-only.
+
+Do not expose it to:
+
+* Talent
+* Admin
+* public users
+
+Do not change Talent TopNavigation dropdown as part of this task.
+
+---
+
+# DO NOT BREAK MESSAGE NOTIFICATIONS
+
+The messaging notification/badge work is connected to:
+
+`Messages`
+
+sidebar item.
+
+If `Messages` currently displays unread count:
+
+preserve it.
+
+Layout refactor must not remove the badge.
+
+---
+
+# RESPONSIVE
+
+Desktop:
+
+sidebar visible.
+
+Tablet/mobile:
+
+preserve existing SidebarProvider collapse/drawer behavior.
+
+Do not force 18rem fixed sidebar on small screens.
+
+If mobile SidebarTrigger is currently provided by the old white header, make sure there is still a way to open the sidebar on mobile.
+
+If necessary, add a small sidebar trigger in the Client content shell or integrate with existing mobile controls.
+
+Do NOT add another desktop header.
+
+---
+
+# IMPORTANT MOBILE CHECK
+
+Because the old white ClientLayout header had:
+
+`SidebarTrigger`
+
+removing that header may have removed mobile sidebar access.
+
+Audit this carefully.
+
+Ensure on small screens:
+
+* sidebar can still open/close
+* trigger is accessible
+* it does not overlap TopNavigation
+* it does not cover page content unexpectedly
+
+Desktop layout should not gain a visible unnecessary trigger if not needed.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+* `client/src/components/ClientLayout.tsx`
+* `client/src/components/ui/sidebar.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/App.tsx`
+* current Client route wrappers
+
+Search all ClientLayout usages before refactoring.
+
+---
+
+# REGRESSION SAFETY
+
+Do not break:
+
+* canonical Client `/dashboard`
+* `/hire-talent`
+* Messages
+* message unread badges
+* message notifications
+* Client Profile
+* application messaging
+* Client sidebar
+* notification bell
+* Talent pages
+* Admin routes
+* public Home
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* `OnSpot Talent` sidebar item routes to `/hire-talent`
+* `/hire-talent` item highlights correctly
+* every other sidebar item is verified against current routes
+* no sidebar item routes to an obsolete/wrong page
+* TopNavigation still hides on scroll down
+* TopNavigation still reappears on scroll up
+* sidebar does NOT animate with it
+* sidebar does not look cut
+* sidebar does not overlap header
+* sidebar does not cover main content
+* main content does not jump
+* no duplicate white header
+* dashboard remains fully usable
+* messages remain functional
+* mobile sidebar remains accessible
+* build/type checks pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. all sidebar routes before/after
+2. which wrong routes were corrected
+3. confirm OnSpot Talent → `/hire-talent`
+4. ClientLayout structural changes
+5. how TopNavigation/nav spacer is handled
+6. sidebar height/top behavior
+7. mobile sidebar behavior
+8. files changed
+9. tests run
+10. regression results
+
+Do not add animation.
+
+This task is specifically a **route correction + stable layout fix**.

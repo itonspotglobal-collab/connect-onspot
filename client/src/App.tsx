@@ -317,6 +317,19 @@ function ClientTalentRoute() {
   return user?.role === "client" ? <ClientRouter /> : <PublicRouter />;
 }
 
+function ClientHireTalentRoute() {
+  const { isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  // The Hire Talent page is public, but Clients reach the canonical URL from
+  // their sidebar. Keep that path in the Client shell so navigation and the
+  // active sidebar state remain available.
+  return user?.role === "client" ? <ClientRouter /> : <PublicRouter />;
+}
+
 function ClientRouter() {
   return (
     <ClientProtectedRoute>
@@ -477,7 +490,7 @@ function AppContent() {
       
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
-      <Route path="/hire-talent" component={PublicRouter} />
+      <Route path="/hire-talent" component={ClientHireTalentRoute} />
       <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
       <Route path="/find-best-matches" component={PublicRouter} />
