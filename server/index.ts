@@ -3,6 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import * as Sentry from "@sentry/node";
 import { v4 as uuidv4 } from "uuid";
+import { createServer } from "http";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -20,6 +21,31 @@ declare global {
 }
 
 const app = express();
+const server = createServer(app);
+let applicationReady = false;
+
+// Autoscale publishing probes GET / while the process is starting. The
+// application has a long, idempotent database-setup phase, so bind immediately
+// and answer the probe while that phase completes instead of appearing down.
+// Once initialization finishes, this middleware falls through to the SPA.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!applicationReady && req.method === "GET" && req.path === "/") {
+    return res.status(200).type("text/plain").send("Starting application…");
+  }
+  next();
+});
+
+const port = parseInt(process.env.PORT || "5000", 10);
+server.listen(
+  {
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  },
+  () => {
+    log(`serving on port ${port} (initializing)`);
+  },
+);
 
 // Trust the first proxy in Replit's deployment chain so req.ip resolves
 // correctly for rate-limiting (Replit sits behind a load-balancer / reverse proxy).
@@ -552,7 +578,7 @@ app.use((req, res, next) => {
   const { seedEmailTemplates } = await import('./seeds/seedEmailTemplates');
   await seedEmailTemplates();
   
-  const server = await registerRoutes(app);
+  await registerRoutes(app, server);
 
   // ── Scaffold-job TTL cleanup ────────────────────────────────────────────────
   // Removes search_scaffold rows older than 7 days that have no job_submissions
@@ -691,16 +717,6 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  applicationReady = true;
+  log(`application initialization complete on port ${port}`);
 })();

@@ -858,7 +858,10 @@ async function fireInvitationEmail(opts: {
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 // hint: Logic changed on both sides. Requires understanding intent of each change.
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(
+  app: Express,
+  httpServer: Server = createServer(app),
+): Promise<Server> {
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -15193,7 +15196,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
   // ─────────────────────────────────────────────────────────────────────────
   // DEV ONLY: Temporary password reset endpoint for testing accounts.
   // Enabled when NODE_ENV !== "production" OR ENABLE_DEV_PASSWORD_RESET=true.
