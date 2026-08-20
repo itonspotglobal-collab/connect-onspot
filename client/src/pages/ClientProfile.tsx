@@ -69,6 +69,7 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import ApplicantEmailComposer from "@/components/ApplicantEmailComposer";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -144,17 +145,24 @@ function ViewSubmissionModal({
   const { toast } = useToast();
   const statusInfo = SUBMISSION_STATUS_LABELS[submission.status] ?? SUBMISSION_STATUS_LABELS.new;
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/client/job-submissions/${id}/status`, { status }),
-    onSuccess: (_data, variables) => {
-      onStatusChange(variables.id, variables.status);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const statusEmailMutation = useMutation({
+    mutationFn: (payload: {
+      subject: string; bodyHtml: string; templateId: string; senderEmail: string;
+    }) =>
+      apiRequest("POST", `/api/client/job-submissions/${submission.id}/status-with-email`, {
+        ...payload,
+        updateStage: pendingStatus,
+      }),
+    onSuccess: () => {
+      if (pendingStatus) onStatusChange(submission.id, pendingStatus);
       queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
       queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
-      toast({ title: "Status updated" });
+      toast({ title: "Application status updated and email sent" });
+      setPendingStatus(null);
     },
     onError: (err: any) =>
-      toast({ title: "Failed to update status", description: err.message, variant: "destructive" }),
+      toast({ title: "Email could not be sent. Status was not changed.", description: err.message, variant: "destructive" }),
   });
 
   const handleResumeDownload = () => {
@@ -202,8 +210,8 @@ function ViewSubmissionModal({
             {!isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
               <Select
                 value={submission.status}
-                onValueChange={(v) => statusMutation.mutate({ id: submission.id, status: v })}
-                disabled={statusMutation.isPending}
+                onValueChange={setPendingStatus}
+                disabled={statusEmailMutation.isPending}
               >
                 <SelectTrigger className="h-8 w-40 text-xs">
                   <SelectValue placeholder="Update status" />
@@ -309,6 +317,17 @@ function ViewSubmissionModal({
             </div>
           )}
         </div>
+        <ApplicantEmailComposer
+          application={submission}
+          open={!!pendingStatus}
+          onClose={() => setPendingStatus(null)}
+          pendingStatus={pendingStatus ? {
+            previousStatus: submission.status,
+            newStatus: pendingStatus,
+          } : undefined}
+          onRequestSend={statusEmailMutation.mutate}
+          isSendingEmail={statusEmailMutation.isPending}
+        />
       </DialogContent>
     </Dialog>
   );

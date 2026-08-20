@@ -13832,10 +13832,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pipeline-driven statuses (interviewing, offer_extended, etc.) are set as side
   // effects of creating interview/offer/contract records — never directly via this endpoint.
   app.patch("/api/client/job-submissions/:id/status", authenticateJWT, async (req: Request, res: Response) => {
-    let client: Awaited<ReturnType<typeof getClient>> | null = null;
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      return res.status(409).json({
+        error: "status_email_required",
+        message: "Client application status changes must be sent through the Email Applicant workflow.",
+      });
+      /*
       const { id } = req.params;
       const { status } = req.body;
       const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
@@ -13999,18 +14003,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updated.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
       const revealed = revealedStatusesForThreshold(threshold);
       return res.json(sanitizeClientSubmissionRow(updated.rows[0], revealed));
+      */
     } catch (err: any) {
-      if (client) {
-        try {
-          await client.query("ROLLBACK");
-        } catch {
-          // Preserve the original error.
-        }
-      }
       console.error("Client application status update failed:", err);
       return res.status(500).json({ error: "Failed to update application status" });
-    } finally {
-      client?.release();
     }
   });
 
@@ -15298,15 +15294,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Email Templates — CRUD + publish/archive/duplicate ──────────────────────
 
   // GET /api/admin/email-templates — list all (non-archived by default)
-  app.get("/api/admin/email-templates", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.get("/api/admin/email-templates", authenticateJWT, requireAnyRole, async (req: any, res: Response) => {
     try {
-      const includeArchived = req.query.archived === "true";
+      const isClient = req.user?.role === "client";
+      const includeArchived = !isClient && req.query.archived === "true";
       const result = await query(
         `SELECT id, name, subject, category, stage, is_published AS "isPublished",
                 is_default AS "isDefault", is_archived AS "isArchived",
                 variables, created_at AS "createdAt", updated_at AS "updatedAt"
          FROM applicant_email_templates
-         ${includeArchived ? "" : "WHERE is_archived = false"}
+         ${isClient ? "WHERE is_archived = false AND is_published = true" : includeArchived ? "" : "WHERE is_archived = false"}
          ORDER BY is_default DESC, category, name`,
         [],
       );
@@ -15318,7 +15315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/email-templates/:id — get single template
-  app.get("/api/admin/email-templates/:id", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+  app.get("/api/admin/email-templates/:id", authenticateJWT, requireAnyRole, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
       const result = await query(
@@ -15326,8 +15323,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 is_published AS "isPublished", is_default AS "isDefault",
                 is_archived AS "isArchived", variables,
                 created_at AS "createdAt", updated_at AS "updatedAt"
-         FROM applicant_email_templates WHERE id = $1`,
-        [id],
+          FROM applicant_email_templates
+          WHERE id = $1
+            AND ($2 <> 'client' OR (is_archived = false AND is_published = true))`,
+        [id, req.user?.role ?? ""],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: "Template not found" });
       return res.json(result.rows[0]);
@@ -15630,9 +15629,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/admin/job-applications/:id/email/send — send email and, when
-  // requested, commit the application status only after delivery succeeds.
-  app.post("/api/admin/job-applications/:id/email/send", authenticateAdminFlexible, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: any, res: Response) => {
+  // Shared application-status-with-email workflow. Admin and Client wrappers
+  // below use this same handler; only authorization and recipient policy differ.
+  const handleApplicationStatusEmail = async (req: any, res: Response) => {
     const { id } = req.params;
     const {
       templateId,
@@ -15655,8 +15654,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
 
     try {
-      const { ADMIN_SETTABLE_STATUSES, submissionStatusLabel } =
+      const { ADMIN_SETTABLE_STATUSES, CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
         await import("../shared/submissionStatuses");
+      const isClientActor = req.user?.role === "client";
       const LEGACY_STATUS_ALIASES: Record<string, string> = {
         submitted: "new",
         interview: "interviewing",
@@ -15676,10 +15676,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "shortlisted",
         "rejected",
       ];
-      if (updateStage && !GENERIC_ADMIN_EMAIL_STATUSES.includes(updateStage)) {
+      const allowedStatuses = isClientActor
+        ? CLIENT_SETTABLE_STATUSES
+        : GENERIC_ADMIN_EMAIL_STATUSES;
+      if (updateStage && !allowedStatuses.includes(updateStage as any)) {
         return res.status(400).json({
           error: "Invalid status transition",
-          message: `This status is managed by its dedicated workflow. Generic email status changes support: ${GENERIC_ADMIN_EMAIL_STATUSES.join(", ")}`,
+          message: `This status is managed by its dedicated workflow. Email status changes support: ${allowedStatuses.join(", ")}`,
         });
       }
 
@@ -15702,11 +15705,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const appRow = await dbClient.query(
-        `SELECT js.id, js.job_id, js.first_name, js.last_name, js.applicant_name,
-                js.email, js.phone, js.talent_id, js.status, js.submitted_at,
-                j.title AS job_title, j.company AS job_company, j.location AS job_location
+        `SELECT js.id, js.job_id, js.client_id, js.first_name, js.last_name,
+                js.applicant_name, js.email, js.phone, js.talent_id,
+                js.status, js.submitted_at
            FROM job_submissions js
-           JOIN jobs j ON j.id = js.job_id
           WHERE js.id = $1
           FOR UPDATE`,
         [id],
@@ -15716,6 +15718,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Application not found" });
       }
       const app_ = appRow.rows[0];
+      if (isClientActor && app_.client_id !== req.user.id) {
+        await rollbackQuietly();
+        return res.status(403).json({ error: "You do not own this application" });
+      }
+      const jobRow = await dbClient.query(
+        `SELECT title, company, location FROM jobs WHERE id = $1 LIMIT 1`,
+        [app_.job_id],
+      );
+      if (jobRow.rows.length === 0) {
+        await rollbackQuietly();
+        return res.status(404).json({ error: "Application job not found" });
+      }
+      app_.job_title = jobRow.rows[0].title;
+      app_.job_company = jobRow.rows[0].company;
+      app_.job_location = jobRow.rows[0].location;
 
       if (updateStage && updateStage === app_.status) {
         await rollbackQuietly();
@@ -15885,10 +15902,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   FROM notifications
                  WHERE user_id = $1
                    AND type = 'job_application_status_changed'
-                   AND related_id = $3
+                   AND related_id = $4
                    AND message = $2
               )`,
-            [talentUser.rows[0].id, talentMessage, id],
+            [talentUser.rows[0].id, talentMessage, id, id],
+          );
+        }
+
+        if (isClientActor) {
+          const clientNameResult = await dbClient.query(
+            `SELECT first_name, last_name, company FROM users WHERE id = $1 LIMIT 1`,
+            [app_.client_id],
+          );
+          const clientUser = clientNameResult.rows[0];
+          const clientName =
+            [clientUser?.first_name, clientUser?.last_name].filter(Boolean).join(" ") ||
+            clientUser?.company ||
+            "A Client";
+          const talentName =
+            [app_.first_name, app_.last_name].filter(Boolean).join(" ") ||
+            app_.applicant_name ||
+            "a Talent";
+          const adminMessage =
+            `${clientName} changed ${talentName}'s application for ` +
+            `${app_.job_title || "a job"} to ${submissionStatusLabel(updateStage)}.`;
+          await dbClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type)
+             SELECT u.id, 'client_application_status_changed',
+                    'Client updated application', $1, $2, 'job_submission'
+               FROM users u
+              WHERE u.role = 'admin'
+                AND NOT EXISTS (
+                  SELECT 1 FROM notifications n
+                   WHERE n.user_id = u.id
+                     AND n.type = 'client_application_status_changed'
+                     AND n.related_id = $3
+                     AND n.message = $1
+                )`,
+            [adminMessage, id, id],
           );
         }
       }
@@ -15917,7 +15969,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } finally {
       dbClient.release();
     }
-  });
+  };
+
+  app.post(
+    "/api/admin/job-applications/:id/email/send",
+    authenticateAdminFlexible,
+    requireAdmin,
+    requireAdminSubRole(["talent_acquisition"]),
+    handleApplicationStatusEmail,
+  );
+  app.post(
+    "/api/client/job-submissions/:id/status-with-email",
+    authenticateJWT,
+    requireClient,
+    handleApplicationStatusEmail,
+  );
 
   // GET /api/admin/job-applications/:id/email/history — list sent emails for an application
   app.get("/api/admin/job-applications/:id/email/history", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {

@@ -1,0 +1,1116 @@
+Fix the broken Client application status update and remove the duplicate Client/Admin status-change implementations.
+
+## IMPORTANT PRODUCT DECISION
+
+Client and Admin should now use the SAME core application status update workflow.
+
+For BOTH roles:
+
+```text
+Choose new status
+        ↓
+Email Applicant
+        ↓
+Choose email template
+        ↓
+Review/edit email
+        ↓
+Send Email
+        ↓
+ONLY if email succeeds:
+    update application status
+    write status history
+    notify Talent
+    notify other required role(s)
+```
+
+The Client status selector must no longer use its separate broken PATCH implementation.
+
+There should be ONE shared backend application-status-with-email service used by:
+
+* Admin
+* Client
+
+with role-specific authorization and notifications.
+
+---
+
+# CURRENT CLIENT FAILURE
+
+The Client Profile / Job Submissions Application Details modal still returns:
+
+`500 Internal Server Error`
+
+when changing application status.
+
+Do NOT keep patching that broken Client route independently.
+
+Find it, remove its duplicated transition implementation, and route Client status changes through the same tested shared transition service used by Admin.
+
+---
+
+# PRIMARY ARCHITECTURE
+
+Create/reuse one shared service conceptually like:
+
+```ts
+changeApplicationStatusWithEmail({
+  applicationId,
+  newStatus,
+  actorUserId,
+  actorRole,
+  emailPayload,
+})
+```
+
+or an equivalent existing service.
+
+The service owns:
+
+1. application lookup
+2. authorization
+3. current-status lookup
+4. status transition validation
+5. applicant recipient resolution
+6. email send
+7. canonical status update
+8. status history
+9. notifications
+10. final response
+
+Do not implement these separately in Client and Admin routes.
+
+---
+
+# SHARED WORKFLOW, DIFFERENT AUTHORIZATION
+
+## Admin
+
+Admin may update applications according to the existing Admin-settable status rules.
+
+## Client
+
+Client may update an application ONLY when:
+
+```text
+application.job_id
+→ job
+→ job.client_id
+=== authenticated Client users.id
+```
+
+or according to the existing canonical job ownership relation.
+
+Client must never update applications belonging to another Client.
+
+The shared service must receive actor context but authorization remains role-aware.
+
+---
+
+# CLIENT UX SHOULD MATCH ADMIN UX
+
+Currently Client's Application Details modal has a status dropdown.
+
+Today it immediately tries to PATCH the backend.
+
+Change this.
+
+When Client chooses:
+
+`Under Review`
+
+do NOT immediately persist it.
+
+Instead:
+
+```text
+Current status: New
+
+Selected:
+New → Under Review
+
+[Continue to Email Applicant]
+```
+
+Then open the SAME email composer experience used by Admin.
+
+---
+
+# REUSE APPLICANT EMAIL COMPOSER
+
+Admin already uses:
+
+`client/src/components/ApplicantEmailComposer.tsx`
+
+Reuse that component for Client.
+
+Do NOT create:
+
+* `ClientApplicantEmailComposer`
+* another rich text editor
+* another email-template selector
+
+Adapt the existing component so it can receive:
+
+```ts
+application
+pendingStatus
+actorRole
+onSuccess
+onCancel
+```
+
+or equivalent.
+
+---
+
+# CLIENT EMAIL TEMPLATE SELECTION
+
+Client should be able to choose an email template before sending the application update.
+
+The flow:
+
+```text
+1. Change Status
+2. Email Applicant
+```
+
+Email Applicant should allow:
+
+* From address according to allowed Client/product rules
+* Template selection
+* Subject
+* Message/body
+* Preview
+* Send
+
+Reuse existing email infrastructure.
+
+---
+
+# TEMPLATE AVAILABILITY
+
+Audit existing Admin email templates.
+
+Determine whether templates are:
+
+* global
+* Admin-only
+* role-scoped
+
+For Client status email:
+
+prefer exposing approved status-update templates that are safe for Client use.
+
+Do not expose internal/Admin-only templates to Clients if some are intended only for internal operations.
+
+If necessary add a reusable template scope such as:
+
+```text
+application_status
+```
+
+or existing equivalent.
+
+Do not create an entirely separate template table.
+
+---
+
+# STATUS COMMIT RULE
+
+This rule applies to BOTH Client and Admin:
+
+> No successful email = no status change.
+
+Client chooses Shortlisted.
+
+Email composer opens.
+
+Client cancels.
+
+Expected:
+
+status remains old value.
+
+Client sends but email provider fails.
+
+Expected:
+
+status remains old value.
+
+Only after email provider reports success:
+
+update canonical `job_submissions.status`.
+
+---
+
+# DO NOT UPDATE STATUS BEFORE EMAIL
+
+Do not do this:
+
+```text
+PATCH status
+→ status saved
+→ email
+```
+
+Do:
+
+```text
+validate everything
+→ send email
+→ status transaction
+```
+
+The external email call cannot be rolled back with PostgreSQL, so email should succeed before the DB commit.
+
+---
+
+# SHARED BACKEND ENDPOINT
+
+Prefer one endpoint if cleanly possible:
+
+```text
+POST /api/applications/:applicationId/status-with-email
+```
+
+with actor determined from authentication.
+
+OR keep role-specific route wrappers:
+
+```text
+POST /api/admin/job-applications/:id/status-with-email
+POST /api/client/applications/:id/status-with-email
+```
+
+but BOTH must call the SAME shared service.
+
+Do not duplicate the SQL/business logic.
+
+---
+
+# DO NOT TRUST ROLE FROM FRONTEND
+
+Do not accept:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+or:
+
+```json
+{
+  "clientId": "..."
+}
+```
+
+as authorization.
+
+Derive:
+
+* authenticated user
+* role
+* Client ownership
+
+server-side.
+
+---
+
+# FIX THE EXISTING 500
+
+Before completing the refactor, identify the exact reason the current Client PATCH returns 500.
+
+Do not hide it by merely switching endpoints.
+
+Report it.
+
+Possible recent regression areas include:
+
+* invalid `FOR UPDATE`
+* nullable outer joins
+* notification recipient lookup
+* status-history helper
+* Client/Admin actor resolution
+* Admin notification insert
+* shared transition helper
+
+Search server logs and reproduce.
+
+The final report must state the actual root cause.
+
+---
+
+# ROW LOCKING
+
+The shared status service should preserve concurrency safety.
+
+Lock only the canonical application row:
+
+```sql
+SELECT *
+FROM job_submissions
+WHERE id = $1
+FOR UPDATE;
+```
+
+Do not apply unrestricted:
+
+`FOR UPDATE`
+
+to nullable `LEFT JOIN` results.
+
+After locking the submission:
+
+fetch separately:
+
+* job
+* Client
+* Talent/candidate
+* other related information
+
+This prevents the PostgreSQL error previously seen.
+
+---
+
+# DO NOT MAKE OPTIONAL RELATIONSHIPS BREAK STATUS CHANGE
+
+Some application relations may be nullable.
+
+For example:
+
+* Talent account not linked yet
+* candidate optional data
+* optional Client profile metadata
+
+Do not use an INNER JOIN just to avoid locking errors.
+
+Preserve nullable behavior.
+
+---
+
+# CLIENT → TALENT NOTIFICATION
+
+After Client email succeeds and status commits:
+
+Talent receives:
+
+### Title
+
+`Application update`
+
+### Message
+
+Example:
+
+`Your application for Social Media Manager is now Under Review.`
+
+or:
+
+`The status of your application has been updated to Under Review.`
+
+Use shared canonical status labels.
+
+---
+
+# CLIENT → ADMIN NOTIFICATION
+
+When Client changes an application status, Admin must also be notified.
+
+Example:
+
+### Title
+
+`Client updated application`
+
+### Message
+
+`Val Client changed Valu Testu's application for Social Media Manager to Under Review.`
+
+Include as metadata if useful:
+
+* application ID
+* job ID
+* Client ID
+* Talent ID
+* previous status
+* new status
+
+Do not make raw IDs the main display text.
+
+---
+
+# CLIENT → TALENT EMAIL
+
+The email Client just reviewed and sent IS the Talent status email.
+
+Do not send a second automatic status email afterward.
+
+There should be exactly one email per successful workflow.
+
+---
+
+# ADMIN → TALENT
+
+Admin flow remains:
+
+Admin chooses status.
+
+Admin chooses template.
+
+Admin sends email.
+
+After success:
+
+* status changes
+* Talent receives in-app notification
+
+Do not create another email.
+
+---
+
+# SHOULD ADMIN BE NOTIFIED ABOUT THEIR OWN CHANGE?
+
+No.
+
+If Admin is the actor changing the application:
+
+do not notify the same Admin about their own status change unless existing product requirements intentionally do so.
+
+Talent should be notified.
+
+---
+
+# SHOULD CLIENT BE NOTIFIED ABOUT THEIR OWN CHANGE?
+
+No.
+
+Client does not need a Bell notification saying they changed their own applicant status.
+
+Talent + Admin are the recipients for a Client-originated transition.
+
+---
+
+# IF ADMIN CHANGES CLIENT-OWNED JOB APPLICATION
+
+If Admin changes an application belonging to a Client's posted job:
+
+required minimum:
+
+* Talent receives notification/email
+
+Also audit whether Client should receive an informational notification that Admin changed their applicant.
+
+If existing product requirements do not define this, do not add it automatically in this task.
+
+Focus on the explicitly required Talent notification.
+
+---
+
+# EMAIL FAILURE
+
+If the email fails:
+
+return controlled error, e.g.:
+
+```json
+{
+  "error": "Email could not be sent. Application status was not changed."
+}
+```
+
+Client/Admin UI must show a useful toast.
+
+Do not return raw provider or SQL internals.
+
+---
+
+# CANCEL
+
+If Client/Admin cancels Email Applicant:
+
+* pending status cleared
+* modal returns to application
+* canonical status unchanged
+* no history
+* no notification
+* no email
+
+---
+
+# PENDING STATUS UI
+
+Until email succeeds, distinguish:
+
+```text
+Current status
+```
+
+from:
+
+```text
+Pending status
+```
+
+Do not visually show Shortlisted as final while the DB is still New.
+
+---
+
+# AFTER SUCCESS
+
+On email success + DB commit:
+
+close composer.
+
+Application Details should immediately display new status.
+
+Invalidate/refetch:
+
+### Client
+
+* submission detail
+* job submissions
+* status counts
+* dashboard/profile data
+
+### Admin
+
+* Admin Job Applications
+* application detail
+* summary counts
+
+### Talent
+
+Talent receives notification and My Applications refetches according to existing behavior.
+
+---
+
+# STATUS HISTORY
+
+Both Admin and Client use SAME history mechanism.
+
+Successful change should record:
+
+```text
+applicationId
+previousStatus
+newStatus
+changedBy
+changedByRole
+createdAt
+```
+
+if schema supports these fields.
+
+Do not create separate Client history.
+
+---
+
+# HISTORY ACTOR
+
+Client example:
+
+```text
+Reviewed → Shortlisted
+Changed by: Val Client
+Role: Client
+```
+
+Admin example:
+
+```text
+New → Under Review
+Changed by: Admin Name
+Role: Admin
+```
+
+---
+
+# STATUS TRANSITION RULES
+
+Use:
+
+`shared/submissionStatuses.ts`
+
+as canonical source.
+
+Do not allow Client/Admin UI and backend to maintain contradictory lists.
+
+Audit which statuses may be directly changed.
+
+Dedicated special workflows must stay dedicated.
+
+Examples may include:
+
+* offer
+* contract
+* hired
+
+If existing product rules require special endpoints for those states:
+
+do NOT expose them as generic dropdown transitions just because Admin/Client share this service.
+
+---
+
+# WITHDRAWN
+
+Talent withdrawal remains terminal.
+
+Client/Admin generic status selector must not silently change:
+
+```text
+withdrawn → shortlisted
+```
+
+unless an explicit restore workflow exists.
+
+---
+
+# REJECTED
+
+If Rejected requires email, it should flow through the shared composer just like other normal status changes.
+
+Admin/Client can select the appropriate rejection email template.
+
+---
+
+# EMAIL TEMPLATE BY STATUS
+
+Improve template UX.
+
+When pending status is:
+
+`shortlisted`
+
+prioritize templates tagged for:
+
+`shortlisted`
+
+When:
+
+`rejected`
+
+prioritize rejection templates.
+
+When:
+
+`under_review`
+
+prioritize review/update templates.
+
+But Admin/Client may choose another permitted template where appropriate.
+
+---
+
+# SAME COMPONENT, SAME SERVICE
+
+This is critical.
+
+Final architecture should NOT be:
+
+```text
+Client status route A
+Admin status route B
+
+with copied SQL
+```
+
+It should be:
+
+```text
+Client wrapper ─┐
+                ├─ shared ApplicationStatusService
+Admin wrapper ──┘
+```
+
+And frontend:
+
+```text
+Client Application Details ─┐
+                            ├─ ApplicantEmailComposer
+Admin Application Details ──┘
+```
+
+Role-specific configuration is okay.
+
+Duplicated workflows are not.
+
+---
+
+# TEST EXACT CLIENT REPRODUCTION
+
+Current broken scenario:
+
+Client:
+
+`Val Client`
+
+Application:
+
+`Valu Testu`
+
+Job:
+
+`Social Media Manager`
+
+Status:
+
+`New`
+
+Steps:
+
+1. Open Application Details.
+2. Choose:
+   `Under Review`
+3. Email Applicant opens.
+4. Select template.
+5. Send.
+6. Email succeeds.
+
+Expected:
+
+HTTP success.
+
+Then:
+
+* Client sees Under Review.
+* Talent sees Under Review.
+* Talent gets one email.
+* Talent gets one in-app notification.
+* Admin gets one Client-status-change notification.
+* one history row exists.
+
+No 500.
+
+---
+
+# TEST CLIENT CANCEL
+
+Client:
+
+New → Shortlisted
+
+opens email composer.
+
+Cancel.
+
+Expected:
+
+still New.
+
+---
+
+# TEST CLIENT EMAIL FAILURE
+
+Simulate mail provider failure.
+
+Expected:
+
+still New.
+
+No Talent notification.
+
+No Admin notification.
+
+No history row.
+
+---
+
+# TEST ADMIN
+
+Run same status flow as Admin.
+
+Expected Admin's existing workflow still works.
+
+---
+
+# TEST CLIENT VS ADMIN SAME TRANSITION
+
+Take two different test applications.
+
+Client transitions one:
+
+New → Under Review.
+
+Admin transitions another:
+
+New → Under Review.
+
+Both should run through the same shared service.
+
+Verify equivalent database/history behavior.
+
+---
+
+# CLIENT OWNERSHIP TEST
+
+Client A cannot execute shared status workflow on Client B's job application.
+
+Expected:
+
+403/404 before email is sent.
+
+This authorization MUST occur before sending email.
+
+---
+
+# IMPORTANT — VALIDATE BEFORE EMAIL
+
+Before sending email verify all of the following:
+
+* authenticated actor
+* actor authorized
+* application exists
+* transition valid
+* applicant email valid
+* selected template permitted
+* subject/body valid
+
+Do not send email and only afterward discover Client does not own the job.
+
+---
+
+# DOUBLE-SEND SAFETY
+
+Disable Send while request pending.
+
+Protect server against retries/double click.
+
+A single workflow execution must create at most:
+
+* one email
+* one status update
+* one status history event
+* one Talent notification
+* one Admin notification for Client-originated action
+
+---
+
+# OPTIONAL IDEMPOTENCY KEY
+
+If the current email infrastructure supports idempotency, use it.
+
+Potential key:
+
+```text
+application-status:
+<applicationId>:
+<oldStatus>:
+<newStatus>:
+<actorUserId>
+```
+
+plus a request ID when appropriate.
+
+Do not use a static key that prevents legitimate future transitions.
+
+---
+
+# CLIENT ADMIN NOTIFICATION FAILURE
+
+Core consistency matters.
+
+If the Talent email succeeds and DB status commits, an Admin notification insert should normally be included in the DB transaction.
+
+Do not silently lose it.
+
+If Admin-recipient resolution is impossible because no Admin account exists, handle that explicitly/log it.
+
+Do not throw an unrelated null dereference.
+
+---
+
+# TALENT ACCOUNT MAY BE UNLINKED
+
+Talent in-app notification requires linked canonical user.
+
+Email can still go to application email.
+
+If no linked Talent account:
+
+* email sends
+* status commits
+* history records
+* Admin notification for Client action records
+* Talent in-app notification skipped because no recipient exists
+
+Do not return 500 solely because no Talent account is linked.
+
+---
+
+# FRONTEND APPLICATION DETAILS
+
+Both Client and Admin should present a coherent status flow.
+
+Suggested:
+
+```text
+APPLICATION DETAILS
+
+Current status:
+New
+
+Change status:
+[Under Review ▼]
+
+Pending:
+New → Under Review
+
+[Continue to Email Applicant]
+```
+
+Do not immediately submit when selecting from dropdown.
+
+---
+
+# DO NOT CHANGE MESSAGING
+
+No changes to:
+
+* Client/Talent messaging
+* unread counts
+* notification grouping for messages
+* Delivered/Read
+* Message buttons
+
+Application-status notification type remains separate from `new_message`.
+
+---
+
+# NOTIFICATION BELL
+
+Preserve:
+
+Bell icon = red dot only.
+
+Application status notifications should appear as individual application events.
+
+Do not group them using message sender/thread grouping logic.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+### Shared/backend
+
+* `server/routes.ts`
+* application status helpers/services
+* `server/storage.ts`
+* notification helpers
+* email sending service
+* template rendering
+* `shared/submissionStatuses.ts`
+* `shared/schema.ts`
+
+### Admin
+
+* `client/src/pages/AdminJobApplications.tsx`
+* `client/src/components/ApplicantEmailComposer.tsx`
+
+Admin already uses `ApplicantEmailComposer`; build on this existing component.
+
+### Client
+
+* Client Profile / Job Submissions page
+* Application Details dialog
+* existing Client status PATCH mutation
+
+Replace its standalone update implementation with the shared workflow.
+
+---
+
+# REMOVE DEAD/BROKEN CLIENT PATCH LOGIC
+
+Once Client is successfully moved to the shared workflow:
+
+search for the old Client-only status mutation.
+
+If no callers remain:
+
+remove it safely.
+
+If legacy compatibility requires the endpoint:
+
+make it call the shared service OR return a controlled deprecation behavior.
+
+Do not leave the broken duplicate implementation active.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+### Client
+
+* can select application status
+* email composer opens
+* can choose template
+* can edit/preview email
+* status does NOT change before send
+* successful email commits status
+* Talent gets email
+* Talent gets notification
+* Admin gets notification
+* no 500
+
+### Admin
+
+* same core workflow/service
+* email required before status commit
+* Talent gets email/notification
+* Admin workflow remains operational
+
+### Data
+
+* one canonical application status
+* one canonical status history mechanism
+* no duplicate status transitions
+* no duplicate emails
+* no duplicate notifications
+* correct actor recorded
+
+### Security
+
+* Client may only change own job applicants
+* Admin authorization unchanged
+* validation occurs BEFORE email
+
+### Regression
+
+* Talent withdrawal still works
+* offers/contracts/hiring special flows remain intact
+* messaging remains intact
+* build/tests pass
+
+---
+
+# FINAL REPORT
+
+Do not just say "fixed."
+
+Report:
+
+1. exact current Client 500 root cause
+2. old Client endpoint
+3. Admin endpoint
+4. new shared service/helper
+5. whether Client/Admin use one or two wrapper endpoints
+6. shared ApplicantEmailComposer behavior
+7. authorization differences
+8. Client → Talent notification
+9. Client → Admin notification
+10. Admin → Talent notification
+11. email failure/cancel behavior
+12. row-lock strategy
+13. files changed
+14. tests run and results
+15. database migration status
+
+The key architectural requirement is:
+
+**Client and Admin must use the same status-transition + email engine. Do not maintain a separate Client status implementation anymore.**
