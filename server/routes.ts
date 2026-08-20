@@ -13854,18 +13854,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [`client-status:${id}`],
       );
 
-      // Lock the canonical submission while validating ownership and applying
-      // the transition. This makes retries/concurrent Client clicks atomic.
+      // Lock only the canonical submission row. Optional relations must not be
+      // part of a SELECT ... FOR UPDATE because PostgreSQL rejects locking the
+      // nullable side of an outer join.
       const current = await client.query(
         `SELECT js.status, js.initiated_by, js.talent_id, js.email,
                 js.first_name, js.last_name, js.applicant_name,
-                j.title AS job_title,
-                u.first_name AS client_first_name,
-                u.last_name AS client_last_name,
-                u.company AS client_company
+                 js.job_id, js.client_id
            FROM job_submissions js
-           JOIN jobs j ON j.id = js.job_id
-           LEFT JOIN users u ON u.id = js.client_id
           WHERE js.id = $1 AND js.client_id = $2
           FOR UPDATE`,
         [id, userId],
@@ -13875,6 +13871,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Submission not found or forbidden" });
       }
       const currentRow = current.rows[0];
+      const [jobResult, clientUserResult] = await Promise.all([
+        client.query(
+          `SELECT title FROM jobs WHERE id = $1 LIMIT 1`,
+          [currentRow.job_id],
+        ),
+        client.query(
+          `SELECT first_name, last_name, company
+             FROM users
+            WHERE id = $1
+            LIMIT 1`,
+          [currentRow.client_id],
+        ),
+      ]);
+      currentRow.job_title = jobResult.rows[0]?.title ?? null;
+      currentRow.client_first_name = clientUserResult.rows[0]?.first_name ?? null;
+      currentRow.client_last_name = clientUserResult.rows[0]?.last_name ?? null;
+      currentRow.client_company = clientUserResult.rows[0]?.company ?? null;
       const currentStatus: string = currentRow.status;
       const initiatedBy: string | null = currentRow.initiated_by;
       if (initiatedBy === "client" && (currentStatus === "invited" || currentStatus === "declined")) {
@@ -13994,7 +14007,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Preserve the original error.
         }
       }
-      return res.status(500).json({ error: err.message });
+      console.error("Client application status update failed:", err);
+      return res.status(500).json({ error: "Failed to update application status" });
     } finally {
       client?.release();
     }

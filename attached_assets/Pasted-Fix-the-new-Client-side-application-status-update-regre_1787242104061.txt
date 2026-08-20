@@ -1,0 +1,630 @@
+Fix the new Client-side application status update regression in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT ERROR
+
+When Client opens Application Details and changes an applicant's status, the frontend now receives:
+
+`500 Internal Server Error`
+
+The actual PostgreSQL error shown in the UI/console is:
+
+```text
+FOR UPDATE cannot be applied to the nullable side of an outer join
+```
+
+This started after the recent application status / notification workflow changes.
+
+The status update currently fails completely.
+
+---
+
+# IMPORTANT
+
+Do NOT remove the recent notification requirements.
+
+Do NOT disable transactions.
+
+Do NOT remove row-level locking blindly.
+
+Do NOT solve this in the frontend.
+
+The failure is in the backend SQL/transaction logic.
+
+---
+
+# FIRST — FIND THE EXACT FAILING CLIENT STATUS ROUTE
+
+Trace the PATCH request triggered by the Client Application Details status dropdown.
+
+Search repository-wide for:
+
+* Client application status PATCH
+* `FOR UPDATE`
+* `forUpdate`
+* `job_submissions`
+* application status transition
+* Client status notification
+* Admin notification
+* `application_update`
+* `Client updated application`
+* transaction callbacks
+
+Identify the exact endpoint generating the 500.
+
+Do not guess.
+
+---
+
+# ROOT CAUSE
+
+The new backend flow likely runs a query conceptually similar to:
+
+```sql
+SELECT ...
+FROM job_submissions js
+LEFT JOIN jobs j ...
+LEFT JOIN candidates c ...
+LEFT JOIN users u ...
+WHERE js.id = $1
+FOR UPDATE;
+```
+
+PostgreSQL rejects this because `FOR UPDATE` is being applied across an outer join where one or more joined tables are nullable.
+
+The canonical row that needs locking is:
+
+`job_submissions`
+
+not every optionally joined relation.
+
+---
+
+# REQUIRED FIX
+
+Refactor the transaction so the application/submission row is locked independently.
+
+Preferred pattern:
+
+```sql
+BEGIN;
+
+SELECT *
+FROM job_submissions
+WHERE id = $1
+FOR UPDATE;
+```
+
+Then fetch related records separately:
+
+```sql
+SELECT ...
+FROM jobs
+...
+```
+
+or:
+
+```sql
+SELECT ...
+FROM candidates/users
+...
+```
+
+without trying to lock nullable outer-join rows.
+
+Then:
+
+* verify authorization
+* validate transition
+* update application
+* write status history
+* create notifications
+
+COMMIT.
+
+---
+
+# ALTERNATIVE SAFE POSTGRESQL FORM
+
+If the existing query genuinely needs joins while locking, use PostgreSQL's table-specific locking syntax where appropriate:
+
+```sql
+FOR UPDATE OF js
+```
+
+where `js` is the non-nullable `job_submissions` base table.
+
+But only use this if the ORM/query builder supports it correctly and it is clear that only the application row needs locking.
+
+Preferred solution is still:
+
+**lock the base row first, fetch relations second.**
+
+---
+
+# DO NOT REMOVE LOCKING
+
+Do not “fix” this by simply deleting:
+
+`FOR UPDATE`
+
+The lock was likely added to prevent status race conditions.
+
+Preserve the requirement that concurrent actions cannot blindly overwrite each other.
+
+Example:
+
+Client changes:
+
+`New → Reviewed`
+
+at the same time Admin changes:
+
+`New → Shortlisted`
+
+The backend should serialize or reject conflicting transitions rather than silently clobbering one.
+
+---
+
+# CLIENT STATUS WORKFLOW MUST REMAIN
+
+For a valid Client-originated status update:
+
+1. Authenticate Client.
+2. Lock exact `job_submissions` row.
+3. Confirm Client owns the associated job.
+4. Read current status.
+5. Validate requested transition.
+6. Update canonical status.
+7. Write status history.
+8. Create Talent notification.
+9. Create Admin notification.
+10. Commit transaction.
+11. Return updated status.
+
+The current notification requirements must remain intact.
+
+---
+
+# IMPORTANT — AUTHORIZATION DATA
+
+Because the job ownership check may require joining `jobs`, do NOT put that LEFT JOIN inside the locking query if it causes the PostgreSQL error.
+
+Instead:
+
+### Step A
+
+Lock:
+
+`job_submissions`
+
+### Step B
+
+Using the locked row's:
+
+`job_id`
+
+fetch:
+
+`jobs`
+
+### Step C
+
+Verify:
+
+`jobs.client_id === authenticatedClientUserId`
+
+or the application's current canonical ownership rule.
+
+---
+
+# TALENT RELATIONSHIP LOOKUP
+
+Likewise, if Talent/candidate/user linkage is nullable, fetch it AFTER locking the submission.
+
+Do not outer-join nullable Talent tables inside a global `FOR UPDATE`.
+
+This is especially important because some applications may be:
+
+* linked Talent
+* pending Talent account
+* legacy application
+* candidate-only
+
+The query must work even when optional relations are null.
+
+---
+
+# ADMIN RECIPIENT LOOKUP
+
+If Client status update now creates Admin notifications, fetch Admin recipients separately.
+
+Do not join all Admin users into the `FOR UPDATE` query.
+
+The application row is the only resource requiring status serialization.
+
+---
+
+# NOTIFICATION CREATION
+
+After successful Client status update:
+
+Talent should receive:
+
+```text
+Application update
+Your application for Social Media Manager is now Reviewed.
+```
+
+Admin should receive something like:
+
+```text
+Client updated application
+Val Client changed Valu Testu's application for Social Media Manager to Reviewed.
+```
+
+Keep this behavior.
+
+The fix must not remove these notifications just to avoid the query error.
+
+---
+
+# TRANSACTION STRUCTURE
+
+Preferred conceptual flow:
+
+```ts
+await db.transaction(async (tx) => {
+  // 1. Lock only canonical application row
+  const application = await getSubmissionForUpdate(tx, applicationId);
+
+  if (!application) {
+    throw notFound();
+  }
+
+  // 2. Fetch related Job separately
+  const job = await getJob(tx, application.jobId);
+
+  // 3. Authorize Client
+  assertClientOwnsJob(job, authenticatedUserId);
+
+  // 4. Validate transition
+  validateApplicationTransition(
+    application.status,
+    requestedStatus
+  );
+
+  // 5. Fetch Talent/user information separately
+  const talentRecipient = await resolveApplicationTalent(...);
+
+  // 6. Update canonical row
+  await updateSubmissionStatus(...);
+
+  // 7. History
+  await createStatusHistory(...);
+
+  // 8. Talent notification
+  if (talentRecipient) {
+    await createNotification(...);
+  }
+
+  // 9. Admin notification(s)
+  await createAdminStatusNotification(...);
+});
+```
+
+Adapt this to existing storage/query abstractions.
+
+---
+
+# DRIZZLE / ORM NOTE
+
+If using Drizzle:
+
+avoid applying `.for("update")` to a query that contains nullable `leftJoin(...)` relations unless explicitly locking only the base table is supported.
+
+A safer implementation is two queries inside the same transaction.
+
+Do not convert optional LEFT JOINs into INNER JOINs merely to satisfy `FOR UPDATE`, because that can break valid legacy/unlinked applications.
+
+---
+
+# DO NOT CHANGE LEFT JOIN TO INNER JOIN BLINDLY
+
+This matters.
+
+If Talent/candidate/user relations are optional:
+
+changing:
+
+`LEFT JOIN`
+
+to:
+
+`INNER JOIN`
+
+may make applications disappear.
+
+That is not an acceptable fix.
+
+Keep optional relationship semantics.
+
+Only restructure locking.
+
+---
+
+# ERROR HANDLING
+
+Do not return raw database errors to the Client UI.
+
+Currently the toast exposes:
+
+`FOR UPDATE cannot be applied...`
+
+After fix, unexpected DB errors should produce:
+
+```json
+{
+  "error": "Failed to update application status"
+}
+```
+
+Log the detailed PostgreSQL error server-side.
+
+Do not expose SQL internals to normal users.
+
+---
+
+# FRONTEND
+
+The Client Application Details UI should not require significant changes.
+
+The dropdown/status UI currently works until the backend PATCH fails.
+
+After successful PATCH:
+
+* modal shows updated status
+* Job Submission row updates
+* status count updates
+* query cache invalidates/refetches
+* Talent notification appears
+* Admin notification appears
+
+Do not add optimistic success before server confirmation.
+
+---
+
+# TEST THE EXACT REPRODUCTION
+
+Use the existing Client application:
+
+`Valu Testu`
+
+for:
+
+`Social Media Manager`
+
+Current status:
+
+`New`
+
+Test:
+
+```text
+New → Under Review
+```
+
+Expected:
+
+HTTP 200/appropriate success
+
+No PostgreSQL `FOR UPDATE` error.
+
+Then:
+
+* Client row becomes Under Review
+* Talent sees update
+* Admin sees Client-change notification
+
+---
+
+# TEST OTHER CLIENT TRANSITIONS
+
+Test at minimum:
+
+```text
+New → Under Review
+Under Review → Reviewed
+Reviewed → Shortlisted
+Shortlisted → Rejected
+```
+
+according to existing allowed status transitions.
+
+Do not weaken terminal-state rules.
+
+---
+
+# CONCURRENT UPDATE TEST
+
+Add a regression test specifically for row locking.
+
+Example:
+
+Client and Admin attempt to update same application concurrently.
+
+Expected:
+
+* no SQL `FOR UPDATE` error
+* updates serialize/validate correctly
+* no duplicated status-history rows for the same event
+* notifications correspond to successful transition(s)
+
+---
+
+# NULLABLE RELATION TEST
+
+This is important because the original error is caused by nullable outer joins.
+
+Create/test an application where an optional joined relationship is null, such as:
+
+* no linked Talent user
+* optional candidate relation missing
+* optional Client metadata missing
+
+Then perform Client status update.
+
+Expected:
+
+no `FOR UPDATE` error.
+
+If Talent user is absent:
+
+* status can still update if application is otherwise valid
+* Talent in-app notification may be skipped gracefully
+* Admin notification still works
+* no crash
+
+---
+
+# CLIENT OWNERSHIP TEST
+
+Client A owns Job A.
+
+Client B tries to update Application A.
+
+Expected:
+
+403/404
+
+No status change.
+
+No notification.
+
+---
+
+# HISTORY TEST
+
+Successful Client transition must create exactly one history entry containing:
+
+* old status
+* new status
+* Client actor
+* timestamp
+
+Do not duplicate history during retries.
+
+---
+
+# NOTIFICATION TEST
+
+Successful Client transition:
+
+### Talent
+
+one application-update notification.
+
+### Admin
+
+one Client-change notification per intended Admin recipient policy.
+
+Do not generate duplicates.
+
+---
+
+# ADMIN WORKFLOW MUST REMAIN SEPARATE
+
+The Admin's new:
+
+status → email → commit
+
+workflow is separate.
+
+Do not accidentally force the Client status route through the Admin email composer.
+
+Client status change should continue using its own Client workflow.
+
+---
+
+# DO NOT BREAK RECENT FEATURES
+
+Regression-test:
+
+* Admin status + email workflow
+* Talent application notifications
+* Admin Client-change notifications
+* Client withdrawal notifications
+* messaging
+* grouped message notifications
+* Bell red dot
+* application Message buttons
+* offers
+* Talent My Applications
+* Client Job Submissions
+
+---
+
+# SEARCH FOR OTHER INVALID FOR UPDATE QUERIES
+
+Since this bug was introduced by a shared pattern, search the repository for all new:
+
+`FOR UPDATE`
+
+or:
+
+`.for("update")`
+
+queries.
+
+Review any query that also contains:
+
+* `LEFT JOIN`
+* `RIGHT JOIN`
+* `FULL JOIN`
+
+If another workflow has the same PostgreSQL-invalid pattern, repair it now using the same safe base-row-lock approach.
+
+Do not make unrelated architectural changes.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client status PATCH no longer returns 500
+* `FOR UPDATE cannot be applied to nullable side of outer join` is gone
+* canonical submission row remains row-locked
+* optional relationships can remain nullable
+* Client ownership is still enforced
+* status transitions still validated
+* status history works
+* Talent receives status notification
+* Admin receives Client-change notification
+* no raw SQL errors shown to Client
+* concurrent updates remain safe
+* Admin email workflow still works
+* build/tests pass
+
+---
+
+# FINAL REPORT
+
+After the fix provide:
+
+1. exact endpoint that was failing
+2. exact query/root cause
+3. which table is now locked
+4. how related records are fetched
+5. whether `FOR UPDATE OF` or separate query was used
+6. files changed
+7. Client transition tests
+8. nullable-relation regression test
+9. concurrency test
+10. Talent/Admin notification verification
+11. Admin email-flow regression result
+12. database migration status
+
+The key fix is:
+
+**Lock `job_submissions` directly; do not apply unrestricted `FOR UPDATE` across nullable outer joins.**
