@@ -12,7 +12,6 @@ import { TopNavigation } from "@/components/TopNavigation";
 import { ClientLayout } from "@/components/ClientLayout";
 import { ClientProtectedRoute, TalentProtectedRoute, AdminProtectedRoute } from "@/components/ProtectedRoute";
 import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper";
-import { PostLoginPortalSelection } from "@/components/PostLoginPortalSelection";
 import { DomainRouter } from "@/components/DomainRouter";
 import { VanessaChat } from "@/components/VanessaChat";
 import { Button } from "@/components/ui/button";
@@ -127,6 +126,46 @@ function ClientSearchRedirect() {
   return null;
 }
 
+function RoleAwareHome() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+
+    if (user?.role === "client") {
+      navigate("/dashboard", { replace: true });
+    } else if (user?.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate, user?.role]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (isAuthenticated && (user?.role === "client" || user?.role === "admin")) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Talent and logged-out visitors retain the current public-home behavior.
+  return <Home />;
+}
+
+function LegacyClientDashboardRedirect() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate("/dashboard", { replace: true });
+  }, [navigate]);
+
+  return null;
+}
+
 // Immersive Page Wrapper - Full screen without navigation (for campaigns and reveals)
 function ImmersivePage() {
   return <ComingSoon />;
@@ -144,7 +183,6 @@ function LegalOpsImmersive() {
 
 // Public Routes - Always available regardless of authentication
 function PublicRouter() {
-  const { isAuthenticated, user } = useAuth();
   const [location] = useLocation();
   const hideTopNav =
     location === "/why-onspot/about" ||
@@ -157,20 +195,7 @@ function PublicRouter() {
       {!hideTopNav && <TopNavigation />}
       <main>
         <Switch>
-          <Route path="/" component={() => {
-            // TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready.
-            // Talent users see the public homepage — do not auto-route them to TalentPortal.
-            if (isAuthenticated && user?.role !== 'talent') {
-              return <PostLoginPortalSelection />;
-            }
-            return <Home />;
-          }} />
-          <Route path="/client-dashboard" component={() => {
-            if (isAuthenticated) {
-              return <PostLoginPortalSelection />;
-            }
-            return <Home />;
-          }} />
+          <Route path="/" component={RoleAwareHome} />
           {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
           <Route path="/talent-dashboard" component={RedirectToHome} />
           <Route path="/hire-talent" component={HireTalentPage} />
@@ -489,6 +514,7 @@ function AppContent() {
       <Route path="/powerapp" component={PublicRouter} />
       
       {/* Client Protected Routes */}
+      <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
       <Route path="/client-profile" component={ClientRouter} />
       <Route path="/dashboard" component={ClientRouter} />
       <Route path="/projects" component={ClientRouter} />

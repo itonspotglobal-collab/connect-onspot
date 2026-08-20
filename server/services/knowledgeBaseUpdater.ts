@@ -147,7 +147,7 @@ Client Workflow:
 ─────────────────────────────────────────────
 - Clients can sign up or log in directly on the OnSpot platform (no manual contact required to get started).
 - Client signup uses email and password. The role is set to "client" during registration.
-- After logging in, clients land on their Client Profile (accessible at /client-profile).
+- After logging in, clients land on their Client Dashboard (accessible at /dashboard).
 - The Client Profile page shows: company name, contact person, email, phone, website, industry, company size, location, about, hiring needs, preferred roles, and timezone.
 - Clients can edit all their profile fields directly on the Client Profile page.
 - IMPORTANT: Clients CAN create and post job openings DIRECTLY from their Client Profile. They do NOT need to contact OnSpot manually to post a job.

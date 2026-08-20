@@ -105,7 +105,7 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
         if (result.user.role === "talent") {
           window.location.href = "/get-hired";
         } else {
-          window.location.href = "/client-profile";
+          window.location.href = "/dashboard";
         }
       } else {
         toast({
@@ -167,7 +167,7 @@ export function DevPortalModal({ open, onOpenChange }: DevPortalModalProps) {
         if (signUpRole === "talent") {
           window.location.href = "/get-hired";
         } else {
-          window.location.href = "/client-profile";
+          window.location.href = "/dashboard";
         }
       } else {
         toast({

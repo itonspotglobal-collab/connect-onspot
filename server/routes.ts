@@ -1684,27 +1684,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("❌ Admin bootstrap migration failed:", err.message);
   }
 
-  // Protected Dashboard Routes with Role-Based Access Control
-  // These routes serve the dashboard content with server-side validation
-  app.get(
-    "/client-dashboard",
-    authenticateJWT,
-    requireClient,
-    (req: Request, res: Response) => {
-      console.log(`🏠 Client dashboard access [${(req as any).requestId}]:`, {
-        userId: (req as any).user?.id,
-        role: (req as any).user?.role,
-      });
-      // In a production app, this would render the client dashboard or return appropriate data
-      res.json({
-        success: true,
-        message: "Client dashboard access granted",
-        userRole: (req as any).user?.role,
-        userId: (req as any).user?.id,
-      });
-    },
-  );
-
   app.get(
     "/talent-dashboard",
     authenticateJWT,
@@ -15579,7 +15558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "path must start with /" });
     }
     // Strip private routes from preview
-    const BLOCKED = ["/admin", "/client-dashboard", "/talent-portal", "/api/"];
+    const BLOCKED = ["/admin", "/talent-portal", "/api/"];
     if (BLOCKED.some((p) => targetPath.startsWith(p))) {
       return res.status(403).json({ error: "Cannot preview private routes" });
     }

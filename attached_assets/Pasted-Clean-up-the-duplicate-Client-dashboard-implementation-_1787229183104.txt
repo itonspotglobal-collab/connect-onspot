@@ -1,0 +1,908 @@
+Clean up the duplicate Client dashboard implementation in the existing OnSpot / `connect-onspot` application.
+
+## DECISION
+
+We are NO LONGER going to use the old Client dashboard/page that has:
+
+* blue `TopNavigation`
+* Home Dashboard content
+* NO left sidebar
+
+The only Client dashboard we want going forward is the version that uses:
+
+**blue/purple `TopNavigation` + Client sidebar + dashboard content**
+
+Completely remove the old sidebar-less Client dashboard flow from active routing.
+
+---
+
+# CURRENT PROBLEM
+
+There are currently multiple routes/flows representing a Client dashboard.
+
+I have confirmed:
+
+### Old / unwanted
+
+`/client-dashboard`
+
+This currently renders the sidebar-less Client dashboard / post-login Client dashboard behavior.
+
+### Desired
+
+The Client dashboard experience that uses the Client sidebar.
+
+This should become the ONE canonical Client dashboard.
+
+The user should never land on the old sidebar-less version again.
+
+---
+
+# IMPORTANT FINDING IN CURRENT CODE
+
+Audit:
+
+`client/src/App.tsx`
+
+There is currently logic similar to:
+
+```tsx
+<Route path="/" component={() => {
+  if (isAuthenticated && user?.role !== "talent") {
+    return <PostLoginPortalSelection />;
+  }
+  return <Home />;
+}} />
+
+<Route path="/client-dashboard" component={() => {
+  if (isAuthenticated) {
+    return <PostLoginPortalSelection />;
+  }
+  return <Home />;
+}} />
+```
+
+This is part of the duplicate Client dashboard problem.
+
+Do NOT keep `PostLoginPortalSelection` as the Client dashboard destination if it produces the old sidebar-less dashboard.
+
+---
+
+# GOAL
+
+There must be exactly ONE canonical Client home/dashboard route.
+
+Prefer the existing Client Portal dashboard route that uses:
+
+```text
+TopNavigation
+Client Sidebar
+Dashboard content
+```
+
+For example, if the existing sidebar dashboard route is:
+
+`/dashboard`
+
+then make:
+
+`/dashboard`
+
+the canonical Client home.
+
+Verify the actual route before implementation.
+
+---
+
+# REMOVE /CLIENT-DASHBOARD FROM ACTIVE USE
+
+The old:
+
+`/client-dashboard`
+
+page/route should no longer render its own Client dashboard.
+
+Do ONE of these safely:
+
+### Preferred
+
+Keep the URL only as a legacy redirect:
+
+```text
+/client-dashboard
+      ↓
+/dashboard
+```
+
+Use `replace: true`.
+
+This preserves old bookmarks while eliminating the duplicate page.
+
+Example:
+
+```tsx
+function LegacyClientDashboardRedirect() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate("/dashboard", { replace: true });
+  }, [navigate]);
+
+  return null;
+}
+```
+
+Then:
+
+```tsx
+<Route
+  path="/client-dashboard"
+  component={LegacyClientDashboardRedirect}
+/>
+```
+
+Do not render `PostLoginPortalSelection` there anymore.
+
+---
+
+# REMOVE DUPLICATE PAGE CODE IF UNUSED
+
+Search the entire repository for:
+
+`PostLoginPortalSelection`
+
+Determine whether it still serves any legitimate purpose.
+
+If it exists only to create the old Client dashboard / duplicate post-login page:
+
+* remove its Client-dashboard responsibility
+* delete the component if truly unused
+* remove its import
+* remove dead CSS/helpers
+* remove old tests/references
+
+BUT:
+
+Do NOT delete it blindly.
+
+First search every import and usage.
+
+If it has other legitimate portal-selection functionality, preserve that functionality but stop using it as the Client dashboard.
+
+---
+
+# ROOT "/" ROUTE
+
+The public root route must stop sending authenticated Clients into the old dashboard.
+
+Current behavior appears similar to:
+
+```tsx
+if (isAuthenticated && user?.role !== "talent") {
+  return <PostLoginPortalSelection />;
+}
+```
+
+This is too broad because it catches Client/Admin users and can send them into the wrong experience.
+
+Fix role routing explicitly.
+
+Desired behavior:
+
+```text
+Logged out
+/
+→ public homepage
+
+Client
+/
+→ canonical Client dashboard
+
+Admin
+/
+→ canonical Admin dashboard
+
+Talent
+/
+→ existing Talent/public behavior according to current product rules
+```
+
+Do not use:
+
+```tsx
+user?.role !== "talent"
+```
+
+as a shortcut for Client routing.
+
+Use explicit roles.
+
+---
+
+# CLIENT HOME REDIRECT
+
+For authenticated Client:
+
+```text
+/
+→ /dashboard
+```
+
+or whichever route is confirmed to be the sidebar dashboard.
+
+Use a redirect rather than rendering the dashboard twice.
+
+This means there should only be one actual dashboard page implementation.
+
+---
+
+# TOPNAVIGATION LOGO
+
+Update the existing:
+
+`client/src/components/TopNavigation.tsx`
+
+The OnSpot logo currently routes to:
+
+```tsx
+<Link href="/">
+```
+
+For logged-in Clients, this must ultimately land on the canonical sidebar dashboard.
+
+Either:
+
+### Option A — direct role-aware route
+
+```tsx
+const homeRoute =
+  user?.role === "client"
+    ? "/dashboard"
+    : user?.role === "admin"
+      ? "/admin/dashboard"
+      : talentAuth || user?.role === "talent"
+        ? talentHomeRoute
+        : "/";
+```
+
+Then:
+
+```tsx
+<Link href={homeRoute}>
+```
+
+### OR
+
+if `/` is now safely role-aware:
+
+the logo may remain `/`.
+
+But direct role-aware routing is preferable because it avoids an unnecessary redirect.
+
+Verify Talent/Admin routes before changing them.
+
+---
+
+# CANONICAL CLIENT LAYOUT
+
+The dashboard we keep must consistently use:
+
+```text
+Blue TopNavigation
+────────────────────────────────
+Sidebar | Main Client Content
+```
+
+The sidebar should include the existing Client Portal navigation.
+
+### Core Modules
+
+* Dashboard
+* OnSpot Talent
+* Messages
+* Client Projects
+* Performance
+
+### Management
+
+* Client Management
+* Contracts
+* Payments
+* ROI Analytics
+
+### System
+
+* Settings
+
+Do not recreate the old white top header.
+
+The only header should be `TopNavigation`.
+
+---
+
+# DASHBOARD ROUTE
+
+Find the actual route that currently produces the Client sidebar.
+
+The desired dashboard route must render the dashboard inside the same Client layout used by Messages.
+
+Conceptually:
+
+```tsx
+<ClientProtectedRoute>
+  <ClientPortalShell>
+    <Dashboard />
+  </ClientPortalShell>
+</ClientProtectedRoute>
+```
+
+Use existing layout abstractions where possible.
+
+Do not duplicate TopNavigation/sidebar inside `Dashboard.tsx` if the shared shell owns them.
+
+---
+
+# KEEP DASHBOARD BUSINESS CONTENT
+
+Removing the old route does NOT mean removing the dashboard content.
+
+Preserve:
+
+* Home Dashboard
+* VA information
+* Today's Overview
+* Attendance Dashboard
+* Financial Overview
+* Communication
+* Requests
+* invoice history
+* all existing data/API behavior
+
+Move/reuse the page content inside the canonical Client shell if necessary.
+
+Do not maintain two copies of that content.
+
+---
+
+# SEARCH ALL REFERENCES TO /CLIENT-DASHBOARD
+
+Search the whole repository for:
+
+`/client-dashboard`
+
+Update every Client-facing reference.
+
+Possible locations:
+
+* login redirects
+* signup redirects
+* portal selection
+* OnSpot logo
+* auth hooks
+* protected routes
+* profile menus
+* CTA buttons
+* tests
+* documentation
+* localStorage redirect state
+* email links if any
+
+Every active Client navigation flow should now use the canonical dashboard route.
+
+Legacy external URLs may redirect.
+
+---
+
+# LOGIN REDIRECT
+
+After a successful Client login, redirect directly to:
+
+canonical Client dashboard
+
+NOT:
+
+`/client-dashboard`
+
+if `/client-dashboard` is retired.
+
+Expected:
+
+```text
+Client Login
+    ↓
+/dashboard
+    ↓
+TopNavigation + Sidebar + Dashboard
+```
+
+---
+
+# CLIENT SIGNUP REDIRECT
+
+Likewise, once Client signup/onboarding is complete:
+
+redirect to the canonical Client destination.
+
+Do not send new Clients into the retired layout.
+
+Preserve onboarding steps that are still required.
+
+---
+
+# PORTAL SELECTION
+
+Audit:
+
+* `PostLoginPortalSelection.tsx`
+* `PortalSelectionDialog.tsx`
+* `usePortalLogin`
+* login modal logic
+
+If Client portal selection currently navigates to:
+
+`/client-dashboard`
+
+change it to the canonical sidebar dashboard route.
+
+Do not affect Talent portal routing.
+
+---
+
+# PROTECTED ROUTING
+
+The canonical Client dashboard must remain Client-protected.
+
+Unauthenticated access should:
+
+* redirect to appropriate Client login
+* preserve returnTo if current system supports it
+
+Talent/Admin should not be able to accidentally get a Client shell.
+
+---
+
+# REMOVE OLD CLIENT DASHBOARD UI
+
+After confirming no remaining references:
+
+remove the standalone sidebar-less Client dashboard path/component.
+
+There should not be:
+
+```text
+Dashboard A — no sidebar
+Dashboard B — sidebar
+```
+
+There should only be:
+
+```text
+Dashboard — sidebar
+```
+
+If both versions currently use the same `Dashboard.tsx` but different wrappers, remove the old wrapper/route rather than duplicating files.
+
+---
+
+# DO NOT DELETE THE WRONG DASHBOARD
+
+Be very careful with:
+
+`client/src/pages/Dashboard.tsx`
+
+The screenshots indicate the actual Home Dashboard content itself may be shared.
+
+Do not delete that content if it is what the sidebar dashboard uses.
+
+The thing being removed is the **sidebar-less route/layout**, not necessarily the `Dashboard.tsx` file.
+
+First identify:
+
+* page component
+* route
+* wrapper/layout
+
+Then remove only the legacy route/layout path.
+
+---
+
+# CLIENT SIDEBAR DASHBOARD MUST BECOME DEFAULT
+
+After this task:
+
+### Browser direct URL
+
+`/dashboard`
+
+→ sidebar visible
+
+### Client login
+
+→ `/dashboard`
+
+→ sidebar visible
+
+### OnSpot logo
+
+→ `/dashboard`
+
+→ sidebar visible
+
+### Sidebar Dashboard click
+
+→ `/dashboard`
+
+→ sidebar visible
+
+### Legacy URL
+
+`/client-dashboard`
+
+→ redirects to `/dashboard`
+
+→ sidebar visible
+
+### Root
+
+`/`
+
+when Client authenticated:
+
+→ redirects to `/dashboard`
+
+→ sidebar visible
+
+There must be no route left where a Client can reach the old dashboard.
+
+---
+
+# MESSAGES MUST REMAIN
+
+The Messages page is already behaving closer to the desired shell.
+
+Do not modify messaging business logic.
+
+Verify:
+
+```text
+/dashboard
+/messages
+```
+
+both use the same Client shell.
+
+Messages must keep:
+
+* working threads
+* delivery
+* unread status
+* notifications
+* Client/Talent identity logic
+
+---
+
+# CLIENT ROUTE CONSISTENCY
+
+Audit all sidebar links.
+
+They should stay in the same shell.
+
+Examples:
+
+```text
+/dashboard
+/hire-talent
+/messages
+/client-projects
+/performance
+/client-management
+/contracts
+/payments
+/roi-analytics
+/settings
+```
+
+Use actual existing paths.
+
+Do not invent routes.
+
+---
+
+# TOPNAVIGATION + SIDEBAR OWNERSHIP
+
+Preferred final architecture:
+
+```text
+ClientPortalShell
+├── TopNavigation
+├── ClientSidebar
+└── Page Content
+```
+
+This shell should own the common navigation.
+
+Pages should not individually mount another:
+
+`TopNavigation`
+
+or another sidebar.
+
+Avoid duplicate headers.
+
+---
+
+# DO NOT BREAK OTHER ROLES
+
+This cleanup is specifically for Client routing.
+
+Do not remove:
+
+* Admin dashboard
+* Talent pages
+* public Home page
+
+The word `Dashboard` is used by multiple roles.
+
+Only retire the old Client dashboard route/layout.
+
+---
+
+# ADMIN
+
+Admin must continue using:
+
+`/admin/dashboard`
+
+Do not redirect Admin to Client `/dashboard`.
+
+---
+
+# TALENT
+
+Do not redirect Talent to Client `/dashboard`.
+
+Retain existing Talent home/application routing.
+
+---
+
+# PUBLIC HOME
+
+Unauthenticated users must still be able to visit:
+
+`/`
+
+and see the public OnSpot homepage.
+
+Do not turn `/` into a globally protected Client route.
+
+---
+
+# BROWSER HISTORY
+
+Use `replace: true` for legacy redirects.
+
+Example:
+
+```text
+/client-dashboard
+→ /dashboard
+```
+
+so Back does not bounce users into an obsolete route repeatedly.
+
+---
+
+# TEST EXACTLY THESE FLOWS
+
+## Test A — Client login
+
+1. Login as Client.
+2. Expected URL:
+   `/dashboard`
+3. Blue TopNavigation visible.
+4. Sidebar visible.
+5. Dashboard content visible.
+
+---
+
+## Test B — OnSpot logo
+
+1. Start on `/messages`.
+2. Sidebar visible.
+3. Click OnSpot logo.
+4. Expected:
+   `/dashboard`
+5. Sidebar remains visible.
+
+---
+
+## Test C — Legacy URL
+
+Manually visit:
+
+`/client-dashboard`
+
+Expected:
+
+redirect to:
+
+`/dashboard`
+
+The old dashboard must never render.
+
+---
+
+## Test D — Root URL
+
+As logged-in Client visit:
+
+`/`
+
+Expected:
+
+redirect to canonical Client dashboard.
+
+Sidebar visible.
+
+---
+
+## Test E — browser refresh
+
+Refresh:
+
+`/dashboard`
+
+Expected:
+
+sidebar still visible.
+
+No fallback to old page.
+
+---
+
+## Test F — navigation
+
+Navigate:
+
+Dashboard → Messages → Dashboard → OnSpot Talent → Dashboard
+
+Sidebar and TopNavigation should remain consistent.
+
+---
+
+## Test G — Admin
+
+Login as Admin.
+
+Admin routes remain unchanged.
+
+---
+
+## Test H — Talent
+
+Login as Talent.
+
+Talent routes remain unchanged.
+
+---
+
+## Test I — Logged-out
+
+Visit `/`.
+
+Public website remains unchanged.
+
+---
+
+# CLEANUP DEAD CODE
+
+After migrating all references:
+
+Search again for:
+
+```text
+/client-dashboard
+PostLoginPortalSelection
+old Client dashboard
+```
+
+Any remaining `/client-dashboard` usage should normally only be the intentional legacy redirect.
+
+Delete unused imports/components/styles if they truly have no other callers.
+
+Do not leave dead duplicate Client dashboard code behind.
+
+---
+
+# BUILD / TEST
+
+Run:
+
+* TypeScript check
+* frontend build
+* relevant route/auth tests
+* messaging tests if shared layout changed
+
+Fix all new errors caused by this cleanup.
+
+Do not claim completion if build is failing.
+
+---
+
+# COMPLETION REPORT
+
+When finished tell me:
+
+## Canonical Client route
+
+Example:
+
+`/dashboard`
+
+## Removed legacy route
+
+Explain what `/client-dashboard` now does.
+
+## Old page
+
+State whether the old component was deleted or whether only its wrapper/route was removed, and why.
+
+## Redirects changed
+
+List:
+
+* login
+* signup
+* logo
+* `/`
+* portal selection
+* legacy `/client-dashboard`
+
+## Files changed
+
+List exact files.
+
+## Regression checks
+
+Confirm:
+
+* Client dashboard
+* sidebar
+* Messages
+* Hire Talent
+* Client Profile
+* notifications
+* Admin
+* Talent
+* public homepage
+
+## Tests
+
+Give exact commands and results.
+
+---
+
+# FINAL ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* there is ONE Client dashboard experience
+* it includes the sidebar
+* `/client-dashboard` no longer renders a standalone dashboard
+* legacy `/client-dashboard` redirects to canonical Client dashboard
+* authenticated Client `/` resolves to canonical Client dashboard
+* Client login goes directly to canonical Client dashboard
+* OnSpot logo returns Client to canonical Client dashboard
+* sidebar persists
+* blue TopNavigation persists
+* no white header returns
+* no duplicate dashboard content remains
+* Messages still works
+* Admin unaffected
+* Talent unaffected
+* public homepage unaffected
+* build passes
+
+The old Client dashboard without the sidebar is retired permanently.
+
+Do not keep it as an alternate Client dashboard.

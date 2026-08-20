@@ -28,7 +28,6 @@ interface AuthContextType {
   refreshAuth: () => Promise<void>;
   checkNewUserStatus: (userId: string) => Promise<boolean>;
   redirectToOnboarding: () => void;
-  enterPortal: (portalType: "client" | "talent") => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -342,66 +341,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🚀 Redirecting to onboarding flow');
   };
 
-  // Portal selection with role validation
-  const enterPortal = async (portalType: "client" | "talent"): Promise<boolean> => {
-    try {
-      console.log(`🚪 Portal access requested [${portalType}]:`, {
-        userRole: user?.role,
-        requestedPortal: portalType,
-        userId: user?.id
-      });
-
-      // Check if user is authenticated
-      if (!isAuthenticated || !user) {
-        console.error('❌ Portal access denied: User not authenticated');
-        setError('Authentication required to access portal');
-        return false;
-      }
-
-      // Validate role matches requested portal
-      if (user.role !== portalType) {
-        const errorMessage = `You do not have access to this portal. Please use your ${user.role} account.`;
-        console.error(`❌ Portal access denied [${user.id}]:`, {
-          userRole: user.role,
-          requestedPortal: portalType,
-          reason: 'Role mismatch'
-        });
-        
-        setError(errorMessage);
-        
-        // Show user-friendly toast
-        toast({
-          title: "Access Denied",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        
-        return false;
-      }
-
-      // Role matches - portal access granted
-      console.log(`✅ Portal access granted [${user.id}]:`, {
-        userRole: user.role,
-        accessedPortal: portalType
-      });
-
-      setError(null);
-      return true;
-
-    } catch (error: any) {
-      console.error('Portal access error:', error);
-      setError('An error occurred while accessing the portal. Please try again.');
-      
-      toast({
-        title: "Portal Access Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-      
-      return false;
-    }
-  };
-
   // Check for authentication on mount - only once
   useEffect(() => {
     if (!initialized) {
@@ -422,8 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout, 
       refreshAuth,
       checkNewUserStatus,
-      redirectToOnboarding,
-      enterPortal
+      redirectToOnboarding
     }}>
       {children}
     </AuthContext.Provider>
