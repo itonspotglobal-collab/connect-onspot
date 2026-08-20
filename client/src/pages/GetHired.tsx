@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
+import type { ResumeReviewField } from "@/lib/applyResumeToCandidate";
+import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
 import { authAPI } from "@/lib/api";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,6 +88,10 @@ export default function GetHired() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoVersion, setPhotoVersion] = useState(0);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [resumeReview, setResumeReview] = useState<{
+    fields: ResumeReviewField[];
+    source: "vanessa" | "deterministic";
+  } | null>(null);
   
   // Use consolidated profile system
   const {
@@ -291,7 +297,7 @@ export default function GetHired() {
           }
 
           if (candidateId) {
-            const { updated, appliedFields, parseError, analysisSource } = await applyResumeToCandidate({
+            const { updated, reviewFields, parseError, analysisSource } = await applyResumeToCandidate({
               file: file.data,
               candidateId,
               token,
@@ -300,12 +306,9 @@ export default function GetHired() {
 
             if (parseError) {
               console.warn("Resume analysis partial error:", parseError);
-            } else if (updated !== null && appliedFields.length > 0) {
-              // Only surface a toast when the PATCH actually persisted to the DB
-              toast({
-                title: analysisSource === "vanessa" ? "Profile auto-filled" : "Resume imported",
-                description: `Updated: ${appliedFields.slice(0, 4).join(", ")}${appliedFields.length > 4 ? ` +${appliedFields.length - 4} more` : ""}.`,
-              });
+            } else if (updated !== null && reviewFields.length > 0) {
+              // Show the side-by-side review panel instead of a plain toast
+              setResumeReview({ fields: reviewFields, source: analysisSource });
             }
           }
         } catch (analysisErr) {
@@ -1271,6 +1274,16 @@ export default function GetHired() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Resume import review panel — shown after Vanessa auto-fills the profile */}
+      {resumeReview && (
+        <ResumeImportReviewPanel
+          open
+          fields={resumeReview.fields}
+          analysisSource={resumeReview.source}
+          onClose={() => setResumeReview(null)}
+        />
+      )}
     </div>
   );
 }

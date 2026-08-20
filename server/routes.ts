@@ -5745,6 +5745,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/candidates/me — find the candidate record for the authenticated talent user by email.
+  // Must be registered BEFORE /api/candidates/:id so Express doesn't match "me" as an id param.
+  // Returns the same full DTO as GET /api/candidates/:id so all pages compute an identical
+  // completion percentage regardless of which endpoint they use.
+  app.get("/api/candidates/me", authenticateJWT, async (req: any, res) => {
+    try {
+      const userEmail = req.user?.email;
+      if (!userEmail) return res.status(400).json({ error: "No email on authenticated user" });
+      const result = await query(
+        `SELECT id,
+                display_name        AS "displayName",
+                full_name           AS "fullName",
+                first_name          AS "firstName",
+                last_name           AS "lastName",
+                email, phone, location,
+                target_position     AS "targetPosition",
+                headline,
+                category,
+                experience_years    AS "experienceYears",
+                seniority,
+                core_skills         AS "coreSkills",
+                secondary_skills    AS "secondarySkills",
+                work_history        AS "workHistory",
+                education,
+                preferences,
+                summary,
+                profile_photo_url   AS "profilePhotoUrl",
+                resume_url          AS "resumeUrl",
+                resume_file_name    AS "resumeFileName",
+                linkedin_url        AS "linkedinUrl",
+                portfolio_url       AS "portfolioUrl",
+                profile_completed   AS "profileCompleted",
+                culture_score       AS "cultureScore",
+                availability,
+                values_answers      AS "valuesAnswers",
+                created_at          AS "createdAt",
+                updated_at          AS "updatedAt"
+         FROM candidates WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        [userEmail],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "No candidate profile found" });
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("GET /api/candidates/me error:", error);
+      res.status(500).json({ error: "Failed to fetch candidate" });
+    }
+  });
+
   app.get("/api/candidates/:id", async (req: any, res) => {
     try {
       const candidate = await storage.getCandidate(req.params.id);
@@ -5914,53 +5962,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stack:       pgErr instanceof Error ? pgErr.stack?.split("\n").slice(0, 5).join(" | ") : undefined,
       });
       res.status(500).json({ error: "Failed to update candidate" });
-    }
-  });
-
-  // GET /api/candidates/me — find the candidate record for the authenticated talent user by email.
-  // Returns the same full DTO as GET /api/candidates/:id so all pages compute an identical
-  // completion percentage regardless of which endpoint they use.
-  app.get("/api/candidates/me", authenticateJWT, async (req: any, res) => {
-    try {
-      const userEmail = req.user?.email;
-      if (!userEmail) return res.status(400).json({ error: "No email on authenticated user" });
-      const result = await query(
-        `SELECT id,
-                display_name        AS "displayName",
-                full_name           AS "fullName",
-                first_name          AS "firstName",
-                last_name           AS "lastName",
-                email, phone, location,
-                target_position     AS "targetPosition",
-                headline,
-                category,
-                experience_years    AS "experienceYears",
-                seniority,
-                core_skills         AS "coreSkills",
-                secondary_skills    AS "secondarySkills",
-                work_history        AS "workHistory",
-                education,
-                preferences,
-                summary,
-                profile_photo_url   AS "profilePhotoUrl",
-                resume_url          AS "resumeUrl",
-                resume_file_name    AS "resumeFileName",
-                linkedin_url        AS "linkedinUrl",
-                portfolio_url       AS "portfolioUrl",
-                profile_completed   AS "profileCompleted",
-                culture_score       AS "cultureScore",
-                availability,
-                values_answers      AS "valuesAnswers",
-                created_at          AS "createdAt",
-                updated_at          AS "updatedAt"
-         FROM candidates WHERE LOWER(email) = LOWER($1) LIMIT 1`,
-        [userEmail],
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: "No candidate profile found" });
-      res.json(result.rows[0]);
-    } catch (error) {
-      console.error("GET /api/candidates/me error:", error);
-      res.status(500).json({ error: "Failed to fetch candidate" });
     }
   });
 

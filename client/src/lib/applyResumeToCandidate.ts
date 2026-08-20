@@ -245,9 +245,11 @@ export function mergeResumeWithCandidate(
 ): Partial<CandidateSnapshot & { preferences: Record<string, unknown> }> {
   const patch: Record<string, unknown> = {};
 
-  if (extracted.phone?.trim())          patch.phone = extracted.phone.trim();
-  if (extracted.location?.trim())        patch.location = extracted.location.trim();
-  if (extracted.targetPosition?.trim())  patch.targetPosition = extracted.targetPosition.trim();
+  // Scalar strings: only fill when the existing field is empty — never overwrite
+  // manually maintained data (matches FindBestMatches non-destructive prefill).
+  if (extracted.phone?.trim()          && !existing.phone?.trim())          patch.phone          = extracted.phone.trim();
+  if (extracted.location?.trim()       && !existing.location?.trim())       patch.location       = extracted.location.trim();
+  if (extracted.targetPosition?.trim() && !existing.targetPosition?.trim()) patch.targetPosition = extracted.targetPosition.trim();
 
   // summary: preserve existing manual edits
   if (extracted.summary?.trim() && !existing.summary?.trim())

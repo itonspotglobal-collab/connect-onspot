@@ -59,6 +59,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { parsePhoneNumber as libParsePhoneNumber } from "libphonenumber-js";
+import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
+import type { ResumeReviewField, VanessaConfidence } from "@/lib/applyResumeToCandidate";
 
 // ─── CandidateProfile type ────────────────────────────────────────────────────
 
@@ -1924,6 +1926,10 @@ export default function FindBestMatches() {
   const [extractParseError, setExtractParseError] = useState<string | null>(
     null,
   );
+  const [resumeReview, setResumeReview] = useState<{
+    fields: ResumeReviewField[];
+    source: "vanessa" | "deterministic";
+  } | null>(null);
 
   // ── Candidate persistence state ──────────────────────────────────────────
   // candidateId priority:
@@ -2075,6 +2081,54 @@ export default function FindBestMatches() {
     return () => clearTimeout(t);
   }, [phase]);
 
+  // ── Review field builder (for ResumeImportReviewPanel) ──────────────────
+  function buildFBMReviewFields(
+    prevProfile: CandidateProfile,
+    result: ExtractedCandidateProfile,
+    confidence: VanessaConfidence | null,
+  ): ResumeReviewField[] {
+    const confMap: Record<string, keyof VanessaConfidence> = {
+      targetPosition:  "professionalTitle",
+      summary:         "summary",
+      workHistory:     "experience",
+      education:       "education",
+      coreSkills:      "skills",
+      secondarySkills: "skills",
+      location:        "location",
+    };
+    const makeField = (
+      field: string,
+      importedValue: unknown,
+      previousValue: unknown,
+    ): ResumeReviewField => {
+      let conf: number | null = null;
+      if (confidence) {
+        const key = confMap[field];
+        conf = (key ? confidence[key] : undefined) ?? confidence.overall ?? null;
+      }
+      return { field, importedValue, previousValue, confidence: conf };
+    };
+
+    const fields: ResumeReviewField[] = [];
+
+    // Scalar fields — only include if the value was actually applied (prev was empty)
+    if (result.fullName      && !prevProfile.fullName)      fields.push(makeField("fullName",       result.fullName,       prevProfile.fullName));
+    if (result.phone         && !prevProfile.phone)         fields.push(makeField("phone",          result.phone,          prevProfile.phone));
+    if (result.location      && !prevProfile.location)      fields.push(makeField("location",       result.location,       prevProfile.location));
+    if (result.targetPosition && !prevProfile.targetPosition) fields.push(makeField("targetPosition", result.targetPosition, prevProfile.targetPosition));
+    if (result.summary       && !prevProfile.summary)       fields.push(makeField("summary",        result.summary,        prevProfile.summary));
+
+    // Array fields — only include if the value was applied (prev array was empty)
+    if (result.coreSkills.length      && !prevProfile.coreSkills.length)      fields.push(makeField("coreSkills",      result.coreSkills,      prevProfile.coreSkills));
+    if (result.secondarySkills.length && !prevProfile.secondarySkills.length) fields.push(makeField("secondarySkills", result.secondarySkills, prevProfile.secondarySkills));
+    if (result.workHistory.length     && !prevProfile.workHistory.length)     fields.push(makeField("workHistory",     result.workHistory,     prevProfile.workHistory));
+    if (result.education.length       && !prevProfile.education.length)       fields.push(makeField("education",       result.education,       prevProfile.education));
+    if (result.certifications.length  && !prevProfile.certifications.length)  fields.push(makeField("certifications",  result.certifications,  prevProfile.certifications));
+    if (result.languages.length       && !prevProfile.languages.length)       fields.push(makeField("languages",       result.languages,       prevProfile.languages));
+
+    return fields;
+  }
+
   // ── Resume extraction trigger ────────────────────────────────────────────
   async function handleFileChange(file: File | null) {
     setField("resumeFile", file);
@@ -2087,9 +2141,15 @@ export default function FindBestMatches() {
     setExtracting(true);
     setExtractParseError(null);
 
+    // Capture pre-hydration profile so we can build accurate review fields
+    const prevProfile = profile;
+
     try {
       // Try Vanessa server-side analysis first; fall back to deterministic parser
       let result: ReturnType<typeof parseResumeFile> extends Promise<infer T> ? T : never;
+      let analysisSource: "vanessa" | "deterministic" = "deterministic";
+      let vanessaConfidence: VanessaConfidence | null = null;
+
       try {
         const rawText = await extractTextFromFile(file);
         if (rawText.trim()) {
@@ -2104,6 +2164,8 @@ export default function FindBestMatches() {
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.profile) {
+              analysisSource = "vanessa";
+              vanessaConfidence = data.profile.confidence ?? null;
               // Map Vanessa response to the local result shape
               const p = data.profile;
               result = {
@@ -2201,6 +2263,12 @@ export default function FindBestMatches() {
             ? prev.languages
             : result.languages.length ? result.languages : prev.languages,
         }));
+
+        // Show the review panel when fields were applied
+        const reviewFields = buildFBMReviewFields(prevProfile, result, vanessaConfidence);
+        if (reviewFields.length > 0) {
+          setResumeReview({ fields: reviewFields, source: analysisSource });
+        }
       }
     } catch {
       setExtractParseError(
@@ -4006,6 +4074,17 @@ export default function FindBestMatches() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Resume import review panel — shown after Vanessa pre-fills the profile form */}
+      {resumeReview && (
+        <ResumeImportReviewPanel
+          open
+          fields={resumeReview.fields}
+          analysisSource={resumeReview.source}
+          onClose={() => setResumeReview(null)}
+          onEditField={() => setResumeReview(null)}
+        />
+      )}
     </div>
   );
 }
