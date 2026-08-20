@@ -1,0 +1,1177 @@
+Extend the existing OnSpot / `connect-onspot` job application workflow so application status changes are coordinated with email delivery and notifications.
+
+## GOAL
+
+There are two related workflows to support:
+
+### A. Admin changes a Talent application status
+
+Admin must:
+
+1. choose the new status
+2. choose/review an email template
+3. compose/confirm the email
+4. send the email
+5. ONLY AFTER successful email send:
+
+   * commit the new application status
+   * write status history
+   * notify the Talent
+
+### B. Client changes a Talent application status
+
+When a Client changes the status of an application to their own job:
+
+* Talent receives an application-status notification
+* Admin receives a notification describing the Client's change
+* existing Talent email behavior should remain consistent with product rules
+
+Do not create duplicate application records.
+
+Do not create a parallel notification system.
+
+Use the existing canonical application/submission record and existing email/notification infrastructure.
+
+---
+
+# IMPORTANT EXISTING COMPONENTS
+
+Audit and reuse:
+
+* `client/src/pages/AdminJobApplications.tsx`
+* `client/src/components/ApplicantEmailComposer.tsx`
+* Admin email template system
+* `AdminEmailTemplates`
+* notification storage/API
+* application status history
+* Client application status update route
+* Talent application notification route
+* shared submission status definitions
+
+The Admin Job Applications page already imports:
+
+`ApplicantEmailComposer`
+
+and already has canonical admin-settable statuses.
+
+Reuse that.
+
+---
+
+# ADMIN WORKFLOW — TWO STEP PROCESS
+
+When Admin selects a new application status, DO NOT immediately persist the status.
+
+The flow should become:
+
+```text
+Admin selects new status
+        ↓
+Pending status change
+        ↓
+Email Applicant modal opens
+        ↓
+Admin chooses email template
+        ↓
+Admin reviews/edits subject + body
+        ↓
+Admin clicks Send Email
+        ↓
+Email successfully sends
+        ↓
+Application status is committed
+        ↓
+Status history written
+        ↓
+Talent notification created
+```
+
+If the email fails:
+
+```text
+status must remain unchanged
+```
+
+This is critical.
+
+---
+
+# CURRENT STATUS DROPDOWN
+
+The Application Details dialog currently lets Admin choose statuses such as:
+
+* Under Review
+* Reviewed
+* Shortlisted
+* Rejected
+* etc.
+
+Change the behavior so selecting one creates a:
+
+`pendingStatus`
+
+in frontend state.
+
+Do NOT PATCH/UPDATE the application immediately.
+
+Example:
+
+```ts
+setPendingStatus("shortlisted");
+setEmailComposerOpen(true);
+```
+
+The actual database update occurs only after successful email send.
+
+---
+
+# EMAIL APPLICANT — TEMPLATE SELECTION
+
+Use the existing Applicant Email Composer.
+
+Admin must be able to:
+
+* choose From address
+* select an existing template
+* preview template
+* edit subject
+* edit body
+* optionally use no template
+* send email
+
+Do not invent another template store.
+
+Use existing Admin Email Templates.
+
+---
+
+# TEMPLATE VARIABLES
+
+Where supported, make status-update templates able to resolve values like:
+
+* Talent first name
+* Talent full name
+* Job title
+* Company/client name
+* New application status
+* Previous application status
+* Application ID
+* Job posting ID
+* OnSpot name/branding
+
+Use existing templating syntax if already present.
+
+Do not add a second incompatible variable system.
+
+---
+
+# EMAIL CONTENT
+
+Admin should remain in control of the actual email.
+
+Suggested default subject:
+
+`Update on your application for {{job_title}}`
+
+Suggested default body concept:
+
+```text
+Hi {{first_name}},
+
+Your application status for {{job_title}} has been updated to {{new_status}}.
+
+[admin-selected/template content]
+
+Regards,
+OnSpot
+```
+
+Do not hardcode this if an existing selected template provides its own subject/body.
+
+---
+
+# STATUS SHOULD COMMIT ONLY AFTER SUCCESSFUL EMAIL
+
+This must be enforced server-side, not only in React.
+
+Do not implement:
+
+1. PATCH status
+2. try to email
+3. rollback visually if email fails
+
+Instead create an atomic/coordinated workflow endpoint.
+
+Preferred conceptual endpoint:
+
+`POST /api/admin/job-applications/:applicationId/status-with-email`
+
+Payload conceptually:
+
+```json
+{
+  "newStatus": "shortlisted",
+  "templateId": "...",
+  "subject": "...",
+  "htmlBody": "...",
+  "textBody": "..."
+}
+```
+
+The exact schema should follow existing email composer contracts.
+
+---
+
+# SERVER PROCESS FOR ADMIN CHANGE
+
+Conceptually:
+
+```text
+1. authenticate Admin
+2. load application
+3. validate requested status transition
+4. load Talent recipient
+5. validate email address
+6. render/validate chosen email content
+7. send email
+8. if email fails → STOP, no status update
+9. update job_submissions.status
+10. write status history
+11. create Talent notification
+12. return updated application
+```
+
+If DB transaction cannot include external email delivery, handle carefully:
+
+* email must succeed first
+* then perform DB status/history/notification transaction
+* if DB commit fails after email succeeds, log a high-priority consistency error and return failure
+
+Do not pretend external email can participate in a normal SQL transaction.
+
+---
+
+# ADMIN TALENT NOTIFICATION
+
+After Admin successfully changes status and email is sent, create a persistent Talent notification.
+
+Suggested:
+
+### Type
+
+Use existing:
+
+`application_update`
+
+if that is already canonical.
+
+Do not introduce a duplicate type unnecessarily.
+
+### Title
+
+`Application update`
+
+### Message
+
+`The status of your application for Social Media Manager was updated to Shortlisted.`
+
+or:
+
+`Your application status is now Shortlisted.`
+
+### Related ID
+
+application/submission ID
+
+### Related Type
+
+follow current application notification convention.
+
+---
+
+# TALENT NOTIFICATION CLICK
+
+When Talent clicks the status-update notification:
+
+navigate to:
+
+`/my-applications`
+
+and preferably target/highlight the relevant application if existing routing supports it.
+
+Do not route to Messages.
+
+---
+
+# TALENT EMAIL
+
+The same successful Admin action must send an email to the Talent.
+
+The notification and email should correspond to the SAME new status.
+
+Do not allow:
+
+notification says Shortlisted
+
+while email says Under Review.
+
+Use the pending status as the single source during the workflow.
+
+---
+
+# STATUS HISTORY
+
+After successful email delivery and status commit, write one status-history row.
+
+Include:
+
+* previous status
+* new status
+* changed by Admin user ID
+* changed by name if existing history supports it
+* timestamp
+* optional note such as:
+  `Status updated with applicant email sent`
+* email/template reference if existing schema supports metadata
+
+Do not create duplicate history entries.
+
+---
+
+# CANCEL BEHAVIOR
+
+Admin selects:
+
+`Shortlisted`
+
+Email composer opens.
+
+Admin clicks Cancel.
+
+Expected:
+
+* application status remains previous status
+* no status history
+* no Talent notification
+* no email sent
+
+Close/reopen Application Details and it should still show the old status.
+
+---
+
+# EMAIL FAILURE BEHAVIOR
+
+If Send Email fails:
+
+show clear error:
+
+`Email could not be sent. The application status was not changed.`
+
+Do not close the composer automatically unless appropriate.
+
+Allow Admin to retry.
+
+---
+
+# DOUBLE CLICK / RETRY SAFETY
+
+Prevent Admin from double-clicking Send Email and causing:
+
+* two emails
+* two status history rows
+* duplicate notifications
+
+Disable Send while pending.
+
+Add idempotency/server protection where practical.
+
+---
+
+# ADMIN TEMPLATE CHOICE
+
+Admin must explicitly choose or review a template before final send.
+
+Do not auto-send immediately after selecting status.
+
+The two-step user experience is intentional:
+
+### Step 1
+
+Choose status
+
+### Step 2
+
+Email Applicant
+
+A small step indicator is optional:
+
+`1. Status → 2. Email Applicant`
+
+Do not overdesign.
+
+---
+
+# EXISTING EMAIL COMPOSER
+
+Reuse:
+
+`ApplicantEmailComposer`
+
+Do not create another rich-text composer.
+
+Make it accept the pending status context if required.
+
+For example:
+
+```text
+application
+pendingStatus
+onEmailSentAndCommitted
+onCancel
+```
+
+Adapt to current component contracts.
+
+---
+
+# CLIENT-ORIGINATED STATUS CHANGES
+
+Now handle changes made by Clients to applications for jobs they own.
+
+When Client changes a Talent application status:
+
+Talent must continue to see the new canonical status.
+
+Additionally create notifications for:
+
+1. Talent
+2. Admin
+
+---
+
+# TALENT NOTIFICATION FOR CLIENT CHANGE
+
+Suggested:
+
+### Title
+
+`Application update`
+
+### Message
+
+`The status of your application for Social Media Manager was updated to Shortlisted.`
+
+Do not expose internal IDs unnecessarily.
+
+Use the same canonical status label mapping.
+
+---
+
+# ADMIN NOTIFICATION FOR CLIENT CHANGE
+
+Admin must receive a notification such as:
+
+### Title
+
+`Client updated application`
+
+### Message
+
+`Val Client changed Valu Testu's application for Social Media Manager to Shortlisted.`
+
+If useful, include Job Posting ID as metadata or secondary text.
+
+Preferred human-readable content is Job Title.
+
+Example:
+
+`Val Client changed Valu Testu's application for Social Media Manager to Shortlisted.`
+
+Optional:
+
+`Job ID: abc123`
+
+Do not show raw IDs as the main UI text unless no title exists.
+
+---
+
+# ADMIN NOTIFICATION RELATED ID
+
+Use application/submission ID so Admin can navigate to that exact record.
+
+Related type should match existing admin application conventions.
+
+---
+
+# ADMIN NOTIFICATION CLICK
+
+If feasible:
+
+click Admin notification →
+
+`/admin/job-applications?...`
+
+focused on exact application.
+
+If exact-deep-link support does not exist, route to Admin Job Applications with query parameter or filter.
+
+Do not create a dead URL.
+
+---
+
+# CLIENT CHANGE — EMAIL RULE
+
+Clarify behavior carefully.
+
+For this task:
+
+When CLIENT changes the application status:
+
+* Talent notification is mandatory
+* Admin notification is mandatory
+
+If the existing Client workflow already sends Talent emails, preserve it.
+
+Do NOT force Client to use the Admin Email Applicant composer unless that is explicitly intended.
+
+The Admin-controlled two-step email workflow applies to ADMIN status changes.
+
+---
+
+# SOURCE / ACTOR TRACKING
+
+Status history and notifications should identify who made the change.
+
+Possible actors:
+
+* Admin
+* Client
+* Talent/system where applicable
+
+Store/use:
+
+* changedBy user ID
+* changedBy role
+* changedBy display name
+
+if existing schema supports it.
+
+Do not infer actor later from notification text.
+
+---
+
+# CLIENT-OWNED JOB CHECK
+
+For Client-originated status updates:
+
+server must verify:
+
+* authenticated user is Client
+* job belongs to that Client
+* application belongs to that job
+
+Client must not update another Client's application.
+
+---
+
+# ADMIN AUTHORIZATION
+
+Admin status-with-email endpoint must require Admin authorization.
+
+Do not expose it to Client/Talent.
+
+---
+
+# TALENT STATUS CONSISTENCY
+
+After either Admin or Client changes status:
+
+Talent My Applications must display the updated canonical status after refetch.
+
+Do not maintain a separate notification-only status.
+
+---
+
+# STATUS LABEL MAPPING
+
+Use shared canonical status definitions.
+
+Avoid mismatches such as:
+
+`reviewed`
+
+displaying differently in:
+
+* Admin
+* Client
+* Talent
+* email
+* notification
+
+Use shared helpers where possible.
+
+---
+
+# DO NOT CHANGE WITHDRAWAL RULES
+
+Talent withdrawal is a separate workflow.
+
+Preserve:
+
+* Talent can withdraw allowed applications
+* Client receives withdrawal notification
+* status becomes withdrawn
+* terminal protection remains
+
+Do not force an Admin email composer for Talent withdrawal.
+
+---
+
+# DO NOT CHANGE OFFER FLOW UNNECESSARILY
+
+Statuses related to:
+
+* offer_extended
+* offer_accepted
+* offer_declined
+* hired
+
+may have special existing workflows.
+
+Audit those before routing them through the generic status-with-email flow.
+
+If an existing Offer/Contract workflow already handles email/notifications, do NOT duplicate it.
+
+The generic Admin status+email workflow should only apply to statuses that are currently changed through the normal status dropdown.
+
+---
+
+# IMPORTANT SPECIAL STATUS REVIEW
+
+The current Admin code documents that some states are reached only through dedicated hiring workflows.
+
+Preserve that rule.
+
+Do not let the new generic status/email flow bypass dedicated:
+
+* contract
+* hire
+* offer
+
+business logic.
+
+---
+
+# NOTIFICATION BELL RULES
+
+Preserve recent notification UX:
+
+* Bell icon = red dot only
+* no number on Bell icon
+* notification dropdown may show group count/header
+* message notifications remain grouped by sender/thread
+
+Application status notifications are separate notification types.
+
+Do not merge application updates into message groups.
+
+---
+
+# EMAIL AUDIT TRAIL
+
+If existing email history exists in ApplicantEmailComposer/Admin emails, ensure the status-change email appears in that history.
+
+Useful metadata:
+
+* application ID
+* recipient
+* template ID
+* subject
+* sent timestamp
+* Admin sender
+
+Do not store unnecessary duplicate email bodies if the existing email-history system already does.
+
+---
+
+# TEMPLATE FILTERING
+
+If email templates have categories/stages:
+
+when Admin chooses status:
+
+prefer showing relevant templates first.
+
+Examples:
+
+Shortlisted →
+shortlist/status templates
+
+Rejected →
+rejection templates
+
+Under Review →
+review templates
+
+But still allow Admin to choose another valid template if product permits it.
+
+Do not hardcode a single template per status.
+
+---
+
+# UI FLOW EXAMPLE
+
+Admin opens Application Details.
+
+Current:
+
+```text
+Status: New
+[v Select status]
+```
+
+Admin selects:
+
+`Shortlisted`
+
+Do NOT show Shortlisted as final immediately.
+
+Instead:
+
+```text
+Pending change:
+New → Shortlisted
+
+[Continue to Email Applicant]
+```
+
+Then open existing composer.
+
+After successful Send:
+
+```text
+Status: Shortlisted
+```
+
+Toast:
+
+`Email sent and application status updated.`
+
+---
+
+# CLIENT CHANGE EXAMPLE
+
+Client Val Client changes:
+
+Valu Testu
+
+Social Media Manager
+
+from:
+
+New
+
+to:
+
+Reviewed
+
+Expected:
+
+### Talent
+
+Notification:
+
+`Your application for Social Media Manager is now Reviewed.`
+
+Talent My Applications:
+
+`Reviewed`
+
+### Admin
+
+Notification:
+
+`Val Client changed Valu Testu's application for Social Media Manager to Reviewed.`
+
+Admin Job Applications:
+
+same canonical status.
+
+---
+
+# ADMIN CHANGE EXAMPLE
+
+Admin changes:
+
+Valu Testu
+
+Social Media Manager
+
+from:
+
+Reviewed
+
+to:
+
+Shortlisted
+
+Expected:
+
+1. Admin selects Shortlisted.
+2. Email Applicant opens.
+3. Admin chooses template.
+4. Admin edits/previews email.
+5. Admin clicks Send Email.
+6. Email successfully sends.
+7. Status changes to Shortlisted.
+8. history entry created.
+9. Talent notification created.
+10. Talent email arrives.
+11. Talent My Applications shows Shortlisted.
+
+---
+
+# IF TALENT HAS NO VALID EMAIL
+
+Admin should not be able to accidentally commit an email-required status change without a deliverable address.
+
+If email is missing/invalid:
+
+show:
+
+`Applicant does not have a valid email address. Status was not changed.`
+
+If product later supports override, that should be a separate explicit feature.
+
+Do not silently skip email.
+
+---
+
+# IF TALENT ACCOUNT IS NOT LINKED
+
+If application exists but no linked Talent user exists:
+
+email may still be possible using application email.
+
+But in-app notification requires a linked/canonical user.
+
+Handle gracefully:
+
+* email can send if valid
+* status may commit after email
+* log/skips in-app Talent notification only if no canonical account exists
+
+Do not crash.
+
+Clearly report this case in completion notes.
+
+---
+
+# TRANSACTION / CONSISTENCY
+
+After successful email, perform DB changes in a transaction where possible:
+
+```text
+BEGIN
+
+update submission status
+insert status history
+insert Talent notification
+
+COMMIT
+```
+
+For Client changes:
+
+```text
+BEGIN
+
+update submission status
+insert status history
+insert Talent notification
+insert Admin notification
+
+COMMIT
+```
+
+Do not partially update status without history/notification unless unavoidable.
+
+---
+
+# DUPLICATE NOTIFICATION PROTECTION
+
+A retried status request should not create duplicate Talent/Admin notifications.
+
+Use idempotency or compare:
+
+* application ID
+* old status
+* new status
+* actor
+* transition event
+
+as appropriate.
+
+---
+
+# TEST MATRIX — ADMIN
+
+## Test 1 — successful status + email
+
+Admin selects Reviewed.
+
+Chooses template.
+
+Sends email.
+
+Expected:
+
+* one email
+* status changes
+* history row
+* Talent notification
+
+---
+
+## Test 2 — cancel email
+
+Admin selects Shortlisted.
+
+Cancels composer.
+
+Expected:
+
+* no email
+* no status change
+* no notification
+* no history row
+
+---
+
+## Test 3 — email failure
+
+Email provider returns error.
+
+Expected:
+
+* status unchanged
+* no history
+* no Talent notification
+* retry available
+
+---
+
+## Test 4 — double send
+
+Rapid double click Send.
+
+Expected:
+
+* one email
+* one status update
+* one history row
+* one notification
+
+---
+
+## Test 5 — invalid transition
+
+Admin chooses a transition not allowed by shared status rules.
+
+Expected:
+
+reject.
+
+No email/status mutation.
+
+---
+
+# TEST MATRIX — CLIENT
+
+## Test 6 — Client changes status
+
+Client updates own job applicant.
+
+Expected:
+
+* canonical status changes
+* history row
+* Talent notification
+* Admin notification
+
+---
+
+## Test 7 — Client cannot update foreign job
+
+Expected:
+
+403/404.
+
+No notifications.
+
+---
+
+## Test 8 — Admin notification text
+
+Verify:
+
+Client name
+Talent name
+Job title
+new status
+
+are correct.
+
+---
+
+# TEST MATRIX — TALENT
+
+## Test 9 — Talent receives Admin change
+
+Admin completes email workflow.
+
+Talent:
+
+* receives in-app application notification
+* receives email
+* My Applications shows same status
+
+---
+
+## Test 10 — Talent receives Client change
+
+Client updates status.
+
+Talent:
+
+* receives in-app notification
+* sees updated application state
+
+---
+
+# REGRESSION SAFETY
+
+Do not break:
+
+* Admin Job Applications
+* ApplicantEmailComposer
+* email templates
+* email history
+* Client status updates
+* Talent My Applications
+* withdrawal
+* offer flow
+* contract/hire flow
+* message notifications
+* grouped message notification behavior
+* Bell red-dot-only UI
+* Client/Talent messaging
+* application status history
+* Client/Admin/Talent auth
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+### Admin frontend
+
+* `client/src/pages/AdminJobApplications.tsx`
+* `client/src/components/ApplicantEmailComposer.tsx`
+* Admin email template components
+
+### Client frontend
+
+* Client application/submission status UI
+
+### Talent frontend
+
+* `client/src/pages/TalentApplications.tsx`
+* NotificationBell
+
+### Backend
+
+* `server/routes.ts`
+* application status update routes
+* admin job application routes
+* client application routes
+* notification storage
+* email sending services
+* email template rendering
+
+### Shared
+
+* `shared/submissionStatuses.ts`
+* `shared/schema.ts`
+
+### Tests
+
+* admin job application tests
+* notification tests
+* email tests
+* Client application tests
+* status-history tests
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+### Admin status change
+
+* selecting status does NOT immediately persist it
+* email composer opens
+* Admin can choose template
+* Admin can edit/preview email
+* status commits only after successful email send
+* Talent receives email
+* Talent receives in-app notification
+* status history is created
+* cancel/failure leaves status unchanged
+
+### Client status change
+
+* Client can update own job application
+* Talent gets in-app status notification
+* Admin gets notification identifying Client/Talent/job/status
+* canonical status updates everywhere
+
+### General
+
+* no duplicate notifications
+* no duplicate emails
+* dedicated offer/hire workflows remain intact
+* notification Bell remains dot-only
+* message notification grouping remains intact
+* tests/build pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. Admin status-change workflow before/after
+2. endpoint used for status+email
+3. ApplicantEmailComposer changes
+4. template selection behavior
+5. when status is committed
+6. email failure behavior
+7. Talent notification behavior
+8. Client-originated Admin notification behavior
+9. status-history behavior
+10. special statuses excluded from generic flow
+11. files changed
+12. tests run
+13. database migration status
+14. remaining limitations
+
+The core rule is:
+
+**For Admin: no successful email = no application status change.**
+
+And:
+
+**For Client-originated status changes: notify both Talent and Admin about the same canonical transition.**
