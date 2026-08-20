@@ -1,0 +1,909 @@
+# Replit Prompt — Update Client Create/Edit Job Posting to Use the New Simplified Full-Page Flow
+
+We already redesigned the **Admin Create/Edit Job Posting** experience into a dedicated simplified full-page, multi-step flow.
+
+The **Client** job posting experience has NOT been updated and is still using the older `JobFormModal.tsx` popup.
+
+Your task is to update the Client Create/Edit Job Posting flow so it uses the **same simplified page-based UX architecture as Admin**, while preserving all client-specific API/auth/business logic.
+
+## IMPORTANT: AUDIT FIRST
+
+Before changing anything, inspect the current code and report the exact client flow.
+
+Primary files to inspect:
+
+* `client/src/pages/ClientProfile.tsx`
+* `client/src/components/JobFormModal.tsx`
+* `client/src/pages/JobFormPage.tsx`
+* `client/src/components/job-form/JobBasicsStep.tsx`
+* `client/src/components/job-form/JobDescriptionStep.tsx`
+* `client/src/components/job-form/JobRequirementsStep.tsx`
+* `client/src/components/job-form/JobReviewStep.tsx`
+* `client/src/lib/jobFormUtils.ts`
+* `client/src/App.tsx`
+* client job API routes under `/api/client/jobs`
+* admin job API routes under `/api/admin/jobs`
+
+Confirm:
+
+1. Which button currently opens the Client "Post a Job" flow.
+2. Which handler opens `JobFormModal`.
+3. How Client Edit currently opens `JobFormModal`.
+4. Which API endpoints Client create/edit currently use.
+5. How the authenticated client ID is determined server-side.
+6. Whether Client jobs require approval after create/update.
+7. Whether any client-only behavior exists that Admin does not have.
+
+Do not implement until the existing flow is understood.
+
+---
+
+# CURRENT STATE
+
+Admin already uses a dedicated page-based job form.
+
+Current Admin routes:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+These routes use:
+
+```text
+client/src/pages/JobFormPage.tsx
+```
+
+The existing page already implements the simplified four-step experience:
+
+```text
+1. Basics
+2. Description
+3. Requirements
+4. Review
+```
+
+The Client area still imports/uses:
+
+```text
+JobFormModal.tsx
+```
+
+and runs it with:
+
+```text
+clientMode={true}
+```
+
+`JobFormModal` already distinguishes Client behavior by using:
+
+```text
+/api/client/jobs
+```
+
+instead of:
+
+```text
+/api/admin/jobs
+```
+
+Therefore, DO NOT redesign the job form again from scratch.
+
+Reuse/refactor the existing full-page Admin form architecture.
+
+---
+
+# MAIN OBJECTIVE
+
+When a Client clicks:
+
+```text
+Post a Job
+```
+
+or equivalent Create Job action:
+
+DO NOT open a modal.
+
+Navigate to a dedicated page such as:
+
+```text
+/client/jobs/new
+```
+
+When a Client clicks Edit on one of their jobs:
+
+navigate to:
+
+```text
+/client/jobs/:jobId/edit
+```
+
+The page should visually and functionally use the same simplified experience already built for Admin:
+
+```text
+Basics
+→ Description
+→ Requirements
+→ Review
+```
+
+The Client should feel like they are using the same modern job-posting UI, not the legacy modal shown in the screenshot.
+
+---
+
+# DO NOT DUPLICATE THE FORM
+
+Avoid creating:
+
+```text
+AdminJobFormPage.tsx
+ClientJobFormPage.tsx
+```
+
+with two copies of essentially identical form logic.
+
+Prefer one shared page/component architecture.
+
+For example, refactor `JobFormPage.tsx` to support a mode:
+
+```ts
+<JobFormPage mode="admin" />
+<JobFormPage mode="client" />
+```
+
+or another clean equivalent.
+
+Possible architecture:
+
+```text
+JobFormPage
+├── JobFormHeader
+├── JobFormStepper
+├── JobBasicsStep
+├── JobDescriptionStep
+├── JobRequirementsStep
+├── JobReviewStep
+└── JobFormFooter
+```
+
+The existing step components should remain shared wherever practical.
+
+The goal is:
+
+```text
+ONE job form UX
++
+different Admin / Client data access rules
+```
+
+---
+
+# CLIENT ROUTES
+
+Add protected Client routes using the existing router/auth structure.
+
+Suggested routes:
+
+```text
+/client/jobs/new
+/client/jobs/:jobId/edit
+```
+
+Both routes must require an authenticated Client.
+
+Use the project's existing `ClientProtectedRoute` or equivalent.
+
+Do NOT expose these routes publicly.
+
+Refreshing these URLs directly must still work.
+
+---
+
+# CLIENT CREATE BEHAVIOR
+
+Create mode should:
+
+1. Start with the same `defaultFormData`.
+2. Use the authenticated client's company information where appropriate.
+3. POST using the existing Client endpoint:
+
+```text
+POST /api/client/jobs
+```
+
+4. Do NOT manually send or spoof another `clientId` if the Client API already derives the client from authentication.
+5. Preserve the current approval workflow.
+6. Preserve existing success/error toasts.
+7. After success, return to the appropriate Client jobs/profile page.
+
+Do not change server ownership/security rules.
+
+A Client must NEVER be able to create a job for another client by manipulating a client ID.
+
+---
+
+# CLIENT EDIT BEHAVIOR
+
+Edit mode should:
+
+1. Load the existing Client-owned job from the Client API.
+2. Populate the shared form using the existing `jobToFormData(...)` helper.
+3. Use:
+
+```text
+PATCH /api/client/jobs/:jobId
+```
+
+or the exact existing Client update endpoint already used by the modal.
+4. Preserve ownership validation on the server.
+5. Prevent Clients from editing another Client's job by changing the URL.
+6. Show a clean error state if the job cannot be loaded.
+7. After success, return to the Client jobs/profile page.
+
+Do NOT use `/api/admin/jobs/:id` in Client mode.
+
+---
+
+# ADMIN MUST CONTINUE WORKING
+
+The existing Admin flow must remain unchanged from the user's perspective.
+
+These routes must continue working:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+Admin behavior must continue using:
+
+```text
+/api/admin/jobs
+```
+
+and any Admin-only client selector / approval behavior already implemented.
+
+Do not accidentally remove Admin functionality while making the page reusable.
+
+---
+
+# CLIENT UI
+
+Use the same simplified layout and branding already implemented in `JobFormPage.tsx`.
+
+The user should see:
+
+```text
+Post a job
+
+Let's find your match.
+
+Four short steps...
+```
+
+For edit mode use appropriate wording such as:
+
+```text
+Edit Job Posting
+```
+
+Keep the existing OnSpot branding, spacing, responsive layout, cards, typography, sticky bottom navigation, and step progress.
+
+Do NOT bring the old modal visual style into the new page.
+
+---
+
+# STEP 1 — BASICS
+
+Reuse the existing Basics step.
+
+Keep supported fields such as:
+
+* Job title / Professional Role Name
+* Original / Alternative Role if currently supported
+* Work Setup
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Company information
+* Company confidentiality
+* Company description / client overview where supported
+
+Client-specific behavior:
+
+If the authenticated Client's company is already known, prefill it.
+
+Do not force Clients to select themselves from an Admin-style Client dropdown.
+
+There must be NO Admin "Select Client" control in Client mode.
+
+---
+
+# STEP 2 — DESCRIPTION
+
+Reuse the existing Description step.
+
+Preserve fields such as:
+
+* Role Overview / About the Role
+* Card Preview Summary
+* Key Responsibilities
+* Skill Tags
+* What We Offer
+* Benefits
+* any currently-supported role narrative fields
+
+Keep existing rich-text behavior.
+
+Do not rename database/API fields merely because the UI label is simplified.
+
+---
+
+# STEP 3 — REQUIREMENTS
+
+Reuse the existing Requirements step.
+
+Preserve:
+
+* Required Qualifications
+* Preferred Qualifications
+* Compensation
+* Currency
+* Salary
+* Commission
+* Equity
+* System requirements
+* Minimum Internet Speed
+* Required Tools / Software
+* Other Equipment Requirements
+* Work Days
+* Time Zone
+* Video Introduction requirement
+* Resume requirement
+* Success-profile fields already supported
+* other currently persisted requirements
+
+Optional fields should remain progressively disclosed where the Admin form already does this.
+
+---
+
+# STEP 4 — REVIEW
+
+Reuse the existing Review step.
+
+Show the same simplified applicant-facing preview.
+
+Client should be able to click Edit for:
+
+```text
+Basics
+Description
+Requirements
+```
+
+and return to that step without losing form state.
+
+Final Client create action:
+
+```text
+Submit for Approval
+```
+
+if that matches the current Client approval workflow.
+
+Final Client edit action:
+
+```text
+Update Job
+```
+
+Do not invent a new approval workflow.
+
+Preserve whatever the current backend already does.
+
+---
+
+# FORM STATE
+
+Moving between steps must never clear entered values.
+
+Keep one shared `JobFormData` state.
+
+Do not create independent forms per step.
+
+Back navigation should retain all changes.
+
+---
+
+# VALIDATION
+
+Reuse the existing step-by-step validation logic wherever possible.
+
+Validate required fields before advancing.
+
+On validation failure:
+
+* stay on the same step
+* show the existing human-readable validation message
+* highlight the field
+* scroll to the first invalid field
+
+Backend validation remains the final source of truth.
+
+Do not weaken validation merely to make Client posting easier.
+
+---
+
+# ROUTING CHANGES IN CLIENT PROFILE
+
+Find every Client Create/Edit job action in `ClientProfile.tsx`.
+
+Search for:
+
+```text
+JobFormModal
+clientMode
+setJobFormOpen
+jobFormOpen
+selectedJob
+editingJob
+Post a Job
+Add Job
+Edit Job
+Pencil
+```
+
+Replace Create handlers that currently open the modal with navigation similar to:
+
+```ts
+navigate("/client/jobs/new");
+```
+
+Replace Edit handlers with:
+
+```ts
+navigate(`/client/jobs/${job.id}/edit`);
+```
+
+Use the project's existing `useLocation()` / Wouter navigation pattern.
+
+Browser Back should return naturally to the Client page.
+
+---
+
+# RETIRE THE CLIENT MODAL CALLER
+
+After Client Create/Edit has been successfully migrated:
+
+Remove `JobFormModal` from the ClientProfile render tree.
+
+Remove unused modal-specific state such as:
+
+```text
+jobFormOpen
+selectedJob
+editingJob
+```
+
+ONLY if those variables are no longer used elsewhere.
+
+Do NOT delete `JobFormModal.tsx` immediately.
+
+First search the entire codebase for all remaining usages.
+
+Admin or another feature may still reference it.
+
+Delete/deprecate it only if there are truly no remaining callers.
+
+---
+
+# API MODE REFACTOR
+
+The existing `JobFormPage.tsx` is currently Admin-specific in places.
+
+For example, it currently uses Admin API paths such as:
+
+```text
+GET /api/admin/jobs/:jobId
+POST /api/admin/jobs
+PATCH /api/admin/jobs/:jobId
+```
+
+Refactor this cleanly rather than sprinkling conditionals everywhere.
+
+A reasonable approach:
+
+```ts
+const config = mode === "client"
+  ? {
+      listQueryKey: ["/api/client/jobs"],
+      getJob: (id) => `/api/client/jobs/${id}`,
+      createJob: "/api/client/jobs",
+      updateJob: (id) => `/api/client/jobs/${id}`,
+      returnPath: "/client-profile",
+    }
+  : {
+      listQueryKey: ["/api/admin/jobs"],
+      getJob: (id) => `/api/admin/jobs/${id}`,
+      createJob: "/api/admin/jobs",
+      updateJob: (id) => `/api/admin/jobs/${id}`,
+      returnPath: "/admin/find-work",
+    };
+```
+
+Use the actual current Client return path after auditing the app.
+
+Do not blindly hardcode `/client-profile` if a better existing jobs/dashboard route is used.
+
+---
+
+# PAYLOAD COMPATIBILITY
+
+Use the existing shared payload logic from the redesigned Admin form.
+
+Do not create two separate payload builders.
+
+All currently-supported fields must continue being sent correctly, including where applicable:
+
+```text
+professionalRoleName
+title
+originalRoleName
+jobFunction
+company
+location
+category
+engagementType
+experienceLevel
+description
+jobSummary
+status
+budgetCurrency
+customCurrencyCode
+salaryDisplay
+duration
+responsibilities
+requirements
+skillTags
+culturalFit
+reportingTo
+division
+jobCode
+jobGrade
+jobLevel
+companyOverview
+roleMission
+keyOutcomes
+keyResponsibilities
+skillsAndCompetencies
+behavioralTraits
+kpis
+trainingAndSupport
+growthPath
+minimumInternetSpeed
+systemRequirements
+requiredToolsSoftware
+otherEquipmentRequirements
+workDays
+timeZone
+preferredQualifications
+compensationNotes
+whatWeOffer
+applicationMethod
+applyLink
+isFeatured
+urgentlyHiring
+requiresResume
+requiresVideoIntro
+benefits
+hasCommission
+hasEquity
+```
+
+However:
+
+Client mode must NOT be allowed to set Admin-only fields if current backend rules disallow them.
+
+Audit those first.
+
+For example, if `isFeatured` is Admin-only, hide/disable it in Client mode rather than expanding Client permissions.
+
+Preserve current authorization semantics.
+
+---
+
+# ADMIN-ONLY CONTROLS
+
+Audit which controls are truly Admin-only.
+
+Likely examples:
+
+* Select Client
+* Featured Job
+* Status override
+* approval management
+* any internal publishing controls
+
+Do not automatically expose these controls to Clients just because the shared form has them.
+
+The shared form should support field visibility/configuration based on mode.
+
+For example:
+
+```ts
+showClientSelector={mode === "admin"}
+showFeaturedToggle={mode === "admin"}
+```
+
+Use actual backend rules as the source of truth.
+
+---
+
+# COMPANY PREFILL
+
+The legacy modal already supports:
+
+```text
+defaultCompany
+```
+
+in client mode.
+
+Preserve equivalent behavior in the new page.
+
+Get the Client's real company value from the existing Client profile/auth source rather than hardcoding it.
+
+Existing jobs must still load their saved company value during Edit.
+
+---
+
+# UNSAVED CHANGES
+
+Preserve the new page's current unsaved-changes handling.
+
+If the user has changed something and clicks exit:
+
+show confirmation before losing changes.
+
+Do not claim "Save & exit" actually saves a draft unless there is real draft persistence.
+
+If no draft backend exists, consider changing the wording to:
+
+```text
+Exit
+```
+
+or:
+
+```text
+Cancel
+```
+
+while preserving the unsaved-changes dialog.
+
+Do not introduce fake saving behavior.
+
+---
+
+# RESPONSIVE BEHAVIOR
+
+Verify Client pages on:
+
+* desktop
+* laptop
+* tablet
+* mobile
+
+The stepper must remain understandable.
+
+No horizontal overflow.
+
+Sticky footer must not cover fields.
+
+Keep enough bottom padding.
+
+---
+
+# SECURITY CHECK
+
+This migration must NOT weaken Client job ownership security.
+
+Test manually/API-side:
+
+```text
+Client A creates a job
+→ job belongs to Client A
+
+Client A edits their own job
+→ succeeds
+
+Client A manually changes URL to Client B's job ID
+→ request is rejected / job not exposed
+
+Unauthenticated user opens /client/jobs/new
+→ redirected/rejected
+
+Talent user opens /client/jobs/new
+→ rejected
+```
+
+Do not rely only on frontend routing for authorization.
+
+---
+
+# DO NOT CHANGE
+
+Do not modify unnecessarily:
+
+* database schema
+* job table column names
+* existing public job detail behavior
+* job application behavior
+* approval statuses
+* compensation formatting
+* public job cards
+* admin job ownership rules
+* client ownership rules
+* video intro submission behavior
+* resume requirement behavior
+
+This is primarily:
+
+```text
+Client routing
++
+shared form reuse/refactor
++
+removal of the legacy Client modal entry point
+```
+
+---
+
+# ACCEPTANCE TESTS
+
+## Client Create
+
+```text
+Client Profile
+→ click Post a Job
+→ URL changes to /client/jobs/new
+→ NO modal opens
+→ simplified four-step page renders
+```
+
+Complete Basics:
+
+```text
+Continue
+→ Description
+```
+
+Go Back:
+
+```text
+previous values remain
+```
+
+Finish all steps:
+
+```text
+Review shows correct job data
+```
+
+Submit:
+
+```text
+POST /api/client/jobs
+→ existing approval flow runs
+→ success toast
+→ return to Client area
+```
+
+## Client Edit
+
+```text
+Client Profile
+→ Edit existing job
+→ URL changes to /client/jobs/{id}/edit
+→ NO modal
+→ job data loads into all steps
+```
+
+Modify data:
+
+```text
+Update Job
+→ PATCH /api/client/jobs/{id}
+→ existing record updates
+→ success toast
+```
+
+Refresh Edit URL:
+
+```text
+job loads correctly
+```
+
+## Admin Regression
+
+Verify:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+still work exactly as before.
+
+Admin client selector and Admin-only controls still work.
+
+## Public Regression
+
+Verify:
+
+* public Find Work cards
+* Job Details
+* application page
+* video introduction requirement
+* resume requirement
+* compensation display
+
+remain unchanged.
+
+---
+
+# IMPLEMENTATION QUALITY
+
+Do not solve this by copying the 800+ line form into another Client page.
+
+Refactor shared logic cleanly.
+
+Good outcome:
+
+```text
+one JobFormPage architecture
+one JobFormData model
+one payload builder
+one validation flow
+shared step components
+Admin/Client mode configuration
+```
+
+Bad outcome:
+
+```text
+AdminJobFormPage
+ClientJobFormPage
+two payload builders
+two validation implementations
+two copies that will drift again
+```
+
+---
+
+# FINAL REPORT
+
+After implementation, report:
+
+1. Exact files changed.
+2. Current Client Create handler before the fix.
+3. Current Client Edit handler before the fix.
+4. New Client Create route.
+5. New Client Edit route.
+6. How `JobFormPage` was refactored for Admin/Client modes.
+7. Which API endpoints Admin mode uses.
+8. Which API endpoints Client mode uses.
+9. Which fields/controls are hidden in Client mode because they are Admin-only.
+10. How Client company prefill works.
+11. Confirmation Client cannot edit another Client's job.
+12. Confirmation Client Create/Edit no longer opens `JobFormModal`.
+13. Whether `JobFormModal.tsx` still has remaining callers.
+14. Whether it was retained or removed.
+15. Confirmation Admin Create/Edit still works.
+16. Confirmation public job/application behavior was not changed.
+17. Any existing Client-specific behavior that required special handling.
+
+Do not redesign the form again. The full-page simplified design already exists. The purpose of this task is to bring the Client Create/Edit flow onto that same architecture safely.
