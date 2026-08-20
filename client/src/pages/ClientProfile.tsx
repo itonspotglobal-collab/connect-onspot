@@ -148,6 +148,7 @@ function ViewSubmissionModal({
     onSuccess: (_data, variables) => {
       onStatusChange(variables.id, variables.status);
       queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
       toast({ title: "Status updated" });
     },
     onError: (err: any) =>
@@ -1085,7 +1086,10 @@ function JobSubmissionsSection({
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiRequest("PATCH", `/api/client/job-submissions/${id}/status`, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
+    },
   });
 
   return (

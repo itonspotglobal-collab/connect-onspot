@@ -1,0 +1,1141 @@
+# URGENT Replit Prompt — Make Job Application Notifications Work for Client, Talent, and Admin Status Changes
+
+The existing navbar Notification Bell is currently only handling OFFER notifications.
+
+We now need proper **JOB APPLICATION notifications**.
+
+This needs to work end-to-end on the backend and frontend.
+
+Do not just change the bell text.
+
+Do not fake notifications from frontend state.
+
+Notifications must be persisted in the existing `notifications` table/system and appear for the correct authenticated user.
+
+---
+
+# REQUIRED BEHAVIOR
+
+There are TWO main notification flows.
+
+## FLOW 1 — Talent applies → Client gets notified
+
+When a Talent successfully submits an application to a job:
+
+```text
+Talent applies
+→ application/job_submission row created successfully
+→ Client who owns that job receives notification
+→ Client bell badge increases
+→ Client opens bell
+→ sees application notification
+```
+
+Example:
+
+```text
+New application received
+
+Valu Testu applied for Social Media Manager.
+```
+
+Clicking it should take the Client to the relevant Client job/application area.
+
+Prefer a route where they can actually inspect the submission.
+
+---
+
+## FLOW 2 — Client/Admin changes application status → Talent gets notified
+
+Whenever the application status is changed by either:
+
+```text
+Client
+OR
+Admin
+```
+
+the Talent who owns that application must receive a notification.
+
+Examples:
+
+```text
+Application update
+
+Your application for Social Media Manager is now Under Review.
+```
+
+```text
+Application update
+
+Your application for Social Media Manager has been Shortlisted.
+```
+
+```text
+Application update
+
+Your application for Social Media Manager is now Interviewing.
+```
+
+```text
+Application update
+
+Your application for Social Media Manager was not selected.
+```
+
+Talent bell badge should increase immediately/on refresh.
+
+Clicking the notification should navigate to:
+
+```text
+/my-applications
+```
+
+or preferably the relevant application/timeline if an existing direct route exists.
+
+---
+
+# IMPORTANT CURRENT BUG
+
+Inspect:
+
+```text
+client/src/components/NotificationBell.tsx
+```
+
+Right now the notification system is OFFER-ONLY.
+
+The current configuration only includes types such as:
+
+```text
+offer_received
+offer_accepted
+offer_declined
+offer_expired
+```
+
+and contains filtering like:
+
+```ts
+const OFFER_TYPES_TALENT = ["offer_received"];
+
+const OFFER_TYPES_CLIENT = [
+  "offer_accepted",
+  "offer_declined",
+  "offer_expired"
+];
+```
+
+This means application notifications will NEVER appear even if they exist in the database.
+
+Fix this.
+
+---
+
+# AUDIT FIRST
+
+Before implementing, inspect the complete notification/application architecture.
+
+Primary frontend files:
+
+```text
+client/src/components/NotificationBell.tsx
+client/src/hooks/useUnreadOfferNotificationsCount.ts
+client/src/pages/JobApplyPage.tsx
+client/src/pages/ClientProfile.tsx
+client/src/pages/AdminJobApplications.tsx
+client/src/hooks/useTalentApplications.ts
+client/src/components/TopNavigation.tsx
+```
+
+Primary backend/shared areas:
+
+```text
+server/index.ts
+server/storage.ts
+shared/schema.ts
+shared/submissionStatuses.ts
+```
+
+Also search the entire repo for:
+
+```text
+createNotification
+listNotificationsByUser
+notifications
+job_submissions
+jobSubmissions
+application status
+statusMutation
+offer_received
+offer_accepted
+/api/talent/notifications
+/api/users/:userId/notifications
+/api/notifications/:id/read
+/api/client/job-submissions
+/api/admin/job-applications
+```
+
+Report which exact endpoints currently:
+
+1. create a job application
+2. update application status from Client
+3. update application status from Admin
+4. fetch notifications for Talent
+5. fetch notifications for Client/Admin
+6. mark notifications read
+
+Then implement.
+
+---
+
+# USE EXISTING NOTIFICATION SYSTEM
+
+Do NOT build a separate `application_notifications` table.
+
+The repo already has generic notification storage methods.
+
+Use the existing:
+
+```ts
+storage.createNotification(...)
+storage.listNotificationsByUser(...)
+storage.markNotificationAsRead(...)
+```
+
+or the equivalent existing implementation.
+
+Use the existing `notifications` table.
+
+Only add a schema migration if the current notifications schema genuinely cannot represent these events.
+
+Prefer no migration.
+
+---
+
+# NEW NOTIFICATION TYPES
+
+Add clear notification types.
+
+Recommended:
+
+```text
+job_application_received
+job_application_status_changed
+```
+
+You may use similarly clear names if existing conventions dictate otherwise.
+
+Do NOT misuse offer notification types.
+
+Application notifications and offer notifications are different events.
+
+---
+
+# NOTIFICATION 1 — CLIENT RECEIVES APPLICATION
+
+Find the backend endpoint that actually completes/submits a Talent job application.
+
+This could be invoked from:
+
+```text
+JobApplyPage.tsx
+```
+
+but notification creation MUST happen on the server after the database insert succeeds.
+
+Do not create it only in React.
+
+After the job submission has successfully been inserted:
+
+1. Load the relevant Job.
+2. Determine its actual owning `clientId`.
+3. Resolve that to the correct authenticated Client `users.id` if necessary.
+4. Create the notification.
+
+Suggested payload:
+
+```ts
+{
+  userId: jobOwnerUserId,
+  type: "job_application_received",
+  title: "New application received",
+  message: `${applicantDisplayName} applied for ${jobTitle}.`,
+  relatedId: submission.id,
+  relatedType: "job_submission",
+  isRead: false
+}
+```
+
+Use the project's actual notification insert shape.
+
+Do not hardcode applicant names or job titles.
+
+---
+
+# CLIENT OWNERSHIP IS CRITICAL
+
+The notification MUST go to the Client who actually owns the posted job.
+
+Do not send it to:
+
+```text
+all clients
+admin
+the applicant
+a hardcoded user
+admin-system
+```
+
+Resolve ownership from the job/application relationship.
+
+Conceptually:
+
+```text
+submission.jobId
+→ jobs.id
+→ jobs.clientId
+→ Client user account
+```
+
+Audit what `jobs.clientId` actually stores.
+
+If it already stores `users.id`, use it.
+
+If it points to another profile/client table, resolve it correctly.
+
+Do not guess.
+
+---
+
+# TALENT STATUS NOTIFICATION
+
+Both Client and Admin status-changing endpoints need to trigger the exact same notification logic.
+
+Do NOT implement notification creation only in React.
+
+Do NOT duplicate two inconsistent notification implementations.
+
+Prefer a shared backend helper, for example:
+
+```ts
+async function notifyTalentApplicationStatusChange({
+  submission,
+  oldStatus,
+  newStatus,
+  actorType,
+}) {
+  ...
+}
+```
+
+Then call it from BOTH:
+
+```text
+Client status endpoint
+Admin status endpoint
+```
+
+---
+
+# CLIENT STATUS ENDPOINT
+
+The Client currently changes submission status from the Client Profile / submission UI.
+
+Inspect the exact endpoint used by code similar to:
+
+```text
+PATCH /api/client/job-submissions/:id/status
+```
+
+After the status update succeeds:
+
+```text
+oldStatus
+→ newStatus
+```
+
+create a notification for the Talent.
+
+Only create it when:
+
+```ts
+oldStatus !== newStatus
+```
+
+Do not generate duplicate notifications when saving the same status.
+
+---
+
+# ADMIN STATUS ENDPOINT
+
+The Admin Job Applications page has the "Change Application Status" modal shown in the screenshot.
+
+Find the exact API called from:
+
+```text
+client/src/pages/AdminJobApplications.tsx
+```
+
+The status choices include statuses such as:
+
+```text
+Submitted
+Under Review
+Shortlisted
+Interviewing
+Offer Extended
+Offer Accepted
+Offer Declined
+Rejected
+Withdrawn
+```
+
+Whenever Admin successfully changes a status, notify the Talent just like Client changes do.
+
+Example:
+
+```text
+Admin changes Submitted → Under Review
+→ Talent notification created
+```
+
+The Talent should not care whether Client or Admin performed the update unless product requirements explicitly need actor wording.
+
+Preferred message:
+
+```text
+Your application for Social Media Manager is now Under Review.
+```
+
+---
+
+# RESOLVE THE CORRECT TALENT USER
+
+This is extremely important because the app has multiple Talent auth paths.
+
+The repo currently supports things like:
+
+```text
+candidateId
+users.id
+Talent Portal JWT
+main JWT talent
+```
+
+The notification row ultimately needs to belong to whichever canonical `users.id` the notification APIs use.
+
+Resolve Talent recipient from the application safely.
+
+Potential relationship:
+
+```text
+job_submission
+→ applicant email / candidate id / user id
+→ candidate
+→ candidate.userId
+→ users.id
+```
+
+Use the strongest existing relationship available.
+
+Preferred priority:
+
+```text
+submission.userId / candidate.userId
+```
+
+if one exists.
+
+Email matching should only be a fallback if the current schema genuinely requires it.
+
+Do not create notifications using `candidateId` if `notifications.userId` expects `users.id`.
+
+This mismatch is a likely cause of "notification exists but Talent cannot see it."
+
+---
+
+# HANDLE TALENT PORTAL AUTH
+
+`NotificationBell.tsx` already differentiates between:
+
+```text
+/api/talent/notifications
+```
+
+and:
+
+```text
+/api/users/:userId/notifications
+```
+
+The Talent-specific endpoint resolves the Talent account differently.
+
+Preserve that logic.
+
+After this fix, application status notifications must work for BOTH:
+
+```text
+Talent Portal JWT Talent
+main JWT Talent
+```
+
+Test both if both account types still exist.
+
+---
+
+# UPDATE NotificationBell.tsx
+
+Do not leave it offer-only.
+
+Refactor the configuration to support application notification types.
+
+Example:
+
+```ts
+const TYPE_CONFIG = {
+  ...existingOfferTypes,
+
+  job_application_received: {
+    icon: ...,
+    color: ...,
+    bg: ...,
+    label: "New Application",
+    route: "/client-profile",
+  },
+
+  job_application_status_changed: {
+    icon: ...,
+    color: ...,
+    bg: ...,
+    label: "Application Update",
+    route: "/my-applications",
+  },
+};
+```
+
+Use existing Lucide icons.
+
+For example:
+
+```text
+FileText
+ClipboardList
+UserPlus
+Briefcase
+CheckCircle
+Clock
+```
+
+No new icon package.
+
+---
+
+# RELEVANT TYPE FILTERING
+
+The role filters must become something like:
+
+```ts
+const TALENT_NOTIFICATION_TYPES = [
+  "offer_received",
+  "job_application_status_changed",
+];
+
+const CLIENT_NOTIFICATION_TYPES = [
+  "offer_accepted",
+  "offer_declined",
+  "offer_expired",
+  "job_application_received",
+];
+```
+
+Admin may retain offer notifications if appropriate.
+
+Do not automatically show Client-owned application notifications to Admin unless Admin is actually the intended recipient.
+
+Admin's role in this task is:
+
+```text
+Admin changes status
+→ Talent receives notification
+```
+
+NOT:
+
+```text
+Admin receives every client application
+```
+
+unless the current system already requires that separately.
+
+---
+
+# UPDATE BELL HEADER TEXT
+
+The current labels are too offer-specific:
+
+```text
+Offer Notifications
+Offer Updates
+No offer notifications yet
+```
+
+Now that the bell contains more than offers, change them to generic wording.
+
+Recommended:
+
+Talent:
+
+```text
+Notifications
+```
+
+Client:
+
+```text
+Notifications
+```
+
+Empty:
+
+```text
+No notifications yet
+```
+
+Do not call the entire bell "Offer Notifications" anymore.
+
+---
+
+# UPDATE UNREAD COUNT HOOK
+
+Inspect:
+
+```text
+client/src/hooks/useUnreadOfferNotificationsCount.ts
+```
+
+It is currently likely counting only offer-related notification types.
+
+Refactor/rename if practical to a generic hook such as:
+
+```text
+useUnreadNotificationsCount
+```
+
+or extend the existing hook carefully.
+
+The badge MUST count:
+
+Talent:
+
+```text
+offer_received
+job_application_status_changed
+```
+
+Client:
+
+```text
+offer_accepted
+offer_declined
+offer_expired
+job_application_received
+```
+
+If renaming the hook creates a large unnecessary refactor, retaining the filename temporarily is acceptable, but its behavior must no longer be offer-only.
+
+Prefer cleaning up the misleading name if safe.
+
+---
+
+# REACT QUERY REFRESH
+
+The notification badge should update without requiring logout/login.
+
+After relevant local mutations succeed, invalidate/refetch the notification query.
+
+For Client application status mutation:
+
+```ts
+queryClient.invalidateQueries(...)
+```
+
+For Admin status mutation:
+
+Talent is a different browser/session, so frontend invalidation alone is NOT enough.
+
+The notification must be persisted server-side.
+
+The Talent bell should refresh via the existing query polling/refetch strategy.
+
+If the notification query currently never refetches while the navbar remains mounted, add a reasonable polling interval such as:
+
+```ts
+refetchInterval: 30_000
+```
+
+or use the existing app-wide notification refresh strategy.
+
+Do NOT build WebSockets just for this unless the project already uses them.
+
+A short polling/refetch approach is sufficient.
+
+---
+
+# CLIENT APPLICATION NOTIFICATION NAVIGATION
+
+When Client clicks:
+
+```text
+New application received
+```
+
+route them to the most useful existing destination.
+
+Likely:
+
+```text
+/client-profile
+```
+
+If there is an existing route/query mechanism to open the exact submission, use it.
+
+For example:
+
+```text
+/client-profile?submission=<id>
+```
+
+ONLY if that routing pattern already exists or can be implemented cleanly.
+
+Do not invent a broken deep link.
+
+At minimum:
+
+```text
+/client-profile
+```
+
+is acceptable.
+
+---
+
+# TALENT APPLICATION UPDATE NAVIGATION
+
+When Talent clicks:
+
+```text
+Application update
+```
+
+navigate to:
+
+```text
+/my-applications
+```
+
+If `relatedId` can be used to focus/open the exact application safely, do so.
+
+Do not route Talent to Client/Admin pages.
+
+---
+
+# STATUS DISPLAY TEXT
+
+Do not expose raw database values like:
+
+```text
+under_review
+offer_extended
+offer_declined
+```
+
+Convert them to existing human labels.
+
+Use the existing centralized status definitions from:
+
+```text
+shared/submissionStatuses.ts
+```
+
+if possible.
+
+Examples:
+
+```text
+under_review → Under Review
+shortlisted → Shortlisted
+interviewing → Interviewing
+offer_extended → Offer Extended
+offer_accepted → Offer Accepted
+offer_declined → Offer Declined
+rejected → Rejected
+withdrawn → Withdrawn
+```
+
+Do not create another conflicting status map if the repo already has one.
+
+---
+
+# DO NOT NOTIFY ON INITIAL SUBMITTED STATUS CHANGE UNLESS NEEDED
+
+Application submission itself should generate:
+
+```text
+Client → job_application_received
+```
+
+Talent does NOT need a notification saying:
+
+```text
+Your application is Submitted
+```
+
+because they just submitted it.
+
+Only send Talent `job_application_status_changed` when a Client/Admin changes it after submission.
+
+If Admin manually sets a record back to Submitted from another state, that is a real status change and may be notified.
+
+---
+
+# DUPLICATE PREVENTION
+
+Avoid duplicate notifications.
+
+Examples that should generate exactly ONE notification:
+
+```text
+Talent submits once
+→ one Client application_received notification
+```
+
+```text
+Client changes submitted → under_review
+→ one Talent status_changed notification
+```
+
+```text
+Admin changes under_review → shortlisted
+→ one Talent status_changed notification
+```
+
+If the API is accidentally retried after the DB status is already equal to the requested value, do NOT create another notification.
+
+Compare old/new status.
+
+---
+
+# TRANSACTION / FAILURE BEHAVIOR
+
+The application/status update is the primary action.
+
+Preferred behavior:
+
+```text
+DB application/status update succeeds
+notification insert succeeds
+response succeeds
+```
+
+If practical, use the same DB transaction.
+
+If the existing architecture does not support this cleanly, do not make the primary status update fail solely because a secondary notification failed.
+
+At minimum:
+
+```ts
+try {
+  await storage.createNotification(...)
+} catch (err) {
+  console.error(...)
+}
+```
+
+But log enough details to diagnose recipient-resolution failures.
+
+Do not silently swallow everything.
+
+---
+
+# SECURITY
+
+Notification retrieval must remain user-scoped.
+
+A Client must not be able to retrieve another Client's notifications by changing:
+
+```text
+/api/users/:userId/notifications
+```
+
+Verify the endpoint checks the authenticated user's identity/role.
+
+Likewise Talent-specific endpoints must only return notifications belonging to the authenticated Talent.
+
+Do not weaken notification auth as part of this fix.
+
+---
+
+# BACKEND TESTS
+
+Add/update tests.
+
+At minimum:
+
+## Test 1
+
+```text
+Talent submits application to Client A job
+→ notification created for Client A
+→ Client B gets none
+```
+
+## Test 2
+
+```text
+Client changes application:
+submitted → under_review
+→ notification created for applicant Talent
+```
+
+## Test 3
+
+```text
+Admin changes:
+under_review → shortlisted
+→ notification created for applicant Talent
+```
+
+## Test 4
+
+```text
+status changed to same value
+→ no duplicate notification
+```
+
+## Test 5
+
+```text
+Talent notification endpoint
+→ returns job_application_status_changed
+```
+
+## Test 6
+
+```text
+Client notification endpoint
+→ returns job_application_received
+```
+
+## Test 7
+
+Unauthorized user cannot read another user's notifications.
+
+---
+
+# END-TO-END MANUAL TEST
+
+Use a REAL test Client and REAL test Talent.
+
+## Scenario A
+
+Client posts:
+
+```text
+Social Media Manager
+```
+
+Talent applies.
+
+Immediately verify database:
+
+```text
+notifications
+```
+
+contains a row for the CLIENT with:
+
+```text
+type = job_application_received
+related_id = submission id
+related_type = job_submission
+is_read = false
+```
+
+Login/open Client page.
+
+Expected:
+
+```text
+bell has badge
+```
+
+Click bell.
+
+Expected:
+
+```text
+New application received
+
+Valu Testu applied for Social Media Manager.
+```
+
+---
+
+# Scenario B — CLIENT CHANGES STATUS
+
+Client changes Talent application:
+
+```text
+Submitted
+→ Under Review
+```
+
+Verify database notification belongs to TALENT user.
+
+Open Talent account.
+
+Expected:
+
+```text
+bell badge appears
+
+Application update
+Your application for Social Media Manager is now Under Review.
+```
+
+Click:
+
+```text
+→ /my-applications
+```
+
+---
+
+# Scenario C — ADMIN CHANGES STATUS
+
+Admin Job Applications:
+
+```text
+Social Media Manager
+Submitted
+→ Shortlisted
+```
+
+Verify notification row belongs to the applicant Talent.
+
+Talent bell:
+
+```text
+Application update
+Your application for Social Media Manager is now Shortlisted.
+```
+
+---
+
+# Scenario D — SECOND UPDATE
+
+Admin or Client changes:
+
+```text
+Shortlisted
+→ Interviewing
+```
+
+Talent receives another separate notification.
+
+Notification history should now show both status changes in chronological order.
+
+---
+
+# MARK AS READ
+
+Clicking a notification must:
+
+```text
+PATCH mark-read endpoint
+→ isRead = true
+→ badge decreases
+```
+
+Preserve current mark-read behavior.
+
+Verify this works with the new application notification types too.
+
+---
+
+# KEEP OFFER NOTIFICATIONS WORKING
+
+Do NOT break existing:
+
+```text
+offer_received
+offer_accepted
+offer_declined
+offer_expired
+```
+
+This is an extension of the notification system, not a replacement.
+
+Final Talent notifications include BOTH:
+
+```text
+Offers
+Application updates
+```
+
+Final Client notifications include BOTH:
+
+```text
+Offer responses
+New job applications
+```
+
+---
+
+# DO NOT DO THESE
+
+Do NOT:
+
+* fake notifications from application list state
+* use toast messages as the notification system
+* add notifications only in React
+* notify every Client
+* notify every Talent
+* use candidateId where notifications require users.id
+* remove existing offer notifications
+* create duplicate notification tables
+* hardcode test account IDs
+* hardcode "Social Media Manager"
+* change job application statuses
+* change approval logic
+* change application ownership
+* weaken notification authorization
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. Exact files changed.
+2. Exact Talent application-create endpoint.
+3. Exact Client application-status endpoint.
+4. Exact Admin application-status endpoint.
+5. New notification types added.
+6. How Client recipient user ID is resolved from the Job.
+7. How Talent recipient user ID is resolved from the application/candidate.
+8. Confirmation Client receives notification after Talent applies.
+9. Confirmation Talent receives notification after Client status change.
+10. Confirmation Talent receives notification after Admin status change.
+11. Confirmation same-status updates do not duplicate notifications.
+12. Confirmation bell is no longer offer-only.
+13. Confirmation unread badge counts application notifications.
+14. Confirmation mark-as-read works.
+15. Confirmation existing offer notifications still work.
+16. Database rows from one successful Client notification test.
+17. Database rows from one successful Talent status-change notification test.
+18. Automated tests added and results.
+19. Browser screenshots showing the notifications in both Client and Talent accounts.
+
+DO NOT report this as complete until you have verified actual persisted notification rows and the bell displays them in the browser.

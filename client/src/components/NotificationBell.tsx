@@ -1,22 +1,24 @@
 /**
- * NotificationBell — bell icon with dropdown list for offer-related notifications.
+ * NotificationBell — bell icon with persisted offer and job-application notifications.
  *
  * Talent users (talent-portal JWT) see "offer_received" notifications that link
  * to /my-applications.  The bell uses GET /api/talent/notifications so that the
  * server resolves candidateId → linked users.id, ensuring notifications are
  * fetched for the correct account.
  *
- * Client/admin users see "offer_accepted" and "offer_declined" notifications
- * that link to /hire-talent.  These sessions use the main-JWT-authenticated
+ * Client/admin users see offer responses and new job applications. These sessions use the main-JWT-authenticated
  * GET /api/users/:userId/notifications endpoint.
  */
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, PackageOpen, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
+import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
-import { useUnreadOfferNotificationsCount } from "@/hooks/useUnreadOfferNotificationsCount";
+import {
+  notificationTypesForRole,
+  useUnreadNotificationsCount,
+} from "@/hooks/useUnreadNotificationsCount";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -96,10 +98,21 @@ const TYPE_CONFIG: Record<
     label: "Offer Expired",
     route: "/hire-talent",
   },
+  job_application_received: {
+    icon: FileText,
+    color: "#2563EB",
+    bg: "#DBEAFE",
+    label: "New Application",
+    route: "/client-profile",
+  },
+  job_application_status_changed: {
+    icon: ClipboardList,
+    color: "#7C3AED",
+    bg: "#EDE9FE",
+    label: "Application Update",
+    route: "/my-applications",
+  },
 };
-
-const OFFER_TYPES_TALENT = ["offer_received"];
-const OFFER_TYPES_CLIENT = ["offer_accepted", "offer_declined", "offer_expired"];
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -113,12 +126,12 @@ export function NotificationBell() {
   // Main-JWT sessions (client/admin/talent) are identified by user.
   const isTalentPortal = !!talentAuth;
   const isTalent = isTalentPortal || user?.role === "talent";
-  const relevantTypes = isTalent ? OFFER_TYPES_TALENT : OFFER_TYPES_CLIENT;
+  const relevantTypes = notificationTypesForRole(isTalent);
 
   // Only show bell when some auth session is active.
   const isAuthenticated = isTalentPortal || !!user;
 
-  const unreadCount = useUnreadOfferNotificationsCount();
+  const unreadCount = useUnreadNotificationsCount();
 
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
@@ -196,7 +209,7 @@ export function NotificationBell() {
       fetch(markReadUrl, { method: "PATCH", headers })
         .then(() => {
           // Invalidate the badge count so it refreshes.
-          qc.invalidateQueries({ queryKey: ["unread-offer-notifications"] });
+          qc.invalidateQueries({ queryKey: ["unread-notifications"] });
           // Optimistically mark read in local state.
           setNotifications((prev) =>
             prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x))
@@ -215,7 +228,7 @@ export function NotificationBell() {
       <button
         ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
-        aria-label="Offer notifications"
+        aria-label="Notifications"
         className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
         <Bell className="w-5 h-5 text-white/80" />
@@ -239,7 +252,7 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <span className="text-sm font-semibold text-slate-800">
-              {isTalent ? "Offer Notifications" : "Offer Updates"}
+              Notifications
             </span>
             {unreadCount > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
@@ -259,7 +272,7 @@ export function NotificationBell() {
             {!loading && notifications.length === 0 && (
               <div className="py-10 text-center">
                 <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">No offer notifications yet</p>
+                <p className="text-xs text-slate-400">No notifications yet</p>
               </div>
             )}
 
@@ -312,11 +325,11 @@ export function NotificationBell() {
               <button
                 onClick={() => {
                   setOpen(false);
-                  navigate(isTalent ? "/my-applications" : "/hire-talent");
+                  navigate(isTalent ? "/my-applications" : "/client-profile");
                 }}
                 className="w-full py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
               >
-                {isTalent ? "View all offers →" : "Go to hiring pipeline →"}
+                {isTalent ? "View my applications →" : "View applications →"}
               </button>
             </div>
           )}

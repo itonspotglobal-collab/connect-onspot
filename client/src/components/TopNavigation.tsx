@@ -61,9 +61,8 @@ import {
   clearTalentAuth,
   type TalentAuthState,
 } from "@/components/TalentLoginModal";
-import { useUnreadApplicationsCount } from "@/hooks/useTalentApplications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
-import { useUnreadOfferNotificationsCount } from "@/hooks/useUnreadOfferNotificationsCount";
+import { useUnreadNotificationsCount } from "@/hooks/useUnreadNotificationsCount";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
@@ -221,12 +220,10 @@ export function TopNavigation() {
     : 0;
   const [generalTalentDropdownOpen, setGeneralTalentDropdownOpen] = useState(false);
 
-  // ── Unread application status changes badge (talent) ──────────────────────
-  const unreadAppsCount = useUnreadApplicationsCount();
   // ── Unread message notifications badge (talent) ───────────────────────────
   const unreadMsgsCount = useUnreadMessagesCount();
-  // ── Unread offer notifications (talent: offer_received; client: offer_accepted/declined) ──
-  const unreadOfferCount = useUnreadOfferNotificationsCount();
+  // ── Persisted offer + application notifications for the account menu ──────
+  const unreadNotificationCount = useUnreadNotificationsCount();
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   // Resolve candidate ID for talent users regardless of which auth path was used:
@@ -974,9 +971,9 @@ export function TopNavigation() {
                                 {submittedCount > 99 ? "99+" : submittedCount}
                               </span>
                             )}
-                            {label === "Hire Talent" && unreadOfferCount > 0 && (
+                            {label === "Hire Talent" && unreadNotificationCount > 0 && (
                               <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: '#EF4444', color: '#FFFFFF', fontSize: 10, fontWeight: 700, lineHeight: 1, minWidth: 18, height: 18, padding: '0 4px' }}>
-                                {unreadOfferCount > 99 ? "99+" : unreadOfferCount}
+                                {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                               </span>
                             )}
                             <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
@@ -1170,9 +1167,9 @@ export function TopNavigation() {
                       >
                         <ClipboardList style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
                         <span style={{ flex: 1 }}>My Applications</span>
-                        {(unreadAppsCount + unreadOfferCount) > 0 && (
+                        {unreadNotificationCount > 0 && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18, borderRadius: 99, background: '#E5484D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '0 5px', flexShrink: 0 }}>
-                            {(unreadAppsCount + unreadOfferCount) > 99 ? '99+' : (unreadAppsCount + unreadOfferCount)}
+                            {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                           </span>
                         )}
                       </button>
@@ -1568,14 +1565,14 @@ export function TopNavigation() {
                       {unreadMsgsCount > 99 ? '99+' : unreadMsgsCount}
                     </span>
                   )}
-                  {label === "My Applications" && (unreadAppsCount + unreadOfferCount) > 0 && (
+                  {label === "My Applications" && unreadNotificationCount > 0 && (
                     <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
-                      {(unreadAppsCount + unreadOfferCount) > 99 ? '99+' : (unreadAppsCount + unreadOfferCount)}
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                     </span>
                   )}
-                  {label === "Hire Talent" && unreadOfferCount > 0 && (
+                  {label === "Hire Talent" && unreadNotificationCount > 0 && (
                     <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold px-1 shrink-0">
-                      {unreadOfferCount > 99 ? '99+' : unreadOfferCount}
+                      {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                     </span>
                   )}
                 </button>

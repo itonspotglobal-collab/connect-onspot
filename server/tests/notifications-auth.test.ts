@@ -239,7 +239,7 @@ describe("notification endpoint authorization", () => {
     );
     candidateId = c.rows[0].id;
 
-    // Seed two notifications for talentUserId: one offer_received, one new_message
+    // Seed offer, application-status, and message notifications for talentUserId.
     const n1 = await storage.createNotification({
       userId: talentUserId,
       type: "offer_received",
@@ -256,20 +256,28 @@ describe("notification endpoint authorization", () => {
       relatedId: null,
       relatedType: null,
     });
-    notifIds.push(n1.id, n2.id);
+    const n3 = await storage.createNotification({
+      userId: talentUserId,
+      type: "job_application_status_changed",
+      title: "Application update",
+      message: "Your application for a role is now Under Review.",
+      relatedId: "00000000-0000-0000-0000-bbbbbbbbbbbb",
+      relatedType: "job_submission",
+    });
+    notifIds.push(n1.id, n2.id, n3.id);
   });
 
   after(async () => {
     await stopServer(srv);
     if (notifIds.length) {
-      await query(`DELETE FROM notifications WHERE id = ANY($1::uuid[])`, [notifIds]).catch(() => {});
+      await query(`DELETE FROM notifications WHERE id = ANY($1::text[])`, [notifIds]).catch(() => {});
     }
     await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
     await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[talentUserId, otherUserId]]).catch(() => {});
   });
 
-  // ── (a) Talent portal JWT fetches both offer and message notifications ────────
-  it("(a) candidate JWT: GET /api/talent/notifications returns offer_received and new_message rows", async () => {
+  // ── (a) Talent portal JWT fetches offer, application, and message notifications ─
+  it("(a) candidate JWT: GET /api/talent/notifications returns job_application_status_changed rows", async () => {
     const token = makeCandidateToken(candidateId, talentEmail);
     const { status, body } = await req(srv, "GET", "/api/talent/notifications", { token });
     assert.equal(status, 200, "must return 200");
@@ -277,6 +285,7 @@ describe("notification endpoint authorization", () => {
     const types = body.map((n: any) => n.type);
     assert.ok(types.includes("offer_received"), "must include offer_received");
     assert.ok(types.includes("new_message"), "must include new_message");
+    assert.ok(types.includes("job_application_status_changed"), "must include application status updates");
   });
 
   // ── (b) Mark-read endpoint verifies ownership ─────────────────────────────────

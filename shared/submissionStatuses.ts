@@ -38,6 +38,32 @@ export const SUBMISSION_STATUSES = [
 
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
+/** Human-readable labels for status-facing surfaces and notification messages. */
+export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
+  new: "Submitted",
+  invited: "Invited",
+  declined: "Invitation Declined",
+  withdrawn: "Withdrawn",
+  under_review: "Under Review",
+  reviewed: "Reviewed",
+  shortlisted: "Shortlisted",
+  rejected: "Rejected",
+  interviewing: "Interviewing",
+  offer_extended: "Offer Extended",
+  offer_expired: "Offer Expired",
+  offer_accepted: "Offer Accepted",
+  offer_declined: "Offer Declined",
+  contract_sent: "Contract Sent",
+  hired: "Hired",
+};
+
+/** Converts canonical (and legacy display) values into user-facing status text. */
+export function submissionStatusLabel(status: string): string {
+  if (status === "submitted") return "Submitted";
+  return SUBMISSION_STATUS_LABELS[status as SubmissionStatus] ??
+    status.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 /**
  * Statuses a CLIENT may write directly via PATCH /api/client/job-submissions/:id/status.
  * Other status transitions happen as side effects of creating interview/offer/contract records.

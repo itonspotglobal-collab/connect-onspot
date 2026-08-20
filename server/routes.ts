@@ -63,6 +63,10 @@ import { setObjectAclPolicy } from "./objectAcl";
 import { v4 as uuidv4 } from "uuid";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import {
+  notifyClientOfJobApplication,
+  notifyTalentOfApplicationStatusChange,
+} from "./services/applicationNotificationService";
+import {
   insertUserSchema,
   insertProfileSchema,
   insertSkillSchema,
@@ -12565,6 +12569,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Non-blocking: fire application-received email — must not affect response
         fireAutoApplicationEmail(result.rows[0].id);
+        await notifyClientOfJobApplication({
+          submissionId: result.rows[0].id,
+          clientUserId: job.clientId,
+          applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
+          jobTitle: job.title,
+        });
 
         return res.status(201).json({
           success: true,
@@ -12680,6 +12690,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Non-blocking: fire application-received email — must not affect response
       fireAutoApplicationEmail(submissionId);
+        await notifyClientOfJobApplication({
+          submissionId,
+          clientUserId: job.clientId,
+          applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
+          jobTitle: job.title,
+        });
 
       // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
@@ -13302,7 +13318,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch existing application (confirm it exists and get current status)
-      const existing = await query(`SELECT id, status FROM job_submissions WHERE id = $1`, [applicationId]);
+      const existing = await query(
+        `SELECT js.id, js.status, js.talent_id, js.email, j.title AS job_title
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1`,
+        [applicationId],
+      );
       if (existing.rows.length === 0) return res.status(404).json({ error: "Application not found" });
       const previousStatus = existing.rows[0].status;
 
@@ -13320,6 +13342,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           [applicationId, previousStatus, status, note?.trim() || null, changedBy],
         );
         await query("COMMIT");
+        await notifyTalentOfApplicationStatusChange({
+          submissionId: applicationId,
+          talentUserId: existing.rows[0].talent_id,
+          applicantEmail: existing.rows[0].email,
+          jobTitle: existing.rows[0].job_title,
+          previousStatus,
+          newStatus: status,
+        });
         return res.json({ success: true, application: updated.rows[0] });
       } catch (txErr) {
         await query("ROLLBACK");
@@ -13386,13 +13416,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid status", allowed: ADMIN_SETTABLE_STATUSES });
       }
 
+      const existing = await query(
+        `SELECT js.status, js.talent_id, js.email, j.title AS job_title
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1`,
+        [id],
+      );
+      if (existing.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+
       const result = await query(
         `UPDATE job_submissions SET status = $1, updated_at = NOW()
          WHERE id = $2
          RETURNING *`,
         [status, id],
       );
-      if (result.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      await notifyTalentOfApplicationStatusChange({
+        submissionId: id,
+        talentUserId: existing.rows[0].talent_id,
+        applicantEmail: existing.rows[0].email,
+        jobTitle: existing.rows[0].job_title,
+        previousStatus: existing.rows[0].status,
+        newStatus: status,
+      });
       return res.json(result.rows[0]);
     } catch (err: any) {
       console.error("PATCH /api/admin/job-applications/:id error:", err);
@@ -13630,7 +13676,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // status changed by the client — only the talent's own respond endpoint may
       // transition those rows (invited → submitted / declined).
       const current = await query(
-        `SELECT status, initiated_by FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        `SELECT js.status, js.initiated_by, js.talent_id, js.email, j.title AS job_title
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND js.client_id = $2`,
         [id, userId],
       );
       if (current.rows.length === 0) {
@@ -13653,6 +13702,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
          WHERE id = $2 AND client_id = $3`,
         [status, id, userId],
       );
+      await notifyTalentOfApplicationStatusChange({
+        submissionId: id,
+        talentUserId: current.rows[0].talent_id,
+        applicantEmail: current.rows[0].email,
+        jobTitle: current.rows[0].job_title,
+        previousStatus: currentStatus,
+        newStatus: status,
+      });
 
       // Re-fetch via canonical projection (same as GET endpoints) so the response
       // shape is consistent and no raw DB columns bypass the sanitizer.
@@ -13696,7 +13753,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Ownership: submission must belong to this client
       const subResult = await query(
-        `SELECT id, status, client_id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        `SELECT js.id, js.status, js.client_id, js.talent_id, js.email, j.title AS job_title
+         FROM job_submissions js
+         JOIN jobs j ON j.id = js.job_id
+         WHERE js.id = $1 AND js.client_id = $2`,
         [submissionId, userId],
       );
       if (subResult.rows.length === 0) {
@@ -13747,6 +13807,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           [submissionId, submission.status,
            `Round ${roundNumber} interview scheduled (type: ${interviewType})`, userId],
         );
+        await notifyTalentOfApplicationStatusChange({
+          submissionId,
+          talentUserId: submission.talent_id,
+          applicantEmail: submission.email,
+          jobTitle: submission.job_title,
+          previousStatus: submission.status,
+          newStatus: "interviewing",
+        });
       }
 
       return res.status(201).json(interview);
