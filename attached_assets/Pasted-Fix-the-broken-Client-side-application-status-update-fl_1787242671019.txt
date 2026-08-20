@@ -1,0 +1,679 @@
+Fix the broken Client-side application status update flow in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT REGRESSION
+
+Client opens:
+
+Application Details
+
+and selects a new status.
+
+The frontend sends a PATCH request, but receives:
+
+`500 Internal Server Error`
+
+and the UI shows:
+
+`Failed to update status`
+
+This started after the recent work that added:
+
+* Admin notifications
+* Talent notifications
+* status history changes
+* Admin email/status workflow
+* row locking / transaction logic
+
+The Client could update application status correctly BEFORE these changes.
+
+The priority is now:
+
+> Restore Client status updates first without removing the new notification requirements.
+
+---
+
+# IMPORTANT ARCHITECTURE RULE
+
+The Client status workflow and Admin status+email workflow are NOT the same flow.
+
+They must remain separate.
+
+## Client flow
+
+Client selects status:
+
+```text
+status changes immediately on successful backend transaction
+→ status history created
+→ Talent notification created
+→ Admin notification created
+```
+
+Client should NOT be forced through:
+
+* ApplicantEmailComposer
+* Admin email templates
+* status pending state
+* Admin-only email workflow
+
+## Admin flow
+
+Admin:
+
+```text
+select status
+→ compose/send email
+→ only after email succeeds
+→ status changes
+→ Talent notified
+```
+
+Do not accidentally reuse the Admin endpoint/helper in the Client route.
+
+---
+
+# FIRST — FIND EXACTLY WHAT CURRENT PATCH CALL IS
+
+Do not guess.
+
+Inspect the Client Application Details component and identify:
+
+* exact PATCH URL
+* request payload
+* backend route
+* storage/helper called
+* transaction/helper recently added
+
+Use browser/network reproduction if needed.
+
+Log server-side error stack temporarily.
+
+The frontend currently only sees:
+
+`Failed to update application status`
+
+Find the underlying server exception.
+
+---
+
+# RESTORE THE CLIENT PATCH CONTRACT
+
+The Client frontend should continue sending the existing simple payload, conceptually:
+
+```json
+{
+  "status": "under_review"
+}
+```
+
+or whatever the current canonical contract is.
+
+Do not suddenly require Client frontend to send:
+
+* email subject
+* templateId
+* admin fields
+* talentUserId
+* clientId
+* admin notification data
+
+All related identities must be derived server-side.
+
+---
+
+# CLIENT BACKEND FLOW SHOULD BE SIMPLE
+
+Use this structure:
+
+```text
+1. authenticate Client
+2. load exact job_submission
+3. verify job belongs to Client
+4. validate requested status
+5. update status
+6. write status history
+7. create Talent notification if linked Talent exists
+8. create Admin notification
+9. commit
+10. return updated application
+```
+
+Do not call email services from this route.
+
+---
+
+# DO NOT LET OPTIONAL NOTIFICATION LOOKUPS BREAK STATUS UPDATE
+
+This is important.
+
+A valid Client status change should not crash merely because:
+
+* linked Talent account is missing
+* optional candidate relationship is null
+* notification display name lookup fails
+* no Admin notification recipient is found
+* optional job metadata is absent
+
+Handle optional related records gracefully.
+
+The canonical application/job ownership and status transition are required.
+
+Optional notification metadata should not trigger a `500`.
+
+---
+
+# TALENT NOTIFICATION
+
+If Talent has a linked canonical user:
+
+create notification:
+
+```text
+Application update
+Your application for Social Media Manager is now Under Review.
+```
+
+If no linked Talent user exists:
+
+* do not crash
+* skip in-app Talent notification
+* log structured warning
+
+Status change should still succeed if the underlying application is valid.
+
+---
+
+# ADMIN NOTIFICATION
+
+Create a notification for the intended Admin recipient(s):
+
+```text
+Client updated application
+Val Client changed Valu Testu's application for Social Media Manager to Under Review.
+```
+
+If Admin recipient discovery is optional/dynamic and none exist:
+
+do not crash the Client status update.
+
+Log a warning.
+
+Do not treat “no Admin notification recipient found” as a database status failure.
+
+---
+
+# IMPORTANT TRANSACTION DESIGN
+
+The DB-critical operations are:
+
+* application status
+* status history
+
+Notification creation can remain in the same transaction if the notification writes are reliable and all required recipients exist.
+
+However, do not allow optional recipient-resolution joins to make the core update fail.
+
+A safe pattern is:
+
+```text
+BEGIN
+
+lock submission row
+authorize
+validate transition
+update status
+insert history
+
+resolve notification recipients safely
+insert valid notifications
+
+COMMIT
+```
+
+If notification lookup itself is complex/nullable, resolve it before or after the locked query without invalid SQL.
+
+---
+
+# FIX THE ROW LOCK QUERY
+
+The prior error showed:
+
+```text
+FOR UPDATE cannot be applied to the nullable side of an outer join
+```
+
+Make sure this is fully eliminated.
+
+Lock ONLY:
+
+`job_submissions`
+
+Example:
+
+```sql
+SELECT *
+FROM job_submissions
+WHERE id = $1
+FOR UPDATE;
+```
+
+Then separately query:
+
+* jobs
+* candidates
+* users
+* Client
+* Talent
+* Admins
+
+Do not run `FOR UPDATE` on a query containing nullable outer joins.
+
+---
+
+# DO NOT REINTRODUCE THE SAME ERROR THROUGH A HELPER
+
+Search all helpers used by the Client PATCH route for:
+
+* `.for("update")`
+* `FOR UPDATE`
+* leftJoin
+* rightJoin
+* fullJoin
+
+The route may have been fixed while a nested helper still uses the invalid joined lock.
+
+Trace the entire call stack.
+
+---
+
+# CAPTURE THE REAL SERVER ERROR
+
+Temporarily log:
+
+* route name
+* applicationId
+* authenticated Client user ID
+* requested status
+* error name
+* PostgreSQL code/message
+
+Do not log:
+
+* JWT
+* emails
+* private application content
+
+After fixing, keep only useful structured logs.
+
+---
+
+# FRONTEND ERROR HANDLING
+
+Do not expose raw DB errors.
+
+Frontend should get something like:
+
+```json
+{
+  "error": "Failed to update application status"
+}
+```
+
+But server logs must contain the actual underlying failure for debugging.
+
+---
+
+# STATUS TRANSITION VALIDATION
+
+Use existing shared status definitions.
+
+Do not invent new Client-only mappings.
+
+Examples:
+
+```text
+new
+under_review
+reviewed
+shortlisted
+rejected
+```
+
+Follow current rules.
+
+Do not let Client transition a terminal:
+
+`withdrawn`
+
+application back into active workflow.
+
+---
+
+# VERY IMPORTANT — DO NOT COUPLE CLIENT TO ADMIN EMAIL
+
+Search for accidental reuse such as:
+
+* `status-with-email`
+* `ApplicantEmailComposer`
+* email-required status helper
+* Admin status transaction helper
+
+inside Client flow.
+
+Remove that coupling.
+
+Client should not get:
+
+`Email required before status change`
+
+or depend on SMTP/email provider availability.
+
+---
+
+# TEST THE EXACT CURRENT SCENARIO
+
+Use:
+
+Talent:
+`Valu Testu`
+
+Job:
+`Social Media Manager`
+
+Status:
+`New`
+
+As Client:
+
+change:
+
+`New → Under Review`
+
+Expected:
+
+HTTP 200.
+
+UI updates.
+
+No 500.
+
+Then verify:
+
+### Client
+
+Job Submission shows:
+
+`UNDER REVIEW`
+
+### Talent
+
+My Applications shows:
+
+`Under Review`
+
+Talent gets application-update notification.
+
+### Admin
+
+Admin gets Client-change notification.
+
+---
+
+# TEST MULTIPLE TRANSITIONS
+
+Run:
+
+```text
+New → Under Review
+Under Review → Reviewed
+Reviewed → Shortlisted
+Shortlisted → Rejected
+```
+
+where allowed.
+
+Every successful transition should:
+
+* return 200
+* persist
+* appear after refresh
+* create history
+* notify appropriate recipients
+
+---
+
+# TEST NO LINKED TALENT USER
+
+Create/use application where:
+
+candidate/application exists
+
+but canonical Talent user is not linked.
+
+Client changes status.
+
+Expected:
+
+* status succeeds
+* history succeeds
+* no server 500
+* Talent notification skipped gracefully
+* Admin notification still created if possible
+
+This test is mandatory.
+
+---
+
+# TEST ADMIN RECIPIENT FAILURE
+
+Simulate/no Admin recipient found if possible.
+
+Client status change should not return 500 solely because Admin notification target cannot be resolved.
+
+Log warning.
+
+Preserve core status update.
+
+---
+
+# TEST CLIENT OWNERSHIP
+
+Client A cannot update Client B's applicant.
+
+Expected:
+
+403/404
+
+No status change.
+
+No notification.
+
+---
+
+# TEST WITHDRAWN APPLICATION
+
+Application is:
+
+`withdrawn`
+
+Client tries:
+
+`withdrawn → shortlisted`
+
+Expected:
+
+reject with controlled 409/400.
+
+Not 500.
+
+---
+
+# TEST CONCURRENT STATUS CHANGE
+
+Client and Admin update same application around same time.
+
+Expected:
+
+* no SQL lock error
+* no corrupt status
+* transition validation runs against locked current value
+
+Do not remove concurrency protection.
+
+---
+
+# ADMIN FLOW REGRESSION CHECK
+
+After fixing Client:
+
+verify Admin status/email flow still behaves:
+
+```text
+Admin selects status
+→ email composer
+→ email succeeds
+→ status commits
+→ Talent notified
+```
+
+Do not “fix” Client by undoing Admin functionality.
+
+---
+
+# CLIENT NOTIFICATION FLOW MUST NOT WAIT FOR EMAIL
+
+Client update:
+
+does NOT send Admin-composed email.
+
+No SMTP dependency.
+
+This is intentional.
+
+---
+
+# FRONTEND CACHE INVALIDATION
+
+After Client PATCH succeeds, invalidate/refetch:
+
+* Client job submissions
+* application detail
+* summary/counts
+
+Do not show stale status.
+
+Do not optimistically mark success before server confirms.
+
+---
+
+# TALENT REFRESH
+
+Talent My Applications should eventually refetch/new notification cause current status to appear.
+
+Do not create a separate Talent-side status.
+
+Same `job_submissions.status`.
+
+---
+
+# STATUS HISTORY
+
+Successful Client transition should produce exactly one entry:
+
+```text
+previousStatus: new
+newStatus: under_review
+actor: Client
+```
+
+No duplicates.
+
+---
+
+# NOTIFICATION DUPLICATION
+
+One Client transition should create at most:
+
+* one Talent application-update notification
+* intended Admin notification(s)
+
+No duplicates caused by retries.
+
+---
+
+# DO NOT TOUCH MESSAGING
+
+Do not alter:
+
+* Client/Talent chat
+* grouped message notifications
+* Delivered/Read
+* unread badges
+* Message buttons
+
+This fix is application status only.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+* Client application/profile page containing Application Details
+* Client status PATCH route
+* `server/routes.ts`
+* status transition helper
+* notification helper
+* `shared/submissionStatuses.ts`
+* status history storage
+* Admin notification recipient resolver
+* Client/Talent account linking helper
+
+Search all recent changes around Client application status.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Client can update application status again
+* no 500
+* no invalid FOR UPDATE query
+* Client does not depend on Admin email workflow
+* canonical status updates correctly
+* status persists after refresh
+* status history is written
+* Talent notification works when Talent is linked
+* missing Talent link does not crash
+* Admin notification works
+* missing Admin recipient does not crash
+* unauthorized Client is rejected safely
+* terminal status rules remain
+* Admin email/status workflow remains working
+* messaging remains untouched
+* tests/build pass
+
+---
+
+# FINAL REPORT
+
+After fixing provide:
+
+1. exact Client PATCH endpoint
+2. exact root cause of current 500
+3. whether it was row-locking, notification lookup, or another helper
+4. previous failing query/helper
+5. new transaction flow
+6. how optional Talent/Admin recipients are handled
+7. status transition tests
+8. no-linked-Talent test
+9. Client ownership test
+10. Admin workflow regression test
+11. files changed
+12. test commands/results
+13. database migration status
+
+The priority is:
+
+**Restore the original reliable Client status transition, then attach notifications safely around it — do not make Client status updates depend on the Admin email workflow.**

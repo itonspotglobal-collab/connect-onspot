@@ -13945,10 +13945,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 FROM notifications
                WHERE user_id = $1
                  AND type = 'job_application_status_changed'
-                 AND related_id = $3
+                   AND related_id = $4
                  AND message = $2
             )`,
-          [talentUser.rows[0].id, talentMessage, id],
+            [talentUser.rows[0].id, talentMessage, id, id],
         );
       }
 
@@ -13979,10 +13979,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 FROM notifications n
                WHERE n.user_id = u.id
                  AND n.type = 'client_application_status_changed'
-                 AND n.related_id = $2
+                   AND n.related_id = $3
                  AND n.message = $1
             )`,
-        [adminMessage, id],
+        [adminMessage, id, id],
       );
       await client.query("COMMIT");
 
