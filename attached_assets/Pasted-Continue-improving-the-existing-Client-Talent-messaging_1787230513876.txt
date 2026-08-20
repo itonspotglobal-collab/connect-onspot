@@ -1,0 +1,918 @@
+Continue improving the existing Client ↔ Talent messaging system in the OnSpot / `connect-onspot` application.
+
+## CURRENT STATE
+
+The underlying messaging system is now working between Client and Talent.
+
+Do NOT rebuild messaging.
+
+Do NOT create a second chat system.
+
+The task now is to make messaging properly accessible from the **Talent side**.
+
+---
+
+# REQUIRED UX
+
+I want TWO Talent-side entry points.
+
+## 1. My Applications — Chat with Client
+
+On the Talent:
+
+`My Applications`
+
+page, add a clear action for each eligible application:
+
+**Chat with Client**
+
+Use a MessageSquare/chat icon.
+
+Place it near the existing actions such as:
+
+* View submission
+* Timeline
+* Withdraw
+
+Example:
+
+```text
+Social Media Manager
+
+Under Review   Applied Aug 20, 2026
+
+View submission · Timeline · Chat with Client
+                              Withdraw
+```
+
+The button should open the existing conversation between the Talent and the Client who owns that job.
+
+---
+
+## 2. Talent Profile dropdown — Messages
+
+In the Talent account dropdown shown from:
+
+`Talent Profile`
+
+add:
+
+**Messages**
+
+with a message/chat icon.
+
+Desired order can be approximately:
+
+```text
+Talent Profile
+Finish Profile Setup
+Find Work
+My Applications
+Messages
+Settings
+----------------
+Sign Out
+```
+
+Use the existing visual style.
+
+Do not redesign the dropdown.
+
+---
+
+# IMPORTANT: REUSE THE EXISTING MESSAGING SYSTEM
+
+Do NOT:
+
+* create a new messages table
+* create a new thread model
+* build a separate Talent inbox
+* create Talent-only chat records
+* duplicate messages
+* bypass participant authorization
+
+Reuse:
+
+* `message_threads`
+* `messages`
+* canonical `/messages`
+* `/messages/:threadId`
+* existing message APIs
+* existing canonical user-ID resolution
+* existing notification/unread logic
+
+Client and Talent must see the SAME persisted conversation.
+
+---
+
+# FIRST — AUDIT THE CURRENT IMPLEMENTATION
+
+Before changing code, inspect:
+
+### Talent UI
+
+* `client/src/pages/TalentApplications.tsx`
+* `client/src/components/TopNavigation.tsx`
+* Talent profile dropdown implementation
+* Talent authentication helpers
+* Talent application hook
+
+### Messaging
+
+* `client/src/pages/Messages.tsx`
+* `client/src/pages/Inbox.tsx`
+* messaging route setup in `client/src/App.tsx`
+* `server/routes.ts`
+* `server/tests/message-threads.test.ts`
+* production messaging tests
+
+### Auth
+
+* main JWT
+* Talent Profile / candidate token
+* candidate → canonical `users.id` resolution
+
+Do not start by creating a new endpoint until you confirm whether existing APIs already support the required flow.
+
+---
+
+# TALENT DROPDOWN — MESSAGES
+
+Audit the Talent dropdown logic inside:
+
+`TopNavigation.tsx`
+
+There may already be partial/conditional Messages logic.
+
+The screenshot currently shows:
+
+* Talent Profile
+* Finish Profile Setup
+* Find Work
+* My Applications
+* Settings
+
+but Messages is not visible.
+
+Find out why.
+
+It may be:
+
+* missing from current dropdown items
+* only included for one auth path
+* behind a condition
+* excluded from Talent Portal auth
+* present in code but not the actual rendered menu branch
+
+Fix the ROOT cause.
+
+---
+
+# BOTH TALENT AUTH MODES MUST SHOW MESSAGES
+
+The app supports more than one Talent session type.
+
+Messages must appear for:
+
+### Talent Portal authentication
+
+Candidate/profile token.
+
+### Main JWT Talent
+
+`user.role === "talent"`
+
+Do not add Messages only to one branch.
+
+The Talent dropdown must consistently show:
+
+```text
+Messages
+```
+
+for either valid Talent session.
+
+---
+
+# MESSAGES MENU DESTINATION
+
+Clicking:
+
+`Messages`
+
+should navigate to:
+
+`/messages`
+
+or the current canonical message route.
+
+Do not navigate to an old standalone `/inbox` implementation unless `/inbox` is intentionally just a redirect to the canonical messages page.
+
+Preferred:
+
+```text
+Talent Profile dropdown
+        ↓
+Messages
+        ↓
+/messages
+```
+
+---
+
+# UNREAD BADGE IN DROPDOWN
+
+If the existing unread-message hook is already reliable, optionally show unread count next to Messages.
+
+Example:
+
+```text
+Messages                         2
+```
+
+Do not invent another unread-count implementation.
+
+Reuse the existing messaging unread source of truth.
+
+If there are zero unread messages, no badge is necessary.
+
+---
+
+# MY APPLICATIONS — CHAT WITH CLIENT
+
+Update:
+
+`client/src/pages/TalentApplications.tsx`
+
+Each eligible application should have:
+
+**Chat with Client**
+
+This should be tied to that application's actual Client/job relationship.
+
+Do not ask the Talent to manually search for a Client.
+
+---
+
+# BUTTON BEHAVIOR
+
+When Talent clicks:
+
+**Chat with Client**
+
+determine whether a canonical thread already exists.
+
+### Thread exists
+
+Navigate immediately:
+
+`/messages/:threadId`
+
+### Thread does not exist but messaging is permitted
+
+Create/reuse a canonical thread through an authorized backend action, then navigate:
+
+`/messages/:threadId`
+
+### Messaging not permitted
+
+Show an appropriate user-facing state/error rather than creating an unauthorized conversation.
+
+---
+
+# DO NOT CREATE DUPLICATE THREADS
+
+This is critical.
+
+For the same relevant Client/Talent/job relationship:
+
+Clicking:
+
+`Chat with Client`
+
+multiple times must return the SAME canonical thread.
+
+No duplicate conversation every click.
+
+Use existing get-or-create/idempotent thread logic.
+
+---
+
+# APPLICATION → CLIENT RELATIONSHIP
+
+The application is backed by:
+
+`job_submissions`
+
+or the current canonical application structure.
+
+From the application, server-side resolve:
+
+* application ID
+* job ID
+* Talent canonical `users.id`
+* Client canonical `users.id`
+
+Never trust a frontend-submitted Client ID if the server can derive it from the application/job.
+
+The application relationship should prove that the Talent is allowed to contact that Client.
+
+---
+
+# SECURE ENDPOINT
+
+If an application-specific messaging endpoint is needed, make it something conceptually like:
+
+```text
+POST /api/talent/applications/:applicationId/message-thread
+```
+
+or:
+
+```text
+POST /api/talent/applications/:applicationId/open-chat
+```
+
+But first reuse an existing route if one already safely performs this function.
+
+The endpoint must:
+
+1. authenticate Talent
+2. resolve canonical Talent `users.id`
+3. find the exact application
+4. confirm that application belongs to Talent
+5. resolve owning Client
+6. confirm the application represents a valid relationship
+7. find canonical existing thread
+8. otherwise create it idempotently
+9. return:
+
+```json
+{
+  "threadId": "..."
+}
+```
+
+Do not expose unnecessary Client private data.
+
+---
+
+# THREAD REUSE PRIORITY
+
+The application Chat button must not create a duplicate if a conversation already exists from another flow.
+
+Check existing threads created by:
+
+* Client direct messaging Talent
+* Client invitation
+* accepted invitation
+* earlier application-related conversation
+
+Reuse the appropriate canonical conversation according to current messaging architecture.
+
+---
+
+# JOB CONTEXT
+
+When appropriate, preserve useful job context.
+
+For an application such as:
+
+`Social Media Manager`
+
+the conversation may carry:
+
+* `job_id`
+* safe subject/job title
+
+according to the existing thread model.
+
+Do not overwrite an existing thread's valid subject or history just to add the button.
+
+---
+
+# APPLICATION STATUS RULES
+
+Decide eligibility from existing product rules.
+
+At minimum, active applications such as:
+
+* submitted
+* new
+* under_review
+* reviewed
+* shortlisted
+* interview
+* offered
+
+should be audited for Chat availability.
+
+For:
+
+`withdrawn`
+
+do not automatically delete an existing conversation.
+
+If a thread already exists, historical communication should remain accessible unless the current product explicitly requires blocking it.
+
+Do not destroy conversations when an application changes state.
+
+---
+
+# CLIENT SIDE
+
+The Talent clicking Chat must land in the SAME conversation visible on Client:
+
+`Messages`
+
+If Talent sends:
+
+`Hi, I wanted to follow up on my application.`
+
+Client must receive it in the existing Client Messages page.
+
+Likewise:
+
+Client reply
+
+must appear on Talent Messages.
+
+Do not create application-only messages hidden from the normal Client inbox.
+
+---
+
+# TALENT MESSAGES PAGE
+
+Ensure `/messages` works when Talent is logged in.
+
+The page must:
+
+* use the blue `TopNavigation`
+* NOT show the Client sidebar
+* show Talent's own conversations
+* display correct Client conversation names
+* send/receive messages
+* mark read
+* show unread state correctly
+
+Do not wrap Talent Messages inside the Client Portal shell.
+
+Role-based layout should remain:
+
+```text
+Client:
+/TopNavigation
+Client sidebar
+Messages
+
+Talent:
+TopNavigation
+Messages
+```
+
+---
+
+# CORRECT DISPLAY NAME
+
+Talent should see the Client's proper safe display name.
+
+Example:
+
+```text
+Val Client
+```
+
+Do not show:
+
+* user UUID
+* candidate ID
+* email address
+* `Other party`
+
+unless absolutely necessary as a fallback.
+
+Use existing safe display-name logic.
+
+Client should continue seeing the correct Talent display name according to current privacy rules.
+
+---
+
+# TALENT APPLICATION CARD DESIGN
+
+Do not overcrowd the card.
+
+A simple text action is enough:
+
+```text
+View submission · Timeline · Chat with Client
+```
+
+with MessageSquare icon where appropriate.
+
+On smaller screens, allow actions to wrap gracefully.
+
+Do not break:
+
+* View Job
+* View submission
+* Timeline
+* Withdraw
+
+---
+
+# LOADING STATE
+
+When Talent clicks Chat:
+
+show a temporary loading state:
+
+`Opening chat...`
+
+or spinner.
+
+Disable repeated clicking while request is pending.
+
+Prevent duplicate API calls from rapid clicks.
+
+---
+
+# ERROR HANDLING
+
+If chat cannot be opened:
+
+show a toast such as:
+
+**Unable to open conversation**
+
+`Please try again.`
+
+If relationship is invalid/unauthorized:
+
+do not leak Client information.
+
+---
+
+# TOPNAVIGATION DROPDOWN
+
+Use the existing dropdown component and design.
+
+Add/reinstate:
+
+```tsx
+{
+  label: "Messages",
+  route: "/messages",
+  icon: MessageSquare
+}
+```
+
+in the correct Talent branch.
+
+But audit all Talent branches first.
+
+Do not add duplicate Messages entries.
+
+---
+
+# MOBILE
+
+Verify the Talent navigation on mobile.
+
+Messages must be accessible from the mobile account/menu experience as well if TopNavigation has separate mobile rendering.
+
+Do not fix desktop dropdown while leaving mobile navigation unable to reach Messages.
+
+---
+
+# NOTIFICATIONS
+
+When Client sends a message to Talent:
+
+* unread message notification should remain
+* notification badge should update
+* Messages dropdown/menu entry may reflect unread count
+* clicking a message notification opens correct thread
+
+When Talent reads thread:
+
+* unread state clears
+
+Do not interfere with:
+
+* Application update notifications
+* Offer notifications
+* other Talent notifications
+
+---
+
+# APPLICATION NOTIFICATIONS
+
+Do not confuse:
+
+application status notifications
+
+with:
+
+message notifications.
+
+The Talent currently receives notifications such as:
+
+* Application update
+* You have a new offer
+
+Preserve those exactly.
+
+Adding Messages must not change application notification behavior.
+
+---
+
+# TEST CASE 1 — TALENT DROPDOWN
+
+Login as Talent.
+
+Open Talent Profile dropdown.
+
+Expected visible:
+
+* Talent Profile
+* Finish Profile Setup
+* Find Work
+* My Applications
+* **Messages**
+* Settings
+* Sign Out
+
+Click Messages.
+
+Expected:
+
+`/messages`
+
+---
+
+# TEST CASE 2 — CHAT FROM APPLICATION
+
+Talent has:
+
+`Social Media Manager`
+
+application.
+
+Click:
+
+`Chat with Client`
+
+Expected:
+
+1. server resolves owning Client
+2. existing thread is reused or canonical thread created
+3. browser navigates to:
+
+`/messages/:threadId`
+
+4. Client is conversation participant
+
+---
+
+# TEST CASE 3 — SEND TALENT → CLIENT
+
+Talent sends:
+
+`Hello, I wanted to follow up on my application.`
+
+Expected:
+
+* message persists
+* Client unread count increments
+* Client receives notification
+* Client sees message
+* same thread ID
+
+---
+
+# TEST CASE 4 — CLIENT REPLY
+
+Client sends:
+
+`Thanks, we are reviewing it now.`
+
+Expected:
+
+* Talent receives message
+* Talent notification/unread count updates
+* same conversation
+
+---
+
+# TEST CASE 5 — REPEATED CHAT CLICK
+
+Talent returns to My Applications.
+
+Clicks:
+
+`Chat with Client`
+
+again.
+
+Expected:
+
+same thread.
+
+No duplicate conversation.
+
+---
+
+# TEST CASE 6 — MULTIPLE APPLICATIONS TO SAME CLIENT
+
+Audit carefully.
+
+If Talent has two different jobs with the same Client, follow the existing canonical thread architecture.
+
+If threads are job-specific, each application may open the job-specific thread.
+
+If the architecture intentionally uses one direct relationship thread, reuse that.
+
+Do not arbitrarily change the thread identity rule.
+
+---
+
+# TEST CASE 7 — WITHDRAWN APPLICATION
+
+Existing conversation:
+
+Talent withdraws application.
+
+Expected:
+
+* application becomes Withdrawn
+* Client notification remains correct
+* existing message history is not deleted
+
+Decide whether opening chat remains allowed according to current product rule, but do not destroy existing messages.
+
+---
+
+# AUTHORIZATION TESTS
+
+Verify:
+
+### Talent A
+
+Can open chat for Talent A's own application.
+
+### Talent B
+
+Cannot use Talent A's application ID to open/access that conversation.
+
+### Client participant
+
+Can access the conversation.
+
+### Third user
+
+Cannot access the conversation.
+
+---
+
+# DO NOT BREAK THE RECENT CLIENT LAYOUT WORK
+
+Client dashboard now has the correct:
+
+* blue `TopNavigation`
+* Client sidebar
+* canonical Client dashboard routing
+
+Do not undo those changes.
+
+Client `/messages` should keep the Client sidebar.
+
+Talent `/messages` should not receive the Client sidebar.
+
+---
+
+# DO NOT BREAK WITHDRAWAL
+
+The newly fixed Talent withdrawal behavior must continue working.
+
+Adding Chat with Client must not affect:
+
+* Withdraw
+* withdrawn status
+* Client withdrawal notification
+* Client submission status
+* terminal status protection
+
+---
+
+# DO NOT BREAK OFFERS
+
+The Talent screenshot shows active offer notifications.
+
+Do not change:
+
+* offer_received
+* offer accepted/declined
+* offer notification count
+* Offer actions
+
+unless needed for shared menu rendering.
+
+---
+
+# RECOMMENDED IMPLEMENTATION
+
+Prefer:
+
+### Existing reusable backend helper
+
+```text
+resolveMessagingUserId
+getOrCreateCanonicalThread
+assertParticipant
+```
+
+and a small application-to-thread resolver rather than duplicating SQL.
+
+Frontend:
+
+```text
+TalentApplications
+     ↓
+openChat(applicationId)
+     ↓
+backend returns threadId
+     ↓
+navigate(`/messages/${threadId}`)
+```
+
+---
+
+# TESTS TO ADD
+
+Add a regression test:
+
+## Talent application chat
+
+1. create Client
+2. create Talent
+3. create Job owned by Client
+4. create application owned by Talent
+5. authenticate Talent
+6. call application chat endpoint
+7. thread created
+8. participants contain canonical Client/Talent user IDs
+9. call endpoint again
+10. same `threadId`
+11. Talent sends message
+12. Client fetches same message
+13. Client replies
+14. Talent fetches reply
+
+Also test unauthorized Talent.
+
+---
+
+# FINAL ACCEPTANCE CRITERIA
+
+Do not mark complete until:
+
+* `Chat with Client` appears on eligible Talent applications
+* button opens canonical existing conversation
+* no duplicate threads
+* Talent can send to Client
+* Client receives Talent message
+* Client can reply
+* Talent receives Client reply
+* Messages appears in Talent Profile dropdown
+* Messages works for Talent Portal auth
+* Messages works for main Talent JWT
+* mobile Talent navigation can access Messages
+* unread message count works
+* message notifications work
+* application notifications remain unchanged
+* offer notifications remain unchanged
+* withdrawal remains working
+* Client layout/sidebar remains working
+* authorization remains secure
+* build/tests pass
+
+---
+
+# COMPLETION REPORT
+
+When finished provide:
+
+1. files changed
+2. application Chat button behavior
+3. endpoint/helper used
+4. thread reuse logic
+5. Talent dropdown change
+6. Talent auth handling
+7. tests run
+8. Client/Talent end-to-end results
+9. regression checks
+10. any remaining limitation
+
+Do not create another messaging feature.
+
+This task is specifically to **expose the already-working canonical Client ↔ Talent messaging system correctly on the Talent side.**
