@@ -1,0 +1,471 @@
+Fix the Client Profile dropdown badge logic in the existing OnSpot / `connect-onspot` application.
+
+## CURRENT ISSUE
+
+The Client dropdown currently shows something like:
+
+```text
+Client Profile
+
+Hire Talent   3
+
+Messages      3
+
+Settings
+```
+
+The `3` on `Messages` is correct if the Client has 3 unread messages.
+
+But the `3` on `Hire Talent` must NOT come from unread messages.
+
+The Client dropdown is currently mixing message unread count with hiring/application activity.
+
+Fix this separation.
+
+---
+
+# REQUIRED BEHAVIOR
+
+## Messages
+
+The `Messages` dropdown item should show:
+
+the number of unread chat messages.
+
+Example:
+
+```text
+Messages   3
+```
+
+This should be driven only by the canonical unread-message source.
+
+---
+
+## Hire Talent
+
+The `Hire Talent` dropdown item must NOT react to incoming chat messages.
+
+A Client receiving:
+
+* 1 message
+* 3 messages
+* 10 messages
+
+must NOT cause any badge on:
+
+`Hire Talent`
+
+---
+
+# WHAT HIRE TALENT BADGE SHOULD REPRESENT
+
+`Hire Talent` is related to:
+
+* Client-posted jobs
+* Talent applications/submissions
+* hiring pipeline activity
+
+If a badge is shown there, it should represent only relevant hiring/application activity.
+
+Examples:
+
+* new Talent application received
+* new/unreviewed job submission
+* possibly other explicitly defined hiring actions
+
+Do NOT use:
+
+* unread message count
+* message notifications
+* `new_message`
+* thread unread count
+
+for Hire Talent.
+
+---
+
+# EXAMPLE
+
+Client has:
+
+* 3 unread messages
+* 1 new Talent application
+
+Expected:
+
+```text
+Hire Talent   1
+Messages      3
+```
+
+Not:
+
+```text
+Hire Talent   3
+Messages      3
+```
+
+---
+
+# ANOTHER EXAMPLE
+
+Client has:
+
+* 4 unread messages
+* zero new applications
+
+Expected:
+
+```text
+Hire Talent
+Messages      4
+```
+
+No badge on Hire Talent.
+
+---
+
+# ANOTHER EXAMPLE
+
+Client has:
+
+* zero unread messages
+* 2 new applications
+
+Expected:
+
+```text
+Hire Talent   2
+Messages
+```
+
+---
+
+# AUDIT TOPNAVIGATION
+
+Inspect:
+
+`client/src/components/TopNavigation.tsx`
+
+Find the Client dropdown rendering logic.
+
+Search for:
+
+* `Hire Talent`
+* `Messages`
+* `unreadMsgsCount`
+* application/submission counts
+* `submittedCount`
+* notification count
+* badge rendering
+* `getDropdownItems`
+
+The likely issue is that a generic badge count is being reused for more than one menu item.
+
+Separate the badge sources explicitly.
+
+---
+
+# CLIENT DROPDOWN ITEM MODEL
+
+If dropdown items currently look like:
+
+```ts
+{
+  label,
+  route,
+  icon
+}
+```
+
+extend them safely if needed.
+
+For example:
+
+```ts
+{
+  label: "Hire Talent",
+  route: "/hire-talent",
+  icon: Users,
+  badgeCount: hiringActivityCount
+}
+
+{
+  label: "Messages",
+  route: "/messages",
+  icon: MessageSquare,
+  badgeCount: unreadMessagesCount
+}
+```
+
+Or compute badge by label/route during rendering.
+
+Do not use one generic count for both.
+
+---
+
+# MESSAGE COUNT SOURCE
+
+`Messages` must use the existing canonical:
+
+`useUnreadMessagesCount()`
+
+or equivalent shared unread-message source.
+
+Do not create a second message counter.
+
+---
+
+# HIRE TALENT COUNT SOURCE
+
+Audit the Client's current application/submission data.
+
+If a reliable hiring activity count already exists, reuse it.
+
+Potential sources may include:
+
+* new/unreviewed job submissions
+* Client job application summary
+* application notifications
+
+But do not create a misleading badge merely to keep a badge visible.
+
+If there is no reliable Client hiring badge source yet:
+
+remove the badge from Hire Talent for now.
+
+That is preferable to showing the message count there.
+
+---
+
+# IMPORTANT ROLE DISTINCTION
+
+There is existing Admin application summary logic in `TopNavigation`.
+
+Do NOT accidentally reuse Admin-only:
+
+`/api/admin/job-applications/summary`
+
+for Client Hire Talent badge.
+
+Client activity must be scoped to the authenticated Client's own jobs/applications.
+
+Do not leak platform-wide application counts.
+
+---
+
+# CLIENT HIRING BADGE DEFINITION
+
+If implementing a Client Hire Talent badge now, use a clear definition such as:
+
+> Count of unread/new applications to jobs owned by the authenticated Client.
+
+For example:
+
+submission status:
+
+`new`
+
+or equivalent canonical unreviewed state.
+
+Once Client reviews/changes the application from New:
+
+the Hire Talent badge should decrease.
+
+Do not tie it to messages.
+
+---
+
+# APPLICATION NOTIFICATION VS MESSAGE NOTIFICATION
+
+Keep types separate.
+
+Example:
+
+`new_application`
+→ may affect Hire Talent
+
+`application_withdrawn`
+→ Bell notification, possibly hiring activity depending on product rule
+
+`new_message`
+→ Messages only
+
+Do not let:
+
+`new_message`
+
+increment Hire Talent.
+
+---
+
+# NOTIFICATION BELL
+
+The Bell is separate.
+
+It now uses a red dot only.
+
+Preserve that behavior.
+
+The Bell indicates:
+
+"there is at least one unread notification of any type."
+
+Do not change it.
+
+---
+
+# SIDEBAR
+
+The Client sidebar:
+
+`Messages`
+
+should continue using numeric unread-message count.
+
+Do not modify it.
+
+`OnSpot Talent`
+
+does not need the same message badge.
+
+---
+
+# JOB SUBMISSION MESSAGE BUTTONS
+
+Per-submission:
+
+`Message`
+
+badges should continue showing thread-specific unread messages.
+
+Do not change those.
+
+---
+
+# TEST MATRIX
+
+## Test 1 — Message only
+
+Client receives 3 Talent messages.
+
+Expected:
+
+```text
+Bell: red dot
+Hire Talent: no message-derived badge
+Messages: 3
+Sidebar Messages: 3
+```
+
+---
+
+## Test 2 — Application only
+
+Talent submits one new application.
+
+Expected:
+
+```text
+Bell: red dot
+Hire Talent: 1   (only if hiring badge is supported)
+Messages: no badge
+```
+
+---
+
+## Test 3 — Both
+
+Client has:
+
+* 2 new applications
+* 4 unread messages
+
+Expected:
+
+```text
+Hire Talent   2
+Messages      4
+```
+
+---
+
+## Test 4 — Read messages
+
+Client opens all message threads.
+
+Expected:
+
+```text
+Messages badge disappears
+Hire Talent badge remains unchanged
+```
+
+if new applications still exist.
+
+---
+
+## Test 5 — Review application
+
+Client reviews the application.
+
+Expected:
+
+Hire Talent count decreases according to hiring badge rules.
+
+Messages unaffected.
+
+---
+
+# DO NOT BREAK
+
+Preserve:
+
+* Client dropdown Messages
+* Client sidebar unread count
+* Job Submission Message unread badges
+* Client notification Bell red dot
+* Talent dropdown behavior
+* message delivery
+* Delivered / Read
+* application notification system
+* Hire Talent route
+* Client sidebar route
+* Client/Talent auth
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* incoming messages do NOT affect Hire Talent badge
+* unread messages affect Messages badge only
+* Hire Talent badge is either:
+
+  * correctly driven by Client hiring/application activity, or
+  * removed if no reliable hiring count exists
+* Messages continues showing exact unread count
+* sidebar Messages remains correct
+* per-thread Message badges remain correct
+* Bell remains red-dot-only
+* no Admin/global application counts leak into Client
+* tests/build pass
+
+---
+
+# FINAL REPORT
+
+After implementation provide:
+
+1. why Hire Talent was showing the message count
+2. message badge source
+3. Hire Talent badge source, or state that it was removed
+4. files changed
+5. tests run
+6. regression results
+
+The important rule is:
+
+**Chat activity belongs to Messages. Hiring/application activity belongs to Hire Talent. Never mix the two counters.**
