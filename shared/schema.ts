@@ -1374,6 +1374,9 @@ export const jobApplicationEmails = pgTable("job_application_emails", {
   status: text("status").notNull().default("sent"),
   errorMessage: text("error_message"),
   isTest: boolean("is_test").notNull().default(false),
+  statusUpdate: text("status_update"),
+  statusPrevious: text("status_previous"),
+  statusNote: text("status_note"),
   sentAt: timestamp("sent_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [

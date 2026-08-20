@@ -8,6 +8,7 @@ import { query } from "../db.js";
 import { DbStorage } from "../storage.js";
 import {
   notifyClientOfJobApplication,
+  notifyAdminsOfClientApplicationStatusChange,
   notifyTalentOfApplicationStatusChange,
 } from "../services/applicationNotificationService.js";
 
@@ -19,9 +20,10 @@ describe("job application notifications", () => {
   let clientAId = "";
   let clientBId = "";
   let talentId = "";
+  let adminId = "";
 
   before(async () => {
-    const [clientA, clientB, talent] = await Promise.all([
+    const [clientA, clientB, talent, admin] = await Promise.all([
       query(
         `INSERT INTO users (email, role, password_hash) VALUES ($1, 'client', 'x') RETURNING id`,
         [email("client-a")],
@@ -34,17 +36,22 @@ describe("job application notifications", () => {
         `INSERT INTO users (email, role, password_hash) VALUES ($1, 'talent', 'x') RETURNING id`,
         [email("talent")],
       ),
+      query(
+        `INSERT INTO users (email, role, password_hash) VALUES ($1, 'admin', 'x') RETURNING id`,
+        [email("admin")],
+      ),
     ]);
     clientAId = clientA.rows[0].id;
     clientBId = clientB.rows[0].id;
     talentId = talent.rows[0].id;
+    adminId = admin.rows[0].id;
   });
 
   after(async () => {
     if (notificationIds.length) {
       await query(`DELETE FROM notifications WHERE id = ANY($1::text[])`, [notificationIds]).catch(() => {});
     }
-    await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[clientAId, clientBId, talentId]]).catch(() => {});
+    await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[clientAId, clientBId, talentId, adminId]]).catch(() => {});
   });
 
   it("notifies only the Client who owns the job when a Talent applies", async () => {
@@ -114,5 +121,34 @@ describe("job application notifications", () => {
     assert.equal(adminChanges.length, 1, "a same-status save must not duplicate notifications");
     assert.match(adminChanges[0].message, /is now Shortlisted/);
     notificationIds.push(clientChange.id, adminChanges[0].id);
+  });
+
+  it("creates one Admin alert with the application deep-link context", async () => {
+    const submissionId = `application-admin-alert-${suffix}`;
+    await notifyAdminsOfClientApplicationStatusChange({
+      submissionId,
+      clientName: "Client Example",
+      talentName: "Talent Example",
+      jobTitle: "Operations Manager",
+      newStatus: "shortlisted",
+    });
+    await notifyAdminsOfClientApplicationStatusChange({
+      submissionId,
+      clientName: "Client Example",
+      talentName: "Talent Example",
+      jobTitle: "Operations Manager",
+      newStatus: "shortlisted",
+    });
+
+    const alerts = (await storage.listNotificationsByUser(adminId, true)).filter(
+      (notification) =>
+        notification.type === "client_application_status_changed" &&
+        notification.relatedId === submissionId,
+    );
+    assert.equal(alerts.length, 1);
+    assert.equal(alerts[0].relatedType, "job_submission");
+    assert.match(alerts[0].message, /Client Example changed Talent Example's application/);
+    assert.match(alerts[0].message, /Operations Manager to Shortlisted/);
+    notificationIds.push(alerts[0].id);
   });
 });

@@ -6,7 +6,8 @@
  *   {{applicant_first_name}}   {{applicant_last_name}}  {{applicant_full_name}}
  *   {{applicant_email}}        {{applicant_phone}}
  *   {{job_title}}              {{job_company}}          {{job_location}}
- *   {{application_status}}     {{submitted_date}}
+ *   {{application_status}}     {{previous_application_status}} {{new_application_status}}
+ *   {{application_id}}         {{job_posting_id}}     {{submitted_date}}
  *   {{portal_url}}             {{company_name}}
  */
 
@@ -20,6 +21,10 @@ export interface EmailVariableContext {
   jobCompany?: string;
   jobLocation?: string;
   applicationStatus?: string;
+  previousApplicationStatus?: string;
+  newApplicationStatus?: string;
+  applicationId?: string;
+  jobPostingId?: string;
   submittedDate?: string;
   portalUrl?: string;
   companyName?: string;
@@ -35,6 +40,14 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   job_company:           "jobCompany",
   job_location:          "jobLocation",
   application_status:    "applicationStatus",
+  previous_application_status: "previousApplicationStatus",
+  new_application_status: "newApplicationStatus",
+  application_id:        "applicationId",
+  job_posting_id:        "jobPostingId",
+  first_name:            "applicantFirstName",
+  full_name:             "applicantFullName",
+  new_status:            "newApplicationStatus",
+  previous_status:       "previousApplicationStatus",
   submitted_date:        "submittedDate",
   portal_url:            "portalUrl",
   company_name:          "companyName",
@@ -83,6 +96,10 @@ export function buildEmailContext(opts: {
   jobCompany?: string | null;
   jobLocation?: string | null;
   status?: string | null;
+  previousStatus?: string | null;
+  newStatus?: string | null;
+  applicationId?: string | null;
+  jobPostingId?: string | null;
   submittedAt?: Date | string | null;
 }): EmailVariableContext {
   const firstName = opts.firstName?.trim() ?? opts.applicantName?.split(" ")[0] ?? "";
@@ -112,7 +129,11 @@ export function buildEmailContext(opts: {
     jobTitle:           opts.jobTitle ?? undefined,
     jobCompany:         opts.jobCompany ?? undefined,
     jobLocation:        opts.jobLocation ?? undefined,
-    applicationStatus:  opts.status ?? undefined,
+    applicationStatus:  opts.newStatus ?? opts.status ?? undefined,
+    previousApplicationStatus: opts.previousStatus ?? undefined,
+    newApplicationStatus: opts.newStatus ?? opts.status ?? undefined,
+    applicationId: opts.applicationId ?? undefined,
+    jobPostingId: opts.jobPostingId ?? undefined,
     submittedDate:      submittedDate || undefined,
     portalUrl:          portalUrl || undefined,
     companyName,
@@ -130,6 +151,10 @@ export const SUPPORTED_VARIABLES: { key: string; label: string; description: str
   { key: "job_company",          label: "Company",           description: "Company name from the job posting" },
   { key: "job_location",         label: "Job Location",      description: "Location of the job" },
   { key: "application_status",   label: "Application Status",description: "Current application status" },
+  { key: "previous_application_status", label: "Previous Status", description: "Application status before this update" },
+  { key: "new_application_status", label: "New Status", description: "Application status after this update" },
+  { key: "application_id",       label: "Application ID",   description: "Canonical application ID" },
+  { key: "job_posting_id",       label: "Job Posting ID",    description: "Job posting ID" },
   { key: "submitted_date",       label: "Submitted Date",    description: "Date the application was submitted" },
   { key: "portal_url",           label: "Portal URL",        description: "Link to the talent portal" },
   { key: "company_name",         label: "Our Company",       description: "OnSpot company name" },

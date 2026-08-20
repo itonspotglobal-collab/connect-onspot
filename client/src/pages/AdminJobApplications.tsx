@@ -56,6 +56,9 @@ const VALID_STATUSES = [
   "new", "under_review", "reviewed", "shortlisted", "interviewing",
   "offer_extended", "offer_accepted", "offer_declined", "rejected", "withdrawn",
 ] as const;
+const GENERIC_ADMIN_EMAIL_STATUSES = [
+  "new", "under_review", "reviewed", "shortlisted", "rejected",
+] as const;
 type AppStatus = typeof VALID_STATUSES[number] | "submitted" | "hired";
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
@@ -775,29 +778,18 @@ function DetailDialog({
 // ─── Status Update Dialog ─────────────────────────────────────────────────────
 
 function StatusDialog({
-  applicationId, currentStatus, open, onClose, onSuccess,
-}: { applicationId: string | null; currentStatus: string; open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const { toast } = useToast();
+  currentStatus, open, onClose, onContinue,
+}: {
+  applicationId: string | null;
+  currentStatus: string;
+  open: boolean;
+  onClose: () => void;
+  onContinue: (change: { status: string; note?: string }) => void;
+}) {
   const [status, setStatus] = useState("");
   const [note, setNote] = useState("");
-  const [confirmHired, setConfirmHired] = useState(false);
 
-  useEffect(() => { if (open) { setStatus(""); setNote(""); setConfirmHired(false); } }, [open]);
-
-  const mutation = useMutation({
-    mutationFn: () => apiFetch(`/api/admin/job-applications/${applicationId}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status, note: note.trim() || undefined }),
-    }),
-    onSuccess: () => {
-      toast({ title: "Status updated", description: `Application moved to ${STATUS_CFG[status]?.label ?? status}.` });
-      onSuccess();
-      onClose();
-    },
-    onError: (err: any) => toast({ title: "Update failed", description: err.message, variant: "destructive" }),
-  });
-
-  const needsHiredConfirm = status === "hired" && !confirmHired;
+  useEffect(() => { if (open) { setStatus(""); setNote(""); } }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -817,7 +809,7 @@ function StatusDialog({
                 <SelectValue placeholder="Select a status…" />
               </SelectTrigger>
               <SelectContent>
-                {VALID_STATUSES.filter(s => s !== currentStatus).map(s => (
+                {GENERIC_ADMIN_EMAIL_STATUSES.filter(s => s !== currentStatus).map(s => (
                   <SelectItem key={s} value={s}>{STATUS_CFG[s]?.label ?? s}</SelectItem>
                 ))}
               </SelectContent>
@@ -834,29 +826,23 @@ function StatusDialog({
             />
             <p className="text-xs text-slate-400">This note is not visible to the applicant.</p>
           </div>
-          {status === "hired" && (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
-              <p className="text-sm font-medium text-green-800 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> Marking as Hired
-              </p>
-              <p className="text-xs text-green-700">
-                This changes the application status only. It does not automatically create payroll, employee, contract, or payment records.
-              </p>
-              <label className="flex items-center gap-2 text-xs text-green-800 cursor-pointer">
-                <Checkbox checked={confirmHired} onCheckedChange={v => setConfirmHired(!!v)} />
-                I understand — change status to Hired
-              </label>
-            </div>
+          {status && (
+            <p className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-800">
+              The applicant email must be sent successfully before this status change is saved.
+            </p>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
-            disabled={!status || mutation.isPending || needsHiredConfirm}
-            onClick={() => mutation.mutate()}
+            disabled={!status}
+            onClick={() => {
+              onClose();
+              onContinue({ status, note: note.trim() || undefined });
+            }}
             className="bg-[#474ead] text-white hover:bg-[#3d439c]"
           >
-            {mutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Update Status"}
+            Continue to Email
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -977,6 +963,12 @@ export default function AdminJobApplications() {
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    applicationId: string;
+    previousStatus: string;
+    newStatus: string;
+    note?: string;
+  } | null>(null);
 
   // ── Email send confirmation (lifted from composer to avoid Radix nested-dialog focus-lock) ────
   // The confirmation is a separate top-level Radix Dialog rendered as a sibling of the Email
@@ -996,6 +988,7 @@ export default function AdminJobApplications() {
         bodyHtml: emailPendingPayload?.bodyHtml,
         senderEmail: emailPendingPayload?.senderEmail,
         updateStage: emailConfirmStage || undefined,
+        note: pendingStatusChange?.note,
       }),
     }),
     onSuccess: () => {
@@ -1003,9 +996,11 @@ export default function AdminJobApplications() {
       setEmailConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", emailDialog?.id, "email/history"] });
       if (emailConfirmStage) {
+        queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
         queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
       }
       setEmailDialog(null);
+      setPendingStatusChange(null);
     },
     onError: (err: any) => {
       setEmailConfirmOpen(false);
@@ -1015,8 +1010,20 @@ export default function AdminJobApplications() {
 
   function handleEmailSendRequest(payload: { subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string }) {
     setEmailPendingPayload(payload);
-    setEmailConfirmStage("");
+    setEmailConfirmStage(pendingStatusChange?.newStatus ?? "");
     setEmailConfirmOpen(true);
+  }
+
+  function handleStatusContinue(change: { status: string; note?: string }) {
+    const app = items.find(item => item.id === statusDialog?.id);
+    if (!app || !statusDialog) return;
+    setPendingStatusChange({
+      applicationId: app.id,
+      previousStatus: statusDialog.current,
+      newStatus: change.status,
+      note: change.note,
+    });
+    setEmailDialog(app);
   }
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -1085,25 +1092,6 @@ export default function AdminJobApplications() {
     if (allSelected) setSelected(prev => { const n = new Set(prev); allPageIds.forEach(id => n.delete(id)); return n; });
     else setSelected(prev => { const n = new Set(prev); allPageIds.forEach(id => n.add(id)); return n; });
   };
-
-  const bulkMutation = useMutation({
-    mutationFn: async ({ ids, status }: { ids: string[]; status: string }) => {
-      await Promise.all(ids.map(id =>
-        apiFetch(`/api/admin/job-applications/${id}/status`, {
-          method: "PATCH",
-          body: JSON.stringify({ status }),
-        })
-      ));
-    },
-    onSuccess: () => {
-      toast({ title: "Bulk update complete", description: `${selected.size} applications updated.` });
-      setSelected(new Set());
-      setBulkAction(null);
-      queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
-    },
-    onError: (err: any) => toast({ title: "Bulk update failed", description: err.message, variant: "destructive" }),
-  });
 
   // ── Delete mutation ───────────────────────────────────────────────────────
   const deleteMutation = useMutation({
@@ -1235,11 +1223,17 @@ export default function AdminJobApplications() {
           <div className="mb-3 flex items-center gap-3 rounded-lg bg-[#474ead]/10 border border-[#474ead]/20 px-4 py-2.5 text-sm">
             <span className="font-medium text-[#474ead]">{selected.size} selected</span>
             <Button size="sm" variant="outline" className="h-7 text-xs"
-              onClick={() => bulkMutation.mutate({ ids: Array.from(selected), status: "under_review" })}>
+              onClick={() => toast({
+                title: "Email required for status changes",
+                description: "Open each application and send the applicant email before changing its status.",
+              })}>
               Mark Under Review
             </Button>
             <Button size="sm" variant="outline" className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
-              onClick={() => setBulkAction("rejected")}>
+              onClick={() => toast({
+                title: "Email required for status changes",
+                description: "Bulk status changes are unavailable because each applicant must receive the status email first.",
+              })}>
               Reject Selected
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs ml-auto"
@@ -1483,17 +1477,7 @@ export default function AdminJobApplications() {
         currentStatus={statusDialog?.current ?? ""}
         open={!!statusDialog}
         onClose={() => setStatusDialog(null)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
-        }}
-      />
-      <BulkConfirm
-        open={bulkAction === "rejected"}
-        count={selected.size}
-        action="rejected"
-        onConfirm={() => bulkMutation.mutate({ ids: Array.from(selected), status: "rejected" })}
-        onCancel={() => setBulkAction(null)}
+        onContinue={handleStatusContinue}
       />
       <DeleteConfirmDialog
         app={deleteDialog}
@@ -1511,9 +1495,18 @@ export default function AdminJobApplications() {
             lastName: emailDialog.lastName,
             applicantName: emailDialog.applicantName,
             jobTitle: emailDialog.jobTitle,
+             status: emailDialog.status,
           } : null}
+           pendingStatus={pendingStatusChange ? {
+             previousStatus: pendingStatusChange.previousStatus,
+             newStatus: pendingStatusChange.newStatus,
+           } : undefined}
           open={!!emailDialog}
-          onClose={() => setEmailDialog(null)}
+           onClose={() => {
+             setEmailDialog(null);
+             setPendingStatusChange(null);
+             setEmailConfirmOpen(false);
+           }}
           onRequestSend={handleEmailSendRequest}
           isSendingEmail={sendEmailMutation.isPending}
         />
@@ -1531,7 +1524,9 @@ export default function AdminJobApplications() {
           <DialogHeader>
             <DialogTitle>Confirm: Send Email</DialogTitle>
             <DialogDescription>
-              Review the details below before sending. You can optionally update the applicant&apos;s stage at the same time.
+               {pendingStatusChange
+                 ? "The application status will be saved only after this email is delivered successfully."
+                 : "Review the details below before sending. You can optionally update the applicant's stage at the same time."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1549,30 +1544,29 @@ export default function AdminJobApplications() {
                 <span className="text-slate-700 truncate">{emailPendingPayload?.subject}</span>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Also update application stage</Label>
-              <Select
-                value={emailConfirmStage || "_none"}
-                onValueChange={v => setEmailConfirmStage(v === "_none" ? "" : v)}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {([
-                    { value: "_none",         label: "— No stage change —" },
-                    { value: "under_review",  label: "Under Review" },
-                    { value: "shortlisted",   label: "Shortlisted" },
-                    { value: "interviewing",  label: "Interviewing" },
-                    { value: "offer_extended",label: "Offer Extended" },
-                    { value: "rejected",      label: "Rejected" },
-                    { value: "withdrawn",     label: "Withdrawn" },
-                  ] as const).map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {pendingStatusChange ? (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm">
+                <span className="text-indigo-700">Status after successful delivery: </span>
+                <strong className="text-indigo-900">
+                  {STATUS_CFG[pendingStatusChange.previousStatus]?.label ?? pendingStatusChange.previousStatus}
+                  {" → "}
+                  {STATUS_CFG[pendingStatusChange.newStatus]?.label ?? pendingStatusChange.newStatus}
+                </strong>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Also update application stage</Label>
+                <Select value={emailConfirmStage || "_none"} onValueChange={v => setEmailConfirmStage(v === "_none" ? "" : v)}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">— No stage change —</SelectItem>
+                    {GENERIC_ADMIN_EMAIL_STATUSES.filter(s => s !== "new").map(s => (
+                      <SelectItem key={s} value={s}>{STATUS_CFG[s]?.label ?? s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button

@@ -18,6 +18,14 @@ type TalentApplicationStatusNotificationInput = {
   newStatus: string;
 };
 
+type AdminClientStatusNotificationInput = {
+  submissionId: string;
+  clientName: string | null | undefined;
+  talentName: string | null | undefined;
+  jobTitle: string | null | undefined;
+  newStatus: string;
+};
+
 /**
  * Persists the Client-facing notification emitted after a new job submission is
  * saved. job_submissions.client_id is a direct users.id foreign key, so there is
@@ -115,6 +123,54 @@ export async function notifyTalentOfApplicationStatusChange({
   } catch (error) {
     console.error(
       `[application-notifications] failed status notification for submission ${submissionId}:`,
+      error,
+    );
+  }
+}
+
+/**
+ * Persists one Admin-facing notification for a Client-originated status
+ * transition. The event is keyed by the canonical submission and transition
+ * text so a retried request cannot create another alert.
+ */
+export async function notifyAdminsOfClientApplicationStatusChange({
+  submissionId,
+  clientName,
+  talentName,
+  jobTitle,
+  newStatus,
+}: AdminClientStatusNotificationInput): Promise<void> {
+  const message = `${clientName || "A Client"} changed ${talentName || "a Talent"}'s application for ${jobTitle || "a job"} to ${submissionStatusLabel(newStatus)}.`;
+
+  try {
+    const admins = await query(`SELECT id FROM users WHERE role = 'admin'`);
+    await Promise.all(
+      admins.rows.map(async (admin) => {
+        const existing = await query(
+          `SELECT id
+             FROM notifications
+            WHERE user_id = $1
+              AND type = 'client_application_status_changed'
+              AND related_id = $2
+              AND message = $3
+            LIMIT 1`,
+          [admin.id, submissionId, message],
+        );
+        if (existing.rows.length > 0) return;
+
+        await storage.createNotification({
+          userId: admin.id,
+          type: "client_application_status_changed",
+          title: "Client updated application",
+          message,
+          relatedId: submissionId,
+          relatedType: "job_submission",
+        });
+      }),
+    );
+  } catch (error) {
+    console.error(
+      `[application-notifications] failed Client status notification for submission ${submissionId}:`,
       error,
     );
   }

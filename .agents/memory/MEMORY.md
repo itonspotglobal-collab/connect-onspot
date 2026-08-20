@@ -20,3 +20,4 @@
 - [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — contract endpoints (admin-only create/sign/void + talent view); OnSpot countersign triggers hired; FK delete order on cleanup.
 - [Status rename audit](status-rename-audit.md) — 'submitted' → 'new' canonical rename; all write paths, name_reveal system, test files, and platform_settings migration fully closed.
 - [Resume auto-fill pipeline](resume-autofill-pipeline.md) — shared applyResumeToCandidate.ts calls after every upload; parser extended with workHistory/education/certifications/languages; merge is non-destructive (summary preserves manual edits).
+- [Status email retry invariant](status-email-retry.md) — failed applicant emails persist pending status intent so retries cannot deliver a transition without committing its status workflow.

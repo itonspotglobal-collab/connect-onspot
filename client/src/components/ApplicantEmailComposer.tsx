@@ -60,12 +60,14 @@ interface ApplicationInfo {
   lastName?: string;
   applicantName?: string;
   jobTitle?: string;
+  status?: string;
 }
 
 interface Props {
   application: ApplicationInfo | null;
   open: boolean;
   onClose: () => void;
+  pendingStatus?: { previousStatus: string; newStatus: string };
   /** Called when the user clicks "Send Email" (after validation). Parent opens the confirmation dialog. */
   onRequestSend: (payload: { subject: string; bodyHtml: string; templateId: string; senderEmail: string; senderLabel: string }) => void;
   /** True while the parent is sending — keeps the Send button disabled during the API call. */
@@ -295,6 +297,8 @@ function PreviewTab({
   bodyHtml,
   senderDisplay,
   recipientEmail,
+  newStatus,
+  previousStatus,
 }: {
   appId: string;
   templateId: string;
@@ -302,6 +306,8 @@ function PreviewTab({
   bodyHtml: string;
   senderDisplay: string;
   recipientEmail: string;
+  newStatus?: string;
+  previousStatus?: string;
 }) {
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -317,12 +323,18 @@ function PreviewTab({
     setError(null);
     apiFetch(`/api/admin/job-applications/${appId}/email/preview`, {
       method: "POST",
-      body: JSON.stringify({ templateId: templateId || undefined, subject, bodyHtml }),
+      body: JSON.stringify({
+        templateId: templateId || undefined,
+        subject,
+        bodyHtml,
+        newStatus,
+        previousStatus,
+      }),
     })
       .then(data => { if (!cancelled) { setPreview(data); setLoading(false); } })
       .catch(err => { if (!cancelled) { setError(err.message); setLoading(false); } });
     return () => { cancelled = true; };
-  }, [appId, templateId, subject, bodyHtml]);
+  }, [appId, templateId, subject, bodyHtml, newStatus, previousStatus]);
 
   if (!bodyHtml.trim()) {
     return (
@@ -621,7 +633,7 @@ function TestSendDialog({
 
 // ─── Main Composer ────────────────────────────────────────────────────────────
 
-export default function ApplicantEmailComposer({ application, open, onClose, onRequestSend, isSendingEmail }: Props) {
+export default function ApplicantEmailComposer({ application, open, onClose, onRequestSend, isSendingEmail, pendingStatus }: Props) {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("compose");
@@ -661,6 +673,8 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
           subject,
           bodyHtml,
           testRecipient,
+          newStatus: pendingStatus?.newStatus,
+          previousStatus: pendingStatus?.previousStatus,
         }),
       }),
     onSuccess: (_data, testRecipient) => {
@@ -699,6 +713,13 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
                 — {applicantDisplayName}
               </span>
             </DialogTitle>
+            {pendingStatus && (
+              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-800">
+                This email is required before the application can move from{" "}
+                <strong>{pendingStatus.previousStatus}</strong> to{" "}
+                <strong>{pendingStatus.newStatus}</strong>.
+              </div>
+            )}
           </DialogHeader>
 
           {/* ── Fixed tab bar ── */}
@@ -733,6 +754,8 @@ export default function ApplicantEmailComposer({ application, open, onClose, onR
                 bodyHtml={bodyHtml}
                 senderDisplay={selectedSender.display}
                 recipientEmail={application.email}
+                newStatus={pendingStatus?.newStatus}
+                previousStatus={pendingStatus?.previousStatus}
               />
             )}
 

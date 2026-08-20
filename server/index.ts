@@ -453,10 +453,18 @@ app.use((req, res, next) => {
         status         text      NOT NULL DEFAULT 'sent',
         error_message  text,
         is_test        boolean   NOT NULL DEFAULT false,
+         status_update  text,
+         status_previous text,
+         status_note    text,
         sent_at        timestamp NOT NULL DEFAULT now(),
         created_at     timestamp NOT NULL DEFAULT now()
       )
     `);
+    await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_email text`);
+    await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_name text`);
+    await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_update text`);
+    await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_previous text`);
+    await dbQuery(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_note text`);
     await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_application_id ON job_application_emails(application_id)`);
     await dbQuery(`CREATE INDEX IF NOT EXISTS idx_jae_sent_at         ON job_application_emails(sent_at)`);
   } catch (migErr: any) {

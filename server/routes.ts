@@ -56,7 +56,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
 import jwt from "jsonwebtoken";
-import { query, db, pool } from "./db.ts";
+import { query, db, pool, getClient } from "./db.ts";
 import { and, eq, desc, sql as sqlOp } from "drizzle-orm";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { setObjectAclPolicy } from "./objectAcl";
@@ -1197,6 +1197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   try {
     await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_email text`);
     await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_name text`);
+    await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_update text`);
+    await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_previous text`);
+    await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS status_note text`);
     console.log("✅ Migration: email sender columns ready");
   } catch (migErr: any) {
     console.warn("⚠️  email sender migration skipped:", migErr.message);
@@ -13453,6 +13456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/admin/job-applications/:applicationId/status — update status + record history (admin only)
   app.patch("/api/admin/job-applications/:applicationId/status", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
+      // Normal Admin status changes must go through the authenticated
+      // email/send workflow so a status can never be committed without a
+      // successful applicant email.
+      return res.status(409).json({
+        error: "status_email_required",
+        message: "Admin application status changes must be sent through the Email Applicant workflow.",
+      });
+      /*
       const changedBy: string | null = (req as any).user?.id ?? null;
 
       const { applicationId } = req.params;
@@ -13509,6 +13520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await query("ROLLBACK");
         throw txErr;
       }
+      */
     } catch (err: any) {
       console.error("PATCH /api/admin/job-applications/:id/status error:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -13560,6 +13572,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PATCH /api/admin/job-applications/:id — update application status (admin only)
   app.patch("/api/admin/job-applications/:id", authenticateJWT, requireAdmin, maybeRequireTalentSubRole, async (req: Request, res: Response) => {
     try {
+      // Keep the legacy endpoint from bypassing the email-before-status
+      // invariant. The UI uses /email/send for coordinated changes.
+      return res.status(409).json({
+        error: "status_email_required",
+        message: "Admin application status changes must be sent through the Email Applicant workflow.",
+      });
+      /*
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
 
@@ -13594,6 +13613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newStatus: status,
       });
       return res.json(result.rows[0]);
+      */
     } catch (err: any) {
       console.error("PATCH /api/admin/job-applications/:id error:", err);
       return res.status(500).json({ error: err.message });
@@ -13812,12 +13832,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pipeline-driven statuses (interviewing, offer_extended, etc.) are set as side
   // effects of creating interview/offer/contract records — never directly via this endpoint.
   app.patch("/api/client/job-submissions/:id/status", authenticateJWT, async (req: Request, res: Response) => {
+    let client: Awaited<ReturnType<typeof getClient>> | null = null;
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
       const { status } = req.body;
-      const { CLIENT_SETTABLE_STATUSES } = await import("../shared/submissionStatuses");
+      const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
+        await import("../shared/submissionStatuses");
       if (!status || !CLIENT_SETTABLE_STATUSES.includes(status as any)) {
         return res.status(400).json({
           error: "Invalid status",
@@ -13825,23 +13847,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Fetch current row to check current status.
-      // Client-invited talent in "invited" or "declined" state must not have their
-      // status changed by the client — only the talent's own respond endpoint may
-      // transition those rows (invited → submitted / declined).
-      const current = await query(
-        `SELECT js.status, js.initiated_by, js.talent_id, js.email, j.title AS job_title
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.client_id = $2`,
+      client = await getClient();
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1))",
+        [`client-status:${id}`],
+      );
+
+      // Lock the canonical submission while validating ownership and applying
+      // the transition. This makes retries/concurrent Client clicks atomic.
+      const current = await client.query(
+        `SELECT js.status, js.initiated_by, js.talent_id, js.email,
+                js.first_name, js.last_name, js.applicant_name,
+                j.title AS job_title,
+                u.first_name AS client_first_name,
+                u.last_name AS client_last_name,
+                u.company AS client_company
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users u ON u.id = js.client_id
+          WHERE js.id = $1 AND js.client_id = $2
+          FOR UPDATE`,
         [id, userId],
       );
       if (current.rows.length === 0) {
+        await client.query("ROLLBACK");
         return res.status(404).json({ error: "Submission not found or forbidden" });
       }
-      const currentStatus: string = current.rows[0].status;
-      const initiatedBy: string | null = current.rows[0].initiated_by;
+      const currentRow = current.rows[0];
+      const currentStatus: string = currentRow.status;
+      const initiatedBy: string | null = currentRow.initiated_by;
       if (initiatedBy === "client" && (currentStatus === "invited" || currentStatus === "declined")) {
+        await client.query("ROLLBACK");
         return res.status(409).json({
           error: "cannot_update_pending_invitation",
           message:
@@ -13851,19 +13888,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      await query(
-        `UPDATE job_submissions SET status = $1, updated_at = NOW()
-         WHERE id = $2 AND client_id = $3`,
-        [status, id, userId],
+      if (currentStatus === status) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({
+          error: "status_already_set",
+          message: "This application already has the requested status.",
+        });
+      }
+
+      await client.query(
+        `UPDATE job_submissions
+            SET status = $1, updated_at = NOW()
+          WHERE id = $2 AND client_id = $3 AND status = $4`,
+        [status, id, userId, currentStatus],
       );
-      await notifyTalentOfApplicationStatusChange({
-        submissionId: id,
-        talentUserId: current.rows[0].talent_id,
-        applicantEmail: current.rows[0].email,
-        jobTitle: current.rows[0].job_title,
-        previousStatus: currentStatus,
-        newStatus: status,
-      });
+
+      await client.query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, currentStatus, status, "Status updated by Client", userId],
+      );
+
+      const talentUser = await client.query(
+        `SELECT id
+           FROM users
+          WHERE role = 'talent'
+            AND (id = $1 OR lower(email) = lower($2))
+          LIMIT 1`,
+        [currentRow.talent_id, currentRow.email],
+      );
+      if (talentUser.rows.length > 0) {
+        const talentMessage =
+          status === "rejected"
+            ? `Your application for ${currentRow.job_title || "your application"} was not selected.`
+            : `Your application for ${currentRow.job_title || "your application"} is now ${submissionStatusLabel(status)}.`;
+        await client.query(
+          `INSERT INTO notifications
+             (user_id, type, title, message, related_id, related_type)
+           SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
+            WHERE NOT EXISTS (
+              SELECT 1
+                FROM notifications
+               WHERE user_id = $1
+                 AND type = 'job_application_status_changed'
+                 AND related_id = $3
+                 AND message = $2
+            )`,
+          [talentUser.rows[0].id, talentMessage, id],
+        );
+      }
+
+      const clientName =
+        [currentRow.client_first_name, currentRow.client_last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        currentRow.client_company ||
+        "A Client";
+      const talentName =
+        [currentRow.first_name, currentRow.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        currentRow.applicant_name ||
+        "a Talent";
+      const adminMessage =
+        `${clientName} changed ${talentName}'s application for ` +
+        `${currentRow.job_title || "a job"} to ${submissionStatusLabel(status)}.`;
+      await client.query(
+        `INSERT INTO notifications
+           (user_id, type, title, message, related_id, related_type)
+         SELECT u.id, 'client_application_status_changed',
+                'Client updated application', $1, $2, 'job_submission'
+           FROM users u
+          WHERE u.role = 'admin'
+            AND NOT EXISTS (
+              SELECT 1
+                FROM notifications n
+               WHERE n.user_id = u.id
+                 AND n.type = 'client_application_status_changed'
+                 AND n.related_id = $2
+                 AND n.message = $1
+            )`,
+        [adminMessage, id],
+      );
+      await client.query("COMMIT");
 
       // Re-fetch via canonical projection (same as GET endpoints) so the response
       // shape is consistent and no raw DB columns bypass the sanitizer.
@@ -13879,7 +13987,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const revealed = revealedStatusesForThreshold(threshold);
       return res.json(sanitizeClientSubmissionRow(updated.rows[0], revealed));
     } catch (err: any) {
+      if (client) {
+        try {
+          await client.query("ROLLBACK");
+        } catch {
+          // Preserve the original error.
+        }
+      }
       return res.status(500).json({ error: err.message });
+    } finally {
+      client?.release();
     }
   });
 
@@ -15377,12 +15494,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/job-applications/:id/email/preview", authenticateAdminFlexible, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: any, res: Response) => {
     try {
       const { id } = req.params;
-      const { templateId, subject, bodyHtml } = req.body;
+      const { templateId, subject, bodyHtml, newStatus, previousStatus } = req.body;
 
       // Load application + job
       const appRow = await query(
         `SELECT js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
-                js.status, js.submitted_at,
+                js.status, js.submitted_at, js.job_id,
                 j.title AS job_title, j.company AS job_company, j.location AS job_location
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
@@ -15413,7 +15530,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: app_.first_name, lastName: app_.last_name,
         applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
         jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
-        status: app_.status, submittedAt: app_.submitted_at,
+        status: newStatus ?? app_.status,
+        previousStatus: previousStatus ?? null,
+        newStatus: newStatus ?? null,
+        applicationId: id,
+        jobPostingId: app_.job_id,
+        submittedAt: app_.submitted_at,
       });
 
       const subjectResult = resolveVariables(subjectRaw ?? "", ctx);
@@ -15434,12 +15556,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/job-applications/:id/email/test", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
     try {
       const { id } = req.params;
-      const { templateId, subject, bodyHtml, testRecipient } = req.body;
+      const { templateId, subject, bodyHtml, testRecipient, newStatus, previousStatus } = req.body;
       if (!testRecipient?.trim()) return res.status(400).json({ error: "testRecipient is required for test sends" });
 
       const appRow = await query(
         `SELECT js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
-                js.status, js.submitted_at,
+                js.status, js.submitted_at, js.job_id,
                 j.title AS job_title, j.company AS job_company, j.location AS job_location
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
@@ -15467,7 +15589,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: app_.first_name, lastName: app_.last_name,
         applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
         jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
-        status: app_.status, submittedAt: app_.submitted_at,
+        status: newStatus ?? app_.status,
+        previousStatus: previousStatus ?? null,
+        newStatus: newStatus ?? null,
+        applicationId: id,
+        jobPostingId: app_.job_id,
+        submittedAt: app_.submitted_at,
       });
       const resolvedSubject = `[TEST] ${resolveVariables(subjectRaw ?? "", ctx).resolved}`;
       const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
@@ -15489,110 +15616,292 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/admin/job-applications/:id/email/send — send email + optionally update stage
-  // TODO: Protect with admin authorization before production.
-  app.post("/api/admin/job-applications/:id/email/send", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { templateId, subject, bodyHtml, updateStage, senderEmail: rawSenderEmail } = req.body;
-      // Derive sentBy from the authenticated admin — never trust the request body for audit integrity
-      const sentBy: string | null = req.user?.id ?? null;
+  // POST /api/admin/job-applications/:id/email/send — send email and, when
+  // requested, commit the application status only after delivery succeeds.
+  app.post("/api/admin/job-applications/:id/email/send", authenticateAdminFlexible, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: any, res: Response) => {
+    const { id } = req.params;
+    const {
+      templateId,
+      subject,
+      bodyHtml,
+      updateStage: rawUpdateStage,
+      note,
+      senderEmail: rawSenderEmail,
+    } = req.body ?? {};
+    const sentBy: string | null = req.user?.id ?? null;
+    const dbClient = await getClient();
+    let emailDelivered = false;
 
-      // Validate senderEmail against server-side allowlist — backend is the source of truth
-      const { ALLOWED_SENDERS: SENDER_ALLOWLIST } = await import("./services/microsoftGraphEmailService.ts");
+    const rollbackQuietly = async () => {
+      try {
+        await dbClient.query("ROLLBACK");
+      } catch {
+        // Preserve the original error/response.
+      }
+    };
+
+    try {
+      const { ADMIN_SETTABLE_STATUSES, submissionStatusLabel } =
+        await import("../shared/submissionStatuses");
+      const LEGACY_STATUS_ALIASES: Record<string, string> = {
+        submitted: "new",
+        interview: "interviewing",
+        offered: "offer_extended",
+      };
+      const updateStage = rawUpdateStage
+        ? LEGACY_STATUS_ALIASES[rawUpdateStage] ?? rawUpdateStage
+        : null;
+
+      // These statuses are owned by the interview/offer/contract/withdrawal
+      // workflows. They must not be repackaged as a generic Admin
+      // status-with-email transition.
+      const GENERIC_ADMIN_EMAIL_STATUSES = [
+        "new",
+        "under_review",
+        "reviewed",
+        "shortlisted",
+        "rejected",
+      ];
+      if (updateStage && !GENERIC_ADMIN_EMAIL_STATUSES.includes(updateStage)) {
+        return res.status(400).json({
+          error: "Invalid status transition",
+          message: `This status is managed by its dedicated workflow. Generic email status changes support: ${GENERIC_ADMIN_EMAIL_STATUSES.join(", ")}`,
+        });
+      }
+
+      const { ALLOWED_SENDERS: SENDER_ALLOWLIST } =
+        await import("./services/microsoftGraphEmailService.ts");
       const resolvedSenderEmail: string =
         rawSenderEmail && SENDER_ALLOWLIST[rawSenderEmail]
           ? rawSenderEmail
           : "careers@onspotglobal.com";
-      const resolvedSenderName: string = SENDER_ALLOWLIST[resolvedSenderEmail] ?? "OnSpot Careers";
+      const resolvedSenderName =
+        SENDER_ALLOWLIST[resolvedSenderEmail] ?? "OnSpot Careers";
 
-      console.log(`[send-email] Request reached send-email endpoint — applicationId=${id} sender=${resolvedSenderEmail} updateStage=${updateStage ?? "none"} bypass=${BYPASS_ADMIN_AUTH}`);
+      await dbClient.query("BEGIN");
+      // Serialize status-with-email requests for the same application. This
+      // prevents a rapid retry from sending a second email after the first
+      // request has already committed the requested status.
+      await dbClient.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1))",
+        [`admin-status-email:${id}`],
+      );
 
-      // Always load email from DB — never trust browser-supplied recipient
-      const appRow = await query(
-        `SELECT js.id, js.first_name, js.last_name, js.applicant_name, js.email, js.phone,
-                js.status, js.submitted_at,
+      const appRow = await dbClient.query(
+        `SELECT js.id, js.job_id, js.first_name, js.last_name, js.applicant_name,
+                js.email, js.phone, js.talent_id, js.status, js.submitted_at,
                 j.title AS job_title, j.company AS job_company, j.location AS job_location
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1`,
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+          WHERE js.id = $1
+          FOR UPDATE`,
         [id],
       );
-      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      if (appRow.rows.length === 0) {
+        await rollbackQuietly();
+        return res.status(404).json({ error: "Application not found" });
+      }
       const app_ = appRow.rows[0];
+
+      if (updateStage && updateStage === app_.status) {
+        await rollbackQuietly();
+        return res.status(409).json({
+          error: "status_already_set",
+          message: "This application already has the requested status.",
+        });
+      }
+
+      if (!app_.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(app_.email)) {
+        await rollbackQuietly();
+        return res.status(400).json({
+          error: "Applicant does not have a valid email address. Status was not changed.",
+        });
+      }
 
       let subjectRaw = subject;
       let bodyRaw = bodyHtml;
-      let resolvedTemplateId = templateId ?? null;
-
+      const resolvedTemplateId = templateId ?? null;
       if (templateId && (!subjectRaw || !bodyRaw)) {
-        const tpl = await query(
-          `SELECT subject, body_html FROM applicant_email_templates WHERE id = $1`, [templateId],
+        const tpl = await dbClient.query(
+          `SELECT subject, body_html
+             FROM applicant_email_templates
+            WHERE id = $1`,
+          [templateId],
         );
         if (tpl.rows.length > 0) {
           subjectRaw = subjectRaw ?? tpl.rows[0].subject;
           bodyRaw = bodyRaw ?? tpl.rows[0].body_html;
         }
       }
-      if (!bodyRaw) return res.status(400).json({ error: "bodyHtml or templateId is required" });
-      if (!subjectRaw) return res.status(400).json({ error: "subject is required" });
+      if (!bodyRaw) {
+        await rollbackQuietly();
+        return res.status(400).json({ error: "bodyHtml or templateId is required" });
+      }
+      if (!subjectRaw) {
+        await rollbackQuietly();
+        return res.status(400).json({ error: "subject is required" });
+      }
 
-      const { buildEmailContext, resolveVariables } = await import("./services/emailVariableResolver.ts");
+      const { buildEmailContext, resolveVariables } =
+        await import("./services/emailVariableResolver.ts");
       const ctx = buildEmailContext({
-        firstName: app_.first_name, lastName: app_.last_name,
-        applicantName: app_.applicant_name, email: app_.email, phone: app_.phone,
-        jobTitle: app_.job_title, jobCompany: app_.job_company, jobLocation: app_.job_location,
-        status: app_.status, submittedAt: app_.submitted_at,
+        firstName: app_.first_name,
+        lastName: app_.last_name,
+        applicantName: app_.applicant_name,
+        email: app_.email,
+        phone: app_.phone,
+        jobTitle: app_.job_title,
+        jobCompany: app_.job_company,
+        jobLocation: app_.job_location,
+        status: updateStage ?? app_.status,
+        previousStatus: updateStage ? app_.status : null,
+        newStatus: updateStage ?? null,
+        applicationId: app_.id,
+        jobPostingId: app_.job_id,
+        submittedAt: app_.submitted_at,
       });
       const resolvedSubject = resolveVariables(subjectRaw, ctx).resolved;
       const resolvedBody = resolveVariables(bodyRaw, ctx).resolved;
 
-      const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-      console.log(`[send-email] Email provider request started — to=${app_.email} from=${resolvedSenderEmail} subject="${resolvedSubject.slice(0, 60)}"`);
+      const { sendApplicantEmail } =
+        await import("./services/microsoftGraphEmailService.ts");
       const sendResult = await sendApplicantEmail({
         to: app_.email,
         subject: resolvedSubject,
         bodyHtml: resolvedBody,
         senderEmail: resolvedSenderEmail,
       });
-      console.log(`[send-email] Email provider response — success=${sendResult.success}${sendResult.error ? ` error="${sendResult.error}"` : ""}`);
 
-      const emailStatus = sendResult.success ? "sent" : "failed";
-      const emailErr = sendResult.success ? null : sendResult.error;
+      if (!sendResult.success) {
+        await rollbackQuietly();
+        await query(
+          `INSERT INTO job_application_emails
+             (application_id, template_id, subject, body_html, sent_to, sent_by,
+              sender_email, sender_name, status, error_message, is_test,
+              status_update, status_previous, status_note)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'failed', $9, false, $10, $11, $12)`,
+          [
+            id,
+            resolvedTemplateId,
+            resolvedSubject,
+            resolvedBody,
+            app_.email,
+            sentBy,
+            resolvedSenderEmail,
+            resolvedSenderName,
+            sendResult.error ?? "Email delivery failed",
+            updateStage,
+            updateStage ? app_.status : null,
+            updateStage ? (note?.trim() || "Status updated with applicant email sent") : null,
+          ],
+        );
+        return res.status(502).json({
+          error: `Email delivery failed: ${sendResult.error ?? "Unknown provider error"}`,
+        });
+      }
+      emailDelivered = true;
 
-      // Log the email attempt
-      await query(
+      await dbClient.query(
         `INSERT INTO job_application_emails
-           (application_id, template_id, subject, body_html, sent_to, sent_by, sender_email, sender_name, status, error_message, is_test)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)`,
-        [id, resolvedTemplateId, resolvedSubject, resolvedBody, app_.email, sentBy ?? null, resolvedSenderEmail, resolvedSenderName, emailStatus, emailErr],
+           (application_id, template_id, subject, body_html, sent_to, sent_by,
+            sender_email, sender_name, status, error_message, is_test,
+            status_update, status_previous, status_note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'sent', NULL, false, $9, $10, $11)`,
+        [
+          id,
+          resolvedTemplateId,
+          resolvedSubject,
+          resolvedBody,
+          app_.email,
+          sentBy,
+          resolvedSenderEmail,
+          resolvedSenderName,
+          updateStage,
+          updateStage ? app_.status : null,
+          updateStage ? (note?.trim() || "Status updated with applicant email sent") : null,
+        ],
       );
 
-      // Optionally update application stage — failure here must not block email response
-      if (updateStage && sendResult.success) {
-        try {
-          await query(
-            `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
-            [updateStage, id],
+      let updatedApplication = app_;
+      if (updateStage) {
+        const updated = await dbClient.query(
+          `UPDATE job_submissions
+              SET status = $1, updated_at = NOW()
+            WHERE id = $2 AND status = $3
+          RETURNING *`,
+          [updateStage, id, app_.status],
+        );
+        if (updated.rows.length === 0) {
+          throw new Error("Application status changed while the email was being sent");
+        }
+        updatedApplication = updated.rows[0];
+
+        await dbClient.query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            id,
+            app_.status,
+            updateStage,
+            note?.trim() || "Status updated with applicant email sent",
+            sentBy,
+          ],
+        );
+
+        const talentUser = await dbClient.query(
+          `SELECT id
+             FROM users
+            WHERE role = 'talent'
+              AND (id = $1 OR lower(email) = lower($2))
+            LIMIT 1`,
+          [app_.talent_id, app_.email],
+        );
+        if (talentUser.rows.length > 0) {
+          const talentMessage =
+            updateStage === "rejected"
+              ? `Your application for ${app_.job_title || "your application"} was not selected.`
+              : `Your application for ${app_.job_title || "your application"} is now ${submissionStatusLabel(updateStage)}.`;
+          await dbClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type)
+             SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM notifications
+                 WHERE user_id = $1
+                   AND type = 'job_application_status_changed'
+                   AND related_id = $3
+                   AND message = $2
+              )`,
+            [talentUser.rows[0].id, talentMessage, id],
           );
-          await query(
-            `INSERT INTO job_application_status_history
-               (application_id, previous_status, new_status, note, changed_by)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [id, app_.status, updateStage, "Stage updated via email send", sentBy ?? null],
-          );
-        } catch (stageErr: any) {
-          console.warn("Email send: stage update failed (non-fatal):", stageErr.message);
         }
       }
 
-      if (!sendResult.success) {
-        return res.status(502).json({ error: `Email delivery failed: ${sendResult.error}` });
-      }
-      return res.json({ success: true, sentTo: app_.email });
+      await dbClient.query("COMMIT");
+      return res.json({
+        success: true,
+        sentTo: app_.email,
+        application: updatedApplication,
+      });
     } catch (err: any) {
-      console.error("POST /api/admin/job-applications/:id/email/send error:", err);
-      return res.status(500).json({ error: "Internal server error" });
+      await rollbackQuietly();
+      if (emailDelivered) {
+        console.error(
+          `[CRITICAL] Applicant email delivered but status transaction failed for ${id}:`,
+          err,
+        );
+      } else {
+        console.error("POST /api/admin/job-applications/:id/email/send error:", err);
+      }
+      return res.status(emailDelivered ? 500 : 500).json({
+        error: emailDelivered
+          ? "Email was delivered, but the application update could not be committed. Contact an administrator before retrying."
+          : "Internal server error",
+      });
+    } finally {
+      dbClient.release();
     }
   });
 
@@ -15622,48 +15931,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/job-applications/:id/email/:emailId/retry — retry a failed email
-  app.post("/api/admin/job-applications/:id/email/:emailId/retry", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+  app.post("/api/admin/job-applications/:id/email/:emailId/retry", authenticateAdminFlexible, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: any, res: Response) => {
+    const { id, emailId } = req.params;
+    const dbClient = await getClient();
+    let emailDelivered = false;
+    const rollbackQuietly = async () => {
+      try {
+        await dbClient.query("ROLLBACK");
+      } catch {
+        // Preserve the original response.
+      }
+    };
+
     try {
-      const { id, emailId } = req.params;
-      const emailRow = await query(
-        `SELECT * FROM job_application_emails WHERE id = $1 AND application_id = $2`,
+      const { submissionStatusLabel } =
+        await import("../shared/submissionStatuses");
+      const GENERIC_ADMIN_EMAIL_STATUSES = [
+        "new",
+        "under_review",
+        "reviewed",
+        "shortlisted",
+        "rejected",
+      ];
+
+      await dbClient.query("BEGIN");
+      await dbClient.query(
+        "SELECT pg_advisory_xact_lock(hashtext($1))",
+        [`admin-status-email-retry:${id}`],
+      );
+      const emailRow = await dbClient.query(
+        `SELECT *
+           FROM job_application_emails
+          WHERE id = $1 AND application_id = $2
+          FOR UPDATE`,
         [emailId, id],
       );
-      if (emailRow.rows.length === 0) return res.status(404).json({ error: "Email record not found" });
+      if (emailRow.rows.length === 0) {
+        await rollbackQuietly();
+        return res.status(404).json({ error: "Email record not found" });
+      }
       const prev = emailRow.rows[0];
+      if (prev.is_test) {
+        await rollbackQuietly();
+        return res.status(400).json({ error: "Test emails cannot be retried from applicant history" });
+      }
+      if (prev.status !== "failed") {
+        await rollbackQuietly();
+        return res.status(409).json({
+          error: "email_already_processed",
+          message: "Only failed applicant emails can be retried.",
+        });
+      }
 
-      // Reload recipient from DB
-      const appRow = await query(
-        `SELECT email FROM job_submissions WHERE id = $1`, [id],
+      // Reload the recipient and current status from the canonical application.
+      const appRow = await dbClient.query(
+        `SELECT js.id, js.email, js.status, js.talent_id,
+                j.title AS job_title
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+          WHERE js.id = $1
+          FOR UPDATE`,
+        [id],
       );
-      if (appRow.rows.length === 0) return res.status(404).json({ error: "Application not found" });
+      if (appRow.rows.length === 0) {
+        await rollbackQuietly();
+        return res.status(404).json({ error: "Application not found" });
+      }
+      const app_ = appRow.rows[0];
+      const pendingStatus = prev.status_update as string | null;
+      if (pendingStatus) {
+        if (
+          !GENERIC_ADMIN_EMAIL_STATUSES.includes(pendingStatus) ||
+          !prev.status_previous ||
+          app_.status !== prev.status_previous
+        ) {
+          await rollbackQuietly();
+          return res.status(409).json({
+            error: "status_transition_no_longer_available",
+            message: "The saved status transition is no longer valid for this application. Start a new status email.",
+          });
+        }
+      }
+
+      const { ALLOWED_SENDERS: SENDER_ALLOWLIST } =
+        await import("./services/microsoftGraphEmailService.ts");
+      const senderEmail =
+        prev.sender_email && SENDER_ALLOWLIST[prev.sender_email]
+          ? prev.sender_email
+          : "careers@onspotglobal.com";
 
       const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
       const sendResult = await sendApplicantEmail({
-        to: appRow.rows[0].email,
+        to: app_.email,
         subject: prev.subject,
         bodyHtml: prev.body_html,
-        senderEmail: prev.sender_email ?? undefined,
+        senderEmail,
       });
 
-      const newStatus = sendResult.success ? "sent" : "failed";
-      await query(
-        `INSERT INTO job_application_emails
-           (application_id, template_id, subject, body_html, sent_to, sent_by, sender_email, sender_name, status, error_message, is_test)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false)`,
-        [id, prev.template_id, prev.subject, prev.body_html,
-         appRow.rows[0].email, prev.sent_by,
-         prev.sender_email ?? null, prev.sender_name ?? null,
-         newStatus, sendResult.success ? null : sendResult.error],
-      );
-
       if (!sendResult.success) {
+        await rollbackQuietly();
+        await query(
+          `UPDATE job_application_emails
+              SET status = 'failed', error_message = $1, sent_to = $2,
+                  sender_email = $3, sender_name = COALESCE(sender_name, $4),
+                  sent_at = NOW()
+            WHERE id = $5 AND status = 'failed'`,
+          [
+            sendResult.error ?? "Email delivery failed",
+            app_.email,
+            senderEmail,
+            SENDER_ALLOWLIST[senderEmail] ?? "OnSpot Careers",
+            emailId,
+          ],
+        );
         return res.status(502).json({ error: `Retry failed: ${sendResult.error}` });
       }
-      return res.json({ success: true });
+      emailDelivered = true;
+
+      await dbClient.query(
+        `UPDATE job_application_emails
+            SET status = 'sent', error_message = NULL, sent_to = $1,
+                sender_email = $2, sender_name = COALESCE(sender_name, $3),
+                sent_at = NOW()
+          WHERE id = $4 AND status = 'failed'`,
+        [
+          app_.email,
+          senderEmail,
+          SENDER_ALLOWLIST[senderEmail] ?? "OnSpot Careers",
+          emailId,
+        ],
+      );
+
+      if (pendingStatus) {
+        const updated = await dbClient.query(
+          `UPDATE job_submissions
+              SET status = $1, updated_at = NOW()
+            WHERE id = $2 AND status = $3
+          RETURNING id`,
+          [pendingStatus, id, prev.status_previous],
+        );
+        if (updated.rows.length === 0) {
+          throw new Error("Application status changed while the retry email was being sent");
+        }
+
+        await dbClient.query(
+          `INSERT INTO job_application_status_history
+             (application_id, previous_status, new_status, note, changed_by)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, prev.status_previous, pendingStatus, prev.status_note, prev.sent_by],
+        );
+
+        const talentUser = await dbClient.query(
+          `SELECT id
+             FROM users
+            WHERE role = 'talent'
+              AND (id = $1 OR lower(email) = lower($2))
+            LIMIT 1`,
+          [app_.talent_id, app_.email],
+        );
+        if (talentUser.rows.length > 0) {
+          const talentMessage =
+            pendingStatus === "rejected"
+              ? `Your application for ${app_.job_title || "your application"} was not selected.`
+              : `Your application for ${app_.job_title || "your application"} is now ${submissionStatusLabel(pendingStatus)}.`;
+          await dbClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type)
+             SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM notifications
+                 WHERE user_id = $1
+                   AND type = 'job_application_status_changed'
+                   AND related_id = $3
+                   AND message = $2
+              )`,
+            [talentUser.rows[0].id, talentMessage, id],
+          );
+        }
+      }
+
+      await dbClient.query("COMMIT");
+      return res.json({ success: true, statusUpdated: !!pendingStatus });
     } catch (err: any) {
+      await rollbackQuietly();
+      if (emailDelivered) {
+        console.error(
+          `[CRITICAL] Applicant retry email delivered but status transaction failed for ${emailId}:`,
+          err,
+        );
+      }
       console.error("POST /api/admin/job-applications/:id/email/:emailId/retry error:", err);
       return res.status(500).json({ error: "Internal server error" });
+    } finally {
+      dbClient.release();
     }
   });
 
