@@ -11,6 +11,7 @@ import {
   Users,
   Zap,
   Building,
+  Building2,
   User,
   ArrowRight,
   Settings,
@@ -225,6 +226,22 @@ export function TopNavigation() {
   // ── Persisted offer + application notifications for the account menu ──────
   const unreadNotificationCount = useUnreadNotificationsCount();
 
+  // Client organization shortcut. This query is only enabled for Clients so
+  // Talent/Admin account menus remain unchanged and do not call the endpoint.
+  const { data: clientOrganizations = [] } = useQuery<Array<{
+    organization: { id: string; name: string };
+    membership: { role: string; status: string };
+  }>>({
+    queryKey: ["/api/organizations/me"],
+    queryFn: async () => {
+      const response = await authAPI.get("/api/organizations/me");
+      return response.data;
+    },
+    enabled: !!user && user.role === "client",
+    staleTime: 30_000,
+  });
+  const firstClientOrganization = clientOrganizations[0]?.organization;
+
   // ── Profile route helpers ──────────────────────────────────────────────────
   // Resolve candidate ID for talent users regardless of which auth path was used:
   //   Talent Portal JWT  → talentAuth.candidateId
@@ -276,6 +293,9 @@ export function TopNavigation() {
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
+      firstClientOrganization
+        ? { label: "My Organization", route: `/organization/${firstClientOrganization.id}`, icon: Building2 }
+        : { label: "Create Organization", route: "/organization/create", icon: Building2 },
       { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
       { label: "Messages",       route: "/messages",        icon: MessageSquare },
       { label: "Settings",       route: "/settings",       icon: Settings },

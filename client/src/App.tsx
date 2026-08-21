@@ -83,6 +83,8 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
+import OrganizationCreate from "@/pages/OrganizationCreate";
+import OrganizationDetail from "@/pages/OrganizationDetail";
 import InquiryPage from "@/pages/InquiryPage";
 import InquiryReview from "@/pages/InquiryReview";
 import InquiryPayment from "@/pages/InquiryPayment";
@@ -338,6 +340,8 @@ function ClientRouter() {
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/client-profile" component={ClientProfile} />
+          <Route path="/organization/create" component={OrganizationCreate} />
+          <Route path="/organization/:organizationId" component={OrganizationDetail} />
           <Route path="/talent" component={TalentSearch} />
           <Route path="/projects" component={() => <div className="p-6">Projects Module - Coming Soon</div>} />
           <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />
@@ -532,6 +536,8 @@ function AppContent() {
       <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
       <Route path="/client-profile" component={ClientRouter} />
       <Route path="/dashboard" component={ClientRouter} />
+      <Route path="/organization/create" component={ClientRouter} />
+      <Route path="/organization/:organizationId" component={ClientRouter} />
       <Route path="/projects" component={ClientRouter} />
       <Route path="/performance" component={ClientRouter} />
       <Route path="/clients" component={ClientRouter} />

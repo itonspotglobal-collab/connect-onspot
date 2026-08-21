@@ -920,6 +920,47 @@ export async function registerRoutes(
     console.warn("⚠️  message notification grouping migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: Client organization foundation ────────────────
+  // Organizations are intentionally independent from jobs/client_profiles so
+  // existing individual Client accounts keep working unchanged.
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS organizations (
+        id           varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        name         text NOT NULL,
+        website      text,
+        industry     text,
+        company_size text,
+        location     text,
+        about        text,
+        timezone     text,
+        created_by   varchar NOT NULL REFERENCES users(id),
+        created_at   timestamp DEFAULT now(),
+        updated_at   timestamp DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organizations_created_by ON organizations(created_by)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organizations_created_at ON organizations(created_at)`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS organization_members (
+        id              varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        organization_id varchar NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        user_id         varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role            text NOT NULL DEFAULT 'member',
+        status          text NOT NULL DEFAULT 'active',
+        joined_at       timestamp DEFAULT now(),
+        created_at      timestamp DEFAULT now(),
+        updated_at      timestamp DEFAULT now(),
+        CONSTRAINT organization_members_org_user_unique UNIQUE (organization_id, user_id)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_user_id ON organization_members(user_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_organization_id ON organization_members(organization_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_status ON organization_members(status)`);
+  } catch (migErr: any) {
+    console.warn("⚠️  organization tables migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: set application_method = 'built_in_form' for
   // approved/open jobs that have no valid external apply link (empty, null, or
   // pointing at the old LeadConnector placeholder URL).
@@ -11327,6 +11368,161 @@ export async function registerRoutes(
     timezone: row.timezone ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  });
+
+  // ── Client Organizations ──────────────────────────────────────────────────
+  // Organization membership is the authorization boundary for organization
+  // reads. It does not replace the existing user/client-profile relationships.
+  const optionalOrganizationText = (maxLength: number) =>
+    z.string().trim().max(maxLength).optional().or(z.literal(""));
+  const createOrganizationPayloadSchema = z.object({
+    name: z.string().trim().min(1, "Organization name is required").max(200),
+    website: optionalOrganizationText(2048),
+    industry: optionalOrganizationText(120),
+    companySize: optionalOrganizationText(80),
+    location: optionalOrganizationText(200),
+    about: optionalOrganizationText(5000),
+    timezone: optionalOrganizationText(120),
+  }).strict();
+
+  const mapOrganizationRow = (row: any) => ({
+    id: row.id,
+    name: row.name,
+    website: row.website ?? null,
+    industry: row.industry ?? null,
+    companySize: row.company_size ?? null,
+    location: row.location ?? null,
+    about: row.about ?? null,
+    timezone: row.timezone ?? null,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+
+  const mapOrganizationMembership = (row: any) => ({
+    id: row.membership_id,
+    organizationId: row.organization_id,
+    role: row.membership_role,
+    status: row.membership_status,
+    joinedAt: row.joined_at,
+  });
+
+  app.post("/api/organizations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const payload = createOrganizationPayloadSchema.parse(req.body ?? {});
+      const dbClient = await getClient();
+
+      try {
+        await dbClient.query("BEGIN");
+        const organizationResult = await dbClient.query(
+          `INSERT INTO organizations
+             (name, website, industry, company_size, location, about, timezone, created_by)
+           VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, ''), NULLIF($7, ''), $8)
+           RETURNING *`,
+          [
+            payload.name,
+            payload.website ?? "",
+            payload.industry ?? "",
+            payload.companySize ?? "",
+            payload.location ?? "",
+            payload.about ?? "",
+            payload.timezone ?? "",
+            userId,
+          ],
+        );
+        const organization = organizationResult.rows[0];
+
+        const membershipResult = await dbClient.query(
+          `INSERT INTO organization_members
+             (organization_id, user_id, role, status)
+           VALUES ($1, $2, 'owner', 'active')
+           RETURNING id, organization_id, user_id, role, status, joined_at`,
+          [organization.id, userId],
+        );
+
+        await dbClient.query("COMMIT");
+        return res.status(201).json({
+          organization: mapOrganizationRow(organization),
+          membership: {
+            id: membershipResult.rows[0].id,
+            organizationId: membershipResult.rows[0].organization_id,
+            userId: membershipResult.rows[0].user_id,
+            role: membershipResult.rows[0].role,
+            status: membershipResult.rows[0].status,
+            joinedAt: membershipResult.rows[0].joined_at,
+          },
+        });
+      } catch (transactionError) {
+        await dbClient.query("ROLLBACK").catch(() => {});
+        throw transactionError;
+      } finally {
+        dbClient.release();
+      }
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: err.errors,
+        });
+      }
+      console.error("POST /api/organizations failed:", err);
+      return res.status(500).json({ error: "Failed to create organization" });
+    }
+  });
+
+  app.get("/api/organizations/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const result = await query(
+        `SELECT o.*, om.id AS membership_id, om.organization_id,
+                om.role AS membership_role, om.status AS membership_status,
+                om.joined_at
+           FROM organizations o
+           INNER JOIN organization_members om ON om.organization_id = o.id
+          WHERE om.user_id = $1 AND om.status = 'active'
+          ORDER BY o.created_at DESC`,
+        [userId],
+      );
+      return res.json(result.rows.map((row: any) => ({
+        organization: mapOrganizationRow(row),
+        membership: mapOrganizationMembership(row),
+      })));
+    } catch (err: any) {
+      console.error("GET /api/organizations/me failed:", err);
+      return res.status(500).json({ error: "Failed to load organizations" });
+    }
+  });
+
+  app.get("/api/organizations/:organizationId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const result = await query(
+        `SELECT o.*, om.id AS membership_id, om.organization_id,
+                om.role AS membership_role, om.status AS membership_status,
+                om.joined_at
+           FROM organizations o
+           INNER JOIN organization_members om ON om.organization_id = o.id
+          WHERE o.id = $1 AND om.user_id = $2 AND om.status = 'active'
+          LIMIT 1`,
+        [req.params.organizationId, userId],
+      );
+      if (!result.rows.length) return res.status(404).json({ error: "Organization not found" });
+      const row = result.rows[0];
+      return res.json({
+        organization: mapOrganizationRow(row),
+        membership: mapOrganizationMembership(row),
+      });
+    } catch (err: any) {
+      console.error("GET /api/organizations/:organizationId failed:", err);
+      return res.status(500).json({ error: "Failed to load organization" });
+    }
   });
 
   app.get("/api/client-profile/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {

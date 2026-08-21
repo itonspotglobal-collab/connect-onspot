@@ -92,6 +92,41 @@ export const insertClientProfileSchema = createInsertSchema(clientProfiles).omit
 export type InsertClientProfile = z.infer<typeof insertClientProfileSchema>;
 export type ClientProfile = typeof clientProfiles.$inferSelect;
 
+// Client organizations/workspaces. Organizations are additive to the existing
+// individual Client account model; users may continue without one.
+export const organizations = pgTable("organizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  website: text("website"),
+  industry: text("industry"),
+  companySize: text("company_size"),
+  location: text("location"),
+  about: text("about"),
+  timezone: text("timezone"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_organizations_created_by").on(table.createdBy),
+  index("idx_organizations_created_at").on(table.createdAt),
+]);
+
+export const organizationMembers = pgTable("organization_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("member"), // owner | member
+  status: text("status").notNull().default("active"), // active | invited | suspended
+  joinedAt: timestamp("joined_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("organization_members_org_user_unique").on(table.organizationId, table.userId),
+  index("idx_organization_members_user_id").on(table.userId),
+  index("idx_organization_members_organization_id").on(table.organizationId),
+  index("idx_organization_members_status").on(table.status),
+]);
+
 // Skills
 export const skills = pgTable("skills", {
   id: serial("id").primaryKey(), // Keep serial for consistency with existing pattern
@@ -674,6 +709,23 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   createdAt: true,
   updatedAt: true,
 });
+
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+export type Organization = typeof organizations.$inferSelect;
+
+export const insertOrganizationMemberSchema = createInsertSchema(organizationMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
+
 // Job Submissions — built-in application form submissions
 export const jobSubmissions = pgTable("job_submissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
