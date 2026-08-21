@@ -1,0 +1,709 @@
+# Fix Only the Talent Notification Bell Unread Indicator
+
+We already fixed the Admin → Talent application-status notification flow.
+
+## Current state
+
+The actual notification is now working correctly.
+
+When Admin changes a Talent's Job Application status:
+
+* the application status updates correctly
+* the notification record is created correctly
+* the Talent can open the notification bell
+* the new `job_application_status_changed` notification appears correctly
+
+Example currently visible in the Talent notification dropdown:
+
+```txt
+Application Status Updated
+
+Your application for Customer Service Representative at OnSpot is now reviewed.
+
+Just now
+```
+
+However, there is one remaining issue:
+
+**The red unread indicator dot on the notification bell does not appear even though there is a new unread notification.**
+
+This task is ONLY to fix the unread indicator/count behavior.
+
+---
+
+# VERY IMPORTANT — keep the scope extremely small
+
+Do NOT redesign or rebuild the notification system.
+
+Do NOT modify the now-working Admin → Talent status notification creation unless inspection proves it is directly necessary.
+
+Do NOT change unrelated notification behavior.
+
+Do NOT change:
+
+* offer notifications
+* Client notifications
+* Admin notifications
+* message notifications
+* application-status notification creation
+* notification text/copy
+* routing when clicking a notification
+* My Applications
+* Admin Job Applications
+* email workflow
+* candidate/Talent linking
+* database schema unless absolutely necessary
+
+This should be a surgical fix to the unread-count / red-dot behavior.
+
+---
+
+# Relevant existing frontend
+
+Inspect:
+
+```txt
+client/src/components/NotificationBell.tsx
+client/src/hooks/useUnreadNotificationsCount.ts
+```
+
+The bell already contains logic equivalent to:
+
+```tsx
+{unreadCount > 0 && (
+  <span
+    aria-hidden="true"
+    className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500"
+  />
+)}
+```
+
+Therefore, do NOT manually hardcode a red dot.
+
+The existing rendering condition is correct.
+
+The actual problem is likely that:
+
+```ts
+unreadCount
+```
+
+is incorrectly returning `0`.
+
+Find and fix why.
+
+---
+
+# Current unread-count behavior
+
+`useUnreadNotificationsCount.ts` currently requests:
+
+```txt
+/api/talent/notifications?unread_only=true
+```
+
+for Talent Portal sessions.
+
+It then filters the returned notifications using:
+
+```ts
+TALENT_NOTIFICATION_TYPES
+```
+
+which already contains:
+
+```ts
+[
+  "offer_received",
+  "job_application_status_changed",
+  "new_message",
+]
+```
+
+Keep this list intact.
+
+Do not remove or rename any notification types.
+
+---
+
+# Primary debugging objective
+
+Determine why this situation occurs:
+
+```txt
+GET /api/talent/notifications
+→ returns the new job_application_status_changed notification
+```
+
+but:
+
+```txt
+GET /api/talent/notifications?unread_only=true
+→ causes the unread count to become 0
+```
+
+or otherwise results in the React hook returning `0`.
+
+Inspect the actual server implementation of:
+
+```txt
+GET /api/talent/notifications
+```
+
+especially how this query parameter is handled:
+
+```txt
+unread_only=true
+```
+
+Check for issues such as:
+
+```ts
+req.query.unread_only
+```
+
+being interpreted incorrectly.
+
+For example, remember Express query parameters are strings.
+
+Correct handling should be explicit, such as:
+
+```ts
+const unreadOnly = req.query.unread_only === "true";
+```
+
+Do NOT assume:
+
+```ts
+Boolean(req.query.unread_only)
+```
+
+or other inconsistent parsing is correct without checking the existing implementation.
+
+---
+
+# Also verify the database field
+
+The newly created application-status notification should have:
+
+```txt
+is_read = false
+```
+
+Verify the actual stored value.
+
+If the notification is being inserted with:
+
+```txt
+is_read = true
+```
+
+or `null` and the unread query excludes it, correct the specific application-status notification insertion.
+
+But only modify notification creation if this is confirmed to be the root cause.
+
+The preferred fix is to preserve the existing working notification creation.
+
+---
+
+# Important difference to inspect
+
+There are two separate flows:
+
+## Notification dropdown
+
+The notification bell opens and requests all Talent notifications.
+
+This is clearly working because the new status notification appears.
+
+## Notification red indicator
+
+The unread-count hook requests unread notifications separately.
+
+This is not working.
+
+Trace both requests independently.
+
+Do not assume that because the dropdown works, the unread-count request also works.
+
+---
+
+# Inspect authentication too
+
+The unread hook currently determines the Talent Portal session and token separately.
+
+Make sure:
+
+```txt
+/api/talent/notifications?unread_only=true
+```
+
+uses exactly the same Talent authentication/account resolution as:
+
+```txt
+/api/talent/notifications
+```
+
+The query parameter must not accidentally cause the route to:
+
+* resolve another user
+* reject the Talent token
+* return an empty array
+* use the wrong account ID
+
+Do not rewrite authentication.
+
+Only fix an auth difference if one actually exists.
+
+---
+
+# Check the response in browser/network or server logs
+
+Temporarily inspect/log:
+
+```txt
+GET /api/talent/notifications
+```
+
+and:
+
+```txt
+GET /api/talent/notifications?unread_only=true
+```
+
+For the same logged-in Talent.
+
+Expected example:
+
+### All notifications
+
+```json
+[
+  {
+    "id": "...",
+    "type": "job_application_status_changed",
+    "isRead": false
+  }
+]
+```
+
+### Unread notifications
+
+```json
+[
+  {
+    "id": "...",
+    "type": "job_application_status_changed",
+    "isRead": false
+  }
+]
+```
+
+If the second response is:
+
+```json
+[]
+```
+
+fix the server-side unread filtering.
+
+If the second response contains the notification but the UI count is still zero, then debug the frontend hook filtering/query cache instead.
+
+---
+
+# Check camelCase vs snake_case
+
+Verify the API returns:
+
+```ts
+isRead
+```
+
+because the frontend interface expects:
+
+```ts
+interface NotificationRow {
+  id: string;
+  type: string;
+  isRead: boolean;
+}
+```
+
+If the unread endpoint returns:
+
+```txt
+is_read
+```
+
+while the normal endpoint maps it to:
+
+```txt
+isRead
+```
+
+make the response formatting consistent by reusing the existing notification mapper.
+
+Do NOT change the entire API response contract.
+
+---
+
+# Check notification type exactly
+
+Verify the new record contains exactly:
+
+```txt
+job_application_status_changed
+```
+
+and not something subtly different such as:
+
+```txt
+application_status_changed
+job_application_status_update
+job_application_status_changed 
+```
+
+Do NOT solve this by broadening filters unnecessarily.
+
+The canonical type must remain:
+
+```txt
+job_application_status_changed
+```
+
+---
+
+# React Query behavior
+
+The existing hook uses a query key similar to:
+
+```ts
+[
+  "unread-notifications",
+  isTalentPortal,
+  userId,
+  role
+]
+```
+
+Preserve the current shared notification query architecture.
+
+Do not introduce another unread-count hook.
+
+Do not introduce global state.
+
+Do not introduce WebSockets.
+
+Current polling/window-focus behavior is sufficient.
+
+---
+
+# Make the red indicator update promptly
+
+After fixing the count, the red dot should appear when an unread notification exists.
+
+Current behavior may poll approximately every 30 seconds.
+
+That existing polling can remain.
+
+However, when the notification dropdown is opened and notifications are fetched, it is acceptable to invalidate/refetch the existing unread query if needed so the indicator reflects the actual current state promptly.
+
+Reuse:
+
+```ts
+queryClient.invalidateQueries({
+  queryKey: ["unread-notifications"]
+});
+```
+
+where appropriate.
+
+Do not create another cache key.
+
+---
+
+# Important mark-as-read behavior
+
+Do NOT break this flow:
+
+```txt
+unread notification exists
+        ↓
+red indicator appears
+        ↓
+Talent opens dropdown
+        ↓
+notification remains unread until clicked
+        ↓
+Talent clicks notification
+        ↓
+notification is marked read
+        ↓
+unread count refreshes
+        ↓
+red indicator disappears if no unread notifications remain
+```
+
+Opening the dropdown alone should NOT automatically mark all notifications as read unless that is already intentional existing behavior.
+
+Keep the current click-to-mark-read behavior.
+
+---
+
+# Preserve existing notification types
+
+This fix must continue supporting:
+
+```ts
+TALENT_NOTIFICATION_TYPES = [
+  "offer_received",
+  "job_application_status_changed",
+  "new_message",
+]
+```
+
+If a Talent has:
+
+```txt
+1 unread offer_received
+1 unread job_application_status_changed
+1 unread new_message
+```
+
+the unread count should be:
+
+```txt
+3
+```
+
+Do not make the hook specific only to job-application notifications.
+
+The goal is to fix the shared unread count without damaging existing working types.
+
+---
+
+# Preserve Client/Admin behavior
+
+The same hook also handles non-Talent sessions through:
+
+```txt
+/api/users/:userId/notifications?unread_only=true
+```
+
+Do NOT break this path.
+
+If the bug is specifically inside:
+
+```txt
+/api/talent/notifications
+```
+
+then make the server-side fix Talent-specific rather than changing Client/Admin behavior unnecessarily.
+
+Regression test both paths.
+
+---
+
+# Preferred fix order
+
+Investigate in this order:
+
+1. Verify the new notification's `isRead` value in the database/API.
+2. Compare responses from:
+
+```txt
+/api/talent/notifications
+/api/talent/notifications?unread_only=true
+```
+
+3. Inspect how `unread_only` is parsed server-side.
+4. Verify the same Talent `users.id` is used for both requests.
+5. Verify the API returns the correct `type`.
+6. Verify frontend filtering includes the type.
+7. Verify React Query receives/counts the returned notification.
+8. Only then modify UI code if genuinely needed.
+
+Do NOT start by changing CSS or manually showing the dot.
+
+---
+
+# Expected result
+
+Given:
+
+```txt
+Notification:
+type = job_application_status_changed
+isRead = false
+```
+
+the hook should produce:
+
+```ts
+unreadCount >= 1
+```
+
+and `NotificationBell.tsx` should naturally render the existing red indicator.
+
+Expected visual:
+
+```txt
+       🔴
+      🔔
+```
+
+No new badge design is needed.
+
+Use the existing small red dot.
+
+---
+
+# Required automated tests
+
+Add/update only focused tests.
+
+## Test 1 — unread Talent application notification
+
+Create:
+
+```txt
+type = job_application_status_changed
+isRead = false
+```
+
+Call:
+
+```txt
+GET /api/talent/notifications?unread_only=true
+```
+
+Expect the notification to be returned.
+
+---
+
+## Test 2 — read notification excluded
+
+Create:
+
+```txt
+type = job_application_status_changed
+isRead = true
+```
+
+Call:
+
+```txt
+GET /api/talent/notifications?unread_only=true
+```
+
+Expect it NOT to be returned.
+
+---
+
+## Test 3 — normal endpoint unchanged
+
+Call:
+
+```txt
+GET /api/talent/notifications
+```
+
+Ensure both read and unread notifications still behave according to the existing API contract.
+
+---
+
+## Test 4 — existing Talent notification types
+
+Verify unread filtering still works for:
+
+```txt
+offer_received
+new_message
+job_application_status_changed
+```
+
+Do not regress the other two.
+
+---
+
+## Test 5 — Client/Admin regression
+
+Confirm:
+
+```txt
+/api/users/:userId/notifications?unread_only=true
+```
+
+still works as before.
+
+Do not modify it unless necessary.
+
+---
+
+# Manual verification
+
+Use the existing Talent account shown during testing.
+
+1. Start with all notifications read.
+2. Confirm no red dot appears.
+3. Admin changes one of the Talent's applications.
+4. Confirm the new application-status notification appears.
+5. Before clicking the notification, confirm the bell now has the red unread dot.
+6. Open the dropdown.
+7. Confirm notification remains visible.
+8. Click the notification.
+9. Confirm it navigates to:
+
+```txt
+/my-applications
+```
+
+10. Confirm the notification becomes read.
+11. Confirm the red dot disappears if no other unread notifications exist.
+12. Create another status update.
+13. Confirm the red dot appears again.
+
+---
+
+# Do not change these working features
+
+Specifically avoid modifying unless strictly necessary:
+
+```txt
+Admin Job Applications status update
+Applicant email sending
+Application status history
+Talent My Applications status display
+Notification creation
+Offer notifications
+Message notifications
+Client/Admin notification behavior
+Notification dropdown design
+Bell icon design
+Candidate → users.id resolution
+Authentication architecture
+Database schema
+```
+
+The notification is already being created and displayed.
+
+**Only fix why the unread indicator thinks there are zero unread notifications.**
+
+---
+
+# Deliverables
+
+After fixing it, report:
+
+1. Exact root cause.
+2. File(s) changed.
+3. Whether the bug was frontend or backend.
+4. What `/api/talent/notifications?unread_only=true` returned before the fix.
+5. What it returns after the fix.
+6. Why the existing bell previously received `unreadCount = 0`.
+7. Tests run.
+8. Confirmation that offer/message/Client/Admin notification behavior was not changed.
+
+Keep the patch minimal.
+
+Do not perform unrelated cleanup or refactoring.

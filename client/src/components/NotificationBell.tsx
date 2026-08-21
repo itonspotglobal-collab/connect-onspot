@@ -197,6 +197,10 @@ export function NotificationBell() {
         // Most-recent first, cap at 20.
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setNotifications(filtered.slice(0, 20));
+        // The dropdown has just observed the current notification state. Refresh
+        // the existing badge query so a newly observed unread item immediately
+        // updates the red dot instead of waiting for its polling interval.
+        qc.invalidateQueries({ queryKey: ["unread-notifications"] });
       })
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));

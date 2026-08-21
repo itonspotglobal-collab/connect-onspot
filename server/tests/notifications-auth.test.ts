@@ -281,6 +281,17 @@ describe("notification endpoint authorization", () => {
     assert.ok(types.includes("job_application_status_changed"), "must include application status updates");
   });
 
+  it("(a.unread) candidate JWT: unread endpoint returns all unread Talent notification types", async () => {
+    const token = makeCandidateToken(candidateId, talentEmail);
+    const { status, body } = await req(srv, "GET", "/api/talent/notifications?unread_only=true", { token });
+    assert.equal(status, 200);
+    assert.deepEqual(
+      new Set(body.map((n: any) => n.type)),
+      new Set(["offer_received", "new_message", "job_application_status_changed"]),
+    );
+    assert.ok(body.every((n: any) => n.isRead === false), "unread endpoint must return only unread rows");
+  });
+
   it("(a.isolation) candidate JWT ignores a mismatched token email and returns only the candidate's own notifications", async () => {
     const mismatchedEmailToken = makeCandidateToken(otherCandidateId, talentEmail);
     const { status, body } = await req(srv, "GET", "/api/talent/notifications", { token: mismatchedEmailToken });
@@ -299,6 +310,25 @@ describe("notification endpoint authorization", () => {
     const notif = rows.find((n) => n.id === notifId);
     assert.ok(notif, "notification must still exist");
     assert.equal(notif!.isRead, true, "notification must be marked read");
+  });
+
+  it("(b.unread) candidate JWT: unread endpoint excludes a read notification but keeps unread status updates", async () => {
+    const token = makeCandidateToken(candidateId, talentEmail);
+    const { status, body } = await req(srv, "GET", "/api/talent/notifications?unread_only=true", { token });
+    assert.equal(status, 200);
+    assert.equal(body.some((n: any) => n.id === notifIds[0]), false, "read offer must be excluded");
+    assert.ok(
+      body.some((n: any) => n.id === notifIds[2] && n.type === "job_application_status_changed" && n.isRead === false),
+      "unread status update must be returned",
+    );
+  });
+
+  it("(b.all) candidate JWT: normal endpoint continues to include both read and unread notifications", async () => {
+    const token = makeCandidateToken(candidateId, talentEmail);
+    const { status, body } = await req(srv, "GET", "/api/talent/notifications", { token });
+    assert.equal(status, 200);
+    assert.ok(body.some((n: any) => n.id === notifIds[0] && n.isRead === true));
+    assert.ok(body.some((n: any) => n.id === notifIds[2] && n.isRead === false));
   });
 
   it("(b.cross) candidate JWT: PATCH /api/talent/notifications/:id/read denied for another user's notification", async () => {
@@ -337,6 +367,20 @@ describe("notification endpoint authorization", () => {
     const { status, body } = await req(srv, "GET", `/api/users/${talentUserId}/notifications`, { token });
     assert.equal(status, 200, "must return 200");
     assert.ok(Array.isArray(body), "body must be an array");
+  });
+
+  it("(d.unread) main JWT: unread endpoint remains unchanged for non-Talent sessions", async () => {
+    const token = makeUserToken(talentUserId);
+    const { status, body } = await req(
+      srv,
+      "GET",
+      `/api/users/${talentUserId}/notifications?unread_only=true`,
+      { token },
+    );
+    assert.equal(status, 200);
+    assert.equal(body.some((n: any) => n.id === notifIds[0]), false, "read notification must be excluded");
+    assert.ok(body.some((n: any) => n.id === notifIds[1] && n.type === "new_message"));
+    assert.ok(body.some((n: any) => n.id === notifIds[2] && n.type === "job_application_status_changed"));
   });
 
   // ── (e) Main JWT with mismatched userId → 403 ─────────────────────────────────
