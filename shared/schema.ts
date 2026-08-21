@@ -133,6 +133,9 @@ export const organizationInvitations = pgTable("organization_invitations", {
   email: varchar("email").notNull(),
   invitedBy: varchar("invited_by").notNull().references(() => users.id),
   status: text("status").notNull().default("pending"), // pending | accepted | declined | revoked | expired
+  emailStatus: text("email_status").notNull().default("pending"), // pending | sent | failed
+  emailError: text("email_error"),
+  emailSentAt: timestamp("email_sent_at"),
   acceptedBy: varchar("accepted_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   expiresAt: timestamp("expires_at").notNull().default(sql`NOW() + INTERVAL '30 days'`),

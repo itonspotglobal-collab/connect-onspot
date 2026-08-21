@@ -980,13 +980,19 @@ export async function registerRoutes(
         email           varchar NOT NULL,
         invited_by      varchar NOT NULL REFERENCES users(id),
         status          text NOT NULL DEFAULT 'pending',
+        email_status    text NOT NULL DEFAULT 'pending',
+        email_error     text,
+        email_sent_at   timestamp,
         accepted_by     varchar REFERENCES users(id),
         created_at      timestamp DEFAULT now(),
-        expires_at      timestamp NOT NULL DEFAULT (now() + interval '30 days'),
+        expires_at      timestamp NOT NULL DEFAULT (NOW() + INTERVAL '30 days'),
         responded_at    timestamp,
         updated_at      timestamp DEFAULT now()
       )
     `);
+    await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS email_status text NOT NULL DEFAULT 'pending'`);
+    await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS email_error text`);
+    await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS email_sent_at timestamp`);
     await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS expires_at timestamp`);
     await query(`
       UPDATE organization_invitations
@@ -11463,6 +11469,9 @@ export async function registerRoutes(
     organizationName: row.organization_name ?? undefined,
     email: row.email,
     status: row.status,
+    emailStatus: row.email_status ?? "pending",
+    emailError: row.email_error ?? null,
+    emailSentAt: row.email_sent_at ?? null,
     invitedBy: row.invited_by,
     inviterName: row.inviter_name ?? null,
     createdAt: row.created_at,
@@ -11679,7 +11688,7 @@ export async function registerRoutes(
         [userId],
       );
       const targetUser = await query(
-        `SELECT id, role FROM users WHERE lower(email) = $1 LIMIT 1`,
+        `SELECT id, role, first_name, last_name FROM users WHERE lower(email) = $1 LIMIT 1`,
         [normalizedEmail],
       );
 
@@ -11722,12 +11731,17 @@ export async function registerRoutes(
         [req.params.organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS],
       );
       const invitation = invitationResult.rows[0];
+      const organization = await query(
+        `SELECT name FROM organizations WHERE id = $1 LIMIT 1`,
+        [req.params.organizationId],
+      );
+      const inviterName =
+        `${inviter.rows[0]?.first_name ?? ""} ${inviter.rows[0]?.last_name ?? ""}`.trim() ||
+        "An organization owner";
 
       // Registered Client invitees also receive an in-app notification. The
       // invitation remains usable for people who sign up after the invite.
       if (targetUser.rows[0]?.id) {
-        const inviterName = `${inviter.rows[0]?.first_name ?? ""} ${inviter.rows[0]?.last_name ?? ""}`.trim() || "An organization owner";
-        const organization = await query(`SELECT name FROM organizations WHERE id = $1`, [req.params.organizationId]);
         await storage.createNotification({
           userId: targetUser.rows[0].id,
           type: "organization_invitation",
@@ -11738,7 +11752,63 @@ export async function registerRoutes(
         });
       }
 
-      return res.status(201).json({ invitation: mapOrganizationInvitation({ ...invitation, organization_name: undefined }) });
+      let emailStatus = "failed";
+      let emailError = "Invitation email could not be sent.";
+      try {
+        const rawBase =
+          process.env.PUBLIC_APP_URL ??
+          process.env.APP_URL ??
+          process.env.PUBLIC_BASE_URL ??
+          (process.env.REPLIT_DOMAINS
+            ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+            : null);
+        if (!rawBase) {
+          throw new Error("No public application URL is configured.");
+        }
+        const baseUrl = rawBase.replace(/\/$/, "");
+        const signInUrl = `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(normalizedEmail)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
+        const { isEmailServiceConfigured, sendOrganizationInvitationEmail } =
+          await import("./services/microsoftGraphEmailService.ts");
+        if (!isEmailServiceConfigured()) {
+          throw new Error("Microsoft Graph email service is not configured.");
+        }
+
+        const emailResult = await sendOrganizationInvitationEmail({
+          to: normalizedEmail,
+          organizationName: organization.rows[0]?.name ?? "an OnSpot organization",
+          inviterName,
+          recipientName: targetUser.rows[0]
+            ? `${targetUser.rows[0].first_name ?? ""} ${targetUser.rows[0].last_name ?? ""}`.trim()
+            : null,
+          signInUrl,
+        });
+        if (!emailResult.success) {
+          throw new Error(emailResult.error || "The email provider rejected the invitation.");
+        }
+        emailStatus = "sent";
+        emailError = "";
+      } catch (emailErr: any) {
+        emailError = emailErr?.message || "The invitation email could not be sent.";
+        console.warn(`Organization invitation email failed for ${normalizedEmail}:`, emailError);
+      }
+
+      const deliveryUpdate = await query(
+        `UPDATE organization_invitations
+            SET email_status = $1,
+                email_error = $2,
+                email_sent_at = CASE WHEN $1 = 'sent' THEN NOW() ELSE NULL END,
+                updated_at = NOW()
+          WHERE id = $3
+          RETURNING *`,
+        [emailStatus, emailStatus === "sent" ? null : emailError.slice(0, 1000), invitation.id],
+      );
+      return res.status(201).json({
+        invitation: mapOrganizationInvitation({
+          ...(deliveryUpdate.rows[0] ?? invitation),
+          organization_name: organization.rows[0]?.name,
+          inviter_name: inviterName,
+        }),
+      });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });

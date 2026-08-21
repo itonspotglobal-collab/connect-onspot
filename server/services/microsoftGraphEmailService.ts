@@ -19,6 +19,12 @@
  * client IDs are required.
  */
 
+import {
+  buildEmailContext,
+  renderApplicantEmail,
+  renderBrandedEmailLayout,
+} from "./emailVariableResolver";
+
 /**
  * Server-side allowlist of permitted sender mailboxes.
  * The frontend may know these addresses, but never accepts arbitrary values —
@@ -110,6 +116,84 @@ export interface SendEmailOptions {
 export interface SendEmailResult {
   success: boolean;
   error?: string;
+}
+
+export interface OrganizationInvitationEmailOptions {
+  to: string;
+  organizationName: string;
+  inviterName: string;
+  signInUrl: string;
+  recipientName?: string | null;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Send the email that brings a Client into an organization invitation flow.
+ * The sign-in URL deliberately carries the pending-invitations return path so
+ * both existing and new accounts land in the same place after authentication.
+ */
+export async function sendOrganizationInvitationEmail(
+  opts: OrganizationInvitationEmailOptions,
+): Promise<SendEmailResult> {
+  const safeOrganizationName = escapeHtml(opts.organizationName);
+  const safeInviterName = escapeHtml(opts.inviterName);
+  const safeSignInUrl = escapeHtml(opts.signInUrl);
+  const greeting = opts.recipientName?.trim()
+    ? `Hi ${escapeHtml(opts.recipientName.trim())},`
+    : "Hello,";
+  const subject = `${opts.inviterName} invited you to join ${opts.organizationName} on OnSpot`;
+  const contentHtml = `
+  <h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">You&apos;re invited to join an OnSpot organization</h1>
+  <p style="color:#444;font-size:15px;margin:12px 0;">${greeting}</p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    <strong>${safeInviterName}</strong> invited you to join
+    <strong>${safeOrganizationName}</strong> as a Client team member.
+  </p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    Sign in or create your free Client account to review the invitation. We&apos;ll take you
+    directly to your pending organization invitations after you authenticate.
+  </p>
+  <p style="margin:26px 0 20px;">
+    <a href="${safeSignInUrl}"
+       style="background:#6d5ef7;color:#fff;padding:13px 24px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;display:inline-block;">
+      Review organization invitation
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
+    If you weren&apos;t expecting this invitation, you can safely ignore this email.
+  </p>
+`.trim();
+
+  const rendered = renderApplicantEmail(
+    {
+      subject,
+      bodyHtml: renderBrandedEmailLayout(contentHtml),
+    },
+    buildEmailContext({
+      applicantName: opts.recipientName ?? undefined,
+      email: opts.to,
+    }),
+  );
+  if (rendered.unresolvedKeys.length > 0) {
+    return {
+      success: false,
+      error: `Invitation email template could not be rendered: ${rendered.unresolvedKeys.join(", ")}`,
+    };
+  }
+
+  return sendApplicantEmail({
+    to: opts.to,
+    subject: rendered.subject,
+    bodyHtml: rendered.bodyHtml,
+  });
 }
 
 /** Send a single HTML email to an applicant via Microsoft Graph /sendMail. */

@@ -48,6 +48,8 @@ type OrganizationMembersResponse = {
     id: string;
     email: string;
     status: string;
+    emailStatus: string;
+    emailError: string | null;
     inviterName: string | null;
     createdAt: string | null;
     expiresAt: string | null;
@@ -87,10 +89,20 @@ export default function OrganizationDetail() {
       const response = await apiRequest("POST", `/api/organizations/${organizationId}/invitations`, { email });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setInviteEmail("");
       queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
-      toast({ title: "Invitation sent", description: "The invitation is now pending for this email address." });
+      if (data.invitation?.emailStatus === "sent") {
+        toast({ title: "Invitation sent", description: "The invitation is pending and an email is on its way." });
+      } else {
+        toast({
+          title: "Invitation created, but email failed",
+          description: data.invitation?.emailError
+            ? `The invitation is still pending. ${data.invitation.emailError}`
+            : "The invitation is still pending. The email could not be delivered.",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => toast({
       title: "Invitation could not be sent",
@@ -336,6 +348,22 @@ export default function OrganizationDetail() {
                             <div className="flex shrink-0 items-center gap-2">
                               <Badge variant={invitation.status === "pending" ? "secondary" : "outline"} className="capitalize">
                                 {invitation.status}
+                              </Badge>
+                              <Badge
+                                variant={
+                                  invitation.emailStatus === "failed"
+                                    ? "destructive"
+                                    : invitation.emailStatus === "sent"
+                                      ? "outline"
+                                      : "secondary"
+                                }
+                                title={invitation.emailError ?? undefined}
+                              >
+                                {invitation.emailStatus === "failed"
+                                  ? "Email failed"
+                                  : invitation.emailStatus === "sent"
+                                    ? "Email sent"
+                                    : "Email pending"}
                               </Badge>
                               {invitation.status === "pending" && (
                                 <Button

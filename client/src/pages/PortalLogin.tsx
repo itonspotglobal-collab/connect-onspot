@@ -187,7 +187,7 @@ export default function PortalLogin() {
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "admin") { navigate("/admin/find-work"); return; }
-      if (user.role === "client") { navigate("/dashboard"); return; }
+      if (user.role === "client") { navigate(returnTo || "/dashboard"); return; }
     }
     // Skip auto-redirect when arriving from a job application flow — the user
     // must explicitly log in so the application token can be linked correctly.
@@ -544,7 +544,8 @@ export default function PortalLogin() {
       </CardShell>
 
       <SignUpDialog open={signupOpen} onOpenChange={setSignupOpen}
-        hideTrigger onSignInInstead={() => setSignupOpen(false)} />
+        hideTrigger onSignInInstead={() => setSignupOpen(false)}
+        returnTo={returnTo} />
     </>
   );
 }

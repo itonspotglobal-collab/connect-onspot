@@ -28,6 +28,7 @@ interface SignUpDialogProps {
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
   onSignInInstead?: () => void;
+  returnTo?: string;
 }
 
 export function SignUpDialog({
@@ -35,6 +36,7 @@ export function SignUpDialog({
   onOpenChange: onOpenChangeProp,
   hideTrigger = false,
   onSignInInstead,
+  returnTo,
 }: SignUpDialogProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -145,7 +147,7 @@ export function SignUpDialog({
           if (userType === "talent") {
             window.location.href = "/get-hired";
           } else {
-            window.location.href = "/dashboard";
+            window.location.href = returnTo || "/dashboard";
           }
         } else {
           console.error("❌ Step 2 failed: Signup response missing token", signupResponse);
