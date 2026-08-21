@@ -1,0 +1,684 @@
+## Task: Add Organization/Company Creation to the Existing Client Account
+
+Implement the first foundation of a **Company / Organization feature for Client users** in the existing OnSpot application.
+
+Use the existing repository and architecture. **Inspect the current implementation before modifying anything. Do not rewrite working authentication, navigation, client profile, hire talent, messages, or settings functionality.**
+
+### Important Context
+
+The existing Client account represents an individual user who logs in with their own credentials.
+
+A Client user may be:
+
+1. An **independent client / contractor** who does not belong to a company yet.
+2. The **owner of a company/organization**.
+3. Later, a **member of another organization** after being invited.
+
+For this task, implement only the initial organization creation foundation.
+
+Do **not** force every existing Client user to create an organization.
+
+Existing Client accounts with no organization must continue working exactly as they do now.
+
+---
+
+# 1. Update the existing Client account dropdown
+
+The existing dropdown is located in:
+
+`client/src/components/TopNavigation.tsx`
+
+The current Client menu includes:
+
+* Client Profile
+* Hire Talent
+* Messages
+* Settings
+* Sign Out
+
+Add a new Client-only menu item:
+
+**Create Organization**
+
+Use an appropriate Lucide icon such as `Building2` or another existing building/company icon.
+
+Place it logically in the dropdown, preferably:
+
+* Client Profile
+* Create Organization
+* Hire Talent
+* Messages
+* Settings
+* divider
+* Sign Out
+
+Do not alter the existing Admin or Talent dropdown behavior.
+
+Do not redesign the whole dropdown.
+
+Keep the current styling, spacing, hover states, icons, colors, responsive behavior, and dropdown interactions.
+
+---
+
+# 2. Behavior of "Create Organization"
+
+When a Client user clicks **Create Organization**, send them to a new page:
+
+`/organization/create`
+
+Create the route using the project's existing routing conventions.
+
+This page must only be available to authenticated users with:
+
+`user.role === "client"`
+
+If an unauthenticated user tries to access it, use the application's existing authentication/redirect behavior.
+
+Do not create a separate organization login system.
+
+Organizations are NOT login accounts.
+
+The logged-in Client user remains the actual authenticated user.
+
+---
+
+# 3. Create Organization page
+
+Create a clean page consistent with the existing Client Portal design.
+
+Suggested title:
+
+**Create an Organization**
+
+Suggested description:
+
+> Create a company workspace so you can collaborate with team members and manage hiring together.
+
+Include a form with:
+
+### Required
+
+* Organization Name
+
+### Optional
+
+* Website
+* Industry
+* Company Size
+* Location
+* About
+* Timezone
+
+Use existing UI components, form patterns, validation styles, buttons, cards, inputs, and layout conventions from the project.
+
+Buttons:
+
+**Create Organization**
+
+and optionally:
+
+**Cancel**
+
+Cancel should return the user to an appropriate Client page such as `/client-profile` or the previous page.
+
+---
+
+# 4. Add an organizations table
+
+Inspect `shared/schema.ts` and follow the existing Drizzle/PostgreSQL conventions.
+
+Add a new table named:
+
+`organizations`
+
+Suggested structure:
+
+```ts
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+
+    name: text("name").notNull(),
+    website: text("website"),
+    industry: text("industry"),
+    companySize: text("company_size"),
+    location: text("location"),
+    about: text("about"),
+    timezone: text("timezone"),
+
+    createdBy: varchar("created_by")
+      .notNull()
+      .references(() => users.id),
+
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("idx_organizations_created_by").on(table.createdBy),
+    index("idx_organizations_created_at").on(table.createdAt),
+  ],
+);
+```
+
+Adjust naming/types if necessary to match the repository's established schema patterns.
+
+Also add appropriate insert/select schemas and TypeScript types using the project's current Drizzle/Zod conventions.
+
+---
+
+# 5. Add organization membership table
+
+Also create:
+
+`organization_members`
+
+This table connects individual Client users to organizations.
+
+Suggested structure:
+
+```ts
+export const organizationMembers = pgTable(
+  "organization_members",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+
+    organizationId: varchar("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+
+    userId: varchar("user_id")
+      .notNull()
+      .references(() => users.id),
+
+    role: text("role")
+      .notNull()
+      .default("member"),
+
+    status: text("status")
+      .notNull()
+      .default("active"),
+
+    invitedBy: varchar("invited_by")
+      .references(() => users.id),
+
+    joinedAt: timestamp("joined_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("organization_member_unique").on(
+      table.organizationId,
+      table.userId,
+    ),
+
+    index("idx_org_members_org").on(table.organizationId),
+    index("idx_org_members_user").on(table.userId),
+  ],
+);
+```
+
+For this first version, valid organization roles may simply be:
+
+* owner
+* admin
+* member
+
+Do not build the full permissions system yet.
+
+---
+
+# 6. Organization creation transaction
+
+When a Client user creates an organization, the backend should perform these actions atomically:
+
+```text
+1. Validate authenticated user
+2. Confirm user.role === "client"
+3. Create organization
+4. Set organizations.createdBy = current user.id
+5. Create organization_members record
+6. organization_members.userId = current user.id
+7. organization_members.organizationId = new organization.id
+8. organization_members.role = "owner"
+9. organization_members.status = "active"
+```
+
+Prefer a database transaction so that organization creation and owner membership cannot become inconsistent.
+
+The user creating the organization automatically becomes its **owner**.
+
+---
+
+# 7. Add backend API
+
+Follow existing route/service/storage patterns in the repository rather than inventing a completely separate architecture.
+
+Add an authenticated endpoint similar to:
+
+```http
+POST /api/organizations
+```
+
+Example request:
+
+```json
+{
+  "name": "OnSpot",
+  "website": "https://onspotglobal.com",
+  "industry": "Staffing and Recruiting",
+  "companySize": "11-50",
+  "location": "Cebu, Philippines",
+  "about": "..."
+}
+```
+
+The server must derive the owner from the authenticated user.
+
+Do NOT accept this from the frontend:
+
+```json
+{
+  "createdBy": "some-user-id"
+}
+```
+
+The backend must use:
+
+```ts
+req.user.id
+```
+
+or the equivalent authenticated user mechanism already used in the application.
+
+Return the newly created organization and the owner's membership.
+
+---
+
+# 8. Add GET endpoint for current user's organizations
+
+Add:
+
+```http
+GET /api/organizations/me
+```
+
+Return organizations that the currently logged-in Client user belongs to.
+
+Suggested response:
+
+```json
+{
+  "organizations": [
+    {
+      "id": "...",
+      "name": "OnSpot",
+      "website": "...",
+      "membership": {
+        "role": "owner",
+        "status": "active"
+      }
+    }
+  ]
+}
+```
+
+This endpoint will later support organization switching and invitations.
+
+Do not implement switching yet unless it is trivial and cannot affect existing functionality.
+
+---
+
+# 9. After organization creation
+
+After successful creation:
+
+* Show an existing-style success toast.
+* Redirect to a new organization page such as:
+
+`/organization/:organizationId`
+
+For this first task, that page can be a simple foundation page.
+
+Display:
+
+* Organization name
+* Current user's role, e.g. `Owner`
+* Basic company information
+* A placeholder/disabled area indicating that **Team Members** will be available later.
+
+Do NOT implement invitations yet unless explicitly requested later.
+
+Example:
+
+```text
+OnSpot
+
+Your role: Owner
+
+Company Details
+----------------
+Website
+Industry
+Company Size
+Location
+About
+
+Team Members
+------------
+Team management and invitations will be added in the next phase.
+```
+
+---
+
+# 10. Update the dropdown after organization creation
+
+If practical using the new `/api/organizations/me` endpoint, change the menu behavior slightly when the Client already belongs to at least one organization.
+
+Instead of always showing:
+
+**Create Organization**
+
+show:
+
+**Organizations**
+
+or:
+
+**My Organization**
+
+Clicking it should open the user's organization page or an organization list page.
+
+However:
+
+* If the user belongs to zero organizations → show **Create Organization**
+* If the user belongs to one organization → show **My Organization**
+* If supporting multiple organizations cleanly is not ready yet → do NOT implement a switcher in this task.
+
+Do not remove the user's personal **Client Profile**.
+
+The organization is separate from the personal user profile.
+
+---
+
+# 11. Important account model
+
+Maintain this distinction throughout the implementation:
+
+```text
+USER
+= the individual person who logs in
+
+CLIENT ROLE
+= their system account type
+
+ORGANIZATION
+= a shared company/workspace
+
+ORGANIZATION MEMBERSHIP
+= relationship between a Client user and an organization
+```
+
+Example:
+
+```text
+Val Client
+role = client
+
+        │
+        ├── personal Client Profile
+        │
+        └── membership
+              ↓
+            OnSpot
+            role = owner
+```
+
+Another Client user can later be invited:
+
+```text
+Anna
+role = client
+
+membership:
+Anna → OnSpot → member
+```
+
+Each user must keep their own login/session.
+
+Never create shared organization credentials.
+
+---
+
+# 12. Independent Client users MUST continue working
+
+This is a strict compatibility requirement.
+
+A Client account must still be valid with:
+
+```text
+organization memberships = 0
+```
+
+Do not make organization creation mandatory.
+
+Do not change existing registration so that company name becomes required.
+
+Do not block:
+
+* Client Profile
+* Hire Talent
+* Messages
+* Settings
+* existing Client Dashboard functionality
+
+for users who have no organization.
+
+An independent contractor or individual client should continue using the Client Portal normally.
+
+---
+
+# 13. Do not migrate jobs yet
+
+The current schema has jobs tied to the existing Client user through `jobs.clientId`.
+
+Do NOT change that relationship as part of this task.
+
+Do NOT migrate:
+
+```text
+jobs.clientId
+```
+
+to:
+
+```text
+jobs.organizationId
+```
+
+yet.
+
+That will be handled as a separate phase after the organization foundation is proven stable.
+
+The purpose of this task is:
+
+```text
+Organization creation
++ membership foundation
++ Client dropdown access
+```
+
+not a full rewrite of Client data ownership.
+
+---
+
+# 14. Do not break existing Client Profiles
+
+The existing `client_profiles` table currently contains company/profile information linked to the individual Client user.
+
+Do NOT remove, rename, or repurpose existing fields yet.
+
+Do NOT migrate existing Client Profile records in this task.
+
+The new organization records should exist alongside the current Client Profile system until a later controlled migration.
+
+---
+
+# 15. Migration safety
+
+Create the appropriate database migration using the project's established migration conventions.
+
+The migration must be additive.
+
+It should primarily:
+
+```text
+CREATE organizations
+CREATE organization_members
+CREATE indexes/constraints
+```
+
+Avoid destructive operations.
+
+Do not:
+
+* drop existing tables
+* remove existing columns
+* rename existing columns
+* delete records
+* reset the database
+* recreate users
+* modify existing passwords/auth records
+* modify existing Client Profile records
+
+---
+
+# 16. Regression protection
+
+Before finishing, inspect the affected code and verify that these existing flows still work:
+
+### Client
+
+* Client login
+* Client dropdown opens/closes
+* Client Profile
+* Hire Talent
+* Messages
+* Settings
+* Sign Out
+* Client Dashboard
+
+### Talent
+
+* Talent dropdown
+* Talent profile navigation
+* My Applications
+* Messages
+* Settings
+* Talent sign out
+
+### Admin
+
+* Admin dropdown
+* Admin Dashboard
+* Admin navigation
+
+Do not modify unrelated Talent/Admin functionality merely to implement organizations.
+
+---
+
+# 17. Error handling
+
+Handle:
+
+* empty organization name
+* API/network failure
+* unauthorized access
+* non-Client users attempting organization creation
+* duplicate submit clicks
+* database transaction failure
+
+Use the project's existing loading states and toast/error patterns.
+
+Disable the submit button while creation is in progress.
+
+Do not create duplicate organizations from accidental double clicks.
+
+---
+
+# 18. UI requirement
+
+The new menu item must visually match the existing dropdown shown in the current Client account menu.
+
+Do not redesign the account menu.
+
+Use the existing:
+
+* icon size
+* typography
+* padding
+* chevron behavior
+* hover background
+* card/dropdown width
+* border
+* shadow
+* responsive/mobile behavior
+
+The new option should look native to the existing UI.
+
+---
+
+# 19. Keep the implementation scoped
+
+Do NOT implement yet:
+
+* member invitations
+* invitation emails
+* advanced permissions
+* organization billing
+* organization switching
+* job ownership migration
+* candidate ownership migration
+* messaging ownership migration
+* organization deletion
+* ownership transfer
+
+Those should be separate follow-up phases.
+
+---
+
+# 20. Final verification
+
+Before declaring the task complete:
+
+1. Review every modified file.
+2. Confirm the schema change is additive.
+3. Confirm existing authentication behavior remains untouched unless absolutely necessary.
+4. Confirm a Client with zero organizations can still use the system.
+5. Confirm a Client can create an organization.
+6. Confirm the creator becomes the organization owner.
+7. Confirm the organization appears from `/api/organizations/me`.
+8. Confirm the Client dropdown still works.
+9. Confirm Talent and Admin dropdown behavior has not changed.
+10. Run the project's existing type checks/tests/build where available.
+11. Fix any TypeScript, route, migration, or runtime errors introduced by these changes.
+12. Do not remove or alter unrelated working code to make tests pass.
+
+At completion, provide a concise summary containing:
+
+* files changed
+* database tables added
+* API endpoints added
+* routes/pages added
+* how organization ownership works
+* confirmation that independent Client accounts remain supported
+* tests/build checks performed
+* any remaining follow-up work
+
+Most important requirement:
+
+**Implement this incrementally and preserve all existing functionality. Do not refactor unrelated working code.**
