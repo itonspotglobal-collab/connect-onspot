@@ -15,6 +15,7 @@ type OrganizationInvitation = {
   status: string;
   inviterName: string | null;
   createdAt: string | null;
+  expiresAt: string | null;
 };
 
 export default function OrganizationInvitations() {

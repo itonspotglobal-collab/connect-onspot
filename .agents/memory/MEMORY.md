@@ -23,3 +23,4 @@
 - [Status email retry invariant](status-email-retry.md) — failed applicant emails persist pending status intent so retries cannot deliver a transition without committing its status workflow.
 - [Client status approval workflow](client-status-approval.md) — Clients submit status requests; Admin approval plus a successful applicant email is required before any canonical transition.
 - [Deployment dependency policy](deployment-dependency-policy.md) — blank publish logs can hide dependency-firewall blocks; verify clean installs and runtime engines before retrying.
+- [Organization invitation lifecycle](organization-invitation-lifecycle.md) — organization invites expire after 30 days; expired history remains visible and resendable.

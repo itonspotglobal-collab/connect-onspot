@@ -213,6 +213,11 @@ describe("Client organization routes", () => {
     );
     assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
     assert.equal(invitation.json.invitation.status, "pending");
+    assert.ok(invitation.json.invitation.expiresAt, "pending invitations must have an expiry");
+    assert.ok(
+      new Date(invitation.json.invitation.expiresAt).getTime() > Date.now() + 29 * 24 * 60 * 60 * 1000,
+      "organization invitations should expire after 30 days",
+    );
 
     const ownerView = await request(
       server,
@@ -288,6 +293,56 @@ describe("Client organization routes", () => {
       clientToken,
     );
     assert.equal(ownerView.json.invitations[0].status, "revoked");
+  });
+
+  it("expires stale invitations, rejects acceptance, and allows a safe resend", async () => {
+    const invitation = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${OTHER_CLIENT_ID}@test.example` },
+    );
+    assert.equal(invitation.status, 201);
+
+    await query(
+      `UPDATE organization_invitations
+          SET expires_at = NOW() - INTERVAL '1 minute'
+        WHERE id = $1`,
+      [invitation.json.invitation.id],
+    );
+
+    const expiredAcceptance = await request(
+      server,
+      "POST",
+      `/api/organization-invitations/${invitation.json.invitation.id}/respond`,
+      otherClientToken,
+      { action: "accept" },
+    );
+    assert.equal(expiredAcceptance.status, 409);
+    assert.equal(expiredAcceptance.json.error, "This invitation has expired");
+
+    const ownerView = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members`,
+      clientToken,
+    );
+    const expired = ownerView.json.invitations.find(
+      (item: { id: string }) => item.id === invitation.json.invitation.id,
+    );
+    assert.equal(expired.status, "expired");
+
+    const resent = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${OTHER_CLIENT_ID}@test.example` },
+    );
+    assert.equal(resent.status, 201, JSON.stringify(resent.json));
+    assert.equal(resent.json.invitation.status, "pending");
+    assert.notEqual(resent.json.invitation.id, invitation.json.invitation.id);
   });
 
   it("rolls back the organization when owner membership creation fails", async () => {

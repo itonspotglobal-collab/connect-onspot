@@ -50,6 +50,7 @@ type OrganizationMembersResponse = {
     status: string;
     inviterName: string | null;
     createdAt: string | null;
+    expiresAt: string | null;
   }>;
 };
 
@@ -262,6 +263,7 @@ export default function OrganizationDetail() {
                   </div>
                   <p className="text-xs leading-5 text-slate-500">
                     The invitee must use a Client account with this email address to accept.
+                    Invitations expire after 30 days and can then be resent.
                   </p>
                 </form>
               )}
@@ -323,7 +325,12 @@ export default function OrganizationDetail() {
                                 {invitation.email}
                               </p>
                               <p className="text-xs text-slate-500">
-                                {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : ""}
+                                {invitation.createdAt ? `Sent ${new Date(invitation.createdAt).toLocaleDateString()}` : ""}
+                                {invitation.status === "pending" && invitation.expiresAt
+                                  ? ` · Expires ${new Date(invitation.expiresAt).toLocaleDateString()}`
+                                  : invitation.status === "expired" && invitation.expiresAt
+                                    ? ` · Expired ${new Date(invitation.expiresAt).toLocaleDateString()}`
+                                    : ""}
                               </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">

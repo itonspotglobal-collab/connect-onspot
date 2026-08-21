@@ -102,6 +102,22 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Organization invitations remain actionable for 30 days. Expiration is a
+// terminal status (distinct from declined/revoked) so owners can resend to
+// the same address without revoking or deleting invitation history.
+export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
+
+export const expireOrganizationInvitations = async (): Promise<number> => {
+  const result = await query(
+    `UPDATE organization_invitations
+        SET status = 'expired', responded_at = NOW(), updated_at = NOW()
+      WHERE status = 'pending'
+        AND expires_at <= NOW()
+     RETURNING id`,
+  );
+  return result.rowCount ?? 0;
+};
+
 // JWT Authentication Types
 interface JWTPayload {
   userId: string;
@@ -966,13 +982,26 @@ export async function registerRoutes(
         status          text NOT NULL DEFAULT 'pending',
         accepted_by     varchar REFERENCES users(id),
         created_at      timestamp DEFAULT now(),
+        expires_at      timestamp NOT NULL DEFAULT (now() + interval '30 days'),
         responded_at    timestamp,
         updated_at      timestamp DEFAULT now()
       )
     `);
+    await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS expires_at timestamp`);
+    await query(`
+      UPDATE organization_invitations
+         SET expires_at = COALESCE(created_at, NOW()) + INTERVAL '30 days'
+       WHERE expires_at IS NULL
+    `);
+    await query(`
+      ALTER TABLE organization_invitations
+        ALTER COLUMN expires_at SET DEFAULT (NOW() + INTERVAL '30 days'),
+        ALTER COLUMN expires_at SET NOT NULL
+    `);
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_organization_id ON organization_invitations(organization_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_email ON organization_invitations(email)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_status ON organization_invitations(status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_expires_at ON organization_invitations(expires_at)`);
     await query(`
       CREATE UNIQUE INDEX IF NOT EXISTS organization_invitations_pending_email_unique
         ON organization_invitations (organization_id, lower(email))
@@ -11437,6 +11466,7 @@ export async function registerRoutes(
     invitedBy: row.invited_by,
     inviterName: row.inviter_name ?? null,
     createdAt: row.created_at,
+    expiresAt: row.expires_at,
     respondedAt: row.responded_at ?? null,
   });
 
@@ -11583,6 +11613,7 @@ export async function registerRoutes(
     try {
       const membership = await getActiveOrganizationMembership(req.params.organizationId, userId);
       if (!membership) return res.status(404).json({ error: "Organization not found" });
+      await expireOrganizationInvitations();
 
       const membersResult = await query(
         `SELECT om.id, om.organization_id, om.user_id, om.role, om.status,
@@ -11639,6 +11670,7 @@ export async function registerRoutes(
     try {
       const owner = await requireOrganizationOwner(req.params.organizationId, userId);
       if (!owner) return res.status(403).json({ error: "Only organization owners can invite members" });
+      await expireOrganizationInvitations();
 
       const { email } = organizationInvitationSchema.parse(req.body ?? {});
       const normalizedEmail = email.toLowerCase();
@@ -11684,10 +11716,10 @@ export async function registerRoutes(
       }
 
       const invitationResult = await query(
-        `INSERT INTO organization_invitations (organization_id, email, invited_by)
-         VALUES ($1, $2, $3)
+        `INSERT INTO organization_invitations (organization_id, email, invited_by, expires_at)
+         VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 day'))
          RETURNING *`,
-        [req.params.organizationId, normalizedEmail, userId],
+        [req.params.organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS],
       );
       const invitation = invitationResult.rows[0];
 
@@ -11771,6 +11803,7 @@ export async function registerRoutes(
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     try {
+      await expireOrganizationInvitations();
       const result = await query(
         `SELECT oi.*, o.name AS organization_name,
                 TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS inviter_name
@@ -11814,9 +11847,24 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Organization invitation not found" });
       }
       const invitation = invitationResult.rows[0];
+      const expiredResult = await dbClient.query(
+        `UPDATE organization_invitations
+            SET status = 'expired', responded_at = NOW(), updated_at = NOW()
+          WHERE id = $1 AND status = 'pending' AND expires_at <= NOW()
+          RETURNING id`,
+        [invitation.id],
+      );
+      if (expiredResult.rows.length) {
+        await dbClient.query("COMMIT");
+        return res.status(409).json({ error: "This invitation has expired" });
+      }
       if (invitation.status !== "pending") {
         await dbClient.query("ROLLBACK");
-        return res.status(409).json({ error: "This invitation is no longer pending" });
+        return res.status(409).json({
+          error: invitation.status === "expired"
+            ? "This invitation has expired"
+            : "This invitation is no longer pending",
+        });
       }
 
       if (action === "decline") {

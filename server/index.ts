@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/node";
 import { v4 as uuidv4 } from "uuid";
 import { createServer } from "http";
 import path from "path";
-import { registerRoutes } from "./routes";
+import { expireOrganizationInvitations, registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 import { ogMiddleware } from "./ogMiddleware";
@@ -579,6 +579,25 @@ app.use((req, res, next) => {
   await seedEmailTemplates();
   
   await registerRoutes(app, server);
+
+  // ── Organization invitation expiry cleanup ────────────────────────────────
+  // Invitations are actionable for 30 days. Reads and responses also expire
+  // overdue rows immediately, while this sweep closes invitations that are
+  // never revisited so owner history stays accurate.
+  const ORGANIZATION_INVITATION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+  const runOrganizationInvitationCleanup = async () => {
+    try {
+      const expired = await expireOrganizationInvitations();
+      if (expired > 0) {
+        console.log(`⏰ Organization invitation cleanup: expired ${expired} invitation(s)`);
+      }
+    } catch (err: any) {
+      console.warn("⚠️ Organization invitation cleanup error (non-fatal):", err.message);
+    }
+  };
+  setTimeout(runOrganizationInvitationCleanup, 5000);
+  setInterval(runOrganizationInvitationCleanup, ORGANIZATION_INVITATION_CLEANUP_INTERVAL_MS);
+  console.log("⏰ Organization invitation expiry scheduled: startup pass in 5 s, then every 1 h");
 
   // ── Scaffold-job TTL cleanup ────────────────────────────────────────────────
   // Removes search_scaffold rows older than 7 days that have no job_submissions

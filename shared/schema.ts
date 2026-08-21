@@ -132,15 +132,17 @@ export const organizationInvitations = pgTable("organization_invitations", {
   organizationId: varchar("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   email: varchar("email").notNull(),
   invitedBy: varchar("invited_by").notNull().references(() => users.id),
-  status: text("status").notNull().default("pending"), // pending | accepted | declined | revoked
+  status: text("status").notNull().default("pending"), // pending | accepted | declined | revoked | expired
   acceptedBy: varchar("accepted_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull().default(sql`NOW() + INTERVAL '30 days'`),
   respondedAt: timestamp("responded_at"),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_organization_invitations_organization_id").on(table.organizationId),
   index("idx_organization_invitations_email").on(table.email),
   index("idx_organization_invitations_status").on(table.status),
+  index("idx_organization_invitations_expires_at").on(table.expiresAt),
 ]);
 
 // Skills
