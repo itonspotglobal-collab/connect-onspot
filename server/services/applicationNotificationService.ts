@@ -12,10 +12,13 @@ type ClientApplicationNotificationInput = {
 type TalentApplicationStatusNotificationInput = {
   submissionId: string;
   talentUserId: string | null | undefined;
+  candidateId?: string | null | undefined;
   applicantEmail: string | null | undefined;
   jobTitle: string | null | undefined;
+  companyName?: string | null | undefined;
   previousStatus: string;
   newStatus: string;
+  eventKey?: string | null | undefined;
 };
 
 type AdminClientStatusNotificationInput = {
@@ -62,24 +65,118 @@ export async function notifyClientOfJobApplication({
 }
 
 /**
- * Resolves the canonical users.id used by notifications. New linked submissions
- * carry talent_id directly; legacy unlinked rows may only have an email, which is
- * intentionally a fallback rather than the primary ownership mechanism.
+ * Resolves the canonical users.id used by Talent notifications. The direct
+ * submission owner and a candidate's user_id are authoritative; email is only a
+ * compatibility fallback for legacy submissions that predate account linking.
  */
-async function resolveTalentNotificationRecipient(
-  talentUserId: string | null | undefined,
-  applicantEmail: string | null | undefined,
-): Promise<string | null> {
-  if (talentUserId) return talentUserId;
-  if (!applicantEmail) return null;
-
+export async function resolveTalentNotificationRecipient({
+  talentUserId,
+  candidateId,
+  applicantEmail,
+}: {
+  talentUserId?: string | null;
+  candidateId?: string | null;
+  applicantEmail?: string | null;
+}): Promise<string | null> {
   const userLookup = await query(
-    `SELECT id FROM users
-     WHERE lower(email) = lower($1) AND role = 'talent'
-     LIMIT 1`,
-    [applicantEmail],
+    `SELECT u.id
+       FROM users u
+       LEFT JOIN candidates c ON c.user_id = u.id
+      WHERE u.role = 'talent'
+        AND (
+          u.id = $1
+          OR c.id = $2
+          OR lower(u.email) = lower($3)
+          OR lower(c.email) = lower($3)
+        )
+      ORDER BY CASE
+        WHEN u.id = $1 THEN 0
+        WHEN c.id = $2 THEN 1
+        WHEN lower(u.email) = lower($3) THEN 2
+        ELSE 3
+      END
+      LIMIT 1`,
+    [talentUserId ?? null, candidateId ?? null, applicantEmail ?? null],
   );
   return userLookup.rows[0]?.id ?? null;
+}
+
+/**
+ * Candidate-token routes must resolve through the candidate's persisted
+ * user_id. Unlike server-side delivery, they intentionally do not fall back to
+ * email: a token for one candidate must never read another user's alerts.
+ */
+export async function resolveTalentPortalNotificationRecipient(
+  candidateId: string,
+): Promise<string | null> {
+  const userLookup = await query(
+    `SELECT u.id
+       FROM candidates c
+       JOIN users u ON u.id = c.user_id
+      WHERE c.id = $1
+        AND u.role = 'talent'
+      LIMIT 1`,
+    [candidateId],
+  );
+  return userLookup.rows[0]?.id ?? null;
+}
+
+function applicationTarget(
+  jobTitle: string | null | undefined,
+  companyName: string | null | undefined,
+): string {
+  if (jobTitle) return companyName ? `${jobTitle} at ${companyName}` : jobTitle;
+  return companyName ? `a role at ${companyName}` : "your application";
+}
+
+function applicationStatusNotificationCopy(
+  jobTitle: string | null | undefined,
+  companyName: string | null | undefined,
+  newStatus: string,
+): { title: string; message: string } {
+  const target = applicationTarget(jobTitle, companyName);
+  switch (newStatus) {
+    case "under_review":
+      return {
+        title: "Application Under Review",
+        message: `Your application for ${target} is now under review.`,
+      };
+    case "shortlisted":
+      return {
+        title: "You've Been Shortlisted",
+        message: `Your application for ${target} has been shortlisted.`,
+      };
+    case "interviewing":
+      return {
+        title: "Interview Stage",
+        message: `Your application for ${target} has moved to the interview stage.`,
+      };
+    case "offer_extended":
+      return {
+        title: "Application Update",
+        message: `An offer has been extended for your application to ${target}.`,
+      };
+    case "offer_accepted":
+      return {
+        title: "Offer Accepted",
+        message: `Your offer for ${target} has been marked as accepted.`,
+      };
+    case "offer_declined":
+      return {
+        title: "Offer Declined",
+        message: `The offer status for your application to ${target} has been updated to declined.`,
+      };
+    case "rejected":
+      return {
+        title: "Application Update",
+        message: `Your application for ${target} will not be moving forward.`,
+      };
+    default:
+      return {
+        title: "Application Status Updated",
+        message: `Your application for ${target} is now ${submissionStatusLabel(newStatus).toLowerCase()}.`,
+      };
+  }
 }
 
 /**
@@ -90,39 +187,53 @@ async function resolveTalentNotificationRecipient(
 export async function notifyTalentOfApplicationStatusChange({
   submissionId,
   talentUserId,
+  candidateId,
   applicantEmail,
   jobTitle,
+  companyName,
   previousStatus,
   newStatus,
+  eventKey,
 }: TalentApplicationStatusNotificationInput): Promise<void> {
   if (previousStatus === newStatus) return;
 
   try {
-    const recipientUserId = await resolveTalentNotificationRecipient(talentUserId, applicantEmail);
+    const recipientUserId = await resolveTalentNotificationRecipient({
+      talentUserId,
+      candidateId,
+      applicantEmail,
+    });
     if (!recipientUserId) {
       console.warn(
-        `[application-notifications] skipped status notification for ${submissionId}: no linked talent user`,
+        "[application-status] notification skipped — linked talent user not found",
+        { applicationId: submissionId, candidateId: candidateId ?? null },
       );
       return;
     }
 
-    const roleTitle = jobTitle || "your application";
-    const message =
-      newStatus === "rejected"
-        ? `Your application for ${roleTitle} was not selected.`
-        : `Your application for ${roleTitle} is now ${submissionStatusLabel(newStatus)}.`;
+    const { title, message } = applicationStatusNotificationCopy(jobTitle, companyName, newStatus);
+    const notificationEventKey =
+      eventKey ?? `application-status:${submissionId}:${previousStatus}:${newStatus}`;
+    const created = await query(
+      `INSERT INTO notifications
+         (user_id, type, title, message, related_id, related_type, event_key)
+       VALUES ($1, 'job_application_status_changed', $2, $3, $4, 'job_submission', $5)
+       ON CONFLICT (event_key) WHERE event_key IS NOT NULL DO NOTHING
+       RETURNING id`,
+      [recipientUserId, title, message, submissionId, notificationEventKey],
+    );
+    if (!created.rows[0]?.id) return;
 
-    await storage.createNotification({
-      userId: recipientUserId,
-      type: "job_application_status_changed",
-      title: "Application update",
-      message,
-      relatedId: submissionId,
-      relatedType: "job_submission",
+    console.log("[application-status] notification created", {
+      applicationId: submissionId,
+      oldStatus: previousStatus,
+      newStatus,
+      talentUserId: recipientUserId,
+      notificationId: created.rows[0].id,
     });
   } catch (error) {
     console.error(
-      `[application-notifications] failed status notification for submission ${submissionId}:`,
+      `[application-status] failed to create status notification for ${submissionId}:`,
       error,
     );
   }

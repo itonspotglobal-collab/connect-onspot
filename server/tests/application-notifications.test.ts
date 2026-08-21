@@ -21,6 +21,7 @@ describe("job application notifications", () => {
   let clientBId = "";
   let talentId = "";
   let adminId = "";
+  let linkedCandidateId = "";
 
   before(async () => {
     const [clientA, clientB, talent, admin] = await Promise.all([
@@ -45,12 +46,20 @@ describe("job application notifications", () => {
     clientBId = clientB.rows[0].id;
     talentId = talent.rows[0].id;
     adminId = admin.rows[0].id;
+    const candidate = await query(
+      `INSERT INTO candidates (email, full_name, user_id)
+       VALUES ($1, 'Linked Notification Talent', $2)
+       RETURNING id`,
+      [email("candidate"), talentId],
+    );
+    linkedCandidateId = candidate.rows[0].id;
   });
 
   after(async () => {
     if (notificationIds.length) {
       await query(`DELETE FROM notifications WHERE id = ANY($1::text[])`, [notificationIds]).catch(() => {});
     }
+    await query(`DELETE FROM candidates WHERE id = $1`, [linkedCandidateId]).catch(() => {});
     await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[clientAId, clientBId, talentId, adminId]]).catch(() => {});
   });
 
@@ -83,7 +92,7 @@ describe("job application notifications", () => {
     );
   });
 
-  it("notifies Talent for Client and Admin status changes, but not same-status saves", async () => {
+  it("notifies the linked Talent user with status-specific copy, but not same-status saves", async () => {
     const clientSubmissionId = `application-client-status-${suffix}`;
     const adminSubmissionId = `application-admin-status-${suffix}`;
 
@@ -97,11 +106,25 @@ describe("job application notifications", () => {
     });
     await notifyTalentOfApplicationStatusChange({
       submissionId: adminSubmissionId,
-      talentUserId: talentId,
-      applicantEmail: null,
+      talentUserId: null,
+      candidateId: linkedCandidateId,
+      applicantEmail: "not-the-talent@example.com",
       jobTitle: "Admin Updated Role",
+      companyName: "OnSpot Technologies Inc.",
       previousStatus: "under_review",
       newStatus: "shortlisted",
+      eventKey: `status-history-${adminSubmissionId}`,
+    });
+    await notifyTalentOfApplicationStatusChange({
+      submissionId: adminSubmissionId,
+      talentUserId: null,
+      candidateId: linkedCandidateId,
+      applicantEmail: "not-the-talent@example.com",
+      jobTitle: "Admin Updated Role",
+      companyName: "OnSpot Technologies Inc.",
+      previousStatus: "under_review",
+      newStatus: "shortlisted",
+      eventKey: `status-history-${adminSubmissionId}`,
     });
     await notifyTalentOfApplicationStatusChange({
       submissionId: adminSubmissionId,
@@ -117,10 +140,31 @@ describe("job application notifications", () => {
     const adminChanges = notifications.filter((notification) => notification.relatedId === adminSubmissionId);
 
     assert.ok(clientChange, "a Client status transition must notify the applicant");
-    assert.match(clientChange.message, /is now Under Review/);
+    assert.equal(clientChange.userId, talentId, "notification must use the canonical users.id");
+    assert.match(clientChange.message, /is now under review/i);
     assert.equal(adminChanges.length, 1, "a same-status save must not duplicate notifications");
-    assert.match(adminChanges[0].message, /is now Shortlisted/);
+    assert.equal(adminChanges[0].title, "You've Been Shortlisted");
+    assert.match(adminChanges[0].message, /Admin Updated Role at OnSpot Technologies Inc. has been shortlisted/);
     notificationIds.push(clientChange.id, adminChanges[0].id);
+  });
+
+  it("skips an unlinked applicant without creating an invalid notification", async () => {
+    const submissionId = `application-unlinked-status-${suffix}`;
+    await notifyTalentOfApplicationStatusChange({
+      submissionId,
+      talentUserId: null,
+      applicantEmail: `unlinked-${suffix}@example.com`,
+      jobTitle: "Unlinked Role",
+      previousStatus: "new",
+      newStatus: "under_review",
+    });
+
+    const notifications = await query(
+      `SELECT id FROM notifications
+        WHERE type = 'job_application_status_changed' AND related_id = $1`,
+      [submissionId],
+    );
+    assert.equal(notifications.rows.length, 0);
   });
 
   it("creates one Admin alert with the application deep-link context", async () => {

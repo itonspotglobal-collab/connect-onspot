@@ -7,4 +7,4 @@ Failed applicant emails that were intended to change application status must ret
 
 **Why:** An email-history retry that only resends the message can tell a Talent their application changed while the canonical application still has the old status, and repeated retries can duplicate delivery.
 
-**How to apply:** Keep dedicated interview, offer, contract, hire, and withdrawal workflows outside the generic status-email path. For generic Admin status changes, use the locked email-send/retry transaction and treat any post-delivery DB failure as a consistency error.
+**How to apply:** Keep dedicated interview, offer, contract, hire, and withdrawal workflows outside the generic status-email path. For generic Admin status changes, use the locked email-send/retry transaction and treat any post-delivery DB failure as a consistency error. Commit the status/history first, then create the Talent alert using that history record's immutable event key so delivery failures cannot undo the status and retries cannot duplicate the alert. Talent-portal notification reads must resolve the candidate's linked `users.id`, never trust token email alone.

@@ -163,7 +163,7 @@ describe("Admin approval finalization after a delivered email", () => {
         [recoverableApplicationId, `Client status request ${recoverableRequestId}:%`],
       ),
       query(
-        `SELECT id FROM notifications
+        `SELECT id, title, message, is_read, related_type, event_key FROM notifications
           WHERE user_id = $1 AND type = 'job_application_status_changed' AND related_id = $2`,
         [TALENT_ID, recoverableApplicationId],
       ),
@@ -177,6 +177,11 @@ describe("Admin approval finalization after a delivered email", () => {
     assert.equal(statusRequest.rows[0].status, "approved");
     assert.equal(history.rows.length, 1, "one status-history event is required");
     assert.equal(talentNotifications.rows.length, 1, "Talent receives one notification");
+    assert.equal(talentNotifications.rows[0].title, "Application Under Review");
+    assert.match(talentNotifications.rows[0].message, /is now under review\./i);
+    assert.equal(talentNotifications.rows[0].is_read, false);
+    assert.equal(talentNotifications.rows[0].related_type, "job_submission");
+    assert.match(talentNotifications.rows[0].event_key, /^job-application-status-history:/);
     assert.equal(clientNotifications.rows.length, 1, "requesting Client receives one notification");
 
     const retry = await request("POST", `/api/admin/status-change-requests/${recoverableRequestId}/finalize`, {});
@@ -201,5 +206,49 @@ describe("Admin approval finalization after a delivered email", () => {
     assert.equal(submission.rows[0].status, "reviewed");
     assert.equal(statusRequest.rows[0].status, "cancelled");
     assert.equal(history.rows.length, 0, "stale approval must not create a history event");
+  });
+
+  it("records every sequential generic Admin transition even when the default note is reused", async () => {
+    const defaultNote = "Status updated with applicant email sent";
+    const firstUpdate = await query(
+      `UPDATE job_submissions
+          SET status = 'under_review', updated_at = NOW()
+        WHERE id = $1 AND status = 'reviewed'
+      RETURNING id`,
+      [staleApplicationId],
+    );
+    assert.equal(firstUpdate.rows.length, 1);
+    const firstHistory = await query(
+      `INSERT INTO job_application_status_history
+         (application_id, previous_status, new_status, note, changed_by)
+       VALUES ($1, 'reviewed', 'under_review', $2, $3)
+       RETURNING id`,
+      [staleApplicationId, defaultNote, ADMIN_ID],
+    );
+
+    const secondUpdate = await query(
+      `UPDATE job_submissions
+          SET status = 'shortlisted', updated_at = NOW()
+        WHERE id = $1 AND status = 'under_review'
+      RETURNING id`,
+      [staleApplicationId],
+    );
+    assert.equal(secondUpdate.rows.length, 1);
+    const secondHistory = await query(
+      `INSERT INTO job_application_status_history
+         (application_id, previous_status, new_status, note, changed_by)
+       VALUES ($1, 'under_review', 'shortlisted', $2, $3)
+       RETURNING id`,
+      [staleApplicationId, defaultNote, ADMIN_ID],
+    );
+
+    assert.notEqual(firstHistory.rows[0].id, secondHistory.rows[0].id);
+    const history = await query(
+      `SELECT id
+         FROM job_application_status_history
+        WHERE application_id = $1 AND note = $2`,
+      [staleApplicationId, defaultNote],
+    );
+    assert.equal(history.rows.length, 2);
   });
 });

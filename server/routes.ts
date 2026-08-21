@@ -65,6 +65,7 @@ import { randomUUID, randomBytes, createHash } from "crypto";
 import {
   notifyClientOfJobApplication,
   notifyTalentOfApplicationStatusChange,
+  resolveTalentPortalNotificationRecipient,
 } from "./services/applicationNotificationService";
 import {
   insertUserSchema,
@@ -908,6 +909,12 @@ export async function registerRoutes(
       `CREATE INDEX IF NOT EXISTS notifications_unread_message_group_idx
          ON notifications (user_id, related_id, created_at DESC)
        WHERE type = 'new_message' AND is_read = false`,
+    );
+    await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS event_key text`);
+    await query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS notifications_event_key_unique_idx
+         ON notifications (event_key)
+       WHERE event_key IS NOT NULL`,
     );
   } catch (migErr: any) {
     console.warn("⚠️  message notification grouping migration skipped:", migErr.message);
@@ -8827,22 +8834,8 @@ export async function registerRoutes(
   // ?unread_only=true for badge-count queries.
   app.get("/api/talent/notifications", authenticateTalentJWT, async (req: any, res) => {
     try {
-      const { candidateId, email } = req.talentAuth;
-
-      // Resolve the linked users.id from the candidate record.
-      let linkedUserId: string | null = null;
-      const candRow = await query(
-        `SELECT email FROM candidates WHERE id = $1 LIMIT 1`,
-        [candidateId],
-      );
-      const candidateEmail: string = candRow.rows[0]?.email ?? email;
-      if (candidateEmail) {
-        const userRow = await query(
-          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-          [candidateEmail],
-        );
-        linkedUserId = userRow.rows[0]?.id ?? null;
-      }
+      const { candidateId } = req.talentAuth;
+      const linkedUserId = await resolveTalentPortalNotificationRecipient(candidateId);
 
       if (!linkedUserId) {
         // No linked user account; no notifications can exist for this talent.
@@ -8916,22 +8909,8 @@ export async function registerRoutes(
   // and verifies the notification belongs to that user before marking it read.
   app.patch("/api/talent/notifications/:id/read", authenticateTalentJWT, async (req: any, res) => {
     try {
-      const { candidateId, email } = req.talentAuth;
-
-      // Resolve the linked users.id.
-      let linkedUserId: string | null = null;
-      const candRow = await query(
-        `SELECT email FROM candidates WHERE id = $1 LIMIT 1`,
-        [candidateId],
-      );
-      const candidateEmail: string = candRow.rows[0]?.email ?? email;
-      if (candidateEmail) {
-        const userRow = await query(
-          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-          [candidateEmail],
-        );
-        linkedUserId = userRow.rows[0]?.id ?? null;
-      }
+      const { candidateId } = req.talentAuth;
+      const linkedUserId = await resolveTalentPortalNotificationRecipient(candidateId);
 
       if (!linkedUserId) {
         return res.status(403).json({ error: "Forbidden" });
@@ -15740,6 +15719,7 @@ export async function registerRoutes(
           [application.job_id],
         );
         const jobTitle = jobResult.rows[0]?.title || "a job";
+        let statusHistoryId: string | null = null;
 
         step = "update_application";
         const applicationUpdate = await dbClient.query(
@@ -15755,68 +15735,22 @@ export async function registerRoutes(
 
         const historyNote = `Client status request ${request.id}: Finalized after previously delivered applicant email`;
         step = "write_status_history";
-        await dbClient.query(
+        const historyResult = await dbClient.query(
           `INSERT INTO job_application_status_history
              (application_id, previous_status, new_status, note, changed_by)
-           SELECT $1, $2, $3, $4, $5
-            WHERE NOT EXISTS (
-              SELECT 1 FROM job_application_status_history
-               WHERE application_id = $6 AND note = $7
-            )`,
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
           [
             application.id,
             request.current_status,
             request.requested_status,
             historyNote,
             req.user.id,
-            application.id,
-            historyNote,
           ],
         );
-
-        step = "resolve_talent_user";
-        const talentUser = await dbClient.query(
-          `SELECT u.id
-             FROM users u
-             LEFT JOIN candidates c ON c.user_id = u.id
-            WHERE u.role = 'talent'
-              AND (u.id = $1 OR lower(u.email) = lower($2) OR lower(c.email) = lower($2))
-            ORDER BY CASE WHEN u.id = $1 THEN 0 ELSE 1 END
-            LIMIT 1`,
-          [application.talent_id, application.email],
-        );
-        if (talentUser.rows[0]) {
-          step = "create_talent_notification";
-          const talentName = [application.first_name, application.last_name].filter(Boolean).join(" ") ||
-            application.applicant_name || "the Talent";
-          const talentMessage = request.requested_status === "rejected"
-            ? `Your application for ${jobTitle} was not selected.`
-            : `Your application for ${jobTitle} is now ${submissionStatusLabel(request.requested_status)}.`;
-          await dbClient.query(
-            `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
-             SELECT $1::varchar, 'job_application_status_changed', 'Application update', $2::text, $3::varchar, 'job_submission'
-              WHERE NOT EXISTS (
-                SELECT 1 FROM notifications
-                 WHERE user_id = $4::varchar
-                   AND type = 'job_application_status_changed'
-                   AND related_id = $5::varchar
-                   AND message = $6::text
-              )`,
-            [
-              talentUser.rows[0].id,
-              talentMessage,
-              application.id,
-              talentUser.rows[0].id,
-              application.id,
-              talentMessage,
-            ],
-          );
-        } else if (application.talent_id) {
-          throw new Error(`Linked Talent user ${application.talent_id} could not be resolved for notification`);
-        } else {
-          console.warn(
-            `[APPROVAL_COMMIT_STEP=resolve_talent_user] Finalized ${request.id}, but no linked Talent account exists.`,
-          );
+        statusHistoryId = historyResult.rows[0]?.id ?? null;
+        if (!statusHistoryId) {
+          throw new Error(`Status history was not recorded for application ${application.id}`);
         }
 
         step = "approve_status_request";
@@ -15856,6 +15790,15 @@ export async function registerRoutes(
           ],
         );
         await dbClient.query("COMMIT");
+        await notifyTalentOfApplicationStatusChange({
+          submissionId: application.id,
+          talentUserId: application.talent_id,
+          applicantEmail: application.email,
+          jobTitle,
+          previousStatus: request.current_status,
+          newStatus: request.requested_status,
+          eventKey: `job-application-status-history:${statusHistoryId}`,
+        });
         return res.json({ success: true, application: applicationUpdate.rows[0], finalizedEmailId: sentEmail.rows[0].id });
       } catch (err: any) {
         await dbClient.query("ROLLBACK").catch(() => {});
@@ -16317,6 +16260,7 @@ export async function registerRoutes(
       );
 
       let updatedApplication = app_;
+      let statusHistoryId: string | null = null;
       if (updateStage) {
         approvalCommitStep = "update_application";
         const updated = await dbClient.query(
@@ -16335,69 +16279,22 @@ export async function registerRoutes(
         const historyNote = approvedRequest
           ? `Client status request ${approvedRequest.id}: ${note?.trim() || "Approved after applicant email delivery"}`
           : note?.trim() || "Status updated with applicant email sent";
-        await dbClient.query(
+        const historyResult = await dbClient.query(
           `INSERT INTO job_application_status_history
              (application_id, previous_status, new_status, note, changed_by)
-            SELECT $1, $2, $3, $4, $5
-             WHERE NOT EXISTS (
-               SELECT 1 FROM job_application_status_history
-                WHERE application_id = $6 AND note = $7
-             )`,
+            VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
           [
             id,
             app_.status,
             updateStage,
             historyNote,
             sentBy,
-            id,
-            historyNote,
           ],
         );
-
-        approvalCommitStep = "resolve_talent_user";
-        const talentUser = await dbClient.query(
-          `SELECT u.id
-             FROM users u
-             LEFT JOIN candidates c ON c.user_id = u.id
-            WHERE u.role = 'talent'
-              AND (u.id = $1 OR lower(u.email) = lower($2) OR lower(c.email) = lower($2))
-            ORDER BY CASE WHEN u.id = $1 THEN 0 ELSE 1 END
-            LIMIT 1`,
-          [app_.talent_id, app_.email],
-        );
-        if (talentUser.rows.length > 0) {
-          const talentMessage =
-            updateStage === "rejected"
-              ? `Your application for ${app_.job_title || "your application"} was not selected.`
-              : `Your application for ${app_.job_title || "your application"} is now ${submissionStatusLabel(updateStage)}.`;
-          approvalCommitStep = "create_talent_notification";
-          await dbClient.query(
-            `INSERT INTO notifications
-               (user_id, type, title, message, related_id, related_type)
-             SELECT $1::varchar, 'job_application_status_changed', 'Application update', $2::text, $3::varchar, 'job_submission'
-              WHERE NOT EXISTS (
-                SELECT 1
-                  FROM notifications
-                 WHERE user_id = $4::varchar
-                   AND type = 'job_application_status_changed'
-                   AND related_id = $5::varchar
-                   AND message = $6::text
-              )`,
-            [
-              talentUser.rows[0].id,
-              talentMessage,
-              id,
-              talentUser.rows[0].id,
-              id,
-              talentMessage,
-            ],
-          );
-        } else if (app_.talent_id) {
-          throw new Error(`Linked Talent user ${app_.talent_id} could not be resolved for status notification`);
-        } else {
-          console.warn(
-            `[APPROVAL_COMMIT_STEP=resolve_talent_user] Email was delivered for ${id}, but no linked Talent account exists; no in-app notification was created.`,
-          );
+        statusHistoryId = historyResult.rows[0]?.id ?? null;
+        if (!statusHistoryId) {
+          throw new Error(`Status history was not recorded for application ${id}`);
         }
 
         if (isClientActor) {
@@ -16470,6 +16367,18 @@ export async function registerRoutes(
 
       approvalCommitStep = "commit";
       await dbClient.query("COMMIT");
+      if (updateStage) {
+        await notifyTalentOfApplicationStatusChange({
+          submissionId: id,
+          talentUserId: app_.talent_id,
+          applicantEmail: app_.email,
+          jobTitle: app_.job_title,
+          companyName: app_.job_company,
+          previousStatus: app_.status,
+          newStatus: updateStage,
+          eventKey: `job-application-status-history:${statusHistoryId}`,
+        });
+      }
       return res.json({
         success: true,
         sentTo: app_.email,
@@ -16717,6 +16626,7 @@ export async function registerRoutes(
         ],
       );
 
+      let statusHistoryId: string | null = null;
       if (pendingStatus) {
         const updated = await dbClient.query(
           `UPDATE job_submissions
@@ -16729,44 +16639,32 @@ export async function registerRoutes(
           throw new Error("Application status changed while the retry email was being sent");
         }
 
-        await dbClient.query(
+        const historyResult = await dbClient.query(
           `INSERT INTO job_application_status_history
              (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, $3, $4, $5)`,
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
           [id, prev.status_previous, pendingStatus, prev.status_note, prev.sent_by],
         );
-
-        const talentUser = await dbClient.query(
-          `SELECT id
-             FROM users
-            WHERE role = 'talent'
-              AND (id = $1 OR lower(email) = lower($2))
-            LIMIT 1`,
-          [app_.talent_id, app_.email],
-        );
-        if (talentUser.rows.length > 0) {
-          const talentMessage =
-            pendingStatus === "rejected"
-              ? `Your application for ${app_.job_title || "your application"} was not selected.`
-              : `Your application for ${app_.job_title || "your application"} is now ${submissionStatusLabel(pendingStatus)}.`;
-          await dbClient.query(
-            `INSERT INTO notifications
-               (user_id, type, title, message, related_id, related_type)
-             SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
-              WHERE NOT EXISTS (
-                SELECT 1
-                  FROM notifications
-                 WHERE user_id = $1
-                   AND type = 'job_application_status_changed'
-                   AND related_id = $3
-                   AND message = $2
-              )`,
-            [talentUser.rows[0].id, talentMessage, id],
-          );
+        statusHistoryId = historyResult.rows[0]?.id ?? null;
+        if (!statusHistoryId) {
+          throw new Error(`Status history was not recorded for application ${id}`);
         }
+
       }
 
       await dbClient.query("COMMIT");
+      if (pendingStatus) {
+        await notifyTalentOfApplicationStatusChange({
+          submissionId: id,
+          talentUserId: app_.talent_id,
+          applicantEmail: app_.email,
+          jobTitle: app_.job_title,
+          previousStatus: prev.status_previous,
+          newStatus: pendingStatus,
+          eventKey: `job-application-status-history:${statusHistoryId}`,
+        });
+      }
       return res.json({ success: true, statusUpdated: !!pendingStatus });
     } catch (err: any) {
       await rollbackQuietly();

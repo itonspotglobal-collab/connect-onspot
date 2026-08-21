@@ -25,6 +25,7 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import jwt from "jsonwebtoken";
 import { query } from "../db.js";
 import { DbStorage } from "../storage.js";
+import { resolveTalentPortalNotificationRecipient } from "../services/applicationNotificationService.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
 const storage = new DbStorage();
@@ -85,16 +86,7 @@ function buildNotifTestApp(): Express {
   app.get("/api/talent/notifications", talentAuth, async (req: Request, res: Response) => {
     try {
       const { candidateId, email } = (req as any).talentAuth;
-      let linkedUserId: string | null = null;
-      const candRow = await query(`SELECT email FROM candidates WHERE id = $1 LIMIT 1`, [candidateId]);
-      const candidateEmail: string = candRow.rows[0]?.email ?? email;
-      if (candidateEmail) {
-        const userRow = await query(
-          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-          [candidateEmail],
-        );
-        linkedUserId = userRow.rows[0]?.id ?? null;
-      }
+      const linkedUserId = await resolveTalentPortalNotificationRecipient(candidateId);
       if (!linkedUserId) return res.json([]);
       const unreadOnly = req.query.unread_only === "true";
       const notifs = await storage.listNotificationsByUser(linkedUserId, unreadOnly);
@@ -108,16 +100,7 @@ function buildNotifTestApp(): Express {
   app.patch("/api/talent/notifications/:id/read", talentAuth, async (req: Request, res: Response) => {
     try {
       const { candidateId, email } = (req as any).talentAuth;
-      let linkedUserId: string | null = null;
-      const candRow = await query(`SELECT email FROM candidates WHERE id = $1 LIMIT 1`, [candidateId]);
-      const candidateEmail: string = candRow.rows[0]?.email ?? email;
-      if (candidateEmail) {
-        const userRow = await query(
-          `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-          [candidateEmail],
-        );
-        linkedUserId = userRow.rows[0]?.id ?? null;
-      }
+      const linkedUserId = await resolveTalentPortalNotificationRecipient(candidateId);
       if (!linkedUserId) return res.status(403).json({ error: "Forbidden" });
       const notifRow = await query(
         `SELECT user_id FROM notifications WHERE id = $1 LIMIT 1`,
@@ -212,6 +195,7 @@ describe("notification endpoint authorization", () => {
   let talentUserId: string;
   let otherUserId: string;
   let candidateId: string;
+  let otherCandidateId: string;
   const notifIds: string[] = [];
   const talentEmail = `notif-auth-talent-${Date.now()}@example.com`;
   const otherEmail  = `notif-auth-other-${Date.now()}@example.com`;
@@ -234,10 +218,19 @@ describe("notification endpoint authorization", () => {
 
     // Create a candidate row linked to the talent user (same email)
     const c = await query(
-      `INSERT INTO candidates (email, full_name) VALUES ($1, 'Notif Talent') RETURNING id`,
-      [talentEmail],
+      `INSERT INTO candidates (email, full_name, user_id)
+       VALUES ($1, 'Notif Talent', $2)
+       RETURNING id`,
+      [talentEmail, talentUserId],
     );
     candidateId = c.rows[0].id;
+    const otherCandidate = await query(
+      `INSERT INTO candidates (email, full_name, user_id)
+       VALUES ($1, 'Other Notif Talent', $2)
+       RETURNING id`,
+      [otherEmail, otherUserId],
+    );
+    otherCandidateId = otherCandidate.rows[0].id;
 
     // Seed offer, application-status, and message notifications for talentUserId.
     const n1 = await storage.createNotification({
@@ -272,7 +265,7 @@ describe("notification endpoint authorization", () => {
     if (notifIds.length) {
       await query(`DELETE FROM notifications WHERE id = ANY($1::text[])`, [notifIds]).catch(() => {});
     }
-    await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
+    await query(`DELETE FROM candidates WHERE id = ANY($1::text[])`, [[candidateId, otherCandidateId]]).catch(() => {});
     await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[talentUserId, otherUserId]]).catch(() => {});
   });
 
@@ -286,6 +279,13 @@ describe("notification endpoint authorization", () => {
     assert.ok(types.includes("offer_received"), "must include offer_received");
     assert.ok(types.includes("new_message"), "must include new_message");
     assert.ok(types.includes("job_application_status_changed"), "must include application status updates");
+  });
+
+  it("(a.isolation) candidate JWT ignores a mismatched token email and returns only the candidate's own notifications", async () => {
+    const mismatchedEmailToken = makeCandidateToken(otherCandidateId, talentEmail);
+    const { status, body } = await req(srv, "GET", "/api/talent/notifications", { token: mismatchedEmailToken });
+    assert.equal(status, 200);
+    assert.equal(body.some((n: any) => n.userId === talentUserId), false);
   });
 
   // ── (b) Mark-read endpoint verifies ownership ─────────────────────────────────
@@ -315,6 +315,14 @@ describe("notification endpoint authorization", () => {
     const token = makeCandidateToken(candidateId, talentEmail);
     const { status } = await req(srv, "PATCH", `/api/talent/notifications/${n.id}/read`, { token });
     assert.equal(status, 403, "cross-user mark-read must be denied with 403");
+  });
+
+  it("(b.email-mismatch) candidate JWT cannot use another Talent's email to mark their notification read", async () => {
+    const mismatchedEmailToken = makeCandidateToken(otherCandidateId, talentEmail);
+    const { status } = await req(srv, "PATCH", `/api/talent/notifications/${notifIds[2]}/read`, {
+      token: mismatchedEmailToken,
+    });
+    assert.equal(status, 403);
   });
 
   // ── (c) Missing token → 401 ───────────────────────────────────────────────────

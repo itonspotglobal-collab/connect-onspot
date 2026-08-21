@@ -92,6 +92,7 @@ function notificationFromRow(row: any): Notification {
     message: row.message,
     relatedId: row.related_id ?? null,
     relatedType: row.related_type ?? null,
+    eventKey: row.event_key ?? null,
     messageCount: Number(row.message_count ?? 1),
     isRead: row.is_read ?? false,
     createdAt: row.created_at ?? null,
@@ -2147,6 +2148,7 @@ export class MemStorage implements IStorage {
       id,
       relatedId: insertNotification.relatedId ?? null,
       relatedType: insertNotification.relatedType ?? null,
+      eventKey: insertNotification.eventKey ?? null,
       messageCount: 1,
       isRead: false,
       createdAt: new Date()

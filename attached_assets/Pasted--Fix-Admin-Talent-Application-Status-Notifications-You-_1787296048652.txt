@@ -1,0 +1,703 @@
+# Fix Admin → Talent Application Status Notifications
+
+You are working inside the existing **OnSpot Global** React + TypeScript + Express + PostgreSQL/Drizzle codebase.
+
+## Problem
+
+There is an existing Admin Job Applications feature.
+
+Current behavior:
+
+1. A Talent applies to an open job.
+2. The application appears under **Admin → Job Applications**.
+3. Admin changes the application status, for example:
+
+   * Submitted
+   * Under Review
+   * Shortlisted
+   * Interviewing
+   * Offer Extended
+   * Rejected
+4. The status update is saved successfully.
+5. On the Talent side, **My Applications** correctly shows the new application status.
+6. However, the Talent's notification bell still shows:
+
+   **"No notifications yet"**
+
+The Talent should receive an in-app notification whenever an Admin changes their application status.
+
+## Important: inspect the existing implementation before changing anything
+
+Do not create a second notification system.
+
+First inspect the existing notification architecture and reuse it.
+
+Relevant existing files include:
+
+* `client/src/components/NotificationBell.tsx`
+* `client/src/hooks/useUnreadNotificationsCount.ts`
+* `client/src/pages/AdminJobApplications.tsx`
+* `server/storage.ts`
+* `shared/schema.ts`
+* the server route/service responsible for Admin Job Application status changes
+* the existing Talent notification endpoints
+
+The frontend already supports this notification type:
+
+```ts
+job_application_status_changed
+```
+
+`NotificationBell.tsx` already has UI configuration for it and sends the Talent to:
+
+```txt
+/my-applications
+```
+
+`useUnreadNotificationsCount.ts` already includes:
+
+```ts
+"job_application_status_changed"
+```
+
+for Talent notification counting.
+
+Therefore, **do not redesign the notification bell unless you discover a genuine frontend bug.**
+
+The primary objective is to make sure a persisted notification record is created for the correct Talent user when an Admin status change succeeds.
+
+---
+
+# Required behavior
+
+When an Admin changes an application from one status to another, create a notification for the Talent linked to that application.
+
+Example:
+
+```txt
+Under Review → Shortlisted
+```
+
+Talent notification:
+
+```txt
+Title:
+Application Shortlisted
+
+Message:
+Your application for IT Administrator at OnSpot Technologies Inc. has been shortlisted.
+```
+
+The persisted notification should use:
+
+```ts
+type: "job_application_status_changed"
+```
+
+Recommended fields:
+
+```ts
+{
+  userId: talentUserId,
+  type: "job_application_status_changed",
+  title: "...",
+  message: "...",
+  relatedId: applicationId,
+  relatedType: "job_application",
+  isRead: false
+}
+```
+
+Use the actual existing InsertNotification/database structure rather than inventing incompatible fields.
+
+---
+
+# Critical requirement: resolve the correct user ID
+
+Investigate how Job Applications relate to:
+
+```txt
+job application
+    ↓
+candidate
+    ↓
+linked Talent account
+    ↓
+users.id
+```
+
+The notification `userId` must be the canonical:
+
+```txt
+users.id
+```
+
+that the Talent notification endpoints query.
+
+Do NOT blindly use:
+
+* application ID
+* candidate ID
+* profile ID
+* email address
+* admin ID
+* client ID
+
+as the notification user ID.
+
+This is especially important because the existing Talent notification endpoint resolves candidate accounts to their linked `users.id`.
+
+Use the same account-linking rules that the existing Talent/My Applications implementation uses.
+
+If the application already contains something such as:
+
+```ts
+talentId
+candidateId
+userId
+```
+
+verify what that ID actually represents before using it.
+
+---
+
+# Trigger location
+
+Notification creation must happen on the **server**, in the same backend workflow that persists the status change.
+
+Do NOT rely on the Admin React page to create the notification.
+
+Desired sequence:
+
+```txt
+Admin selects status
+        ↓
+email is sent successfully if required by current workflow
+        ↓
+server updates application status
+        ↓
+server writes status history
+        ↓
+server creates Talent notification
+        ↓
+response returned to Admin frontend
+```
+
+Respect the current rule in Admin Job Applications that the applicant email must be successfully sent before certain status changes are saved.
+
+Do not weaken or remove that behavior.
+
+The notification should only represent a status change that actually succeeded.
+
+---
+
+# Status copy
+
+Create clear Talent-facing notification copy.
+
+Use the job title and company name when available.
+
+Suggested mapping:
+
+### Under Review
+
+```txt
+Title:
+Application Under Review
+
+Message:
+Your application for {jobTitle} at {companyName} is now under review.
+```
+
+### Shortlisted
+
+```txt
+Title:
+You've Been Shortlisted
+
+Message:
+Your application for {jobTitle} at {companyName} has been shortlisted.
+```
+
+### Interviewing
+
+```txt
+Title:
+Interview Stage
+
+Message:
+Your application for {jobTitle} at {companyName} has moved to the interview stage.
+```
+
+### Offer Extended
+
+```txt
+Title:
+Application Update
+
+Message:
+An offer has been extended for your application to {jobTitle} at {companyName}.
+```
+
+### Offer Accepted
+
+```txt
+Title:
+Offer Accepted
+
+Message:
+Your offer for {jobTitle} at {companyName} has been marked as accepted.
+```
+
+### Offer Declined
+
+```txt
+Title:
+Offer Declined
+
+Message:
+The offer status for your application to {jobTitle} at {companyName} has been updated to declined.
+```
+
+### Rejected
+
+```txt
+Title:
+Application Update
+
+Message:
+Your application for {jobTitle} at {companyName} will not be moving forward.
+```
+
+For other valid statuses, use a safe generic fallback:
+
+```txt
+Title:
+Application Status Updated
+
+Message:
+Your application for {jobTitle} at {companyName} is now {humanReadableStatus}.
+```
+
+Never expose the Admin's internal note to the Talent.
+
+Internal notes must remain Admin-only.
+
+---
+
+# Do not create duplicate notifications
+
+A notification should only be created when the status actually changes.
+
+For example:
+
+```txt
+under_review → under_review
+```
+
+must NOT produce another notification.
+
+Compare the previous status and new status before inserting.
+
+Also ensure retries do not accidentally produce obvious duplicate notifications if the same request is submitted more than once.
+
+If the existing API already prevents no-op status updates, reuse that protection.
+
+---
+
+# Unlinked applicants
+
+Some applications may not yet be linked to an OnSpot Talent account.
+
+If no canonical `users.id` can be found:
+
+* do not fail the status update
+* do not create an invalid notification
+* log a useful server-side warning
+* continue the existing email/status workflow
+
+Example:
+
+```ts
+console.warn(
+  "[job-application-status] Notification skipped: no linked talent user",
+  { applicationId, candidateId, email }
+);
+```
+
+Do not expose sensitive information unnecessarily.
+
+---
+
+# Preserve existing email workflow
+
+The Admin status modal currently states that the applicant email must be sent successfully before the status change is saved.
+
+Keep this behavior intact.
+
+The in-app notification is **additional** to the existing email.
+
+Expected final workflow:
+
+```txt
+Email to applicant
++
+Persisted in-app Talent notification
++
+My Applications status update
+```
+
+All three should reflect the successful Admin status change.
+
+---
+
+# Notification APIs
+
+Verify the existing Talent endpoints correctly return the newly created record, particularly:
+
+```txt
+GET /api/talent/notifications
+GET /api/talent/notifications?unread_only=true
+```
+
+Also verify the normal user notification endpoint where applicable:
+
+```txt
+GET /api/users/:userId/notifications
+```
+
+Do not create a new notification retrieval endpoint unless absolutely necessary.
+
+The existing `NotificationBell.tsx` already knows how to use the Talent endpoint.
+
+---
+
+# Notification bell behavior
+
+After the fix, the existing Talent bell should show the notification.
+
+Expected behavior:
+
+1. Admin changes application to `under_review`
+2. Database receives notification:
+
+```txt
+type = job_application_status_changed
+is_read = false
+```
+
+3. Talent opens or refreshes the site.
+4. Bell displays unread indicator.
+5. Opening Bell displays something like:
+
+```txt
+Application Under Review
+
+Your application for IT Administrator at OnSpot Technologies Inc. is now under review.
+
+Just now
+```
+
+6. Clicking it routes to:
+
+```txt
+/my-applications
+```
+
+7. Clicking the notification marks it read using the existing mark-read implementation.
+
+The frontend already supports this behavior, so reuse it.
+
+---
+
+# Query invalidation / immediate refresh
+
+The current unread-count hook polls periodically.
+
+Do not implement WebSockets just for this fix.
+
+Polling plus window-focus refresh is acceptable.
+
+However, ensure that after a Talent opens the notification and it is marked read, the existing React Query invalidation continues to update the unread badge correctly.
+
+Do not break:
+
+```ts
+["unread-notifications"]
+```
+
+query invalidation behavior.
+
+---
+
+# Database requirements
+
+Use the existing `notifications` table and existing storage method:
+
+```ts
+storage.createNotification(...)
+```
+
+or the equivalent existing implementation.
+
+Do not create another notification table.
+
+Do not add a migration unless the existing notification schema genuinely lacks a required field.
+
+Before changing the schema, inspect it first.
+
+---
+
+# Backend implementation preference
+
+Create a small reusable helper if appropriate, for example:
+
+```ts
+async function createApplicationStatusNotification({
+  application,
+  previousStatus,
+  newStatus,
+}: {
+  application: ...;
+  previousStatus: string;
+  newStatus: string;
+}) {
+  // resolve canonical talent users.id
+  // skip if no linked account
+  // skip if status did not change
+  // determine job/company
+  // create persisted notification
+}
+```
+
+Then call the helper from the successful Admin status update workflow.
+
+Do not duplicate this logic across multiple routes.
+
+If there are multiple legitimate application-status-changing workflows, determine whether they should share the helper.
+
+---
+
+# Transaction / failure handling
+
+Do not leave the application status in a broken or inconsistent state because notification creation fails.
+
+Follow the codebase's existing transaction/error-handling style.
+
+Preferred behavior:
+
+* status/history update remains authoritative
+* attempt notification creation immediately afterward or within the same service workflow
+* log notification failures clearly
+* avoid returning a misleading success if the main status update itself failed
+
+If the project already uses database transactions for this operation, integrate appropriately rather than introducing a conflicting transaction pattern.
+
+---
+
+# Logging
+
+Add useful temporary/permanent server logs around the notification flow.
+
+Example:
+
+```txt
+[application-status] status changed
+applicationId=...
+oldStatus=...
+newStatus=...
+talentUserId=...
+
+[application-status] notification created
+notificationId=...
+userId=...
+```
+
+If resolution fails:
+
+```txt
+[application-status] notification skipped — linked talent user not found
+```
+
+Avoid logging tokens or other secrets.
+
+---
+
+# Automated tests
+
+Add backend tests for the notification behavior.
+
+At minimum cover:
+
+### Test 1 — linked Talent gets notification
+
+Given:
+
+```txt
+application belongs to linked Talent user
+old status = submitted
+new status = under_review
+```
+
+Expect:
+
+```txt
+status updated
+notification created
+notification.userId === linked users.id
+notification.type === "job_application_status_changed"
+notification.relatedId === application.id
+notification.isRead === false
+```
+
+### Test 2 — correct notification copy
+
+For:
+
+```txt
+under_review → shortlisted
+```
+
+verify the notification communicates that the applicant was shortlisted.
+
+### Test 3 — no duplicate on no-op
+
+```txt
+under_review → under_review
+```
+
+Expect no notification.
+
+### Test 4 — unlinked candidate
+
+Status change succeeds, but no invalid notification is inserted.
+
+### Test 5 — Talent notification endpoint
+
+After creation:
+
+```txt
+GET /api/talent/notifications
+```
+
+returns the notification for the authenticated linked Talent.
+
+### Test 6 — unread endpoint
+
+```txt
+GET /api/talent/notifications?unread_only=true
+```
+
+returns the new notification until it is marked read.
+
+### Test 7 — authorization isolation
+
+Another Talent must NOT be able to see someone else's application-status notification.
+
+---
+
+# Manual test scenario
+
+Use this exact workflow:
+
+1. Log in as Talent.
+2. Apply to an open position.
+3. Confirm it appears under:
+
+```txt
+My Applications
+```
+
+4. Log in as Admin.
+5. Open:
+
+```txt
+Admin Dashboard → Job Applications
+```
+
+6. Find the Talent application.
+7. Change:
+
+```txt
+Submitted → Under Review
+```
+
+8. Complete the existing email step.
+9. Confirm Admin page shows:
+
+```txt
+Under Review
+```
+
+10. Return to Talent account.
+11. Confirm My Applications still shows:
+
+```txt
+Under Review
+```
+
+12. Check the notification bell.
+13. Confirm a new unread notification exists.
+14. Click it.
+15. Confirm it routes to:
+
+```txt
+/my-applications
+```
+
+16. Confirm it becomes read.
+
+Repeat with:
+
+```txt
+Under Review → Shortlisted
+```
+
+and verify a second notification is created.
+
+---
+
+# Regression requirements
+
+Do not break:
+
+* Admin Job Applications
+* application status history
+* applicant status emails
+* Talent My Applications
+* existing offer notifications
+* Client/Admin application notifications
+* direct-message notifications
+* notification unread counters
+* mark-as-read behavior
+* Talent authentication
+* candidate → Talent account linking
+* hiring/contract workflow
+* existing status enums
+
+Do not rename existing notification types.
+
+In particular, keep:
+
+```ts
+job_application_status_changed
+```
+
+because the Talent frontend already expects this exact value.
+
+---
+
+# Deliverables
+
+After implementing, provide:
+
+1. Root cause found.
+2. Files changed.
+3. Explanation of how the Talent `users.id` is resolved.
+4. Location where notification creation was added.
+5. Notification payload example.
+6. Tests added/updated.
+7. Manual verification results.
+8. Any edge cases discovered.
+
+Do not stop after explaining the issue. Inspect the actual code, implement the fix, run the relevant tests/type-checks, and verify the Admin → Talent flow end-to-end.
