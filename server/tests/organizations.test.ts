@@ -17,6 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
 const suffix = Date.now();
 const CLIENT_ID = `organization-client-${suffix}`;
 const OTHER_CLIENT_ID = `organization-other-client-${suffix}`;
+const INVITEE_ID = `organization-invitee-${suffix}`;
 const TALENT_ID = `organization-talent-${suffix}`;
 const ADMIN_ID = `organization-admin-${suffix}`;
 
@@ -25,6 +26,7 @@ const makeToken = (userId: string, role: string) =>
 
 const clientToken = makeToken(CLIENT_ID, "client");
 const otherClientToken = makeToken(OTHER_CLIENT_ID, "client");
+const inviteeToken = makeToken(INVITEE_ID, "client");
 const talentToken = makeToken(TALENT_ID, "talent");
 const adminToken = makeToken(ADMIN_ID, "admin");
 
@@ -83,13 +85,16 @@ async function createFixtures() {
      VALUES
        ($1, $2, 'Organization', 'Client', 'client'),
        ($3, $4, 'Other', 'Client', 'client'),
-       ($5, $6, 'Organization', 'Talent', 'talent'),
-       ($7, $8, 'Organization', 'Admin', 'admin')`,
+       ($5, $6, 'Invitee', 'Client', 'client'),
+       ($7, $8, 'Organization', 'Talent', 'talent'),
+       ($9, $10, 'Organization', 'Admin', 'admin')`,
     [
       CLIENT_ID,
       `${CLIENT_ID}@test.example`,
       OTHER_CLIENT_ID,
       `${OTHER_CLIENT_ID}@test.example`,
+      INVITEE_ID,
+      `${INVITEE_ID}@test.example`,
       TALENT_ID,
       `${TALENT_ID}@test.example`,
       ADMIN_ID,
@@ -100,7 +105,8 @@ async function createFixtures() {
 
 async function destroyFixtures() {
   await query(`DELETE FROM organizations WHERE created_by = ANY($1::text[])`, [[CLIENT_ID, OTHER_CLIENT_ID]]).catch(() => {});
-  await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[CLIENT_ID, OTHER_CLIENT_ID, TALENT_ID, ADMIN_ID]]);
+  await query(`DELETE FROM notifications WHERE user_id = ANY($1::text[])`, [[CLIENT_ID, OTHER_CLIENT_ID, INVITEE_ID, TALENT_ID, ADMIN_ID]]).catch(() => {});
+  await query(`DELETE FROM users WHERE id = ANY($1::text[])`, [[CLIENT_ID, OTHER_CLIENT_ID, INVITEE_ID, TALENT_ID, ADMIN_ID]]);
 }
 
 describe("Client organization routes", () => {
@@ -195,6 +201,93 @@ describe("Client organization routes", () => {
     const list = await request(server, "GET", "/api/organizations/me", otherClientToken);
     assert.equal(list.status, 200);
     assert.deepEqual(list.json, []);
+  });
+
+  it("lets owners invite Clients, lets invitees accept, and keeps administration owner-only", async () => {
+    const invitation = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${INVITEE_ID}@test.example` },
+    );
+    assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
+    assert.equal(invitation.json.invitation.status, "pending");
+
+    const ownerView = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members`,
+      clientToken,
+    );
+    assert.equal(ownerView.status, 200);
+    assert.equal(ownerView.json.canManage, true);
+    assert.equal(ownerView.json.members.length, 1);
+    assert.equal(ownerView.json.invitations.length, 1);
+
+    const nonOwnerView = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members`,
+      otherClientToken,
+    );
+    assert.equal(nonOwnerView.status, 404);
+
+    const inviteeInvitations = await request(server, "GET", "/api/organization-invitations", inviteeToken);
+    assert.equal(inviteeInvitations.status, 200);
+    assert.equal(inviteeInvitations.json.length, 1);
+
+    const accepted = await request(
+      server,
+      "POST",
+      `/api/organization-invitations/${invitation.json.invitation.id}/respond`,
+      inviteeToken,
+      { action: "accept" },
+    );
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+    assert.equal(accepted.json.membership.status, "active");
+
+    const inviteeOrganizations = await request(server, "GET", "/api/organizations/me", inviteeToken);
+    assert.equal(inviteeOrganizations.status, 200);
+    assert.equal(inviteeOrganizations.json[0].organization.id, createdOrganizationId);
+
+    const removed = await request(
+      server,
+      "DELETE",
+      `/api/organizations/${createdOrganizationId}/members/${accepted.json.membership.id}`,
+      clientToken,
+    );
+    assert.equal(removed.status, 200, JSON.stringify(removed.json));
+
+    const afterRemoval = await request(server, "GET", "/api/organizations/me", inviteeToken);
+    assert.deepEqual(afterRemoval.json, []);
+  });
+
+  it("allows an owner to revoke a pending invitation", async () => {
+    const invitation = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: "not-yet-registered@example.test" },
+    );
+    assert.equal(invitation.status, 201);
+
+    const revoked = await request(
+      server,
+      "DELETE",
+      `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}`,
+      clientToken,
+    );
+    assert.equal(revoked.status, 200);
+
+    const ownerView = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members`,
+      clientToken,
+    );
+    assert.equal(ownerView.json.invitations[0].status, "revoked");
   });
 
   it("rolls back the organization when owner membership creation fails", async () => {

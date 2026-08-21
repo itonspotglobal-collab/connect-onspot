@@ -241,6 +241,19 @@ export function TopNavigation() {
     staleTime: 30_000,
   });
   const firstClientOrganization = clientOrganizations[0]?.organization;
+  const { data: organizationInvitations = [] } = useQuery<Array<{
+    id: string;
+    organizationName?: string;
+    status: string;
+  }>>({
+    queryKey: ["/api/organization-invitations"],
+    queryFn: async () => {
+      const response = await authAPI.get("/api/organization-invitations");
+      return response.data;
+    },
+    enabled: !!user && user.role === "client",
+    staleTime: 30_000,
+  });
 
   // ── Profile route helpers ──────────────────────────────────────────────────
   // Resolve candidate ID for talent users regardless of which auth path was used:
@@ -296,6 +309,13 @@ export function TopNavigation() {
       firstClientOrganization
         ? { label: "My Organization", route: `/organization/${firstClientOrganization.id}`, icon: Building2 }
         : { label: "Create Organization", route: "/organization/create", icon: Building2 },
+      {
+        label: organizationInvitations.length
+          ? `Organization Invitations (${organizationInvitations.length})`
+          : "Organization Invitations",
+        route: "/organization-invitations",
+        icon: Mail,
+      },
       { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
       { label: "Messages",       route: "/messages",        icon: MessageSquare },
       { label: "Settings",       route: "/settings",       icon: Settings },

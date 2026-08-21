@@ -957,6 +957,27 @@ export async function registerRoutes(
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_user_id ON organization_members(user_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_organization_id ON organization_members(organization_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_organization_members_status ON organization_members(status)`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS organization_invitations (
+        id              varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        organization_id varchar NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        email           varchar NOT NULL,
+        invited_by      varchar NOT NULL REFERENCES users(id),
+        status          text NOT NULL DEFAULT 'pending',
+        accepted_by     varchar REFERENCES users(id),
+        created_at      timestamp DEFAULT now(),
+        responded_at    timestamp,
+        updated_at      timestamp DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_organization_id ON organization_invitations(organization_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_email ON organization_invitations(email)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_status ON organization_invitations(status)`);
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS organization_invitations_pending_email_unique
+        ON organization_invitations (organization_id, lower(email))
+        WHERE status = 'pending'
+    `);
   } catch (migErr: any) {
     console.warn("⚠️  organization tables migration skipped:", migErr.message);
   }
@@ -11407,6 +11428,34 @@ export async function registerRoutes(
     joinedAt: row.joined_at,
   });
 
+  const mapOrganizationInvitation = (row: any) => ({
+    id: row.id,
+    organizationId: row.organization_id,
+    organizationName: row.organization_name ?? undefined,
+    email: row.email,
+    status: row.status,
+    invitedBy: row.invited_by,
+    inviterName: row.inviter_name ?? null,
+    createdAt: row.created_at,
+    respondedAt: row.responded_at ?? null,
+  });
+
+  const getActiveOrganizationMembership = async (organizationId: string, userId: string) => {
+    const result = await query(
+      `SELECT om.id, om.organization_id, om.user_id, om.role, om.status
+         FROM organization_members om
+        WHERE om.organization_id = $1 AND om.user_id = $2 AND om.status = 'active'
+        LIMIT 1`,
+      [organizationId, userId],
+    );
+    return result.rows[0] ?? null;
+  };
+
+  const requireOrganizationOwner = async (organizationId: string, userId: string) => {
+    const membership = await getActiveOrganizationMembership(organizationId, userId);
+    return membership?.role === "owner" ? membership : null;
+  };
+
   app.post("/api/organizations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11522,6 +11571,319 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/organizations/:organizationId failed:", err);
       return res.status(500).json({ error: "Failed to load organization" });
+    }
+  });
+
+  // Team membership is managed separately from the existing individual Client
+  // account. Only an active organization owner can invite, revoke, or remove.
+  app.get("/api/organizations/:organizationId/members", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const membership = await getActiveOrganizationMembership(req.params.organizationId, userId);
+      if (!membership) return res.status(404).json({ error: "Organization not found" });
+
+      const membersResult = await query(
+        `SELECT om.id, om.organization_id, om.user_id, om.role, om.status,
+                om.joined_at, u.email, u.first_name, u.last_name, u.company
+           FROM organization_members om
+           INNER JOIN users u ON u.id = om.user_id
+          WHERE om.organization_id = $1 AND om.status = 'active'
+          ORDER BY CASE WHEN om.role = 'owner' THEN 0 ELSE 1 END, om.joined_at ASC`,
+        [req.params.organizationId],
+      );
+
+      const invitationsResult = membership.role === "owner"
+        ? await query(
+          `SELECT oi.*, o.name AS organization_name,
+                  TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS inviter_name
+             FROM organization_invitations oi
+             INNER JOIN organizations o ON o.id = oi.organization_id
+             INNER JOIN users u ON u.id = oi.invited_by
+            WHERE oi.organization_id = $1
+            ORDER BY oi.created_at DESC`,
+          [req.params.organizationId],
+        )
+        : { rows: [] };
+
+      return res.json({
+        canManage: membership.role === "owner",
+        members: membersResult.rows.map((row: any) => ({
+          id: row.id,
+          userId: row.user_id,
+          role: row.role,
+          status: row.status,
+          joinedAt: row.joined_at,
+          email: row.email,
+          firstName: row.first_name,
+          lastName: row.last_name,
+          company: row.company,
+        })),
+        invitations: invitationsResult.rows.map(mapOrganizationInvitation),
+      });
+    } catch (err: any) {
+      console.error("GET organization members failed:", err);
+      return res.status(500).json({ error: "Failed to load organization members" });
+    }
+  });
+
+  const organizationInvitationSchema = z.object({
+    email: z.string().trim().email("Enter a valid email address").max(320),
+  }).strict();
+
+  app.post("/api/organizations/:organizationId/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can invite members" });
+
+      const { email } = organizationInvitationSchema.parse(req.body ?? {});
+      const normalizedEmail = email.toLowerCase();
+      const inviter = await query(
+        `SELECT id, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+        [userId],
+      );
+      const targetUser = await query(
+        `SELECT id, role FROM users WHERE lower(email) = $1 LIMIT 1`,
+        [normalizedEmail],
+      );
+
+      if (targetUser.rows[0]?.role && targetUser.rows[0].role !== "client") {
+        return res.status(400).json({ error: "Only Client accounts can join an organization" });
+      }
+      if (targetUser.rows[0]?.id === userId) {
+        return res.status(400).json({ error: "You are already an owner of this organization" });
+      }
+
+      if (targetUser.rows[0]) {
+        const existingMembership = await query(
+          `SELECT status FROM organization_members
+            WHERE organization_id = $1 AND user_id = $2
+            LIMIT 1`,
+          [req.params.organizationId, targetUser.rows[0].id],
+        );
+        if (existingMembership.rows[0]?.status === "active") {
+          return res.status(409).json({ error: "This user is already a member of the organization" });
+        }
+        if (existingMembership.rows[0]?.status === "suspended") {
+          return res.status(409).json({ error: "This user's organization membership is suspended" });
+        }
+      }
+
+      const existingInvitation = await query(
+        `SELECT id, status FROM organization_invitations
+          WHERE organization_id = $1 AND lower(email) = $2 AND status = 'pending'
+          LIMIT 1`,
+        [req.params.organizationId, normalizedEmail],
+      );
+      if (existingInvitation.rows.length) {
+        return res.status(409).json({ error: "An invitation is already pending for this email" });
+      }
+
+      const invitationResult = await query(
+        `INSERT INTO organization_invitations (organization_id, email, invited_by)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+        [req.params.organizationId, normalizedEmail, userId],
+      );
+      const invitation = invitationResult.rows[0];
+
+      // Registered Client invitees also receive an in-app notification. The
+      // invitation remains usable for people who sign up after the invite.
+      if (targetUser.rows[0]?.id) {
+        const inviterName = `${inviter.rows[0]?.first_name ?? ""} ${inviter.rows[0]?.last_name ?? ""}`.trim() || "An organization owner";
+        const organization = await query(`SELECT name FROM organizations WHERE id = $1`, [req.params.organizationId]);
+        await storage.createNotification({
+          userId: targetUser.rows[0].id,
+          type: "organization_invitation",
+          title: "Organization invitation",
+          message: `${inviterName} invited you to join ${organization.rows[0]?.name ?? "an organization"}.`,
+          relatedId: invitation.id,
+          relatedType: "organization_invitation",
+        });
+      }
+
+      return res.status(201).json({ invitation: mapOrganizationInvitation({ ...invitation, organization_name: undefined }) });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      if (err?.code === "23505") {
+        return res.status(409).json({ error: "An invitation is already pending for this email" });
+      }
+      console.error("POST organization invitation failed:", err);
+      return res.status(500).json({ error: "Failed to create organization invitation" });
+    }
+  });
+
+  app.delete("/api/organizations/:organizationId/invitations/:invitationId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can revoke invitations" });
+      const result = await query(
+        `UPDATE organization_invitations
+            SET status = 'revoked', responded_at = NOW(), updated_at = NOW()
+          WHERE id = $1 AND organization_id = $2 AND status = 'pending'
+          RETURNING id`,
+        [req.params.invitationId, req.params.organizationId],
+      );
+      if (!result.rows.length) return res.status(404).json({ error: "Pending invitation not found" });
+      return res.json({ status: "revoked" });
+    } catch (err: any) {
+      console.error("DELETE organization invitation failed:", err);
+      return res.status(500).json({ error: "Failed to revoke organization invitation" });
+    }
+  });
+
+  app.delete("/api/organizations/:organizationId/members/:membershipId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can remove members" });
+      const result = await query(
+        `UPDATE organization_members
+            SET status = 'suspended', updated_at = NOW()
+          WHERE id = $1 AND organization_id = $2 AND status = 'active' AND role = 'member'
+          RETURNING id`,
+        [req.params.membershipId, req.params.organizationId],
+      );
+      if (!result.rows.length) {
+        return res.status(404).json({ error: "Active member not found or cannot be removed" });
+      }
+      return res.json({ status: "suspended" });
+    } catch (err: any) {
+      console.error("DELETE organization member failed:", err);
+      return res.status(500).json({ error: "Failed to remove organization member" });
+    }
+  });
+
+  // Invitee-only endpoints. Both the email match and the Client role are
+  // checked server-side; the invitation id alone never grants access.
+  app.get("/api/organization-invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const result = await query(
+        `SELECT oi.*, o.name AS organization_name,
+                TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS inviter_name
+           FROM organization_invitations oi
+           INNER JOIN organizations o ON o.id = oi.organization_id
+           INNER JOIN users u ON u.id = oi.invited_by
+           INNER JOIN users invitee ON lower(invitee.email) = lower(oi.email)
+          WHERE invitee.id = $1 AND oi.status = 'pending'
+          ORDER BY oi.created_at DESC`,
+        [userId],
+      );
+      return res.json(result.rows.map(mapOrganizationInvitation));
+    } catch (err: any) {
+      console.error("GET organization invitations failed:", err);
+      return res.status(500).json({ error: "Failed to load organization invitations" });
+    }
+  });
+
+  app.post("/api/organization-invitations/:invitationId/respond", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const action = req.body?.action;
+    if (action !== "accept" && action !== "decline") {
+      return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
+    }
+
+    const dbClient = await getClient();
+    try {
+      await dbClient.query("BEGIN");
+      const invitationResult = await dbClient.query(
+        `SELECT oi.*, o.name AS organization_name
+           FROM organization_invitations oi
+           INNER JOIN organizations o ON o.id = oi.organization_id
+           INNER JOIN users u ON lower(u.email) = lower(oi.email)
+          WHERE oi.id = $1 AND u.id = $2
+          FOR UPDATE OF oi`,
+        [req.params.invitationId, userId],
+      );
+      if (!invitationResult.rows.length) {
+        await dbClient.query("ROLLBACK");
+        return res.status(404).json({ error: "Organization invitation not found" });
+      }
+      const invitation = invitationResult.rows[0];
+      if (invitation.status !== "pending") {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({ error: "This invitation is no longer pending" });
+      }
+
+      if (action === "decline") {
+        await dbClient.query(
+          `UPDATE organization_invitations
+              SET status = 'declined', responded_at = NOW(), updated_at = NOW()
+            WHERE id = $1`,
+          [invitation.id],
+        );
+        await dbClient.query("COMMIT");
+        return res.json({ status: "declined" });
+      }
+
+      const existingMembership = await dbClient.query(
+        `SELECT id, role, status FROM organization_members
+          WHERE organization_id = $1 AND user_id = $2
+          FOR UPDATE`,
+        [invitation.organization_id, userId],
+      );
+      let membership;
+      if (existingMembership.rows[0]?.role === "owner") {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({ error: "You already own this organization" });
+      } else if (existingMembership.rows[0]) {
+        const membershipResult = await dbClient.query(
+          `UPDATE organization_members
+              SET status = 'active', role = 'member', joined_at = NOW(), updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, organization_id, user_id, role, status, joined_at`,
+          [existingMembership.rows[0].id],
+        );
+        membership = membershipResult.rows[0];
+      } else {
+        const membershipResult = await dbClient.query(
+          `INSERT INTO organization_members (organization_id, user_id, role, status)
+           VALUES ($1, $2, 'member', 'active')
+           RETURNING id, organization_id, user_id, role, status, joined_at`,
+          [invitation.organization_id, userId],
+        );
+        membership = membershipResult.rows[0];
+      }
+
+      await dbClient.query(
+        `UPDATE organization_invitations
+            SET status = 'accepted', accepted_by = $2, responded_at = NOW(), updated_at = NOW()
+          WHERE id = $1`,
+        [invitation.id, userId],
+      );
+      await dbClient.query("COMMIT");
+      return res.json({
+        status: "accepted",
+        organization: { id: invitation.organization_id, name: invitation.organization_name },
+        membership: {
+          id: membership.id,
+          organizationId: membership.organization_id,
+          userId: membership.user_id,
+          role: membership.role,
+          status: membership.status,
+          joinedAt: membership.joined_at,
+        },
+      });
+    } catch (err: any) {
+      await dbClient.query("ROLLBACK").catch(() => {});
+      console.error("POST organization invitation response failed:", err);
+      return res.status(500).json({ error: "Failed to respond to organization invitation" });
+    } finally {
+      dbClient.release();
     }
   });
 

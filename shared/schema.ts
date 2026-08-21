@@ -127,6 +127,22 @@ export const organizationMembers = pgTable("organization_members", {
   index("idx_organization_members_status").on(table.status),
 ]);
 
+export const organizationInvitations = pgTable("organization_invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  email: varchar("email").notNull(),
+  invitedBy: varchar("invited_by").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), // pending | accepted | declined | revoked
+  acceptedBy: varchar("accepted_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_organization_invitations_organization_id").on(table.organizationId),
+  index("idx_organization_invitations_email").on(table.email),
+  index("idx_organization_invitations_status").on(table.status),
+]);
+
 // Skills
 export const skills = pgTable("skills", {
   id: serial("id").primaryKey(), // Keep serial for consistency with existing pattern
@@ -725,6 +741,14 @@ export const insertOrganizationMemberSchema = createInsertSchema(organizationMem
 });
 export type InsertOrganizationMember = z.infer<typeof insertOrganizationMemberSchema>;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
+
+export const insertOrganizationInvitationSchema = createInsertSchema(organizationInvitations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertOrganizationInvitation = z.infer<typeof insertOrganizationInvitationSchema>;
+export type OrganizationInvitation = typeof organizationInvitations.$inferSelect;
 
 // Job Submissions — built-in application form submissions
 export const jobSubmissions = pgTable("job_submissions", {

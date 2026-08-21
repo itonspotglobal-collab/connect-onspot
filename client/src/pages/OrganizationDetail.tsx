@@ -1,10 +1,15 @@
 import { useLocation, useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Building2, Globe2, Users } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
+import { ArrowLeft, Building2, Globe2, Loader2, Mail, UserMinus, Users, X } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 type OrganizationResponse = {
   organization: {
@@ -25,9 +30,33 @@ type OrganizationResponse = {
   };
 };
 
+type OrganizationMembersResponse = {
+  canManage: boolean;
+  members: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    status: string;
+    joinedAt: string | null;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    company: string | null;
+  }>;
+  invitations: Array<{
+    id: string;
+    email: string;
+    status: string;
+    inviterName: string | null;
+    createdAt: string | null;
+  }>;
+};
+
 export default function OrganizationDetail() {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [inviteEmail, setInviteEmail] = useState("");
   const { data, isLoading, isError } = useQuery<OrganizationResponse>({
     queryKey: ["/api/organizations", organizationId],
     queryFn: async () => {
@@ -35,6 +64,60 @@ export default function OrganizationDetail() {
       return response.json();
     },
     enabled: Boolean(organizationId),
+  });
+  const { data: teamData, isLoading: isTeamLoading } = useQuery<OrganizationMembersResponse>({
+    queryKey: ["/api/organizations", organizationId, "members"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/organizations/${organizationId}/members`);
+      return response.json();
+    },
+    enabled: Boolean(organizationId && data?.organization),
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await apiRequest("POST", `/api/organizations/${organizationId}/invitations`, { email });
+      return response.json();
+    },
+    onSuccess: () => {
+      setInviteEmail("");
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
+      toast({ title: "Invitation sent", description: "The invitation is now pending for this email address." });
+    },
+    onError: (error: Error) => toast({
+      title: "Invitation could not be sent",
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
+  const revokeInvitationMutation = useMutation({
+    mutationFn: (invitationId: string) =>
+      apiRequest("DELETE", `/api/organizations/${organizationId}/invitations/${invitationId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
+      toast({ title: "Invitation revoked" });
+    },
+    onError: (error: Error) => toast({
+      title: "Invitation could not be revoked",
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (membershipId: string) =>
+      apiRequest("DELETE", `/api/organizations/${organizationId}/members/${membershipId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations/me"] });
+      toast({ title: "Team member removed" });
+    },
+    onError: (error: Error) => toast({
+      title: "Team member could not be removed",
+      description: error.message,
+      variant: "destructive",
+    }),
   });
 
   if (isLoading) {
@@ -74,6 +157,14 @@ export default function OrganizationDetail() {
     ["Location", organization.location],
     ["Timezone", organization.timezone],
   ].filter(([, value]) => value);
+
+  const isOwner = data.membership.role === "owner";
+  const handleInvite = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const email = inviteEmail.trim();
+    if (!email || inviteMutation.isPending) return;
+    inviteMutation.mutate(email);
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -137,20 +228,131 @@ export default function OrganizationDetail() {
             )}
           </div>
 
-          <Card className="border-dashed border-slate-300 bg-slate-50/70 shadow-none">
+          <Card className="border-slate-200 bg-slate-50/70 shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-5 w-5 text-[#474ead]" />
                 Team members
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-6 text-slate-500">
-                Invite and manage team members from this workspace in a future update.
-              </p>
-              <Button variant="outline" className="mt-5 w-full" disabled>
-                Team management coming soon
-              </Button>
+            <CardContent className="space-y-5">
+              {isOwner && (
+                <form onSubmit={handleInvite} className="space-y-2">
+                  <Label htmlFor="organization-invite-email">Invite a colleague</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="organization-invite-email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(event) => setInviteEmail(event.target.value)}
+                      placeholder="colleague@company.com"
+                      maxLength={320}
+                      required
+                    />
+                    <Button type="submit" disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+                      {inviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
+                    </Button>
+                  </div>
+                  <p className="text-xs leading-5 text-slate-500">
+                    The invitee must use a Client account with this email address to accept.
+                  </p>
+                </form>
+              )}
+
+              {isTeamLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {teamData?.members.map((member) => {
+                      const name = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+                      return (
+                        <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-slate-800">{name}</p>
+                            <p className="truncate text-xs text-slate-500">{member.email}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <Badge variant="outline" className="capitalize">{member.role}</Badge>
+                            {isOwner && member.role !== "owner" && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title={`Remove ${name}`}
+                                aria-label={`Remove ${name}`}
+                                disabled={removeMemberMutation.isPending}
+                                onClick={() => removeMemberMutation.mutate(member.id)}
+                              >
+                                <UserMinus className="h-4 w-4 text-slate-500" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {!teamData?.members.length && (
+                      <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500">
+                        You are the only active member of this organization.
+                      </p>
+                    )}
+                  </div>
+
+                  {isOwner && (
+                    <div className="border-t border-slate-200 pt-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-slate-800">Invitations</h3>
+                        <span className="text-xs text-slate-400">{teamData?.invitations.length ?? 0} total</span>
+                      </div>
+                      <div className="space-y-2">
+                        {teamData?.invitations.map((invitation) => (
+                          <div key={invitation.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                            <div className="min-w-0">
+                              <p className="flex items-center gap-1.5 truncate text-sm font-medium text-slate-800">
+                                <Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                {invitation.email}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : ""}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <Badge variant={invitation.status === "pending" ? "secondary" : "outline"} className="capitalize">
+                                {invitation.status}
+                              </Badge>
+                              {invitation.status === "pending" && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Revoke invitation"
+                                  aria-label={`Revoke invitation for ${invitation.email}`}
+                                  disabled={revokeInvitationMutation.isPending}
+                                  onClick={() => revokeInvitationMutation.mutate(invitation.id)}
+                                >
+                                  <X className="h-4 w-4 text-slate-500" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {!teamData?.invitations.length && (
+                          <p className="text-sm text-slate-500">No invitations have been sent yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!isOwner && (
+                <p className="text-xs leading-5 text-slate-500">
+                  Only organization owners can invite or remove team members.
+                </p>
+              )}
             </CardContent>
           </Card>
         </CardContent>
