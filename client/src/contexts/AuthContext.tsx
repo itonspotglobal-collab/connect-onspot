@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { authAPI, getCurrentUser, isAuthenticated as checkIsAuthenticated } from '@/lib/api';
+import { queryClient } from '@/lib/queryClient';
 
 interface User {
   id: string;
@@ -23,6 +24,8 @@ interface AuthContextType {
   isLoading: boolean;
   user: User | null;
   error: string | null;
+  selectedOrganizationId: string | null;
+  setSelectedOrganizationId: (organizationId: string | null) => void;
   login: (email: string, password: string, userType?: "client" | "talent" | null) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -31,6 +34,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const SELECTED_ORGANIZATION_STORAGE_PREFIX = 'onspot_selected_organization_';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
@@ -38,7 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedOrganizationId, setSelectedOrganizationIdState] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+
+  const setSelectedOrganizationId = useCallback((organizationId: string | null) => {
+    setSelectedOrganizationIdState(organizationId);
+
+    if (typeof window === 'undefined' || user?.role !== 'client') return;
+
+    const storageKey = `${SELECTED_ORGANIZATION_STORAGE_PREFIX}${user.id}`;
+    if (organizationId) {
+      localStorage.setItem(storageKey, organizationId);
+    } else {
+      localStorage.removeItem(storageKey);
+    }
+  }, [user?.id, user?.role]);
 
   const login = async (email: string, password: string, userType: "client" | "talent" | null = "client"): Promise<boolean> => {
     try {
@@ -151,6 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Use JWT logout (clears localStorage)
       authAPI.logout();
+      // Do not let authenticated data, especially workspace memberships,
+      // survive a logout/login transition in the same SPA session.
+      queryClient.clear();
       
       console.log('🚪 JWT User logged out successfully');
     } catch (error) {
@@ -351,12 +372,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [initialized]);
 
+  // Keep the active workspace in the account-scoped local storage slot. This
+  // lets the Client selector survive route changes and browser refreshes
+  // without leaking a previous client's organization into another account.
+  useEffect(() => {
+    if (typeof window === 'undefined' || user?.role !== 'client') {
+      setSelectedOrganizationIdState(null);
+      return;
+    }
+
+    setSelectedOrganizationIdState(
+      localStorage.getItem(`${SELECTED_ORGANIZATION_STORAGE_PREFIX}${user.id}`),
+    );
+  }, [user?.id, user?.role]);
+
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
       isLoading, 
       user, 
       error, 
+      selectedOrganizationId,
+      setSelectedOrganizationId,
       login, 
       logout, 
       refreshAuth,

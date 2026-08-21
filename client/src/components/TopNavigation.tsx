@@ -79,7 +79,15 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location, navigate] = useLocation();
-  const { isAuthenticated, isLoading, user, logout, refreshAuth } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading,
+    user,
+    logout,
+    refreshAuth,
+    selectedOrganizationId,
+    setSelectedOrganizationId,
+  } = useAuth();
   const { signInToPortal } = usePortalLogin();
   const { toast } = useToast();
   const [isVisible, setIsVisible] = useState(true);
@@ -228,19 +236,38 @@ export function TopNavigation() {
 
   // Client organization shortcut. This query is only enabled for Clients so
   // Talent/Admin account menus remain unchanged and do not call the endpoint.
-  const { data: clientOrganizations = [] } = useQuery<Array<{
+  const {
+    data: clientOrganizations = [],
+    isSuccess: isClientOrganizationsLoaded,
+  } = useQuery<Array<{
     organization: { id: string; name: string };
     membership: { role: string; status: string };
   }>>({
-    queryKey: ["/api/organizations/me"],
+    queryKey: ["/api/organizations/me", user?.id],
     queryFn: async () => {
-      const response = await authAPI.get("/api/organizations/me");
-      return response.data;
+      return authAPI.get("/api/organizations/me");
     },
     enabled: !!user && user.role === "client",
     staleTime: 30_000,
   });
-  const firstClientOrganization = clientOrganizations[0]?.organization;
+  const activeClientOrganization = clientOrganizations.find(
+    ({ organization }) => organization.id === selectedOrganizationId,
+  )?.organization ?? clientOrganizations[0]?.organization;
+
+  useEffect(() => {
+    if (user?.role !== "client" || !isClientOrganizationsLoaded) return;
+
+    const nextOrganizationId = activeClientOrganization?.id ?? null;
+    if (nextOrganizationId !== selectedOrganizationId) {
+      setSelectedOrganizationId(nextOrganizationId);
+    }
+  }, [
+    activeClientOrganization?.id,
+    isClientOrganizationsLoaded,
+    selectedOrganizationId,
+    setSelectedOrganizationId,
+    user?.role,
+  ]);
   const { data: organizationInvitations = [] } = useQuery<Array<{
     id: string;
     organizationName?: string;
@@ -306,9 +333,9 @@ export function TopNavigation() {
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
-      firstClientOrganization
-        ? { label: "My Organization", route: `/organization/${firstClientOrganization.id}`, icon: Building2 }
-        : { label: "Create Organization", route: "/organization/create", icon: Building2 },
+      ...(clientOrganizations.length === 0
+        ? [{ label: "Create Organization", route: "/organization/create", icon: Building2 }]
+        : []),
       {
         label: organizationInvitations.length
           ? `Organization Invitations (${organizationInvitations.length})`
@@ -982,7 +1009,9 @@ export function TopNavigation() {
                         <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
                           {accountInitials || <AccountFallbackIcon style={{ width: 13, height: 13 }} />}
                         </span>
-                        {getProfileLabel()}
+                        {user?.role === "client" && activeClientOrganization
+                          ? activeClientOrganization.name
+                          : getProfileLabel()}
                         <ChevronDown style={{ width: 14, height: 14, opacity: 0.8, transform: clientAdminDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }} />
                       </span>
                     </button>
@@ -1011,6 +1040,51 @@ export function TopNavigation() {
                           </div>
                         </div>
                       </div>
+
+                      {user?.role === "client" && clientOrganizations.length > 0 && (
+                        <>
+                          <div style={{ padding: '8px 12px 4px', color: '#777B8C', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                            Workspaces
+                          </div>
+                          {clientOrganizations.map(({ organization, membership }) => {
+                            const isActive = organization.id === activeClientOrganization?.id;
+                            return (
+                              <RadixDropdown.Item key={organization.id} asChild>
+                                <button
+                                  type="button"
+                                  data-testid={`workspace-option-${organization.id}`}
+                                  aria-current={isActive ? "true" : undefined}
+                                  onClick={() => {
+                                    setSelectedOrganizationId(organization.id);
+                                    setClientAdminDropdownOpen(false);
+                                    navigate(`/organization/${organization.id}`);
+                                  }}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px',
+                                    minHeight: 48, width: '100%', fontSize: 14,
+                                    fontWeight: isActive ? 700 : 500,
+                                    color: isActive ? '#4D55C7' : '#1E2330',
+                                    borderRadius: 10, border: 'none',
+                                    background: isActive ? '#F3F3FF' : 'transparent',
+                                    cursor: 'pointer', textAlign: 'left', marginTop: 2,
+                                    transition: 'background 150ms ease, color 150ms ease', outline: 'none',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isActive ? '#F3F3FF' : 'transparent'; e.currentTarget.style.color = isActive ? '#4D55C7' : '#1E2330'; }}
+                                  onFocus={(e) => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                                  onBlur={(e) => { e.currentTarget.style.background = isActive ? '#F3F3FF' : 'transparent'; e.currentTarget.style.color = isActive ? '#4D55C7' : '#1E2330'; }}
+                                >
+                                  <Building2 style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{organization.name}</span>
+                                  <span style={{ color: '#777B8C', fontSize: 11, flexShrink: 0 }}>{membership.role}</span>
+                                  {isActive && <CheckCircle2 style={{ width: 16, height: 16, color: '#4D55C7', flexShrink: 0 }} />}
+                                </button>
+                              </RadixDropdown.Item>
+                            );
+                          })}
+                          <div style={{ height: 1, background: 'rgba(75,81,184,0.1)', margin: '6px 0' }} />
+                        </>
+                      )}
 
                       {getDropdownItems().map(({ label, route, icon: Icon }) => (
                         <RadixDropdown.Item key={route} asChild>
@@ -1609,6 +1683,37 @@ export function TopNavigation() {
             <div className="space-y-1">
               {/* Account label */}
               <p className="px-2 py-1 text-[11px] text-white/40 truncate">{user.email}</p>
+              {user.role === "client" && clientOrganizations.length > 0 && (
+                <div className="mb-2 border-y border-white/10 py-2">
+                  <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+                    Active workspace
+                  </p>
+                  {clientOrganizations.map(({ organization, membership }) => {
+                    const isActive = organization.id === activeClientOrganization?.id;
+                    return (
+                      <button
+                        key={organization.id}
+                        type="button"
+                        data-testid={`mobile-workspace-option-${organization.id}`}
+                        aria-current={isActive ? "true" : undefined}
+                        onClick={() => {
+                          setSelectedOrganizationId(organization.id);
+                          navigate(`/organization/${organization.id}`);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors ${
+                          isActive ? "bg-white/15 font-semibold text-white" : "font-medium text-white/80 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <Building2 className="h-4 w-4 shrink-0 text-white/60" />
+                        <span className="min-w-0 flex-1 truncate">{organization.name}</span>
+                        <span className="text-[10px] capitalize text-white/50">{membership.role}</span>
+                        {isActive && <CheckCircle2 className="h-4 w-4 shrink-0 text-white/80" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {/* Role-based nav items */}
               {getDropdownItems().map(({ label, route, icon: Icon }) => (
                 <button

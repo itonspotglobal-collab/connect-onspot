@@ -1,6 +1,6 @@
 import { useLocation, useParams, Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Building2, Globe2, Loader2, Mail, UserMinus, Users, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type OrganizationResponse = {
   organization: {
@@ -56,6 +57,7 @@ export default function OrganizationDetail() {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { setSelectedOrganizationId } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const { data, isLoading, isError } = useQuery<OrganizationResponse>({
     queryKey: ["/api/organizations", organizationId],
@@ -65,6 +67,11 @@ export default function OrganizationDetail() {
     },
     enabled: Boolean(organizationId),
   });
+  useEffect(() => {
+    if (data?.organization.id) {
+      setSelectedOrganizationId(data.organization.id);
+    }
+  }, [data?.organization.id, setSelectedOrganizationId]);
   const { data: teamData, isLoading: isTeamLoading } = useQuery<OrganizationMembersResponse>({
     queryKey: ["/api/organizations", organizationId, "members"],
     queryFn: async () => {
