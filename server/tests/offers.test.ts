@@ -209,8 +209,8 @@ describe("offer notifications — storage and recipient resolution", () => {
 
     // Create a minimal talent user with a unique email for the legacy lookup test.
     const userRow = await query(
-      `INSERT INTO users (email, name, role, password_hash)
-       VALUES ($1, 'Notify Test Talent', 'talent', 'x')
+      `INSERT INTO users (email, first_name, last_name, role, password_hash)
+       VALUES ($1, 'Notify Test', 'Talent', 'talent', 'x')
        RETURNING id`,
       [testEmail],
     );
@@ -221,7 +221,7 @@ describe("offer notifications — storage and recipient resolution", () => {
     // Clean up notifications created during tests
     if (insertedNotificationIds.length) {
       await query(
-        `DELETE FROM notifications WHERE id = ANY($1::uuid[])`,
+        `DELETE FROM notifications WHERE id = ANY($1::varchar[])`,
         [insertedNotificationIds],
       ).catch(() => {});
     }

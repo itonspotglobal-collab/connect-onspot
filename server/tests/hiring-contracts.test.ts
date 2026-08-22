@@ -80,23 +80,34 @@ const suffix = Date.now();
 const ADMIN_ID = `hc-admin-${suffix}`;
 const CLIENT_ID = `hc-client-${suffix}`;
 const TALENT_ID = `hc-talent-${suffix}`;
+const CANDIDATE_ID = `hc-candidate-${suffix}`;
 
 let srv: http.Server;
 let jobId: string;
 let submissionId: string;   // main happy-path submission
 let submissionId2: string;  // void-rollback submission
+let submissionId3: string;  // non-accepted-offer guard submission
 let offerId: string;        // 'sent' → accepted via talent endpoint
 let sentOfferId: string;    // stays 'sent' (guard test)
 let offerId2: string;       // second accepted offer (void test)
 
 const adminTok = tok(ADMIN_ID, "admin");
-const talentTok = tok(TALENT_ID, "talent");
+const talentTok = jwt.sign(
+  { type: "candidate", candidateId: CANDIDATE_ID, email: `${TALENT_ID}@test.local` },
+  JWT_SECRET,
+  { expiresIn: "1h" },
+);
 const clientTok = tok(CLIENT_ID, "client");
 
 async function createFixtures() {
   for (const [id, role] of [[ADMIN_ID, "admin"], [CLIENT_ID, "client"], [TALENT_ID, "talent"]] as const) {
     await query(`INSERT INTO users (id, email, role) VALUES ($1, $2, $3)`, [id, `${id}@test.local`, role]);
   }
+  await query(
+    `INSERT INTO candidates (id, user_id, email, full_name)
+     VALUES ($1, $2, $3, 'HC Test Talent')`,
+    [CANDIDATE_ID, TALENT_ID, `${TALENT_ID}@test.local`],
+  );
   const jobRow = await query(
     `INSERT INTO jobs (client_id, title, description, category, experience_level, status)
      VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open') RETURNING id`,
@@ -114,6 +125,7 @@ async function createFixtures() {
   };
   submissionId = await makeSubmission();
   submissionId2 = await makeSubmission();
+  submissionId3 = await makeSubmission();
 
   const makeOffer = async (subId: string, status: string) => {
     const row = await query(
@@ -124,16 +136,36 @@ async function createFixtures() {
     return row.rows[0].id as string;
   };
   offerId = await makeOffer(submissionId, "sent");
-  sentOfferId = await makeOffer(submissionId, "sent");
+  sentOfferId = await makeOffer(submissionId3, "sent");
   offerId2 = await makeOffer(submissionId2, "sent");
 }
 
 async function destroyFixtures() {
-  await query(`DELETE FROM hiring_contracts WHERE submission_id IN ($1, $2)`, [submissionId, submissionId2]);
-  await query(`DELETE FROM offers WHERE submission_id IN ($1, $2)`, [submissionId, submissionId2]);
-  await query(`DELETE FROM job_application_status_history WHERE application_id IN ($1, $2)`, [submissionId, submissionId2]);
-  await query(`DELETE FROM job_submissions WHERE job_id = $1`, [jobId]);
-  await query(`DELETE FROM jobs WHERE id = $1`, [jobId]);
+  const fixtureSubmissionIds = [submissionId, submissionId2, submissionId3].filter(
+    (id): id is string => Boolean(id),
+  );
+  if (jobId) {
+    const submissionRows = await query(
+      `SELECT id FROM job_submissions WHERE job_id = $1`,
+      [jobId],
+    );
+    fixtureSubmissionIds.push(...submissionRows.rows.map((row: { id: string }) => row.id));
+  }
+  const submissionIds = [...new Set(fixtureSubmissionIds)];
+  if (submissionIds.length) {
+    await query(`DELETE FROM hiring_contracts WHERE submission_id = ANY($1::varchar[])`, [submissionIds]);
+    await query(`DELETE FROM offers WHERE submission_id = ANY($1::varchar[])`, [submissionIds]);
+    await query(`DELETE FROM job_application_status_history WHERE application_id = ANY($1::varchar[])`, [submissionIds]);
+  }
+  if (jobId) {
+    await query(`DELETE FROM job_submissions WHERE job_id = $1`, [jobId]);
+    await query(`DELETE FROM jobs WHERE id = $1`, [jobId]);
+  }
+  await query(`DELETE FROM candidates WHERE id = $1`, [CANDIDATE_ID]);
+  await query(
+    `DELETE FROM notifications WHERE user_id = ANY($1::varchar[])`,
+    [[ADMIN_ID, CLIENT_ID, TALENT_ID]],
+  );
   await query(`DELETE FROM users WHERE id IN ($1, $2, $3)`, [ADMIN_ID, CLIENT_ID, TALENT_ID]);
 }
 
@@ -153,8 +185,8 @@ describe("hiring-contracts workflow (production routes)", () => {
     await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
   });
   after(async () => {
-    await destroyFixtures();
     await new Promise<void>((r) => srv.close(() => r()));
+    await destroyFixtures();
   });
 
   it("(a) direct-PATCH allowlists never contain contract-workflow statuses", () => {
@@ -202,10 +234,11 @@ describe("hiring-contracts workflow (production routes)", () => {
   let contractId: string;
 
   it("(c) talent accepts offer via production endpoint, then admin creates contract → 'contract_sent'", async () => {
-    // Talent accepts through the real offer-response route (persists 'offer_accepted').
+    // Talent accepts through the real offer-response route (persists 'accepted'
+    // on the offer and 'offer_accepted' on the submission).
     const accept = await request(srv, "PATCH", `/api/talent/offers/${offerId}/respond`, talentTok, { action: "accept" });
     assert.equal(accept.status, 200, JSON.stringify(accept.json));
-    assert.equal(accept.json.status, "offer_accepted");
+    assert.equal(accept.json.status, "accepted");
     assert.equal(await submissionStatus(submissionId), "offer_accepted");
 
     // Admin creates the contract from that accepted offer.
@@ -268,5 +301,46 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.ok(voided.json.voided_at);
     assert.equal(voided.json.voided_reason, "terms changed");
     assert.equal(await submissionStatus(submissionId2), "offer_accepted");
+
+    // Simulate a legacy row written before the canonical 'void' status.
+    await query(`UPDATE hiring_contracts SET status = 'voided' WHERE id = $1`, [create.json.id]);
+
+    const signVoided = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${create.json.id}/sign`,
+      adminTok,
+      { signerType: "talent" },
+    );
+    assert.equal(signVoided.status, 409, JSON.stringify(signVoided.json));
+    assert.equal(signVoided.json.error, "contract_voided");
+
+    const updateVoided = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${create.json.id}`,
+      adminTok,
+      { talentSigned: true },
+    );
+    assert.equal(updateVoided.status, 409, JSON.stringify(updateVoided.json));
+    assert.equal(updateVoided.json.error, "contract_void");
+
+    const talentContracts = await request(
+      srv,
+      "GET",
+      `/api/talent/hiring-contracts?submissionId=${submissionId2}`,
+      talentTok,
+    );
+    assert.equal(talentContracts.status, 200, JSON.stringify(talentContracts.json));
+    assert.deepEqual(talentContracts.json, [], "voided contracts must not be visible to talent");
+
+    const replacement = await request(
+      srv,
+      "POST",
+      "/api/admin/hiring-contracts",
+      adminTok,
+      { offerId: offerId2 },
+    );
+    assert.equal(replacement.status, 201, JSON.stringify(replacement.json));
   });
 });

@@ -52,6 +52,12 @@ import { sendMessageToAssistant, streamMessageToAssistant, streamWithAssistant }
 import { analyzeResumeWithVanessa } from "./services/vanessaResumeAnalyzer";
 import { ingestKnowledgeFiles, runLearningLoop } from "./services/learningLoop";
 import * as dbManager from "./services/db_manager";
+import {
+  ContractError,
+  createHiringContract,
+  updateHiringContract,
+  voidHiringContract,
+} from "./services/hiringContractService";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -1516,6 +1522,13 @@ export async function registerRoutes(
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_offer_id ON hiring_contracts(offer_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_submission_id ON hiring_contracts(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_status ON hiring_contracts(status)`);
+    // Keep legacy 'voided' rows out of the active-offer uniqueness constraint.
+    await query(`DROP INDEX IF EXISTS uq_hiring_contracts_active_offer`);
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_hiring_contracts_active_offer
+      ON hiring_contracts(offer_id)
+      WHERE status NOT IN ('void', 'voided')
+    `);
 
     // Seed the signing entity into platform_settings (idempotent)
     await query(`
@@ -15587,71 +15600,17 @@ export async function registerRoutes(
       const { offerId, templateRef, documentPath, notes } = req.body;
       if (!offerId) return res.status(400).json({ error: "offerId is required" });
 
-      // Load the offer and verify it is in offer_accepted state
-      const offerResult = await query(
-        `SELECT o.*, js.id AS js_id, js.status AS sub_status, js.client_id
-         FROM offers o
-         JOIN job_submissions js ON js.id = o.submission_id
-         WHERE o.id = $1`,
-        [offerId],
-      );
-      if (offerResult.rows.length === 0) {
-        return res.status(404).json({ error: "Offer not found" });
-      }
-      const offer = offerResult.rows[0];
-
-      if (offer.status !== "offer_accepted") {
-        return res.status(409).json({
-          error: "cannot_create_contract",
-          message: `Offer status is '${offer.status}'. A contract can only be created from an 'offer_accepted' offer.`,
-        });
-      }
-
-      // Guard: only one active contract per offer
-      const existingContract = await query(
-        `SELECT id, status FROM hiring_contracts WHERE offer_id = $1 AND status != 'voided' LIMIT 1`,
-        [offerId],
-      );
-      if (existingContract.rows.length > 0) {
-        return res.status(409).json({
-          error: "contract_already_exists",
-          message: `An active contract already exists for this offer (status: '${existingContract.rows[0].status}').`,
-          existingContractId: existingContract.rows[0].id,
-        });
-      }
-
-      // Snapshot signing_entity from platform_settings at creation time
-      const settingResult = await query(
-        `SELECT value FROM platform_settings WHERE key = 'contract_signing_entity' LIMIT 1`,
-      );
-      const signingEntity = settingResult.rows[0]?.value ?? "OnSpot Technologies Inc.";
-
-      // Insert the contract
-      const contractInsert = await query(
-        `INSERT INTO hiring_contracts
-           (offer_id, submission_id, template_ref, document_path, status, signing_entity)
-         VALUES ($1, $2, $3, $4, 'sent', $5)
-         RETURNING *`,
-        [offerId, offer.submission_id, templateRef ?? null, documentPath ?? null, signingEntity],
-      );
-      const contract = contractInsert.rows[0];
-
-      // Side-effect: advance submission to 'contract_sent'
-      const prevStatus = offer.sub_status;
-      await query(
-        `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
-        [offer.submission_id],
-      );
-      await query(
-        `INSERT INTO job_application_status_history
-           (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, 'contract_sent', $3, $4)`,
-        [offer.submission_id, prevStatus,
-         `Contract sent (signing entity: ${signingEntity})`, user.id],
-      );
-
+      const contract = await createHiringContract({
+        offerId,
+        templateRef: templateRef ?? null,
+        documentPath: documentPath ?? null,
+        adminId: user.id,
+      });
       return res.status(201).json(contract);
     } catch (err: any) {
+      if (err instanceof ContractError) {
+        return res.status(err.status).json(err.body);
+      }
       console.error("POST /api/admin/hiring-contracts error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -15678,6 +15637,28 @@ export async function registerRoutes(
       return res.json(result.rows);
     } catch (err: any) {
       console.error("GET /api/admin/hiring-contracts error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/hiring-contracts/:id — update a contract and/or record signatures.
+  // Keep this service-backed path for the admin workflow.
+  app.patch("/api/admin/hiring-contracts/:id", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const result = await updateHiringContract(req.params.id, {
+        ...req.body,
+        adminId: user.id,
+      });
+      return res.json(result);
+    } catch (err: any) {
+      if (err instanceof ContractError) {
+        return res.status(err.status).json(err.body);
+      }
+      console.error("PATCH /api/admin/hiring-contracts/:id error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -15716,7 +15697,7 @@ export async function registerRoutes(
       }
       const contract = contractResult.rows[0];
 
-      if (contract.status === "voided") {
+      if (contract.status === "void" || contract.status === "voided") {
         return res.status(409).json({
           error: "contract_voided",
           message: "Cannot sign a voided contract.",
@@ -15784,34 +15765,12 @@ export async function registerRoutes(
         return res.status(400).json({ error: "reason is required to void a contract" });
       }
 
-      const contractResult = await query(
-        `SELECT id, status FROM hiring_contracts WHERE id = $1`,
-        [id],
-      );
-      if (contractResult.rows.length === 0) {
-        return res.status(404).json({ error: "Contract not found" });
-      }
-      const contract = contractResult.rows[0];
-
-      if (contract.status === "voided") {
-        return res.status(409).json({ error: "already_voided", message: "Contract is already voided." });
-      }
-      if (contract.status === "signed") {
-        return res.status(409).json({
-          error: "cannot_void_signed",
-          message: "A fully signed contract cannot be voided. Contact legal.",
-        });
-      }
-
-      const updated = await query(
-        `UPDATE hiring_contracts
-         SET status = 'voided', voided_at = NOW(), voided_reason = $1, updated_at = NOW()
-         WHERE id = $2
-         RETURNING *`,
-        [reason.trim(), id],
-      );
-      return res.json(updated.rows[0]);
+      const result = await voidHiringContract(id, reason.trim(), user.id);
+      return res.json(result);
     } catch (err: any) {
+      if (err instanceof ContractError) {
+        return res.status(err.status).json(err.body);
+      }
       console.error("PATCH /api/admin/hiring-contracts/:id/void error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -15843,7 +15802,7 @@ export async function registerRoutes(
                 o.engagement_type, o.rate, o.rate_currency, o.proposed_start_date
          FROM hiring_contracts hc
          JOIN offers o ON o.id = hc.offer_id
-         WHERE hc.submission_id = $1 AND hc.status != 'voided'
+         WHERE hc.submission_id = $1 AND hc.status NOT IN ('void', 'voided')
          ORDER BY hc.created_at DESC`,
         [submissionId],
       );

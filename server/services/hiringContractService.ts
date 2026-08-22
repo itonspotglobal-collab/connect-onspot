@@ -16,7 +16,8 @@
  * one BEGIN/COMMIT, so a contract row can never commit without its matching
  * submission-status transition (and vice versa). Duplicate active contracts per
  * offer are prevented both by an in-transaction row lock and by the partial
- * unique index uq_hiring_contracts_active_offer (WHERE status != 'void').
+ * unique index uq_hiring_contracts_active_offer (excluding 'void' and legacy
+ * 'voided' statuses).
  */
 import { getClient } from "../db.ts";
 import type { PoolClient } from "pg";
@@ -83,15 +84,17 @@ export async function createHiringContract(params: {
     );
     if (offerResult.rows.length === 0) throw new ContractError(404, { error: "Offer not found" });
     const offer = offerResult.rows[0];
-    if (offer.status !== "offer_accepted") {
+    if (offer.status !== "accepted" && offer.status !== "offer_accepted") {
       throw new ContractError(409, {
         error: "offer_not_accepted",
-        message: `A contract can only be created from an accepted offer with status 'offer_accepted' (current offer status: '${offer.status}').`,
+        message: `A contract can only be created from an accepted offer (current offer status: '${offer.status}').`,
       });
     }
 
     const existing = await client.query(
-      `SELECT id FROM hiring_contracts WHERE offer_id = $1 AND status != 'void' LIMIT 1`,
+      `SELECT id FROM hiring_contracts
+       WHERE offer_id = $1 AND status NOT IN ('void', 'voided')
+       LIMIT 1`,
       [offerId],
     );
     if (existing.rows.length > 0) {
@@ -171,7 +174,7 @@ export async function updateHiringContract(
     );
     if (contractResult.rows.length === 0) throw new ContractError(404, { error: "Contract not found" });
     const contract = contractResult.rows[0];
-    if (contract.status === "void") {
+    if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "contract_void", message: "A voided contract cannot be updated." });
     }
 
@@ -260,7 +263,7 @@ export async function voidHiringContract(
     );
     if (contractResult.rows.length === 0) throw new ContractError(404, { error: "Contract not found" });
     const contract = contractResult.rows[0];
-    if (contract.status === "void") {
+    if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "already_void", message: "This contract is already void." });
     }
     if (contract.status === "signed") {
