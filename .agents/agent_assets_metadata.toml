@@ -139,3 +139,59 @@ uri = "file://screenshots/verified-footer-job-dark.png"
 type = "image"
 title = "Job detail dark footer"
 description = "Real live browser capture of the adaptive job-detail footer in dark mode with the computed #060816 background."
+
+[[outputs]]
+id = "7eLvGnXm_Z7OoWlppLsqh"
+uri = "file://screenshots/footer-fix-home.png"
+type = "image"
+title = "Footer fix — Homepage"
+description = "Live homepage footer with muted lavender links and divider."
+
+[[outputs]]
+id = "X8_kK2A4XDVNm6YomKfNc"
+uri = "file://screenshots/footer-fix-privacy.png"
+type = "image"
+title = "Footer fix — Privacy Policy"
+description = "Live Privacy Policy footer with muted slate links and divider."
+
+[[outputs]]
+id = "A3Z6XV7f0ctDeYj9EZStm"
+uri = "file://screenshots/footer-fix-refund.png"
+type = "image"
+title = "Footer fix — Refund Policy"
+description = "Live Refund Policy footer with muted slate links and divider."
+
+[[outputs]]
+id = "pM6P5rgoG-QOLiYB8MaYO"
+uri = "file://screenshots/footer-fix-terms.png"
+type = "image"
+title = "Footer fix — Terms"
+description = "Live Terms footer with muted slate links and divider."
+
+[[outputs]]
+id = "ZujB5rLXN2GCmliT4Adxs"
+uri = "file://screenshots/footer-fix-about.png"
+type = "image"
+title = "Footer fix — About"
+description = "Live About footer with muted lavender links and divider on indigo."
+
+[[outputs]]
+id = "xCH6oe1HA_RPGVwTl0HNP"
+uri = "file://screenshots/footer-fix-amazing.png"
+type = "image"
+title = "Footer fix — Amazing"
+description = "Live Amazing footer with muted slate links and divider."
+
+[[outputs]]
+id = "lsXmDjYmZa0gtcdMiMBmI"
+uri = "file://screenshots/footer-fix-job-light.png"
+type = "image"
+title = "Footer fix — Job detail light"
+description = "Live job-detail footer in light mode with muted slate links and divider."
+
+[[outputs]]
+id = "3DefvW8DE_nEmQlvVBW59"
+uri = "file://screenshots/footer-fix-job-dark.png"
+type = "image"
+title = "Footer fix — Job detail dark"
+description = "Live job-detail footer in dark mode with muted lavender links and divider."
