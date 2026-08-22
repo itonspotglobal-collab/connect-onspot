@@ -1,0 +1,43 @@
+Clear instruction, revised scope: apply the HOMEPAGE'S footer (content and
+component) to every page that ALREADY has some form of footer today — do
+NOT add a footer to any page that currently has none. This resolves two
+of the three open questions from the audit:
+
+- Job detail pages (FindWorkJob.tsx) — in scope, already has a footer,
+  gets the homepage footer + link set. Also fixes the duplication bug
+  (same footer JSX rendered twice in one file).
+- The long list of footerless public pages (/why-onspot/*, /insights,
+  /faq, /investors, etc.) — explicitly OUT of scope. Nothing added there.
+
+Confirm before implementing: /amazing currently has its own rich footer
+(logo, social links, contact info, multi-column nav) — since it already
+HAS a footer, per this instruction it should be replaced with the
+homepage's footer too. Confirm this is intended (meaning /amazing loses
+its social links/contact details/columns and gets the same compact
+homepage footer as everywhere else), or flag if this should be a
+deliberate exception. Don't assume either way — ask before implementing
+on this one page specifically, since it's a real content loss if
+replaced.
+
+CRITICAL DESIGN REQUIREMENT: the footer must NOT be a fixed, one-color
+block that looks bolted onto every page regardless of context. It needs
+to adapt its own background/text color to match whatever section sits
+directly above it, so it reads as a continuation of that section rather
+than a visually separate strip. Concretely:
+- On pages ending with a dark section, the footer should carry a dark
+  treatment (matching that section's actual color, not a generic dark
+  default).
+- On pages ending with a light section, the footer should carry a light
+  treatment matching that section.
+- This needs to be a real prop/variant the Footer component accepts (e.g.
+  a `theme` or `variant` prop passed by each page based on its own last
+  section's background), not a hacky CSS override per page.
+
+Audit first: for every page in scope (homepage, legal pages, /why-onspot/
+about, job detail pages, and /amazing pending the question above), report
+what background color the LAST section on each page actually is, so the
+footer's adaptive variants can be built against real values, not assumed
+ones.
+
+Report back the /amazing decision and the last-section color audit before
+implementing.
