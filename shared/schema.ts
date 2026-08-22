@@ -1558,8 +1558,11 @@ export const interviews = pgTable("interviews", {
   outcome:        text("outcome"),
   // [{start: ISO8601, end: ISO8601, timezone: string}, ...]
   proposedTimes:  jsonb("proposed_times").notNull().default([]),
-  // Populated when client confirms one of the proposed slots
-  confirmedTime:  timestamp("confirmed_time"),
+  // Populated when either party confirms one of the proposed slots. The
+  // timestamp is an instant; the companion zone preserves the timezone used
+  // to display the selected slot.
+  confirmedTime:  timestamp("confirmed_time", { withTimezone: true }),
+  confirmedTimeZone: text("confirmed_time_zone"),
   // 'client' | 'talent' | null when no proposal is pending.
   currentProposalOwner: text("current_proposal_owner"),
   meetingLink: text("meeting_link"),
@@ -1592,7 +1595,8 @@ export const interviewProposals = pgTable("interview_proposals", {
   proposerRole: text("proposer_role").notNull(),
   action: text("action").notNull(),
   proposedTimes: jsonb("proposed_times").notNull().default([]),
-  selectedTime: timestamp("selected_time"),
+  selectedTime: timestamp("selected_time", { withTimezone: true }),
+  selectedTimeZone: text("selected_time_zone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [
   index("idx_interview_proposals_interview_id").on(table.interviewId),

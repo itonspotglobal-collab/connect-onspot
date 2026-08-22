@@ -38,6 +38,7 @@ import {
   posts,
   hotSearches,
   jobs as jobsTable,
+  users as usersTable,
   candidates as candidatesTable,
   candidateCultureEvaluations as cultureEvaluationsTable,
   messageThreads as messageThreadsTable,
@@ -1443,7 +1444,12 @@ export class MemStorage implements IStorage {
     }
 
     const candidatesRes = await dbQuery(
-      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+      `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+         FROM candidates c
+         JOIN users u
+           ON u.role = 'talent'
+          AND (u.id = c.user_id
+               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))`,
     );
 
     for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
@@ -1451,9 +1457,17 @@ export class MemStorage implements IStorage {
         const [userSkills, profile, candidate] = await Promise.all([
           this.getUserSkillsWithNames(row.user_id),
           this.getProfileByUserId(row.user_id),
-          this.getCandidateByUserId(row.user_id),
+          // row.user_id may be resolved from a legacy email link while the
+          // candidate row itself intentionally remains null-linked.
+          this.getCandidate(row.id),
         ]);
-        const talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
+        let talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
+        if (talentSkills.length === 0 && candidate) {
+          talentSkills = [
+            ...((candidate.coreSkills as string[]) ?? []),
+            ...((candidate.secondarySkills as string[]) ?? []),
+          ].filter(Boolean);
+        }
         const { score, matchReasons } = this.scoreJobForCandidate(talentSkills, profile, candidate, job);
         if (score > 0 || talentSkills.length === 0) {
           await this.persistMatchResults(row.id, [{ jobId: job.id, score, matchReasons }]);
@@ -1487,7 +1501,12 @@ export class MemStorage implements IStorage {
     }
 
     const candidatesRes = await dbQuery(
-      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+      `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+         FROM candidates c
+         JOIN users u
+           ON u.role = 'talent'
+          AND (u.id = c.user_id
+               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))`,
     );
 
     const results: Array<{
@@ -1504,7 +1523,7 @@ export class MemStorage implements IStorage {
         const [userSkills, profile, candidate] = await Promise.all([
           this.getUserSkillsWithNames(row.user_id),
           this.getProfileByUserId(row.user_id),
-          this.getCandidateByUserId(row.user_id),
+          this.getCandidate(row.id),
         ]);
         // Parity fix: fall back to candidate.coreSkills/secondarySkills when user_skills is empty
         let talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
@@ -1582,7 +1601,12 @@ export class MemStorage implements IStorage {
     };
 
     const candidatesRes = await dbQuery(
-      `SELECT id, user_id FROM candidates WHERE user_id IS NOT NULL`,
+      `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+         FROM candidates c
+         JOIN users u
+           ON u.role = 'talent'
+          AND (u.id = c.user_id
+               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))`,
     );
 
     const results: Array<{
@@ -1599,7 +1623,7 @@ export class MemStorage implements IStorage {
         const [userSkills, profile, candidate] = await Promise.all([
           this.getUserSkillsWithNames(row.user_id),
           this.getProfileByUserId(row.user_id),
-          this.getCandidateByUserId(row.user_id),
+          this.getCandidate(row.id),
         ]);
         let talentSkills = (userSkills as any[]).map((us) => us.skill?.name || '').filter(Boolean);
         if (talentSkills.length === 0 && candidate) {
@@ -3609,7 +3633,24 @@ export class DbStorage extends MemStorage {
   }
 
   async getCandidates(): Promise<Candidate[]> {
-    return await db.select().from(candidatesTable).orderBy(desc(candidatesTable.createdAt));
+    const rows = await db
+      .select({ candidate: candidatesTable })
+      .from(candidatesTable)
+      .innerJoin(
+        usersTable,
+        and(
+          eq(usersTable.role, "talent"),
+          or(
+            eq(usersTable.id, candidatesTable.userId),
+            and(
+              sqlOp`${candidatesTable.userId} IS NULL`,
+              sqlOp`lower(${usersTable.email}) = lower(${candidatesTable.email})`,
+            ),
+          ),
+        ),
+      )
+      .orderBy(desc(candidatesTable.createdAt));
+    return rows.map(({ candidate }) => candidate);
   }
 
   async updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {

@@ -33,6 +33,11 @@ import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
+import {
+  normalizeInterviewTimeZone,
+  normalizeInterviewTimes,
+  parseInterviewTimestamp,
+} from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { containsPii } from "./lib/piiPatterns";
 import fs from "fs";
@@ -1483,7 +1488,8 @@ export async function registerRoutes(
         status           text        NOT NULL DEFAULT 'proposed',
         outcome          text,
         proposed_times   jsonb       NOT NULL DEFAULT '[]',
-        confirmed_time   timestamp,
+        confirmed_time   timestamptz,
+        confirmed_time_zone text,
         current_proposal_owner text,
         meeting_link     text,
         proposal_exchange_count integer NOT NULL DEFAULT 0,
@@ -1499,6 +1505,26 @@ export async function registerRoutes(
     await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS current_proposal_owner text`);
     await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS meeting_link text`);
     await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS proposal_exchange_count integer NOT NULL DEFAULT 0`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS confirmed_time_zone text`);
+    const confirmedTimeType = await query(
+      `SELECT data_type FROM information_schema.columns
+        WHERE table_name = 'interviews' AND column_name = 'confirmed_time'`,
+    );
+    if (confirmedTimeType.rows[0]?.data_type === "timestamp without time zone") {
+      await query(`
+        ALTER TABLE interviews
+          ALTER COLUMN confirmed_time TYPE timestamptz
+          USING CASE
+            WHEN confirmed_time IS NULL THEN NULL
+            ELSE confirmed_time AT TIME ZONE 'UTC'
+          END
+      `);
+    }
+    await query(`
+      UPDATE interviews
+         SET confirmed_time_zone = 'UTC'
+       WHERE confirmed_time IS NOT NULL AND confirmed_time_zone IS NULL
+    `);
 
     await query(`
       CREATE TABLE IF NOT EXISTS interview_proposals (
@@ -1508,12 +1534,33 @@ export async function registerRoutes(
         proposer_role   text NOT NULL,
         action          text NOT NULL,
         proposed_times  jsonb NOT NULL DEFAULT '[]',
-        selected_time   timestamp,
+        selected_time   timestamptz,
+        selected_time_zone text,
         created_at      timestamp NOT NULL DEFAULT now()
       )
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_interview_proposals_interview_id ON interview_proposals(interview_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_interview_proposals_created_at ON interview_proposals(created_at)`);
+    await query(`ALTER TABLE interview_proposals ADD COLUMN IF NOT EXISTS selected_time_zone text`);
+    const selectedTimeType = await query(
+      `SELECT data_type FROM information_schema.columns
+        WHERE table_name = 'interview_proposals' AND column_name = 'selected_time'`,
+    );
+    if (selectedTimeType.rows[0]?.data_type === "timestamp without time zone") {
+      await query(`
+        ALTER TABLE interview_proposals
+          ALTER COLUMN selected_time TYPE timestamptz
+          USING CASE
+            WHEN selected_time IS NULL THEN NULL
+            ELSE selected_time AT TIME ZONE 'UTC'
+          END
+      `);
+    }
+    await query(`
+      UPDATE interview_proposals
+         SET selected_time_zone = 'UTC'
+       WHERE selected_time IS NOT NULL AND selected_time_zone IS NULL
+    `);
 
     // Backfill ownership for pending interviews created before proposal
     // ownership was introduced. The latest proposal decides the next owner;
@@ -5898,6 +5945,7 @@ export async function registerRoutes(
   // after the cache read so admin/TA callers still get their privileged view
   // while sharing the same cached raw dataset.
   const _candidatesCache: { data: any[] | null; expiry: number } = { data: null, expiry: 0 };
+  let _candidatesCacheRoleVersion = "";
   const CANDIDATES_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   app.get("/api/candidates", async (req: any, res) => {
@@ -5906,13 +5954,22 @@ export async function registerRoutes(
 
       let all: any[];
       const now = Date.now();
-      if (_candidatesCache.data && now < _candidatesCache.expiry) {
+      // A role change must invalidate the cached discovery set immediately.
+      // updated_at is indexed and this lightweight version check avoids
+      // serving a legacy candidate row after its user becomes an admin.
+      const roleVersionResult = await query(
+        `SELECT COALESCE(MAX(updated_at), TIMESTAMP 'epoch') AS role_version FROM users`,
+      );
+      const roleVersion = String(roleVersionResult.rows[0]?.role_version ?? "");
+      if (_candidatesCache.data && now < _candidatesCache.expiry &&
+          roleVersion === _candidatesCacheRoleVersion) {
         all = _candidatesCache.data;
         res.setHeader("X-Candidates-Cache", "HIT");
       } else {
         all = await storage.getCandidates();
         _candidatesCache.data   = all;
         _candidatesCache.expiry = now + CANDIDATES_CACHE_TTL_MS;
+        _candidatesCacheRoleVersion = roleVersion;
         res.setHeader("X-Candidates-Cache", "MISS");
       }
       // Admin/TA get full data; everyone else gets public-safe records
@@ -5949,35 +6006,39 @@ export async function registerRoutes(
       const userEmail = req.user?.email;
       if (!userEmail) return res.status(400).json({ error: "No email on authenticated user" });
       const result = await query(
-        `SELECT id,
-                display_name        AS "displayName",
-                full_name           AS "fullName",
-                first_name          AS "firstName",
-                last_name           AS "lastName",
-                email, phone, location,
-                target_position     AS "targetPosition",
-                headline,
-                category,
-                experience_years    AS "experienceYears",
-                seniority,
-                core_skills         AS "coreSkills",
-                secondary_skills    AS "secondarySkills",
-                work_history        AS "workHistory",
-                education,
-                preferences,
-                summary,
-                profile_photo_url   AS "profilePhotoUrl",
-                resume_url          AS "resumeUrl",
-                resume_file_name    AS "resumeFileName",
-                linkedin_url        AS "linkedinUrl",
-                portfolio_url       AS "portfolioUrl",
-                profile_completed   AS "profileCompleted",
-                culture_score       AS "cultureScore",
-                availability,
-                values_answers      AS "valuesAnswers",
-                created_at          AS "createdAt",
-                updated_at          AS "updatedAt"
-         FROM candidates WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        `SELECT c.id,
+                c.display_name        AS "displayName",
+                c.full_name           AS "fullName",
+                c.first_name          AS "firstName",
+                c.last_name           AS "lastName",
+                c.email, c.phone, c.location,
+                c.target_position     AS "targetPosition",
+                c.headline,
+                c.category,
+                c.experience_years    AS "experienceYears",
+                c.seniority,
+                c.core_skills         AS "coreSkills",
+                c.secondary_skills    AS "secondarySkills",
+                c.work_history        AS "workHistory",
+                c.education,
+                c.preferences,
+                c.summary,
+                c.profile_photo_url   AS "profilePhotoUrl",
+                c.resume_url          AS "resumeUrl",
+                c.resume_file_name    AS "resumeFileName",
+                c.linkedin_url        AS "linkedinUrl",
+                c.portfolio_url       AS "portfolioUrl",
+                c.profile_completed   AS "profileCompleted",
+                c.culture_score       AS "cultureScore",
+                c.availability,
+                c.values_answers      AS "valuesAnswers",
+                c.created_at          AS "createdAt",
+                c.updated_at          AS "updatedAt"
+          FROM candidates c
+          JOIN users u
+            ON u.role = 'talent'
+           AND (u.id = c.user_id OR LOWER(u.email) = LOWER(c.email))
+          WHERE LOWER(c.email) = LOWER($1) LIMIT 1`,
         [userEmail],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: "No candidate profile found" });
@@ -5992,6 +6053,17 @@ export async function registerRoutes(
     try {
       const candidate = await storage.getCandidate(req.params.id);
       if (!candidate) return res.status(404).json({ error: "Candidate not found" });
+      const currentUser = await query(
+        `SELECT role
+           FROM users
+          WHERE id = $1 OR LOWER(email) = LOWER($2)
+          ORDER BY CASE WHEN id = $1 THEN 0 ELSE 1 END
+          LIMIT 1`,
+        [candidate.userId ?? "", candidate.email ?? ""],
+      );
+      if (currentUser.rows[0]?.role !== "talent") {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
       const privileged = await isPrivilegedCandidateViewer(req, req.params.id, candidate.email);
       res.json(privileged ? sanitizeCandidate(candidate) : publicSanitizeCandidate(candidate));
     } catch (error) {
@@ -12873,6 +12945,13 @@ export async function registerRoutes(
   app.get("/api/client/talent-profile/:userId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
+      const userResult = await query(
+        `SELECT id FROM users WHERE id = $1 AND role = 'talent' LIMIT 1`,
+        [userId],
+      );
+      if (!userResult.rows.length) {
+        return res.status(404).json({ error: "Talent profile not found" });
+      }
       const candidate = await storage.getCandidateByUserId(userId);
       if (!candidate) {
         return res.status(404).json({ error: "Talent profile not found" });
@@ -12957,17 +13036,6 @@ export async function registerRoutes(
     }
   });
 
-  const normalizeInterviewTimes = (value: unknown): Array<{ start: string; end?: string; timezone?: string }> | null => {
-    if (!Array.isArray(value) || value.length === 0 || value.length > 10) return null;
-    const normalized = value.map((slot: any) => ({
-      start: typeof slot?.start === "string" ? slot.start : "",
-      end: typeof slot?.end === "string" ? slot.end : undefined,
-      timezone: typeof slot?.timezone === "string" ? slot.timezone.slice(0, 80) : undefined,
-    }));
-    if (normalized.some((slot) => !slot.start || Number.isNaN(Date.parse(slot.start)))) return null;
-    if (normalized.some((slot) => slot.end && Number.isNaN(Date.parse(slot.end)))) return null;
-    return normalized;
-  };
   const normalizeMeetingLink = (value: unknown): string | null | undefined => {
     if (value === undefined) return undefined;
     if (value === null || value === "") return null;
@@ -13165,6 +13233,7 @@ export async function registerRoutes(
                  i.status        AS "interviewStatus",
                  i.proposed_times AS "proposedTimes",
                  i.confirmed_time AS "confirmedTime",
+                 i.confirmed_time_zone AS "confirmedTimeZone",
                  i.current_proposal_owner AS "currentProposalOwner",
                  i.meeting_link AS "meetingLink",
                  i.proposal_exchange_count AS "proposalExchangeCount",
@@ -13329,10 +13398,15 @@ export async function registerRoutes(
     try {
       const candidateId = (req as any).talentAuth?.candidateId;
       const talentUserResult = await query(
-        `SELECT COALESCE(c.user_id, u.id) AS user_id
+        `SELECT c.user_id AS user_id
            FROM candidates c
-           LEFT JOIN users u ON lower(u.email) = lower(c.email)
+           JOIN users u ON u.id = c.user_id AND u.role = 'talent'
           WHERE c.id = $1
+          UNION ALL
+         SELECT u.id AS user_id
+           FROM candidates c
+           JOIN users u ON lower(u.email) = lower(c.email) AND u.role = 'talent'
+          WHERE c.id = $1 AND c.user_id IS NULL
           LIMIT 1`,
         [candidateId],
       );
@@ -13349,6 +13423,7 @@ export async function registerRoutes(
                       'proposerRole', ip.proposer_role,
                       'proposedTimes', ip.proposed_times,
                       'selectedTime', ip.selected_time,
+                      'selectedTimeZone', ip.selected_time_zone,
                       'createdAt', ip.created_at
                     ) ORDER BY ip.created_at ASC
                   ) FILTER (WHERE ip.id IS NOT NULL),
@@ -13374,6 +13449,7 @@ export async function registerRoutes(
         status: row.status,
         proposedTimes: row.proposed_times ?? [],
         confirmedTime: row.confirmed_time,
+         confirmedTimeZone: row.confirmed_time_zone ?? "UTC",
         currentProposalOwner: row.current_proposal_owner,
         meetingLink: row.meeting_link,
         proposalExchangeCount: Number(row.proposal_exchange_count ?? 0),
@@ -13391,10 +13467,15 @@ export async function registerRoutes(
   app.patch("/api/talent/interviews/:id/respond", pipelineMutationLimiter, authenticateTalentJWT, async (req: Request, res: Response) => {
     const candidateId = (req as any).talentAuth?.candidateId;
     const talentUserResult = await query(
-      `SELECT COALESCE(c.user_id, u.id) AS user_id
+      `SELECT c.user_id AS user_id
          FROM candidates c
-         LEFT JOIN users u ON lower(u.email) = lower(c.email)
+         JOIN users u ON u.id = c.user_id AND u.role = 'talent'
         WHERE c.id = $1
+        UNION ALL
+       SELECT u.id AS user_id
+         FROM candidates c
+         JOIN users u ON lower(u.email) = lower(c.email) AND u.role = 'talent'
+        WHERE c.id = $1 AND c.user_id IS NULL
         LIMIT 1`,
       [candidateId],
     );
@@ -13432,29 +13513,31 @@ export async function registerRoutes(
       }
 
       if (action === "accept") {
-        if (!selectedTime || Number.isNaN(Date.parse(selectedTime))) {
+        if (!selectedTime || Number.isNaN(parseInterviewTimestamp(selectedTime))) {
           await txClient.query("ROLLBACK");
           return res.status(400).json({ error: "selectedTime must be a valid ISO date" });
         }
-        const slotStarts = (Array.isArray(interview.proposed_times) ? interview.proposed_times : [])
-          .map((slot: any) => slot?.start)
-          .filter(Boolean);
-        if (slotStarts.length > 0 && !slotStarts.includes(selectedTime)) {
+        const selectedTimestamp = parseInterviewTimestamp(selectedTime);
+        const selectedSlot = (Array.isArray(interview.proposed_times) ? interview.proposed_times : [])
+          .find((slot: any) => typeof slot?.start === "string" && parseInterviewTimestamp(slot.start) === selectedTimestamp);
+        if (Number.isNaN(selectedTimestamp) || !selectedSlot) {
           await txClient.query("ROLLBACK");
           return res.status(400).json({ error: "selectedTime must match one of the proposed slots" });
         }
+        const canonicalSelectedTime = new Date(selectedTimestamp).toISOString();
+        const selectedTimeZone = normalizeInterviewTimeZone(selectedSlot.timezone) ?? "UTC";
         await txClient.query(
           `UPDATE interviews
-              SET status = 'confirmed', confirmed_time = $1,
+              SET status = 'confirmed', confirmed_time = $1, confirmed_time_zone = $2,
                   current_proposal_owner = NULL, updated_at = NOW()
-            WHERE id = $2`,
-          [selectedTime, interview.id],
+             WHERE id = $3`,
+          [canonicalSelectedTime, selectedTimeZone, interview.id],
         );
         await txClient.query(
           `INSERT INTO interview_proposals
-             (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time)
-           VALUES ($1, $2, 'talent', 'accepted', $3, $4)`,
-          [interview.id, userId, JSON.stringify(interview.proposed_times ?? []), selectedTime],
+             (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
+           VALUES ($1, $2, 'talent', 'accepted', $3, $4, $5)`,
+          [interview.id, userId, JSON.stringify(interview.proposed_times ?? []), canonicalSelectedTime, selectedTimeZone],
         );
         if (interview.submission_status !== "interviewing") {
           await txClient.query(
@@ -13480,7 +13563,7 @@ export async function registerRoutes(
               SET status = 'proposed', proposed_times = $1,
                   current_proposal_owner = 'client',
                   proposal_exchange_count = $2,
-                  confirmed_time = NULL, updated_at = NOW()
+                  confirmed_time = NULL, confirmed_time_zone = NULL, updated_at = NOW()
             WHERE id = $3`,
           [JSON.stringify(normalized), nextCount, interview.id],
         );
@@ -13494,7 +13577,8 @@ export async function registerRoutes(
         await txClient.query(
           `UPDATE interviews
               SET status = 'cancelled', outcome = 'declined',
-                  current_proposal_owner = NULL, updated_at = NOW()
+                  current_proposal_owner = NULL, confirmed_time = NULL,
+                  confirmed_time_zone = NULL, updated_at = NOW()
             WHERE id = $1`,
           [interview.id],
         );
@@ -15056,7 +15140,8 @@ export async function registerRoutes(
       interviewId: row.interviewId ?? row.interview_id ?? null,
       interviewStatus: row.interviewStatus ?? row.interview_status ?? null,
       proposedTimes: row.proposedTimes ?? row.proposed_times ?? [],
-      confirmedTime: row.confirmedTime ?? row.confirmed_time ?? null,
+       confirmedTime: row.confirmedTime ?? row.confirmed_time ?? null,
+       confirmedTimeZone: row.confirmedTimeZone ?? row.confirmed_time_zone ?? "UTC",
       currentProposalOwner: row.currentProposalOwner ?? row.current_proposal_owner ?? null,
       meetingLink: nameRevealed ? (row.meetingLink ?? row.meeting_link ?? null) : null,
       proposalExchangeCount: Number(row.proposalExchangeCount ?? row.proposal_exchange_count ?? 0),
@@ -15140,6 +15225,11 @@ export async function registerRoutes(
          WHERE ci.submission_id = js.id
          ORDER BY ci.created_at DESC LIMIT 1
       ) AS "confirmedTime"
+       ,(
+         SELECT ci.confirmed_time_zone FROM interviews ci
+          WHERE ci.submission_id = js.id
+          ORDER BY ci.created_at DESC LIMIT 1
+       ) AS "confirmedTimeZone"
       ,(
         SELECT ci.current_proposal_owner FROM interviews ci
          WHERE ci.submission_id = js.id
@@ -15402,6 +15492,10 @@ export async function registerRoutes(
       if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
         return res.status(400).json({ error: "proposedTimes must be a non-empty array of time slots" });
       }
+      const normalizedProposedTimes = normalizeInterviewTimes(proposedTimes);
+      if (!normalizedProposedTimes) {
+        return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+      }
       const validTypes = ["initial", "technical", "final", "culture", "other"];
       if (!validTypes.includes(interviewType)) {
         return res.status(400).json({ error: "interviewType must be one of: " + validTypes.join(", ") });
@@ -15445,7 +15539,7 @@ export async function registerRoutes(
              candidate_notes, internal_notes, created_by)
           VALUES ($1, $2, $3, 'proposed', $4, 'talent', 0, $5, $6, $7)
          RETURNING *`,
-        [submissionId, roundNumber, interviewType, JSON.stringify(proposedTimes),
+        [submissionId, roundNumber, interviewType, JSON.stringify(normalizedProposedTimes),
          candidateNotes ?? null, internalNotes ?? null, userId],
       );
       const interview = insert.rows[0];
@@ -15453,7 +15547,7 @@ export async function registerRoutes(
          `INSERT INTO interview_proposals
             (interview_id, proposer_id, proposer_role, action, proposed_times)
           VALUES ($1, $2, 'client', 'initial', $3)`,
-         [interview.id, userId, JSON.stringify(proposedTimes)],
+         [interview.id, userId, JSON.stringify(normalizedProposedTimes)],
        );
 
       // Side-effect: advance submission to 'interviewing' if not already there
@@ -15554,6 +15648,9 @@ export async function registerRoutes(
       // Build update payload
       const updates: Record<string, any> = { updated_at: "NOW()" };
       const params: any[] = [];
+      let proposalTimesForHistory: Array<{ start: string; end?: string; timezone: string }> | null = null;
+      let confirmedTimeForHistory: string | null = null;
+      let confirmedTimeZoneForHistory: string | null = null;
 
       if (status) {
         if (!allowed.includes(status)) {
@@ -15574,16 +15671,21 @@ export async function registerRoutes(
             await txClient.query("ROLLBACK");
             return res.status(409).json({ error: "It is not the client's turn to confirm this interview proposal" });
           }
-          const confirmedTimestamp = Date.parse(confirmedTime);
-          const isProposedSlot = Array.isArray(interview.proposed_times) &&
-            interview.proposed_times.some((slot: any) =>
-              typeof slot?.start === "string" && Date.parse(slot.start) === confirmedTimestamp);
-          if (Number.isNaN(confirmedTimestamp) || !isProposedSlot) {
+          const confirmedTimestamp = parseInterviewTimestamp(confirmedTime);
+          const selectedSlot = Array.isArray(interview.proposed_times)
+            ? interview.proposed_times.find((slot: any) =>
+                typeof slot?.start === "string" && parseInterviewTimestamp(slot.start) === confirmedTimestamp)
+            : undefined;
+          if (Number.isNaN(confirmedTimestamp) || !selectedSlot) {
             await txClient.query("ROLLBACK");
             return res.status(400).json({ error: "confirmedTime must match one of the proposed interview slots" });
           }
-          params.push(new Date(confirmedTimestamp).toISOString());
+          confirmedTimeForHistory = new Date(confirmedTimestamp).toISOString();
+          confirmedTimeZoneForHistory = normalizeInterviewTimeZone(selectedSlot.timezone) ?? "UTC";
+          params.push(confirmedTimeForHistory);
           updates.confirmed_time = `$${params.length}`;
+          params.push(confirmedTimeZoneForHistory);
+          updates.confirmed_time_zone = `$${params.length}`;
           updates.current_proposal_owner = "NULL";
         }
         if (status === "rescheduled") {
@@ -15598,10 +15700,13 @@ export async function registerRoutes(
           }
           params.push(JSON.stringify(normalizedTimes));
           updates.proposed_times = `$${params.length}`;
+          proposalTimesForHistory = normalizedTimes;
           updates.confirmed_time = "NULL";
+          updates.confirmed_time_zone = "NULL";
         }
         if (status === "cancelled") {
           updates.confirmed_time = "NULL";
+          updates.confirmed_time_zone = "NULL";
         }
         params.push(status);
         updates.status = `$${params.length}`;
@@ -15647,6 +15752,7 @@ export async function registerRoutes(
         }
         params.push(JSON.stringify(normalizedTimes));
         updates.proposed_times = `$${params.length}`;
+        proposalTimesForHistory = normalizedTimes;
       }
 
       if (Object.keys(updates).length === 1) {
@@ -15679,15 +15785,15 @@ export async function registerRoutes(
            `INSERT INTO interview_proposals
               (interview_id, proposer_id, proposer_role, action, proposed_times)
             VALUES ($1, $2, 'client', 'counter', $3)`,
-           [id, userId, JSON.stringify(proposedTimes ?? interview.proposed_times ?? [])],
+            [id, userId, JSON.stringify(proposalTimesForHistory ?? interview.proposed_times ?? [])],
          );
        }
        if (status === "confirmed") {
           await txClient.query(
            `INSERT INTO interview_proposals
-              (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time)
-            VALUES ($1, $2, 'client', 'accepted', $3, $4)`,
-           [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedTime],
+             (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
+           VALUES ($1, $2, 'client', 'accepted', $3, $4, $5)`,
+           [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedTimeForHistory, confirmedTimeZoneForHistory],
          );
          if (interview.submission_status !== "interviewing") {
            await txClient.query(
@@ -15727,9 +15833,11 @@ export async function registerRoutes(
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const result = await query(
-        `SELECT ip.id, ip.action, ip.proposer_role, ip.proposed_times,
-                ip.selected_time, ip.created_at
+       const result = await query(
+         `SELECT ip.id, ip.action, ip.proposer_role, ip.proposed_times,
+                 ip.selected_time AS "selectedTime",
+                 ip.selected_time_zone AS "selectedTimeZone",
+                 ip.created_at
            FROM interview_proposals ip
            JOIN interviews i ON i.id = ip.interview_id
            JOIN job_submissions js ON js.id = i.submission_id

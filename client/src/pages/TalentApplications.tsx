@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useTalentApplications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
+import { formatInterviewTime } from "@/lib/formatInterviewTime";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
   CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink, Clock,
@@ -1078,6 +1079,7 @@ interface TalentInterview {
   status: string;
   proposedTimes: Array<{ start: string; end?: string; timezone?: string }>;
   confirmedTime: string | null;
+  confirmedTimeZone?: string | null;
   currentProposalOwner: string | null;
   meetingLink: string | null;
   proposalExchangeCount: number;
@@ -1152,7 +1154,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
               </div>
               {interview.confirmedTime && (
                 <p className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                  Confirmed: {new Date(interview.confirmedTime).toLocaleString()}
+                  Confirmed: {formatInterviewTime(interview.confirmedTime, interview.confirmedTimeZone ?? "UTC")}
                 </p>
               )}
               {interview.meetingLink && interview.status === "confirmed" && (
@@ -1166,7 +1168,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {interview.proposedTimes.map((slot) => (
                       <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={respondingId === interview.id} onClick={() => respond(interview, "accept", slot.start)}>
-                        <Check className="mr-1 h-3 w-3" /> {new Date(slot.start).toLocaleString()}
+                        <Check className="mr-1 h-3 w-3" /> {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
                       </Button>
                     ))}
                   </div>

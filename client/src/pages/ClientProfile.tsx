@@ -69,6 +69,7 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { formatInterviewTime } from "@/lib/formatInterviewTime";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -98,6 +99,7 @@ interface JobSubmission {
   interviewStatus?: string | null;
   proposedTimes?: Array<{ start: string; end?: string; timezone?: string }>;
   confirmedTime?: string | null;
+  confirmedTimeZone?: string | null;
   currentProposalOwner?: string | null;
   meetingLink?: string | null;
   proposalExchangeCount?: number;
@@ -286,7 +288,7 @@ function ViewSubmissionModal({
                 </span>
               </div>
               {submission.confirmedTime ? (
-                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Confirmed: {new Date(submission.confirmedTime).toLocaleString()}</p>
+                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Confirmed: {formatInterviewTime(submission.confirmedTime, submission.confirmedTimeZone ?? "UTC")}</p>
               ) : (
                 <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
                   Waiting for the talent to choose a time. {submission.proposalExchangeCount ? `${submission.proposalExchangeCount} time exchange${submission.proposalExchangeCount === 1 ? "" : "s"} so far.` : ""}
@@ -302,7 +304,7 @@ function ViewSubmissionModal({
                     <div className="flex flex-wrap gap-2">
                       {(interview.proposed_times ?? []).map((slot: any) => (
                         <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={interviewBusy} onClick={() => respondToInterview({ status: "confirmed", confirmedTime: slot.start, meetingLink: meetingLinkDraft || undefined })}>
-                          Confirm {new Date(slot.start).toLocaleString()}
+                          Confirm {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
                         </Button>
                       ))}
                     </div>

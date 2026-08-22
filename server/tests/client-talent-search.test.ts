@@ -17,6 +17,8 @@ import assert from "node:assert/strict";
 import { query } from "../db.js";
 import { escHtml } from "../lib/escHtml.js";
 import { inferCategory } from "../lib/searchScaffold.js";
+import { normalizeInterviewTimeZone } from "../lib/interviewTime.js";
+import { DbStorage } from "../storage.js";
 
 // ─── PostgreSQL integration test — scaffold job INSERT ────────────────────────
 
@@ -203,6 +205,139 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
     );
     assert.equal(check.rows.length, 1,
       "talent-role user must pass the role check");
+  });
+
+  it("role-filtered talent discovery excludes a legacy candidate for a converted account", async () => {
+    const suffix = Date.now();
+    const userId = `role-filter-${suffix}`;
+    const candidateId = `role-filter-candidate-${suffix}`;
+    try {
+      await query(
+        `INSERT INTO users (id, email, role) VALUES ($1, $2, 'admin')`,
+        [userId, `${userId}@test.local`],
+      );
+      await query(
+        `INSERT INTO candidates (id, user_id, email, full_name, core_skills)
+         VALUES ($1, $2, $3, 'Converted Legacy Account', $4)`,
+        [candidateId, userId, `${userId}@test.local`, ["UniqueLegacySkill"]],
+      );
+      const discovered = await query(
+        `SELECT c.id
+           FROM candidates c
+           JOIN users u ON u.id = c.user_id
+          WHERE c.user_id IS NOT NULL
+            AND u.role = 'talent'
+            AND c.id = $1`,
+        [candidateId],
+      );
+      assert.equal(discovered.rows.length, 0,
+        "candidate rows linked to non-talent users must not enter discovery results");
+      const ranked = await new DbStorage().rankTalentByParams(
+        { title: "UniqueLegacySkill", category: "other", engagementType: "Full-Time" },
+        100,
+      );
+      assert.ok(!ranked.some((result) => result.candidateId === candidateId),
+        "converted accounts must not enter client talent search results");
+    } finally {
+      await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
+      await query(`DELETE FROM users WHERE id = $1`, [userId]).catch(() => {});
+    }
+  });
+
+  it("role-filtered talent discovery keeps a legacy candidate linked by a talent email", async () => {
+    const suffix = Date.now();
+    const userId = `role-filter-talent-${suffix}`;
+    const candidateId = `role-filter-talent-candidate-${suffix}`;
+    const email = `${userId}@test.local`;
+    try {
+      await query(
+        `INSERT INTO users (id, email, role) VALUES ($1, $2, 'talent')`,
+        [userId, email],
+      );
+      await query(
+        `INSERT INTO candidates (id, user_id, email, full_name)
+         VALUES ($1, NULL, $2, 'Legacy Talent')`,
+        [candidateId, email],
+      );
+      const discovered = await query(
+        `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+           FROM candidates c
+           JOIN users u
+             ON u.role = 'talent'
+            AND (u.id = c.user_id
+                 OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))
+          WHERE c.id = $1`,
+        [candidateId],
+      );
+      assert.equal(discovered.rows[0]?.id, candidateId);
+      assert.equal(discovered.rows[0]?.user_id, userId);
+      const ranked = await new DbStorage().rankTalentByParams(
+        { title: "UniqueLegacySkill", category: "other", engagementType: "Full-Time" },
+        100,
+      );
+      assert.ok(ranked.some((result) => result.candidateId === candidateId),
+        "legacy email-linked talent must remain in client talent search results");
+    } finally {
+      await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
+      await query(`DELETE FROM users WHERE id = $1`, [userId]).catch(() => {});
+    }
+  });
+
+  it("job-match recomputation keeps candidate scoring data for a legacy email link", async () => {
+    const suffix = Date.now();
+    const userId = `match-legacy-talent-${suffix}`;
+    const candidateId = `match-legacy-candidate-${suffix}`;
+    const jobId = `match-legacy-job-${suffix}`;
+    const email = `${userId}@test.local`;
+    const clientId = await getClientUserId();
+    try {
+      await query(
+        `INSERT INTO users (id, email, role) VALUES ($1, $2, 'talent')`,
+        [userId, email],
+      );
+      await query(
+        `INSERT INTO candidates (id, user_id, email, full_name, core_skills)
+         VALUES ($1, NULL, $2, 'Legacy Match Talent', $3)`,
+        [candidateId, email, ["UniqueLegacySkill"]],
+      );
+      await query(
+        `INSERT INTO jobs
+           (id, title, professional_role_name, category, job_function, engagement_type,
+            status, approval_status, is_client_submitted, client_id, created_via, description,
+            skill_tags, experience_level)
+         VALUES ($1, 'UniqueLegacySkill role', 'UniqueLegacySkill role', 'other', 'other',
+                 'Full-Time', 'open', 'approved', true, $2, 'test', 'test', $3, 'intermediate')`,
+        [jobId, clientId, ["UniqueLegacySkill"]],
+      );
+
+      const dbStorage = new DbStorage();
+      const rankedForJob = await dbStorage.rankTalentForJob(jobId);
+      assert.ok(rankedForJob.some((result) => result.candidateId === candidateId),
+        "legacy email-linked talent must remain in Search & Shortlist results");
+      await dbStorage.recomputeMatchesForJob(jobId);
+      const match = await query(
+        `SELECT match_reasons FROM job_matches WHERE talent_id = $1 AND job_id = $2`,
+        [candidateId, jobId],
+      );
+      assert.equal(match.rows.length, 1);
+      assert.deepEqual(match.rows[0].match_reasons.skillOverlap, ["UniqueLegacySkill"]);
+    } finally {
+      await query(`DELETE FROM job_matches WHERE talent_id = $1 AND job_id = $2`, [candidateId, jobId]).catch(() => {});
+      await query(`DELETE FROM notifications WHERE user_id = $1`, [userId]).catch(() => {});
+      await query(`DELETE FROM jobs WHERE id = $1`, [jobId]).catch(() => {});
+      await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
+      await query(`DELETE FROM users WHERE id = $1`, [userId]).catch(() => {});
+    }
+  });
+});
+
+describe("interview timezone validation", () => {
+  it("accepts IANA zones and valid offsets while rejecting invalid offsets", () => {
+    assert.equal(normalizeInterviewTimeZone("Asia/Manila"), "Asia/Manila");
+    assert.equal(normalizeInterviewTimeZone("UTC+08:00"), "UTC+08:00");
+    assert.equal(normalizeInterviewTimeZone("UTC+14:01"), null);
+    assert.equal(normalizeInterviewTimeZone("UTC+14:99"), null);
+    assert.equal(normalizeInterviewTimeZone("UTC-03:60"), null);
   });
 });
 

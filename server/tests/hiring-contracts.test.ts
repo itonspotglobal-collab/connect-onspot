@@ -292,6 +292,19 @@ describe("hiring-contracts workflow (production routes)", () => {
     const persisted = await query(`SELECT status, current_proposal_owner FROM interviews WHERE id = $1`, [interviewId]);
     assert.equal(persisted.rows[0].status, "confirmed");
     assert.equal(persisted.rows[0].current_proposal_owner, null);
+    const persistedTime = await query(
+      `SELECT confirmed_time, confirmed_time_zone FROM interviews WHERE id = $1`,
+      [interviewId],
+    );
+    assert.equal(new Date(persistedTime.rows[0].confirmed_time).toISOString(), proposedTime);
+    assert.equal(persistedTime.rows[0].confirmed_time_zone, "Asia/Manila");
+    const acceptedHistory = await query(
+      `SELECT selected_time, selected_time_zone
+         FROM interview_proposals
+        WHERE interview_id = $1 AND action = 'accepted'`,
+      [interviewId],
+    );
+    assert.equal(acceptedHistory.rows[0].selected_time_zone, "Asia/Manila");
   });
 
   it("(b2) talent counter → client confirm advances an invited submission before an offer", async () => {
@@ -334,6 +347,11 @@ describe("hiring-contracts workflow (production routes)", () => {
     );
     assert.equal(confirm.status, 200, JSON.stringify(confirm.json));
     assert.equal(await submissionStatus(counterSubmissionId), "interviewing");
+    const counterTimeRow = await query(
+      `SELECT confirmed_time_zone FROM interviews WHERE id = $1`,
+      [interviewId],
+    );
+    assert.equal(counterTimeRow.rows[0].confirmed_time_zone, "UTC");
 
     const offer = await request(
       srv,
