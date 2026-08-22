@@ -862,6 +862,10 @@ async function fireInvitationEmail(opts: {
 }): Promise<void> {
   try {
     if (!opts.talentEmail) return;
+    // The production route is also used by isolated smoke tests. Those tests
+    // opt into a no-op transport so exercising invitation creation never sends
+    // mail or depends on Microsoft Graph credentials.
+    if (process.env.INVITATION_EMAIL_TRANSPORT === "noop") return;
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
     const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
       await import("./services/emailVariableResolver.ts");
