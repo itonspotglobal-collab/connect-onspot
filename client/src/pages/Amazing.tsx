@@ -11,12 +11,6 @@ import {
   Star,
   ChevronRight,
   Mail,
-  Phone,
-  MapPinIcon,
-  Linkedin,
-  Facebook,
-  Instagram,
-  ChevronDown,
   TrendingUp,
   CheckCircle2,
   Clock,
@@ -25,14 +19,12 @@ import {
   User,
   Bot,
 } from "lucide-react";
-import { SiX, SiThreads, SiTiktok, SiYoutube } from "react-icons/si";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { HeadSEO } from "@/components/HeadSEO";
-
-import onspotLogoCropped from "@assets/onspot-logo-cropped.png";
+import { Footer } from "@/components/Footer";
 
 import FlashLogo from "../assets/logos/Flash.png";
 import FutureEVLogo from "../assets/logos/FutureEV.png";
@@ -422,12 +414,8 @@ export default function Amazing() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [captureEmail, setCaptureEmail] = useState("");
   const [captureSubmitted, setCaptureSubmitted] = useState(false);
-  const [expandedFooterSection, setExpandedFooterSection] = useState<string | null>(null);
   const pageRef = useRef<HTMLDivElement | null>(null);
 
-  const toggleFooterSection = (section: string) => {
-    setExpandedFooterSection((prev) => (prev === section ? null : section));
-  };
   const { scrollYProgress } = useScroll({ target: pageRef, offset: ["start start", "end end"] });
   const chapterY = useTransform(scrollYProgress, [0.48, 0.72], [100, 0]);
 
@@ -1337,146 +1325,7 @@ export default function Amazing() {
           </div>
         </div>
 
-        {/* ── Footer ── */}
-        <footer className="onspot-footer relative overflow-hidden bg-[#3F4698]">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-violet-500/10 via-blue-500/5 to-transparent blur-md"></div>
-            <div className="h-px bg-gradient-to-r from-transparent via-violet-400/30 through-blue-400/30 to-transparent"></div>
-          </div>
-
-          <div className="mx-auto w-full max-w-[1500px] px-6 sm:px-8 lg:px-12 xl:px-14 2xl:px-16 py-10 sm:py-12 lg:py-14">
-            <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-[minmax(300px,360px)_1fr] xl:grid-cols-[minmax(320px,380px)_1fr] lg:gap-x-12 xl:gap-x-14 items-start">
-              <div className="pb-8 lg:pb-0 border-b border-white/10 lg:border-b-0">
-                <div className="space-y-6 sm:space-y-8 relative flex flex-col items-start transition-all duration-300">
-                  <img src={onspotLogoCropped} alt="OnSpot" className="block h-auto w-[160px] sm:w-[175px] lg:w-[190px] object-contain" data-testid="footer-logo" />
-                  <p className="text-xs sm:text-sm text-white/75 leading-relaxed max-w-md text-left transition-all duration-300">
-                    OnSpot is the only outsourcing system built for the world that's coming—pairing AI-ready operations with world-class Philippine talent to power global businesses.
-                  </p>
-                </div>
-                <div className="mt-8 flex flex-wrap items-center justify-start gap-3">
-                  {[
-                    { href: "https://www.linkedin.com/company/onspotglobal/", icon: <Linkedin className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-linkedin" },
-                    { href: "https://www.facebook.com/OnSpotGlobal", icon: <Facebook className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-facebook" },
-                    { href: "https://x.com/OnSpotTribe", icon: <SiX className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-x" },
-                    { href: "https://www.threads.com/@onspotglobal", icon: <SiThreads className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-threads" },
-                    { href: "https://www.instagram.com/onspotglobal", icon: <Instagram className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-instagram" },
-                    { href: "https://www.tiktok.com/@onspottribe", icon: <SiTiktok className="w-4 h-4 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-tiktok" },
-                    { href: "https://www.youtube.com/@OnSpotGlobal", icon: <SiYoutube className="w-5 h-5 text-white/75 group-hover:text-white group-hover:scale-110 transition-all duration-300" />, testid: "footer-youtube" },
-                  ].map((s) => (
-                    <a key={s.testid} href={s.href} target="_blank" rel="noopener noreferrer" data-testid={s.testid} className="relative w-11 h-11 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 hover:border-white/40 hover:-translate-y-0.5 flex items-center justify-center transition-all duration-500 group">{s.icon}</a>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[0.9fr_0.95fr_1.05fr_1.35fr] gap-y-10 gap-x-8 xl:gap-x-10">
-                {[
-                  {
-                    key: "navigation", label: "Navigation",
-                    links: [
-                      { href: "/hire-talent", label: "Hire Talent", testid: "footer-link-hire" },
-                      { href: "/lead-intake", label: "Managed Services", testid: "footer-link-managed" },
-                      { href: "/superhuman", label: "The Superhuman Project", testid: "footer-link-ai" },
-                      { href: "/waitlist", label: "Join Waitlist", testid: "footer-link-waitlist" },
-                      { href: "/careers", label: "Careers", testid: "footer-link-careers" },
-                      { href: "/powerapp", label: "Powerapp", testid: "footer-link-powerapp" },
-                      { href: "/legal-ops", label: "LegalOps NY", testid: "footer-link-legal-ops" },
-                      { href: "/pricing", label: "Pricing", testid: "footer-link-pricing" },
-                      { href: "/faq", label: "FAQ", testid: "footer-link-faq" },
-                    ],
-                  },
-                  {
-                    key: "company", label: "Company",
-                    links: [
-                      { href: "/why-onspot", label: "Why OnSpot", testid: "footer-link-why" },
-                      { href: "/stories", label: "Amazing Stories", testid: "footer-link-stories" },
-                      { href: "/insights", label: "Insights", testid: "footer-link-insights" },
-                      { href: "/affiliate", label: "Affiliate Marketing", testid: "footer-link-affiliate" },
-                      { href: "/bpo-partner", label: "BPO Partner", testid: "footer-link-bpo" },
-                      { href: "/investors", label: "Investors Corner", testid: "footer-link-investors" },
-                      { href: "/about", label: "About Us", testid: "footer-link-about" },
-                      { href: "/operations-playbook", label: "Delivery Playbook", testid: "footer-link-playbook" },
-                    ],
-                  },
-                ].map((col) => (
-                  <div key={col.key} className="md:space-y-6 transition-all duration-300" style={{ paddingBottom: "clamp(4px, 0.6vh, 8px)" }}>
-                    <button onClick={() => toggleFooterSection(col.key)} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
-                      <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">{col.label}</h3>
-                      <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === col.key ? "rotate-180" : ""}`} />
-                    </button>
-                    <div className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${expandedFooterSection === col.key ? "opacity-100 max-h-96" : "opacity-0 max-h-0 overflow-hidden"}`} style={{ marginTop: expandedFooterSection === col.key || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
-                      {col.links.map((link) => (
-                        <Link key={link.href} href={link.href} data-testid={link.testid} className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">{link.label}</Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                <div className="md:space-y-6 transition-all duration-300" style={{ paddingBottom: "clamp(4px, 0.6vh, 8px)" }}>
-                  <button onClick={() => toggleFooterSection("verticals")} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
-                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">New Verticals</h3>
-                    <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "verticals" ? "rotate-180" : ""}`} />
-                  </button>
-                  <div className={`space-y-3 transition-all duration-300 md:!opacity-100 md:!max-h-none md:!block ${expandedFooterSection === "verticals" ? "opacity-100 max-h-96" : "opacity-0 max-h-0 overflow-hidden"}`} style={{ marginTop: expandedFooterSection === "verticals" || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
-                    {["AI Human-in-the-Loop", "Founder Ops", "Healthcare Micro-Admin", "E-commerce Ops"].map((v) => (
-                      <a key={v} href="#" className="block text-xs sm:text-sm text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">{v}</a>
-                    ))}
-                    <a href="#" className="block text-xs sm:text-sm font-medium text-white/70 hover:text-white md:hover:translate-x-1 transition-all duration-300">View all 10 →</a>
-                  </div>
-                </div>
-
-                <div className="md:space-y-6 transition-all duration-300 min-w-0">
-                  <button onClick={() => toggleFooterSection("connect")} className="flex items-center justify-between w-full md:cursor-default md:!p-0 text-left" style={{ padding: "clamp(4px, 0.6vh, 8px) 0" }}>
-                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-wide text-left">Connect</h3>
-                    <ChevronDown className={`w-5 h-5 text-white/60 transition-transform duration-300 md:hidden ${expandedFooterSection === "connect" ? "rotate-180" : ""}`} />
-                  </button>
-                  <div className={`w-full space-y-4 overflow-hidden text-left transition-all duration-300 md:!block md:!max-h-none md:!opacity-100 ${expandedFooterSection === "connect" ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0"}`} style={{ marginTop: expandedFooterSection === "connect" || (typeof window !== "undefined" && window.innerWidth >= 768) ? "16px" : "0" }}>
-                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
-                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><Mail className="h-4 w-4 shrink-0" /></div>
-                      <div className="min-w-0 text-left leading-relaxed text-white/75">
-                        <a href="mailto:hello@onspotglobal.com" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white" data-testid="footer-email">hello@onspotglobal.com</a>
-                      </div>
-                    </div>
-                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
-                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><Phone className="h-4 w-4 shrink-0" /></div>
-                      <div className="min-w-0 text-left leading-relaxed text-white/75">
-                        <a href="tel:+19178019294" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white" data-testid="footer-phone">1-917-801-9294</a>
-                      </div>
-                    </div>
-                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
-                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><MapPinIcon className="h-4 w-4 shrink-0" /></div>
-                      <div className="min-w-0 text-left">
-                        <a href="https://www.google.com/search?q=onspot+global+new+york" target="_blank" rel="noopener noreferrer" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white">
-                          <address className="block w-full not-italic text-left leading-relaxed text-white/75">US - 2248 Broadway, New York, 10024</address>
-                        </a>
-                      </div>
-                    </div>
-                    <div className="grid w-full grid-cols-[24px_1fr] items-start gap-3 text-left text-sm leading-relaxed text-white/75">
-                      <div className="flex h-6 w-6 items-start justify-start pt-0.5 text-white/60"><MapPinIcon className="h-4 w-4 shrink-0" /></div>
-                      <div className="min-w-0 text-left">
-                        <a href="https://www.google.com/search?q=onspot+global+philippines" target="_blank" rel="noopener noreferrer" className="block w-full text-left leading-relaxed text-white/75 transition hover:text-white">
-                          <address className="block w-full max-w-[310px] not-italic text-left leading-relaxed text-white/75">PH - 17th Floor High Street South Corporate Plaza Tower 2, 11th Ave Cor 26th St, Bonifacio Global City, Taguig</address>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between text-xs sm:text-sm text-white/70">
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                <span className="hover:text-white transition-colors duration-300">© 2025 OnSpot. All rights reserved.</span>
-                <span className="hidden sm:inline text-white/30">·</span>
-                <span className="text-[10px] sm:text-xs text-white/50">Powered by OnSpot Intelligence</span>
-              </div>
-              <div className="flex gap-6">
-                <Link href="/privacy-policy" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-privacy">Privacy Policy</Link>
-                <Link href="/terms-and-conditions" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-terms">Terms of Service</Link>
-                <Link href="/cookies" className="hover:text-white transition-all duration-300 hover:translate-y-[-1px]" data-testid="footer-cookies">Cookie Policy</Link>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <Footer variant="light" />
       </main>
     </div>
   );

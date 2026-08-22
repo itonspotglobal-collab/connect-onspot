@@ -280,7 +280,7 @@ export default function PrivacyPolicy() {
         </div>
       </main>
 
-      <Footer />
+      <Footer variant="light" />
     </div>
   );
 }

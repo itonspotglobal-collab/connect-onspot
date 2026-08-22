@@ -1,19 +1,51 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface FooterProps {
   /**
-   * CSS background value for the footer.
-   * Pass "transparent" when the footer is nested inside a shared background
-   * container with the section above it (one continuous surface).
-   * Defaults to the brand indigo used on the About page.
+   * Visual treatment for the surface immediately above the footer.
+   * "dark-gradient" keeps the footer transparent inside a shared dark
+   * gradient, while "adaptive" follows the light/dark page surface.
    */
-  bg?: string;
+  variant?: "dark-gradient" | "light" | "indigo" | "adaptive";
   /**
    * When true, renders a subtle top border to visually separate the footer
    * from the section above without breaking the shared background.
    */
   separator?: boolean;
 }
+
+const VARIANT_STYLES = {
+  "dark-gradient": {
+    background: "transparent",
+    copyright: "rgba(255,255,255,0.72)",
+    link: "rgba(255,255,255,0.78)",
+    hover: "#ffffff",
+    separator: "rgba(255,255,255,0.16)",
+  },
+  light: {
+    background: "#ffffff",
+    copyright: "#475569",
+    link: "#475569",
+    hover: "#0f172a",
+    separator: "rgba(15,23,42,0.10)",
+  },
+  indigo: {
+    background: "#474EAD",
+    copyright: "rgba(255,255,255,0.72)",
+    link: "rgba(255,255,255,0.78)",
+    hover: "#ffffff",
+    separator: "rgba(255,255,255,0.16)",
+  },
+  dark: {
+    background: "#060816",
+    copyright: "rgba(255,255,255,0.72)",
+    link: "rgba(255,255,255,0.78)",
+    hover: "#ffffff",
+    separator: "rgba(255,255,255,0.16)",
+  },
+} as const;
 
 const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
@@ -29,13 +61,44 @@ const NAV_LINKS = [
   { href: "/terms-and-conditions",label: "Terms" },
 ];
 
-export function Footer({ bg = "#474EAD", separator = false }: FooterProps) {
+export function Footer({ variant = "indigo", separator = false }: FooterProps) {
+  const { theme } = useTheme();
+  const [systemTheme, setSystemTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateSystemTheme = () => setSystemTheme(media.matches ? "dark" : "light");
+
+    updateSystemTheme();
+    media.addEventListener("change", updateSystemTheme);
+    return () => media.removeEventListener("change", updateSystemTheme);
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash !== "#site-footer") return;
+
+    const scrollToFooter = () =>
+      document.getElementById("site-footer")?.scrollIntoView({ block: "start" });
+    const frame = window.requestAnimationFrame(scrollToFooter);
+    const timeout = window.setTimeout(scrollToFooter, 300);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, []);
+
+  const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const resolvedVariant = variant === "adaptive" && resolvedTheme === "dark" ? "dark" : variant === "adaptive" ? "light" : variant;
+  const styles = VARIANT_STYLES[resolvedVariant];
+
   return (
     <footer
+      id="site-footer"
       style={{
-        background: bg,
+        background: styles.background,
         padding: "32px 0 28px",
-        ...(separator && { borderTop: "1px solid rgba(255,255,255,0.10)" }),
+        ...(separator && { borderTop: `1px solid ${styles.separator}` }),
       }}
     >
       <div
@@ -55,7 +118,7 @@ export function Footer({ bg = "#474EAD", separator = false }: FooterProps) {
           style={{
             fontSize: 11.5,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.32)",
+            color: styles.copyright,
             margin: 0,
             letterSpacing: "0.02em",
             whiteSpace: "nowrap",
@@ -65,7 +128,8 @@ export function Footer({ bg = "#474EAD", separator = false }: FooterProps) {
         </p>
 
         {/* Right: nav + legal */}
-        <div
+        <nav
+          aria-label="Footer navigation"
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -79,21 +143,22 @@ export function Footer({ bg = "#474EAD", separator = false }: FooterProps) {
               href={href}
               style={{
                 fontSize: 11.5,
-                color: "rgba(255,255,255,0.28)",
+                color: styles.link,
                 textDecoration: "none",
                 transition: "color 0.14s",
               }}
               onMouseEnter={(e: any) =>
-                (e.currentTarget.style.color = "rgba(255,255,255,0.65)")
+                (e.currentTarget.style.color = styles.hover)
               }
               onMouseLeave={(e: any) =>
-                (e.currentTarget.style.color = "rgba(255,255,255,0.28)")
+                (e.currentTarget.style.color = styles.link)
               }
+              className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
             >
               {label}
             </Link>
           ))}
-        </div>
+        </nav>
       </div>
     </footer>
   );

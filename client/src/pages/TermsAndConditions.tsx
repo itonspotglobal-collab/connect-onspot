@@ -679,7 +679,7 @@ export default function TermsAndConditions() {
         </div>
       </main>
 
-      <Footer />
+      <Footer variant="light" />
     </div>
   );
 }

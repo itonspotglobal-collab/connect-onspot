@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X, Mail, Phone, MapPin } from "lucide-react";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
+import { Footer } from "@/components/Footer";
 
 const nurPhoto = "/nur-ceo.jpeg";
 const markPhoto = "/mark-apostol.png";
@@ -751,46 +752,7 @@ export default function WhyOnSpotAbout() {
         </div>
       </section>
 
-      {/* ── Fine-print footer ── same bg, zero visual break ─────────────────── */}
-      <footer style={{ background: P, padding: "32px 0 28px" }}>
-        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px", display: "flex", flexDirection: "column", gap: 20 }}>
-
-          {/* Layout: left stack (copyright + socials) · right nav + legal */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
-
-            {/* Left: copyright */}
-            <p style={{ fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.32)", margin: 0, letterSpacing: "0.02em" }}>
-              Work Without Limits · © {new Date().getFullYear()} OnSpot
-            </p>
-
-            {/* Right: nav + legal */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", justifyContent: "flex-end" }}>
-              {[
-                { to: "/why-onspot/about",     label: "About" },
-                { to: "/amazing",              label: "Stories" },
-                { to: "/insights",             label: "Insights" },
-                { to: "/affiliate-marketing",  label: "Affiliate" },
-                { to: "/bpo-partner",          label: "BPO Partner" },
-                { to: "/investors",            label: "Investors" },
-                { to: "/operations-playbook",  label: "Playbook" },
-                { to: "/privacy-policy",       label: "Privacy Policy" },
-                { to: "/terms-and-conditions", label: "Terms" },
-              ].map(({ to, label }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  style={{ fontSize: 11.5, color: "rgba(255,255,255,0.28)", textDecoration: "none", transition: "color 0.14s" }}
-                  onMouseEnter={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
-                  onMouseLeave={(e: any) => (e.currentTarget.style.color = "rgba(255,255,255,0.28)")}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      </footer>
+      <Footer variant="indigo" />
 
       {/* ── Responsive grid helpers (injected as a style tag) ─────────────────── */}
       <style>{`

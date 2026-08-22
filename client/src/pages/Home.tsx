@@ -400,7 +400,7 @@ export default function Home() {
       {/* One shared gradient field — CTA + footer are the same surface */}
       <div style={{ background: FINAL_BG }}>
         <FinalCtaSection />
-        <Footer bg="transparent" separator />
+        <Footer variant="dark-gradient" separator />
       </div>
     </div>
   );

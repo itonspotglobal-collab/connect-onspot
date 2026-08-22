@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useParams, useLocation, Link } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -38,6 +38,7 @@ import {
 } from "@/lib/jobUtils";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
+import { Footer } from "@/components/Footer";
 
 const roles = [
   {
@@ -1169,38 +1170,7 @@ function DbJobDetail({
         <DbSimilarJobsSection currentJob={job} navigate={navigate} />
       </motion.div>
 
-      {/* Compact page footer */}
-      <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
-        <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              © 2026 OnSpot Global — One marketplace connecting the world's
-              best talent and clients.
-            </span>
-            <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Link
-                href="/terms-and-conditions"
-                className="transition-colors hover:text-white"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/privacy-policy"
-                className="transition-colors hover:text-white"
-              >
-                Privacy
-              </Link>
-              {/* /contractor-agreement route not yet created — rendered non-clickable */}
-              <span
-                className="cursor-default opacity-50"
-                title="Page coming soon"
-              >
-                Contractor Agreement
-              </span>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <Footer variant="adaptive" />
     </div>
   );
 }
@@ -1628,38 +1598,7 @@ export default function FindWorkJob() {
         })()}
       </motion.div>
 
-      {/* Compact page footer */}
-      <footer className="bg-gradient-to-br from-[#1A1836] to-[#2A2760] py-6 text-sm text-white/60">
-        <div className="mx-auto max-w-5xl px-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              © 2026 OnSpot Global — One marketplace connecting the world's
-              best talent and clients.
-            </span>
-            <nav className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <Link
-                href="/terms-and-conditions"
-                className="transition-colors hover:text-white"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/privacy-policy"
-                className="transition-colors hover:text-white"
-              >
-                Privacy
-              </Link>
-              {/* /contractor-agreement route not yet created — rendered non-clickable */}
-              <span
-                className="cursor-default opacity-50"
-                title="Page coming soon"
-              >
-                Contractor Agreement
-              </span>
-            </nav>
-          </div>
-        </div>
-      </footer>
+      <Footer variant="adaptive" />
     </div>
   );
 }
