@@ -1,0 +1,37 @@
+New scope: the tablet breakpoint (screenshot shows a viewport around
+900-1024px width) has the same class of problem already fixed for
+mobile — top-anchored content, large orphaned whitespace below the text
+block, and additionally the phone mockup is being cropped by the right
+edge of the viewport (its right side runs off-screen entirely).
+
+Confirm first: what CSS breakpoint range currently governs this "tablet"
+layout state, and has it been touched by ANY of the mobile fixes from
+this session, or is this a completely separate, previously-unaddressed
+layout? I want to know if this is a gap the mobile work never covered
+(likely) rather than something that regressed.
+
+Apply the same design principles already established and confirmed
+correct for mobile, adapted to this breakpoint's actual available width:
+1. Vertically center the content block within the hero's available height
+   (not top-anchored) — same principle as mobile, different specific
+   numbers since tablet has more vertical room.
+2. Ensure the phone/laptop mockup is NEVER cropped by the viewport edge —
+   confirm its width/position accounts for the actual tablet viewport
+   width, not just scaled down from desktop or up from mobile.
+3. Left-align content to match the same left column as the headline/CTA,
+   consistent with the mobile treatment, adapted proportionally for the
+   wider tablet canvas.
+4. Confirm the same hourly-rate terminology fixes already applied to
+   mobile slides are ALSO reflected here — this may be the same
+   component just rendering at a different breakpoint, in which case the
+   copy fixes should already be inherited; confirm rather than assume.
+
+This is a NEW scope item, separate from and in addition to the mobile
+fixes already completed. Explicitly confirm desktop (the width already
+verified unchanged) and the mobile breakpoints already fixed remain
+untouched by whatever changes you make here.
+
+Audit and report your findings on the current tablet breakpoint rules
+before implementing, then report back with real screenshots at a
+representative tablet width (e.g. 768px and 1024px) showing all five
+slides fixed, before this is considered done.
