@@ -1,0 +1,55 @@
+Two issues to fix together in the invite/interview scheduling flow —
+same feature area, same priority, investigate and fix both in one pass.
+
+ISSUE 1 — Non-talent accounts appearing in Talent search results
+
+Attempting to invite "Odie G." returns 400 "Target account is not a
+talent user." This is happening AFTER the MSA gate and job-approval
+blockers are cleared — the invite-creation endpoint's own check is
+correctly rejecting a non-talent target, but the real question is why a
+non-talent account appeared in search results at all.
+
+1. Confirm whether "Odie G." matches odie.galang@onspotglobal.com — one
+   of the 5 accounts whose role was converted from 'talent' to 'admin'
+   in the earlier admin bootstrap work.
+
+2. If so: confirm whether the search/candidates query correctly filters
+   to current role = 'talent', or whether this is a stale search index/
+   cached row left over from before the role change. Find and fix the
+   actual gap — don't just patch this one account.
+
+3. Check all 5 converted admin accounts (val, emmanuel, odie.galang, nur,
+   mark.apostol @onspotglobal.com) — confirm none still appear in Talent
+   search results or the homepage talent carousel. Same root-cause fix
+   applies to all if the problem is systemic.
+
+ISSUE 2 — CRITICAL: no timezone shown or captured in interview
+scheduling
+
+The propose/confirm/counter-propose dialog shows a bare time
+("08/24/2026, 09:00 AM") with no timezone indicator anywhere. Given
+Client and Talent are frequently in different timezones by design, this
+same displayed string could mean two different real moments to each
+party — undermining the whole negotiation feature if both sides aren't
+agreeing on the same actual instant.
+
+Confirm, with real evidence, which is true:
+1. STORAGE: is interviews.proposed_times / confirmed_time stored with a
+   real timezone/UTC offset (timestamptz), or as a naive/ambiguous
+   timestamp with no timezone captured at all, even server-side?
+2. DISPLAY: does any screen (Client proposing, Talent responding,
+   confirmation views) show which timezone a time is in?
+
+Fix:
+- If storage is sound and this is a display-only gap: show each party
+  the time converted to THEIR OWN local timezone, explicitly labeled
+  (e.g. "9:00 AM PHT" / "9:00 AM your time (EST)") — never a bare
+  unlabeled time.
+- If storage itself is ambiguous: fix the data layer first (capture and
+  store with explicit timezone/UTC offset) before fixing display on top
+  of it. Flag this as the more serious finding if true.
+
+Report root cause for both issues, with real evidence, before proposing
+fixes. Once fixed, re-verify the full Aquavive invite-to-interview flow
+end-to-end with a REAL current Talent account and a real, correctly
+timezone-labeled proposed time, before closing either issue.
