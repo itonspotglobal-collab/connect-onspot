@@ -1,0 +1,38 @@
+Audit and proposed plan approved — the core diagnosis ("Shortlist" was
+never missing, just mislabeled and overloaded) is exactly right, and the
+workflow_type marker, silent-to-Talent default, and shortlist-to-
+invitation promotion logic are all approved as designed.
+
+One thing to answer before implementation: you recommended allowing
+shortlisting against a job that's still pending admin approval. Approved,
+but confirm this first: what happens to an existing shortlist record if
+its underlying job is later REJECTED (or, once the separate job-revision-
+request feature is built, sent back for revision)? Does the shortlist
+record become orphaned/invalid silently, or does it need a defined
+fallback (e.g., the Client sees a "this role was not approved" indicator
+on their shortlist view)? Propose a simple answer — this doesn't need to
+be elaborate, just needs to not fail silently.
+
+Proceed with implementation as proposed:
+- job_submissions reused, workflow_type marker ('application' /
+  'client_shortlist' / 'client_invitation')
+- GET/POST/DELETE /api/client/shortlists as the lightweight endpoint,
+  no MSA check, no interview proposal, no talent notification
+- Every listed surface (Hire Talent results, quick-view modal, Talent
+  Pool cards + quick view, full profile) gets both actions: "Shortlist"
+  (lightweight) and "Interview this talent" (renamed heavyweight flow,
+  same as today's invitation dialog)
+- Centralize the readiness messaging so the shared ClientTalentInviteDialog
+  reads the same real blocking reason (pending approval / MSA required /
+  no roles / closed roles) already correctly handled by the custom Hire
+  Talent picker — apply your suggested copy for each case
+- Uniqueness/idempotency guard preventing duplicate active shortlists for
+  the same client/role/talent
+
+Report back with real evidence: the shortlist action working silently
+(no Talent notification) across all listed surfaces, the invite action
+correctly promoting an existing shortlist to invited status without a
+duplicate row, and the centralized readiness messaging showing the
+correct reason on the previously-broken Talent Pool/full-profile paths —
+specifically re-verify the Aquavive scenario one more time end-to-end
+given this touches the same invite dialog.
