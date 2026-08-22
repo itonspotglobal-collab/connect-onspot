@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -56,12 +63,24 @@ type OrganizationMembersResponse = {
   }>;
 };
 
+const INVITATION_STATUS_FILTERS = [
+  { value: "all", label: "All statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "expired", label: "Expired" },
+  { value: "accepted", label: "Accepted" },
+  { value: "declined", label: "Declined" },
+  { value: "revoked", label: "Revoked" },
+] as const;
+
+type InvitationStatusFilter = typeof INVITATION_STATUS_FILTERS[number]["value"];
+
 export default function OrganizationDetail() {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { setSelectedOrganizationId } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState<InvitationStatusFilter>("all");
   const { data, isLoading, isError } = useQuery<OrganizationResponse>({
     queryKey: ["/api/organizations", organizationId],
     queryFn: async () => {
@@ -76,9 +95,12 @@ export default function OrganizationDetail() {
     }
   }, [data?.organization.id, setSelectedOrganizationId]);
   const { data: teamData, isLoading: isTeamLoading } = useQuery<OrganizationMembersResponse>({
-    queryKey: ["/api/organizations", organizationId, "members"],
+    queryKey: ["/api/organizations", organizationId, "members", invitationStatusFilter],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/organizations/${organizationId}/members`);
+      const statusQuery = invitationStatusFilter === "all"
+        ? ""
+        : `?status=${encodeURIComponent(invitationStatusFilter)}`;
+      const response = await apiRequest("GET", `/api/organizations/${organizationId}/members${statusQuery}`);
       return response.json();
     },
     enabled: Boolean(organizationId && data?.organization),
@@ -179,6 +201,8 @@ export default function OrganizationDetail() {
   ].filter(([, value]) => value);
 
   const isOwner = data.membership.role === "owner";
+  const selectedInvitationStatusLabel =
+    INVITATION_STATUS_FILTERS.find(({ value }) => value === invitationStatusFilter)?.label ?? "All statuses";
   const handleInvite = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const email = inviteEmail.trim();
@@ -324,9 +348,31 @@ export default function OrganizationDetail() {
 
                   {isOwner && (
                     <div className="border-t border-slate-200 pt-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-slate-800">Invitations</h3>
-                        <span className="text-xs text-slate-400">{teamData?.invitations.length ?? 0} total</span>
+                      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-800">Invitations</h3>
+                          <span className="text-xs text-slate-400">
+                            {teamData?.invitations.length ?? 0} {invitationStatusFilter === "all" ? "total" : "matching"}
+                          </span>
+                        </div>
+                        <div className="w-full sm:w-44">
+                          <Label htmlFor="organization-invitation-status" className="text-xs font-medium text-slate-500">
+                            Filter by status
+                          </Label>
+                          <Select
+                            value={invitationStatusFilter}
+                            onValueChange={(value) => setInvitationStatusFilter(value as InvitationStatusFilter)}
+                          >
+                            <SelectTrigger id="organization-invitation-status" className="mt-1 h-9 bg-white text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {INVITATION_STATUS_FILTERS.map((status) => (
+                                <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         {teamData?.invitations.map((invitation) => (
@@ -382,7 +428,11 @@ export default function OrganizationDetail() {
                           </div>
                         ))}
                         {!teamData?.invitations.length && (
-                          <p className="text-sm text-slate-500">No invitations have been sent yet.</p>
+                          <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500">
+                            {invitationStatusFilter === "all"
+                              ? "No invitations have been sent yet."
+                              : `No invitations match the selected "${selectedInvitationStatusLabel}" status.`}
+                          </p>
                         )}
                       </div>
                     </div>

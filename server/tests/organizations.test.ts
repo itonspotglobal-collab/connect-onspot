@@ -230,6 +230,25 @@ describe("Client organization routes", () => {
     assert.equal(ownerView.json.members.length, 1);
     assert.equal(ownerView.json.invitations.length, 1);
 
+    const pendingInvitations = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members?status=pending`,
+      clientToken,
+    );
+    assert.equal(pendingInvitations.status, 200);
+    assert.equal(pendingInvitations.json.invitations.length, 1);
+    assert.equal(pendingInvitations.json.invitations[0].status, "pending");
+
+    const acceptedFilter = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members?status=accepted`,
+      clientToken,
+    );
+    assert.equal(acceptedFilter.status, 200);
+    assert.equal(acceptedFilter.json.invitations.length, 0);
+
     const nonOwnerView = await request(
       server,
       "GET",
@@ -251,6 +270,16 @@ describe("Client organization routes", () => {
     );
     assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
     assert.equal(accepted.json.membership.status, "active");
+
+    const acceptedOwnerView = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members?status=accepted`,
+      clientToken,
+    );
+    assert.equal(acceptedOwnerView.status, 200);
+    assert.equal(acceptedOwnerView.json.invitations.length, 1);
+    assert.equal(acceptedOwnerView.json.invitations[0].status, "accepted");
 
     const inviteeOrganizations = await request(server, "GET", "/api/organizations/me", inviteeToken);
     assert.equal(inviteeOrganizations.status, 200);

@@ -15,6 +15,8 @@ interface FixtureState {
   userId: string;
   unreadMessages: number;
   notificationRead: boolean;
+  includeClientApplicationNotification: boolean;
+  clientApplicationNotificationRead: boolean;
   markReadCalls: number;
   notificationReadCalls: number;
 }
@@ -99,7 +101,7 @@ function threadResponse(state: FixtureState) {
 }
 
 function notificationResponse(state: FixtureState) {
-  return [
+  const notifications = [
     {
       id: `notification-${state.kind}`,
       type: "new_message",
@@ -111,6 +113,19 @@ function notificationResponse(state: FixtureState) {
       createdAt: "2026-08-20T12:01:00.000Z",
     },
   ];
+  if (state.includeClientApplicationNotification) {
+    notifications.push({
+      id: "notification-client-application",
+      type: "client_application_status_changed",
+      title: "Client updated application",
+      message: "A Client updated an application's status.",
+      relatedId: "application-message-regression",
+      relatedType: "job_submission",
+      isRead: state.clientApplicationNotificationRead,
+      createdAt: "2026-08-20T12:02:00.000Z",
+    });
+  }
+  return notifications;
 }
 
 async function routeApi(route: Route, state: FixtureState): Promise<void> {
@@ -186,9 +201,14 @@ async function routeApi(route: Route, state: FixtureState): Promise<void> {
   if (
     request.method() === "PATCH" &&
     (path === `/api/notifications/notification-${state.kind}/read` ||
+      path === "/api/notifications/notification-client-application/read" ||
       path === `/api/talent/notifications/notification-${state.kind}/read`)
   ) {
-    state.notificationRead = true;
+    if (path === "/api/notifications/notification-client-application/read") {
+      state.clientApplicationNotificationRead = true;
+    } else {
+      state.notificationRead = true;
+    }
     state.notificationReadCalls += 1;
     return fulfillJson(route, {});
   }
@@ -196,7 +216,10 @@ async function routeApi(route: Route, state: FixtureState): Promise<void> {
   await route.continue();
 }
 
-async function newSession(kind: SessionKind): Promise<{ page: Page; state: FixtureState }> {
+async function newSession(
+  kind: SessionKind,
+  includeClientApplicationNotification = false,
+): Promise<{ page: Page; state: FixtureState }> {
   const state: FixtureState = {
     kind,
     userId:
@@ -207,6 +230,8 @@ async function newSession(kind: SessionKind): Promise<{ page: Page; state: Fixtu
           : "portal-talent-message-regression",
     unreadMessages: 2,
     notificationRead: false,
+    includeClientApplicationNotification,
+    clientApplicationNotificationRead: false,
     markReadCalls: 0,
     notificationReadCalls: 0,
   };
@@ -340,5 +365,22 @@ after(async () => {
 test("message badges and read state work across every sign-in path", async () => {
   for (const kind of ["client", "main-talent", "talent-portal"] as SessionKind[]) {
     await assertMessageFlow(kind);
+  }
+});
+
+test("client application status notifications link to the admin applications view", async () => {
+  const { page, state } = await newSession("client", true);
+  try {
+    await waitForText(page, "Messages");
+    await page.getByTestId("notification-bell").click();
+    await page.getByTestId("notification-notification-client-application").click();
+    assert.match(page.url(), /\/admin\/job-applications$/);
+    await page.waitForTimeout(250);
+    assert.ok(
+      state.notificationReadCalls > 0,
+      "client application status notification should persist its read state",
+    );
+  } finally {
+    await page.context().close();
   }
 });

@@ -11498,6 +11498,9 @@ export async function registerRoutes(
     respondedAt: row.responded_at ?? null,
   });
 
+  const organizationInvitationStatuses = ["pending", "expired", "accepted", "declined", "revoked"] as const;
+  const organizationInvitationStatusSchema = z.enum(organizationInvitationStatuses).optional();
+
   const getActiveOrganizationMembership = async (organizationId: string, userId: string) => {
     const result = await query(
       `SELECT om.id, om.organization_id, om.user_id, om.role, om.status
@@ -11639,6 +11642,15 @@ export async function registerRoutes(
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
+      const requestedStatus = req.query.status === "" ? undefined : req.query.status;
+      const statusResult = organizationInvitationStatusSchema.safeParse(requestedStatus);
+      if (!statusResult.success) {
+        return res.status(400).json({
+          error: "Invalid invitation status",
+          details: `status must be one of: ${organizationInvitationStatuses.join(", ")}`,
+        });
+      }
+      const invitationStatus = statusResult.data;
       const membership = await getActiveOrganizationMembership(req.params.organizationId, userId);
       if (!membership) return res.status(404).json({ error: "Organization not found" });
       await expireOrganizationInvitations();
@@ -11661,8 +11673,9 @@ export async function registerRoutes(
              INNER JOIN organizations o ON o.id = oi.organization_id
              INNER JOIN users u ON u.id = oi.invited_by
             WHERE oi.organization_id = $1
+              ${invitationStatus ? "AND oi.status = $2" : ""}
             ORDER BY oi.created_at DESC`,
-          [req.params.organizationId],
+          invitationStatus ? [req.params.organizationId, invitationStatus] : [req.params.organizationId],
         )
         : { rows: [] };
 

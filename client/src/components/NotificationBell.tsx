@@ -112,6 +112,13 @@ const TYPE_CONFIG: Record<
     label: "Application Update",
     route: "/my-applications",
   },
+  client_application_status_changed: {
+    icon: ClipboardList,
+    color: "#2563EB",
+    bg: "#DBEAFE",
+    label: "Client Application Update",
+    route: "/admin/job-applications",
+  },
   new_message: {
     icon: MessageSquare,
     color: "#4D55C7",
