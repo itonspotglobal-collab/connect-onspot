@@ -746,10 +746,6 @@ export default function WhyOnSpotAbout() {
           </div>
         </div>
 
-        {/* Subtle separator — lives inside the CTA section for seamless flow */}
-        <div style={{ maxWidth: 1140, margin: "64px auto 0", padding: "0 32px" }}>
-          <div style={{ height: 1, background: "rgba(255,255,255,0.10)" }} />
-        </div>
       </section>
 
       <Footer variant="indigo" />

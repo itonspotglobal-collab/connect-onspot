@@ -195,3 +195,10 @@ uri = "file://screenshots/footer-fix-job-dark.png"
 type = "image"
 title = "Footer fix — Job detail dark"
 description = "Live job-detail footer in dark mode with muted lavender links and divider."
+
+[[outputs]]
+id = "EoGyOwGK0FDu9qEvNcJ1O"
+uri = "file://screenshots/verified-about-no-redundant-cta-divider.png"
+type = "image"
+title = "About page — redundant CTA divider removed"
+description = "Live browser capture showing the About CTA without its inner bottom rule and the shared footer divider retained at the footer boundary."
