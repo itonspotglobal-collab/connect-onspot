@@ -25,6 +25,7 @@ const OTHER_CLIENT_ID = `client-job-other-${suffix}`;
 const TALENT_ID = `client-job-talent-${suffix}`;
 const PENDING_JOB_ID = `client-job-pending-${suffix}`;
 const READY_JOB_ID = `client-job-ready-${suffix}`;
+const REVISION_JOB_ID = `client-job-revision-${suffix}`;
 const SCAFFOLD_JOB_ID = `client-job-scaffold-${suffix}`;
 const CANDIDATE_ID = `client-job-candidate-${suffix}`;
 
@@ -135,9 +136,11 @@ async function createFixtures() {
         'Full-Time', 'open', 'pending', 'manual'),
        ($3, $2, 'Approved invitation job', 'Approved test job', 'Technical', 'intermediate',
         'Full-Time', 'open', 'approved', 'manual'),
-       ($4, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
+        ($4, $2, 'Revision-needed job', 'Revision-needed test job', 'Technical', 'intermediate',
+         'Full-Time', 'open', 'revision_needed', 'manual'),
+        ($5, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
         'Full-Time', 'closed', 'pending', 'search_scaffold')`,
-    [PENDING_JOB_ID, CLIENT_ID, READY_JOB_ID, SCAFFOLD_JOB_ID],
+     [PENDING_JOB_ID, CLIENT_ID, READY_JOB_ID, REVISION_JOB_ID, SCAFFOLD_JOB_ID],
   );
   await query(
     `INSERT INTO candidates
@@ -151,8 +154,9 @@ async function destroyFixtures() {
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
+  await query(`DELETE FROM notifications WHERE user_id = $1`, [TALENT_ID]).catch(() => {});
   await query(`DELETE FROM candidates WHERE id = $1`, [CANDIDATE_ID]).catch(() => {});
-  await query(`DELETE FROM jobs WHERE id = ANY($1::text[])`, [[PENDING_JOB_ID, READY_JOB_ID, SCAFFOLD_JOB_ID]]).catch(() => {});
+  await query(`DELETE FROM jobs WHERE id = ANY($1::text[])`, [[PENDING_JOB_ID, READY_JOB_ID, REVISION_JOB_ID, SCAFFOLD_JOB_ID]]).catch(() => {});
   await query(
     `DELETE FROM client_profiles WHERE user_id = ANY($1::text[])`,
     [[ADMIN_ID, CLIENT_ID, OTHER_CLIENT_ID, TALENT_ID]],
@@ -318,6 +322,12 @@ describe("client profile and job authorization (production routes)", () => {
   });
 
   it("persists silent role shortlists, keeps them out of talent applications, and promotes them without duplicates", async () => {
+    const notificationBaseline = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+    assert.equal(notificationBaseline.rows[0].count, 0);
+
     const shortlist = await request(server, "POST", "/api/client/shortlists", clientToken, {
       jobId: PENDING_JOB_ID,
       talentUserId: TALENT_ID,
@@ -337,6 +347,12 @@ describe("client profile and job authorization (production routes)", () => {
     assert.ok(saved);
     assert.equal(saved.jobStatus, "open");
     assert.equal(saved.approvalStatus, "pending");
+
+    const afterShortlistNotifications = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+    assert.equal(afterShortlistNotifications.rows[0].count, 0, "a silent shortlist must not notify talent");
 
     const talentApplications = await request(server, "GET", "/api/talent/applications", talentToken);
     assert.equal(talentApplications.status, 200, JSON.stringify(talentApplications.json));
@@ -397,6 +413,62 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(rejectedList.status, 200, JSON.stringify(rejectedList.json));
     const rejectedSaved = rejectedList.json.shortlists.find((row: any) => row.id === shortlist.json.id);
     assert.equal(rejectedSaved.approvalStatus, "rejected");
+
+    const revisionShortlist = await request(server, "POST", "/api/client/shortlists", clientToken, {
+      jobId: REVISION_JOB_ID,
+      talentUserId: TALENT_ID,
+    });
+    assert.equal(revisionShortlist.status, 201, JSON.stringify(revisionShortlist.json));
+    const pickerReadiness = await request(server, "GET", "/api/client/invitation-readiness", clientToken);
+    assert.equal(pickerReadiness.status, 200, JSON.stringify(pickerReadiness.json));
+    const pickerRows = pickerReadiness.json.jobs.filter(
+      (job: any) => [PENDING_JOB_ID, REVISION_JOB_ID].includes(job.id),
+    );
+    assert.deepEqual(
+      new Map(pickerRows.map((job: any) => [job.id, job.approval_status])),
+      new Map([
+        [PENDING_JOB_ID, "rejected"],
+        [REVISION_JOB_ID, "revision_needed"],
+      ]),
+      "non-approved open roles must remain available to the shortlist picker",
+    );
+    assert.equal(pickerRows.every((job: any) => job.status === "open"), true);
+
+    const rejectedInterview = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes: [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }],
+    });
+    assert.equal(rejectedInterview.status, 403, JSON.stringify(rejectedInterview.json));
+    assert.equal(rejectedInterview.json.reason, "not_approved");
+    const revisionInterview = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: REVISION_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes: [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }],
+    });
+    assert.equal(revisionInterview.status, 403, JSON.stringify(revisionInterview.json));
+    assert.equal(revisionInterview.json.reason, "not_approved");
+
+    const nonApprovedList = await request(server, "GET", "/api/client/shortlists", clientToken);
+    assert.equal(nonApprovedList.status, 200, JSON.stringify(nonApprovedList.json));
+    const nonApprovedRows = nonApprovedList.json.shortlists.filter(
+      (row: any) => [shortlist.json.id, revisionShortlist.json.id].includes(row.id),
+    );
+    assert.equal(nonApprovedRows.length, 2);
+    assert.deepEqual(
+      new Map(nonApprovedRows.map((row: any) => [row.id, row.approvalStatus])),
+      new Map([
+        [shortlist.json.id, "rejected"],
+        [revisionShortlist.json.id, "revision_needed"],
+      ]),
+    );
+
+    const afterBlockedInterviews = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+    assert.equal(afterBlockedInterviews.rows[0].count, 0, "blocked interviews must not notify talent");
+
     await query(`UPDATE jobs SET approval_status = 'approved' WHERE id = $1`, [PENDING_JOB_ID]);
 
     const acceptance = await request(server, "POST", "/api/client/msa-acceptance", clientToken, { accepted: true });
@@ -416,7 +488,26 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(rows.rows.length, 1);
     assert.equal(rows.rows[0].workflow_type, "client_invitation");
     assert.equal(rows.rows[0].status, "invited");
+    const submissionCount = await query(
+      `SELECT COUNT(*)::int AS count
+         FROM job_submissions
+        WHERE client_id = $1 AND job_id = $2 AND talent_id = $3`,
+      [CLIENT_ID, PENDING_JOB_ID, TALENT_ID],
+    );
+    assert.equal(submissionCount.rows[0].count, 1, "promotion must reuse the shortlist submission");
     const interviewCount = await query(`SELECT COUNT(*)::int AS count FROM interviews WHERE submission_id = $1`, [shortlist.json.id]);
     assert.equal(interviewCount.rows[0].count, 1);
+
+    const duplicateInvite = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes: [{ start: "2030-01-02T10:00:00.000Z", timezone: "UTC" }],
+    });
+    assert.equal(duplicateInvite.status, 409, JSON.stringify(duplicateInvite.json));
+    const finalNotifications = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+    assert.equal(finalNotifications.rows[0].count, 0, "shortlist and promotion must not create a platform notification");
   });
 });
