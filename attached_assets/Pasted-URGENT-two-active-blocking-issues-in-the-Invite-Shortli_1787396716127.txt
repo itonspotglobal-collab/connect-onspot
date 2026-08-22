@@ -1,0 +1,43 @@
+URGENT — two active, blocking issues in the Invite/Shortlist entry point.
+Given Task #327 extensively rewrote exactly this code path (the invite
+creation flow, client profile job-row components, and the second client
+search surface aligned to the same combined-invite flow), treat both of
+these as LIKELY REGRESSIONS from that work — check that first before
+starting a fresh investigation.
+
+ISSUE 1 — No CTA anywhere for a Client to initiate hiring a Talent from
+a profile. There is currently no visible button/action to Shortlist/
+Invite a Talent from the Full Profile view (or wherever this used to
+live). Confirm:
+1. Did #327's rewrite of the invite flow remove, hide, or relocate this
+   CTA as a side effect (e.g., it now only appears after the combined
+   invite+interview dialog is triggered some other way, but the actual
+   entry-point button is gone)?
+2. Check every surface that should have this CTA: the Full Profile modal/
+   page, the search results row/card, and the "second client search
+   surface" explicitly mentioned as touched during #327.
+3. Report exactly what's missing vs. what's just moved, with real
+   screenshots of each surface.
+
+ISSUE 2 — Aquavive still cannot Shortlist/Invite despite having a real
+posted job. This was flagged urgently BEFORE #327 started and was NEVER
+confirmed fixed — it's been open this whole time. Re-investigate now,
+given #327 changed the exact eligibility-check logic this bug lives in:
+1. Query Aquavive's actual job(s) directly — current status,
+   approvalStatus, engagement_type, client_id ownership, created_via.
+2. Compare against the CURRENT (post-#327) eligibility check used by the
+   invite flow — this check may have changed shape entirely during #327's
+   rewrite (it now involves the MSA gate, the combined invite+interview
+   transaction, and the "client's turn" ownership logic added during the
+   review cycles). Confirm precisely which condition is failing for this
+   specific account, with real evidence — the actual job row, the actual
+   failing check.
+3. Confirm whether the MSA gate (also from #327) is unexpectedly blocking
+   this — has Aquavive accepted the MSA? If not, is the failure message
+   incorrectly saying "post a job first" when the REAL blocker is
+   "accept the MSA first"? This would be a real bug — an incorrect error
+   message masking the true cause.
+
+Report root cause for both, with real evidence, before proposing any fix.
+Given real clients are currently blocked from the core hiring action on
+this platform, treat both as highest priority.
