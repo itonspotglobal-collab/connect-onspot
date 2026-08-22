@@ -1,0 +1,44 @@
+Three related fixes to the invite/hiring entry points — send as one
+combined effort since they touch the same code paths.
+
+ISSUE A — No CTA to start hiring from every profile view
+There is currently no way to Shortlist/Invite a Talent from every surface
+where their profile appears — confirm coverage across: Hire Talent search
+results, the preview/quick-view modal, Talent Pool cards and its quick
+view, and the client-facing /talent-profile/:id full profile page. Any
+surface missing the action needs it added, wired to the same underlying
+flow — not a new, separate implementation per surface.
+
+ISSUE B — Inaccurate error messaging when a job can't send an invite
+When a Client has a real posted job that's still pending admin approval,
+or hasn't yet accepted the MSA, the current messaging incorrectly tells
+them "No open job postings — Post a Job." This is actively misleading —
+fix the messaging to reflect the ACTUAL blocking reason (pending
+approval, or MSA not yet accepted), not a generic fallback.
+
+ISSUE C — Separate "Shortlist" from "Interview this talent" into two
+distinct CTAs
+Currently, one button ("Shortlist this talent") triggers the FULL
+combined invite + interview-time-proposal flow (MSA gate, job-picker,
+propose interview time). There's no lighter-weight action to simply save
+a Talent for later without starting the hiring process.
+
+Required: two genuinely separate actions —
+1. SHORTLIST — lightweight, no MSA gate, no interview proposal. Saves
+   the Talent to a list the Client can revisit later, tied to a specific
+   role.
+2. INTERVIEW THIS TALENT — the current heavyweight flow, renamed to
+   accurately reflect what it does (this is what starts hiring).
+
+AUDIT FIRST for all three:
+1. Confirm current CTA coverage across every profile-view surface listed
+   above — report exactly what's present vs. missing.
+2. Confirm job_submissions' existing 'shortlisted' canonical status — is
+   anything currently wired to it, or is it dormant? Reuse it if so.
+3. Does Shortlist need the same job-picker (0/1/2+ open jobs) as Invite,
+   given it's described as "for a specific role," or can it be
+   job-agnostic? Propose the simpler option with tradeoffs stated.
+4. Does Shortlisting notify the Talent at all, or is it silent/
+   Client-side until the heavier Interview action? Propose a default.
+
+Report audit findings and a proposed schema/flow before implementing.
