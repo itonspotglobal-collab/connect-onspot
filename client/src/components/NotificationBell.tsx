@@ -112,13 +112,6 @@ const TYPE_CONFIG: Record<
     label: "Application Update",
     route: "/my-applications",
   },
-  client_application_status_changed: {
-    icon: ClipboardList,
-    color: "#2563EB",
-    bg: "#DBEAFE",
-    label: "Client Application Update",
-    route: "/admin/job-applications",
-  },
   new_message: {
     icon: MessageSquare,
     color: "#4D55C7",
@@ -197,10 +190,6 @@ export function NotificationBell() {
         // Most-recent first, cap at 20.
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setNotifications(filtered.slice(0, 20));
-        // The dropdown has just observed the current notification state. Refresh
-        // the existing badge query so a newly observed unread item immediately
-        // updates the red dot instead of waiting for its polling interval.
-        qc.invalidateQueries({ queryKey: ["unread-notifications"] });
       })
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
@@ -251,14 +240,17 @@ export function NotificationBell() {
         ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
         aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
+        data-testid="notification-bell"
         className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
         <Bell className="w-5 h-5 text-white/80" />
         {unreadCount > 0 && (
           <span
-            aria-hidden="true"
-            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500"
-          />
+            className="absolute top-1 right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold"
+            style={{ minWidth: 16, height: 16, fontSize: 10, padding: "0 4px", lineHeight: 1 }}
+          >
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
         )}
       </button>
 
@@ -304,6 +296,7 @@ export function NotificationBell() {
                   <button
                     key={n.id}
                     onClick={() => handleClickNotification(n)}
+                    data-testid={`notification-${n.id}`}
                     className={[
                       "w-full flex gap-3 px-4 py-3 text-left transition-colors",
                       n.isRead

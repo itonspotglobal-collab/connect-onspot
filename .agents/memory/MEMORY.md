@@ -24,3 +24,4 @@
 - [Client status approval workflow](client-status-approval.md) — Clients submit status requests; Admin approval plus a successful applicant email is required before any canonical transition.
 - [Deployment dependency policy](deployment-dependency-policy.md) — blank publish logs can hide dependency-firewall blocks; verify clean installs and runtime engines before retrying.
 - [Organization invitation lifecycle](organization-invitation-lifecycle.md) — organization invites expire after 30 days; expired history remains visible and resendable.
+- [Browser test environment](browser-test-environment.md) — Playwright browser tests need system browser libraries and should disable Replit-only Vite plugins in isolated frontend servers.
