@@ -293,3 +293,17 @@ uri = "file://screenshots/final-desktop-1440x900-hero-slide-3.png"
 type = "image"
 title = "Monthly-rate hero — desktop 1440 × 900"
 description = "Direct browser capture showing Avg. monthly rate and $2,400/month."
+
+[[outputs]]
+id = "jCxjkarz1hTfgelU0SByA"
+uri = "file://screenshots/mobile-aligned-mobile-390x844-all-slides.jpg"
+type = "image"
+title = "Mobile hero alignment — 390 × 844, all five slides"
+description = "Direct browser captures showing each compact card left-aligned with the slide copy and expanded toward the right edge."
+
+[[outputs]]
+id = "UNLSI7JkJr4OkHIK2ZW_U"
+uri = "file://screenshots/mobile-aligned-mobile-375x844-all-slides.jpg"
+type = "image"
+title = "Mobile hero alignment — 375 × 844, all five slides"
+description = "Direct browser captures showing the same left-edge alignment and wider card treatment at the narrower mobile width."

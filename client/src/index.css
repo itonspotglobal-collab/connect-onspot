@@ -2963,10 +2963,14 @@ body.has-floating-bottom-right {
     gap: 12px !important;
   }
 
-  /* TwoCol right side: center the compact visual on mobile */
+  /*
+   * Keep every compact visual on the same left edge as the slide copy.
+   * The previous centered treatment left large, inconsistent gutters—most
+   * noticeably on the earnings card.
+   */
   .hero-twocol-right {
     display: flex !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: flex-start !important;
     width: 100% !important;
   }
@@ -2990,7 +2994,7 @@ body.has-floating-bottom-right {
     height: auto;
     overflow: visible;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
   }
 
@@ -3011,7 +3015,7 @@ body.has-floating-bottom-right {
     height: auto;
     overflow: visible;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
   }
 
@@ -3020,6 +3024,21 @@ body.has-floating-bottom-right {
     width: min(32vw, 128px) !important;
     max-width: 180px !important;
     margin-inline: auto !important;
+  }
+
+  /*
+   * Use the full remaining viewport width from the copy edge to the right
+   * edge. This deliberately overrides each card's desktop-oriented inline
+   * width while staying mobile-only.
+   */
+  .hero-compact-dashboard,
+  .hero-compact-earnings,
+  .hero-compact-talent,
+  .hero-compact-jobs {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .hero-phone-body {
