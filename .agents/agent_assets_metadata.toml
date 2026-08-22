@@ -321,3 +321,10 @@ uri = "file://screenshots/mobile-inset-375x844-all-slides.jpg"
 type = "image"
 title = "Mobile card inset fix — 375 × 844, all five slides"
 description = "Direct browser captures showing the same corrected mobile card inset at the narrower width."
+
+[[outputs]]
+id = "64W4nrf4Qv22hhz9irhw_"
+uri = "file://screenshots/odie-g-live-search.png"
+type = "image"
+title = "Authenticated Odie G. search check"
+description = "Live /hire-talent UI after Task #334 merged. The visible result rows do not include Odie G."
