@@ -1,0 +1,127 @@
+Thank you for the audit — extending the existing pipeline, not building
+fresh, is confirmed correct. Proceed with the following as an extension
+of what already exists. Here is the complete brief, unbroken.
+
+═══════════════════════════════════════
+PART 1 — Combine Invite + Interview into one action
+═══════════════════════════════════════
+
+Change POST /api/client/invitations to accept job selection AND proposed
+interview time(s) in a single transaction — creating both the
+job_submissions row (status: invited) and an interviews row (round_number
+1, status: proposed, proposed_times populated) together, not as two
+separate client actions.
+
+Extend POST /api/talent/invitations/:id/respond (or add a parallel
+interview-response endpoint) to support three responses instead of two:
+- accept (confirms a specific proposed time)
+- decline (ends the pipeline, exactly as today)
+- counter-propose (talent submits their own proposed_times)
+
+Add to the interviews table: a way to track whose times are currently
+pending response (e.g. proposed_by: 'client' | 'talent'). Do NOT use
+round_number for this negotiation back-and-forth — round_number stays
+reserved for genuinely separate interview stages (e.g. a technical round
+booked later). No hard cap on negotiation rounds, but add a soft nudge
+after ~3 rounds of back-and-forth (a message suggesting one side just
+pick from the other's proposed times) — never a hard block.
+
+UNMASK TRIGGER — CHANGES existing behavior: per your own audit finding,
+the current reveal rule is threshold-based via
+platform_settings.name_reveal_threshold (default: new, set on invitation
+acceptance). This must change so that for the COMBINED invite+interview
+flow specifically, identity does NOT unmask on invitation acceptance
+alone — it should only unmask once interviews.status reaches 'confirmed'
+(a specific time locked in), not on first response and not on a
+counter-proposal. Propose exactly how to implement this given the
+existing threshold mechanism — e.g., is this a new reveal-phase concept,
+or does confirming an interview time need to also update
+job_submissions.status in a way the existing threshold logic already
+honors? Your call on the cleanest implementation, but the BEHAVIOR must
+be: masked through any number of counter-proposals, unmasked only at
+confirmed.
+
+INTERVIEW SCOPE: add a field for a Client-provided meeting link (plain
+text, pasted in manually — no auto-generation via any video-conferencing
+API). No calendar sync, .ics export, or OAuth calendar integration —
+explicitly out of scope for now.
+
+═══════════════════════════════════════
+PART 2 — Offer counter-offers
+═══════════════════════════════════════
+
+Extend the existing offers flow: Talent can Accept, Decline, or Counter
+an Offer (currently only accept/decline exists, per your audit). A
+counter-offer creates a NEW row in the offers table — same as your
+existing "re-offer creates a new row after a decline" pattern, just also
+triggered by a Talent-initiated counter, not only a Client re-offer after
+decline. Full negotiation history preserved, never update an offer row in
+place.
+
+The existing rate-mismatch flag/metadata recomputes fresh on each new
+offer row using the exact same logic already built (currency-match +
+engagement-type-match gate) — no new comparison logic, just applied per
+new row as it already is for re-offers.
+
+═══════════════════════════════════════
+PART 3 — Contract: e-signature placeholder only
+═══════════════════════════════════════
+
+No real e-signature integration yet (blocked on choosing a provider and
+real API credentials, outside this build). Add nullable placeholder
+columns to hiring_contracts: provider_name, external_envelope_id,
+talent_signing_url, onspot_signing_url. Existing signed-status flow
+(admin/OnSpot-controlled, both signatures trigger hired) stays exactly as
+built — these columns are unused by any code path for now, purely
+reserving schema shape.
+
+Confirm this doesn't conflict with the legacy contracts table you found —
+it shouldn't, since that's explicitly a separate, untouched workflow.
+
+═══════════════════════════════════════
+PART 4 — NEW: Master Service Agreement gate
+═══════════════════════════════════════
+
+Per your audit, no real MSA document/artifact currently exists — only
+references in TermsAndConditions.tsx, legal copy, and a mock-data client
+dashboard entry. This needs to be built as a real gate, not assumed to
+exist.
+
+TRIGGER: a Client must accept the MSA before their FIRST-ever Invite
+(i.e., before POST /api/client/invitations succeeds for the first time
+for that client). Search, Full Profile viewing, and pre-invite masked
+messaging remain fully open with no MSA requirement.
+
+ACCEPTANCE MECHANISM: a TICKBOX is sufficient — no e-signature. "I have
+read and agree to the Master Service Agreement," with the actual MSA
+text/terms shown or linked (reuse whatever real legal content already
+exists in TermsAndConditions.tsx or elsewhere as the source — do not
+draft new legal text), and a timestamp recorded on acceptance.
+
+ONE-TIME, PERSISTENT: once accepted, permanently cleared for all future
+Invites — no re-prompting. Reaching hired on any engagement is simply
+evidence the MSA is active; it never requires its own separate
+confirmation per hire.
+
+CLIENT PROFILE VISIBILITY: add a real (not mock-data) section on the
+Client Profile page showing MSA status (accepted / not yet accepted),
+acceptance timestamp if accepted, and a link to view the actual MSA
+terms — reachable at any time.
+
+SCHEMA: propose msa_accepted_at (timestamp, nullable) on the client
+record. Also propose whether msa_version (text) is worth adding now, in
+case the MSA is revised later and you'd want to know which version a
+given Client agreed to — your recommendation, but state it explicitly
+rather than deciding silently.
+
+═══════════════════════════════════════
+BEFORE WRITING CODE
+═══════════════════════════════════════
+
+Propose a phased implementation plan (same discipline as the original
+Phase 1-4 build: schema changes first, then endpoint logic, then any UI,
+verified with real traces at each phase before moving to the next).
+Explicitly call out the unmask-trigger mechanism decision from Part 1 and
+the msa_version question from Part 4 in that plan.
+
+Report the phased plan for review before implementing anything.
