@@ -96,6 +96,88 @@ describe("grouped new_message notifications", () => {
     assert.equal(rows[0].is_read, false);
   });
 
+  it("consolidates legacy unread duplicates without changing read or unrelated alerts", async () => {
+    const threadId = "msg-group-legacy-cleanup-thread";
+    // The cleanup is intentionally global at startup. Normalize any rows left
+    // by earlier local runs so this test's removal count is deterministic.
+    await storage.consolidateUnreadMessageNotifications();
+    await query(
+      `INSERT INTO notifications
+          (user_id, type, title, message, related_id, related_type, message_count, is_read)
+       VALUES
+         ($1, 'new_message', 'New message from Group Talent',
+          'Group Talent sent you a new message.', $2, 'message_thread', 1, false),
+         ($1, 'new_message', 'New message from Group Talent',
+          'Group Talent sent you a new message.', $2, 'message_thread', 1, false),
+         ($1, 'new_message', 'New message from Group Talent',
+          'Group Talent sent you a new message.', $2, 'message_thread', 1, false),
+         ($1, 'new_message', 'Read legacy alert',
+          'This alert was already read.', $2, 'message_thread', 1, true),
+         ($1, 'offer_received', 'Unrelated alert',
+          'This is not a message alert.', $2, 'offer', 1, false)`,
+      [CLIENT_ID, threadId],
+    );
+
+    assert.equal(await storage.consolidateUnreadMessageNotifications(), 2);
+
+    const rows = await query(
+      `SELECT type, title, message, message_count, is_read, related_id, related_type
+         FROM notifications
+        WHERE user_id = $1 AND related_id = $2
+        ORDER BY type, is_read`,
+      [CLIENT_ID, threadId],
+    );
+    assert.deepEqual(
+      rows.rows,
+      [
+        {
+          type: "new_message",
+          title: "3 new messages from Group Talent",
+          message: "Group Talent sent you 3 new messages.",
+          message_count: 3,
+          is_read: false,
+          related_id: threadId,
+          related_type: "message_thread",
+        },
+        {
+          type: "new_message",
+          title: "Read legacy alert",
+          message: "This alert was already read.",
+          message_count: 1,
+          is_read: true,
+          related_id: threadId,
+          related_type: "message_thread",
+        },
+        {
+          type: "offer_received",
+          title: "Unrelated alert",
+          message: "This is not a message alert.",
+          message_count: 1,
+          is_read: false,
+          related_id: threadId,
+          related_type: "offer",
+        },
+      ],
+    );
+
+    // Running the cleanup again must not delete, duplicate, or recount anything.
+    assert.equal(await storage.consolidateUnreadMessageNotifications(), 0);
+    const afterSecondRun = await query(
+      `SELECT type, title, message, message_count, is_read
+         FROM notifications
+        WHERE user_id = $1 AND related_id = $2
+        ORDER BY type, is_read`,
+      [CLIENT_ID, threadId],
+    );
+    assert.deepEqual(afterSecondRun.rows, rows.rows.map((row) => ({
+      type: row.type,
+      title: row.title,
+      message: row.message,
+      message_count: row.message_count,
+      is_read: row.is_read,
+    })));
+  });
+
   it("keeps separate threads and recipients independent", async () => {
     await storage.upsertMessageNotification({
       recipientId: CLIENT_ID,

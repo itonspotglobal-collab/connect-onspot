@@ -938,6 +938,12 @@ export async function registerRoutes(
          ON notifications (event_key)
        WHERE event_key IS NOT NULL`,
     );
+    const consolidated = await storage.consolidateUnreadMessageNotifications();
+    if (consolidated > 0) {
+      console.log(
+        `🔔 Consolidated ${consolidated} legacy unread message notification${consolidated === 1 ? "" : "s"}.`,
+      );
+    }
   } catch (migErr: any) {
     console.warn("⚠️  message notification grouping migration skipped:", migErr.message);
   }

@@ -83,6 +83,17 @@ function messageNotificationCopy(senderName: string, count: number): {
   };
 }
 
+function messageNotificationSenderName(notification: Pick<Notification, "title" | "message">): string {
+  const title = notification.title?.trim() ?? "";
+  const titleMatch = title.match(/^(?:New message from|\d+ new messages from)\s+(.+)$/i);
+  if (titleMatch?.[1]?.trim()) {
+    return titleMatch[1].trim();
+  }
+
+  const message = notification.message?.trim() ?? "";
+  const messageMatch = message.match(/^(.+?) sent you (?:a new message|\d+ new messages)\.?$/i);
+  return messageMatch?.[1]?.trim() || "A participant";
+}
 function notificationFromRow(row: any): Notification {
   return {
     id: row.id,
@@ -244,6 +255,7 @@ export interface IStorage {
   getNotification(id: string): Promise<Notification | undefined>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   upsertMessageNotification(input: MessageNotificationInput): Promise<Notification | undefined>;
+  consolidateUnreadMessageNotifications(): Promise<number>;
   listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<boolean>;
   markMessageNotificationsAsRead(userId: string, threadId: string): Promise<void>;
@@ -2189,6 +2201,54 @@ export class MemStorage implements IStorage {
       relatedId: input.threadId,
       relatedType: "message_thread",
     });
+  }
+
+  async consolidateUnreadMessageNotifications(): Promise<number> {
+    const groups = new Map<string, Notification[]>();
+    for (const notification of Array.from(this.notifications.values())) {
+      if (
+        notification.type !== "new_message" ||
+        notification.isRead ||
+        !notification.relatedId
+      ) {
+        continue;
+      }
+
+      const key = `${notification.userId}\u0000${notification.relatedId}`;
+      const group = groups.get(key) ?? [];
+      group.push(notification);
+      groups.set(key, group);
+    }
+
+    let removed = 0;
+    for (const group of Array.from(groups.values())) {
+      group.sort((a: Notification, b: Notification) =>
+        (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
+      );
+      const keeper = group[0];
+      const messageCount = group.reduce(
+        (total: number, notification: Notification) =>
+          total + messageNotificationCount(notification),
+        0,
+      );
+      const copy = messageNotificationCopy(
+        messageNotificationSenderName(keeper),
+        messageCount,
+      );
+
+      keeper.title = copy.title;
+      keeper.message = copy.message;
+      keeper.messageCount = messageCount;
+      keeper.relatedType = "message_thread";
+      this.notifications.set(keeper.id, keeper);
+
+      for (const duplicate of group.slice(1)) {
+        this.notifications.delete(duplicate.id);
+        removed += 1;
+      }
+    }
+
+    return removed;
   }
 
   async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
@@ -4236,6 +4296,94 @@ export class DbStorage extends MemStorage {
     }
   }
 
+  async consolidateUnreadMessageNotifications(): Promise<number> {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const groups = await client.query(
+        `SELECT DISTINCT user_id, related_id
+           FROM notifications
+          WHERE type = 'new_message'
+            AND is_read = false
+            AND related_id IS NOT NULL`,
+      );
+
+      let removed = 0;
+      for (const group of groups.rows) {
+        const userId = String(group.user_id);
+        const threadId = String(group.related_id);
+
+        // Use the same per-recipient/thread lock as the live upsert path so a
+        // notification cannot be added between selecting and consolidating a group.
+        await client.query(
+          "SELECT pg_advisory_xact_lock(hashtext($1))",
+          [`new_message:${userId}:${threadId}`],
+        );
+
+        const notifications = await client.query(
+          `SELECT id, user_id, type, title, message, related_id, related_type,
+                  message_count, is_read, created_at
+             FROM notifications
+            WHERE user_id = $1
+              AND type = 'new_message'
+              AND related_id = $2
+              AND is_read = false
+            ORDER BY created_at DESC NULLS LAST, id DESC
+            FOR UPDATE`,
+          [userId, threadId],
+        );
+        if (notifications.rows.length === 0) continue;
+
+        const keeper = notifications.rows[0];
+        const messageCount = notifications.rows.reduce(
+          (total: number, notification: any) =>
+            total + messageNotificationCount({
+              messageCount: notification.message_count,
+            }),
+          0,
+        );
+        const copy = messageNotificationCopy(
+          messageNotificationSenderName({
+            title: keeper.title,
+            message: keeper.message,
+          }),
+          messageCount,
+        );
+
+        await client.query(
+          `UPDATE notifications
+              SET title = $1,
+                  message = $2,
+                  related_type = 'message_thread',
+                  message_count = $3
+            WHERE id = $4`,
+          [copy.title, copy.message, messageCount, keeper.id],
+        );
+
+        const duplicateIds = notifications.rows
+          .slice(1)
+          .map((notification: any) => notification.id);
+        if (duplicateIds.length > 0) {
+          const deleted = await client.query(
+            `DELETE FROM notifications
+              WHERE id = ANY($1::varchar[])`,
+            [duplicateIds],
+          );
+          removed += deleted.rowCount ?? 0;
+        }
+      }
+
+      await client.query("COMMIT");
+      return removed;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
     const rows = await db
       .select()
@@ -4273,3 +4421,8 @@ export class DbStorage extends MemStorage {
 }
 
 export const storage = new DbStorage();
+
+function messageNotificationCount(notification: Pick<Notification, "messageCount">): number {
+  const count = Number(notification.messageCount);
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 1;
+}
