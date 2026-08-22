@@ -449,6 +449,112 @@ describe("Client organization routes", () => {
     assert.equal(pendingRows.rows.length, 1);
   });
 
+  it("reports a successful invitation retry when email delivery recovers", async () => {
+    const emailConfigKeys = [
+      "MICROSOFT_TENANT_ID",
+      "MICROSOFT_CLIENT_ID",
+      "MICROSOFT_CLIENT_SECRET",
+      "MICROSOFT_SENDER_EMAIL",
+      "APPLICATION_EMAIL_FROM",
+      "PUBLIC_APP_URL",
+    ] as const;
+    const originalEmailConfig = Object.fromEntries(
+      emailConfigKeys.map((key) => [key, process.env[key]]),
+    ) as Record<(typeof emailConfigKeys)[number], string | undefined>;
+    const originalFetch = globalThis.fetch;
+    const email = `recovered-delivery-${suffix}@test.example`;
+
+    try {
+      for (const key of emailConfigKeys) delete process.env[key];
+
+      const invitation = await request(
+        server,
+        "POST",
+        `/api/organizations/${createdOrganizationId}/invitations`,
+        clientToken,
+        { email },
+      );
+      assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
+      assert.equal(invitation.json.invitation.emailStatus, "failed");
+
+      const beforeRetry = await query(
+        `SELECT expires_at FROM organization_invitations WHERE id = $1`,
+        [invitation.json.invitation.id],
+      );
+      assert.equal(beforeRetry.rows.length, 1);
+      await query(
+        `UPDATE organization_invitations
+            SET email_status = 'failed', email_error = 'Temporary delivery failure'
+          WHERE id = $1`,
+        [invitation.json.invitation.id],
+      );
+
+      process.env.MICROSOFT_TENANT_ID = "test-tenant";
+      process.env.MICROSOFT_CLIENT_ID = "test-client";
+      process.env.MICROSOFT_CLIENT_SECRET = "test-secret";
+      process.env.MICROSOFT_SENDER_EMAIL = "careers@onspotglobal.com";
+      process.env.PUBLIC_APP_URL = "https://test.example";
+      globalThis.fetch = (async (input) => {
+        const url = typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+        if (url.includes("/oauth2/v2.0/token")) {
+          return new Response(
+            JSON.stringify({ access_token: "test-access-token", expires_in: 3600 }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (url.includes("graph.microsoft.com")) {
+          return new Response(null, { status: 202 });
+        }
+        throw new Error(`Unexpected email provider request: ${url}`);
+      }) as typeof fetch;
+
+      const retried = await request(
+        server,
+        "POST",
+        `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}/resend`,
+        clientToken,
+      );
+      assert.equal(retried.status, 200, JSON.stringify(retried.json));
+      assert.equal(retried.json.invitation.emailStatus, "sent");
+      assert.equal(retried.json.invitation.emailError, null);
+      assert.equal(retried.json.invitation.id, invitation.json.invitation.id);
+      assert.equal(retried.json.invitation.status, "pending");
+      assert.equal(
+        new Date(retried.json.invitation.expiresAt).getTime(),
+        new Date(beforeRetry.rows[0].expires_at).getTime(),
+      );
+
+      const pendingRows = await query(
+        `SELECT id, expires_at, email_status, email_error
+           FROM organization_invitations
+          WHERE organization_id = $1 AND lower(email) = lower($2) AND status = 'pending'`,
+        [createdOrganizationId, email],
+      );
+      assert.equal(pendingRows.rows.length, 1);
+      assert.equal(pendingRows.rows[0].id, invitation.json.invitation.id);
+      assert.equal(
+        new Date(pendingRows.rows[0].expires_at).getTime(),
+        new Date(beforeRetry.rows[0].expires_at).getTime(),
+      );
+      assert.equal(pendingRows.rows[0].email_status, "sent");
+      assert.equal(pendingRows.rows[0].email_error, null);
+    } finally {
+      globalThis.fetch = originalFetch;
+      for (const key of emailConfigKeys) {
+        const value = originalEmailConfig[key];
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
+  });
+
   it("rolls back the organization when owner membership creation fails", async () => {
     const triggerName = `organization_test_failure_${suffix}`;
     const functionName = `${triggerName}_fn`;
