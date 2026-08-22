@@ -1065,7 +1065,7 @@ export default function ClientProfile() {
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Link href={msaStatus?.termsUrl ?? "/terms"} target="_blank">
+              <Link href={msaStatus?.termsUrl ?? "/terms-and-conditions"} target="_blank">
                 <Button variant="outline" size="sm">Read Terms <ExternalLink className="ml-1.5 h-3.5 w-3.5" /></Button>
               </Link>
               {!msaStatus?.accepted && (

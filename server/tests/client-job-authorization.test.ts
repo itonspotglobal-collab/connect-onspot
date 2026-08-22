@@ -23,6 +23,10 @@ const ADMIN_ID = `client-job-admin-${suffix}`;
 const CLIENT_ID = `client-job-client-${suffix}`;
 const OTHER_CLIENT_ID = `client-job-other-${suffix}`;
 const TALENT_ID = `client-job-talent-${suffix}`;
+const PENDING_JOB_ID = `client-job-pending-${suffix}`;
+const READY_JOB_ID = `client-job-ready-${suffix}`;
+const SCAFFOLD_JOB_ID = `client-job-scaffold-${suffix}`;
+const CANDIDATE_ID = `client-job-candidate-${suffix}`;
 
 const token = (userId: string, role: string) =>
   jwt.sign({ userId, email: `${userId}@test.example`, role }, JWT_SECRET, { expiresIn: "1h" });
@@ -121,11 +125,34 @@ async function createFixtures() {
     [OTHER_CLIENT_ID],
   );
   otherClientJobId = job.rows[0].id;
+
+  await query(
+    `INSERT INTO jobs
+       (id, client_id, title, description, category, experience_level, engagement_type,
+        status, approval_status, created_via)
+     VALUES
+       ($1, $2, 'Pending approval job', 'Pending test job', 'Technical', 'intermediate',
+        'Full-Time', 'open', 'pending', 'manual'),
+       ($3, $2, 'Approved invitation job', 'Approved test job', 'Technical', 'intermediate',
+        'Full-Time', 'open', 'approved', 'manual'),
+       ($4, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
+        'Full-Time', 'closed', 'pending', 'search_scaffold')`,
+    [PENDING_JOB_ID, CLIENT_ID, READY_JOB_ID, SCAFFOLD_JOB_ID],
+  );
+  await query(
+    `INSERT INTO candidates
+       (id, user_id, full_name, first_name, last_name, target_position, category)
+     VALUES ($1, $2, 'Talent Tester', 'Talent', 'Tester', 'Engineer', 'Technical')`,
+    [CANDIDATE_ID, TALENT_ID],
+  );
 }
 
 async function destroyFixtures() {
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
+  await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
+  await query(`DELETE FROM candidates WHERE id = $1`, [CANDIDATE_ID]).catch(() => {});
+  await query(`DELETE FROM jobs WHERE id = ANY($1::text[])`, [[PENDING_JOB_ID, READY_JOB_ID, SCAFFOLD_JOB_ID]]).catch(() => {});
   await query(
     `DELETE FROM client_profiles WHERE user_id = ANY($1::text[])`,
     [[ADMIN_ID, CLIENT_ID, OTHER_CLIENT_ID, TALENT_ID]],
@@ -240,5 +267,53 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(otherClientList.status, 200, JSON.stringify(otherClientList.json));
     assert.ok(otherClientList.json.some((job: any) => job.id === otherClientJobId));
     assert.ok(!otherClientList.json.some((job: any) => job.id === createdClientJobId));
+  });
+
+  it("reports a pending job instead of treating it as no jobs, including first-invite Terms status", async () => {
+    // Hide the separate approved fixture so this test exercises the pending
+    // branch. A client with both kinds of jobs is correctly "ready".
+    await query(`UPDATE jobs SET status = 'closed' WHERE id = $1`, [READY_JOB_ID]);
+    try {
+      const readiness = await request(server, "GET", "/api/client/invitation-readiness", clientToken);
+
+      assert.equal(readiness.status, 200, JSON.stringify(readiness.json));
+      assert.equal(readiness.json.summary.state, "pending_approval");
+      assert.ok(readiness.json.summary.pendingApprovalCount >= 1);
+      assert.ok(readiness.json.summary.scaffoldJobsCount >= 1);
+      assert.equal(readiness.json.msa.required, true);
+      assert.equal(readiness.json.msa.termsUrl, "/terms-and-conditions");
+      assert.match(readiness.json.msa.termsUrl, /^\/terms-and-conditions$/);
+      assert.ok(
+        readiness.json.jobs.every((job: any) => job.created_via !== "search_scaffold"),
+        "scaffold rows must remain hidden from the picker jobs",
+      );
+
+      const msaStatus = await request(server, "GET", "/api/client/msa-status", clientToken);
+      assert.equal(msaStatus.status, 200, JSON.stringify(msaStatus.json));
+      assert.equal(msaStatus.json.termsUrl, "/terms-and-conditions");
+    } finally {
+      await query(`UPDATE jobs SET status = 'open' WHERE id = $1`, [READY_JOB_ID]);
+    }
+  });
+
+  it("keeps server errors authoritative for pending jobs and first-invite MSA", async () => {
+    const proposedTimes = [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }];
+    const pendingInvite = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes,
+    });
+    assert.equal(pendingInvite.status, 403, JSON.stringify(pendingInvite.json));
+    assert.equal(pendingInvite.json.error, "job_not_invitable");
+    assert.equal(pendingInvite.json.reason, "pending_approval");
+
+    const firstInvite = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: READY_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes,
+    });
+    assert.equal(firstInvite.status, 428, JSON.stringify(firstInvite.json));
+    assert.equal(firstInvite.json.error, "msa_required");
+    assert.equal(firstInvite.json.termsUrl, "/terms-and-conditions");
   });
 });

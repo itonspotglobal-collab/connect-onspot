@@ -55,7 +55,7 @@ const KNOWN_PAGES = [
   "/bpo",
   "/faq",
   "/privacy",
-  "/terms",
+  "/terms-and-conditions",
   "/coming-soon",
   "/legalops",
 ];

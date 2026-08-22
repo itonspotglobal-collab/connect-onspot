@@ -10,6 +10,7 @@ import {
   type TalentBrowseCategory,
 } from "@/lib/jobConstants";
 import { cn } from "@/lib/utils";
+import { isInvitableJob, type InvitationPickerJob, type InvitationReadiness } from "@/lib/invitationReadiness";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Check, Loader2 } from "lucide-react";
@@ -187,7 +188,9 @@ export default function SearchToShortlist() {
 
   // ── Job picker ────────────────────────────────────────────────────────────────
   const [pickerTarget, setPickerTarget] = useState<{ talentUserId: string; talentName: string } | null>(null);
-  const [pickerJobs, setPickerJobs] = useState<Array<{ id: string; title: string; engagementType?: string | null }>>([]);
+  const [pickerJobs, setPickerJobs] = useState<InvitationPickerJob[]>([]);
+  const [pickerReadiness, setPickerReadiness] = useState<InvitationReadiness | null>(null);
+  const [pickerError, setPickerError] = useState<string | null>(null);
   const [pickerLoading, setPickerLoading] = useState(false);
   const [pickerSelectedJobId, setPickerSelectedJobId] = useState<string | null>(null);
   const [pickerSending, setPickerSending] = useState(false);
@@ -276,6 +279,8 @@ export default function SearchToShortlist() {
   function closePicker() {
     setPickerTarget(null);
     setPickerJobs([]);
+    setPickerReadiness(null);
+    setPickerError(null);
     setPickerSelectedJobId(null);
     setInviteDateTime("");
   }
@@ -285,20 +290,20 @@ export default function SearchToShortlist() {
     const name = talentName ?? searchResults?.results.find((r) => r.userId === talentUserId)?.candidate?.maskedName ?? "Talent";
     setPickerTarget({ talentUserId, talentName: name });
     setPickerLoading(true);
+    setPickerError(null);
+    setPickerReadiness(null);
     setPickerSelectedJobId(null);
     try {
-      const res = await apiRequest("GET", "/api/client/jobs");
-      const all = res.ok ? await res.json() : [];
-      const open = Array.isArray(all)
-        ? all.filter(
-            (j: any) =>
-              j.status === "open" &&
-              (j.approvalStatus === "approved" || j.approval_status === "approved"),
-          )
-        : [];
-      setPickerJobs(open);
-    } catch {
+      const res = await apiRequest("GET", "/api/client/invitation-readiness");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(data.jobs) || !data.summary || !data.msa) {
+        throw new Error(data.message || data.error || "Could not load your job postings");
+      }
+      setPickerReadiness(data as InvitationReadiness);
+      setPickerJobs(data.jobs.filter(isInvitableJob));
+    } catch (err: any) {
       setPickerJobs([]);
+      setPickerError(err.message || "Could not load your job postings");
     } finally {
       setPickerLoading(false);
     }
@@ -328,7 +333,7 @@ export default function SearchToShortlist() {
           return;
         }
         if (body.error === "msa_required") {
-          window.open(body.termsUrl || "/terms", "_blank", "noopener,noreferrer");
+          window.open(body.termsUrl || "/terms-and-conditions", "_blank", "noopener,noreferrer");
           const accepted = window.confirm("Please review the Terms of Service in the opened tab. Press OK only if you accept them to send this invitation.");
           if (!accepted) return;
           const msaRes = await apiRequest("POST", "/api/client/msa-acceptance", { accepted: true });
@@ -352,6 +357,7 @@ export default function SearchToShortlist() {
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
+  const pickerState = pickerReadiness?.summary.state;
   return (
     <div className="min-h-screen bg-[#F7F7FA] dark:bg-[#060816]">
       <TopNavigation />
@@ -595,12 +601,62 @@ export default function SearchToShortlist() {
                   <Loader2 className="h-6 w-6 animate-spin text-[#474ead]" />
                   <p className="text-sm text-slate-500">Loading job postings…</p>
                 </div>
+              ) : pickerError ? (
+                <div className="p-6">
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">
+                    We couldn’t load your job postings
+                  </h3>
+                  <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mb-5">
+                    {pickerError}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={closePicker}
+                      className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => pickerTarget && handleInvite(pickerTarget.talentUserId, pickerTarget.talentName)}
+                      className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
               ) : pickerJobs.length === 0 ? (
                 <div className="p-6">
-                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">No open job postings</h3>
+                  {pickerReadiness?.msa.required && (
+                    <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20">
+                      <p className="text-[13px] font-semibold text-amber-900 dark:text-amber-300">
+                        Terms acceptance required for your first invitation
+                      </p>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-amber-800/80 dark:text-amber-400/80">
+                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>. Acceptance is recorded when you send your first invitation.
+                      </p>
+                    </div>
+                  )}
+                  <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">
+                    {pickerState === "pending_approval"
+                      ? "Your job is awaiting approval"
+                      : pickerState === "closed_jobs"
+                        ? "Your job postings are closed"
+                        : pickerState === "scaffold_only"
+                          ? "Create a real job posting to invite talent"
+                          : pickerState === "not_ready"
+                            ? "Your job posting isn’t ready yet"
+                          : "No job postings yet"}
+                  </h3>
                   <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mb-5">
-                    The client must have an active approved job posting to send an invitation to{" "}
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>.
+                    {pickerState === "pending_approval"
+                      ? <>Your job posting is being reviewed. You don’t need to create another one — we’ll let you know when it is approved and ready for an invitation to <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>.</>
+                      : pickerState === "closed_jobs"
+                        ? <>Your job postings are closed. Reopen an approved posting before inviting <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>.</>
+                        : pickerState === "scaffold_only"
+                          ? <>Your search has a saved placeholder, but invitations require a real approved job posting for <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>.</>
+                          : pickerState === "not_ready"
+                            ? <>Your job posting must be open and approved before you can invite <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>.</>
+                          : <>You need an active, approved job posting to invite <span className="font-semibold text-slate-700 dark:text-slate-300">{pickerTarget.talentName}</span>. Create one first, then come back to send the invitation.</>}
                   </p>
                   <div className="flex justify-end">
                     <button
@@ -609,10 +665,28 @@ export default function SearchToShortlist() {
                     >
                       Close
                     </button>
+                    <a
+                      href="/client-profile"
+                      className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors"
+                    >
+                      {pickerState === "pending_approval" || pickerState === "closed_jobs" || pickerState === "not_ready"
+                        ? "View job postings →"
+                        : "Post a Job →"}
+                    </a>
                   </div>
                 </div>
               ) : pickerJobs.length === 1 ? (
                 <div className="p-6">
+                  {pickerReadiness?.msa.required && (
+                    <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20">
+                      <p className="text-[13px] font-semibold text-amber-900 dark:text-amber-300">
+                        Terms acceptance required for your first invitation
+                      </p>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-amber-800/80 dark:text-amber-400/80">
+                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>. When you send this invitation, you’ll be asked to confirm acceptance so we can record it.
+                      </p>
+                    </div>
+                  )}
                   <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
                     Invite {pickerTarget.talentName}?
                   </h3>
@@ -646,6 +720,16 @@ export default function SearchToShortlist() {
                 </div>
               ) : (
                 <div className="p-6">
+                  {pickerReadiness?.msa.required && (
+                    <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20">
+                      <p className="text-[13px] font-semibold text-amber-900 dark:text-amber-300">
+                        Terms acceptance required for your first invitation
+                      </p>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-amber-800/80 dark:text-amber-400/80">
+                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>. When you send this invitation, you’ll be asked to confirm acceptance so we can record it.
+                      </p>
+                    </div>
+                  )}
                   <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
                     Invite {pickerTarget.talentName} to which role?
                   </h3>

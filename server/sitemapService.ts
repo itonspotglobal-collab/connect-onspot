@@ -62,7 +62,7 @@ const STATIC_ROUTES: SitemapEntry[] = [
   { loc: "/payment-protection",            changefreq: "monthly", priority: "0.6" },
   { loc: "/client-verification",           changefreq: "monthly", priority: "0.6" },
   { loc: "/trust-safety",                  changefreq: "monthly", priority: "0.6" },
-  { loc: "/terms",                         changefreq: "yearly",  priority: "0.3" },
+  { loc: "/terms-and-conditions",          changefreq: "yearly",  priority: "0.3" },
   { loc: "/privacy",                       changefreq: "yearly",  priority: "0.3" },
   { loc: "/refund-policy",                 changefreq: "yearly",  priority: "0.3" },
 

@@ -11604,6 +11604,7 @@ export async function registerRoutes(
     updatedAt: row.updated_at,
   });
   const CURRENT_MSA_VERSION = "2026-08-14";
+  const CLIENT_TERMS_URL = "/terms-and-conditions";
 
   // ── Client Organizations ──────────────────────────────────────────────────
   // Organization membership is the authorization boundary for organization
@@ -12316,7 +12317,7 @@ export async function registerRoutes(
         acceptedAt: r.rows[0]?.msa_accepted_at ?? null,
         version: r.rows[0]?.msa_version ?? null,
         currentVersion: CURRENT_MSA_VERSION,
-        termsUrl: "/terms",
+        termsUrl: CLIENT_TERMS_URL,
       });
     } catch (err: any) {
       console.error("GET /api/client/msa-status error:", err);
@@ -12367,7 +12368,7 @@ export async function registerRoutes(
         acceptedAt: result.rows[0].msa_accepted_at,
         version: result.rows[0].msa_version,
         currentVersion: CURRENT_MSA_VERSION,
-        termsUrl: "/terms",
+        termsUrl: CLIENT_TERMS_URL,
       });
     } catch (err: any) {
       console.error("POST /api/client/msa-acceptance error:", err);
@@ -12445,6 +12446,99 @@ export async function registerRoutes(
   });
 
   // ── Client Jobs ───────────────────────────────────────────────────────────
+  // GET /api/client/invitation-readiness — returns the client's complete
+  // invitation prerequisites without exposing search-scaffold rows. The picker
+  // needs the non-invitable jobs' state to explain why it cannot proceed.
+  app.get("/api/client/invitation-readiness", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const [jobsResult, scaffoldResult, profileResult, firstInviteResult] = await Promise.all([
+        query(
+          `SELECT j.*,
+             j.proposal_count AS "proposalCount"
+            FROM jobs j
+           WHERE j.client_id = $1
+             AND (j.created_via IS NULL OR j.created_via != 'search_scaffold')
+           ORDER BY j.created_at DESC`,
+          [userId],
+        ),
+        query(
+          `SELECT COUNT(*)::int AS count
+             FROM jobs
+            WHERE client_id = $1 AND created_via = 'search_scaffold'`,
+          [userId],
+        ),
+        query(
+          `SELECT msa_accepted_at
+             FROM client_profiles
+            WHERE user_id = $1
+            LIMIT 1`,
+          [userId],
+        ),
+        query(
+          `SELECT NOT EXISTS (
+             SELECT 1
+               FROM job_submissions
+              WHERE client_id = $1 AND initiated_by = 'client'
+           ) AS is_first`,
+          [userId],
+        ),
+      ]);
+
+      const jobs = jobsResult.rows;
+      const scaffoldJobsCount = Number(scaffoldResult.rows[0]?.count ?? 0);
+      const pendingApprovalCount = jobs.filter((job: any) =>
+        job.approval_status === "pending" && job.status === "open",
+      ).length;
+      const closedJobsCount = jobs.filter((job: any) =>
+        ["closed", "cancelled", "completed"].includes(job.status),
+      ).length;
+      const openApprovedCount = jobs.filter((job: any) =>
+        job.status === "open" && job.approval_status === "approved",
+      ).length;
+
+      let state: "ready" | "pending_approval" | "closed_jobs" | "scaffold_only" | "no_jobs" | "not_ready";
+      if (openApprovedCount > 0) {
+        state = "ready";
+      } else if (pendingApprovalCount > 0) {
+        state = "pending_approval";
+      } else if (jobs.length === 0 && scaffoldJobsCount > 0) {
+        state = "scaffold_only";
+      } else if (jobs.length === 0) {
+        state = "no_jobs";
+      } else if (jobs.every((job: any) => ["closed", "cancelled", "completed"].includes(job.status))) {
+        state = "closed_jobs";
+      } else {
+        state = "not_ready";
+      }
+
+      const accepted = Boolean(profileResult.rows[0]?.msa_accepted_at);
+      const isFirstInvitation = Boolean(firstInviteResult.rows[0]?.is_first);
+
+      return res.json({
+        jobs,
+        summary: {
+          state,
+          totalJobs: jobs.length,
+          pendingApprovalCount,
+          closedJobsCount,
+          scaffoldJobsCount,
+          openApprovedCount,
+        },
+        msa: {
+          required: isFirstInvitation && !accepted,
+          accepted,
+          termsUrl: CLIENT_TERMS_URL,
+        },
+      });
+    } catch (err: any) {
+      console.error("GET /api/client/invitation-readiness error:", err);
+      return res.status(500).json({ error: "Failed to load invitation readiness" });
+    }
+  });
+
   app.get("/api/client/jobs", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -12454,7 +12548,7 @@ export async function registerRoutes(
           j.proposal_count AS "proposalCount"
          FROM jobs j
          WHERE j.client_id = $1
-           AND j.created_via != 'search_scaffold'
+           AND (j.created_via IS NULL OR j.created_via != 'search_scaffold')
          ORDER BY j.created_at DESC`,
         [userId],
       );
@@ -13113,44 +13207,71 @@ export async function registerRoutes(
            `SELECT pg_advisory_xact_lock(hashtext('invite:' || $1 || ':' || $2 || ':' || $3))`,
            [clientId, talentUserId, jobId],
          );
-         // Serialize all first invites for a client so parallel requests cannot
-         // bypass the durable MSA acceptance gate.
-         await txClient.query(
-           `SELECT pg_advisory_xact_lock(hashtext('invite-client:' || $1))`,
-           [clientId],
-         );
-         const firstInvite = await txClient.query(
-           `SELECT NOT EXISTS (
-              SELECT 1 FROM job_submissions
-               WHERE client_id = $1 AND initiated_by = 'client'
-            ) AS is_first`,
-           [clientId],
-         );
-         if (firstInvite.rows[0]?.is_first) {
-           const msa = await txClient.query(
-             `SELECT msa_accepted_at FROM client_profiles WHERE user_id = $1 LIMIT 1`,
-             [clientId],
-           );
-           if (!msa.rows[0]?.msa_accepted_at) {
-             await txClient.query("ROLLBACK");
-             return res.status(428).json({
-               error: "msa_required",
-               message: "Accept the Terms of Service before sending your first talent invitation.",
-               termsUrl: "/terms",
-             });
-           }
-         }
-         const jobCheck = await txClient.query(
-           `SELECT id, title, description FROM jobs
-            WHERE id = $1 AND client_id = $2 AND status = 'open'
-              AND approval_status = 'approved'
-              AND (created_via IS NULL OR created_via != 'search_scaffold')`,
-           [jobId, clientId],
-         );
-         if (!jobCheck.rows.length) {
+          const jobCheck = await txClient.query(
+            `SELECT id, title, description, status, approval_status, created_via FROM jobs
+             WHERE id = $1 AND client_id = $2`,
+            [jobId, clientId],
+          );
+          if (!jobCheck.rows.length) {
            await txClient.query("ROLLBACK");
            return res.status(403).json({ error: "Job not found, not owned by you, or not an open approved posting" });
          }
+          const selectedJob = jobCheck.rows[0];
+          if (selectedJob.created_via === "search_scaffold") {
+            await txClient.query("ROLLBACK");
+            return res.status(403).json({
+              error: "job_not_invitable",
+              reason: "scaffold_only",
+              message: "This search placeholder is not a job posting. Create a real job posting before inviting talent.",
+            });
+          }
+          if (selectedJob.status !== "open") {
+            await txClient.query("ROLLBACK");
+            return res.status(403).json({
+              error: "job_not_invitable",
+              reason: ["closed", "cancelled", "completed"].includes(selectedJob.status) ? "closed_jobs" : "not_open",
+              message: "This job is not open for invitations. Reopen an approved job posting before inviting talent.",
+            });
+          }
+          if (selectedJob.approval_status !== "approved") {
+            await txClient.query("ROLLBACK");
+            return res.status(403).json({
+              error: "job_not_invitable",
+              reason: selectedJob.approval_status === "pending" ? "pending_approval" : "not_approved",
+              message: selectedJob.approval_status === "pending"
+                ? "This job is awaiting approval. You can send invitations after an admin approves it."
+                : "This job is not approved for invitations.",
+            });
+          }
+
+          // Serialize all first invites for a client so parallel requests cannot
+          // bypass the durable MSA acceptance gate. This check follows job
+          // validation so the response always describes the actual blocker.
+          await txClient.query(
+            `SELECT pg_advisory_xact_lock(hashtext('invite-client:' || $1))`,
+            [clientId],
+          );
+          const firstInvite = await txClient.query(
+            `SELECT NOT EXISTS (
+               SELECT 1 FROM job_submissions
+                WHERE client_id = $1 AND initiated_by = 'client'
+             ) AS is_first`,
+            [clientId],
+          );
+          if (firstInvite.rows[0]?.is_first) {
+            const msa = await txClient.query(
+              `SELECT msa_accepted_at FROM client_profiles WHERE user_id = $1 LIMIT 1`,
+              [clientId],
+            );
+            if (!msa.rows[0]?.msa_accepted_at) {
+              await txClient.query("ROLLBACK");
+              return res.status(428).json({
+                error: "msa_required",
+                message: "Accept the Terms of Service before sending your first talent invitation.",
+                termsUrl: CLIENT_TERMS_URL,
+              });
+            }
+          }
          jobTitle = jobCheck.rows[0].title ?? jobTitle;
          jobDescription = jobCheck.rows[0].description ?? null;
 
