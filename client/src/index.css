@@ -120,6 +120,13 @@ body.has-floating-bottom-right {
   }
 }
 
+/* Keep the full earnings phone readable through the tablet/desktop handoff. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .hero-phone-wrap {
+    width: min(100%, 240px) !important;
+  }
+}
+
 /* Z-index layering reference (use these, don't invent new values):
  *   Normal page content          → default (auto)
  *   Sticky page widgets / pills  → 8 000

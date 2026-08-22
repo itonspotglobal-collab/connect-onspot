@@ -265,3 +265,31 @@ uri = "file://screenshots/verified-tablet-1024x844-all-slides.jpg"
 type = "image"
 title = "Homepage hero — tablet 1024 × 844"
 description = "Direct browser captures of all five slides at the desktop handoff width."
+
+[[outputs]]
+id = "alYEZo8P2cg4g8hkLgf7h"
+uri = "file://screenshots/final-mobile-390x844-hero-slide-3.png"
+type = "image"
+title = "Monthly-rate hero — mobile 390 × 844"
+description = "Direct browser capture showing Avg. monthly rate and $2,400/month."
+
+[[outputs]]
+id = "Nfy-7e_-zgIs7z6nHjGGB"
+uri = "file://screenshots/final-tablet-768x844-hero-slide-3.png"
+type = "image"
+title = "Monthly-rate hero — tablet 768 × 844"
+description = "Direct browser capture showing the full monthly stat without phone-screen clipping."
+
+[[outputs]]
+id = "MDEMMlFRR9sjnXJ45-8MT"
+uri = "file://screenshots/final-tablet-1024x844-hero-slide-3.png"
+type = "image"
+title = "Monthly-rate hero — tablet 1024 × 844"
+description = "Direct browser capture showing the full monthly stat at the desktop handoff."
+
+[[outputs]]
+id = "HS5SDIJLs6z0S5AIb_Iuu"
+uri = "file://screenshots/final-desktop-1440x900-hero-slide-3.png"
+type = "image"
+title = "Monthly-rate hero — desktop 1440 × 900"
+description = "Direct browser capture showing Avg. monthly rate and $2,400/month."

@@ -27,3 +27,4 @@
 - [Browser test environment](browser-test-environment.md) — Playwright browser tests need system browser libraries and should disable Replit-only Vite plugins in isolated frontend servers.
 - [Mobile hero preview rule](homepage-mobile-hero-previews.md) — mobile carousel previews must be purpose-built compact cards, never fixed-height crops of desktop cards.
 - [Tablet hero layout rule](homepage-tablet-hero-layout.md) — 768–1023px uses a contained two-column hero, preventing stacked desktop previews from overflowing.
+- [Flat-rate compensation language](flat-rate-compensation-language.md) — public OnSpot copy must never imply hourly billing; use flat period-based terminology.

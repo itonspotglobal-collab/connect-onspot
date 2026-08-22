@@ -1,0 +1,774 @@
+{
+  "summary": [
+    {
+      "viewport": "mobile-390x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 2,
+      "columns": "342px",
+      "card": {
+        "top": 508.625,
+        "bottom": 680.90625,
+        "left": 25,
+        "right": 365,
+        "width": 340,
+        "height": 172.28125
+      },
+      "clearance": 99.34375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 3,
+      "columns": "342px",
+      "card": {
+        "top": 497.890625,
+        "bottom": 691.640625,
+        "left": 65,
+        "right": 325,
+        "width": 260,
+        "height": 193.75
+      },
+      "clearance": 88.609375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 4,
+      "columns": "342px",
+      "card": {
+        "top": 547.859375,
+        "bottom": 740.359375,
+        "left": 15,
+        "right": 375,
+        "width": 360,
+        "height": 192.5
+      },
+      "clearance": 39.890625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 5,
+      "columns": "342px",
+      "card": {
+        "top": 513.015625,
+        "bottom": 684.765625,
+        "left": 15,
+        "right": 375,
+        "width": 360,
+        "height": 171.75
+      },
+      "clearance": 95.484375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 2,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 186.03125,
+        "bottom": 674.21875,
+        "left": 399.359375,
+        "right": 719.359375,
+        "width": 320,
+        "height": 488.1875
+      },
+      "clearance": 106.03125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 3,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 184.125,
+        "bottom": 676.125,
+        "left": 489.609375,
+        "right": 729.609375,
+        "width": 240,
+        "height": 492
+      },
+      "clearance": 104.125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 4,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 222.375,
+        "bottom": 637.875,
+        "left": 399.359375,
+        "right": 729.609375,
+        "width": 330.25,
+        "height": 415.5
+      },
+      "clearance": 142.375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 5,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 200.359375,
+        "bottom": 659.859375,
+        "left": 471.609375,
+        "right": 729.609375,
+        "width": 258,
+        "height": 459.5
+      },
+      "clearance": 120.390625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 2,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 186.03125,
+        "bottom": 674.21875,
+        "left": 652.8125,
+        "right": 972.8125,
+        "width": 320,
+        "height": 488.1875
+      },
+      "clearance": 106.03125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 3,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 184.125,
+        "bottom": 676.125,
+        "left": 732.8125,
+        "right": 972.8125,
+        "width": 240,
+        "height": 492
+      },
+      "clearance": 104.125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 4,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 235.875,
+        "bottom": 624.375,
+        "left": 572.8125,
+        "right": 972.8125,
+        "width": 400,
+        "height": 388.5
+      },
+      "clearance": 155.875,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 5,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 200.375,
+        "bottom": 659.875,
+        "left": 572.8125,
+        "right": 972.8125,
+        "width": 400,
+        "height": 459.5
+      },
+      "clearance": 120.375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-1.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 2,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 224.203125,
+        "bottom": 689.796875,
+        "left": 826,
+        "right": 1246,
+        "width": 420,
+        "height": 465.59375
+      },
+      "clearance": 144.203125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-2.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 3,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 183.921875,
+        "bottom": 730.078125,
+        "left": 981,
+        "right": 1246,
+        "width": 265,
+        "height": 546.15625
+      },
+      "clearance": 103.921875,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-3.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 4,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 262.75,
+        "bottom": 651.25,
+        "left": 726,
+        "right": 1246,
+        "width": 520,
+        "height": 388.5
+      },
+      "clearance": 182.75,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-4.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 5,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 227.234375,
+        "bottom": 686.734375,
+        "left": 746,
+        "right": 1246,
+        "width": 500,
+        "height": 459.5
+      },
+      "clearance": 147.265625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-5.png"
+    }
+  ],
+  "results": [
+    {
+      "viewport": "mobile-390x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 2,
+      "columns": "342px",
+      "card": {
+        "top": 508.625,
+        "bottom": 680.90625,
+        "left": 25,
+        "right": 365,
+        "width": 340,
+        "height": 172.28125
+      },
+      "clearance": 99.34375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 3,
+      "columns": "342px",
+      "card": {
+        "top": 497.890625,
+        "bottom": 691.640625,
+        "left": 65,
+        "right": 325,
+        "width": 260,
+        "height": 193.75
+      },
+      "clearance": 88.609375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 4,
+      "columns": "342px",
+      "card": {
+        "top": 547.859375,
+        "bottom": 740.359375,
+        "left": 15,
+        "right": 375,
+        "width": 360,
+        "height": 192.5
+      },
+      "clearance": 39.890625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "mobile-390x844",
+      "slide": 5,
+      "columns": "342px",
+      "card": {
+        "top": 513.015625,
+        "bottom": 684.765625,
+        "left": 15,
+        "right": 375,
+        "width": 360,
+        "height": 171.75
+      },
+      "clearance": 95.484375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-mobile-390x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 2,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 186.03125,
+        "bottom": 674.21875,
+        "left": 399.359375,
+        "right": 719.359375,
+        "width": 320,
+        "height": 488.1875
+      },
+      "clearance": 106.03125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 3,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 184.125,
+        "bottom": 676.125,
+        "left": 489.609375,
+        "right": 729.609375,
+        "width": 240,
+        "height": 492
+      },
+      "clearance": 104.125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 4,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 222.375,
+        "bottom": 637.875,
+        "left": 399.359375,
+        "right": 729.609375,
+        "width": 330.25,
+        "height": 415.5
+      },
+      "clearance": 142.375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "tablet-768x844",
+      "slide": 5,
+      "columns": "330.25px 330.25px",
+      "card": {
+        "top": 200.359375,
+        "bottom": 659.859375,
+        "left": 471.609375,
+        "right": 729.609375,
+        "width": 258,
+        "height": 459.5
+      },
+      "clearance": 120.390625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-768x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-1.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 2,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 186.03125,
+        "bottom": 674.21875,
+        "left": 652.8125,
+        "right": 972.8125,
+        "width": 320,
+        "height": 488.1875
+      },
+      "clearance": 106.03125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-2.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 3,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 184.125,
+        "bottom": 676.125,
+        "left": 732.8125,
+        "right": 972.8125,
+        "width": 240,
+        "height": 492
+      },
+      "clearance": 104.125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-3.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 4,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 235.875,
+        "bottom": 624.375,
+        "left": 572.8125,
+        "right": 972.8125,
+        "width": 400,
+        "height": 388.5
+      },
+      "clearance": 155.875,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-4.png"
+    },
+    {
+      "viewport": "tablet-1024x844",
+      "slide": 5,
+      "columns": "430.094px 430.094px",
+      "card": {
+        "top": 200.375,
+        "bottom": 659.875,
+        "left": 572.8125,
+        "right": 972.8125,
+        "width": 400,
+        "height": 459.5
+      },
+      "clearance": 120.375,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-tablet-1024x844-hero-slide-5.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 1,
+      "columns": "none",
+      "card": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-1.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 2,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 224.203125,
+        "bottom": 689.796875,
+        "left": 826,
+        "right": 1246,
+        "width": 420,
+        "height": 465.59375
+      },
+      "clearance": 144.203125,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-2.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 3,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 183.921875,
+        "bottom": 730.078125,
+        "left": 981,
+        "right": 1246,
+        "width": 265,
+        "height": 546.15625
+      },
+      "clearance": 103.921875,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": {
+        "label": true,
+        "value": true
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-3.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 4,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 262.75,
+        "bottom": 651.25,
+        "left": 726,
+        "right": 1246,
+        "width": 520,
+        "height": 388.5
+      },
+      "clearance": 182.75,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-4.png"
+    },
+    {
+      "viewport": "desktop-1440x900",
+      "slide": 5,
+      "columns": "482.797px 482.812px",
+      "card": {
+        "top": 227.234375,
+        "bottom": 686.734375,
+        "left": 746,
+        "right": 1246,
+        "width": 500,
+        "height": 459.5
+      },
+      "clearance": 147.265625,
+      "heroOverflows": false,
+      "horizontalOverflow": false,
+      "forbiddenMatches": [],
+      "monthlyRate": null,
+      "fits": true,
+      "screenshotPath": "screenshots/final-desktop-1440x900-hero-slide-5.png"
+    }
+  ]
+}
