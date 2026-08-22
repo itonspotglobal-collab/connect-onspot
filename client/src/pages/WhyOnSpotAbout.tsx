@@ -272,7 +272,7 @@ export default function WhyOnSpotAbout() {
           </Link>
 
           {/* Desktop nav links — hidden on mobile */}
-          <nav style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 32 }} className="hidden md:flex">
+          <nav style={{ alignItems: "center", gap: 4, marginRight: 32 }} className="hidden md:flex">
             {NAV_LINKS.map((l) => (
               <button
                 key={l.label}
@@ -305,6 +305,9 @@ export default function WhyOnSpotAbout() {
               onClick={() => setMobileOpen((v) => !v)}
               style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 8, padding: 8, cursor: "pointer", color: "#fff" }}
               className="md:hidden"
+              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileOpen}
+              aria-controls="about-mobile-nav"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -313,11 +316,11 @@ export default function WhyOnSpotAbout() {
 
         {/* Mobile drawer — slides in below header on small screens */}
         {mobileOpen && (
-          <div style={{ position: "absolute", top: 80, left: 0, right: 0, background: "#2F327F", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "12px 24px 20px", zIndex: 999 }}>
+          <nav id="about-mobile-nav" aria-label="Mobile navigation" style={{ position: "absolute", top: 80, left: 0, right: 0, background: "#2F327F", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "12px 24px 20px", zIndex: 999 }}>
             {NAV_LINKS.map((l) => (
               <button
                 key={l.label}
-                onClick={() => scrollTo(l.href)}
+                onClick={() => { scrollTo(l.href); setMobileOpen(false); }}
                 style={{ display: "block", width: "100%", textAlign: "left", fontSize: 15, fontWeight: 500, color: "rgba(255,255,255,0.84)", padding: "11px 0", background: "transparent", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
               >
                 {l.label}
@@ -327,7 +330,7 @@ export default function WhyOnSpotAbout() {
               <Link to="/" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: "rgba(255,255,255,0.82)", border: "1px solid rgba(255,255,255,0.25)", padding: "10px 0", borderRadius: 8 }} onClick={() => setMobileOpen(false)}>Log In</Link>
               <a href="https://calendly.com/hello-onspotglobal/lead-intake-schedule" target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: "center", fontSize: 13.5, fontWeight: 600, color: P, background: "#fff", padding: "10px 0", borderRadius: 8 }}>Sign Up</a>
             </div>
-          </div>
+          </nav>
         )}
       </header>
 

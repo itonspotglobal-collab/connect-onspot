@@ -216,3 +216,10 @@ uri = "file://screenshots/verified-about-hero-mobile.png"
 type = "image"
 title = "About hero — mobile viewport"
 description = "Live browser capture of the About hero at 390×844, filling the full viewport before the next section."
+
+[[outputs]]
+id = "Ozl4a4VRQeGZFSj22O1D2"
+uri = "file://screenshots/verified-about-mobile-navigation-open.png"
+type = "image"
+title = "About page — responsive mobile navigation"
+description = "Live browser capture at 390px showing the responsive About navigation panel open without overflow."
