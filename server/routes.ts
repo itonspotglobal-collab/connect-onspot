@@ -13057,10 +13057,24 @@ export async function registerRoutes(
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });
 
-       const { jobId, talentUserId, proposedTimes, interviewType = "initial", candidateNotes } = req.body ?? {};
-       if (typeof jobId !== "string" || typeof talentUserId !== "string" ||
-           jobId.length > 200 || talentUserId.length > 200) {
-        return res.status(400).json({ error: "jobId and talentUserId are required" });
+      const {
+        jobId,
+        talentUserId: requestedTalentUserId,
+        candidateId,
+        proposedTimes,
+        interviewType = "initial",
+        candidateNotes,
+      } = req.body ?? {};
+      if (
+        typeof jobId !== "string" ||
+        jobId.length > 200 ||
+        (requestedTalentUserId !== undefined &&
+          (typeof requestedTalentUserId !== "string" || requestedTalentUserId.length > 200)) ||
+        (candidateId !== undefined &&
+          (typeof candidateId !== "string" || candidateId.length > 200)) ||
+        (typeof requestedTalentUserId !== "string" && typeof candidateId !== "string")
+      ) {
+        return res.status(400).json({ error: "jobId and a talent user or candidate ID are required" });
       }
        if (candidateNotes !== undefined &&
            (typeof candidateNotes !== "string" || candidateNotes.length > 5000)) {
@@ -13082,6 +13096,19 @@ export async function registerRoutes(
        let jobDescription: string | null = null;
        try {
          await txClient.query("BEGIN");
+        let talentUserId: string | null =
+          typeof requestedTalentUserId === "string" ? requestedTalentUserId : null;
+        if (!talentUserId && typeof candidateId === "string") {
+          const candidateRow = await txClient.query(
+            `SELECT user_id FROM candidates WHERE id = $1 LIMIT 1`,
+            [candidateId],
+          );
+          talentUserId = candidateRow.rows[0]?.user_id ?? null;
+        }
+        if (!talentUserId) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "Target candidate is not linked to a talent account" });
+        }
          await txClient.query(
            `SELECT pg_advisory_xact_lock(hashtext('invite:' || $1 || ':' || $2 || ':' || $3))`,
            [clientId, talentUserId, jobId],
@@ -13127,7 +13154,7 @@ export async function registerRoutes(
          jobTitle = jobCheck.rows[0].title ?? jobTitle;
          jobDescription = jobCheck.rows[0].description ?? null;
 
-         const targetUser = await txClient.query(
+        const targetUser = await txClient.query(
            `SELECT id, role FROM users WHERE id = $1 LIMIT 1`,
            [talentUserId],
          );

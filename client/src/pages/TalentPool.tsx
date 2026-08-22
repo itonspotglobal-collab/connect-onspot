@@ -54,6 +54,10 @@ import type { Candidate } from "@shared/schema";
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { useReserveBottomRight } from "@/hooks/useReserveBottomRight";
 import {
+  ClientTalentInviteDialog,
+  type ClientTalentInviteTarget,
+} from "@/components/ClientTalentInviteDialog";
+import {
   buildClientRecProfile,
   scoreTalentForClient,
 } from "@/lib/clientRecommendations";
@@ -235,10 +239,12 @@ function ProfileModal({
   result,
   onClose,
   canSeeContact,
+  onInvite,
 }: {
   result: MatchResult;
   onClose: () => void;
   canSeeContact: boolean;
+  onInvite?: () => void;
 }) {
   const { candidate } = result;
   const prefs = candidate.preferences as Record<string, string> | null;
@@ -491,6 +497,16 @@ function ProfileModal({
         <div className="shrink-0 border-t border-slate-100 px-6 py-4 dark:border-white/10 md:px-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
+              {onInvite && (
+                <Button
+                  size="sm"
+                  className="rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
+                  onClick={onInvite}
+                >
+                  <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                  Shortlist / Invite
+                </Button>
+              )}
               {canSeeContact && candidate.email && (
                 <Button
                   size="sm"
@@ -531,12 +547,14 @@ function TalentCard({
   isShortlisted,
   onToggleShortlist,
   canSeeContact,
+  onInvite,
 }: {
   result: MatchResult;
   onViewProfile: (r: MatchResult) => void;
   isShortlisted: boolean;
   onToggleShortlist: (id: string) => void;
   canSeeContact: boolean;
+  onInvite?: () => void;
 }) {
   const [, navigate] = useLocation();
   const { candidate } = result;
@@ -692,6 +710,15 @@ function TalentCard({
             >
               <ExternalLink className="mr-1.5 h-4 w-4" /> Full Profile
             </Button>
+            {onInvite && (
+              <Button
+                variant="outline"
+                className="rounded-full border-[#474ead]/30 text-[#474ead] hover:bg-[#474ead]/10"
+                onClick={onInvite}
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" /> Shortlist / Invite
+              </Button>
+            )}
             <button
               onClick={() => onViewProfile(result)}
               className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-[#474ead] dark:text-slate-300"
@@ -902,6 +929,11 @@ export default function TalentPool() {
   });
   const [shortlisted, setShortlisted] = useState<Set<string>>(new Set());
   const [selectedResult, setSelectedResult] = useState<MatchResult | null>(null);
+  const [inviteTarget, setInviteTarget] =
+    useState<ClientTalentInviteTarget | null>(null);
+  const [invitedCandidateIds, setInvitedCandidateIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);
 
   // Debounced talent search tracking
@@ -1019,6 +1051,24 @@ export default function TalentPool() {
     });
   }
 
+  function openInvite(candidate: Candidate) {
+    if (!isClientUser || invitedCandidateIds.has(candidate.id)) return;
+    setInviteTarget({
+      id: candidate.id,
+      idType: "candidate",
+      name: getTalentDisplayName(candidate),
+    });
+  }
+
+  function markInviteSent() {
+    if (!inviteTarget) return;
+    setInvitedCandidateIds((previous) => {
+      const next = new Set(previous);
+      next.add(inviteTarget.id);
+      return next;
+    });
+  }
+
   const searchPrompts = [
     "Virtual assistant with admin experience",
     "Customer support specialist, night shift",
@@ -1038,9 +1088,19 @@ export default function TalentPool() {
             result={selectedResult}
             onClose={() => setSelectedResult(null)}
             canSeeContact={canSeeContact}
+            onInvite={
+              isClientUser && !invitedCandidateIds.has(selectedResult.candidate.id)
+                ? () => openInvite(selectedResult.candidate)
+                : undefined
+            }
           />
         )}
       </AnimatePresence>
+      <ClientTalentInviteDialog
+        target={inviteTarget}
+        onClose={() => setInviteTarget(null)}
+        onInvited={markInviteSent}
+      />
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden border-b border-slate-200/70 dark:border-white/10">
@@ -1199,6 +1259,12 @@ export default function TalentPool() {
                     isShortlisted={shortlisted.has(result.candidate.id)}
                     onToggleShortlist={toggleShortlist}
                     canSeeContact={canSeeContact}
+                    onInvite={
+                      isClientUser &&
+                      !invitedCandidateIds.has(result.candidate.id)
+                        ? () => openInvite(result.candidate)
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -1449,6 +1515,12 @@ export default function TalentPool() {
                 isShortlisted={shortlisted.has(result.candidate.id)}
                 onToggleShortlist={toggleShortlist}
                 canSeeContact={canSeeContact}
+                onInvite={
+                  isClientUser &&
+                  !invitedCandidateIds.has(result.candidate.id)
+                    ? () => openInvite(result.candidate)
+                    : undefined
+                }
               />
             ))}
           </div>

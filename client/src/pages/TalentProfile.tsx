@@ -11,7 +11,7 @@ import {
   Github, Link2, Star, ChevronRight, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, ExternalLink,
   Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Eye, EyeOff,
-  FileText, Video, Upload, Square, RotateCcw, Loader2, Play,
+  FileText, Video, Upload, Square, RotateCcw, Loader2, Play, UserPlus,
 } from "lucide-react";
 import {
   TalentLoginModal,
@@ -35,6 +35,10 @@ import { isAdmin, isClient } from "@/lib/authUtils";
 import { formatPublicTalentNameMasked } from "@/lib/formatPublicTalentName";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
+import {
+  ClientTalentInviteDialog,
+  type ClientTalentInviteTarget,
+} from "@/components/ClientTalentInviteDialog";
 import type { Candidate } from "@shared/schema";
 import {
   buildCompletionItems,
@@ -711,6 +715,9 @@ export default function TalentProfile() {
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSkillsModal, setShowSkillsModal] = useState(false);
+  const [inviteTarget, setInviteTarget] =
+    useState<ClientTalentInviteTarget | null>(null);
+  const [inviteSent, setInviteSent] = useState(false);
 
   // ── Resume & video upload state ───────────────────────────────────────────
   const [resumeUploading, setResumeUploading] = useState(false);
@@ -760,6 +767,8 @@ export default function TalentProfile() {
     if (stored) {
       setTalentAuth(stored);
     }
+    setInviteSent(false);
+    setInviteTarget(null);
   }, [id]);
 
   const isOwner = talentAuth?.candidateId === id;
@@ -1158,6 +1167,11 @@ export default function TalentProfile() {
           onSuccess={(auth) => setTalentAuth(auth)}
         />
       )}
+      <ClientTalentInviteDialog
+        target={inviteTarget}
+        onClose={() => setInviteTarget(null)}
+        onInvited={() => setInviteSent(true)}
+      />
 
       {/* ── Edit Skills Modal ── */}
       {canEdit && (
@@ -1284,6 +1298,20 @@ export default function TalentProfile() {
 
           {/* Right: action buttons */}
           <div className="flex flex-wrap gap-2 pt-1">
+              {isClientUser && !inviteSent && id && (
+                <Button
+                  className="rounded-full bg-[#474ead] text-sm text-white hover:bg-[#3d439c]"
+                  onClick={() =>
+                    setInviteTarget({
+                      id,
+                      idType: "candidate",
+                      name: displayName,
+                    })
+                  }
+                >
+                  <UserPlus className="mr-1.5 h-4 w-4" /> Shortlist / Invite
+                </Button>
+              )}
               {isClientViewer && (
                 <Button
                   onClick={() => navigate("/talent-pool")}
