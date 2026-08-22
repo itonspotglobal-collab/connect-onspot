@@ -80,8 +80,8 @@ async function cleanup() {
 
 async function insertSubmission(initiatedBy: string, status = "invited"): Promise<string> {
   const r = await query(
-    `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, first_name, last_name, email, status, initiated_by, talent_id, registration_status)
-     VALUES (gen_random_uuid(), $1, $2, 'Prod Talent', 'Prod', 'Talent', 'msgprod-talent@example.com', $3, $4, $5, 'linked')
+    `INSERT INTO job_submissions (id, job_id, client_id, applicant_name, first_name, last_name, email, status, initiated_by, workflow_type, talent_id, registration_status)
+     VALUES (gen_random_uuid(), $1, $2, 'Prod Talent', 'Prod', 'Talent', 'msgprod-talent@example.com', $3, $4, 'client_invitation', $5, 'linked')
      RETURNING id`,
     [JOB_ID, CLIENT_ID, status, initiatedBy, TALENT_ID],
   );

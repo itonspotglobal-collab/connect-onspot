@@ -19,6 +19,9 @@ import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clo
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { LoginDialog } from "@/components/LoginDialog";
+import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
+import { useClientShortlists } from "@/hooks/useClientShortlists";
+import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +137,8 @@ function ProfilePreviewModal({
   isInviting,
   isAnonymous,
   onShortlist,
+  onInterview,
+  isShortlisted,
   onSignIn,
   onMessage,
   isMessaging,
@@ -145,6 +150,8 @@ function ProfilePreviewModal({
   isInviting: boolean;
   isAnonymous: boolean;
   onShortlist: () => void;
+  onInterview: () => void;
+  isShortlisted: boolean;
   onSignIn?: () => void;
   onMessage?: () => void;
   isMessaging?: boolean;
@@ -486,7 +493,7 @@ function ProfilePreviewModal({
               onClick={() => { onShortlist(); onClose(); }}
               className={cn(
                 "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
-                isInvited
+                isInvited || isShortlisted
                   ? "border border-emerald-400 text-emerald-600 cursor-default"
                   : "bg-[#474ead] hover:bg-[#3d439c] text-white",
               )}
@@ -499,6 +506,8 @@ function ProfilePreviewModal({
                 <span className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5" /> Invited
                 </span>
+              ) : isShortlisted ? (
+                <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5" /> Shortlisted</span>
               ) : isAnonymous ? (
                 "Create account to shortlist"
               ) : (
@@ -506,6 +515,15 @@ function ProfilePreviewModal({
               )}
             </button>
             <div className="flex items-center gap-2">
+              {!isAnonymous && !isInvited && (
+                <button
+                  onClick={() => { onInterview(); onClose(); }}
+                  disabled={isInviting}
+                  className="rounded-full border border-[#474ead] px-5 py-2 text-sm font-semibold text-[#474ead] hover:bg-[#474ead] hover:text-white disabled:opacity-50"
+                >
+                  Interview this talent
+                </button>
+              )}
               {!isAnonymous && !fullProfile && (
                 <button
                   onClick={handleViewFullProfile}
@@ -569,6 +587,8 @@ function ResultRow({
   isInviting,
   isAnonymous,
   onShortlist,
+  onInterview,
+  isShortlisted,
   onPreview,
 }: {
   result: TalentResult;
@@ -576,6 +596,8 @@ function ResultRow({
   isInviting: boolean;
   isAnonymous: boolean;
   onShortlist: () => void;
+  onInterview: () => void;
+  isShortlisted: boolean;
   onPreview: () => void;
 }) {
   const { candidate } = result;
@@ -652,7 +674,7 @@ function ResultRow({
         onClick={onShortlist}
         className={cn(
           "rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
-          isInvited
+          isInvited || isShortlisted
             ? "border-emerald-400 text-emerald-600 cursor-default"
             : isAnonymous
               ? "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white"
@@ -666,10 +688,21 @@ function ResultRow({
             <Check className="h-3.5 w-3.5" />
             Invited
           </span>
+        ) : isShortlisted ? (
+          <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" /> Shortlisted</span>
         ) : (
           "Shortlist"
         )}
       </button>
+      {!isAnonymous && !isInvited && (
+        <button
+          onClick={onInterview}
+          disabled={isInviting}
+          className="rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white hover:bg-[#363c87] disabled:opacity-60"
+        >
+          Interview
+        </button>
+      )}
       </div>
     </div>
   );
@@ -714,6 +747,12 @@ export default function HireTalentPage() {
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [shortlistTarget, setShortlistTarget] = useState<ClientTalentInviteTarget | null>(null);
+  const { shortlists } = useClientShortlists(isClient);
+  const shortlistedTalentIds = useMemo(
+    () => new Set(shortlists.flatMap((item) => [item.talentId, item.candidateId].filter(Boolean) as string[])),
+    [shortlists],
+  );
 
   // ── Profile preview sheet ──────────────────────────────────────────────────────
   const [previewResult, setPreviewResult] = useState<TalentResult | null>(null);
@@ -971,8 +1010,8 @@ export default function HireTalentPage() {
     searchMutation.mutate({ text: q, engType: et, isBaseSearch });
   }
 
-  // ── Shortlist handler ─────────────────────────────────────────────────────────
-  function handleShortlist(talentUserId: string, talentName: string) {
+  // Formal interview invitation flow.
+  function handleInterview(talentUserId: string, talentName: string) {
     if (isAnonymous) {
       // Save search state + intended invite target, then prompt sign-up.
       sessionStorage.setItem(
@@ -989,6 +1028,23 @@ export default function HireTalentPage() {
     }
     // Authenticated client — open the job picker.
     openPicker(talentUserId, talentName);
+  }
+
+  function handleShortlist(talentUserId: string, talentName: string) {
+    if (isAnonymous) {
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          query: searchText,
+          engagementType,
+          pendingTalentId: talentUserId,
+          pendingTalentName: talentName,
+        } satisfies PendingSearchState),
+      );
+      setShowSignUp(true);
+      return;
+    }
+    setShortlistTarget({ id: talentUserId, idType: "talentUser", name: talentName });
   }
 
   // ── Job picker — open, confirm, close ─────────────────────────────────────────
@@ -1320,9 +1376,16 @@ export default function HireTalentPage() {
                     isAnonymous={isAnonymous}
                     isInvited={invitedIds.has(r.userId)}
                     isInviting={invitingId === r.userId}
+                    isShortlisted={shortlistedTalentIds.has(r.userId)}
                     onPreview={() => setPreviewResult(r)}
                     onShortlist={() =>
                       handleShortlist(
+                        r.userId,
+                        r.candidate.fullName ?? r.candidate.full_name ?? "Talent Profile",
+                      )
+                    }
+                    onInterview={() =>
+                      handleInterview(
                         r.userId,
                         r.candidate.fullName ?? r.candidate.full_name ?? "Talent Profile",
                       )
@@ -1646,6 +1709,11 @@ export default function HireTalentPage() {
           document.body,
         )}
 
+      <ClientTalentShortlistDialog
+        target={shortlistTarget}
+        onClose={() => setShortlistTarget(null)}
+      />
+
       {/* ── Profile preview modal ── */}
       <ProfilePreviewModal
         result={previewResult}
@@ -1654,9 +1722,17 @@ export default function HireTalentPage() {
         isAnonymous={isAnonymous}
         isInvited={previewResult ? invitedIds.has(previewResult.userId) : false}
         isInviting={previewResult ? invitingId === previewResult.userId : false}
+        isShortlisted={previewResult ? shortlistedTalentIds.has(previewResult.userId) : false}
         onShortlist={() => {
           if (!previewResult) return;
           handleShortlist(
+            previewResult.userId,
+            previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+          );
+        }}
+        onInterview={() => {
+          if (!previewResult) return;
+          handleInterview(
             previewResult.userId,
             previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
           );

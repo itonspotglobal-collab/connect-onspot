@@ -39,6 +39,8 @@ import {
   ClientTalentInviteDialog,
   type ClientTalentInviteTarget,
 } from "@/components/ClientTalentInviteDialog";
+import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
+import { useClientShortlists } from "@/hooks/useClientShortlists";
 import type { Candidate } from "@shared/schema";
 import {
   buildCompletionItems,
@@ -718,6 +720,9 @@ export default function TalentProfile() {
   const [inviteTarget, setInviteTarget] =
     useState<ClientTalentInviteTarget | null>(null);
   const [inviteSent, setInviteSent] = useState(false);
+  const [shortlistTarget, setShortlistTarget] = useState<ClientTalentInviteTarget | null>(null);
+  const { shortlists } = useClientShortlists(isClientUser);
+  const isShortlisted = shortlists.some((item) => item.candidateId === id || item.talentId === id);
 
   // ── Resume & video upload state ───────────────────────────────────────────
   const [resumeUploading, setResumeUploading] = useState(false);
@@ -1172,6 +1177,10 @@ export default function TalentProfile() {
         onClose={() => setInviteTarget(null)}
         onInvited={() => setInviteSent(true)}
       />
+      <ClientTalentShortlistDialog
+        target={shortlistTarget}
+        onClose={() => setShortlistTarget(null)}
+      />
 
       {/* ── Edit Skills Modal ── */}
       {canEdit && (
@@ -1298,6 +1307,16 @@ export default function TalentProfile() {
 
           {/* Right: action buttons */}
           <div className="flex flex-wrap gap-2 pt-1">
+              {isClientUser && id && (
+                <Button
+                  variant="outline"
+                  className="rounded-full text-sm"
+                  onClick={() => setShortlistTarget({ id, idType: "candidate", name: displayName })}
+                  disabled={false}
+                >
+                  <UserPlus className="mr-1.5 h-4 w-4" /> {isShortlisted ? "Shortlisted" : "Shortlist"}
+                </Button>
+              )}
               {isClientUser && !inviteSent && id && (
                 <Button
                   className="rounded-full bg-[#474ead] text-sm text-white hover:bg-[#3d439c]"
@@ -1309,7 +1328,7 @@ export default function TalentProfile() {
                     })
                   }
                 >
-                  <UserPlus className="mr-1.5 h-4 w-4" /> Shortlist / Invite
+                  <UserPlus className="mr-1.5 h-4 w-4" /> Interview this talent
                 </Button>
               )}
               {isClientViewer && (

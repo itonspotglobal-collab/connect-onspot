@@ -1477,6 +1477,39 @@ export async function registerRoutes(
   // ── Hiring pipeline tables: interviews, offers, hiring_contracts ─────────
   try {
     await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS combined_invite_reveal boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS workflow_type text NOT NULL DEFAULT 'application'`);
+    await query(`
+      UPDATE job_submissions
+         SET workflow_type = 'client_invitation'
+       WHERE workflow_type = 'application'
+         AND initiated_by = 'client'
+         AND (
+           status IN (
+             'invited', 'declined', 'interviewing', 'offer_extended',
+             'offer_accepted', 'offer_declined', 'offer_expired', 'hired'
+           )
+           OR combined_invite_reveal = true
+         )
+    `);
+    await query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+           WHERE conrelid = 'job_submissions'::regclass
+             AND conname = 'job_submissions_workflow_type_check'
+        ) THEN
+          ALTER TABLE job_submissions
+            ADD CONSTRAINT job_submissions_workflow_type_check
+            CHECK (workflow_type IN ('application', 'client_shortlist', 'client_invitation'));
+        END IF;
+      END $$;
+    `);
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS job_submissions_active_shortlist_unique
+        ON job_submissions (client_id, job_id, talent_id)
+       WHERE workflow_type = 'client_shortlist' AND status = 'shortlisted'
+    `);
 
     // interviews — one row per round per submission, client-driven
     await query(`
@@ -5689,6 +5722,7 @@ export async function registerRoutes(
            OR
            (js.talent_id IS NULL AND lower(js.email) = lower($2))
          )
+         AND js.workflow_type <> 'client_shortlist'
          ORDER BY js.submitted_at DESC`,
         [linkedUserId, candidateEmail],
       );
@@ -8260,9 +8294,9 @@ export async function registerRoutes(
              FROM job_submissions js
             WHERE ((js.client_id = $2 AND js.talent_id = u.id)
                 OR (js.client_id = u.id AND js.talent_id = $2))
-              AND js.initiated_by = 'client'
+           AND js.workflow_type = 'client_invitation'
               AND js.status IN (
-                'new', 'under_review', 'reviewed', 'shortlisted', 'interviewing',
+             'new', 'under_review', 'reviewed', 'interviewing',
                 'offer_extended', 'offer_accepted', 'contract_sent', 'hired'
               )
          ) AS name_revealed
@@ -8321,6 +8355,7 @@ export async function registerRoutes(
          js.job_id,
          js.client_id,
          js.status,
+         js.workflow_type,
          js.talent_id,
          js.email AS applicant_email,
          j.client_id AS job_owner_id,
@@ -8345,6 +8380,9 @@ export async function registerRoutes(
 
     if (!clientId || !talentUserId || !jobId || clientId === talentUserId) {
       return { status: 404, error: "Conversation is not available for this application." };
+    }
+    if (submission.workflow_type !== "client_invitation") {
+      return { status: 403, error: "Conversation is not available for this application." };
     }
     if (role === "client" && clientId !== authenticatedUserId) {
       return { status: 403, error: "Conversation is not available for this application." };
@@ -8450,8 +8488,8 @@ export async function registerRoutes(
       const rel = await query(
         `SELECT job_id, client_id, talent_id FROM job_submissions
          WHERE ((client_id = $1 AND talent_id = $2) OR (client_id = $2 AND talent_id = $1))
-           AND initiated_by = 'client'
-           AND status IN ('new', 'under_review', 'reviewed', 'shortlisted', 'interviewing', 'offer_extended', 'offer_accepted', 'contract_sent', 'hired')
+           AND workflow_type = 'client_invitation'
+           AND status IN ('new', 'under_review', 'reviewed', 'interviewing', 'offer_extended', 'offer_accepted', 'contract_sent', 'hired')
          ORDER BY updated_at DESC NULLS LAST
          LIMIT 1`,
         [userId, otherId],
@@ -8572,9 +8610,9 @@ export async function registerRoutes(
                SELECT 1 FROM job_submissions js
                WHERE ((js.client_id = $2 AND js.talent_id = u.id)
                    OR (js.client_id = u.id AND js.talent_id = $2))
-                 AND js.initiated_by = 'client'
-                 AND js.status IN ('new','under_review','reviewed',
-                                   'shortlisted','interviewing','offer_extended','offer_accepted','contract_sent','hired')
+                AND js.workflow_type = 'client_invitation'
+                AND js.status IN ('new','under_review','reviewed',
+                                  'interviewing','offer_extended','offer_accepted','contract_sent','hired')
              ) AS name_revealed,
              -- Clients are never masked; only talent participants need masking
              EXISTS (SELECT 1 FROM candidates c WHERE c.user_id = u.id) AS is_talent
@@ -12481,7 +12519,9 @@ export async function registerRoutes(
           `SELECT NOT EXISTS (
              SELECT 1
                FROM job_submissions
-              WHERE client_id = $1 AND initiated_by = 'client'
+              WHERE client_id = $1
+                AND (workflow_type = 'client_invitation'
+                  OR (workflow_type = 'application' AND initiated_by = 'client'))
            ) AS is_first`,
           [userId],
         ),
@@ -13119,7 +13159,7 @@ export async function registerRoutes(
          FROM job_submissions
          WHERE client_id = $1
            AND talent_id = ANY($2::text[])
-           AND initiated_by = 'client'
+           AND workflow_type = 'client_invitation'
            AND status NOT IN ('declined', 'rejected', 'withdrawn')`,
         [clientId, talentUserIds],
       );
@@ -13127,6 +13167,229 @@ export async function registerRoutes(
       return res.json({ invitedIds: result.rows.map((r: any) => r.talent_id) });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/shortlists — silent, client-owned shortlist rows.
+  // These rows intentionally do not appear in talent applications or trigger
+  // invitation/status notifications until the client promotes one to an invite.
+  app.get("/api/client/shortlists", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      const result = await query(
+        `SELECT js.id,
+                js.job_id AS "jobId",
+                js.talent_id AS "talentId",
+                c.id AS "candidateId",
+                js.status,
+                j.title AS "jobTitle",
+                j.status AS "jobStatus",
+                j.approval_status AS "approvalStatus",
+                js.created_at AS "createdAt",
+                js.updated_at AS "updatedAt"
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN candidates c
+             ON c.user_id = js.talent_id
+             OR (c.user_id IS NULL AND lower(c.email) = lower(js.email))
+          WHERE js.client_id = $1
+            AND js.workflow_type = 'client_shortlist'
+            AND js.status = 'shortlisted'
+          ORDER BY js.updated_at DESC`,
+        [clientId],
+      );
+      return res.json({ shortlists: result.rows });
+    } catch (err: any) {
+      console.error("GET /api/client/shortlists error:", err);
+      return res.status(500).json({ error: "Failed to load shortlists" });
+    }
+  });
+
+  // POST /api/client/shortlists — save a talent against one real client role.
+  // No MSA, interview proposal, email, or talent notification is involved.
+  app.post("/api/client/shortlists", pipelineMutationLimiter, authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const clientId = (req as any).user?.id;
+    if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const { jobId, talentUserId: requestedTalentUserId, candidateId } = req.body ?? {};
+      if (
+        typeof jobId !== "string" ||
+        jobId.length > 200 ||
+        (requestedTalentUserId !== undefined &&
+          (typeof requestedTalentUserId !== "string" || requestedTalentUserId.length > 200)) ||
+        (candidateId !== undefined &&
+          (typeof candidateId !== "string" || candidateId.length > 200)) ||
+        (typeof requestedTalentUserId !== "string" && typeof candidateId !== "string")
+      ) {
+        return res.status(400).json({ error: "jobId and a talent user or candidate ID are required" });
+      }
+
+      const txClient = await pool.connect();
+      try {
+        await txClient.query("BEGIN");
+        let talentUserId = typeof requestedTalentUserId === "string" ? requestedTalentUserId : null;
+        if (!talentUserId && typeof candidateId === "string") {
+          const candidateResult = await txClient.query(
+            `SELECT u.id
+               FROM candidates c
+               JOIN users u
+                 ON u.role = 'talent'
+                AND (u.id = c.user_id
+                  OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))
+              WHERE c.id = $1
+              LIMIT 1`,
+            [candidateId],
+          );
+          talentUserId = candidateResult.rows[0]?.id ?? null;
+        }
+        if (!talentUserId) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "Target candidate is not linked to a talent account" });
+        }
+
+        await txClient.query(
+          `SELECT pg_advisory_xact_lock(hashtext('shortlist:' || $1 || ':' || $2 || ':' || $3))`,
+          [clientId, talentUserId, jobId],
+        );
+
+        const jobResult = await txClient.query(
+          `SELECT id, title, status, approval_status, created_via
+             FROM jobs
+            WHERE id = $1 AND client_id = $2
+            LIMIT 1`,
+          [jobId, clientId],
+        );
+        if (!jobResult.rows.length) {
+          await txClient.query("ROLLBACK");
+          return res.status(404).json({ error: "job_not_found", message: "This role is not available to your account." });
+        }
+        const job = jobResult.rows[0];
+        if (job.created_via === "search_scaffold") {
+          await txClient.query("ROLLBACK");
+          return res.status(403).json({
+            error: "job_not_shortlistable",
+            reason: "scaffold_only",
+            message: "This search placeholder is not a role. Create a real job posting before saving talent.",
+          });
+        }
+        if (job.status !== "open") {
+          await txClient.query("ROLLBACK");
+          return res.status(403).json({
+            error: "job_not_shortlistable",
+            reason: "closed",
+            message: "This role is closed. Reopen it or choose another role.",
+          });
+        }
+
+        const targetUser = await txClient.query(
+          `SELECT id, email FROM users WHERE id = $1 AND role = 'talent' LIMIT 1`,
+          [talentUserId],
+        );
+        if (!targetUser.rows.length) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "Target account is not a talent user" });
+        }
+
+        const existingInvite = await txClient.query(
+          `SELECT id
+             FROM job_submissions
+            WHERE client_id = $1 AND job_id = $2 AND talent_id = $3
+           AND (
+             workflow_type = 'client_invitation'
+             OR (workflow_type = 'application' AND initiated_by = 'client' AND status <> 'shortlisted')
+           )
+              AND status NOT IN ('declined', 'rejected', 'withdrawn')
+            LIMIT 1`,
+          [clientId, jobId, talentUserId],
+        );
+        if (existingInvite.rows.length) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "already_invited", message: "This talent has already been invited to this role." });
+        }
+
+        const existingShortlist = await txClient.query(
+          `SELECT id
+             FROM job_submissions
+            WHERE client_id = $1 AND job_id = $2 AND talent_id = $3
+              AND workflow_type = 'client_shortlist' AND status = 'shortlisted'
+            LIMIT 1`,
+          [clientId, jobId, talentUserId],
+        );
+        if (existingShortlist.rows.length) {
+          await txClient.query("ROLLBACK");
+          return res.status(200).json({
+            id: existingShortlist.rows[0].id,
+            alreadyShortlisted: true,
+            jobId,
+            talentId: talentUserId,
+          });
+        }
+
+        const talentResult = await txClient.query(
+          `SELECT c.first_name, c.last_name, c.full_name
+             FROM candidates c
+            WHERE c.user_id = $1
+            LIMIT 1`,
+          [talentUserId],
+        );
+        const talent = talentResult.rows[0] ?? {};
+        const name = talent.full_name ||
+          [talent.first_name, talent.last_name].filter(Boolean).join(" ") ||
+          "Talent";
+        const inserted = await txClient.query(
+          `INSERT INTO job_submissions
+             (id, job_id, client_id, applicant_name, first_name, last_name, email,
+              status, initiated_by, workflow_type, talent_id, registration_status, combined_invite_reveal)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'shortlisted', 'client',
+                   'client_shortlist', $7, 'linked', false)
+          RETURNING id`,
+          [
+            jobId,
+            clientId,
+            name,
+            talent.first_name ?? name,
+            talent.last_name ?? "",
+            targetUser.rows[0].email ?? "",
+            talentUserId,
+          ],
+        );
+        await txClient.query("COMMIT");
+        return res.status(201).json({
+          id: inserted.rows[0].id,
+          alreadyShortlisted: false,
+          jobId,
+          talentId: talentUserId,
+          jobTitle: job.title,
+        });
+      } catch (txErr) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        throw txErr;
+      } finally {
+        txClient.release();
+      }
+    } catch (err: any) {
+      console.error("POST /api/client/shortlists error:", err);
+      return res.status(500).json({ error: "Failed to save shortlist" });
+    }
+  });
+
+  app.delete("/api/client/shortlists/:id", pipelineMutationLimiter, authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      const result = await query(
+        `DELETE FROM job_submissions
+          WHERE id = $1 AND client_id = $2
+            AND workflow_type = 'client_shortlist' AND status = 'shortlisted'
+        RETURNING id`,
+        [req.params.id, clientId],
+      );
+      if (!result.rows.length) return res.status(404).json({ error: "Shortlist not found" });
+      return res.status(204).send();
+    } catch (err: any) {
+      console.error("DELETE /api/client/shortlists error:", err);
+      return res.status(500).json({ error: "Failed to remove shortlist" });
     }
   });
 
@@ -13194,7 +13457,14 @@ export async function registerRoutes(
           typeof requestedTalentUserId === "string" ? requestedTalentUserId : null;
         if (!talentUserId && typeof candidateId === "string") {
           const candidateRow = await txClient.query(
-            `SELECT user_id FROM candidates WHERE id = $1 LIMIT 1`,
+            `SELECT u.id AS user_id
+               FROM candidates c
+               JOIN users u
+                 ON u.role = 'talent'
+                AND (u.id = c.user_id
+                  OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))
+              WHERE c.id = $1
+              LIMIT 1`,
             [candidateId],
           );
           talentUserId = candidateRow.rows[0]?.user_id ?? null;
@@ -13254,7 +13524,9 @@ export async function registerRoutes(
           const firstInvite = await txClient.query(
             `SELECT NOT EXISTS (
                SELECT 1 FROM job_submissions
-                WHERE client_id = $1 AND initiated_by = 'client'
+             WHERE client_id = $1
+               AND (workflow_type = 'client_invitation'
+                 OR (workflow_type = 'application' AND initiated_by = 'client'))
              ) AS is_first`,
             [clientId],
           );
@@ -13285,8 +13557,13 @@ export async function registerRoutes(
          }
          const existing = await txClient.query(
            `SELECT id FROM job_submissions
-             WHERE job_id = $1 AND talent_id = $2 AND status = 'invited'`,
-           [jobId, talentUserId],
+             WHERE client_id = $1 AND job_id = $2 AND talent_id = $3
+               AND (
+                 workflow_type = 'client_invitation'
+                 OR (workflow_type = 'application' AND initiated_by = 'client' AND status <> 'shortlisted')
+               )
+               AND status NOT IN ('declined', 'rejected', 'withdrawn')`,
+           [clientId, jobId, talentUserId],
          );
          if (existing.rows.length > 0) {
            await txClient.query("ROLLBACK");
@@ -13305,18 +13582,45 @@ export async function registerRoutes(
            "Invited Talent";
          const email = talent.email ?? "";
 
-         const submissionResult = await txClient.query(
-           `INSERT INTO job_submissions
-              (id, job_id, client_id, applicant_name, first_name, last_name, email,
-                status, initiated_by, talent_id, registration_status, combined_invite_reveal)
-             VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'invited', 'client', $7, 'linked', true)
-            RETURNING id`,
-           [
-             jobId, clientId, name, talent.first_name ?? name, talent.last_name ?? "",
-              email, talentUserId,
-           ],
+         const existingShortlist = await txClient.query(
+           `SELECT id FROM job_submissions
+             WHERE client_id = $1 AND job_id = $2 AND talent_id = $3
+               AND workflow_type = 'client_shortlist' AND status = 'shortlisted'
+             LIMIT 1`,
+           [clientId, jobId, talentUserId],
          );
+         const submissionResult = existingShortlist.rows.length
+           ? await txClient.query(
+               `UPDATE job_submissions
+                   SET status = 'invited',
+                       workflow_type = 'client_invitation',
+                       combined_invite_reveal = true,
+                       updated_at = NOW()
+                 WHERE id = $1
+                RETURNING id`,
+               [existingShortlist.rows[0].id],
+             )
+           : await txClient.query(
+               `INSERT INTO job_submissions
+                  (id, job_id, client_id, applicant_name, first_name, last_name, email,
+                    status, initiated_by, workflow_type, talent_id, registration_status, combined_invite_reveal)
+                VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'invited', 'client',
+                        'client_invitation', $7, 'linked', true)
+               RETURNING id`,
+               [
+                 jobId, clientId, name, talent.first_name ?? name, talent.last_name ?? "",
+                 email, talentUserId,
+               ],
+             );
          created = submissionResult.rows[0];
+         if (existingShortlist.rows.length) {
+           await txClient.query(
+             `INSERT INTO job_application_status_history
+                (application_id, previous_status, new_status, note, changed_by)
+              VALUES ($1, 'shortlisted', 'invited', 'Client promoted a shortlist to an interview invitation', $2)`,
+             [created.id, clientId],
+           );
+         }
          if (normalizedTimes) {
            const interviewResult = await txClient.query(
              `INSERT INTO interviews
@@ -14646,9 +14950,9 @@ export async function registerRoutes(
     try {
 
       const [byStatus, byReg, total] = await Promise.all([
-        query(`SELECT status, COUNT(*) AS count FROM job_submissions GROUP BY status`),
-        query(`SELECT registration_status, COUNT(*) AS count FROM job_submissions GROUP BY registration_status`),
-        query(`SELECT COUNT(*) AS count FROM job_submissions`),
+        query(`SELECT status, COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist' GROUP BY status`),
+        query(`SELECT registration_status, COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist' GROUP BY registration_status`),
+        query(`SELECT COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist'`),
       ]);
 
       const byStatusMap: Record<string, number> = {};
@@ -14697,7 +15001,7 @@ export async function registerRoutes(
       };
       const orderCol = SORT_COLS[sortBy] ?? "js.submitted_at";
 
-      const conditions: string[] = [];
+      const conditions: string[] = ["js.workflow_type <> 'client_shortlist'"];
       const params: any[] = [];
 
       if (statusFilter) {
@@ -14814,7 +15118,7 @@ export async function registerRoutes(
              ORDER BY profile_completed DESC NULLS LAST, updated_at DESC NULLS LAST
              LIMIT 1
            ) c ON true
-           WHERE js.id = $1`,
+           WHERE js.id = $1 AND js.workflow_type <> 'client_shortlist'`,
           [applicationId],
         ),
         query(
@@ -15084,7 +15388,7 @@ export async function registerRoutes(
 
       // Confirm the application exists
       const existing = await query(
-        `SELECT id FROM job_submissions WHERE id = $1`,
+        `SELECT id FROM job_submissions WHERE id = $1 AND workflow_type <> 'client_shortlist'`,
         [applicationId],
       );
       if (existing.rows.length === 0) {
@@ -15276,6 +15580,7 @@ export async function registerRoutes(
       clientId:     row.clientId     ?? row.client_id,
       talentId:     row.talentId     ?? row.talent_id,
       status:       row.status,
+      workflowType: row.workflowType ?? row.workflow_type ?? "application",
       initiated_by: row.initiated_by,
       submittedAt:  row.submittedAt  ?? row.submitted_at,
       updatedAt:    row.updatedAt    ?? row.updated_at,
@@ -15340,6 +15645,7 @@ export async function registerRoutes(
       js.expected_salary          AS "expectedSalary",
       js.availability,
       js.status,
+      js.workflow_type            AS "workflowType",
       js.submitted_at             AS "submittedAt",
       js.updated_at               AS "updatedAt",
       js.created_at               AS "createdAt",
@@ -15348,6 +15654,8 @@ export async function registerRoutes(
       j.title                     AS "jobTitle",
       j.company                   AS "jobCompany",
       j.engagement_type           AS "jobEngagementType"
+      ,j.status                   AS "jobStatus"
+      ,j.approval_status          AS "approvalStatus"
       ,js.combined_invite_reveal  AS "combinedInviteReveal"
       ,EXISTS (
         SELECT 1 FROM interviews ci
@@ -15406,6 +15714,7 @@ export async function registerRoutes(
         query(
           `${CLIENT_SUBMISSION_SELECT}
            WHERE js.client_id = $1
+             AND js.workflow_type <> 'client_shortlist'
            ORDER BY js.submitted_at DESC`,
           [userId],
         ),
@@ -15427,7 +15736,8 @@ export async function registerRoutes(
       const [result, threshold] = await Promise.all([
         query(
           `${CLIENT_SUBMISSION_SELECT}
-           WHERE js.id = $1 AND js.client_id = $2`,
+           WHERE js.id = $1 AND js.client_id = $2
+             AND js.workflow_type <> 'client_shortlist'`,
           [id, userId],
         ),
         getNameRevealThreshold(),
@@ -15651,10 +15961,11 @@ export async function registerRoutes(
 
       // Ownership: submission must belong to this client
       const subResult = await query(
-        `SELECT js.id, js.status, js.client_id, js.talent_id, js.email, j.title AS job_title
+        `SELECT js.id, js.status, js.workflow_type, js.client_id, js.talent_id, js.email, j.title AS job_title
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.client_id = $2`,
+         WHERE js.id = $1 AND js.client_id = $2
+           AND js.workflow_type = 'client_invitation'`,
         [submissionId, userId],
       );
       if (subResult.rows.length === 0) {
@@ -15739,7 +16050,9 @@ export async function registerRoutes(
 
       // Ownership check
       const ownerCheck = await query(
-        `SELECT id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        `SELECT id FROM job_submissions
+         WHERE id = $1 AND client_id = $2
+           AND workflow_type = 'client_invitation'`,
         [submissionId, userId],
       );
       if (ownerCheck.rows.length === 0) {
@@ -15777,6 +16090,7 @@ export async function registerRoutes(
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
            WHERE i.id = $1 AND js.client_id = $2
+             AND js.workflow_type = 'client_invitation'
            FOR UPDATE OF i`,
           [id, userId],
         );
@@ -15990,6 +16304,7 @@ export async function registerRoutes(
            JOIN interviews i ON i.id = ip.interview_id
            JOIN job_submissions js ON js.id = i.submission_id
           WHERE ip.interview_id = $1 AND js.client_id = $2
+            AND js.workflow_type = 'client_invitation'
           ORDER BY ip.created_at ASC`,
         [req.params.id, userId],
       );
@@ -16021,7 +16336,8 @@ export async function registerRoutes(
         `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
          FROM interviews i
          JOIN job_submissions js ON js.id = i.submission_id
-         WHERE i.id = $1 AND js.client_id = $2`,
+         WHERE i.id = $1 AND js.client_id = $2
+           AND js.workflow_type = 'client_invitation'`,
         [id, userId],
       );
       if (interviewResult.rows.length === 0) {
@@ -16100,11 +16416,12 @@ export async function registerRoutes(
 
       // Ownership + submission state
       const subResult = await query(
-        `SELECT js.id, js.status, js.talent_id, js.email, js.job_id,
+        `SELECT js.id, js.status, js.workflow_type, js.talent_id, js.email, js.job_id,
                 j.engagement_type AS job_engagement_type
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.client_id = $2`,
+         WHERE js.id = $1 AND js.client_id = $2
+           AND js.workflow_type = 'client_invitation'`,
         [submissionId, userId],
       );
       if (subResult.rows.length === 0) {
@@ -16345,7 +16662,9 @@ export async function registerRoutes(
       if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
       const ownerCheck = await query(
-        `SELECT id FROM job_submissions WHERE id = $1 AND client_id = $2`,
+        `SELECT id FROM job_submissions
+         WHERE id = $1 AND client_id = $2
+           AND workflow_type = 'client_invitation'`,
         [submissionId, userId],
       );
       if (ownerCheck.rows.length === 0) {
@@ -16353,7 +16672,10 @@ export async function registerRoutes(
       }
 
       const result = await query(
-        `SELECT * FROM offers WHERE submission_id = $1 ORDER BY sent_at DESC, created_at DESC`,
+        `SELECT o.* FROM offers o
+         JOIN job_submissions js ON js.id = o.submission_id
+         WHERE o.submission_id = $1 AND js.workflow_type = 'client_invitation'
+         ORDER BY o.sent_at DESC, o.created_at DESC`,
         [submissionId],
       );
       return res.json(result.rows);
@@ -16399,6 +16721,7 @@ export async function registerRoutes(
            JOIN job_submissions js ON js.id = o.submission_id
           WHERE o.id = $1
             AND js.client_id = $2
+            AND js.workflow_type = 'client_invitation'
             AND o.status = 'sent'
             AND o.proposer_role = 'talent'
             AND o.parent_offer_id IS NOT NULL`,
@@ -16586,6 +16909,7 @@ export async function registerRoutes(
            ($1::text IS NOT NULL AND js.talent_id = $1::text)
            OR (js.talent_id IS NULL AND lower(js.email) = lower($2))
          )
+         AND js.workflow_type = 'client_invitation'
          ORDER BY o.sent_at DESC NULLS LAST`,
         [linkedUserId, candidateEmail],
       );
@@ -16916,7 +17240,9 @@ export async function registerRoutes(
         `SELECT hc.*, o.rate, o.rate_currency, o.engagement_type
          FROM hiring_contracts hc
          JOIN offers o ON o.id = hc.offer_id
+         JOIN job_submissions js ON js.id = hc.submission_id
          WHERE hc.submission_id = $1
+           AND js.workflow_type = 'client_invitation'
          ORDER BY hc.created_at DESC`,
         [submissionId],
       );
@@ -17443,8 +17769,11 @@ export async function registerRoutes(
       `SELECT r.id, r.current_status AS "currentStatus", r.requested_status AS "requestedStatus",
               r.status, r.reason, r.admin_note AS "adminNote", r.created_at AS "createdAt"
        FROM application_status_change_requests r
-       JOIN jobs j ON j.id = (SELECT job_id FROM job_submissions WHERE id = r.application_id)
-       WHERE r.application_id = $1 AND j.client_id = $2 AND r.status = 'pending'
+       JOIN job_submissions js ON js.id = r.application_id
+       JOIN jobs j ON j.id = js.job_id
+       WHERE r.application_id = $1 AND j.client_id = $2
+         AND js.workflow_type <> 'client_shortlist'
+         AND r.status = 'pending'
        LIMIT 1`,
       [req.params.id, req.user.id],
     );
@@ -17465,7 +17794,9 @@ export async function registerRoutes(
         `SELECT js.id, js.job_id, js.status, js.talent_id, js.first_name, js.last_name, js.applicant_name,
                 j.title AS job_title
          FROM job_submissions js JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND j.client_id = $2 FOR UPDATE OF js`,
+         WHERE js.id = $1 AND j.client_id = $2
+           AND js.workflow_type <> 'client_shortlist'
+         FOR UPDATE OF js`,
         [req.params.id, req.user.id],
       );
       if (!appResult.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(403).json({ error: "Application not found or not owned by you." }); }
@@ -17531,6 +17862,7 @@ export async function registerRoutes(
        JOIN jobs j ON j.id = js.job_id
        JOIN users u ON u.id = r.requested_by_user_id
        WHERE r.status = 'pending'
+         AND js.workflow_type <> 'client_shortlist'
        ORDER BY r.created_at DESC`,
     );
     return res.json(result.rows);

@@ -781,6 +781,8 @@ export const jobSubmissions = pgTable("job_submissions", {
   // Who initiated this submission. Survives status changes (e.g. invited→submitted).
   // 'talent' = talent applied themselves; 'client' = client invited the talent
   initiatedBy: text("initiated_by").notNull().default("talent"), // talent | client
+  // Separates lightweight client shortlists from formal invitations and applications.
+  workflowType: text("workflow_type").notNull().default("application"), // application | client_shortlist | client_invitation
   talentId: varchar("talent_id").references(() => users.id),
   registrationStatus: text("registration_status").notNull().default("pending_account"),
   isRepeatApplication: boolean("is_repeat_application").notNull().default(false),

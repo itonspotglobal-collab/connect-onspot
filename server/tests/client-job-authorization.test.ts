@@ -316,4 +316,107 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(firstInvite.json.error, "msa_required");
     assert.equal(firstInvite.json.termsUrl, "/terms-and-conditions");
   });
+
+  it("persists silent role shortlists, keeps them out of talent applications, and promotes them without duplicates", async () => {
+    const shortlist = await request(server, "POST", "/api/client/shortlists", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+    });
+    assert.equal(shortlist.status, 201, JSON.stringify(shortlist.json));
+
+    const duplicate = await request(server, "POST", "/api/client/shortlists", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+    });
+    assert.equal(duplicate.status, 200, JSON.stringify(duplicate.json));
+    assert.equal(duplicate.json.alreadyShortlisted, true);
+
+    const list = await request(server, "GET", "/api/client/shortlists", clientToken);
+    assert.equal(list.status, 200, JSON.stringify(list.json));
+    const saved = list.json.shortlists.find((row: any) => row.id === shortlist.json.id);
+    assert.ok(saved);
+    assert.equal(saved.jobStatus, "open");
+    assert.equal(saved.approvalStatus, "pending");
+
+    const talentApplications = await request(server, "GET", "/api/talent/applications", talentToken);
+    assert.equal(talentApplications.status, 200, JSON.stringify(talentApplications.json));
+    assert.ok(!talentApplications.json.some((application: any) => application.id === shortlist.json.id));
+
+    const genericMessage = await request(server, "POST", "/api/message-threads", clientToken, {
+      participants: [CLIENT_ID, TALENT_ID],
+    });
+    assert.equal(genericMessage.status, 403, JSON.stringify(genericMessage.json));
+    const applicationMessage = await request(
+      server,
+      "POST",
+      `/api/applications/${shortlist.json.id}/message-thread`,
+      clientToken,
+    );
+    assert.equal(applicationMessage.status, 403, JSON.stringify(applicationMessage.json));
+
+    const directInterview = await request(server, "POST", "/api/client/interviews", clientToken, {
+      submissionId: shortlist.json.id,
+      proposedTimes: [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }],
+    });
+    assert.notEqual(directInterview.status, 201, JSON.stringify(directInterview.json));
+    const shortlistAfterInterview = await query(
+      `SELECT status FROM job_submissions WHERE id = $1`,
+      [shortlist.json.id],
+    );
+    assert.equal(shortlistAfterInterview.rows[0].status, "shortlisted");
+    const interviewRows = await query(`SELECT id FROM interviews WHERE submission_id = $1`, [shortlist.json.id]);
+    assert.equal(interviewRows.rows.length, 0);
+
+    const adminApplications = await request(
+      server,
+      "GET",
+      `/api/admin/job-applications?jobId=${encodeURIComponent(PENDING_JOB_ID)}`,
+      adminToken,
+    );
+    assert.equal(adminApplications.status, 200, JSON.stringify(adminApplications.json));
+    assert.ok(!adminApplications.json.items.some((application: any) => application.id === shortlist.json.id));
+    const adminDetail = await request(server, "GET", `/api/admin/job-applications/${shortlist.json.id}`, adminToken);
+    assert.equal(adminDetail.status, 404, JSON.stringify(adminDetail.json));
+
+    const clientSubmissions = await request(server, "GET", "/api/client/job-submissions", clientToken);
+    assert.equal(clientSubmissions.status, 200, JSON.stringify(clientSubmissions.json));
+    assert.ok(!clientSubmissions.json.some((submission: any) => submission.id === shortlist.json.id));
+    const clientSubmissionDetail = await request(server, "GET", `/api/client/job-submissions/${shortlist.json.id}`, clientToken);
+    assert.equal(clientSubmissionDetail.status, 404, JSON.stringify(clientSubmissionDetail.json));
+    const shortlistStatusRequest = await request(
+      server,
+      "POST",
+      `/api/client/job-submissions/${shortlist.json.id}/status-change-requests`,
+      clientToken,
+      { requestedStatus: "shortlisted", reason: "Should not be possible for a silent shortlist" },
+    );
+    assert.notEqual(shortlistStatusRequest.status, 201, JSON.stringify(shortlistStatusRequest.json));
+
+    await query(`UPDATE jobs SET approval_status = 'rejected' WHERE id = $1`, [PENDING_JOB_ID]);
+    const rejectedList = await request(server, "GET", "/api/client/shortlists", clientToken);
+    assert.equal(rejectedList.status, 200, JSON.stringify(rejectedList.json));
+    const rejectedSaved = rejectedList.json.shortlists.find((row: any) => row.id === shortlist.json.id);
+    assert.equal(rejectedSaved.approvalStatus, "rejected");
+    await query(`UPDATE jobs SET approval_status = 'approved' WHERE id = $1`, [PENDING_JOB_ID]);
+
+    const acceptance = await request(server, "POST", "/api/client/msa-acceptance", clientToken, { accepted: true });
+    assert.equal(acceptance.status, 200, JSON.stringify(acceptance.json));
+    const invitation = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: PENDING_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes: [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }],
+    });
+    assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
+
+    const rows = await query(
+      `SELECT workflow_type, status FROM job_submissions
+        WHERE id = $1`,
+      [shortlist.json.id],
+    );
+    assert.equal(rows.rows.length, 1);
+    assert.equal(rows.rows[0].workflow_type, "client_invitation");
+    assert.equal(rows.rows[0].status, "invited");
+    const interviewCount = await query(`SELECT COUNT(*)::int AS count FROM interviews WHERE submission_id = $1`, [shortlist.json.id]);
+    assert.equal(interviewCount.rows[0].count, 1);
+  });
 });

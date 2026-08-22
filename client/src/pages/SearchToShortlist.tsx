@@ -15,6 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Check, Loader2 } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
+import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
+import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
+import { useClientShortlists } from "@/hooks/useClientShortlists";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,11 +71,15 @@ function ResultRow({
   isInvited,
   isInviting,
   onInvite,
+  isShortlisted,
+  onShortlist,
 }: {
   result: TalentResult;
   isInvited: boolean;
   isInviting: boolean;
   onInvite: () => void;
+  isShortlisted: boolean;
+  onShortlist: () => void;
 }) {
   const { candidate } = result;
 
@@ -131,13 +139,13 @@ function ResultRow({
         </p>
       </div>
 
-      {/* Shortlist / Invite button */}
+      {/* Separate shortlist and interview actions */}
       <button
         disabled={isInvited || isInviting}
-        onClick={onInvite}
+        onClick={onShortlist}
         className={cn(
           "shrink-0 rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
-          isInvited
+          isInvited || isShortlisted
             ? "border-emerald-400 text-emerald-600 cursor-default"
             : "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white",
         )}
@@ -149,10 +157,17 @@ function ResultRow({
             <Check className="h-3.5 w-3.5" />
             Invited
           </span>
+        ) : isShortlisted ? (
+          <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" /> Shortlisted</span>
         ) : (
           "Shortlist"
         )}
       </button>
+      {!isInvited && (
+        <button onClick={onInvite} disabled={isInviting} className="shrink-0 rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white disabled:opacity-60">
+          Interview
+        </button>
+      )}
     </div>
   );
 }
@@ -164,6 +179,14 @@ type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
 
 export default function SearchToShortlist() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isClient = user?.role === "client";
+  const [shortlistTarget, setShortlistTarget] = useState<ClientTalentInviteTarget | null>(null);
+  const { shortlists } = useClientShortlists(isClient);
+  const shortlistedIds = useMemo(
+    () => new Set(shortlists.flatMap((item) => [item.talentId, item.candidateId].filter(Boolean) as string[])),
+    [shortlists],
+  );
 
   // ── Stage ─────────────────────────────────────────────────────────────────────
   const [stage, setStage] = useState<"initial" | "active">("initial");
@@ -526,6 +549,18 @@ export default function SearchToShortlist() {
                     result={r}
                     isInvited={invitedIds.has(r.userId)}
                     isInviting={invitingId === r.userId}
+                    isShortlisted={shortlistedIds.has(r.userId)}
+                    onShortlist={() => {
+                      if (!isClient) {
+                        toast({ title: "Sign in as a client to shortlist talent" });
+                        return;
+                      }
+                      setShortlistTarget({
+                        id: r.userId,
+                        idType: "talentUser",
+                        name: r.candidate.maskedName ?? "Talent Profile",
+                      });
+                    }}
                     onInvite={() => handleInvite(r.userId, r.candidate.maskedName ?? undefined)}
                   />
                 ))}
@@ -779,6 +814,10 @@ export default function SearchToShortlist() {
           </div>,
           document.body,
         )}
+      <ClientTalentShortlistDialog
+        target={shortlistTarget}
+        onClose={() => setShortlistTarget(null)}
+      />
     </div>
   );
 }

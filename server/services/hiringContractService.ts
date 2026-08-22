@@ -109,10 +109,19 @@ export async function createHiringContract(params: {
     const submissionId: string = offer.submission_id;
 
     const subResult = await client.query(
-      `SELECT id, status FROM job_submissions WHERE id = $1 FOR UPDATE`,
+      `SELECT id, status, workflow_type
+         FROM job_submissions
+        WHERE id = $1
+        FOR UPDATE`,
       [submissionId],
     );
     if (subResult.rows.length === 0) throw new ContractError(404, { error: "Submission not found" });
+    if (subResult.rows[0].workflow_type !== "client_invitation") {
+      throw new ContractError(409, {
+        error: "formal_invitation_required",
+        message: "A hiring contract can only be created for a formally invited submission.",
+      });
+    }
     const previousStatus: string = subResult.rows[0].status;
 
     let insert;

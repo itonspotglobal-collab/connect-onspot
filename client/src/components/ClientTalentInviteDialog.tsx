@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { isInvitableJob, type InvitationReadiness } from "@/lib/invitationReadiness";
 
 export type ClientTalentInviteTarget = {
   id: string;
@@ -15,6 +16,9 @@ type InviteJob = {
   id: string;
   title: string;
   engagementType?: string | null;
+  status?: string | null;
+  approvalStatus?: string | null;
+  approval_status?: string | null;
 };
 
 type ApiResult = {
@@ -81,6 +85,7 @@ export function ClientTalentInviteDialog({
 }) {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<InviteJob[]>([]);
+  const [readiness, setReadiness] = useState<InvitationReadiness | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -89,6 +94,7 @@ export function ClientTalentInviteDialog({
   useEffect(() => {
     if (!target) {
       setJobs([]);
+      setReadiness(null);
       setLoading(false);
       setSelectedJobId(null);
       setInviteDateTime("");
@@ -101,19 +107,18 @@ export function ClientTalentInviteDialog({
     setInviteDateTime("");
     (async () => {
       try {
-        const res = await apiRequest("GET", "/api/client/jobs");
-        const all = await res.json().catch(() => []);
-        const open = Array.isArray(all)
-          ? all.filter(
-              (job: any) =>
-                job.status === "open" &&
-                (job.approvalStatus === "approved" ||
-                  job.approval_status === "approved"),
-            )
-          : [];
-        if (!cancelled) setJobs(open);
+        const res = await apiRequest("GET", "/api/client/invitation-readiness");
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.summary || !body.msa) throw new Error(body.message || "Could not load invitation readiness");
+        if (!cancelled) {
+          setReadiness(body as InvitationReadiness);
+          setJobs(Array.isArray(body.jobs) ? body.jobs.filter(isInvitableJob) : []);
+        }
       } catch {
-        if (!cancelled) setJobs([]);
+        if (!cancelled) {
+          setJobs([]);
+          setReadiness(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -229,14 +234,28 @@ export function ClientTalentInviteDialog({
               id="client-talent-invite-title"
               className="mb-2 text-[17px] font-bold text-slate-900 dark:text-white"
             >
-              No open job postings
+              {readiness?.summary.state === "pending_approval"
+                ? "Your role is awaiting approval"
+                : readiness?.summary.state === "closed_jobs"
+                  ? "Your roles are closed"
+                  : readiness?.summary.state === "scaffold_only"
+                    ? "Create a real role first"
+                    : readiness?.summary.state === "no_jobs"
+                      ? "No roles yet"
+                      : "No approved open roles"}
             </h2>
             <p className="mb-5 text-[13.5px] text-slate-500 dark:text-slate-400">
-              You need an active, approved job posting to invite{" "}
+              {readiness?.summary.state === "pending_approval"
+                ? "Your invitation will be available after an admin approves your open role. "
+                : readiness?.summary.state === "closed_jobs"
+                  ? "Reopen an approved role before sending an invitation. "
+                  : readiness?.summary.state === "scaffold_only"
+                    ? "Your saved search placeholder is not a role. Create a real approved job posting before inviting. "
+                    : "You need an active, approved job posting to invite "}
               <span className="font-semibold text-slate-700 dark:text-slate-300">
                 {target.name}
               </span>
-              . Post one first, then come back to send the invitation.
+              {readiness?.summary.state === "pending_approval" ? "" : " Post one first, then come back to send the invitation."}
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -250,7 +269,7 @@ export function ClientTalentInviteDialog({
                 onClick={onClose}
                 className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#363c87]"
               >
-                Post a Job →
+                {readiness?.summary.state === "pending_approval" || readiness?.summary.state === "closed_jobs" ? "View job postings →" : "Post a Job →"}
               </a>
             </div>
           </div>
@@ -262,6 +281,11 @@ export function ClientTalentInviteDialog({
             >
               Invite {target.name}?
             </h2>
+            {readiness?.msa.required && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900 dark:border-amber-800/40 dark:bg-amber-950/20 dark:text-amber-300">
+                Accept the Terms of Service before sending your first invitation. The Terms will open when you send it.
+              </div>
+            )}
             <p className="mb-5 text-[13.5px] text-slate-500 dark:text-slate-400">
               They&apos;ll be invited to:{" "}
               <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -292,6 +316,11 @@ export function ClientTalentInviteDialog({
             >
               Invite {target.name} to which role?
             </h2>
+            {readiness?.msa.required && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900 dark:border-amber-800/40 dark:bg-amber-950/20 dark:text-amber-300">
+                Accept the Terms of Service before sending your first invitation.
+              </div>
+            )}
             <p className="mb-4 text-[13.5px] text-slate-400">
               Select one of your open job postings.
             </p>
