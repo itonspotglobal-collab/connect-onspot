@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "NEpWqqNBFvtlj1MX42VnX"
@@ -84,3 +83,59 @@ id = "v1DSYWbv_4aUnJw2RDonc"
 uri = "file://client/src/assets/work-differently/work-differently-professionals-remote-work.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "vl4sVXy16vlxFRPiF4v75"
+uri = "file://screenshots/verified-footer-home.png"
+type = "image"
+title = "Homepage footer"
+description = "Real live preview capture showing the transparent footer continuing the homepage dark gradient."
+
+[[outputs]]
+id = "J8Uhlhu5bqz9h1jCALqzZ"
+uri = "file://screenshots/verified-footer-privacy.png"
+type = "image"
+title = "Privacy Policy footer"
+description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+
+[[outputs]]
+id = "1t-oH3V3EeBpiwjaXrMm6"
+uri = "file://screenshots/verified-footer-refund.png"
+type = "image"
+title = "Refund Policy footer"
+description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+
+[[outputs]]
+id = "-6U7ghaKm7mNgrBpN9vMy"
+uri = "file://screenshots/verified-footer-terms.png"
+type = "image"
+title = "Terms of Service footer"
+description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+
+[[outputs]]
+id = "O_zUDVYHOdCbukGgABRUC"
+uri = "file://screenshots/verified-footer-about.png"
+type = "image"
+title = "About footer"
+description = "Real live preview capture showing the shared indigo footer continuing the About page's #474EAD CTA."
+
+[[outputs]]
+id = "4FhasI8lX_EYKWHNA4_im"
+uri = "file://screenshots/verified-footer-amazing.png"
+type = "image"
+title = "Amazing footer"
+description = "Real live preview capture showing the old rich footer removed and the shared light footer continuing the People Behind the Platform section."
+
+[[outputs]]
+id = "djIBMGVj9yzFJvF3W3iF6"
+uri = "file://screenshots/verified-footer-job-light.png"
+type = "image"
+title = "Job detail light footer"
+description = "Real live browser capture of the adaptive job-detail footer in light mode with a white background."
+
+[[outputs]]
+id = "nbBKi_uzFo-zkxL_tFl0U"
+uri = "file://screenshots/verified-footer-job-dark.png"
+type = "image"
+title = "Job detail dark footer"
+description = "Real live browser capture of the adaptive job-detail footer in dark mode with the computed #060816 background."
