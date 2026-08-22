@@ -362,16 +362,47 @@ describe("Client organization routes", () => {
     );
     assert.equal(expired.status, "expired");
 
+    const nonOwnerResend = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}/resend`,
+      otherClientToken,
+    );
+    assert.equal(nonOwnerResend.status, 403);
+
     const resent = await request(
       server,
       "POST",
-      `/api/organizations/${createdOrganizationId}/invitations`,
+      `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}/resend`,
       clientToken,
-      { email: `${OTHER_CLIENT_ID}@test.example` },
     );
     assert.equal(resent.status, 201, JSON.stringify(resent.json));
     assert.equal(resent.json.invitation.status, "pending");
     assert.notEqual(resent.json.invitation.id, invitation.json.invitation.id);
+
+    const pendingResend = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}/resend`,
+      clientToken,
+    );
+    assert.equal(pendingResend.status, 409);
+    assert.equal(pendingResend.json.error, "An invitation is already pending for this email");
+
+    const history = await request(
+      server,
+      "GET",
+      `/api/organizations/${createdOrganizationId}/members`,
+      clientToken,
+    );
+    assert.equal(
+      history.json.invitations.find((item: { id: string }) => item.id === invitation.json.invitation.id).status,
+      "expired",
+    );
+    assert.equal(
+      history.json.invitations.find((item: { id: string }) => item.id === resent.json.invitation.id).status,
+      "pending",
+    );
   });
 
   it("rolls back the organization when owner membership creation fails", async () => {

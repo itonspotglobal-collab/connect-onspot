@@ -1,7 +1,7 @@
 import { useLocation, useParams, Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Building2, Globe2, Loader2, Mail, UserMinus, Users, X } from "lucide-react";
+import { ArrowLeft, Building2, Globe2, Loader2, Mail, RefreshCw, UserMinus, Users, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +106,23 @@ export default function OrganizationDetail() {
     enabled: Boolean(organizationId && data?.organization),
   });
 
+  const showInvitationFeedback = (invitation?: {
+    emailStatus?: string;
+    emailError?: string | null;
+  }) => {
+    if (invitation?.emailStatus === "sent") {
+      toast({ title: "Invitation sent", description: "The invitation is pending and an email is on its way." });
+    } else {
+      toast({
+        title: "Invitation created, but email failed",
+        description: invitation?.emailError
+          ? `The invitation is still pending. ${invitation.emailError}`
+          : "The invitation is still pending. The email could not be delivered.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const inviteMutation = useMutation({
     mutationFn: async (email: string) => {
       const response = await apiRequest("POST", `/api/organizations/${organizationId}/invitations`, { email });
@@ -114,17 +131,7 @@ export default function OrganizationDetail() {
     onSuccess: (data) => {
       setInviteEmail("");
       queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
-      if (data.invitation?.emailStatus === "sent") {
-        toast({ title: "Invitation sent", description: "The invitation is pending and an email is on its way." });
-      } else {
-        toast({
-          title: "Invitation created, but email failed",
-          description: data.invitation?.emailError
-            ? `The invitation is still pending. ${data.invitation.emailError}`
-            : "The invitation is still pending. The email could not be delivered.",
-          variant: "destructive",
-        });
-      }
+      showInvitationFeedback(data.invitation);
     },
     onError: (error: Error) => toast({
       title: "Invitation could not be sent",
@@ -142,6 +149,25 @@ export default function OrganizationDetail() {
     },
     onError: (error: Error) => toast({
       title: "Invitation could not be revoked",
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
+  const resendInvitationMutation = useMutation({
+    mutationFn: async (invitationId: string) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/organizations/${organizationId}/invitations/${invitationId}/resend`,
+      );
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId, "members"] });
+      showInvitationFeedback(data.invitation);
+    },
+    onError: (error: Error) => toast({
+      title: "Invitation could not be sent",
       description: error.message,
       variant: "destructive",
     }),
@@ -411,6 +437,21 @@ export default function OrganizationDetail() {
                                     ? "Email sent"
                                     : "Email pending"}
                               </Badge>
+                              {isOwner && invitation.status === "expired" && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Resend invitation"
+                                  aria-label={`Resend invitation for ${invitation.email}`}
+                                  disabled={resendInvitationMutation.isPending}
+                                  onClick={() => resendInvitationMutation.mutate(invitation.id)}
+                                >
+                                  {resendInvitationMutation.isPending
+                                    ? <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                                    : <RefreshCw className="h-4 w-4 text-slate-500" />}
+                                </Button>
+                              )}
                               {invitation.status === "pending" && (
                                 <Button
                                   type="button"

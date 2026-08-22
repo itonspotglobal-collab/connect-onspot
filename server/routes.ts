@@ -11704,6 +11704,147 @@ export async function registerRoutes(
     email: z.string().trim().email("Enter a valid email address").max(320),
   }).strict();
 
+  type OrganizationInvitationCreationResult =
+    | { invitation: ReturnType<typeof mapOrganizationInvitation> }
+    | { error: string; status: number };
+
+  const createOrganizationInvitation = async (
+    organizationId: string,
+    userId: string,
+    rawEmail: string,
+  ): Promise<OrganizationInvitationCreationResult> => {
+    await expireOrganizationInvitations();
+
+    const { email } = organizationInvitationSchema.parse({ email: rawEmail });
+    const normalizedEmail = email.toLowerCase();
+    const inviter = await query(
+      `SELECT id, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+      [userId],
+    );
+    const targetUser = await query(
+      `SELECT id, role, first_name, last_name FROM users WHERE lower(email) = $1 LIMIT 1`,
+      [normalizedEmail],
+    );
+
+    if (targetUser.rows[0]?.role && targetUser.rows[0].role !== "client") {
+      return { status: 400, error: "Only Client accounts can join an organization" };
+    }
+    if (targetUser.rows[0]?.id === userId) {
+      return { status: 400, error: "You are already an owner of this organization" };
+    }
+
+    if (targetUser.rows[0]) {
+      const existingMembership = await query(
+        `SELECT status FROM organization_members
+          WHERE organization_id = $1 AND user_id = $2
+          LIMIT 1`,
+        [organizationId, targetUser.rows[0].id],
+      );
+      if (existingMembership.rows[0]?.status === "active") {
+        return { status: 409, error: "This user is already a member of the organization" };
+      }
+      if (existingMembership.rows[0]?.status === "suspended") {
+        return { status: 409, error: "This user's organization membership is suspended" };
+      }
+    }
+
+    const existingInvitation = await query(
+      `SELECT id, status FROM organization_invitations
+        WHERE organization_id = $1 AND lower(email) = $2 AND status = 'pending'
+        LIMIT 1`,
+      [organizationId, normalizedEmail],
+    );
+    if (existingInvitation.rows.length) {
+      return { status: 409, error: "An invitation is already pending for this email" };
+    }
+
+    const invitationResult = await query(
+      `INSERT INTO organization_invitations (organization_id, email, invited_by, expires_at)
+       VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 day'))
+       RETURNING *`,
+      [organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS],
+    );
+    const invitation = invitationResult.rows[0];
+    const organization = await query(
+      `SELECT name FROM organizations WHERE id = $1 LIMIT 1`,
+      [organizationId],
+    );
+    const inviterName =
+      `${inviter.rows[0]?.first_name ?? ""} ${inviter.rows[0]?.last_name ?? ""}`.trim() ||
+      "An organization owner";
+
+    // Registered Client invitees also receive an in-app notification. The
+    // invitation remains usable for people who sign up after the invite.
+    if (targetUser.rows[0]?.id) {
+      await storage.createNotification({
+        userId: targetUser.rows[0].id,
+        type: "organization_invitation",
+        title: "Organization invitation",
+        message: `${inviterName} invited you to join ${organization.rows[0]?.name ?? "an organization"}.`,
+        relatedId: invitation.id,
+        relatedType: "organization_invitation",
+      });
+    }
+
+    let emailStatus = "failed";
+    let emailError = "Invitation email could not be sent.";
+    try {
+      const rawBase =
+        process.env.PUBLIC_APP_URL ??
+        process.env.APP_URL ??
+        process.env.PUBLIC_BASE_URL ??
+        (process.env.REPLIT_DOMAINS
+          ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+          : null);
+      if (!rawBase) {
+        throw new Error("No public application URL is configured.");
+      }
+      const baseUrl = rawBase.replace(/\/$/, "");
+      const signInUrl = `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(normalizedEmail)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
+      const { isEmailServiceConfigured, sendOrganizationInvitationEmail } =
+        await import("./services/microsoftGraphEmailService.ts");
+      if (!isEmailServiceConfigured()) {
+        throw new Error("Microsoft Graph email service is not configured.");
+      }
+
+      const emailResult = await sendOrganizationInvitationEmail({
+        to: normalizedEmail,
+        organizationName: organization.rows[0]?.name ?? "an OnSpot organization",
+        inviterName,
+        recipientName: targetUser.rows[0]
+          ? `${targetUser.rows[0].first_name ?? ""} ${targetUser.rows[0].last_name ?? ""}`.trim()
+          : null,
+        signInUrl,
+      });
+      if (!emailResult.success) {
+        throw new Error(emailResult.error || "The email provider rejected the invitation.");
+      }
+      emailStatus = "sent";
+      emailError = "";
+    } catch (emailErr: any) {
+      emailError = emailErr?.message || "The invitation email could not be sent.";
+      console.warn(`Organization invitation email failed for ${normalizedEmail}:`, emailError);
+    }
+
+    const deliveryUpdate = await query(
+      `UPDATE organization_invitations
+          SET email_status = $1,
+              email_error = $2,
+              email_sent_at = CASE WHEN $1 = 'sent' THEN NOW() ELSE NULL END,
+              updated_at = NOW()
+        WHERE id = $3
+        RETURNING *`,
+      [emailStatus, emailStatus === "sent" ? null : emailError.slice(0, 1000), invitation.id],
+    );
+    return {
+      invitation: mapOrganizationInvitation({
+        ...(deliveryUpdate.rows[0] ?? invitation),
+        organization_name: organization.rows[0]?.name,
+        inviter_name: inviterName,
+      }),
+    };
+  };
+
   app.post("/api/organizations/:organizationId/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -11711,136 +11852,14 @@ export async function registerRoutes(
     try {
       const owner = await requireOrganizationOwner(req.params.organizationId, userId);
       if (!owner) return res.status(403).json({ error: "Only organization owners can invite members" });
-      await expireOrganizationInvitations();
 
-      const { email } = organizationInvitationSchema.parse(req.body ?? {});
-      const normalizedEmail = email.toLowerCase();
-      const inviter = await query(
-        `SELECT id, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
-        [userId],
+      const result = await createOrganizationInvitation(
+        req.params.organizationId,
+        userId,
+        organizationInvitationSchema.parse(req.body ?? {}).email,
       );
-      const targetUser = await query(
-        `SELECT id, role, first_name, last_name FROM users WHERE lower(email) = $1 LIMIT 1`,
-        [normalizedEmail],
-      );
-
-      if (targetUser.rows[0]?.role && targetUser.rows[0].role !== "client") {
-        return res.status(400).json({ error: "Only Client accounts can join an organization" });
-      }
-      if (targetUser.rows[0]?.id === userId) {
-        return res.status(400).json({ error: "You are already an owner of this organization" });
-      }
-
-      if (targetUser.rows[0]) {
-        const existingMembership = await query(
-          `SELECT status FROM organization_members
-            WHERE organization_id = $1 AND user_id = $2
-            LIMIT 1`,
-          [req.params.organizationId, targetUser.rows[0].id],
-        );
-        if (existingMembership.rows[0]?.status === "active") {
-          return res.status(409).json({ error: "This user is already a member of the organization" });
-        }
-        if (existingMembership.rows[0]?.status === "suspended") {
-          return res.status(409).json({ error: "This user's organization membership is suspended" });
-        }
-      }
-
-      const existingInvitation = await query(
-        `SELECT id, status FROM organization_invitations
-          WHERE organization_id = $1 AND lower(email) = $2 AND status = 'pending'
-          LIMIT 1`,
-        [req.params.organizationId, normalizedEmail],
-      );
-      if (existingInvitation.rows.length) {
-        return res.status(409).json({ error: "An invitation is already pending for this email" });
-      }
-
-      const invitationResult = await query(
-        `INSERT INTO organization_invitations (organization_id, email, invited_by, expires_at)
-         VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 day'))
-         RETURNING *`,
-        [req.params.organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS],
-      );
-      const invitation = invitationResult.rows[0];
-      const organization = await query(
-        `SELECT name FROM organizations WHERE id = $1 LIMIT 1`,
-        [req.params.organizationId],
-      );
-      const inviterName =
-        `${inviter.rows[0]?.first_name ?? ""} ${inviter.rows[0]?.last_name ?? ""}`.trim() ||
-        "An organization owner";
-
-      // Registered Client invitees also receive an in-app notification. The
-      // invitation remains usable for people who sign up after the invite.
-      if (targetUser.rows[0]?.id) {
-        await storage.createNotification({
-          userId: targetUser.rows[0].id,
-          type: "organization_invitation",
-          title: "Organization invitation",
-          message: `${inviterName} invited you to join ${organization.rows[0]?.name ?? "an organization"}.`,
-          relatedId: invitation.id,
-          relatedType: "organization_invitation",
-        });
-      }
-
-      let emailStatus = "failed";
-      let emailError = "Invitation email could not be sent.";
-      try {
-        const rawBase =
-          process.env.PUBLIC_APP_URL ??
-          process.env.APP_URL ??
-          process.env.PUBLIC_BASE_URL ??
-          (process.env.REPLIT_DOMAINS
-            ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-            : null);
-        if (!rawBase) {
-          throw new Error("No public application URL is configured.");
-        }
-        const baseUrl = rawBase.replace(/\/$/, "");
-        const signInUrl = `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(normalizedEmail)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
-        const { isEmailServiceConfigured, sendOrganizationInvitationEmail } =
-          await import("./services/microsoftGraphEmailService.ts");
-        if (!isEmailServiceConfigured()) {
-          throw new Error("Microsoft Graph email service is not configured.");
-        }
-
-        const emailResult = await sendOrganizationInvitationEmail({
-          to: normalizedEmail,
-          organizationName: organization.rows[0]?.name ?? "an OnSpot organization",
-          inviterName,
-          recipientName: targetUser.rows[0]
-            ? `${targetUser.rows[0].first_name ?? ""} ${targetUser.rows[0].last_name ?? ""}`.trim()
-            : null,
-          signInUrl,
-        });
-        if (!emailResult.success) {
-          throw new Error(emailResult.error || "The email provider rejected the invitation.");
-        }
-        emailStatus = "sent";
-        emailError = "";
-      } catch (emailErr: any) {
-        emailError = emailErr?.message || "The invitation email could not be sent.";
-        console.warn(`Organization invitation email failed for ${normalizedEmail}:`, emailError);
-      }
-
-      const deliveryUpdate = await query(
-        `UPDATE organization_invitations
-            SET email_status = $1,
-                email_error = $2,
-                email_sent_at = CASE WHEN $1 = 'sent' THEN NOW() ELSE NULL END,
-                updated_at = NOW()
-          WHERE id = $3
-          RETURNING *`,
-        [emailStatus, emailStatus === "sent" ? null : emailError.slice(0, 1000), invitation.id],
-      );
-      return res.status(201).json({
-        invitation: mapOrganizationInvitation({
-          ...(deliveryUpdate.rows[0] ?? invitation),
-          organization_name: organization.rows[0]?.name,
-          inviter_name: inviterName,
-        }),
-      });
+      if ("error" in result) return res.status(result.status).json({ error: result.error });
+      return res.status(201).json(result);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });
@@ -11850,6 +11869,44 @@ export async function registerRoutes(
       }
       console.error("POST organization invitation failed:", err);
       return res.status(500).json({ error: "Failed to create organization invitation" });
+    }
+  });
+
+  app.post("/api/organizations/:organizationId/invitations/:invitationId/resend", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can resend invitations" });
+      await expireOrganizationInvitations();
+
+      const expiredInvitation = await query(
+        `SELECT email FROM organization_invitations
+          WHERE id = $1 AND organization_id = $2 AND status = 'expired'
+          LIMIT 1`,
+        [req.params.invitationId, req.params.organizationId],
+      );
+      if (!expiredInvitation.rows.length) {
+        return res.status(404).json({ error: "Expired invitation not found" });
+      }
+
+      const result = await createOrganizationInvitation(
+        req.params.organizationId,
+        userId,
+        expiredInvitation.rows[0].email,
+      );
+      if ("error" in result) return res.status(result.status).json({ error: result.error });
+      return res.status(201).json(result);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      if (err?.code === "23505") {
+        return res.status(409).json({ error: "An invitation is already pending for this email" });
+      }
+      console.error("POST organization invitation resend failed:", err);
+      return res.status(500).json({ error: "Failed to resend organization invitation" });
     }
   });
 
