@@ -405,6 +405,50 @@ describe("Client organization routes", () => {
     );
   });
 
+  it("lets an owner retry a failed pending invitation without changing its expiry", async () => {
+    const invitation = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `retry-delivery-${suffix}@test.example` },
+    );
+    assert.equal(invitation.status, 201);
+
+    const beforeRetry = await query(
+      `SELECT expires_at FROM organization_invitations WHERE id = $1`,
+      [invitation.json.invitation.id],
+    );
+    assert.equal(beforeRetry.rows.length, 1);
+    await query(
+      `UPDATE organization_invitations
+          SET email_status = 'failed', email_error = 'Temporary delivery failure'
+        WHERE id = $1`,
+      [invitation.json.invitation.id],
+    );
+
+    const retried = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations/${invitation.json.invitation.id}/resend`,
+      clientToken,
+    );
+    assert.equal(retried.status, 200, JSON.stringify(retried.json));
+    assert.equal(retried.json.invitation.id, invitation.json.invitation.id);
+    assert.equal(retried.json.invitation.status, "pending");
+    assert.equal(
+      new Date(retried.json.invitation.expiresAt).getTime(),
+      new Date(beforeRetry.rows[0].expires_at).getTime(),
+    );
+
+    const pendingRows = await query(
+      `SELECT id FROM organization_invitations
+        WHERE organization_id = $1 AND lower(email) = lower($2) AND status = 'pending'`,
+      [createdOrganizationId, `retry-delivery-${suffix}@test.example`],
+    );
+    assert.equal(pendingRows.rows.length, 1);
+  });
+
   it("rolls back the organization when owner membership creation fails", async () => {
     const triggerName = `organization_test_failure_${suffix}`;
     const functionName = `${triggerName}_fn`;

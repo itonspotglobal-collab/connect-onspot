@@ -437,13 +437,16 @@ export default function OrganizationDetail() {
                                     ? "Email sent"
                                     : "Email pending"}
                               </Badge>
-                              {isOwner && invitation.status === "expired" && (
+                              {isOwner && (
+                                invitation.status === "expired" ||
+                                (invitation.status === "pending" && invitation.emailStatus === "failed")
+                              ) && (
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  title="Resend invitation"
-                                  aria-label={`Resend invitation for ${invitation.email}`}
+                                  title={invitation.status === "expired" ? "Resend invitation" : "Retry invitation delivery"}
+                                  aria-label={`${invitation.status === "expired" ? "Resend" : "Retry"} invitation for ${invitation.email}`}
                                   disabled={resendInvitationMutation.isPending}
                                   onClick={() => resendInvitationMutation.mutate(invitation.id)}
                                 >
