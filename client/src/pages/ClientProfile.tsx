@@ -86,10 +86,22 @@ interface JobSubmission {
   expectedSalary: string | null;
   availability: string | null;
   status: string;
+  proposer_role?: string;
+  parent_offer_id?: string | null;
   submittedAt: string;
   jobTitle: string;
   jobCompany: string | null;
   jobEngagementType: string | null;
+  combinedInviteReveal?: boolean;
+  combinedInterviewConfirmed?: boolean;
+  interviewId?: string | null;
+  interviewStatus?: string | null;
+  proposedTimes?: Array<{ start: string; end?: string; timezone?: string }>;
+  confirmedTime?: string | null;
+  currentProposalOwner?: string | null;
+  meetingLink?: string | null;
+  proposalExchangeCount?: number;
+  interviewNudge?: boolean;
   /** 'client' when the client invited this talent via Search & Shortlist; 'talent' for self-applied */
   initiated_by: string | null;
 }
@@ -123,6 +135,8 @@ interface OfferRecord {
   expires_at: string | null;
   notes: string | null;
   status: string;
+  proposer_role?: string;
+  parent_offer_id?: string | null;
   rate_below_expectation: boolean | null;
   rate_delta: string | null;
   sent_at: string | null;
@@ -150,6 +164,34 @@ function ViewSubmissionModal({
     queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"],
     queryFn: async () => (await apiRequest("GET", `/api/client/job-submissions/${submission.id}/status-change-request`)).json(),
   });
+  const { data: interviewRows = [], refetch: refetchInterviews } = useQuery<any[]>({
+    queryKey: ["/api/client/interviews", submission.id],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/client/interviews?submissionId=${submission.id}`);
+      return res.ok ? res.json() : [];
+    },
+    enabled: Boolean(submission.interviewId),
+  });
+  const [meetingLinkDraft, setMeetingLinkDraft] = useState("");
+  const [interviewBusy, setInterviewBusy] = useState(false);
+  const respondToInterview = async (payload: Record<string, unknown>) => {
+    const interviewId = submission.interviewId;
+    if (!interviewId) return;
+    setInterviewBusy(true);
+    try {
+      const response = await apiRequest("PATCH", `/api/client/interviews/${interviewId}`, payload);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || "Could not update the interview");
+      }
+      await refetchInterviews();
+      toast({ title: "Interview updated" });
+    } catch (err: any) {
+      toast({ title: "Could not update interview", description: err.message, variant: "destructive" });
+    } finally {
+      setInterviewBusy(false);
+    }
+  };
   const requestStatusMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/client/job-submissions/${submission.id}/status-change-requests`, {
       requestedStatus,
@@ -232,6 +274,53 @@ function ViewSubmissionModal({
                 </div>
               </div>
             )
+          )}
+
+          {/* Interview coordination */}
+          {submission.interviewId && (
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Initial interview</p>
+                <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold capitalize text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
+                  {submission.interviewStatus ?? "proposed"}
+                </span>
+              </div>
+              {submission.confirmedTime ? (
+                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Confirmed: {new Date(submission.confirmedTime).toLocaleString()}</p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                  Waiting for the talent to choose a time. {submission.proposalExchangeCount ? `${submission.proposalExchangeCount} time exchange${submission.proposalExchangeCount === 1 ? "" : "s"} so far.` : ""}
+                </p>
+              )}
+              {(() => {
+                const interview = interviewRows.find((row: any) => row.id === submission.interviewId);
+                const canRespond = interview && ["proposed", "rescheduled"].includes(interview.status) && interview.current_proposal_owner === "client";
+                if (!interview || !canRespond) return null;
+                return (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">The talent suggested new times. Confirm one to lock the interview:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(interview.proposed_times ?? []).map((slot: any) => (
+                        <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={interviewBusy} onClick={() => respondToInterview({ status: "confirmed", confirmedTime: slot.start, meetingLink: meetingLinkDraft || undefined })}>
+                          Confirm {new Date(slot.start).toLocaleString()}
+                        </Button>
+                      ))}
+                    </div>
+                    <Input aria-label="Meeting link" value={meetingLinkDraft} onChange={(event) => setMeetingLinkDraft(event.target.value)} placeholder="Optional meeting link (Zoom, Teams, Meet)" className="h-9 text-xs" />
+                  </div>
+                );
+              })()}
+              {submission.interviewStatus === "confirmed" && (
+                <div className="mt-3 flex gap-2">
+                  <Input aria-label="Meeting link" value={meetingLinkDraft || submission.meetingLink || ""} onChange={(event) => setMeetingLinkDraft(event.target.value)} placeholder="Add a meeting link" className="h-9 text-xs" />
+                  <Button size="sm" variant="outline" className="h-9 text-xs" disabled={interviewBusy || !meetingLinkDraft} onClick={() => respondToInterview({ meetingLink: meetingLinkDraft })}>Save link</Button>
+                </div>
+              )}
+              {submission.meetingLink && submission.interviewStatus === "confirmed" && (
+                <a href={submission.meetingLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"><ExternalLink className="h-3 w-3" /> Open meeting link</a>
+              )}
+              {submission.interviewNudge && <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">Several time proposals have been exchanged. Consider the talent’s suggested availability.</p>}
+            </div>
           )}
 
           {/* Applicant details */}
@@ -351,6 +440,8 @@ interface ClientProfile {
   hiringNeeds: string | null;
   preferredRoles: string[];
   timezone: string | null;
+  msaAcceptedAt: string | null;
+  msaVersion: string | null;
   createdAt: string;
 }
 
@@ -671,6 +762,30 @@ export default function ClientProfile() {
     },
   });
 
+  const { data: msaStatus, refetch: refetchMsaStatus } = useQuery<{
+    accepted: boolean;
+    acceptedAt: string | null;
+    version: string | null;
+    currentVersion: string;
+    termsUrl: string;
+  }>({
+    queryKey: ["/api/client/msa-status"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/client/msa-status");
+      return res.json();
+    },
+  });
+
+  const acceptMsaMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/client/msa-acceptance", { accepted: true }),
+    onSuccess: () => {
+      refetchMsaStatus();
+      queryClient.invalidateQueries({ queryKey: ["/api/client-profile/me"] });
+      toast({ title: "Terms accepted", description: "You can now send talent invitations." });
+    },
+    onError: (err: any) => toast({ title: "Could not save acceptance", description: err.message, variant: "destructive" }),
+  });
+
   const { data: jobs = [], isLoading: jobsLoading } = useQuery<Job[]>({
     queryKey: ["/api/client/jobs"],
     queryFn: async () => {
@@ -931,6 +1046,32 @@ export default function ClientProfile() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* ── MSA acceptance ───────────────────────────────────────────────── */}
+        <Card className={msaStatus?.accepted ? "border-emerald-200 dark:border-emerald-800/40" : "border-amber-200 dark:border-amber-800/40"}>
+          <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                {msaStatus?.accepted ? "Terms of Service accepted" : "Terms of Service acceptance required"}
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {msaStatus?.accepted
+                  ? `Accepted${msaStatus.acceptedAt ? ` on ${new Date(msaStatus.acceptedAt).toLocaleDateString()}` : ""} · Version ${msaStatus.version ?? msaStatus.currentVersion}`
+                  : "Accept the current terms before sending your first talent invitation."}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href={msaStatus?.termsUrl ?? "/terms"} target="_blank">
+                <Button variant="outline" size="sm">Read Terms <ExternalLink className="ml-1.5 h-3.5 w-3.5" /></Button>
+              </Link>
+              {!msaStatus?.accepted && (
+                <Button size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]" onClick={() => acceptMsaMutation.mutate()} disabled={acceptMsaMutation.isPending}>
+                  {acceptMsaMutation.isPending ? "Saving…" : "Accept Terms"}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -1427,6 +1568,43 @@ function ExtendOfferDialog({
     },
   });
 
+  const counterResponseMutation = useMutation({
+    mutationFn: async ({ offerId, action, payload = {} }: { offerId: string; action: "accept" | "decline" | "counter"; payload?: Record<string, unknown> }) => {
+      const res = await apiRequest("PATCH", `/api/client/offers/${offerId}/respond`, { action, ...payload });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || data.error || "Could not update the counter offer");
+      }
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/client/offers", submission.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
+      toast({
+        title: variables.action === "accept" ? "Counter offer accepted" : variables.action === "decline" ? "Counter offer declined" : "Counter offer sent",
+        description: variables.action === "counter" ? "The talent will be notified of your revised terms." : undefined,
+      });
+    },
+    onError: (err: any) => toast({ title: "Could not update counter offer", description: err.message, variant: "destructive" }),
+  });
+
+  const respondToCounter = (offer: OfferRecord, action: "accept" | "decline" | "counter") => {
+    if (action !== "counter") {
+      counterResponseMutation.mutate({ offerId: offer.id, action });
+      return;
+    }
+    const nextRate = window.prompt("Enter your revised rate:", offer.rate);
+    if (!nextRate || Number.isNaN(Number(nextRate)) || Number(nextRate) <= 0) return;
+    counterResponseMutation.mutate({
+      offerId: offer.id,
+      action,
+      payload: {
+        counterRate: Number(nextRate),
+        counterRateCurrency: offer.rate_currency || "PHP",
+      },
+    });
+  };
+
   const formatOfferDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
 
@@ -1574,11 +1752,14 @@ function ExtendOfferDialog({
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                           o.status === "accepted" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" :
                           o.status === "declined" ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
+                          o.status === "sent" && o.expires_at && new Date(o.expires_at) < new Date() ? "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" :
                           o.status === "sent"     ? "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" :
                           o.status === "expired"  ? "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" :
                           "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                         }`}>
-                          {offerStatusLabel[o.status] ?? o.status}
+                          {o.status === "sent" && o.expires_at && new Date(o.expires_at) < new Date()
+                            ? "Expired"
+                            : offerStatusLabel[o.status] ?? o.status}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-x-3 text-slate-400 mt-0.5">
@@ -1589,7 +1770,15 @@ function ExtendOfferDialog({
                       {o.rate_below_expectation === true && (
                         <p className="mt-0.5 text-amber-600 dark:text-amber-400">Below expectation by {o.rate_currency} {Math.abs(parseFloat(o.rate_delta ?? "0")).toLocaleString()}</p>
                       )}
-                      {o.notes && <p className="mt-1 text-slate-500 italic line-clamp-2">{o.notes}</p>}
+                       {o.notes && <p className="mt-1 text-slate-500 italic line-clamp-2">{o.notes}</p>}
+                       {o.status === "sent" && o.proposer_role === "talent" && (!o.expires_at || new Date(o.expires_at) >= new Date()) && (
+                         <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-2 dark:border-slate-700">
+                           <span className="mr-auto text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">Talent counter offer — your response</span>
+                           <Button size="sm" className="h-7 rounded-full bg-emerald-600 px-3 text-[11px] text-white hover:bg-emerald-700" disabled={counterResponseMutation.isPending} onClick={() => respondToCounter(o, "accept")}>Accept</Button>
+                           <Button size="sm" variant="outline" className="h-7 rounded-full px-3 text-[11px]" disabled={counterResponseMutation.isPending} onClick={() => respondToCounter(o, "counter")}>Counter</Button>
+                           <Button size="sm" variant="outline" className="h-7 rounded-full border-red-200 px-3 text-[11px] text-red-600 hover:bg-red-50" disabled={counterResponseMutation.isPending} onClick={() => respondToCounter(o, "decline")}>Decline</Button>
+                         </div>
+                       )}
                     </div>
                   ))}
                 </div>

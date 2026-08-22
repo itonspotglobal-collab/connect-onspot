@@ -12,6 +12,8 @@ description: Durable rules for the offer flow — engagement snapshot, rate-mism
   **Why:** a review caught invitation-accept and the admin status route still writing legacy values after the constraint landed — a production-breaking regression.
 - **Business-rule uniqueness must be DB-enforced, not check-then-insert.** Single pending offer per submission uses a partial unique index (`WHERE status = 'sent'`); the route maps error 23505 to a 409 `offer_already_pending`. Status transitions plus their history/side-effect writes go in one transaction, with conditional UPDATEs (`WHERE status = ...`) for race safety; re-offer after decline is a new row.
 - **Talent ownership resolution:** talent JWT (type:"candidate") → candidates row → linked users row by email → `job_submissions.talent_id = users.id`, with legacy fallback `(talent_id IS NULL AND email match)`.
+- **Offer negotiation ownership is explicit:** every immutable offer row records `proposer_role`; a `sent` row may only be answered by the opposite side, and counters must set the new row's proposer role explicitly.
+  **Why:** relying on the default client role lets talent counters become self-actionable and prevents the client from responding safely.
 - **Dev trace JWTs:** client tokens need `{userId, email, role}` and the role must match the users row (middleware re-checks DB → 401 "User role has changed" on mismatch); talent tokens need `{type:"candidate", candidateId, email}`.
 
 **How to apply:** contract-stage work hangs contracts off offers, reuses the conditional-UPDATE + single-transaction pattern, and checks every status writer against the canonical list before adding new pipeline states.

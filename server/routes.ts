@@ -765,6 +765,24 @@ const publicSearchLimiter = rateLimit({
   },
 });
 
+// Pipeline mutations can create database rows and trigger email/notifications.
+// Keep a generous development budget while bounding abuse in production.
+const pipelineMutationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 1000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `pipeline:${ipKeyGenerator(req.ip ?? "")}:${(req as any).user?.id ?? "anonymous"}`,
+  handler: (req: Request, res: Response) => {
+    const secs = retryAfterSecs(req);
+    res.status(429).set("Retry-After", String(secs)).json({
+      error: "RATE_LIMITED",
+      message: "Too many pipeline updates. Please wait a moment and try again.",
+      retryAfter: secs,
+    });
+  },
+});
+
 // ── Auto application-received email (non-blocking helper) ─────────────────────
 async function fireAutoApplicationEmail(submissionId: string): Promise<void> {
   try {
@@ -1453,6 +1471,8 @@ export async function registerRoutes(
 
   // ── Hiring pipeline tables: interviews, offers, hiring_contracts ─────────
   try {
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS combined_invite_reveal boolean NOT NULL DEFAULT false`);
+
     // interviews — one row per round per submission, client-driven
     await query(`
       CREATE TABLE IF NOT EXISTS interviews (
@@ -1464,6 +1484,9 @@ export async function registerRoutes(
         outcome          text,
         proposed_times   jsonb       NOT NULL DEFAULT '[]',
         confirmed_time   timestamp,
+        current_proposal_owner text,
+        meeting_link     text,
+        proposal_exchange_count integer NOT NULL DEFAULT 0,
         created_by       varchar     NOT NULL REFERENCES users(id),
         candidate_notes  text,
         internal_notes   text,
@@ -1473,6 +1496,52 @@ export async function registerRoutes(
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_interviews_submission_id ON interviews(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_interviews_status ON interviews(status)`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS current_proposal_owner text`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS meeting_link text`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS proposal_exchange_count integer NOT NULL DEFAULT 0`);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS interview_proposals (
+        id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        interview_id    uuid NOT NULL REFERENCES interviews(id) ON DELETE CASCADE,
+        proposer_id     varchar NOT NULL REFERENCES users(id),
+        proposer_role   text NOT NULL,
+        action          text NOT NULL,
+        proposed_times  jsonb NOT NULL DEFAULT '[]',
+        selected_time   timestamp,
+        created_at      timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_interview_proposals_interview_id ON interview_proposals(interview_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_interview_proposals_created_at ON interview_proposals(created_at)`);
+
+    // Backfill ownership for pending interviews created before proposal
+    // ownership was introduced. The latest proposal decides the next owner;
+    // no-history rows are initial client proposals awaiting talent.
+    await query(`
+      UPDATE interviews i
+         SET current_proposal_owner = CASE
+           WHEN latest.proposer_role = 'talent' THEN 'client'
+           ELSE 'talent'
+         END,
+             updated_at = NOW()
+        FROM (
+          SELECT DISTINCT ON (interview_id) interview_id, proposer_role
+            FROM interview_proposals
+           ORDER BY interview_id, created_at DESC, id DESC
+        ) latest
+       WHERE i.id = latest.interview_id
+         AND i.current_proposal_owner IS NULL
+         AND i.status IN ('proposed', 'rescheduled')
+    `);
+    await query(`
+      UPDATE interviews
+         SET current_proposal_owner = 'talent',
+             updated_at = NOW()
+       WHERE current_proposal_owner IS NULL
+         AND status IN ('proposed', 'rescheduled')
+    `);
+    console.log("✅ Migration: pending interview proposal owners backfilled");
 
     // offers — client creates; talent responds
     await query(`
@@ -1484,6 +1553,7 @@ export async function registerRoutes(
         rate_currency              text          NOT NULL DEFAULT 'PHP',
         proposed_start_date        date,
         status                     text          NOT NULL DEFAULT 'sent',
+        parent_offer_id            uuid,
         talent_expected_rate       numeric(12,2),
         talent_expected_currency   text,
         talent_expected_engagement text,
@@ -1499,6 +1569,8 @@ export async function registerRoutes(
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_offers_submission_id ON offers(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_offers_status ON offers(status)`);
+    await query(`ALTER TABLE offers ADD COLUMN IF NOT EXISTS parent_offer_id uuid`);
+    await query(`ALTER TABLE offers ADD COLUMN IF NOT EXISTS proposer_role text NOT NULL DEFAULT 'client'`);
     // Race safety: at most ONE pending ('sent') offer per submission, enforced by
     // the database — concurrent POST /api/client/offers cannot both insert.
     await query(`
@@ -1517,6 +1589,8 @@ export async function registerRoutes(
         document_version integer     NOT NULL DEFAULT 1,
         status           text        NOT NULL DEFAULT 'draft',
         signing_entity   text        NOT NULL DEFAULT 'OnSpot Technologies Inc.',
+        signature_provider text,
+        signature_envelope_id text,
         talent_signed_at   timestamp,
         onspot_signed_at   timestamp,
         voided_at        timestamp,
@@ -1528,6 +1602,8 @@ export async function registerRoutes(
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_offer_id ON hiring_contracts(offer_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_submission_id ON hiring_contracts(submission_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_hiring_contracts_status ON hiring_contracts(status)`);
+    await query(`ALTER TABLE hiring_contracts ADD COLUMN IF NOT EXISTS signature_provider text`);
+    await query(`ALTER TABLE hiring_contracts ADD COLUMN IF NOT EXISTS signature_envelope_id text`);
     // Keep legacy 'voided' rows out of the active-offer uniqueness constraint.
     await query(`DROP INDEX IF EXISTS uq_hiring_contracts_active_offer`);
     await query(`
@@ -1546,6 +1622,15 @@ export async function registerRoutes(
     console.log("✅ Migration: hiring pipeline tables ready (interviews, offers, hiring_contracts)");
   } catch (pipelineErr: any) {
     console.warn("⚠️  Hiring pipeline table migration skipped:", pipelineErr.message);
+  }
+
+  // ── Client MSA acceptance fields ───────────────────────────────────────────
+  try {
+    await query(`ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS msa_accepted_at timestamp`);
+    await query(`ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS msa_version text`);
+    console.log("✅ Migration: client MSA acceptance fields ready");
+  } catch (msaColErr: any) {
+    console.warn("⚠️  Client MSA migration skipped:", msaColErr.message);
   }
 
   // ── Add expiry_reminder_sent_at to offers (idempotent) ────────────────────
@@ -8311,7 +8396,7 @@ export async function registerRoutes(
       // lock used by the acceptance flow (client:talent:job ordering), so
       // concurrent explicit creations (or a creation racing an accept) always
       // converge on a single thread.
-      const txClient = await pool.connect();
+       const txClient = await pool.connect();
       try {
         await txClient.query("BEGIN");
         await txClient.query(
@@ -11441,9 +11526,12 @@ export async function registerRoutes(
     hiringNeeds: row.hiring_needs ?? null,
     preferredRoles: row.preferred_roles ?? [],
     timezone: row.timezone ?? null,
+    msaAcceptedAt: row.msa_accepted_at ?? null,
+    msaVersion: row.msa_version ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
+  const CURRENT_MSA_VERSION = "2026-08-14";
 
   // ── Client Organizations ──────────────────────────────────────────────────
   // Organization membership is the authorization boundary for organization
@@ -12140,6 +12228,81 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/client/msa-status", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const r = await query(
+        `SELECT msa_accepted_at, msa_version
+           FROM client_profiles
+          WHERE user_id = $1
+          LIMIT 1`,
+        [userId],
+      );
+      return res.json({
+        accepted: Boolean(r.rows[0]?.msa_accepted_at),
+        acceptedAt: r.rows[0]?.msa_accepted_at ?? null,
+        version: r.rows[0]?.msa_version ?? null,
+        currentVersion: CURRENT_MSA_VERSION,
+        termsUrl: "/terms",
+      });
+    } catch (err: any) {
+      console.error("GET /api/client/msa-status error:", err);
+      return res.status(500).json({ error: "Failed to load MSA status" });
+    }
+  });
+
+  app.post("/api/client/msa-acceptance", pipelineMutationLimiter, authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (req.body?.accepted !== true) {
+        return res.status(400).json({ error: "You must accept the Terms of Service before inviting talent." });
+      }
+
+      const existing = await query(`SELECT id FROM client_profiles WHERE user_id = $1 LIMIT 1`, [userId]);
+      let result;
+      if (existing.rows.length) {
+        result = await query(
+          `UPDATE client_profiles
+              SET msa_accepted_at = COALESCE(msa_accepted_at, NOW()),
+                  msa_version = COALESCE(msa_version, $1),
+                  updated_at = NOW()
+            WHERE user_id = $2
+            RETURNING *`,
+          [CURRENT_MSA_VERSION, userId],
+        );
+      } else {
+        const userRes = await query(`SELECT company, first_name, last_name, email FROM users WHERE id = $1`, [userId]);
+        const u = userRes.rows[0];
+        result = await query(
+          `INSERT INTO client_profiles
+             (id, user_id, company_name, contact_person, email, msa_accepted_at, msa_version, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW(), NOW())
+           RETURNING *`,
+          [
+            `cp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+            userId,
+            u?.company ?? null,
+            `${u?.first_name ?? ""} ${u?.last_name ?? ""}`.trim() || null,
+            u?.email ?? null,
+            CURRENT_MSA_VERSION,
+          ],
+        );
+      }
+      return res.json({
+        accepted: true,
+        acceptedAt: result.rows[0].msa_accepted_at,
+        version: result.rows[0].msa_version,
+        currentVersion: CURRENT_MSA_VERSION,
+        termsUrl: "/terms",
+      });
+    } catch (err: any) {
+      console.error("POST /api/client/msa-acceptance error:", err);
+      return res.status(500).json({ error: "Failed to save MSA acceptance" });
+    }
+  });
+
   app.get("/api/client-profile/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
@@ -12794,95 +12957,190 @@ export async function registerRoutes(
     }
   });
 
+  const normalizeInterviewTimes = (value: unknown): Array<{ start: string; end?: string; timezone?: string }> | null => {
+    if (!Array.isArray(value) || value.length === 0 || value.length > 10) return null;
+    const normalized = value.map((slot: any) => ({
+      start: typeof slot?.start === "string" ? slot.start : "",
+      end: typeof slot?.end === "string" ? slot.end : undefined,
+      timezone: typeof slot?.timezone === "string" ? slot.timezone.slice(0, 80) : undefined,
+    }));
+    if (normalized.some((slot) => !slot.start || Number.isNaN(Date.parse(slot.start)))) return null;
+    if (normalized.some((slot) => slot.end && Number.isNaN(Date.parse(slot.end)))) return null;
+    return normalized;
+  };
+  const normalizeMeetingLink = (value: unknown): string | null | undefined => {
+    if (value === undefined) return undefined;
+    if (value === null || value === "") return null;
+    if (typeof value !== "string" || value.length > 2048) return undefined;
+    try {
+      const parsed = new URL(value);
+      return ["http:", "https:"].includes(parsed.protocol) ? parsed.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   // POST /api/client/invitations — invite a specific talent to one of the client's real job postings.
   // jobId must reference a job that: (a) is owned by the authenticated client,
   // (b) has status='open' and approval_status='approved', and (c) is NOT a search scaffold.
   // Scaffold jobs were never meant to be client-manageable postings and are explicitly rejected.
-  app.post("/api/client/invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.post("/api/client/invitations", pipelineMutationLimiter, authenticateJWT, requireClient, async (req: Request, res: Response) => {
     try {
       const clientId = (req as any).user?.id;
       if (!clientId) return res.status(401).json({ error: "Unauthorized" });
 
-      const { jobId, talentUserId } = req.body;
-      if (!jobId || !talentUserId) {
+       const { jobId, talentUserId, proposedTimes, interviewType = "initial", candidateNotes } = req.body ?? {};
+       if (typeof jobId !== "string" || typeof talentUserId !== "string" ||
+           jobId.length > 200 || talentUserId.length > 200) {
         return res.status(400).json({ error: "jobId and talentUserId are required" });
       }
+       if (candidateNotes !== undefined &&
+           (typeof candidateNotes !== "string" || candidateNotes.length > 5000)) {
+         return res.status(400).json({ error: "candidateNotes must be no longer than 5000 characters" });
+       }
+       const normalizedTimes = normalizeInterviewTimes(proposedTimes);
+       if (!normalizedTimes) {
+         return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+       }
+       const validInterviewTypes = ["initial", "technical", "final", "culture", "other"];
+       if (!validInterviewTypes.includes(interviewType)) {
+         return res.status(400).json({ error: "interviewType is invalid" });
+       }
 
-      // Verify ownership: the job must belong to this client, be open/approved, and not be a scaffold.
-      const jobCheck = await query(
-        `SELECT id FROM jobs
-         WHERE id = $1
-           AND client_id = $2
-           AND status = 'open'
-           AND approval_status = 'approved'
-           AND (created_via IS NULL OR created_via != 'search_scaffold')`,
-        [jobId, clientId],
-      );
-      if (!jobCheck.rows.length) {
-        return res.status(403).json({ error: "Job not found, not owned by you, or not an open approved posting" });
-      }
+       const txClient = await pool.connect();
+       let created: any;
+       let talent: any;
+       let jobTitle = "a new role";
+       let jobDescription: string | null = null;
+       try {
+         await txClient.query("BEGIN");
+         await txClient.query(
+           `SELECT pg_advisory_xact_lock(hashtext('invite:' || $1 || ':' || $2 || ':' || $3))`,
+           [clientId, talentUserId, jobId],
+         );
+         // Serialize all first invites for a client so parallel requests cannot
+         // bypass the durable MSA acceptance gate.
+         await txClient.query(
+           `SELECT pg_advisory_xact_lock(hashtext('invite-client:' || $1))`,
+           [clientId],
+         );
+         const firstInvite = await txClient.query(
+           `SELECT NOT EXISTS (
+              SELECT 1 FROM job_submissions
+               WHERE client_id = $1 AND initiated_by = 'client'
+            ) AS is_first`,
+           [clientId],
+         );
+         if (firstInvite.rows[0]?.is_first) {
+           const msa = await txClient.query(
+             `SELECT msa_accepted_at FROM client_profiles WHERE user_id = $1 LIMIT 1`,
+             [clientId],
+           );
+           if (!msa.rows[0]?.msa_accepted_at) {
+             await txClient.query("ROLLBACK");
+             return res.status(428).json({
+               error: "msa_required",
+               message: "Accept the Terms of Service before sending your first talent invitation.",
+               termsUrl: "/terms",
+             });
+           }
+         }
+         const jobCheck = await txClient.query(
+           `SELECT id, title, description FROM jobs
+            WHERE id = $1 AND client_id = $2 AND status = 'open'
+              AND approval_status = 'approved'
+              AND (created_via IS NULL OR created_via != 'search_scaffold')`,
+           [jobId, clientId],
+         );
+         if (!jobCheck.rows.length) {
+           await txClient.query("ROLLBACK");
+           return res.status(403).json({ error: "Job not found, not owned by you, or not an open approved posting" });
+         }
+         jobTitle = jobCheck.rows[0].title ?? jobTitle;
+         jobDescription = jobCheck.rows[0].description ?? null;
 
-      // Verify the target user is actually a talent-role account
-      const targetUser = await query(
-        `SELECT id, role FROM users WHERE id = $1 LIMIT 1`,
-        [talentUserId],
-      );
-      if (!targetUser.rows.length || targetUser.rows[0].role !== "talent") {
-        return res.status(400).json({ error: "Target account is not a talent user" });
-      }
+         const targetUser = await txClient.query(
+           `SELECT id, role FROM users WHERE id = $1 LIMIT 1`,
+           [talentUserId],
+         );
+         if (!targetUser.rows.length || targetUser.rows[0].role !== "talent") {
+           await txClient.query("ROLLBACK");
+           return res.status(400).json({ error: "Target account is not a talent user" });
+         }
+         const existing = await txClient.query(
+           `SELECT id FROM job_submissions
+             WHERE job_id = $1 AND talent_id = $2 AND status = 'invited'`,
+           [jobId, talentUserId],
+         );
+         if (existing.rows.length > 0) {
+           await txClient.query("ROLLBACK");
+           return res.status(409).json({ error: "already_invited", message: "This talent has already been invited" });
+         }
+         const talentRow = await txClient.query(
+           `SELECT c.first_name, c.last_name, c.full_name, u.email
+              FROM candidates c
+              JOIN users u ON u.id = c.user_id
+             WHERE c.user_id = $1 LIMIT 1`,
+           [talentUserId],
+         );
+         talent = talentRow.rows[0] ?? {};
+         const name = talent.full_name ||
+           [talent.first_name, talent.last_name].filter(Boolean).join(" ") ||
+           "Invited Talent";
+         const email = talent.email ?? "";
 
-      // Idempotency — return 409 if already invited (prevents duplicate rows)
-      const existing = await query(
-        `SELECT id FROM job_submissions WHERE job_id = $1 AND talent_id = $2 AND status = 'invited'`,
-        [jobId, talentUserId],
-      );
-      if (existing.rows.length > 0) {
-        return res.status(409).json({ error: "already_invited", message: "This talent has already been invited" });
-      }
+         const submissionResult = await txClient.query(
+           `INSERT INTO job_submissions
+              (id, job_id, client_id, applicant_name, first_name, last_name, email,
+                status, initiated_by, talent_id, registration_status, combined_invite_reveal)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'invited', 'client', $7, 'linked', true)
+            RETURNING id`,
+           [
+             jobId, clientId, name, talent.first_name ?? name, talent.last_name ?? "",
+              email, talentUserId,
+           ],
+         );
+         created = submissionResult.rows[0];
+         if (normalizedTimes) {
+           const interviewResult = await txClient.query(
+             `INSERT INTO interviews
+                (submission_id, round_number, interview_type, status, proposed_times,
+                 current_proposal_owner, proposal_exchange_count, candidate_notes, created_by)
+               VALUES ($1, 1, $2, 'proposed', $3, 'talent', 0, $4, $5)
+              RETURNING *`,
+             [created.id, interviewType, JSON.stringify(normalizedTimes), candidateNotes ?? null, clientId],
+           );
+           await txClient.query(
+             `INSERT INTO interview_proposals
+                (interview_id, proposer_id, proposer_role, action, proposed_times)
+              VALUES ($1, $2, 'client', 'initial', $3)`,
+             [interviewResult.rows[0].id, clientId, JSON.stringify(normalizedTimes)],
+           );
+           created.interview = interviewResult.rows[0];
+         }
+         await txClient.query("COMMIT");
 
-      // Resolve talent identity from their linked candidate row
-      const talentRow = await query(
-        `SELECT c.first_name, c.last_name, c.full_name, u.email
-         FROM candidates c
-         JOIN users u ON u.id = c.user_id
-         WHERE c.user_id = $1
-         LIMIT 1`,
-        [talentUserId],
-      );
-      const talent = talentRow.rows[0];
-      const name = talent?.full_name ||
-        [talent?.first_name, talent?.last_name].filter(Boolean).join(" ") ||
-        "Invited Talent";
-      const email = talent?.email ?? "";
+         fireInvitationEmail({
+           talentEmail: email,
+           talentName: name,
+           jobTitle,
+           jobDescription,
+           submissionId: created.id,
+         });
+       } catch (txErr: any) {
+         await txClient.query("ROLLBACK").catch(() => {});
+         throw txErr;
+       } finally {
+         txClient.release();
+       }
 
-      // Fetch job title & description for the invitation email.
-      const jobRow = await query(
-        `SELECT title, description FROM jobs WHERE id = $1 LIMIT 1`,
-        [jobId],
-      );
-      const jobTitle = jobRow.rows[0]?.title ?? "a new role";
-      const jobDescription = jobRow.rows[0]?.description ?? null;
-
-      const result = await query(
-        `INSERT INTO job_submissions
-           (id, job_id, client_id, applicant_name, first_name, last_name, email,
-            status, initiated_by, talent_id, registration_status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, 'invited', 'client', $7, 'linked')
-         RETURNING id`,
-        [jobId, clientId, name, talent?.first_name ?? name, talent?.last_name ?? "", email, talentUserId],
-      );
-
-      // Fire invitation email non-blockingly
-      fireInvitationEmail({
-        talentEmail: email,
-        talentName: name,
-        jobTitle,
-        jobDescription,
-        submissionId: result.rows[0].id,
-      });
-
-      return res.status(201).json({ id: result.rows[0].id });
+       return res.status(201).json({
+         id: created.id,
+          combinedInvite: true,
+         interview: created.interview ?? null,
+       });
     } catch (err: any) {
+       console.error("POST /api/client/invitations error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
@@ -12903,10 +13161,23 @@ export async function registerRoutes(
                 j.engagement_type AS "engagementType",
                 j.salary_display AS "salaryDisplay",
                 j.budget_currency AS "budgetCurrency",
+                 i.id            AS "interviewId",
+                 i.status        AS "interviewStatus",
+                 i.proposed_times AS "proposedTimes",
+                 i.confirmed_time AS "confirmedTime",
+                 i.current_proposal_owner AS "currentProposalOwner",
+                 i.meeting_link AS "meetingLink",
+                 i.proposal_exchange_count AS "proposalExchangeCount",
                 -- Never expose internal scaffold descriptions to talent
                 CASE WHEN j.created_via = 'search_scaffold' THEN NULL ELSE j.description END AS "description"
          FROM job_submissions js
          JOIN jobs j ON j.id = js.job_id
+          LEFT JOIN LATERAL (
+            SELECT * FROM interviews
+             WHERE submission_id = js.id
+             ORDER BY created_at DESC
+             LIMIT 1
+          ) i ON true
          WHERE js.talent_id = $1
            AND js.status = 'invited'
          ORDER BY js.created_at DESC`,
@@ -13049,6 +13320,231 @@ export async function registerRoutes(
       return res.json({ status: newStatus, threadId });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/talent/interviews — proposed/confirmed interviews for the
+  // authenticated talent, including immutable proposal history.
+  app.get("/api/talent/interviews", authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
+      const candidateId = (req as any).talentAuth?.candidateId;
+      const talentUserResult = await query(
+        `SELECT COALESCE(c.user_id, u.id) AS user_id
+           FROM candidates c
+           LEFT JOIN users u ON lower(u.email) = lower(c.email)
+          WHERE c.id = $1
+          LIMIT 1`,
+        [candidateId],
+      );
+      const userId = talentUserResult.rows[0]?.user_id;
+      if (!userId) return res.status(404).json({ error: "Talent profile not found" });
+      const result = await query(
+        `SELECT i.*, js.status AS submission_status, js.id AS submission_id,
+                j.title AS job_title, j.company AS job_company,
+                COALESCE(
+                  json_agg(
+                    json_build_object(
+                      'id', ip.id,
+                      'action', ip.action,
+                      'proposerRole', ip.proposer_role,
+                      'proposedTimes', ip.proposed_times,
+                      'selectedTime', ip.selected_time,
+                      'createdAt', ip.created_at
+                    ) ORDER BY ip.created_at ASC
+                  ) FILTER (WHERE ip.id IS NOT NULL),
+                  '[]'::json
+                ) AS proposals
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN interview_proposals ip ON ip.interview_id = i.id
+          WHERE js.talent_id = $1
+            AND i.status IN ('proposed', 'rescheduled', 'confirmed')
+          GROUP BY i.id, js.status, js.id, j.title, j.company
+          ORDER BY i.created_at DESC`,
+        [userId],
+      );
+      return res.json(result.rows.map((row: any) => ({
+        id: row.id,
+        submissionId: row.submission_id,
+        submissionStatus: row.submission_status,
+        job: { title: row.job_title, company: row.job_company || "OnSpot" },
+        roundNumber: row.round_number,
+        interviewType: row.interview_type,
+        status: row.status,
+        proposedTimes: row.proposed_times ?? [],
+        confirmedTime: row.confirmed_time,
+        currentProposalOwner: row.current_proposal_owner,
+        meetingLink: row.meeting_link,
+        proposalExchangeCount: Number(row.proposal_exchange_count ?? 0),
+        proposals: row.proposals ?? [],
+        nudge: Number(row.proposal_exchange_count ?? 0) >= 3 && row.status !== "confirmed",
+      })));
+    } catch (err: any) {
+      console.error("GET /api/talent/interviews error:", err);
+      return res.status(500).json({ error: "Failed to load interviews" });
+    }
+  });
+
+  // PATCH /api/talent/interviews/:id/respond — accept a slot, decline the
+  // pipeline, or counter-propose. Negotiation never changes round_number.
+  app.patch("/api/talent/interviews/:id/respond", pipelineMutationLimiter, authenticateTalentJWT, async (req: Request, res: Response) => {
+    const candidateId = (req as any).talentAuth?.candidateId;
+    const talentUserResult = await query(
+      `SELECT COALESCE(c.user_id, u.id) AS user_id
+         FROM candidates c
+         LEFT JOIN users u ON lower(u.email) = lower(c.email)
+        WHERE c.id = $1
+        LIMIT 1`,
+      [candidateId],
+    );
+    const userId = talentUserResult.rows[0]?.user_id;
+    if (!userId) return res.status(404).json({ error: "Talent profile not found" });
+    const { action, selectedTime, proposedTimes } = req.body ?? {};
+    if (!["accept", "decline", "counter"].includes(action)) {
+      return res.status(400).json({ error: "action must be 'accept', 'decline', or 'counter'" });
+    }
+    const txClient = await pool.connect();
+    try {
+      await txClient.query("BEGIN");
+      const interviewResult = await txClient.query(
+        `SELECT i.*, js.status AS submission_status, js.id AS submission_id, js.client_id,
+                j.title AS job_title
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+           JOIN jobs j ON j.id = js.job_id
+          WHERE i.id = $1 AND js.talent_id = $2
+          FOR UPDATE OF i`,
+        [req.params.id, userId],
+      );
+      if (!interviewResult.rows.length) {
+        await txClient.query("ROLLBACK");
+        return res.status(404).json({ error: "Interview not found" });
+      }
+      const interview = interviewResult.rows[0];
+      if (!["proposed", "rescheduled"].includes(interview.status)) {
+        await txClient.query("ROLLBACK");
+        return res.status(409).json({ error: "This interview is no longer awaiting a response" });
+      }
+      if (interview.current_proposal_owner !== "talent") {
+        await txClient.query("ROLLBACK");
+        return res.status(409).json({ error: "It is not your turn to respond to this proposal" });
+      }
+
+      if (action === "accept") {
+        if (!selectedTime || Number.isNaN(Date.parse(selectedTime))) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "selectedTime must be a valid ISO date" });
+        }
+        const slotStarts = (Array.isArray(interview.proposed_times) ? interview.proposed_times : [])
+          .map((slot: any) => slot?.start)
+          .filter(Boolean);
+        if (slotStarts.length > 0 && !slotStarts.includes(selectedTime)) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "selectedTime must match one of the proposed slots" });
+        }
+        await txClient.query(
+          `UPDATE interviews
+              SET status = 'confirmed', confirmed_time = $1,
+                  current_proposal_owner = NULL, updated_at = NOW()
+            WHERE id = $2`,
+          [selectedTime, interview.id],
+        );
+        await txClient.query(
+          `INSERT INTO interview_proposals
+             (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time)
+           VALUES ($1, $2, 'talent', 'accepted', $3, $4)`,
+          [interview.id, userId, JSON.stringify(interview.proposed_times ?? []), selectedTime],
+        );
+        if (interview.submission_status !== "interviewing") {
+          await txClient.query(
+            `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
+            [interview.submission_id],
+          );
+          await txClient.query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, 'interviewing', 'Talent confirmed an interview time', $3)`,
+            [interview.submission_id, interview.submission_status, userId],
+          );
+        }
+      } else if (action === "counter") {
+        const normalized = normalizeInterviewTimes(proposedTimes);
+        if (!normalized) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+        }
+        const nextCount = Number(interview.proposal_exchange_count ?? 0) + 1;
+        await txClient.query(
+          `UPDATE interviews
+              SET status = 'proposed', proposed_times = $1,
+                  current_proposal_owner = 'client',
+                  proposal_exchange_count = $2,
+                  confirmed_time = NULL, updated_at = NOW()
+            WHERE id = $3`,
+          [JSON.stringify(normalized), nextCount, interview.id],
+        );
+        await txClient.query(
+          `INSERT INTO interview_proposals
+             (interview_id, proposer_id, proposer_role, action, proposed_times)
+           VALUES ($1, $2, 'talent', 'counter', $3)`,
+          [interview.id, userId, JSON.stringify(normalized)],
+        );
+      } else {
+        await txClient.query(
+          `UPDATE interviews
+              SET status = 'cancelled', outcome = 'declined',
+                  current_proposal_owner = NULL, updated_at = NOW()
+            WHERE id = $1`,
+          [interview.id],
+        );
+        await txClient.query(
+          `INSERT INTO interview_proposals
+             (interview_id, proposer_id, proposer_role, action, proposed_times)
+           VALUES ($1, $2, 'talent', 'declined', $3)`,
+          [interview.id, userId, JSON.stringify(interview.proposed_times ?? [])],
+        );
+        if (!["declined", "withdrawn"].includes(interview.submission_status)) {
+          await txClient.query(
+            `UPDATE job_submissions SET status = 'declined', updated_at = NOW() WHERE id = $1`,
+            [interview.submission_id],
+          );
+          await txClient.query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, 'declined', 'Talent declined the interview invitation', $3)`,
+            [interview.submission_id, interview.submission_status, userId],
+          );
+        }
+      }
+      const updated = await txClient.query(`SELECT * FROM interviews WHERE id = $1`, [interview.id]);
+      await txClient.query("COMMIT");
+
+      const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);
+      if (interview.client_id) {
+        storage.createNotification({
+          userId: interview.client_id,
+          type: action === "accept" ? "interview_confirmed" : "interview_response",
+          title: action === "accept" ? "Interview confirmed" : "Interview proposal updated",
+          message: action === "decline"
+            ? "A talent declined the interview invitation."
+            : action === "counter"
+              ? "A talent proposed different interview times."
+              : "A talent confirmed an interview time.",
+          relatedId: String(interview.id),
+          relatedType: "interview",
+        }).catch((notifyErr: any) => console.error("Interview notification failed:", notifyErr));
+      }
+      return res.json({
+        ...updated.rows[0],
+        nudge: action === "counter" && exchangeCount >= 3,
+      });
+    } catch (err: any) {
+      await txClient.query("ROLLBACK").catch(() => {});
+      console.error("PATCH /api/talent/interviews/:id/respond error:", err);
+      return res.status(500).json({ error: "Failed to respond to interview proposal" });
+    } finally {
+      txClient.release();
     }
   });
 
@@ -14062,10 +14558,19 @@ export async function registerRoutes(
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName",
                   c.id AS "candidateId",
-                  c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName"
+                  c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName",
+                  accepted_offer.id AS "acceptedOfferId"
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
+           LEFT JOIN LATERAL (
+             SELECT id
+             FROM offers
+             WHERE submission_id = js.id
+               AND status IN ('accepted', 'offer_accepted')
+             ORDER BY created_at DESC
+             LIMIT 1
+           ) accepted_offer ON true
            -- Candidate lookup: prefer user-linked email, fall back to application email (covers pending_login).
            -- LATERAL + LIMIT 1 avoids duplicate rows when multiple candidate rows share an email;
            -- profile_completed DESC picks the most complete profile deterministically.
@@ -14518,8 +15023,15 @@ export async function registerRoutes(
   const sanitizeClientSubmissionRow = (row: any, revealedStatuses: Set<string>): any => {
     // Name reveals once talent's status meets or exceeds the configured threshold.
     // For self-applied candidates (initiated_by !== "client") names are always shown.
+    const combinedInviteReveal = Boolean(row.combined_invite_reveal ?? row.combinedInviteReveal);
+    const combinedInterviewConfirmed = Boolean(row.combined_interview_confirmed ?? row.combinedInterviewConfirmed);
+    const combinedInterviewBlocked =
+      row.initiated_by === "client" &&
+      combinedInviteReveal &&
+      !combinedInterviewConfirmed;
     const nameRevealed =
-      row.initiated_by !== "client" || revealedStatuses.has(row.status);
+      !combinedInterviewBlocked &&
+      (row.initiated_by !== "client" || revealedStatuses.has(row.status));
 
     const rawName = row.applicantName ?? row.applicant_name ?? null;
     const displayName = nameRevealed ? rawName : maskInviteName(rawName);
@@ -14539,6 +15051,17 @@ export async function registerRoutes(
       jobTitle:     row.jobTitle,
       jobCompany:   row.jobCompany,
       registrationStatus: row.registrationStatus ?? row.registration_status ?? null,
+      combinedInviteReveal: Boolean(row.combined_invite_reveal ?? row.combinedInviteReveal),
+      combinedInterviewConfirmed: Boolean(row.combined_interview_confirmed ?? row.combinedInterviewConfirmed),
+      interviewId: row.interviewId ?? row.interview_id ?? null,
+      interviewStatus: row.interviewStatus ?? row.interview_status ?? null,
+      proposedTimes: row.proposedTimes ?? row.proposed_times ?? [],
+      confirmedTime: row.confirmedTime ?? row.confirmed_time ?? null,
+      currentProposalOwner: row.currentProposalOwner ?? row.current_proposal_owner ?? null,
+      meetingLink: nameRevealed ? (row.meetingLink ?? row.meeting_link ?? null) : null,
+      proposalExchangeCount: Number(row.proposalExchangeCount ?? row.proposal_exchange_count ?? 0),
+      interviewNudge: Number(row.proposalExchangeCount ?? row.proposal_exchange_count ?? 0) >= 3 &&
+        !["confirmed", "cancelled", "completed"].includes(row.interviewStatus ?? row.interview_status ?? ""),
 
       // Identity — controlled by the configurable name-reveal threshold.
       applicantName:  displayName,
@@ -14592,6 +15115,46 @@ export async function registerRoutes(
       j.title                     AS "jobTitle",
       j.company                   AS "jobCompany",
       j.engagement_type           AS "jobEngagementType"
+      ,js.combined_invite_reveal  AS "combinedInviteReveal"
+      ,EXISTS (
+        SELECT 1 FROM interviews ci
+         WHERE ci.submission_id = js.id AND ci.status = 'confirmed'
+      ) AS "combinedInterviewConfirmed"
+      ,(
+        SELECT ci.id FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "interviewId"
+      ,(
+        SELECT ci.status FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "interviewStatus"
+      ,(
+        SELECT ci.proposed_times FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "proposedTimes"
+      ,(
+        SELECT ci.confirmed_time FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "confirmedTime"
+      ,(
+        SELECT ci.current_proposal_owner FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "currentProposalOwner"
+      ,(
+        SELECT ci.meeting_link FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "meetingLink"
+      ,(
+        SELECT ci.proposal_exchange_count FROM interviews ci
+         WHERE ci.submission_id = js.id
+         ORDER BY ci.created_at DESC LIMIT 1
+      ) AS "proposalExchangeCount"
     FROM job_submissions js
     JOIN jobs j ON j.id = js.job_id
   `;
@@ -14829,7 +15392,7 @@ export async function registerRoutes(
   // invitation endpoints. A client can only act on their own submissions.
 
   // POST /api/client/interviews — schedule a new interview round
-  app.post("/api/client/interviews", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/interviews", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -14875,16 +15438,23 @@ export async function registerRoutes(
       const roundNumber = roundResult.rows[0].next_round;
 
       // Create the interview row
-      const insert = await query(
-        `INSERT INTO interviews
-           (submission_id, round_number, interview_type, status, proposed_times,
-            candidate_notes, internal_notes, created_by)
-         VALUES ($1, $2, $3, 'proposed', $4, $5, $6, $7)
+       const insert = await query(
+         `INSERT INTO interviews
+            (submission_id, round_number, interview_type, status, proposed_times,
+             current_proposal_owner, proposal_exchange_count,
+             candidate_notes, internal_notes, created_by)
+          VALUES ($1, $2, $3, 'proposed', $4, 'talent', 0, $5, $6, $7)
          RETURNING *`,
         [submissionId, roundNumber, interviewType, JSON.stringify(proposedTimes),
          candidateNotes ?? null, internalNotes ?? null, userId],
       );
       const interview = insert.rows[0];
+       await query(
+         `INSERT INTO interview_proposals
+            (interview_id, proposer_id, proposer_role, action, proposed_times)
+          VALUES ($1, $2, 'client', 'initial', $3)`,
+         [interview.id, userId, JSON.stringify(proposedTimes)],
+       );
 
       // Side-effect: advance submission to 'interviewing' if not already there
       if (submission.status !== "interviewing") {
@@ -14947,25 +15517,32 @@ export async function registerRoutes(
 
   // PATCH /api/client/interviews/:id — confirm, reschedule, or cancel an interview
   // Body: { status, confirmedTime?, proposedTimes?, candidateNotes?, internalNotes? }
-  app.patch("/api/client/interviews/:id", authenticateJWT, async (req: Request, res: Response) => {
+  app.patch("/api/client/interviews/:id", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
-      const { status, confirmedTime, proposedTimes, candidateNotes, internalNotes } = req.body;
+       const { status, confirmedTime, proposedTimes, candidateNotes, internalNotes, meetingLink } = req.body;
 
-      // Load the interview and verify client ownership via submission
-      const interviewResult = await query(
-        `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
-         FROM interviews i
-         JOIN job_submissions js ON js.id = i.submission_id
-         WHERE i.id = $1 AND js.client_id = $2`,
-        [id, userId],
-      );
-      if (interviewResult.rows.length === 0) {
-        return res.status(404).json({ error: "Interview not found or forbidden" });
-      }
-      const interview = interviewResult.rows[0];
+      const txClient = await pool.connect();
+      let transactionClosed = false;
+      try {
+        await txClient.query("BEGIN");
+        // Lock the interview before checking ownership/turn so two responses
+        // cannot confirm or counter the same proposal at once.
+        const interviewResult = await txClient.query(
+          `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+           WHERE i.id = $1 AND js.client_id = $2
+           FOR UPDATE OF i`,
+          [id, userId],
+        );
+        if (interviewResult.rows.length === 0) {
+          await txClient.query("ROLLBACK");
+          return res.status(404).json({ error: "Interview not found or forbidden" });
+        }
+        const interview = interviewResult.rows[0];
 
       const validTransitions: Record<string, string[]> = {
         proposed:     ["confirmed", "cancelled"],
@@ -14980,6 +15557,8 @@ export async function registerRoutes(
 
       if (status) {
         if (!allowed.includes(status)) {
+          await txClient.query("ROLLBACK");
+          transactionClosed = true;
           return res.status(409).json({
             error: "invalid_transition",
             message: `Cannot transition from '${interview.status}' to '${status}'. ` +
@@ -14988,16 +15567,36 @@ export async function registerRoutes(
         }
         if (status === "confirmed") {
           if (!confirmedTime) {
+            await txClient.query("ROLLBACK");
             return res.status(400).json({ error: "confirmedTime is required when confirming an interview" });
           }
-          params.push(confirmedTime);
+          if (interview.current_proposal_owner !== "client") {
+            await txClient.query("ROLLBACK");
+            return res.status(409).json({ error: "It is not the client's turn to confirm this interview proposal" });
+          }
+          const confirmedTimestamp = Date.parse(confirmedTime);
+          const isProposedSlot = Array.isArray(interview.proposed_times) &&
+            interview.proposed_times.some((slot: any) =>
+              typeof slot?.start === "string" && Date.parse(slot.start) === confirmedTimestamp);
+          if (Number.isNaN(confirmedTimestamp) || !isProposedSlot) {
+            await txClient.query("ROLLBACK");
+            return res.status(400).json({ error: "confirmedTime must match one of the proposed interview slots" });
+          }
+          params.push(new Date(confirmedTimestamp).toISOString());
           updates.confirmed_time = `$${params.length}`;
+          updates.current_proposal_owner = "NULL";
         }
         if (status === "rescheduled") {
           if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
+            await txClient.query("ROLLBACK");
             return res.status(400).json({ error: "proposedTimes is required when rescheduling" });
           }
-          params.push(JSON.stringify(proposedTimes));
+          const normalizedTimes = normalizeInterviewTimes(proposedTimes);
+          if (!normalizedTimes) {
+            await txClient.query("ROLLBACK");
+            return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+          }
+          params.push(JSON.stringify(normalizedTimes));
           updates.proposed_times = `$${params.length}`;
           updates.confirmed_time = "NULL";
         }
@@ -15009,19 +15608,49 @@ export async function registerRoutes(
       }
 
       if (candidateNotes !== undefined) {
+        if (typeof candidateNotes !== "string" || candidateNotes.length > 5000) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "candidateNotes must be no longer than 5000 characters" });
+        }
         params.push(candidateNotes);
         updates.candidate_notes = `$${params.length}`;
       }
       if (internalNotes !== undefined) {
+        if (typeof internalNotes !== "string" || internalNotes.length > 5000) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "internalNotes must be no longer than 5000 characters" });
+        }
         params.push(internalNotes);
         updates.internal_notes = `$${params.length}`;
       }
+       if (meetingLink !== undefined) {
+         const normalizedMeetingLink = normalizeMeetingLink(meetingLink);
+         if (normalizedMeetingLink === undefined) {
+           await txClient.query("ROLLBACK");
+           transactionClosed = true;
+           return res.status(400).json({ error: "meetingLink must be a valid http(s) URL no longer than 2048 characters" });
+         }
+         params.push(normalizedMeetingLink);
+         updates.meeting_link = `$${params.length}`;
+       }
       if (proposedTimes !== undefined && status !== "rescheduled") {
-        params.push(JSON.stringify(proposedTimes));
+        if (interview.current_proposal_owner !== "client") {
+          await txClient.query("ROLLBACK");
+          transactionClosed = true;
+          return res.status(409).json({ error: "It is not the client's turn to propose new interview times" });
+        }
+        const normalizedTimes = normalizeInterviewTimes(proposedTimes);
+        if (!normalizedTimes) {
+          await txClient.query("ROLLBACK");
+          transactionClosed = true;
+          return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+        }
+        params.push(JSON.stringify(normalizedTimes));
         updates.proposed_times = `$${params.length}`;
       }
 
       if (Object.keys(updates).length === 1) {
+        await txClient.query("ROLLBACK");
         return res.status(400).json({ error: "No updatable fields provided" });
       }
 
@@ -15029,15 +15658,89 @@ export async function registerRoutes(
         .map(([col, val]) => `${col} = ${val === "NOW()" || val === "NULL" ? val : val}`)
         .join(", ");
       params.push(id);
-      const updated = await query(
+      const updated = await txClient.query(
         `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
         params,
       );
 
-      return res.json(updated.rows[0]);
+       // Client proposals are recorded separately from interview stages so
+       // negotiation can continue indefinitely without changing round_number.
+       if (proposedTimes !== undefined || status === "rescheduled") {
+         const nextCount = Number(interview.proposal_exchange_count ?? 0) + 1;
+          await txClient.query(
+           `UPDATE interviews
+               SET current_proposal_owner = 'talent',
+                   proposal_exchange_count = $1,
+                   updated_at = NOW()
+             WHERE id = $2`,
+           [nextCount, id],
+         );
+          await txClient.query(
+           `INSERT INTO interview_proposals
+              (interview_id, proposer_id, proposer_role, action, proposed_times)
+            VALUES ($1, $2, 'client', 'counter', $3)`,
+           [id, userId, JSON.stringify(proposedTimes ?? interview.proposed_times ?? [])],
+         );
+       }
+       if (status === "confirmed") {
+          await txClient.query(
+           `INSERT INTO interview_proposals
+              (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time)
+            VALUES ($1, $2, 'client', 'accepted', $3, $4)`,
+           [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedTime],
+         );
+         if (interview.submission_status !== "interviewing") {
+           await txClient.query(
+             `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
+             [interview.submission_id],
+           );
+           await txClient.query(
+             `INSERT INTO job_application_status_history
+                (application_id, previous_status, new_status, note, changed_by)
+              VALUES ($1, $2, 'interviewing', 'Client confirmed an interview time', $3)`,
+             [interview.submission_id, interview.submission_status, userId],
+           );
+         }
+       }
+
+       await txClient.query("COMMIT");
+       transactionClosed = true;
+        const finalResult = await query(`SELECT * FROM interviews WHERE id = $1`, [id]);
+       return res.json(finalResult.rows[0] ?? updated.rows[0]);
+      } catch (txErr) {
+        if (!transactionClosed) {
+          await txClient.query("ROLLBACK").catch(() => {});
+          transactionClosed = true;
+        }
+        throw txErr;
+      } finally {
+        if (!transactionClosed) await txClient.query("ROLLBACK").catch(() => {});
+        txClient.release();
+      }
     } catch (err: any) {
       console.error("PATCH /api/client/interviews/:id error:", err);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/client/interviews/:id/proposals", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const result = await query(
+        `SELECT ip.id, ip.action, ip.proposer_role, ip.proposed_times,
+                ip.selected_time, ip.created_at
+           FROM interview_proposals ip
+           JOIN interviews i ON i.id = ip.interview_id
+           JOIN job_submissions js ON js.id = i.submission_id
+          WHERE ip.interview_id = $1 AND js.client_id = $2
+          ORDER BY ip.created_at ASC`,
+        [req.params.id, userId],
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/client/interviews/:id/proposals error:", err);
+      return res.status(500).json({ error: "Failed to load interview proposal history" });
     }
   });
 
@@ -15124,7 +15827,7 @@ export async function registerRoutes(
   // POST /api/client/offers — client creates a formal offer for a submission
   // Body: { submissionId, rate, rateCurrency?, proposedStartDate?, expiresAt?, notes? }
   // engagement_type is snapshotted from the jobs row — NOT accepted from the body.
-  app.post("/api/client/offers", authenticateJWT, async (req: Request, res: Response) => {
+  app.post("/api/client/offers", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -15404,6 +16107,151 @@ export async function registerRoutes(
     }
   });
 
+  // PATCH /api/client/offers/:id/respond — client responds to a talent counter.
+  // Counter rows are immutable proposals; accepting/declining closes the row,
+  // while another counter creates a new child owned by the client.
+  app.patch("/api/client/offers/:id/respond", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      const { action, counterRate, counterRateCurrency, proposedStartDate, notes } = req.body ?? {};
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      if (!["accept", "decline", "counter"].includes(action)) {
+        return res.status(400).json({ error: "action must be 'accept', 'decline', or 'counter'" });
+      }
+      const counterRateNum = Number(counterRate);
+      if (action === "counter" &&
+          (counterRate === undefined || counterRate === null || Number.isNaN(counterRateNum) || counterRateNum <= 0)) {
+        return res.status(400).json({ error: "counterRate must be a positive number" });
+      }
+      const counterCurrency = counterRateCurrency ?? "PHP";
+      if (action === "counter" && (typeof counterCurrency !== "string" || !/^[A-Z]{3}$/.test(counterCurrency))) {
+        return res.status(400).json({ error: "counterRateCurrency must be a 3-letter uppercase currency code" });
+      }
+      if (action === "counter" && notes !== undefined &&
+          (typeof notes !== "string" || notes.length > 5000)) {
+        return res.status(400).json({ error: "notes must be no longer than 5000 characters" });
+      }
+      if (action === "counter" && proposedStartDate !== undefined &&
+          proposedStartDate !== null &&
+          (typeof proposedStartDate !== "string" || Number.isNaN(Date.parse(proposedStartDate)))) {
+        return res.status(400).json({ error: "proposedStartDate must be a valid date" });
+      }
+
+      const loaded = await query(
+        `SELECT o.*, js.status AS submission_status, js.talent_id, js.id AS js_id
+           FROM offers o
+           JOIN job_submissions js ON js.id = o.submission_id
+          WHERE o.id = $1
+            AND js.client_id = $2
+            AND o.status = 'sent'
+            AND o.proposer_role = 'talent'
+            AND o.parent_offer_id IS NOT NULL`,
+        [req.params.id, clientId],
+      );
+      if (!loaded.rows.length) return res.status(404).json({ error: "Talent counter offer not found" });
+      const offer = loaded.rows[0];
+      const txClient = await pool.connect();
+      let responseOffer: any;
+      try {
+        await txClient.query("BEGIN");
+        const locked = await txClient.query(
+          `SELECT id, status, expires_at FROM offers WHERE id = $1 FOR UPDATE`,
+          [offer.id],
+        );
+        if (!locked.rows.length || locked.rows[0].status !== "sent") {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "offer_not_pending", message: "This counter offer is no longer pending." });
+        }
+        if (locked.rows[0].expires_at && new Date(locked.rows[0].expires_at) < new Date()) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "offer_expired", message: "This counter offer has expired." });
+        }
+        if (action === "counter") {
+          await txClient.query(
+            `UPDATE offers SET status = 'countered', responded_at = NOW(), updated_at = NOW()
+              WHERE id = $1`,
+            [offer.id],
+          );
+          const expectedRate = offer.talent_expected_rate;
+          const expectedCurrency = offer.talent_expected_currency;
+          const expectedEngagement = offer.talent_expected_engagement;
+          const mismatchApplies = expectedRate !== null &&
+            expectedCurrency !== null &&
+            expectedCurrency === counterCurrency &&
+            expectedEngagement !== null &&
+            expectedEngagement === offer.engagement_type;
+          const below = mismatchApplies ? counterRateNum < Number(expectedRate) : null;
+          const delta = mismatchApplies ? (counterRateNum - Number(expectedRate)).toFixed(2) : null;
+          const counter = await txClient.query(
+            `INSERT INTO offers
+               (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+                status, parent_offer_id, proposer_role, talent_expected_rate,
+                talent_expected_currency, talent_expected_engagement, rate_below_expectation,
+                rate_delta, expires_at, notes)
+             VALUES ($1, $2, $3, $4, $5, 'sent', $6, 'client', $7, $8, $9, $10, $11, $12, $13)
+             RETURNING *`,
+            [
+              offer.js_id, offer.engagement_type, counterRateNum.toFixed(2), counterCurrency,
+              proposedStartDate ?? offer.proposed_start_date ?? null, offer.id,
+              expectedRate, expectedCurrency, expectedEngagement, below, delta,
+              offer.expires_at ?? null, notes ?? null,
+            ],
+          );
+          responseOffer = counter.rows[0];
+        } else {
+          const nextStatus = action === "accept" ? "accepted" : "declined";
+          const nextSubmissionStatus = action === "accept" ? "offer_accepted" : "offer_declined";
+          const updated = await txClient.query(
+            `UPDATE offers SET status = $1, responded_at = NOW(), updated_at = NOW()
+              WHERE id = $2 AND status = 'sent'
+              RETURNING *`,
+            [nextStatus, offer.id],
+          );
+          if (!updated.rows.length) {
+            await txClient.query("ROLLBACK");
+            return res.status(409).json({ error: "offer_not_pending", message: "This counter offer is no longer pending." });
+          }
+          responseOffer = updated.rows[0];
+          await txClient.query(
+            `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+            [nextSubmissionStatus, offer.js_id],
+          );
+          await txClient.query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [offer.js_id, offer.submission_status, nextSubmissionStatus,
+             `Client ${action === "accept" ? "accepted" : "declined"} the talent counter offer`, clientId],
+          );
+        }
+        await txClient.query("COMMIT");
+      } catch (txErr) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        throw txErr;
+      } finally {
+        txClient.release();
+      }
+
+      if (offer.talent_id) {
+        const actionLabel = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";
+        storage.createNotification({
+          userId: offer.talent_id,
+          type: action === "accept" ? "offer_accepted" : action === "counter" ? "offer_countered" : "offer_declined",
+          title: `Offer ${actionLabel}`,
+          message: `A client has ${actionLabel} your counter offer.`,
+          relatedId: String(offer.id),
+          relatedType: "offer",
+        }).catch((notifyErr: any) => {
+          console.error("PATCH /api/client/offers/:id/respond — notification failed:", notifyErr);
+        });
+      }
+      return res.json(responseOffer);
+    } catch (err: any) {
+      console.error("PATCH /api/client/offers/:id/respond error:", err);
+      return res.status(500).json({ error: "Failed to respond to counter offer" });
+    }
+  });
+
   // Helper: load an offer + verify the authenticated talent owns its submission.
   // Ownership: job_submissions.talent_id = candidate's linked users.id, or
   // (legacy rows) talent_id IS NULL and submission email matches candidate email.
@@ -15467,8 +16315,9 @@ export async function registerRoutes(
       );
       const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
 
-      const result = await query(
-        `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
+       const result = await query(
+          `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
+                  o.parent_offer_id, o.proposer_role,
                 o.proposed_start_date, o.status,
                 o.talent_expected_rate, o.talent_expected_currency, o.talent_expected_engagement,
                 o.rate_below_expectation, o.rate_delta,
@@ -15499,6 +16348,8 @@ export async function registerRoutes(
           rateCurrency: o.rate_currency,
           proposedStartDate: o.proposed_start_date,
           status: o.status,
+           parentOfferId: o.parent_offer_id,
+           proposerRole: o.proposer_role,
           talentExpectedRate: o.talent_expected_rate,
           talentExpectedCurrency: o.talent_expected_currency,
           talentExpectedEngagement: o.talent_expected_engagement,
@@ -15537,6 +16388,7 @@ export async function registerRoutes(
         rateCurrency: o.rate_currency,
         proposedStartDate: o.proposed_start_date,
         status: o.status,
+         parentOfferId: o.parent_offer_id,
         talentExpectedRate: o.talent_expected_rate,
         talentExpectedCurrency: o.talent_expected_currency,
         talentExpectedEngagement: o.talent_expected_engagement,
@@ -15553,18 +16405,44 @@ export async function registerRoutes(
     }
   });
 
-  // PATCH /api/talent/offers/:id/respond — talent accepts or declines an offer
-  // Body: { action: 'accept' | 'decline' }
-  app.patch("/api/talent/offers/:id/respond", authenticateTalentJWT, async (req: Request, res: Response) => {
+  // PATCH /api/talent/offers/:id/respond — talent accepts, declines, or
+  // counters an offer. A counter creates a new immutable linked offer row.
+  // Body: { action: 'accept' | 'decline' | 'counter', counterRate?,
+  //         counterRateCurrency?, proposedStartDate?, notes? }
+  app.patch("/api/talent/offers/:id/respond", pipelineMutationLimiter, authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const { action } = req.body;
-      if (!["accept", "decline"].includes(action)) {
-        return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
+      const { action, counterRate, counterRateCurrency, proposedStartDate, notes } = req.body ?? {};
+      if (!["accept", "decline", "counter"].includes(action)) {
+        return res.status(400).json({ error: "action must be 'accept', 'decline', or 'counter'" });
+      }
+      const counterRateNum = Number(counterRate);
+      if (action === "counter" &&
+        (counterRate === undefined || counterRate === null || Number.isNaN(counterRateNum) || counterRateNum <= 0)) {
+        return res.status(400).json({ error: "counterRate must be a positive number" });
+      }
+      const counterCurrency = counterRateCurrency ?? "PHP";
+      if (action === "counter" && (typeof counterCurrency !== "string" || !/^[A-Z]{3}$/.test(counterCurrency))) {
+        return res.status(400).json({ error: "counterRateCurrency must be a 3-letter uppercase currency code" });
+      }
+      if (action === "counter" && notes !== undefined &&
+          (typeof notes !== "string" || notes.length > 5000)) {
+        return res.status(400).json({ error: "notes must be no longer than 5000 characters" });
+      }
+      if (action === "counter" && proposedStartDate !== undefined &&
+          proposedStartDate !== null &&
+          (typeof proposedStartDate !== "string" || Number.isNaN(Date.parse(proposedStartDate)))) {
+        return res.status(400).json({ error: "proposedStartDate must be a valid date" });
       }
 
       const loaded = await loadTalentOwnedOffer(req, res);
       if (!loaded) return;
       const { offer, linkedUserId } = loaded;
+      if (offer.proposer_role === "talent") {
+        return res.status(409).json({
+          error: "offer_waiting_for_client",
+          message: "This is your counter offer and is waiting for the client's response.",
+        });
+      }
 
       if (offer.expires_at && new Date(offer.expires_at) < new Date()) {
         return res.status(409).json({ error: "offer_expired", message: "This offer has expired." });
@@ -15584,7 +16462,7 @@ export async function registerRoutes(
            SET status = $1, responded_at = NOW(), updated_at = NOW()
            WHERE id = $2 AND status = 'sent'
            RETURNING *`,
-          [newOfferStatus, offer.id],
+          [action === "counter" ? "countered" : newOfferStatus, offer.id],
         );
         if (updated.rows.length === 0) {
           await txClient.query("ROLLBACK");
@@ -15595,19 +16473,49 @@ export async function registerRoutes(
         }
         respondedOffer = updated.rows[0];
 
-        // Side-effect: submission status + audit trail
-        await txClient.query(
-          `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
-          [newSubmissionStatus, offer.js_id],
-        );
-        await txClient.query(
-          `INSERT INTO job_application_status_history
-             (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [offer.js_id, offer.submission_status, newSubmissionStatus,
-           `Talent ${action === "accept" ? "accepted" : "declined"} the offer`,
-           linkedUserId],
-        );
+        if (action === "counter") {
+          const expectedRate = offer.talent_expected_rate;
+          const expectedCurrency = offer.talent_expected_currency;
+          const expectedEngagement = offer.talent_expected_engagement;
+          const mismatchApplies =
+            expectedRate !== null &&
+            expectedCurrency !== null &&
+            expectedCurrency === counterCurrency &&
+            expectedEngagement !== null &&
+            expectedEngagement === offer.engagement_type;
+          const below = mismatchApplies ? counterRateNum < Number(expectedRate) : null;
+          const delta = mismatchApplies ? (counterRateNum - Number(expectedRate)).toFixed(2) : null;
+          const counter = await txClient.query(
+            `INSERT INTO offers
+               (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+                status, parent_offer_id, proposer_role, talent_expected_rate, talent_expected_currency,
+                talent_expected_engagement, rate_below_expectation, rate_delta,
+                expires_at, notes)
+             VALUES ($1, $2, $3, $4, $5, 'sent', $6, 'talent', $7, $8, $9, $10, $11, $12, $13)
+             RETURNING *`,
+            [
+              offer.js_id, offer.engagement_type, counterRateNum.toFixed(2), counterCurrency,
+              proposedStartDate ?? offer.proposed_start_date ?? null, offer.id,
+              expectedRate, expectedCurrency, expectedEngagement, below, delta,
+              offer.expires_at ?? null, notes ?? null,
+            ],
+          );
+          respondedOffer = counter.rows[0];
+        } else {
+          // Side-effect: submission status + audit trail
+          await txClient.query(
+            `UPDATE job_submissions SET status = $1, updated_at = NOW() WHERE id = $2`,
+            [newSubmissionStatus, offer.js_id],
+          );
+          await txClient.query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [offer.js_id, offer.submission_status, newSubmissionStatus,
+             `Talent ${action === "accept" ? "accepted" : "declined"} the offer`,
+             linkedUserId],
+          );
+        }
         await txClient.query("COMMIT");
       } catch (txErr: any) {
         await txClient.query("ROLLBACK").catch(() => {});
@@ -15620,10 +16528,10 @@ export async function registerRoutes(
       // offer.js_client_id is the client user's ID from job_submissions; no PII in message.
       const clientUserId = offer.js_client_id;
       if (clientUserId) {
-        const actionLabel = action === "accept" ? "accepted" : "declined";
+        const actionLabel = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";
         storage.createNotification({
           userId: clientUserId,
-          type: action === "accept" ? "offer_accepted" : "offer_declined",
+          type: action === "accept" ? "offer_accepted" : action === "counter" ? "offer_countered" : "offer_declined",
           title: `Offer ${actionLabel}`,
           message: `A talent has ${actionLabel} your offer. View the hiring pipeline for next steps.`,
           relatedId: String(offer.id),
@@ -15664,7 +16572,7 @@ export async function registerRoutes(
             const pipelineUrl = `${baseUrl}/hiring-pipeline`;
 
             const jobTitle: string = offer.job_title ?? "the role";
-            const decisionVerb = action === "accept" ? "accepted" : "declined";
+            const decisionVerb = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";
             const subject = `Your offer has been ${decisionVerb}`;
             const bodyHtml = `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
@@ -15773,6 +16681,7 @@ export async function registerRoutes(
       }
       const result = await updateHiringContract(req.params.id, {
         ...req.body,
+        actorRole: "admin",
         adminId: user.id,
       });
       return res.json(result);
@@ -15785,9 +16694,9 @@ export async function registerRoutes(
     }
   });
 
-  // PATCH /api/admin/hiring-contracts/:id/sign — record a signature (talent or OnSpot).
-  // Body: { signerType: 'talent' | 'onspot', signedAt?: ISO date string }
-  // When onspot_signed_at is set → contract status = 'signed'; submission → 'hired'.
+  // PATCH /api/admin/hiring-contracts/:id/sign — record the OnSpot signature.
+  // Body: { signerType: 'onspot', signedAt?: ISO date string }
+  // The contract is executed only when both signature timestamps are present.
   app.patch("/api/admin/hiring-contracts/:id/sign", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
@@ -15797,8 +16706,11 @@ export async function registerRoutes(
       const { id } = req.params;
       const { signerType, signedAt } = req.body;
 
-      if (!["talent", "onspot"].includes(signerType)) {
-        return res.status(400).json({ error: "signerType must be 'talent' or 'onspot'" });
+      if (signerType !== "onspot") {
+        return res.status(403).json({
+          error: "talent_signature_forbidden",
+          message: "Only the authenticated talent can record the talent signature.",
+        });
       }
 
       const signTs = signedAt ? new Date(signedAt) : new Date();
@@ -15806,67 +16718,19 @@ export async function registerRoutes(
         return res.status(400).json({ error: "signedAt must be a valid ISO date string" });
       }
 
-      // Load contract
-      const contractResult = await query(
-        `SELECT hc.*, js.status AS sub_status, js.id AS js_id
-         FROM hiring_contracts hc
-         JOIN job_submissions js ON js.id = hc.submission_id
-         WHERE hc.id = $1`,
-        [id],
-      );
-      if (contractResult.rows.length === 0) {
-        return res.status(404).json({ error: "Contract not found" });
-      }
-      const contract = contractResult.rows[0];
-
-      if (contract.status === "void" || contract.status === "voided") {
-        return res.status(409).json({
-          error: "contract_voided",
-          message: "Cannot sign a voided contract.",
-        });
-      }
-      if (contract.status === "signed") {
-        return res.status(409).json({
-          error: "contract_already_signed",
-          message: "This contract is already fully signed.",
-        });
-      }
-
-      // Set the relevant timestamp
-      const col = signerType === "talent" ? "talent_signed_at" : "onspot_signed_at";
-      const updatedContract = await query(
-        `UPDATE hiring_contracts
-         SET ${col} = $1, updated_at = NOW()
-         WHERE id = $2
-         RETURNING *`,
-        [signTs, id],
-      );
-      let c = updatedContract.rows[0];
-
-      // If OnSpot has signed → contract is executed; submission → 'hired'
-      if (c.onspot_signed_at) {
-        const signed = await query(
-          `UPDATE hiring_contracts SET status = 'signed', updated_at = NOW() WHERE id = $1 RETURNING *`,
-          [id],
-        );
-        c = signed.rows[0];
-
-        const prevStatus = contract.sub_status;
-        await query(
-          `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
-          [contract.js_id],
-        );
-        await query(
-          `INSERT INTO job_application_status_history
-             (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, 'hired', $3, $4)`,
-          [contract.js_id, prevStatus,
-           `Contract fully executed — OnSpot countersigned by admin ${user.id}`, user.id],
-        );
-      }
-
-      return res.json(c);
+      const result = await updateHiringContract(id, {
+        onspotSigned: signerType === "onspot",
+        talentSigned: signerType === "talent",
+        onspotSignedAt: signerType === "onspot" ? signTs : undefined,
+        talentSignedAt: signerType === "talent" ? signTs : undefined,
+        actorRole: "admin",
+        adminId: user.id,
+      });
+      return res.json(result);
     } catch (err: any) {
+      if (err instanceof ContractError) {
+        return res.status(err.status).json(err.body);
+      }
       console.error("PATCH /api/admin/hiring-contracts/:id/sign error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -15900,10 +16764,19 @@ export async function registerRoutes(
 
   // GET /api/talent/hiring-contracts?submissionId= — talent view of their own contract
   // Returns non-sensitive fields only (no admin notes or signing entity internals).
-  app.get("/api/talent/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+  app.get("/api/talent/hiring-contracts", authenticateTalentJWT, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const candidateId = (req as any).talentAuth?.candidateId;
+      const talentUserResult = await query(
+        `SELECT COALESCE(c.user_id, u.id) AS user_id
+           FROM candidates c
+           LEFT JOIN users u ON lower(u.email) = lower(c.email)
+          WHERE c.id = $1
+          LIMIT 1`,
+        [candidateId],
+      );
+      const userId = talentUserResult.rows[0]?.user_id;
+      if (!userId) return res.status(404).json({ error: "Talent profile not found" });
       const { submissionId } = req.query as { submissionId?: string };
       if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
@@ -15932,6 +16805,48 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/talent/hiring-contracts error:", err);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/talent/hiring-contracts/:id/sign — talent records their signature.
+  // OnSpot's signature remains admin-only; the shared service executes the
+  // contract only after both signatures are present.
+  app.patch("/api/talent/hiring-contracts/:id/sign", pipelineMutationLimiter, authenticateTalentJWT, async (req: Request, res: Response) => {
+    try {
+      const candidateId = (req as any).talentAuth?.candidateId;
+      const talentUserResult = await query(
+        `SELECT COALESCE(c.user_id, u.id) AS user_id
+           FROM candidates c
+           LEFT JOIN users u ON lower(u.email) = lower(c.email)
+          WHERE c.id = $1
+          LIMIT 1`,
+        [candidateId],
+      );
+      const userId = talentUserResult.rows[0]?.user_id;
+      if (!userId) return res.status(404).json({ error: "Talent profile not found" });
+
+      const owned = await query(
+        `SELECT hc.id
+           FROM hiring_contracts hc
+           JOIN job_submissions js ON js.id = hc.submission_id
+          WHERE hc.id = $1 AND js.talent_id = $2`,
+        [req.params.id, userId],
+      );
+      if (!owned.rows.length) return res.status(404).json({ error: "Contract not found" });
+
+      const result = await updateHiringContract(req.params.id, {
+        talentSigned: true,
+        talentSignedAt: new Date(),
+        actorRole: "talent",
+        adminId: userId,
+      });
+      return res.json(result);
+    } catch (err: any) {
+      if (err instanceof ContractError) {
+        return res.status(err.status).json(err.body);
+      }
+      console.error("PATCH /api/talent/hiring-contracts/:id/sign error:", err);
+      return res.status(500).json({ error: "Unable to sign contract" });
     }
   });
 

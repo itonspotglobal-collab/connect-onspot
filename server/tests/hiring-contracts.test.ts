@@ -87,6 +87,7 @@ let jobId: string;
 let submissionId: string;   // main happy-path submission
 let submissionId2: string;  // void-rollback submission
 let submissionId3: string;  // non-accepted-offer guard submission
+  let legacySubmissionId: string;
 let offerId: string;        // 'sent' → accepted via talent endpoint
 let sentOfferId: string;    // stays 'sent' (guard test)
 let offerId2: string;       // second accepted offer (void test)
@@ -109,23 +110,30 @@ async function createFixtures() {
     [CANDIDATE_ID, TALENT_ID, `${TALENT_ID}@test.local`],
   );
   const jobRow = await query(
-    `INSERT INTO jobs (client_id, title, description, category, experience_level, status)
-     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open') RETURNING id`,
+    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type)
+     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open', 'Full-Time') RETURNING id`,
     [CLIENT_ID],
   );
   jobId = jobRow.rows[0].id;
 
-  const makeSubmission = async () => {
+  const makeSubmission = async (status = "offer_extended") => {
     const row = await query(
       `INSERT INTO job_submissions (job_id, talent_id, client_id, applicant_name, email, status)
-       VALUES ($1, $2, $3, 'HC Test Talent', 'hc-talent@test.local', 'offer_extended') RETURNING id`,
-      [jobId, TALENT_ID, CLIENT_ID],
+       VALUES ($1, $2, $3, 'HC Test Talent', 'hc-talent@test.local', $4) RETURNING id`,
+      [jobId, TALENT_ID, CLIENT_ID, status],
     );
     return row.rows[0].id as string;
   };
   submissionId = await makeSubmission();
   submissionId2 = await makeSubmission();
   submissionId3 = await makeSubmission();
+  legacySubmissionId = await makeSubmission("invited");
+  await query(
+    `INSERT INTO interviews
+       (submission_id, round_number, interview_type, status, proposed_times, created_by)
+     VALUES ($1, 1, 'initial', 'proposed', $2, $3)`,
+    [legacySubmissionId, JSON.stringify([{ start: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString() }]), CLIENT_ID],
+  );
 
   const makeOffer = async (subId: string, status: string) => {
     const row = await query(
@@ -231,7 +239,140 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(list.status, 403);
   });
 
+  it("(b0) startup backfills ownership for a legacy pending interview", async () => {
+    const legacy = await query(
+      `SELECT current_proposal_owner FROM interviews WHERE submission_id = $1`,
+      [legacySubmissionId],
+    );
+    assert.equal(legacy.rows[0].current_proposal_owner, "talent");
+
+    const response = await request(
+      srv,
+      "PATCH",
+      `/api/talent/interviews/${(await query(`SELECT id FROM interviews WHERE submission_id = $1`, [legacySubmissionId])).rows[0].id}/respond`,
+      talentTok,
+      { action: "decline" },
+    );
+    assert.equal(response.status, 200, JSON.stringify(response.json));
+  });
+
   let contractId: string;
+
+  it("(b1) candidate talent token can load and confirm an interview proposal", async () => {
+    const proposedTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const interview = await query(
+      `INSERT INTO interviews
+         (submission_id, round_number, interview_type, status, proposed_times,
+          current_proposal_owner, created_by)
+       VALUES ($1, 1, 'initial', 'proposed', $2, 'talent', $3)
+       RETURNING id`,
+      [submissionId3, JSON.stringify([{ start: proposedTime, timezone: "Asia/Manila" }]), CLIENT_ID],
+    );
+    const interviewId = interview.rows[0].id as string;
+    await query(
+      `INSERT INTO interview_proposals
+         (interview_id, proposer_id, proposer_role, action, proposed_times)
+       VALUES ($1, $2, 'client', 'initial', $3)`,
+      [interviewId, CLIENT_ID, JSON.stringify([{ start: proposedTime, timezone: "Asia/Manila" }])],
+    );
+
+    const list = await request(srv, "GET", "/api/talent/interviews", talentTok);
+    assert.equal(list.status, 200, JSON.stringify(list.json));
+    assert.ok(list.json.some((item: any) => item.id === interviewId), "candidate token should see its interview");
+
+    const accept = await request(
+      srv,
+      "PATCH",
+      `/api/talent/interviews/${interviewId}/respond`,
+      talentTok,
+      { action: "accept", selectedTime: proposedTime },
+    );
+    assert.equal(accept.status, 200, JSON.stringify(accept.json));
+    assert.equal(accept.json.status, "confirmed");
+    const persisted = await query(`SELECT status, current_proposal_owner FROM interviews WHERE id = $1`, [interviewId]);
+    assert.equal(persisted.rows[0].status, "confirmed");
+    assert.equal(persisted.rows[0].current_proposal_owner, null);
+  });
+
+  it("(b2) talent counter → client confirm advances an invited submission before an offer", async () => {
+    const submission = await query(
+      `INSERT INTO job_submissions
+         (job_id, talent_id, client_id, applicant_name, email, status)
+       VALUES ($1, $2, $3, 'HC Counter Talent', 'hc-talent@test.local', 'invited')
+       RETURNING id`,
+      [jobId, TALENT_ID, CLIENT_ID],
+    );
+    const counterSubmissionId = submission.rows[0].id as string;
+    const initialTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    const counterTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const interview = await query(
+      `INSERT INTO interviews
+         (submission_id, round_number, interview_type, status, proposed_times,
+          current_proposal_owner, created_by)
+       VALUES ($1, 1, 'initial', 'proposed', $2, 'talent', $3)
+       RETURNING id`,
+      [counterSubmissionId, JSON.stringify([{ start: initialTime }]), CLIENT_ID],
+    );
+    const interviewId = interview.rows[0].id as string;
+
+    const counter = await request(
+      srv,
+      "PATCH",
+      `/api/talent/interviews/${interviewId}/respond`,
+      talentTok,
+      { action: "counter", proposedTimes: [{ start: counterTime }] },
+    );
+    assert.equal(counter.status, 200, JSON.stringify(counter.json));
+    assert.equal(counter.json.current_proposal_owner, "client");
+
+    const confirm = await request(
+      srv,
+      "PATCH",
+      `/api/client/interviews/${interviewId}`,
+      clientTok,
+      { status: "confirmed", confirmedTime: counterTime },
+    );
+    assert.equal(confirm.status, 200, JSON.stringify(confirm.json));
+    assert.equal(await submissionStatus(counterSubmissionId), "interviewing");
+
+    const offer = await request(
+      srv,
+      "POST",
+      "/api/client/offers",
+      clientTok,
+      { submissionId: counterSubmissionId, rate: 1000, rateCurrency: "PHP" },
+    );
+    assert.equal(offer.status, 201, JSON.stringify(offer.json));
+  });
+
+  it("(b3) client cannot accept an expired talent counter", async () => {
+    await query(
+      `UPDATE offers SET expires_at = NOW() + INTERVAL '1 day' WHERE id = $1`,
+      [sentOfferId],
+    );
+    const counter = await request(
+      srv,
+      "PATCH",
+      `/api/talent/offers/${sentOfferId}/respond`,
+      talentTok,
+      { action: "counter", counterRate: 1100, counterRateCurrency: "PHP" },
+    );
+    assert.equal(counter.status, 200, JSON.stringify(counter.json));
+    const counterId = counter.json.id as string;
+    await query(`UPDATE offers SET expires_at = NOW() - INTERVAL '1 minute' WHERE id = $1`, [counterId]);
+
+    const response = await request(
+      srv,
+      "PATCH",
+      `/api/client/offers/${counterId}/respond`,
+      clientTok,
+      { action: "accept" },
+    );
+    assert.equal(response.status, 409, JSON.stringify(response.json));
+    assert.equal(response.json.error, "offer_expired");
+    const persisted = await query(`SELECT status FROM offers WHERE id = $1`, [counterId]);
+    assert.equal(persisted.rows[0].status, "sent");
+  });
 
   it("(c) talent accepts offer via production endpoint, then admin creates contract → 'contract_sent'", async () => {
     // Talent accepts through the real offer-response route (persists 'accepted'
@@ -264,8 +405,31 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(r.json.error, "active_contract_exists");
   });
 
-  it("(f) one signature alone does not set 'hired'", async () => {
-    const r = await request(srv, "PATCH", `/api/admin/hiring-contracts/${contractId}`, adminTok, { onspotSigned: true });
+  it("(e1) admin cannot fabricate the talent signature", async () => {
+    const sign = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${contractId}/sign`,
+      adminTok,
+      { signerType: "talent" },
+    );
+    assert.equal(sign.status, 403, JSON.stringify(sign.json));
+    assert.equal(sign.json.error, "talent_signature_forbidden");
+
+    const update = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${contractId}`,
+      adminTok,
+      { talentSigned: true },
+    );
+    assert.equal(update.status, 403, JSON.stringify(update.json));
+    assert.equal(update.json.error, "talent_signature_forbidden");
+    assert.equal(await submissionStatus(submissionId), "contract_sent");
+  });
+
+  it("(f) OnSpot-first signing does not set 'hired' until talent also signs", async () => {
+    const r = await request(srv, "PATCH", `/api/admin/hiring-contracts/${contractId}/sign`, adminTok, { signerType: "onspot" });
     assert.equal(r.status, 200, JSON.stringify(r.json));
     assert.ok(r.json.onspot_signed_at);
     assert.equal(r.json.status, "sent");
@@ -273,11 +437,23 @@ describe("hiring-contracts workflow (production routes)", () => {
   });
 
   it("(g) both signatures → contract 'signed' and submission 'hired'", async () => {
-    const r = await request(srv, "PATCH", `/api/admin/hiring-contracts/${contractId}`, adminTok, { talentSigned: true });
+    const r = await request(srv, "PATCH", `/api/talent/hiring-contracts/${contractId}/sign`, talentTok, {});
     assert.equal(r.status, 200, JSON.stringify(r.json));
     assert.ok(r.json.talent_signed_at);
     assert.equal(r.json.status, "signed");
     assert.equal(await submissionStatus(submissionId), "hired");
+  });
+
+  it("(g1) a signed contract cannot be edited", async () => {
+    const r = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${contractId}`,
+      adminTok,
+      { documentPath: "/objects/contracts/changed.pdf" },
+    );
+    assert.equal(r.status, 409, JSON.stringify(r.json));
+    assert.equal(r.json.error, "contract_signed");
   });
 
   it("(h) a fully signed contract cannot be voided", async () => {
@@ -310,10 +486,10 @@ describe("hiring-contracts workflow (production routes)", () => {
       "PATCH",
       `/api/admin/hiring-contracts/${create.json.id}/sign`,
       adminTok,
-      { signerType: "talent" },
+      { signerType: "onspot" },
     );
     assert.equal(signVoided.status, 409, JSON.stringify(signVoided.json));
-    assert.equal(signVoided.json.error, "contract_voided");
+    assert.equal(signVoided.json.error, "contract_void");
 
     const updateVoided = await request(
       srv,

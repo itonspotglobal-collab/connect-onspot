@@ -123,12 +123,29 @@ interface StatusHistory {
 
 interface ApplicationDetail extends Application {
   candidateId?: string;
+  acceptedOfferId?: string | null;
   resumeUrl?: string;
   resumeFileName?: string;
   resumeSource?: "application" | "talent_profile" | null;
   videoIntroductionUrl?: string | null;
   videoIntroductionFileName?: string | null;
   history: StatusHistory[];
+}
+
+interface AdminHiringContract {
+  id: string;
+  offer_id?: string;
+  submission_id?: string;
+  status: string;
+  document_path?: string | null;
+  document_version?: number | null;
+  talent_signed_at?: string | null;
+  onspot_signed_at?: string | null;
+  signing_entity?: string | null;
+  created_at?: string;
+  rate?: string | null;
+  rate_currency?: string | null;
+  engagement_type?: string | null;
 }
 
 interface Summary {
@@ -301,6 +318,52 @@ function DetailDialog({
     queryFn: () => apiFetch(`/api/admin/job-applications/${applicationId}`),
     enabled: !!applicationId && open,
   });
+  const { data: contracts = [], isLoading: contractsLoading } = useQuery<AdminHiringContract[]>({
+    queryKey: ["/api/admin/hiring-contracts", applicationId],
+    queryFn: () => apiFetch(`/api/admin/hiring-contracts?submissionId=${encodeURIComponent(applicationId!)}`),
+    enabled: !!applicationId && open,
+  });
+  const contractMutation = useMutation({
+    mutationFn: ({ offerId }: { offerId: string }) =>
+      apiFetch("/api/admin/hiring-contracts", {
+        method: "POST",
+        body: JSON.stringify({ offerId }),
+      }),
+    onSuccess: () => {
+      toast({ title: "Contract created", description: "The contract is ready for signature." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/hiring-contracts", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+    },
+    onError: (error: Error) => toast({ title: "Could not create contract", description: error.message, variant: "destructive" }),
+  });
+  const contractSignMutation = useMutation({
+    mutationFn: ({ id, signerType }: { id: string; signerType: "onspot" }) =>
+      apiFetch(`/api/admin/hiring-contracts/${id}/sign`, {
+        method: "PATCH",
+        body: JSON.stringify({ signerType }),
+      }),
+    onSuccess: () => {
+      toast({ title: "Signature recorded" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/hiring-contracts", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+    },
+    onError: (error: Error) => toast({ title: "Could not record signature", description: error.message, variant: "destructive" }),
+  });
+  const contractVoidMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiFetch(`/api/admin/hiring-contracts/${id}/void`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: () => {
+      toast({ title: "Contract voided" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/hiring-contracts", applicationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+    },
+    onError: (error: Error) => toast({ title: "Could not void contract", description: error.message, variant: "destructive" }),
+  });
+  const activeContract = contracts.find((contract) => !["void", "voided"].includes(contract.status));
+  const canCreateContract = !!detail?.acceptedOfferId && detail.status === "offer_accepted" && !activeContract;
 
   async function handleCvUpload(file: File) {
     const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -551,6 +614,104 @@ function DetailDialog({
                 )
               )}
             </section>
+
+            {/* Hiring contract */}
+            {(detail.status === "offer_accepted" || detail.status === "contract_sent" || detail.status === "hired" ||
+              contracts.length > 0 || detail.acceptedOfferId) && (
+              <section className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Hiring contract</h3>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Create, review, and record the two required signatures for this hire.
+                    </p>
+                  </div>
+                  <FileText className="h-5 w-5 shrink-0 text-indigo-500" />
+                </div>
+                {contractsLoading ? (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading contract status…
+                  </div>
+                ) : activeContract ? (
+                  <div className="mt-3 rounded-md border border-indigo-100 bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">
+                          {activeContract.status === "signed" ? "Fully signed" : "Contract sent"}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Version {activeContract.document_version ?? 1}
+                          {activeContract.created_at ? ` · Created ${fmtDate(activeContract.created_at)}` : ""}
+                        </p>
+                      </div>
+                      <StatusBadge status={activeContract.status === "signed" ? "hired" : "contract_sent"} />
+                    </div>
+                    <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        {activeContract.talent_signed_at
+                          ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          : <Clock className="h-4 w-4 text-amber-500" />}
+                        Talent signature {activeContract.talent_signed_at ? `· ${fmtDate(activeContract.talent_signed_at)}` : "pending"}
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        {activeContract.onspot_signed_at
+                          ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          : <Clock className="h-4 w-4 text-amber-500" />}
+                        OnSpot signature {activeContract.onspot_signed_at ? `· ${fmtDate(activeContract.onspot_signed_at)}` : "pending"}
+                      </div>
+                    </div>
+                    {activeContract.document_path && (
+                      <p className="mt-3 truncate text-xs text-slate-500">
+                        Document: {activeContract.document_path}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {!activeContract.onspot_signed_at && activeContract.status !== "signed" && (
+                        <Button
+                          size="sm"
+                          className="h-8 bg-[#474ead] text-xs text-white hover:bg-[#3d439c]"
+                          disabled={contractSignMutation.isPending}
+                          onClick={() => contractSignMutation.mutate({ id: activeContract.id, signerType: "onspot" })}
+                        >
+                          Countersign for OnSpot
+                        </Button>
+                      )}
+                      {activeContract.status !== "signed" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                          disabled={contractVoidMutation.isPending}
+                          onClick={() => {
+                            const reason = window.prompt("Why is this contract being voided?");
+                            if (reason?.trim()) contractVoidMutation.mutate({ id: activeContract.id, reason: reason.trim() });
+                          }}
+                        >
+                          Void contract
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : canCreateContract ? (
+                  <Button
+                    size="sm"
+                    className="mt-3 bg-[#474ead] text-white hover:bg-[#3d439c]"
+                    disabled={contractMutation.isPending}
+                    onClick={() => contractMutation.mutate({ offerId: detail.acceptedOfferId! })}
+                  >
+                    {contractMutation.isPending
+                      ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Creating…</>
+                      : <><FileText className="mr-1.5 h-3.5 w-3.5" /> Create contract from accepted offer</>}
+                  </Button>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-500">
+                    {detail.status === "offer_accepted"
+                      ? "No accepted offer is available to create a contract from."
+                      : "No active contract has been created for this application."}
+                  </p>
+                )}
+              </section>
+            )}
 
             {/* Resume / CV */}
             <section>

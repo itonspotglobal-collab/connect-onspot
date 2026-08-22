@@ -163,10 +163,22 @@ export async function updateHiringContract(
     templateRef?: string;
     onspotSigned?: boolean;
     talentSigned?: boolean;
+    onspotSignedAt?: Date | string;
+    talentSignedAt?: Date | string;
+    actorRole?: "admin" | "talent";
     adminId?: string | null;
   },
 ): Promise<Record<string, any>> {
-  const { documentPath, templateRef, onspotSigned, talentSigned, adminId } = updates;
+  const {
+    documentPath,
+    templateRef,
+    onspotSigned,
+    talentSigned,
+    onspotSignedAt,
+    talentSignedAt,
+    actorRole,
+    adminId,
+  } = updates;
   return withTransaction(async (client) => {
     const contractResult = await client.query(
       `SELECT * FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
@@ -176,6 +188,18 @@ export async function updateHiringContract(
     const contract = contractResult.rows[0];
     if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "contract_void", message: "A voided contract cannot be updated." });
+    }
+    if (contract.status === "signed") {
+      throw new ContractError(409, {
+        error: "contract_signed",
+        message: "A fully signed contract is immutable. Void it and issue a new contract to change its terms.",
+      });
+    }
+    if (actorRole === "admin" && (talentSigned === true || talentSignedAt !== undefined)) {
+      throw new ContractError(403, {
+        error: "talent_signature_forbidden",
+        message: "Only the authenticated talent can record the talent signature.",
+      });
     }
 
     const sets: string[] = [];
@@ -194,10 +218,12 @@ export async function updateHiringContract(
       params.push(templateRef.trim());
     }
     if (onspotSigned === true && !contract.onspot_signed_at) {
-      sets.push(`onspot_signed_at = NOW()`);
+      sets.push(`onspot_signed_at = $${p++}`);
+      params.push(onspotSignedAt ?? new Date());
     }
     if (talentSigned === true && !contract.talent_signed_at) {
-      sets.push(`talent_signed_at = NOW()`);
+      sets.push(`talent_signed_at = $${p++}`);
+      params.push(talentSignedAt ?? new Date());
     }
     if (sets.length === 0) {
       throw new ContractError(400, {

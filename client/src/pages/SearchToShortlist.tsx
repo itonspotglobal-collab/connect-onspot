@@ -191,6 +191,7 @@ export default function SearchToShortlist() {
   const [pickerLoading, setPickerLoading] = useState(false);
   const [pickerSelectedJobId, setPickerSelectedJobId] = useState<string | null>(null);
   const [pickerSending, setPickerSending] = useState(false);
+  const [inviteDateTime, setInviteDateTime] = useState("");
 
   // ── Dynamic suggestion chips ──────────────────────────────────────────────────
   const { data: suggestions = [] } = useQuery<Suggestion[]>({
@@ -276,6 +277,7 @@ export default function SearchToShortlist() {
     setPickerTarget(null);
     setPickerJobs([]);
     setPickerSelectedJobId(null);
+    setInviteDateTime("");
   }
 
   async function handleInvite(talentUserId: string, talentName?: string) {
@@ -304,11 +306,20 @@ export default function SearchToShortlist() {
 
   async function confirmInvite(jobId: string) {
     if (!pickerTarget) return;
+    if (!inviteDateTime) {
+      toast({ title: "Choose an interview time", description: "Every new invitation includes an initial interview proposal.", variant: "destructive" });
+      return;
+    }
     const { talentUserId } = pickerTarget;
     setPickerSending(true);
     setInvitingId(talentUserId);
     try {
-      const res = await apiRequest("POST", "/api/client/invitations", { jobId, talentUserId });
+      const payload = {
+        jobId,
+        talentUserId,
+        proposedTimes: [{ start: new Date(inviteDateTime).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }],
+      };
+      let res = await apiRequest("POST", "/api/client/invitations", payload);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         if (body.error === "already_invited") {
@@ -316,7 +327,18 @@ export default function SearchToShortlist() {
           closePicker();
           return;
         }
-        throw new Error(body.message || "Failed to send invitation");
+        if (body.error === "msa_required") {
+          window.open(body.termsUrl || "/terms", "_blank", "noopener,noreferrer");
+          const accepted = window.confirm("Please review the Terms of Service in the opened tab. Press OK only if you accept them to send this invitation.");
+          if (!accepted) return;
+          const msaRes = await apiRequest("POST", "/api/client/msa-acceptance", { accepted: true });
+          if (!msaRes.ok) throw new Error("Please accept the Terms of Service before inviting talent.");
+          res = await apiRequest("POST", "/api/client/invitations", payload);
+        }
+        if (!res.ok) {
+          const retryBody = await res.json().catch(() => ({}));
+          throw new Error(retryBody.message || retryBody.error || "Failed to send invitation");
+        }
       }
       setInvitedIds((p) => new Set(p).add(talentUserId));
       toast({ title: "Invitation sent", description: "The talent will see your invitation on their dashboard." });
@@ -601,17 +623,21 @@ export default function SearchToShortlist() {
                       <span className="ml-1 text-slate-400">· {pickerJobs[0].engagementType}</span>
                     )}
                   </p>
+                   <label className="block mb-5">
+                     <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Propose an initial interview time</span>
+                     <input type="datetime-local" value={inviteDateTime} onChange={(e) => setInviteDateTime(e.target.value)} className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#474ead] focus:ring-2 focus:ring-[#474ead]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
+                   </label>
                   <div className="flex gap-2 justify-end">
                     <button
                       onClick={closePicker}
-                      disabled={pickerSending}
+                      disabled={pickerSending || !inviteDateTime}
                       className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-60"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => confirmInvite(pickerJobs[0].id)}
-                      disabled={pickerSending}
+                      disabled={pickerSending || !inviteDateTime}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send invitation"}
@@ -624,6 +650,10 @@ export default function SearchToShortlist() {
                     Invite {pickerTarget.talentName} to which role?
                   </h3>
                   <p className="text-[13.5px] text-slate-400 mb-4">Select a job posting.</p>
+                   <label className="block mb-4">
+                     <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Propose an initial interview time</span>
+                     <input type="datetime-local" value={inviteDateTime} onChange={(e) => setInviteDateTime(e.target.value)} className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#474ead] focus:ring-2 focus:ring-[#474ead]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white" required />
+                   </label>
                   <div className="flex flex-col gap-2 max-h-64 overflow-y-auto mb-5 pr-1">
                     {pickerJobs.map((job) => (
                       <button
@@ -653,7 +683,7 @@ export default function SearchToShortlist() {
                     </button>
                     <button
                       onClick={() => pickerSelectedJobId && confirmInvite(pickerSelectedJobId)}
-                      disabled={!pickerSelectedJobId || pickerSending}
+                      disabled={!pickerSelectedJobId || !inviteDateTime || pickerSending}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send invitation"}

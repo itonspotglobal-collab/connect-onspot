@@ -21,7 +21,7 @@ import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
-  CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink,
+  CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink, Clock,
   FileText, X, Download, MessageSquare, BookOpen, Mail,
   Check, XCircle,
 } from "lucide-react";
@@ -568,6 +568,8 @@ interface TalentOffer {
   respondedAt: string | null;
   expiresAt: string | null;
   notes: string | null;
+  parentOfferId?: string | null;
+  proposerRole?: string;
 }
 
 function formatRate(rate: string | null, currency: string | null, engagement: string | null): string {
@@ -583,7 +585,7 @@ interface OfferCardProps {
   isPending: boolean;
   errorMessages: Record<string, string>;
   respondingId: string | null;
-  onRespond: (id: string, action: "accept" | "decline") => void;
+  onRespond: (id: string, action: "accept" | "decline" | "counter", payload?: Record<string, unknown>) => void;
   isMutating: boolean;
 }
 
@@ -607,6 +609,10 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
       statusBadge = { label: "Expired", classes: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400" };
     else if (offer.status === "withdrawn")
       statusBadge = { label: "Withdrawn", classes: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-400" };
+    else if (offer.status === "countered")
+      statusBadge = { label: "Countered", classes: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400" };
+    else if (offer.status === "sent" && offer.proposerRole === "talent")
+      statusBadge = { label: "Waiting for client", classes: "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400" };
 
     return (
       <div
@@ -713,7 +719,7 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
         )}
 
         {/* Action buttons — only for genuinely pending offers */}
-        {isPending && !isExpired && offer.status === "sent" && (
+        {isPending && !isExpired && offer.status === "sent" && offer.proposerRole !== "talent" && (
           <div className="mt-3 flex gap-2">
             <Button
               size="sm"
@@ -729,6 +735,27 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
                   Accept Offer
                 </>
               )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full h-8 text-xs text-amber-700 border-amber-200 hover:bg-amber-50"
+              disabled={isBusy}
+              onClick={() => {
+                const raw = window.prompt("What rate would you like to propose?");
+                if (raw === null) return;
+                const nextRate = Number(raw);
+                if (!Number.isFinite(nextRate) || nextRate <= 0) {
+                  window.alert("Please enter a positive rate.");
+                  return;
+                }
+                onRespond(offer.id, "counter", {
+                  counterRate: nextRate,
+                  counterRateCurrency: offer.rateCurrency ?? "PHP",
+                });
+              }}
+            >
+              Counter
             </Button>
             <Button
               size="sm"
@@ -765,14 +792,14 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
   });
 
   const respondMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: "accept" | "decline" }) => {
+    mutationFn: async ({ id, action, payload }: { id: string; action: "accept" | "decline" | "counter"; payload?: Record<string, unknown> }) => {
       const res = await fetch(`/api/talent/offers/${id}/respond`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth?.token ?? ""}`,
         },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, ...(payload ?? {}) }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -800,7 +827,8 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
 
   if (isLoading || offers.length === 0) return null;
 
-  const pendingOffers = offers.filter((o) => o.status === "sent");
+  const pendingOffers = offers.filter((o) => o.status === "sent" && o.proposerRole !== "talent");
+  const waitingForClientOffers = offers.filter((o) => o.status === "sent" && o.proposerRole === "talent");
   const pastOffers = offers.filter((o) => o.status !== "sent");
 
   return (
@@ -822,6 +850,11 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
           Review your offer{pendingOffers.length > 1 ? "s" : ""} and respond before {pendingOffers.length > 1 ? "they expire" : "it expires"}.
         </p>
       )}
+      {waitingForClientOffers.length > 0 && (
+        <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-3">
+          Your counter offer{waitingForClientOffers.length > 1 ? "s" : ""} {waitingForClientOffers.length > 1 ? "are" : "is"} waiting for the client’s response.
+        </p>
+      )}
 
       <div className="space-y-3">
         {pendingOffers.map((offer) => (
@@ -831,7 +864,18 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
             isPending={true}
             errorMessages={errorMessages}
             respondingId={respondingId}
-            onRespond={(id, action) => respondMutation.mutate({ id, action })}
+            onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
+            isMutating={respondMutation.isPending}
+          />
+        ))}
+        {waitingForClientOffers.map((offer) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            isPending={false}
+            errorMessages={errorMessages}
+            respondingId={respondingId}
+            onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
             isMutating={respondMutation.isPending}
           />
         ))}
@@ -842,10 +886,314 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
             isPending={false}
             errorMessages={errorMessages}
             respondingId={respondingId}
-            onRespond={(id, action) => respondMutation.mutate({ id, action })}
+            onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
             isMutating={respondMutation.isPending}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+interface TalentHiringContract {
+  id: string;
+  status: string;
+  documentPath?: string | null;
+  documentVersion?: number | null;
+  talentSignedAt?: string | null;
+  onspotSignedAt?: string | null;
+  signingEntity?: string | null;
+  createdAt?: string;
+  engagementType?: string | null;
+  rate?: string | null;
+  rateCurrency?: string | null;
+  proposedStartDate?: string | null;
+}
+
+function TalentContractCard({
+  application,
+  authToken,
+}: {
+  application: TalentApplication;
+  authToken: string;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: contracts = [], isLoading } = useQuery<TalentHiringContract[]>({
+    queryKey: ["talent-hiring-contracts", application.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/talent/hiring-contracts?submissionId=${encodeURIComponent(application.id)}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) throw new Error("Unable to load contract");
+      const rows = await res.json();
+      return rows.map((row: any) => ({
+        id: row.id,
+        status: row.status,
+        documentPath: row.document_path,
+        documentVersion: row.document_version,
+        talentSignedAt: row.talent_signed_at,
+        onspotSignedAt: row.onspot_signed_at,
+        signingEntity: row.signing_entity,
+        createdAt: row.created_at,
+        engagementType: row.engagement_type,
+        rate: row.rate,
+        rateCurrency: row.rate_currency,
+        proposedStartDate: row.proposed_start_date,
+      }));
+    },
+    enabled: !!authToken,
+    staleTime: 30_000,
+  });
+  const signMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      const res = await fetch(`/api/talent/hiring-contracts/${contractId}/sign`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({}),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || "Unable to sign contract");
+      return body;
+    },
+    onSuccess: () => {
+      toast({ title: "Signature recorded", description: "OnSpot will countersign before the hire is finalized." });
+      queryClient.invalidateQueries({ queryKey: ["talent-hiring-contracts", application.id] });
+      queryClient.invalidateQueries({ queryKey: ["talent-applications"] });
+    },
+    onError: (error: Error) => toast({ title: "Could not sign contract", description: error.message, variant: "destructive" }),
+  });
+
+  const contract = contracts.find((item) => !["void", "voided"].includes(item.status));
+  if (isLoading || !contract) return null;
+
+  const rate = contract.rate
+    ? `${contract.rateCurrency ? `${contract.rateCurrency} ` : ""}${contract.rate}`
+    : null;
+  return (
+    <Card className="border border-indigo-200 bg-indigo-50/50 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold text-slate-900 dark:text-white">Contract ready for review</h3>
+              <span className="rounded-full border border-indigo-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300">
+                {contract.status === "signed" ? "Fully signed" : "Your signature needed"}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+              {application.job.title} · {application.job.companyName}
+            </p>
+          </div>
+          <FileText className="h-5 w-5 shrink-0 text-indigo-500" />
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+          {rate && (
+            <div>
+              <span className="text-slate-500 dark:text-slate-400">Rate</span>
+              <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">{rate}</p>
+            </div>
+          )}
+          {contract.engagementType && (
+            <div>
+              <span className="text-slate-500 dark:text-slate-400">Engagement</span>
+              <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">{contract.engagementType}</p>
+            </div>
+          )}
+          {contract.proposedStartDate && (
+            <div>
+              <span className="text-slate-500 dark:text-slate-400">Proposed start</span>
+              <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">
+                {new Date(contract.proposedStartDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          )}
+          <div>
+            <span className="text-slate-500 dark:text-slate-400">Signatures</span>
+            <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">
+              {contract.talentSignedAt ? "You signed" : "You have not signed"}
+              {" · "}
+              {contract.onspotSignedAt ? "OnSpot signed" : "OnSpot pending"}
+            </p>
+          </div>
+        </div>
+
+        {contract.documentPath && (
+          <p className="mt-3 rounded-md border border-indigo-100 bg-white/70 px-3 py-2 text-xs text-slate-600 dark:border-indigo-900/40 dark:bg-slate-900/50 dark:text-slate-300">
+            Contract document: {contract.documentPath}
+          </p>
+        )}
+        {!contract.talentSignedAt && contract.status !== "signed" && (
+          <Button
+            size="sm"
+            className="mt-3 bg-[#474ead] text-white hover:bg-[#3d439c]"
+            disabled={signMutation.isPending}
+            onClick={() => signMutation.mutate(contract.id)}
+          >
+            {signMutation.isPending
+              ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Recording…</>
+              : <><Check className="mr-1.5 h-3.5 w-3.5" /> Review and sign contract</>}
+          </Button>
+        )}
+        {contract.talentSignedAt && contract.status !== "signed" && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <Clock className="h-3.5 w-3.5" /> Waiting for OnSpot to countersign.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ContractsSection({
+  applications,
+  authToken,
+}: {
+  applications: TalentApplication[];
+  authToken: string | null;
+}) {
+  if (!authToken || applications.length === 0) return null;
+  return (
+    <div className="mb-8">
+      <div className="mb-3 flex items-center gap-2">
+        <FileText className="h-4 w-4 text-indigo-500" />
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contracts</h2>
+      </div>
+      <div className="space-y-3">
+        {applications.map((application) => (
+          <TalentContractCard key={application.id} application={application} authToken={authToken} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface TalentInterview {
+  id: string;
+  submissionId: string;
+  job: { title: string; company: string };
+  roundNumber: number;
+  interviewType: string;
+  status: string;
+  proposedTimes: Array<{ start: string; end?: string; timezone?: string }>;
+  confirmedTime: string | null;
+  currentProposalOwner: string | null;
+  meetingLink: string | null;
+  proposalExchangeCount: number;
+  nudge: boolean;
+}
+
+function InterviewsSection({ refetchApplications }: { refetchApplications: () => void }) {
+  const auth = loadTalentAuth();
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [counterTimes, setCounterTimes] = useState<Record<string, string>>({});
+  const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
+  const { data: interviews = [], isLoading, refetch } = useQuery<TalentInterview[]>({
+    queryKey: ["talent-interviews"],
+    queryFn: async () => {
+      if (!auth) return [];
+      const res = await fetch("/api/talent/interviews", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+  const respond = async (interview: TalentInterview, action: "accept" | "decline" | "counter", selectedTime?: string) => {
+    setRespondingId(interview.id);
+    setErrorMessages((current) => ({ ...current, [interview.id]: "" }));
+    try {
+      const body = action === "counter"
+        ? { action, proposedTimes: [{ start: new Date(selectedTime!).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }] }
+        : { action, ...(selectedTime ? { selectedTime: new Date(selectedTime).toISOString() } : {}) };
+      const res = await fetch(`/api/talent/interviews/${interview.id}/respond`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth?.token ?? ""}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || data.error || "Unable to update interview");
+      await refetch();
+      refetchApplications();
+    } catch (err: any) {
+      setErrorMessages((current) => ({ ...current, [interview.id]: err.message }));
+    } finally {
+      setRespondingId(null);
+    }
+  };
+  if (isLoading || interviews.length === 0) return null;
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-3">
+        <Calendar className="h-4 w-4 text-indigo-500" />
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Interviews</h2>
+        <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+          {interviews.filter((item) => item.status === "proposed" || item.status === "rescheduled").length} awaiting
+        </span>
+      </div>
+      <div className="space-y-3">
+        {interviews.map((interview) => {
+          const pending = (interview.status === "proposed" || interview.status === "rescheduled") &&
+            interview.currentProposalOwner === "talent";
+          return (
+            <div key={interview.id} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{interview.job.title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {interview.job.company} · Round {interview.roundNumber} · {interview.interviewType}
+                  </p>
+                </div>
+                <span className="rounded-full border border-indigo-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
+                  {interview.status === "confirmed" ? "Confirmed" : "Proposal"}
+                </span>
+              </div>
+              {interview.confirmedTime && (
+                <p className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  Confirmed: {new Date(interview.confirmedTime).toLocaleString()}
+                </p>
+              )}
+              {interview.meetingLink && interview.status === "confirmed" && (
+                <a className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline" href={interview.meetingLink} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3 w-3" /> Join meeting
+                </a>
+              )}
+              {pending && (
+                <>
+                  <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">Choose one of the client’s proposed times:</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {interview.proposedTimes.map((slot) => (
+                      <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={respondingId === interview.id} onClick={() => respond(interview, "accept", slot.start)}>
+                        <Check className="mr-1 h-3 w-3" /> {new Date(slot.start).toLocaleString()}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      aria-label="Alternative interview time"
+                      type="datetime-local"
+                      value={counterTimes[interview.id] ?? ""}
+                      onChange={(event) => setCounterTimes((current) => ({ ...current, [interview.id]: event.target.value }))}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                    />
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" disabled={respondingId === interview.id || !counterTimes[interview.id]} onClick={() => respond(interview, "counter", counterTimes[interview.id])}>
+                      Suggest another time
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs text-slate-500" disabled={respondingId === interview.id} onClick={() => respond(interview, "decline")}>
+                      <XCircle className="mr-1 h-3 w-3" /> Decline
+                    </Button>
+                  </div>
+                  {interview.nudge && (
+                    <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">You’ve exchanged several time proposals. Consider the other side’s available times.</p>
+                  )}
+                </>
+              )}
+              {errorMessages[interview.id] && <p className="mt-2 text-xs text-red-600">{errorMessages[interview.id]}</p>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1054,6 +1402,7 @@ export default function TalentApplications() {
   );
   const filtered = filterApplications(apps, filter);
   const appliedJobIds = new Set(apps.map((a) => a.job.id));
+  const contractApplications = apps.filter((app) => ["contract_sent", "hired"].includes(app.applicationStatus));
 
   // Stats
   const totalCount       = apps.length;
@@ -1114,6 +1463,11 @@ export default function TalentApplications() {
             ))}
           </div>
         )}
+
+        <ContractsSection
+          applications={contractApplications}
+          authToken={talentAuth?.token ?? null}
+        />
 
         {/* Your Applications */}
         <div className="mb-8">
@@ -1213,7 +1567,10 @@ export default function TalentApplications() {
           )}
         </div>
 
-        {/* Offers — rate/engagement offers from clients that talent can accept or decline */}
+        {/* Interviews — schedule negotiation and confirmed meeting details */}
+        <InterviewsSection refetchApplications={refetch} />
+
+        {/* Offers — rate/engagement offers from clients that talent can accept, decline, or counter */}
         <OffersSection refetchApplications={refetch} />
 
         {/* Role Invitations — client-initiated invites the talent can accept/decline */}

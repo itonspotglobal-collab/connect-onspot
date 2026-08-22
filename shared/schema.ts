@@ -77,6 +77,8 @@ export const clientProfiles = pgTable("client_profiles", {
   hiringNeeds: text("hiring_needs"),
   preferredRoles: text("preferred_roles").array().default([]),
   timezone: text("timezone"),
+  msaAcceptedAt: timestamp("msa_accepted_at"),
+  msaVersion: text("msa_version"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -782,6 +784,9 @@ export const jobSubmissions = pgTable("job_submissions", {
   talentId: varchar("talent_id").references(() => users.id),
   registrationStatus: text("registration_status").notNull().default("pending_account"),
   isRepeatApplication: boolean("is_repeat_application").notNull().default(false),
+  // Client invitations that include an initial interview keep identity masked
+  // until the interview itself reaches confirmed.
+  combinedInviteReveal: boolean("combined_invite_reveal").notNull().default(false),
   answers: jsonb("answers"), // [{ questionId, question, answer }]
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -1555,6 +1560,10 @@ export const interviews = pgTable("interviews", {
   proposedTimes:  jsonb("proposed_times").notNull().default([]),
   // Populated when client confirms one of the proposed slots
   confirmedTime:  timestamp("confirmed_time"),
+  // 'client' | 'talent' | null when no proposal is pending.
+  currentProposalOwner: text("current_proposal_owner"),
+  meetingLink: text("meeting_link"),
+  proposalExchangeCount: integer("proposal_exchange_count").notNull().default(0),
   // Client user who created this interview row (must match submission's client_id)
   createdBy:      varchar("created_by").notNull().references(() => users.id),
   // Shown to the candidate (instructions, location, video link, etc.)
@@ -1574,6 +1583,28 @@ export const insertInterviewSchema = createInsertSchema(interviews).omit({
 export type InsertInterview = z.infer<typeof insertInterviewSchema>;
 export type Interview = typeof interviews.$inferSelect;
 
+// Immutable history for every interview proposal/response. Negotiation does
+// not consume interview round numbers.
+export const interviewProposals = pgTable("interview_proposals", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  interviewId: uuid("interview_id").notNull().references(() => interviews.id, { onDelete: "cascade" }),
+  proposerId: varchar("proposer_id").notNull().references(() => users.id),
+  proposerRole: text("proposer_role").notNull(),
+  action: text("action").notNull(),
+  proposedTimes: jsonb("proposed_times").notNull().default([]),
+  selectedTime: timestamp("selected_time"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("idx_interview_proposals_interview_id").on(table.interviewId),
+  index("idx_interview_proposals_created_at").on(table.createdAt),
+]);
+
+export const insertInterviewProposalSchema = createInsertSchema(interviewProposals).omit({
+  id: true, createdAt: true,
+});
+export type InsertInterviewProposal = z.infer<typeof insertInterviewProposalSchema>;
+export type InterviewProposal = typeof interviewProposals.$inferSelect;
+
 // ── Hiring Pipeline — Phase 2: Offers ────────────────────────────────────────
 // One row per offer per job_submission (re-offers after decline create a new row).
 // Client-driven: client creates the offer; talent responds.
@@ -1585,8 +1616,12 @@ export const offers = pgTable("offers", {
   rate:                      decimal("rate", { precision: 12, scale: 2 }).notNull(),
   rateCurrency:              text("rate_currency").notNull().default("PHP"),
   proposedStartDate:         timestamp("proposed_start_date"),
-  // 'sent' → 'accepted' | 'declined' | 'withdrawn' | 'expired'
+  // 'sent' → 'accepted' | 'declined' | 'countered' | 'withdrawn' | 'expired'
   status:                    text("status").notNull().default("sent"),
+  // A counter closes the current immutable row and creates a linked child.
+  parentOfferId:             uuid("parent_offer_id"),
+  // The side that created this immutable proposal; the other side owns the response turn.
+  proposerRole:              text("proposer_role").notNull().default("client"),
   // Snapshots of talent's rate expectation AT offer creation time (non-retroactive)
   talentExpectedRate:        decimal("talent_expected_rate", { precision: 12, scale: 2 }),
   talentExpectedCurrency:    text("talent_expected_currency"),
@@ -1632,6 +1667,9 @@ export const hiringContracts = pgTable("hiring_contracts", {
   status:          text("status").notNull().default("draft"),
   // Snapshotted from platform_settings('contract_signing_entity') at row creation
   signingEntity:   text("signing_entity").notNull().default("OnSpot Technologies Inc."),
+  // Reserved for a future e-signature provider; current signing remains admin-controlled.
+  signatureProvider: text("signature_provider"),
+  signatureEnvelopeId: text("signature_envelope_id"),
   talentSignedAt:  timestamp("talent_signed_at"),
   onspotSignedAt:  timestamp("onspot_signed_at"),
   voidedAt:        timestamp("voided_at"),
