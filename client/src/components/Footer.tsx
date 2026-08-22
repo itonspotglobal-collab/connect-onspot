@@ -19,30 +19,30 @@ interface FooterProps {
 const VARIANT_STYLES = {
   "dark-gradient": {
     background: "transparent",
-    copyright: "rgba(255,255,255,0.72)",
-    link: "rgba(255,255,255,0.78)",
-    hover: "#ffffff",
+    copyright: "rgba(220,224,255,0.38)",
+    link: "rgba(220,224,255,0.46)",
+    hover: "rgba(247,248,255,0.78)",
     separator: "rgba(255,255,255,0.16)",
   },
   light: {
     background: "#ffffff",
-    copyright: "#475569",
-    link: "#475569",
-    hover: "#0f172a",
+    copyright: "rgba(71,85,105,0.60)",
+    link: "rgba(71,85,105,0.68)",
+    hover: "#334155",
     separator: "rgba(15,23,42,0.10)",
   },
   indigo: {
     background: "#474EAD",
-    copyright: "rgba(255,255,255,0.72)",
-    link: "rgba(255,255,255,0.78)",
-    hover: "#ffffff",
+    copyright: "rgba(220,224,255,0.38)",
+    link: "rgba(220,224,255,0.46)",
+    hover: "rgba(247,248,255,0.78)",
     separator: "rgba(255,255,255,0.16)",
   },
   dark: {
     background: "#060816",
-    copyright: "rgba(255,255,255,0.72)",
-    link: "rgba(255,255,255,0.78)",
-    hover: "#ffffff",
+    copyright: "rgba(220,224,255,0.38)",
+    link: "rgba(220,224,255,0.46)",
+    hover: "rgba(247,248,255,0.78)",
     separator: "rgba(255,255,255,0.16)",
   },
 } as const;
@@ -61,7 +61,7 @@ const NAV_LINKS = [
   { href: "/terms-and-conditions",label: "Terms" },
 ];
 
-export function Footer({ variant = "indigo", separator = false }: FooterProps) {
+export function Footer({ variant = "indigo", separator = true }: FooterProps) {
   const { theme } = useTheme();
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">("light");
 

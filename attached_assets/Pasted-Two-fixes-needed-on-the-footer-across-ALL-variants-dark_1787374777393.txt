@@ -1,0 +1,35 @@
+Two fixes needed on the footer, across ALL variants (dark-gradient, light,
+indigo, adaptive) — not just the homepage one shown in the screenshot.
+
+1. FOOTER TEXT COLOR — too aggressive/high-contrast. The link text (About,
+   Stories, Insights, etc.) currently reads as a bright, saturated
+   periwinkle against the dark gradient, drawing too much visual attention
+   for what should be a quiet, low-emphasis part of the page. It should be
+   subtle — muted, lower-contrast, secondary in visual weight, not
+   competing with the actual page content above it.
+
+   Before changing anything: confirm whether this bright color is a
+   REGRESSION introduced during the recent footer consolidation work (i.e.,
+   did the original homepage footer, before this task, use a more muted
+   tone that got lost when the shared component was built?), or whether
+   this brightness already existed before and simply was never addressed.
+   Check git history/prior styling if needed. Report which it is.
+
+   Apply a genuinely subtle treatment appropriate to EACH variant's own
+   background — muted light-gray/lavender at reduced opacity on the dark
+   variants (dark-gradient, indigo, adaptive-dark), muted gray at reduced
+   opacity on the light variants (light, adaptive-light) — not one fixed
+   color value applied blindly across backgrounds that don't share the
+   same contrast needs.
+
+2. DIVIDER LINE — confirm the thin horizontal rule separating the footer
+   from the section above it (visible in the screenshot) is present and
+   visually consistent across EVERY footer variant and every route in
+   scope (homepage, legal pages, About, Amazing, job detail light AND
+   dark). Report explicitly for each one whether it's currently present,
+   and fix any that are missing or inconsistent.
+
+Report back with real screenshots (the same headless-browser method used
+for the last verification, not descriptions) showing the corrected, more
+subtle text color and the confirmed divider line across all variants and
+routes, before this is considered done.
