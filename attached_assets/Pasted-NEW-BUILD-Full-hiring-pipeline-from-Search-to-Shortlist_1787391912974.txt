@@ -1,0 +1,46 @@
+NEW BUILD: Full hiring pipeline, from Search-to-Shortlist through Hired.
+Do not assume any part of this already exists — start with a real audit
+of the current codebase and report what's actually there before building
+anything.
+
+═══════════════════════════════════════
+STEP 0 — AUDIT FIRST
+═══════════════════════════════════════
+
+Report on the actual current state:
+1. Does a job_submissions (or equivalent) table exist? What status values
+   does it currently support?
+2. Do interviews, offers, or hiring_contracts tables exist in any form?
+3. Does the existing Search-to-Shortlist / Invite flow (Client searches
+   Talent, views a masked Full Profile, sends an Invite tied to a real
+   job) already exist? If so, describe its current mechanics exactly.
+4. Does any masking/unmask logic for Talent identity currently exist, and
+   if so, what currently triggers unmask?
+5. Does an MSA (Master Service Agreement) document exist anywhere in this
+   codebase already (static page, PDF, CMS)?
+
+Do not proceed to building until this audit is reported. If any of the
+above already exists in some form, propose how the design below should
+integrate with it rather than duplicate it.
+
+═══════════════════════════════════════
+THE DESIGN TO BUILD
+═══════════════════════════════════════
+
+PART 1 — Combined Invite + Interview
+Client sends ONE Invite that includes both the job selection and
+proposed interview time(s) — not a bare invite followed by separate
+scheduling later. Talent's response is three-way:
+- Accept a proposed time
+- Decline entirely (ends the pipeline)
+- Counter-propose different times
+
+Mechanics: an interviews table tracks proposed times and whose turn it is
+to respond (proposed_by: 'client' | 'talent'). Do NOT increment a round
+counter for this negotiation back-and-forth — that's reserved for
+genuinely separate interview stages (e.g. a technical round after this
+one). No hard cap on rounds, but add a soft nudge after ~3 rounds
+suggesting one side pick from the other's times.
+
+UNMASK TRIGGER: Talent identity unmasks only when a time is CONFIRMED —
+never on first response, never on a
