@@ -1,0 +1,198 @@
+[
+  {
+    "viewport": "390x844",
+    "slide": 1,
+    "documentElementScrollWidth": 390,
+    "windowInnerWidth": 390,
+    "bodyScrollWidth": 390,
+    "copy": null,
+    "card": null,
+    "screenshotPath": "screenshots/mobile-inset-390x844-hero-slide-1.png"
+  },
+  {
+    "viewport": "390x844",
+    "slide": 2,
+    "documentElementScrollWidth": 390,
+    "windowInnerWidth": 390,
+    "bodyScrollWidth": 390,
+    "copy": {
+      "left": 24,
+      "right": 366,
+      "width": 342,
+      "top": 179.328125,
+      "bottom": 496.625
+    },
+    "card": {
+      "left": 24,
+      "right": 372,
+      "width": 348,
+      "top": 508.625,
+      "bottom": 680.90625
+    },
+    "screenshotPath": "screenshots/mobile-inset-390x844-hero-slide-2.png"
+  },
+  {
+    "viewport": "390x844",
+    "slide": 3,
+    "documentElementScrollWidth": 390,
+    "windowInnerWidth": 390,
+    "bodyScrollWidth": 390,
+    "copy": {
+      "left": 24,
+      "right": 366,
+      "width": 342,
+      "top": 168.59375,
+      "bottom": 485.890625
+    },
+    "card": {
+      "left": 24,
+      "right": 372,
+      "width": 348,
+      "top": 497.890625,
+      "bottom": 691.640625
+    },
+    "screenshotPath": "screenshots/mobile-inset-390x844-hero-slide-3.png"
+  },
+  {
+    "viewport": "390x844",
+    "slide": 4,
+    "documentElementScrollWidth": 390,
+    "windowInnerWidth": 390,
+    "bodyScrollWidth": 390,
+    "copy": {
+      "left": 24,
+      "right": 366,
+      "width": 342,
+      "top": 119.890625,
+      "bottom": 535.859375
+    },
+    "card": {
+      "left": 24,
+      "right": 372,
+      "width": 348,
+      "top": 547.859375,
+      "bottom": 740.359375
+    },
+    "screenshotPath": "screenshots/mobile-inset-390x844-hero-slide-4.png"
+  },
+  {
+    "viewport": "390x844",
+    "slide": 5,
+    "documentElementScrollWidth": 390,
+    "windowInnerWidth": 390,
+    "bodyScrollWidth": 390,
+    "copy": {
+      "left": 24,
+      "right": 366,
+      "width": 342,
+      "top": 175.484375,
+      "bottom": 501.015625
+    },
+    "card": {
+      "left": 24,
+      "right": 372,
+      "width": 348,
+      "top": 513.015625,
+      "bottom": 684.765625
+    },
+    "screenshotPath": "screenshots/mobile-inset-390x844-hero-slide-5.png"
+  },
+  {
+    "viewport": "375x844",
+    "slide": 1,
+    "documentElementScrollWidth": 375,
+    "windowInnerWidth": 375,
+    "bodyScrollWidth": 375,
+    "copy": null,
+    "card": null,
+    "screenshotPath": "screenshots/mobile-inset-375x844-hero-slide-1.png"
+  },
+  {
+    "viewport": "375x844",
+    "slide": 2,
+    "documentElementScrollWidth": 375,
+    "windowInnerWidth": 375,
+    "bodyScrollWidth": 375,
+    "copy": {
+      "left": 24,
+      "right": 351,
+      "width": 327,
+      "top": 179.328125,
+      "bottom": 496.625
+    },
+    "card": {
+      "left": 24,
+      "right": 357,
+      "width": 333,
+      "top": 508.625,
+      "bottom": 680.90625
+    },
+    "screenshotPath": "screenshots/mobile-inset-375x844-hero-slide-2.png"
+  },
+  {
+    "viewport": "375x844",
+    "slide": 3,
+    "documentElementScrollWidth": 375,
+    "windowInnerWidth": 375,
+    "bodyScrollWidth": 375,
+    "copy": {
+      "left": 24,
+      "right": 351,
+      "width": 327,
+      "top": 168.59375,
+      "bottom": 485.890625
+    },
+    "card": {
+      "left": 24,
+      "right": 357,
+      "width": 333,
+      "top": 497.890625,
+      "bottom": 691.640625
+    },
+    "screenshotPath": "screenshots/mobile-inset-375x844-hero-slide-3.png"
+  },
+  {
+    "viewport": "375x844",
+    "slide": 4,
+    "documentElementScrollWidth": 375,
+    "windowInnerWidth": 375,
+    "bodyScrollWidth": 375,
+    "copy": {
+      "left": 24,
+      "right": 351,
+      "width": 327,
+      "top": 119.890625,
+      "bottom": 535.859375
+    },
+    "card": {
+      "left": 24,
+      "right": 357,
+      "width": 333,
+      "top": 547.859375,
+      "bottom": 740.359375
+    },
+    "screenshotPath": "screenshots/mobile-inset-375x844-hero-slide-4.png"
+  },
+  {
+    "viewport": "375x844",
+    "slide": 5,
+    "documentElementScrollWidth": 375,
+    "windowInnerWidth": 375,
+    "bodyScrollWidth": 375,
+    "copy": {
+      "left": 24,
+      "right": 351,
+      "width": 327,
+      "top": 175.484375,
+      "bottom": 501.015625
+    },
+    "card": {
+      "left": 24,
+      "right": 357,
+      "width": 333,
+      "top": 513.015625,
+      "bottom": 684.765625
+    },
+    "screenshotPath": "screenshots/mobile-inset-375x844-hero-slide-5.png"
+  }
+]

@@ -3027,16 +3027,16 @@ body.has-floating-bottom-right {
   }
 
   /*
-   * Use the full remaining viewport width from the copy edge to the right
-   * edge. This deliberately overrides each card's desktop-oriented inline
-   * width while staying mobile-only.
+   * Start at the 24px copy inset and preserve an 18px breathing room at the
+   * true viewport edge. The width must account for both sides of that span;
+   * otherwise a card starting at the inset extends past the viewport.
    */
   .hero-compact-dashboard,
   .hero-compact-earnings,
   .hero-compact-talent,
   .hero-compact-jobs {
-    width: calc(100vw - 24px) !important;
-    max-width: calc(100vw - 24px) !important;
+    width: calc(100vw - 24px - 18px) !important;
+    max-width: calc(100vw - 24px - 18px) !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
   }

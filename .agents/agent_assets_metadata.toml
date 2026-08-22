@@ -307,3 +307,17 @@ uri = "file://screenshots/mobile-aligned-mobile-375x844-all-slides.jpg"
 type = "image"
 title = "Mobile hero alignment — 375 × 844, all five slides"
 description = "Direct browser captures showing the same left-edge alignment and wider card treatment at the narrower mobile width."
+
+[[outputs]]
+id = "Uf_c3R5EuWMgcQkwf4DK0"
+uri = "file://screenshots/mobile-inset-390x844-all-slides.jpg"
+type = "image"
+title = "Mobile card inset fix — 390 × 844, all five slides"
+description = "Direct browser captures showing the shared 24px copy edge and 18px right margin."
+
+[[outputs]]
+id = "chbv1gKGd_XZN122c3Xdd"
+uri = "file://screenshots/mobile-inset-375x844-all-slides.jpg"
+type = "image"
+title = "Mobile card inset fix — 375 × 844, all five slides"
+description = "Direct browser captures showing the same corrected mobile card inset at the narrower width."
