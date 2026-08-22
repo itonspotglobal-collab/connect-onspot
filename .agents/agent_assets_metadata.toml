@@ -223,3 +223,31 @@ uri = "file://screenshots/verified-about-mobile-navigation-open.png"
 type = "image"
 title = "About page — responsive mobile navigation"
 description = "Live browser capture at 390px showing the responsive About navigation panel open without overflow."
+
+[[outputs]]
+id = "zfxhqluFz86LPNn8uaA3Z"
+uri = "file://screenshots/verified-home-hero-390x700-all-slides.jpg"
+type = "image"
+title = "Homepage mobile hero — 390 × 700"
+description = "Direct mobile-browser captures of slides 1–5 at the shortest requested viewport."
+
+[[outputs]]
+id = "CrFp2-iN0wq1yBVm-tQ0j"
+uri = "file://screenshots/verified-home-hero-390x768-all-slides.jpg"
+type = "image"
+title = "Homepage mobile hero — 390 × 768"
+description = "Direct mobile-browser captures of slides 1–5 at the standard phone viewport."
+
+[[outputs]]
+id = "JXFSG0hM6yoEVa4IzUYUL"
+uri = "file://screenshots/verified-home-hero-390x844-all-slides.jpg"
+type = "image"
+title = "Homepage mobile hero — 390 × 844"
+description = "Direct mobile-browser captures of slides 1–5 at the tall phone viewport."
+
+[[outputs]]
+id = "tzSeNuajM9FYFz5Dh5cQS"
+uri = "file://screenshots/verified-home-hero-375x844-all-slides.jpg"
+type = "image"
+title = "Homepage mobile hero — 375 × 844"
+description = "Narrow-width browser check showing all five slides without horizontal overflow."

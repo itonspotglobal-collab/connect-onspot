@@ -2910,7 +2910,7 @@ body.has-floating-bottom-right {
     gap: 12px !important;
   }
 
-  /* TwoCol right side: center the visual on mobile; cropping handled by window divs */
+  /* TwoCol right side: center the compact visual on mobile */
   .hero-twocol-right {
     display: flex !important;
     justify-content: center !important;
@@ -2930,18 +2930,18 @@ body.has-floating-bottom-right {
     margin-top: 8px !important;
   }
 
-  /* Slide 2 — tablet crop window: fixed-height overflow container, shows top portion */
+  /* Slide 2 — compact dashboard replaces the desktop laptop on mobile */
   .hero-mobile-device-window {
     position: relative;
     width: 100%;
-    height: clamp(250px, 36vh, 340px);
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
   }
 
-  /* Slide 2 — laptop mockup: centered inside crop window, 3D rotation flattened */
+  /* Slide 2 — desktop laptop remains available above the mobile breakpoint */
   .hero-laptop-wrap {
     width: min(76vw, 340px) !important;
     max-width: 340px !important;
@@ -2951,36 +2951,89 @@ body.has-floating-bottom-right {
     transform: none !important;
   }
 
-  /* Slide 3 — phone crop window: fixed-height overflow container */
+  /* Slide 3 — full compact earnings preview, without a crop window */
   .hero-phone-window {
     position: relative;
     width: 100%;
-    height: clamp(220px, 32vh, 300px);
-    overflow: hidden;
+    height: auto;
+    overflow: visible;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
   }
 
-  /* Slide 3 — phone mockup: larger now that window handles cropping */
+  /* Slide 3 — smaller phone keeps the key summary legible within the slide */
   .hero-phone-wrap {
-    width: min(42vw, 180px) !important;
+    width: min(32vw, 128px) !important;
     max-width: 180px !important;
     margin-inline: auto !important;
   }
 
-  /* Slide content area: allow shrink, clip overflow so controls are never pushed out */
-  .hero-slide-content {
-    overflow: hidden;
+  .hero-phone-body {
+    padding: 4px 12px 12px !important;
   }
 
-  /* Slides 4 & 5 — talent/jobs cards: mobile-safe width + height cap */
+  .hero-phone-total {
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .hero-phone-stats {
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .hero-phone-chart {
+    display: none !important;
+  }
+
+  /* No mobile card/window acts as a silent height-based crop. */
+  .hero-slide-content {
+    overflow: visible;
+  }
+
+  .hero-mobile-hide-row,
+  .hero-mobile-hide-secondary {
+    display: none !important;
+  }
+
+  .hero-talent-search,
+  .hero-jobs-search {
+    padding: 10px 12px 8px !important;
+  }
+
+  .hero-talent-footer,
+  .hero-jobs-footer {
+    padding: 8px 12px !important;
+  }
+
+  .hero-talent-wrap,
+  .hero-jobs-wrap {
+    /* Compact content determines height; never crop a future row silently. */
+    max-height: none;
+    overflow: visible;
+  }
+
+  .hero-jobs-header {
+    padding: 8px 12px !important;
+  }
+
+  .hero-job-secondary {
+    display: none !important;
+  }
+
+  @media (max-height: 800px) {
+    .hero-network-detail,
+    .hero-jobs-detail {
+      display: none !important;
+    }
+  }
+
+  /* Slides 4 & 5 — mobile-safe width */
   .hero-talent-wrap,
   .hero-jobs-wrap {
     width: min(94vw, 360px) !important;
     margin-inline: auto !important;
-    max-height: 255px;
-    overflow: hidden;
     border-radius: 18px;
   }
 }

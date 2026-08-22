@@ -684,7 +684,12 @@ function CompaniesSlide({ isDark }: { isDark: boolean }) {
       }
       right={
         <div className="hero-mobile-device-window">
-          <LaptopMockup />
+          <div className="hidden md:block">
+            <LaptopMockup />
+          </div>
+          <div className="md:hidden">
+            <CompactDashboardCard />
+          </div>
         </div>
       }
     />
@@ -754,21 +759,21 @@ function LaptopMockup() {
               </div>
             </div>
             {/* Body */}
-            <div style={{ padding: "12px 16px 14px" }}>
+            <div className="hero-dashboard-body" style={{ padding: "12px 16px 14px" }}>
               {/* Header row */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
                 <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 13, fontWeight: 700, color: T.text }}>Team dashboard</span>
                 <span style={{ fontSize: 8, color: T.dim2 }}>Last 6 months</span>
               </div>
               {/* 4 stat tiles */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 12 }}>
+              <div className="hero-dashboard-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 12 }}>
                 {[
                   { label: "Monthly cost",     value: "$18,400", sub: "▼ 22% vs traditional", cost: true  },
                   { label: "Headcount",        value: "8",       sub: "Active members",        cost: false },
                   { label: "Avg. performance", value: "4.8/5",   sub: "Across all roles",      cost: false },
                   { label: "Retention",        value: "94%",     sub: "Team continuity",       cost: false },
                 ].map((s) => (
-                  <div key={s.label} style={{ background: s.cost ? T.purpleTint : T.bg2, border: s.cost ? "1px solid rgba(71,78,173,0.2)" : "none", borderRadius: 8, padding: "8px 9px" }}>
+                  <div key={s.label} className="hero-dashboard-stat" style={{ background: s.cost ? T.purpleTint : T.bg2, border: s.cost ? "1px solid rgba(71,78,173,0.2)" : "none", borderRadius: 8, padding: "8px 9px" }}>
                     <p style={{ fontSize: 6, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 4 }}>{s.label}</p>
                     <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 14, fontWeight: 800, color: s.cost ? T.purple : T.text, lineHeight: 1 }}>{s.value}</p>
                     <p style={{ fontSize: 6, color: s.cost ? T.green : T.dim2, fontWeight: s.cost ? 600 : 400, marginTop: 3 }}>{s.sub}</p>
@@ -776,12 +781,12 @@ function LaptopMockup() {
                 ))}
               </div>
               {/* Split */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 12 }}>
+              <div className="hero-dashboard-split" style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 12 }}>
                 {/* Left — Team performance */}
                 <div>
                   <p style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 8 }}>Team performance</p>
-                  {TEAM.map((m) => (
-                    <div key={m.i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
+                  {TEAM.map((m, i) => (
+                    <div key={m.i} className={i >= 2 ? "hero-mobile-hide-row hero-dashboard-team-row" : "hero-dashboard-team-row"} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: T.purpleTint, color: T.purple, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: 6 }}>{m.i}</div>
                         <div>
@@ -810,8 +815,8 @@ function LaptopMockup() {
                     </div>
                   </div>
                   <p style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: T.dim, marginBottom: 5 }}>Vacant roles</p>
-                  {VACANT.map((v) => (
-                    <div key={v.r} style={{ padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
+                  {VACANT.map((v, i) => (
+                    <div key={v.r} className={i >= 2 ? "hero-mobile-hide-row hero-dashboard-vacant-row" : "hero-dashboard-vacant-row"} style={{ padding: "6px 0", borderTop: `1px solid ${T.line}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
                         <span style={{ fontSize: 8, fontWeight: 600, color: T.text }}>{v.r}</span>
                         <span style={{ fontSize: 7, color: T.dim2 }}>{v.d}</span>
@@ -822,6 +827,74 @@ function LaptopMockup() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompactDashboardCard() {
+  const team = [
+    { initials: "MR", name: "Maria R.", role: "Customer Support", performance: "4.9" },
+    { initials: "JT", name: "Josh T.", role: "Data Analyst", performance: "4.7" },
+  ];
+  const roles = [
+    { title: "Customer Support Rep", detail: "5 candidates in review" },
+    { title: "Sales Associate", detail: "6 candidates in review" },
+  ];
+
+  return (
+    <div
+      className="hero-compact-dashboard"
+      style={{
+        width: "min(88vw, 340px)",
+        background: "#fff",
+        border: "1px solid #ECECF1",
+        borderRadius: 18,
+        boxShadow: "0 18px 42px rgba(20,25,80,0.18)",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid #ECECF1" }}>
+        <span style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontWeight: 700, fontSize: 11, color: "#1D1D1F" }}>OnSpot</span>
+        <span style={{ fontSize: 8, color: "#6E6E76" }}>Team dashboard</span>
+      </div>
+      <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 5, marginBottom: 9 }}>
+          {[
+            { label: "Monthly cost", value: "$18,400", accent: true },
+            { label: "Headcount", value: "8" },
+            { label: "Retention", value: "94%" },
+          ].map((stat) => (
+            <div key={stat.label} style={{ background: stat.accent ? "#EEEDFB" : "#F6F6FA", borderRadius: 7, padding: "6px 7px" }}>
+              <p style={{ fontSize: 5.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "#6E6E76", margin: "0 0 3px" }}>{stat.label}</p>
+              <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 12, fontWeight: 800, color: stat.accent ? "#474EAD" : "#1D1D1F", lineHeight: 1, margin: 0 }}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 9 }}>
+          <div>
+            <p style={{ fontSize: 6.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#6E6E76", margin: "0 0 4px" }}>Team performance</p>
+            {team.map((member) => (
+              <div key={member.initials} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 0", borderTop: "1px solid #ECECF1" }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, background: "#EEEDFB", color: "#474EAD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 5.5, fontWeight: 700 }}>{member.initials}</div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 7.5, fontWeight: 600, color: "#1D1D1F", margin: 0, lineHeight: 1.1 }}>{member.name}</p>
+                  <p style={{ fontSize: 6.5, color: "#A1A1A8", margin: "2px 0 0", lineHeight: 1.1 }}>{member.role}</p>
+                </div>
+                <span style={{ marginLeft: "auto", fontSize: 6.5, fontWeight: 700, color: "#1D8A5A", background: "#E6F5EC", padding: "2px 4px", borderRadius: 100 }}>{member.performance}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p style={{ fontSize: 6.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#6E6E76", margin: "0 0 4px" }}>Open roles</p>
+            {roles.map((role) => (
+              <div key={role.title} style={{ padding: "4px 0", borderTop: "1px solid #ECECF1" }}>
+                <p style={{ fontSize: 7.5, fontWeight: 600, color: "#1D1D1F", margin: 0, lineHeight: 1.1 }}>{role.title}</p>
+                <p style={{ fontSize: 6.5, color: "#474EAD", margin: "2px 0 0", lineHeight: 1.1 }}>{role.detail}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -863,7 +936,12 @@ function TalentSlide({ isDark }: { isDark: boolean }) {
       }
       right={
         <div className="hero-phone-window">
-          <PhoneMockup />
+          <div className="hidden md:block">
+            <PhoneMockup />
+          </div>
+          <div className="md:hidden">
+            <CompactEarningsCard />
+          </div>
         </div>
       }
     />
@@ -918,7 +996,7 @@ function PhoneMockup() {
           </div>
 
           {/* App body */}
-          <div style={{ padding: "6px 20px 24px" }}>
+          <div className="hero-phone-body" style={{ padding: "6px 20px 24px" }}>
 
             {/* Page title */}
             <div style={{ marginBottom: 16 }}>
@@ -927,14 +1005,14 @@ function PhoneMockup() {
             </div>
 
             {/* Total tile — gold tint */}
-            <div style={{ background: goldTint, border: "1px solid rgba(245,166,35,0.25)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
+            <div className="hero-phone-total" style={{ background: goldTint, border: "1px solid rgba(245,166,35,0.25)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
               <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: textDim, marginBottom: 6 }}>Total Earned This Month</div>
               <div style={{ fontFamily: brio, fontSize: 30, fontWeight: 800, color: text }}>$3,455</div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: green, background: greenTint, padding: "3px 9px", borderRadius: 100, marginTop: 6 }}>▲ 18% vs last month</div>
             </div>
 
             {/* Stat tiles */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+            <div className="hero-phone-stats" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
               {[{ label: "Avg. rate", val: "$20/hr" }, { label: "Active clients", val: "2" }].map(s => (
                 <div key={s.label} style={{ background: bg2, borderRadius: 14, padding: "14px 16px" }}>
                   <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: textDim, marginBottom: 6 }}>{s.label}</div>
@@ -944,7 +1022,7 @@ function PhoneMockup() {
             </div>
 
             {/* Bar chart — percentage heights */}
-            <div style={{ marginBottom: 24 }}>
+            <div className="hero-phone-chart" style={{ marginBottom: 24 }}>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 7, height: 60 }}>
                 {[42, 58, 38, 70, 65, 100].map((h, i) => (
                   <div key={i} style={{ flex: 1, height: `${h}%`, background: "linear-gradient(180deg, #FFC968 0%, #F5A623 100%)", borderRadius: "4px 4px 0 0" }} />
@@ -962,8 +1040,8 @@ function PhoneMockup() {
             {[
               { name: "New Tech AI",      amt: "$2,000", pct: 100 },
               { name: "John Roberts LLC", amt: "$1,455", pct:  73 },
-            ].map(c => (
-              <div key={c.name} style={{ marginBottom: 14 }}>
+            ].map((c, i) => (
+              <div key={c.name} className={i > 0 ? "hero-mobile-hide-secondary" : undefined} style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: text }}>{c.name}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: textDim }}>{c.amt}</span>
@@ -976,6 +1054,45 @@ function PhoneMockup() {
 
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CompactEarningsCard() {
+  return (
+    <div
+      className="hero-compact-earnings"
+      style={{
+        width: "min(72vw, 260px)",
+        background: "#fff",
+        borderRadius: 18,
+        padding: 12,
+        boxShadow: "0 20px 44px rgba(0,0,0,0.3)",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 9 }}>
+        <div>
+          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 12, fontWeight: 700, color: "#1D1D1F", margin: 0 }}>Earnings summary</p>
+          <p style={{ fontSize: 7.5, color: "#A1A1A8", margin: "2px 0 0" }}>This month</p>
+        </div>
+        <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#7B81D4" }} />
+      </div>
+      <div style={{ background: "#FDF1DE", border: "1px solid rgba(245,166,35,0.25)", borderRadius: 12, padding: "10px 11px", marginBottom: 8 }}>
+        <p style={{ fontSize: 7, textTransform: "uppercase", letterSpacing: "0.04em", color: "#6E6E76", margin: "0 0 4px" }}>Total earned</p>
+        <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22, fontWeight: 800, color: "#1D1D1F", margin: 0, lineHeight: 1 }}>$3,455</p>
+        <span style={{ display: "inline-block", fontSize: 7.5, fontWeight: 700, color: "#1D8A5A", background: "#E6F5EC", padding: "3px 5px", borderRadius: 100, marginTop: 6 }}>▲ 18% this month</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        {[
+          { label: "Avg. rate", value: "$20/hr" },
+          { label: "Active clients", value: "2" },
+        ].map((stat) => (
+          <div key={stat.label} style={{ background: "#F6F6FA", borderRadius: 9, padding: "7px 8px" }}>
+            <p style={{ fontSize: 6.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "#6E6E76", margin: "0 0 3px" }}>{stat.label}</p>
+            <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 12, fontWeight: 800, color: "#1D1D1F", margin: 0, lineHeight: 1 }}>{stat.value}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1005,7 +1122,7 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
             Vetted, experienced, and{" "}
             <span className="font-bold" style={{ color: C.orangeDeep }}>ready to start in days — not months.</span>
           </p>
-          <p className="mt-3" style={{ fontSize: "clamp(15px, 1.1vw, 17px)", color: C.gray, maxWidth: 500, lineHeight: 1.55 }}>
+          <p className="mt-3 hero-network-detail" style={{ fontSize: "clamp(15px, 1.1vw, 17px)", color: C.gray, maxWidth: 500, lineHeight: 1.55 }}>
             Every professional in the network is screened for skills, experience, and reliability before you ever see them — so the match is fast and the quality holds.
           </p>
           <Link
@@ -1017,7 +1134,16 @@ function NetworkSlide({ isDark, liveTalents, isLoading }: { isDark: boolean; liv
           </Link>
         </>
       }
-      right={<TalentListCard candidates={liveTalents} isLoading={isLoading} />}
+      right={
+        <>
+          <div className="hidden md:block">
+            <TalentListCard candidates={liveTalents} isLoading={isLoading} />
+          </div>
+          <div className="md:hidden">
+            <CompactTalentListCard candidates={liveTalents} isLoading={isLoading} />
+          </div>
+        </>
+      }
     />
   );
 }
@@ -1048,7 +1174,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
         style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(75,81,184,0.18)", backdropFilter: "blur(14px)", boxShadow: "0 24px 56px rgba(75,81,184,0.12)" }}
       >
         {/* Search bar — functional: navigates to /hire-talent?search=... */}
-        <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EEEDFB" }}>
+        <div className="hero-talent-search px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EEEDFB" }}>
           <form onSubmit={handleSearch}>
             <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
               <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
@@ -1067,11 +1193,11 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
             </div>
           </form>
           <div className="flex flex-wrap gap-1.5 mt-2.5">
-            {["Available now", "4.5★ and up", "3+ yrs experience"].map((f) => (
+            {["Available now", "4.5★ and up", "3+ yrs experience"].map((f, i) => (
               <button
                 key={f}
                 onClick={() => { window.location.href = `/hire-talent?search=${encodeURIComponent(f)}#top-matches`; }}
-                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition hover:opacity-75"
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition hover:opacity-75${i >= 2 ? " hero-mobile-hide-secondary" : ""}`}
                 style={{ background: "rgba(75,81,184,0.1)", color: C.indigo, border: "1px solid rgba(75,81,184,0.2)" }}
               >
                 {f}
@@ -1084,8 +1210,8 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
         <div className="divide-y" style={{ borderColor: "#EEEDFB" }}>
           {isLoading ? (
             // Skeleton rows — preserve card height while loading
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 animate-pulse">
+              Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={`flex items-center justify-between px-4 py-3 animate-pulse${i >= 2 ? " hero-mobile-hide-row" : ""}`}>
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 flex-shrink-0 rounded-full bg-[#EEEDFB]" />
                   <div className="space-y-1.5">
@@ -1102,7 +1228,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
               <a href="/hire-talent#top-matches" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>Browse talent →</a>
             </div>
           ) : (
-            candidates.map((c: any) => {
+            candidates.map((c: any, i: number) => {
               const name =
                 c.displayName?.trim() ||
                 formatPublicTalentNameFromFull(c.fullName) ||
@@ -1114,7 +1240,7 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
                 <Link
                   key={c.id}
                   href={`/talent-profile/${c.id}`}
-                  className="px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer"
+                  className={`px-4 py-3 hover:bg-[#F8F7FD] transition-colors cursor-pointer${i >= 2 ? " hero-mobile-hide-row" : ""}`}
                   style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 10, alignItems: "center" }}
                 >
                   {/* Avatar — always initials; never expose talent faces on public pages */}
@@ -1144,12 +1270,72 @@ function TalentListCard({ candidates, isLoading }: { candidates: any[]; isLoadin
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t" style={{ borderColor: "#EEEDFB", background: "#F8F7FD" }}>
+        <div className="hero-talent-footer px-4 py-3 border-t" style={{ borderColor: "#EEEDFB", background: "#F8F7FD" }}>
           <a href="/hire-talent#top-matches" className="text-[11px] font-semibold hover:underline" style={{ color: C.indigo }}>
             Browse all talent →
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CompactTalentListCard({ candidates, isLoading }: { candidates: any[]; isLoading: boolean }) {
+  const rows = candidates.slice(0, 2);
+
+  return (
+    <div
+      className="hero-compact-talent"
+      style={{
+        width: "min(94vw, 360px)",
+        background: "rgba(255,255,255,0.92)",
+        border: "1px solid rgba(75,81,184,0.18)",
+        borderRadius: 16,
+        boxShadow: "0 18px 42px rgba(75,81,184,0.14)",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ padding: "9px 12px", borderBottom: "1px solid #EEEDFB" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#F4F3FC", border: "1px solid #DDDCF4", borderRadius: 7, padding: "6px 8px" }}>
+          <Search size={12} style={{ color: C.indigoLight, flexShrink: 0 }} />
+          <span style={{ fontSize: 8.5, color: "#9CA3AF" }}>Find your next talent</span>
+        </div>
+        <div style={{ display: "flex", gap: 5, marginTop: 6 }}>
+          {["Available now", "4.5★ and up"].map((filter) => (
+            <span key={filter} style={{ fontSize: 7.5, fontWeight: 600, color: C.indigo, background: "rgba(75,81,184,0.1)", border: "1px solid rgba(75,81,184,0.16)", padding: "3px 6px", borderRadius: 999 }}>{filter}</span>
+          ))}
+        </div>
+      </div>
+      <div>
+        {isLoading ? (
+          [0, 1].map((index) => (
+            <div key={index} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderBottom: "1px solid #EEEDFB" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EEEDFB" }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ height: 7, width: 86, borderRadius: 99, background: "#EEEDFB", marginBottom: 5 }} />
+                <div style={{ height: 6, width: 112, borderRadius: 99, background: "#F4F3FC" }} />
+              </div>
+            </div>
+          ))
+        ) : rows.length > 0 ? rows.map((candidate: any) => {
+          const name = candidate.displayName?.trim() || formatPublicTalentNameFromFull(candidate.fullName) || "Talent";
+          const role = candidate.targetPosition || candidate.headline || "Professional";
+          const available = candidate.availability === "available" || candidate.availability === "Available";
+          return (
+            <Link key={candidate.id} href={`/talent-profile/${candidate.id}`} style={{ display: "grid", gridTemplateColumns: "28px minmax(0,1fr) auto", gap: 8, alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #EEEDFB", textDecoration: "none" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.indigo, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700 }}>{talentInitials(name)}</div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ color: C.charcoal, fontSize: 9.5, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</p>
+                <p style={{ color: C.gray, fontSize: 7.5, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{role}</p>
+              </div>
+              <span style={{ color: available ? "#1a7d42" : C.indigo, background: available ? "rgba(46,186,107,0.12)" : "rgba(75,81,184,0.1)", borderRadius: 999, padding: "3px 5px", fontSize: 7, fontWeight: 700 }}>{available ? "Ready" : "Open"}</span>
+            </Link>
+          );
+        }) : (
+          <div style={{ padding: "16px 12px", textAlign: "center", fontSize: 9, color: C.gray }}>Browse verified professionals</div>
+        )}
+      </div>
+      <Link href="/hire-talent#top-matches" style={{ display: "block", padding: "8px 12px", color: C.indigo, background: "#F8F7FD", fontSize: 9, fontWeight: 700, textDecoration: "none" }}>Browse all talent →</Link>
     </div>
   );
 }
@@ -1175,7 +1361,7 @@ function JobsSlide({ isDark, liveJobs, isLoading, liveTalents }: { isDark: boole
             Real roles, real rates —{" "}
             <span className="font-bold" style={{ color: C.orangeLight }}>and new jobs opening every week.</span>
           </p>
-          <p className="mt-3 leading-relaxed" style={{ fontSize: "clamp(15px, 1vw, 17px)", color: "rgba(255,255,255,0.62)", maxWidth: 510 }}>
+          <p className="mt-3 leading-relaxed hero-jobs-detail" style={{ fontSize: "clamp(15px, 1vw, 17px)", color: "rgba(255,255,255,0.62)", maxWidth: 510 }}>
             Set your rate and keep it. OnSpot's fee is added on top — never taken out of your pay.
           </p>
           <Link
@@ -1187,7 +1373,16 @@ function JobsSlide({ isDark, liveJobs, isLoading, liveTalents }: { isDark: boole
           </Link>
         </>
       }
-      right={<OpenRolesCard liveJobs={liveJobs} isLoading={isLoading} liveTalents={liveTalents} />}
+      right={
+        <>
+          <div className="hidden md:block">
+            <OpenRolesCard liveJobs={liveJobs} isLoading={isLoading} liveTalents={liveTalents} />
+          </div>
+          <div className="md:hidden">
+            <CompactOpenRolesCard liveJobs={liveJobs} isLoading={isLoading} />
+          </div>
+        </>
+      }
     />
   );
 }
@@ -1224,7 +1419,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
         style={{ background: "rgba(255,255,255,0.84)", border: "1px solid rgba(255,255,255,0.32)", backdropFilter: "blur(16px)", boxShadow: "0 40px 80px -28px rgba(5,8,30,0.55)" }}
       >
         {/* Search bar */}
-        <div className="px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EDEDF2" }}>
+        <div className="hero-jobs-search px-4 pt-4 pb-3 border-b" style={{ borderColor: "#EDEDF2" }}>
           <form onSubmit={handleSearch}>
             <div className="flex items-center gap-2 rounded-[8px] px-3 py-2" style={{ background: "#F4F3FC", border: "1px solid #DDDCF4" }}>
               <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.indigoLight }} />
@@ -1245,7 +1440,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "#EDEDF2" }}>
+        <div className="hero-jobs-header flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "#EDEDF2" }}>
           <div>
             <p className="text-[13px] font-bold" style={{ color: C.charcoal }}>Open roles</p>
             <p className="text-[10px]" style={{ color: C.grayLight }}>Updated this week</p>
@@ -1257,7 +1452,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
         <div className="divide-y" style={{ borderColor: "#F0F0F5" }}>
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3.5 animate-pulse">
+              <div key={i} className={`flex items-center justify-between px-5 py-3.5 animate-pulse${i >= 2 ? " hero-mobile-hide-row" : ""}`}>
                 <div className="space-y-1.5">
                   <div className="h-3 w-36 rounded bg-gray-100" />
                   <div className="h-2 w-24 rounded bg-gray-50" />
@@ -1280,7 +1475,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
                 <Link
                   key={j.id}
                   href={`/find-work/job/${j.id}`}
-                  className="block px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                  className={`block px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors cursor-pointer${idx >= 2 ? " hero-mobile-hide-row" : ""}`}
                 >
                   <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 12, alignItems: "start" }}>
                     <div className="min-w-0">
@@ -1290,7 +1485,7 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
                       </p>
                       {/* Avatar stack */}
                       {rowAvatars.length > 0 && (
-                        <div className="flex items-center gap-1.5 mt-2">
+                        <div className="hero-job-secondary flex items-center gap-1.5 mt-2">
                           <div className="flex -space-x-1.5">
                             {rowAvatars.map((c: any, i: number) => (
                               <div key={i} className="h-5 w-5 rounded-full flex items-center justify-center ring-[1.5px] ring-white flex-shrink-0" style={{ background: C.indigo, fontSize: "7px", color: "white", fontWeight: 700 }}>
@@ -1321,12 +1516,66 @@ function OpenRolesCard({ liveJobs, isLoading, liveTalents }: { liveJobs: any[]; 
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t" style={{ borderColor: "#EDEDF2" }}>
+        <div className="hero-jobs-footer px-5 py-3 border-t" style={{ borderColor: "#EDEDF2" }}>
           <Link href="/find-work/jobs" className="text-[12px] font-semibold hover:underline underline-offset-2 transition" style={{ color: C.indigo }}>
             See all open jobs →
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CompactOpenRolesCard({ liveJobs, isLoading }: { liveJobs: any[]; isLoading: boolean }) {
+  const rows = liveJobs.slice(0, 2);
+
+  return (
+    <div
+      className="hero-compact-jobs"
+      style={{
+        width: "min(94vw, 360px)",
+        background: "rgba(255,255,255,0.94)",
+        border: "1px solid rgba(255,255,255,0.38)",
+        borderRadius: 16,
+        boxShadow: "0 18px 42px rgba(5,8,30,0.3)",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #EDEDF2" }}>
+        <div>
+          <p style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 11, fontWeight: 700, color: C.charcoal, margin: 0 }}>Open roles</p>
+          <p style={{ fontSize: 7.5, color: C.grayLight, margin: "2px 0 0" }}>Updated this week</p>
+        </div>
+        <span style={{ color: C.orangeDeep, background: "rgba(255,174,33,0.18)", borderRadius: 999, padding: "3px 6px", fontSize: 7, fontWeight: 800, letterSpacing: "0.04em" }}>LIVE</span>
+      </div>
+      <div>
+        {isLoading ? (
+          [0, 1].map((index) => (
+            <div key={index} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #F0F0F5" }}>
+              <div>
+                <div style={{ width: 115, height: 8, borderRadius: 99, background: "#F0F0F5", marginBottom: 6 }} />
+                <div style={{ width: 72, height: 6, borderRadius: 99, background: "#F6F6FA" }} />
+              </div>
+              <div style={{ width: 38, height: 15, borderRadius: 99, background: "#F0F0F5" }} />
+            </div>
+          ))
+        ) : rows.length > 0 ? rows.map((job: any) => {
+          const location = job.location || job.engagementType || "Remote";
+          const pay = jobPay(job);
+          return (
+            <Link key={job.id} href={`/find-work/job/${job.id}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8, alignItems: "center", padding: "9px 12px", borderBottom: "1px solid #F0F0F5", textDecoration: "none" }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ color: C.charcoal, fontSize: 10, fontWeight: 700, lineHeight: 1.15, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.title}</p>
+                <p style={{ color: C.gray, fontSize: 7.5, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{location}{pay ? ` · ${pay}` : ""}</p>
+              </div>
+              <span style={{ color: C.indigo, border: `1px solid ${C.indigo}`, borderRadius: 999, padding: "3px 6px", fontSize: 7, fontWeight: 700 }}>Apply</span>
+            </Link>
+          );
+        }) : (
+          <div style={{ padding: "15px 12px", textAlign: "center", color: C.gray, fontSize: 9 }}>Browse roles from verified companies</div>
+        )}
+      </div>
+      <Link href="/find-work/jobs" style={{ display: "block", padding: "8px 12px", background: "#F8F7FD", color: C.indigo, fontSize: 9, fontWeight: 700, textDecoration: "none" }}>See all open jobs →</Link>
     </div>
   );
 }

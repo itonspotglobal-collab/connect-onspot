@@ -1,0 +1,682 @@
+{
+  "summary": [
+    {
+      "viewport": "390x700",
+      "slide": 1,
+      "cardHeight": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-1.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 2,
+      "cardHeight": 172,
+      "clearance": 30.2,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-2.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 3,
+      "cardHeight": 194,
+      "clearance": 19.5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-3.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 4,
+      "cardHeight": 193,
+      "clearance": 23.3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-4.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 5,
+      "cardHeight": 172,
+      "clearance": 56.7,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-5.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 1,
+      "cardHeight": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-1.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 2,
+      "cardHeight": 172,
+      "clearance": 62.9,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-2.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 3,
+      "cardHeight": 194,
+      "clearance": 52.1,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-3.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 4,
+      "cardHeight": 193,
+      "clearance": 55.9,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-4.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 5,
+      "cardHeight": 172,
+      "clearance": 89.4,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-5.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 1,
+      "cardHeight": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-1.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 2,
+      "cardHeight": 172,
+      "clearance": 99.3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-2.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 3,
+      "cardHeight": 194,
+      "clearance": 88.6,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-3.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 4,
+      "cardHeight": 193,
+      "clearance": 39.9,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-4.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 5,
+      "cardHeight": 172,
+      "clearance": 95.5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-5.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 1,
+      "cardHeight": null,
+      "clearance": null,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-1.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 2,
+      "cardHeight": 172,
+      "clearance": 99.3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-2.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 3,
+      "cardHeight": 194,
+      "clearance": 88.6,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-3.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 4,
+      "cardHeight": 193,
+      "clearance": 39.9,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-4.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 5,
+      "cardHeight": 172,
+      "clearance": 95.5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "horizontalOverflow": false,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-5.png"
+    }
+  ],
+  "results": [
+    {
+      "viewport": "390x700",
+      "slide": 1,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": null,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 706,
+        "height": 626,
+        "clientHeight": 626,
+        "scrollHeight": 626
+      },
+      "card": null,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-1.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 2,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 30.21875,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 706,
+        "height": 626,
+        "clientHeight": 626,
+        "scrollHeight": 626
+      },
+      "card": {
+        "top": 439.5,
+        "bottom": 611.78125,
+        "height": 172.28125,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-2.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 19.484375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 706,
+        "height": 626,
+        "clientHeight": 626,
+        "scrollHeight": 626
+      },
+      "card": {
+        "top": 428.765625,
+        "bottom": 622.515625,
+        "height": 193.75,
+        "clientHeight": 194,
+        "scrollHeight": 194
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-3.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 4,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 23.265625,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 706,
+        "height": 626,
+        "clientHeight": 626,
+        "scrollHeight": 626
+      },
+      "card": {
+        "top": 426.234375,
+        "bottom": 618.734375,
+        "height": 192.5,
+        "clientHeight": 191,
+        "scrollHeight": 191
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-4.png"
+    },
+    {
+      "viewport": "390x700",
+      "slide": 5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 56.734375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 706,
+        "height": 626,
+        "clientHeight": 626,
+        "scrollHeight": 626
+      },
+      "card": {
+        "top": 413.515625,
+        "bottom": 585.265625,
+        "height": 171.75,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x700-slide-5.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 1,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": null,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 774,
+        "height": 694,
+        "clientHeight": 694,
+        "scrollHeight": 694
+      },
+      "card": null,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-1.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 2,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 62.859375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 774,
+        "height": 694,
+        "clientHeight": 694,
+        "scrollHeight": 694
+      },
+      "card": {
+        "top": 472.140625,
+        "bottom": 644.421875,
+        "height": 172.28125,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-2.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 52.125,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 774,
+        "height": 694,
+        "clientHeight": 694,
+        "scrollHeight": 694
+      },
+      "card": {
+        "top": 461.40625,
+        "bottom": 655.15625,
+        "height": 193.75,
+        "clientHeight": 194,
+        "scrollHeight": 194
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-3.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 4,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 55.90625,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 774,
+        "height": 694,
+        "clientHeight": 694,
+        "scrollHeight": 694
+      },
+      "card": {
+        "top": 458.875,
+        "bottom": 651.375,
+        "height": 192.5,
+        "clientHeight": 191,
+        "scrollHeight": 191
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-4.png"
+    },
+    {
+      "viewport": "390x768",
+      "slide": 5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 89.375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 774,
+        "height": 694,
+        "clientHeight": 694,
+        "scrollHeight": 694
+      },
+      "card": {
+        "top": 446.15625,
+        "bottom": 617.90625,
+        "height": 171.75,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x768-slide-5.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 1,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": null,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": null,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-1.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 2,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 99.34375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 508.625,
+        "bottom": 680.90625,
+        "height": 172.28125,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-2.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 88.609375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 497.890625,
+        "bottom": 691.640625,
+        "height": 193.75,
+        "clientHeight": 194,
+        "scrollHeight": 194
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-3.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 4,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 39.890625,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 547.859375,
+        "bottom": 740.359375,
+        "height": 192.5,
+        "clientHeight": 191,
+        "scrollHeight": 191
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-4.png"
+    },
+    {
+      "viewport": "390x844",
+      "slide": 5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 95.484375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 513.015625,
+        "bottom": 684.765625,
+        "height": 171.75,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-390x844-slide-5.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 1,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": null,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": null,
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-1.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 2,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 99.34375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 508.625,
+        "bottom": 680.90625,
+        "height": 172.28125,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-2.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 3,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 88.609375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 497.890625,
+        "bottom": 691.640625,
+        "height": 193.75,
+        "clientHeight": 194,
+        "scrollHeight": 194
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-3.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 4,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 39.890625,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 547.859375,
+        "bottom": 740.359375,
+        "height": 192.5,
+        "clientHeight": 191,
+        "scrollHeight": 191
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-4.png"
+    },
+    {
+      "viewport": "375x844",
+      "slide": 5,
+      "heroOverflows": false,
+      "cardOverflows": false,
+      "clearance": 95.484375,
+      "horizontalOverflow": false,
+      "hero": {
+        "top": 80,
+        "bottom": 850,
+        "height": 770,
+        "clientHeight": 770,
+        "scrollHeight": 770
+      },
+      "card": {
+        "top": 513.015625,
+        "bottom": 684.765625,
+        "height": 171.75,
+        "clientHeight": 170,
+        "scrollHeight": 170
+      },
+      "fits": true,
+      "screenshotPath": "screenshots/verified-home-hero-375x844-slide-5.png"
+    }
+  ]
+}
