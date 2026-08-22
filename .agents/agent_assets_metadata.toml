@@ -202,3 +202,17 @@ uri = "file://screenshots/verified-about-no-redundant-cta-divider.png"
 type = "image"
 title = "About page — redundant CTA divider removed"
 description = "Live browser capture showing the About CTA without its inner bottom rule and the shared footer divider retained at the footer boundary."
+
+[[outputs]]
+id = "keAhFNqeANzyoNjy7bz3S"
+uri = "file://screenshots/verified-about-hero-desktop.png"
+type = "image"
+title = "About hero — desktop viewport"
+description = "Live browser capture of the About hero at 1440×900, filling the full viewport before the next section."
+
+[[outputs]]
+id = "N4VFjDP_unocOo1T2GDuQ"
+uri = "file://screenshots/verified-about-hero-mobile.png"
+type = "image"
+title = "About hero — mobile viewport"
+description = "Live browser capture of the About hero at 390×844, filling the full viewport before the next section."

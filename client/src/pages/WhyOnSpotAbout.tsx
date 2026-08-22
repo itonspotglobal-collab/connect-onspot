@@ -333,9 +333,9 @@ export default function WhyOnSpotAbout() {
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section
+        className="about-hero"
         style={{
           background: "linear-gradient(180deg, #3A47A8 0%, #2F327F 28%, #1D1F40 62%, #0F0F13 100%)",
-          height: "calc(100svh - 74px)",
           display: "flex",
           alignItems: "center",
           textAlign: "center",
@@ -764,6 +764,10 @@ export default function WhyOnSpotAbout() {
         @keyframes _culture-in {
           from { opacity: 0; transform: translateY(28px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .about-hero {
+          min-height: 100vh;
+          min-height: 100dvh;
         }
         .belief-card-pre {
           opacity: 0;
