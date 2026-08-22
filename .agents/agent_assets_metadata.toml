@@ -251,3 +251,17 @@ uri = "file://screenshots/verified-home-hero-375x844-all-slides.jpg"
 type = "image"
 title = "Homepage mobile hero — 375 × 844"
 description = "Narrow-width browser check showing all five slides without horizontal overflow."
+
+[[outputs]]
+id = "WAkCvzknrATeuZl-UbNd1"
+uri = "file://screenshots/verified-tablet-768x844-all-slides.jpg"
+type = "image"
+title = "Homepage hero — tablet 768 × 844"
+description = "Direct browser captures of all five slides after the tablet containment fix."
+
+[[outputs]]
+id = "upEUDGkeVVdWvfNl7zmom"
+uri = "file://screenshots/verified-tablet-1024x844-all-slides.jpg"
+type = "image"
+title = "Homepage hero — tablet 1024 × 844"
+description = "Direct browser captures of all five slides at the desktop handoff width."

@@ -74,6 +74,52 @@ body.has-floating-bottom-right {
   }
 }
 
+/* ─── Homepage hero carousel — tablet layout ───────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /*
+   * At tablet width the desktop two-column composition needs to start before
+   * the lg breakpoint. This keeps the slide content centered vertically rather
+   * than stacking a full-density card below a tall text block.
+   */
+  .hero-twocol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(24px, 4vw, 48px) !important;
+    align-items: center;
+  }
+
+  .hero-twocol-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-twocol-right > * {
+    max-width: 100%;
+  }
+
+  .hero-laptop-wrap,
+  .hero-phone-wrap,
+  .hero-talent-wrap,
+  .hero-jobs-wrap {
+    max-width: 100% !important;
+  }
+
+  .hero-laptop-wrap {
+    width: min(100%, 320px) !important;
+  }
+
+  .hero-phone-wrap {
+    width: min(100%, 220px) !important;
+  }
+
+  .hero-talent-wrap,
+  .hero-jobs-wrap {
+    width: min(100%, 400px) !important;
+  }
+}
+
 /* Z-index layering reference (use these, don't invent new values):
  *   Normal page content          → default (auto)
  *   Sticky page widgets / pills  → 8 000

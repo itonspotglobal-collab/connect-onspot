@@ -42,6 +42,9 @@ const C = {
   navySection:  "#0C123F",
 };
 
+const HERO_HOURLY_RATE_LABEL = "Hourly rate";
+const HERO_HOURLY_RATE_VALUE = "$20/hour";
+
 const SLIDE_MS = 6000;
 
 const SLIDES = [
@@ -1013,7 +1016,7 @@ function PhoneMockup() {
 
             {/* Stat tiles */}
             <div className="hero-phone-stats" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
-              {[{ label: "Avg. rate", val: "$20/hr" }, { label: "Active clients", val: "2" }].map(s => (
+              {[{ label: HERO_HOURLY_RATE_LABEL, val: HERO_HOURLY_RATE_VALUE }, { label: "Active clients", val: "2" }].map(s => (
                 <div key={s.label} style={{ background: bg2, borderRadius: 14, padding: "14px 16px" }}>
                   <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: textDim, marginBottom: 6 }}>{s.label}</div>
                   <div style={{ fontFamily: brio, fontSize: 18, fontWeight: 800, color: text }}>{s.val}</div>
@@ -1085,7 +1088,7 @@ function CompactEarningsCard() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {[
-          { label: "Avg. rate", value: "$20/hr" },
+          { label: HERO_HOURLY_RATE_LABEL, value: HERO_HOURLY_RATE_VALUE },
           { label: "Active clients", value: "2" },
         ].map((stat) => (
           <div key={stat.label} style={{ background: "#F6F6FA", borderRadius: 9, padding: "7px 8px" }}>
