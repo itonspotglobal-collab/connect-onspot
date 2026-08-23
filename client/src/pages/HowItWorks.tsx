@@ -109,8 +109,17 @@ const SECTIONS: Section[] = [
         heading: "The Hiring Process",
         items: [
           {
-            q: "Are Contractors vetted before I can hire them?",
-            a: 'Not all Contractors on OnSpot are vetted. If you specifically want vetted Contractors, look for profiles with the "Vetted" mark — these have gone through OnSpot\'s internal review process in addition to AI-based matching.',
+            q: "Are Contractors verified or vetted before I can hire them?",
+            a: (
+              <>
+                Not every Contractor carries these marks — both are optional, not automatic.
+                <ul className="mt-2 space-y-1 list-none">
+                  <li><span className="font-semibold text-slate-800">Verified</span> means OnSpot has confirmed their identity and certifications.</li>
+                  <li><span className="font-semibold text-slate-800">Vetted</span> means OnSpot has gone further, reviewing their skills, experience, and work history — and requires that they're already Verified first.</li>
+                </ul>
+                <p className="mt-2">Look for either mark on a profile if trust signals matter for your hiring decision.</p>
+              </>
+            ),
           },
           {
             q: "How do I find contractors?",
@@ -230,8 +239,29 @@ const SECTIONS: Section[] = [
             a: "Complete your profile with your skills, experience, and availability. AI resume parsing helps speed this up. The more complete your profile, the more visible you are to Clients searching for your skillset.",
           },
           {
+            q: "How do I get Verified?",
+            a: '"Verified" confirms your identity and credentials — you\'ll upload a government-issued ID and any relevant certifications, and OnSpot reviews them to confirm you are who you say you are. It\'s the foundation for building trust with Clients, and it\'s required before you can become Vetted.',
+          },
+          {
             q: "How do I get Vetted?",
-            a: 'Getting the "Vetted" mark isn\'t automatic — it\'s granted by OnSpot after an internal review of your profile and work history. There are three paths: you reach out to your account manager to request a review; OnSpot proactively selects you based on strong performance and a complete profile; or you reach a tenure and engagement milestone that triggers an automatic review. Until then, your profile is fully visible and searchable — Vetted is an added distinction that makes you more attractive to Clients specifically looking for vetted Contractors, not a prerequisite for being hired.',
+            a: (
+              <>
+                "Vetted" goes further than Verified — it confirms your skills, experience, and work history are accurate, through OnSpot's internal review. You must be Verified first. From there, there's more than one path:
+                <ul className="mt-2 space-y-1 list-none">
+                  <li><span className="font-semibold text-slate-800">Request it</span> — reach out to your account manager and ask for a review.</li>
+                  <li><span className="font-semibold text-slate-800">Get selected</span> — OnSpot may proactively offer it to Contractors with strong performance.</li>
+                  <li><span className="font-semibold text-slate-800">Reach a milestone</span> — it can also be granted automatically once you hit a tenure or engagement threshold.</li>
+                </ul>
+              </>
+            ),
+          },
+          {
+            q: "What's the difference between Verified and Vetted?",
+            a: (
+              <>
+                Verified confirms <em>who you are</em> — your identity and certifications are on file and reviewed. Vetted confirms <em>how you perform</em> — your skills, experience, and work history have been reviewed by OnSpot. Verified is the foundation; Vetted is the deeper layer built on top of it.
+              </>
+            ),
           },
         ],
       },
