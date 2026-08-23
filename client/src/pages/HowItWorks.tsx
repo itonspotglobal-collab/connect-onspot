@@ -3,6 +3,18 @@ import { ChevronDown, Sparkles, ArrowRight, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 import { Footer } from "@/components/Footer";
 import { useVanessa } from "@/contexts/VanessaContext";
+import NotFound from "@/pages/not-found";
+
+// ─── Publish gate ─────────────────────────────────────────────────────────────
+// This page is STAGED — it must not be publicly reachable until both of these
+// dependencies have shipped to the live product:
+//   1. Lite/Standard engagement-type rename
+//   2. "Vetted" badge feature on Contractor profiles
+//
+// To preview during development, set VITE_HOW_IT_WORKS_ENABLED=true in the
+// environment. Without that flag this component renders a 404, making the page
+// genuinely unreachable regardless of how a visitor finds the URL.
+const ENABLED = import.meta.env.VITE_HOW_IT_WORKS_ENABLED === "true";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -358,6 +370,11 @@ function AccordionItem({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HowItWorks() {
+  // Hard gate — return 404 for any visitor when the publish flag is off.
+  // This fires before any hooks, which is valid because ENABLED is a module-level
+  // constant (never changes at runtime), so hook call count is always the same.
+  if (!ENABLED) return <NotFound />;
+
   const { openVanessa } = useVanessa();
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);

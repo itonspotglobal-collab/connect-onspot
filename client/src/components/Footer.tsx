@@ -51,7 +51,11 @@ const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
   { href: "/amazing",             label: "Stories" },
   { href: "/insights",            label: "Insights" },
-  { href: "/how-it-works",        label: "How It Works" },
+  // NOTE: "How It Works" footer link is intentionally omitted until the page
+  // ships publicly. Re-add { href: "/how-it-works", label: "How It Works" }
+  // here once both publish-gate dependencies have shipped:
+  //   1. Lite/Standard engagement-type rename
+  //   2. "Vetted" badge feature
   { href: "/hire-talent",         label: "Hire Talent" },
   { href: "/find-work/jobs",      label: "Find Work" },
   { href: "/affiliate-marketing", label: "Affiliate" },
