@@ -646,7 +646,7 @@ export default function HowItWorks() {
         </div>
       </div>
 
-      <Footer variant="dark-gradient" separator />
+      <Footer variant="light" separator />
     </div>
   );
 }
