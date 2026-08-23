@@ -15,6 +15,7 @@
  *   2. Complex JOIN query: embed `js.${FORMAL_PIPELINE_PREDICATE}` in the WHERE clause.
  *   3. Name-reveal EXISTS: call nameRevealExistsSQL(clientParam, talentParam).
  *   4. Status IN-list: embed FORMAL_PIPELINE_ACTIVE_STATUS_SQL.
+ *   5. Non-pipeline submission query: embed `js.${SHORTLIST_EXCLUSION_PREDICATE}`.
  */
 
 import { query } from "../db.js";
@@ -27,6 +28,12 @@ import { query } from "../db.js";
  * query has JOINs (e.g. `AND js.${FORMAL_PIPELINE_PREDICATE}`).
  */
 export const FORMAL_PIPELINE_PREDICATE = `workflow_type = 'client_invitation'` as const;
+
+/**
+ * SQL predicate fragment that excludes silent client shortlist submissions from
+ * non-pipeline application views and operations.
+ */
+export const SHORTLIST_EXCLUSION_PREDICATE = "workflow_type <> 'client_shortlist'" as const;
 
 // ── Name-reveal / messaging statuses ──────────────────────────────────────────
 

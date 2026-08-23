@@ -66,6 +66,7 @@ import {
 import {
   loadClientFormalSubmission,
   FORMAL_PIPELINE_PREDICATE,
+  SHORTLIST_EXCLUSION_PREDICATE,
   FORMAL_PIPELINE_ACTIVE_STATUS_SQL,
   nameRevealExistsSQL,
 } from "./services/formalPipelineGuard.js";
@@ -5732,7 +5733,7 @@ export async function registerRoutes(
            OR
            (js.talent_id IS NULL AND lower(js.email) = lower($2))
          )
-         AND js.workflow_type <> 'client_shortlist'
+         AND js.${SHORTLIST_EXCLUSION_PREDICATE}
          ORDER BY js.submitted_at DESC`,
         [linkedUserId, candidateEmail],
       );
@@ -14943,9 +14944,9 @@ export async function registerRoutes(
     try {
 
       const [byStatus, byReg, total] = await Promise.all([
-        query(`SELECT status, COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist' GROUP BY status`),
-        query(`SELECT registration_status, COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist' GROUP BY registration_status`),
-        query(`SELECT COUNT(*) AS count FROM job_submissions WHERE workflow_type <> 'client_shortlist'`),
+        query(`SELECT status, COUNT(*) AS count FROM job_submissions WHERE ${SHORTLIST_EXCLUSION_PREDICATE} GROUP BY status`),
+        query(`SELECT registration_status, COUNT(*) AS count FROM job_submissions WHERE ${SHORTLIST_EXCLUSION_PREDICATE} GROUP BY registration_status`),
+        query(`SELECT COUNT(*) AS count FROM job_submissions WHERE ${SHORTLIST_EXCLUSION_PREDICATE}`),
       ]);
 
       const byStatusMap: Record<string, number> = {};
@@ -14994,7 +14995,7 @@ export async function registerRoutes(
       };
       const orderCol = SORT_COLS[sortBy] ?? "js.submitted_at";
 
-      const conditions: string[] = ["js.workflow_type <> 'client_shortlist'"];
+      const conditions: string[] = [`js.${SHORTLIST_EXCLUSION_PREDICATE}`];
       const params: any[] = [];
 
       if (statusFilter) {
@@ -15111,7 +15112,7 @@ export async function registerRoutes(
              ORDER BY profile_completed DESC NULLS LAST, updated_at DESC NULLS LAST
              LIMIT 1
            ) c ON true
-           WHERE js.id = $1 AND js.workflow_type <> 'client_shortlist'`,
+           WHERE js.id = $1 AND js.${SHORTLIST_EXCLUSION_PREDICATE}`,
           [applicationId],
         ),
         query(
@@ -15381,7 +15382,7 @@ export async function registerRoutes(
 
       // Confirm the application exists
       const existing = await query(
-        `SELECT id FROM job_submissions WHERE id = $1 AND workflow_type <> 'client_shortlist'`,
+        `SELECT id FROM job_submissions WHERE id = $1 AND ${SHORTLIST_EXCLUSION_PREDICATE}`,
         [applicationId],
       );
       if (existing.rows.length === 0) {
@@ -15707,7 +15708,7 @@ export async function registerRoutes(
         query(
           `${CLIENT_SUBMISSION_SELECT}
            WHERE js.client_id = $1
-             AND js.workflow_type <> 'client_shortlist'
+             AND js.${SHORTLIST_EXCLUSION_PREDICATE}
            ORDER BY js.submitted_at DESC`,
           [userId],
         ),
@@ -15730,7 +15731,7 @@ export async function registerRoutes(
         query(
           `${CLIENT_SUBMISSION_SELECT}
            WHERE js.id = $1 AND js.client_id = $2
-             AND js.workflow_type <> 'client_shortlist'`,
+             AND js.${SHORTLIST_EXCLUSION_PREDICATE}`,
           [id, userId],
         ),
         getNameRevealThreshold(),
@@ -17739,7 +17740,7 @@ export async function registerRoutes(
        JOIN job_submissions js ON js.id = r.application_id
        JOIN jobs j ON j.id = js.job_id
        WHERE r.application_id = $1 AND j.client_id = $2
-         AND js.workflow_type <> 'client_shortlist'
+         AND js.${SHORTLIST_EXCLUSION_PREDICATE}
          AND r.status = 'pending'
        LIMIT 1`,
       [req.params.id, req.user.id],
@@ -17762,7 +17763,7 @@ export async function registerRoutes(
                 j.title AS job_title
          FROM job_submissions js JOIN jobs j ON j.id = js.job_id
          WHERE js.id = $1 AND j.client_id = $2
-           AND js.workflow_type <> 'client_shortlist'
+           AND js.${SHORTLIST_EXCLUSION_PREDICATE}
          FOR UPDATE OF js`,
         [req.params.id, req.user.id],
       );
@@ -17829,7 +17830,7 @@ export async function registerRoutes(
        JOIN jobs j ON j.id = js.job_id
        JOIN users u ON u.id = r.requested_by_user_id
        WHERE r.status = 'pending'
-         AND js.workflow_type <> 'client_shortlist'
+         AND js.${SHORTLIST_EXCLUSION_PREDICATE}
        ORDER BY r.created_at DESC`,
     );
     return res.json(result.rows);
