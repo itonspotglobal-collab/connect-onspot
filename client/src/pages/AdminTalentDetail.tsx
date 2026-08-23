@@ -339,7 +339,7 @@ export default function AdminTalentDetail() {
                       <CheckCircle2 className="w-3.5 h-3.5" />Vetted
                     </span>
                   : <span className="flex items-center gap-1 text-muted-foreground">
-                      <Circle className="w-3.5 h-3.5" />Not vetted
+                      <Circle className="w-3.5 h-3.5" />No Classification
                     </span>}
               </div>
 

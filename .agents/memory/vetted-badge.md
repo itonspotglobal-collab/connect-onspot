@@ -42,6 +42,10 @@ The hire-count proxy is `hiring_contracts.onspot_signed_at IS NOT NULL`.
 
 **Why:** `authAPI.patch` at line 182 of `client/src/lib/api.ts` is the correct method for authenticated PATCH calls from admin pages.
 
+## Tier model (canonical naming)
+No Classification → Verified → Vetted.
+"No Classification" is the admin-facing label for the base tier; it is never shown as a badge on public-facing profiles (no-badge-by-default rule). DB column `admin_role_changes.new_role` stores `'unvetted'` as the internal identifier for the base tier — the display label "No Classification" is applied at render time only.
+
 ## Known future work
 - Vetted filter on the admin talent list page so admins can browse all vetted contractors at once.
 - Vetting history/audit log tab on AdminTalentDetail showing who granted/revoked and when.
