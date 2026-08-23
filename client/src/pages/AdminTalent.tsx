@@ -90,6 +90,7 @@ export default function AdminTalent() {
   const [debouncedSkill, setDebouncedSkill]       = useState('');
   const [statusFilter, setStatusFilter]           = useState('');
   const [vettedFilter, setVettedFilter]           = useState(false);
+  const [vettedSort, setVettedSort]               = useState('');
   const [page, setPage]                           = useState(1);
   const LIMIT = 50;
 
@@ -101,6 +102,7 @@ export default function AdminTalent() {
   const handleSearch = (val: string) => { setSearch(val);      debounce(setDebouncedSearch)(val); };
   const handleSkill  = (val: string) => { setSkillFilter(val); debounce(setDebouncedSkill)(val);  };
   const handleStatus = (val: string) => { setStatusFilter(val); setPage(1); };
+  const handleVettedSort = (val: string) => { setVettedSort(val === '__default__' ? '' : val); setPage(1); };
 
   const clearFilters = () => {
     setSearch(''); setDebouncedSearch('');
@@ -112,13 +114,17 @@ export default function AdminTalent() {
   const hasFilters = debouncedSearch || debouncedSkill || statusFilter || vettedFilter;
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<TalentListResponse>({
-    queryKey: ['/api/admin/talent', debouncedSearch, debouncedSkill, statusFilter, vettedFilter, page],
+    queryKey: ['/api/admin/talent', debouncedSearch, debouncedSkill, statusFilter, vettedFilter, vettedSort, page],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (debouncedSkill)  params.set('skill',  debouncedSkill);
       if (statusFilter)    params.set('applicationStatus', statusFilter);
       if (vettedFilter)    params.set('vetted', 'true');
+      if (vettedSort) {
+        params.set('sortBy', 'vetted');
+        params.set('sortOrder', vettedSort === 'vetted-first' ? 'desc' : 'asc');
+      }
       return authAPI.get(`/api/admin/talent?${params}`);
     },
   });
@@ -186,6 +192,18 @@ export default function AdminTalent() {
             {APPLICATION_STATUSES.map(s => (
               <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        {/* Vetted sort */}
+        <Select value={vettedSort || '__default__'} onValueChange={handleVettedSort}>
+          <SelectTrigger className="w-48" data-testid="talent-vetted-sort">
+            <SelectValue placeholder="Sort by Vetted status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__default__">Newest first</SelectItem>
+            <SelectItem value="vetted-first">Vetted first</SelectItem>
+            <SelectItem value="not-vetted-first">Not vetted first</SelectItem>
           </SelectContent>
         </Select>
 

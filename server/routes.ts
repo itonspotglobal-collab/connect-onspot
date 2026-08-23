@@ -7447,6 +7447,8 @@ export async function registerRoutes(
   //   applicationStatus — filter to talent who have at least one submission
   //                       with this status value
   //   vetted          — when true, filter to talent with the Vetted badge
+  //   sortBy          — "vetted" enables Vetted-status sorting
+  //   sortOrder       — "asc" puts Not vetted first; "desc" puts Vetted first
   //   page, limit     — pagination
   //
   // Response item fields (all admin-accessible, none redacted):
@@ -7469,9 +7471,14 @@ export async function registerRoutes(
       const skill             = String(req.query.skill             ?? "").trim();
       const applicationStatus = String(req.query.applicationStatus ?? "").trim();
       const vetted            = String(req.query.vetted            ?? "").trim().toLowerCase() === "true";
+      const sortBy            = String(req.query.sortBy            ?? "").trim();
+      const sortOrder         = String(req.query.sortOrder         ?? "").trim().toUpperCase() === "ASC" ? "ASC" : "DESC";
       const page   = Math.max(1, parseInt(String(req.query.page  ?? 1),  10));
       const limit  = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? 50), 10)));
       const offset = (page - 1) * limit;
+      const orderSQL = sortBy === "vetted"
+        ? `COALESCE(c.is_vetted, false) ${sortOrder}, u.created_at DESC, u.id DESC`
+        : "u.created_at DESC, u.id DESC";
 
       // Build WHERE clause dynamically so each filter is an independent
       // optional condition and parameter indices stay correct.
@@ -7557,7 +7564,7 @@ export async function registerRoutes(
            FROM   users u
            LEFT JOIN candidates c ON c.user_id = u.id
            ${whereSQL}
-           ORDER BY u.created_at DESC
+            ORDER BY ${orderSQL}
            LIMIT  $${limitIdx} OFFSET $${offsetIdx}`,
           listParams
         ),
