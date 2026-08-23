@@ -95,6 +95,7 @@ import InquirySuccess from "@/pages/InquirySuccess";
 import AdminInquiries from "@/pages/AdminInquiries";
 import AdminScaffoldJobs from "@/pages/AdminScaffoldJobs";
 import AdminFlaggedMessages from "@/pages/AdminFlaggedMessages";
+import AdminLedger from "@/pages/AdminLedger";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -276,6 +277,7 @@ function PublicRouter() {
           <Route path="/admin/scaffold-jobs" component={() => <AdminProtectedRoute><AdminScaffoldJobs /></AdminProtectedRoute>} />
           <Route path="/admin/flagged-messages" component={() => <AdminProtectedRoute><AdminFlaggedMessages /></AdminProtectedRoute>} />
           <Route path="/admin/verification" component={() => <AdminProtectedRoute><AdminVerification /></AdminProtectedRoute>} />
+          <Route path="/admin/ledger" component={() => <AdminProtectedRoute><AdminLedger /></AdminProtectedRoute>} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

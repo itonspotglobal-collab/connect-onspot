@@ -271,26 +271,6 @@ export const jobs = pgTable("jobs", {
   index("idx_jobs_status_approval").on(table.status, table.approvalStatus),
 ]);
 
-// Proposals
-export const proposals = pgTable("proposals", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  jobId: varchar("job_id").notNull().references(() => jobs.id),
-  talentId: varchar("talent_id").notNull().references(() => users.id),
-  coverLetter: text("cover_letter").notNull(),
-  proposedRate: decimal("proposed_rate", { precision: 8, scale: 2 }),
-  proposedBudget: decimal("proposed_budget", { precision: 10, scale: 2 }),
-  estimatedDuration: text("estimated_duration"),
-  status: text("status").notNull().default("submitted"), // submitted, shortlisted, accepted, rejected, withdrawn
-  clientResponse: text("client_response"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  uniqueIndex("proposals_job_talent_unique").on(table.jobId, table.talentId),
-  index("idx_proposals_job_id").on(table.jobId),
-  index("idx_proposals_talent_id").on(table.talentId),
-  index("idx_proposals_status").on(table.status),
-]);
-
 // Job Skills (normalized for better querying)
 export const jobSkills = pgTable("job_skills", {
   id: serial("id").primaryKey(),
@@ -395,61 +375,10 @@ export const waitlist = pgTable("waitlist", {
   index("idx_waitlist_created_at").on(table.createdAt),
 ]);
 
-// Contracts
-export const contracts = pgTable("contracts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  jobId: varchar("job_id").notNull().references(() => jobs.id),
-  proposalId: varchar("proposal_id").notNull().references(() => proposals.id),
-  clientId: varchar("client_id").notNull().references(() => users.id),
-  talentId: varchar("talent_id").notNull().references(() => users.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  contractType: text("contract_type").notNull(), // hourly, fixed
-  rate: decimal("rate", { precision: 8, scale: 2 }),
-  totalBudget: decimal("total_budget", { precision: 10, scale: 2 }),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  status: text("status").notNull().default("active"), // active, paused, completed, cancelled
-  terms: text("terms"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Milestones (for fixed contracts)
-export const milestones = pgTable("milestones", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  contractId: varchar("contract_id").notNull().references(() => contracts.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  dueDate: timestamp("due_date"),
-  status: text("status").notNull().default("pending"), // pending, funded, in_progress, submitted, approved, paid
-  submissionNote: text("submission_note"),
-  approvalNote: text("approval_note"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Time Entries (for hourly contracts)
-export const timeEntries = pgTable("time_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  contractId: varchar("contract_id").notNull().references(() => contracts.id),
-  talentId: varchar("talent_id").notNull().references(() => users.id),
-  description: text("description"),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time"),
-  duration: integer("duration"), // minutes
-  hourlyRate: decimal("hourly_rate", { precision: 8, scale: 2 }).notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }),
-  status: text("status").notNull().default("logged"), // logged, submitted, approved, paid
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 // Messages & Communication
 export const messageThreads = pgTable("message_threads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").references(() => jobs.id),
-  contractId: varchar("contract_id").references(() => contracts.id),
   participants: text("participants").array().notNull(), // Array of user IDs
   subject: text("subject"),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
@@ -471,7 +400,6 @@ export const messages = pgTable("messages", {
 // Reviews & Ratings
 export const reviews = pgTable("reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  contractId: varchar("contract_id").notNull().references(() => contracts.id),
   reviewerId: varchar("reviewer_id").notNull().references(() => users.id),
   revieweeId: varchar("reviewee_id").notNull().references(() => users.id),
   rating: integer("rating").notNull(), // 1-5 stars
@@ -534,40 +462,6 @@ export const testAttempts = pgTable("test_attempts", {
   answers: json("answers"), // User answers
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
-});
-
-// Payment & Financial
-export const payments = pgTable("payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  contractId: varchar("contract_id").references(() => contracts.id),
-  milestoneId: varchar("milestone_id").references(() => milestones.id),
-  payerId: varchar("payer_id").notNull().references(() => users.id),
-  payeeId: varchar("payee_id").notNull().references(() => users.id),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  fees: decimal("fees", { precision: 12, scale: 2 }).default("0"),
-  currency: text("currency").default("USD"),
-  paymentMethod: text("payment_method"), // stripe_card, bank_transfer, etc.
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  status: text("status").notNull().default("pending"), // pending, processing, completed, failed, refunded
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow(),
-  completedAt: timestamp("completed_at"),
-});
-
-// Disputes
-export const disputes = pgTable("disputes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  contractId: varchar("contract_id").notNull().references(() => contracts.id),
-  raisedById: varchar("raised_by_id").notNull().references(() => users.id),
-  disputeType: text("dispute_type").notNull(), // payment, quality, deadline, other
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  evidence: text("evidence").array(), // File URLs
-  status: text("status").notNull().default("open"), // open, in_review, resolved, closed
-  resolution: text("resolution"),
-  resolvedBy: varchar("resolved_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  resolvedAt: timestamp("resolved_at"),
 });
 
 // LinkedIn Integration
@@ -860,29 +754,6 @@ export type JobSubmission = typeof jobSubmissions.$inferSelect;
 export type ApplicationToken = typeof applicationTokens.$inferSelect;
 export type JobApplicationStatusHistory = typeof jobApplicationStatusHistory.$inferSelect;
 
-export const insertProposalSchema = createInsertSchema(proposals).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertContractSchema = createInsertSchema(contracts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertMilestoneSchema = createInsertSchema(milestones).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const insertMessageThreadSchema = createInsertSchema(messageThreads).omit({
   id: true,
   lastMessageAt: true,
@@ -921,19 +792,6 @@ export const insertTestAttemptSchema = createInsertSchema(testAttempts).omit({
   id: true,
   startedAt: true,
   completedAt: true,
-});
-
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  fees: true,
-  createdAt: true,
-  completedAt: true,
-});
-
-export const insertDisputeSchema = createInsertSchema(disputes).omit({
-  id: true,
-  createdAt: true,
-  resolvedAt: true,
 });
 
 export const insertLinkedinProfileSchema = createInsertSchema(linkedinProfiles).omit({
@@ -1005,18 +863,6 @@ export type JobSkill = typeof jobSkills.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
 
-export type InsertProposal = z.infer<typeof insertProposalSchema>;
-export type Proposal = typeof proposals.$inferSelect;
-
-export type InsertContract = z.infer<typeof insertContractSchema>;
-export type Contract = typeof contracts.$inferSelect;
-
-export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
-export type Milestone = typeof milestones.$inferSelect;
-
-export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
-export type TimeEntry = typeof timeEntries.$inferSelect;
-
 export type InsertMessageThread = z.infer<typeof insertMessageThreadSchema>;
 export type MessageThread = typeof messageThreads.$inferSelect;
 
@@ -1037,12 +883,6 @@ export type SkillsTest = typeof skillsTests.$inferSelect;
 
 export type InsertTestAttempt = z.infer<typeof insertTestAttemptSchema>;
 export type TestAttempt = typeof testAttempts.$inferSelect;
-
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-export type Payment = typeof payments.$inferSelect;
-
-export type InsertDispute = z.infer<typeof insertDisputeSchema>;
-export type Dispute = typeof disputes.$inferSelect;
 
 export type InsertLinkedinProfile = z.infer<typeof insertLinkedinProfileSchema>;
 export type LinkedinProfile = typeof linkedinProfiles.$inferSelect;

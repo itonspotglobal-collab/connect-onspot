@@ -23,7 +23,7 @@ import {
   CheckCircle2,
   Loader2
 } from "lucide-react";
-import { type Job, insertProposalSchema } from "@shared/schema";
+import { type Job } from "@shared/schema";
 
 interface JobApplicationModalProps {
   open: boolean;
@@ -32,12 +32,8 @@ interface JobApplicationModalProps {
   onSuccess?: () => void;
 }
 
-// Form schema based on insertProposalSchema with additional client-side validation
-// Use z.coerce.number() to properly parse numeric inputs from HTML forms
-const applicationFormSchema = insertProposalSchema.omit({
-  jobId: true,
-  talentId: true, // Server will derive this from authentication
-}).extend({
+// Application form schema (proposals table is retired; schema is local)
+const applicationFormSchema = z.object({
   coverLetter: z.string()
     .min(50, "Cover letter must be at least 50 characters")
     .max(2000, "Cover letter must be less than 2000 characters"),

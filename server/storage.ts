@@ -6,17 +6,11 @@ import {
   type UserSkill, type InsertUserSkill,
   type Job, type InsertJob,
   type JobSkill, type InsertJobSkill,
-  type Proposal, type InsertProposal,
-  type Contract, type InsertContract,
-  type Milestone, type InsertMilestone,
-  type TimeEntry, type InsertTimeEntry,
   type MessageThread, type InsertMessageThread,
   type Message, type InsertMessage,
   type Review, type InsertReview,
   type PortfolioItem, type InsertPortfolioItem,
   type Certification, type InsertCertification,
-  type Payment, type InsertPayment,
-  type Dispute, type InsertDispute,
   type Notification, type InsertNotification,
   type LeadIntake, type InsertLeadIntake,
   type CsvTalentRow, type CsvBulkImport, type CsvImportResult, type CsvTemplate, type BulkTalentData,
@@ -176,32 +170,9 @@ export interface IStorage {
   createJobSkill(jobSkill: InsertJobSkill): Promise<JobSkill>;
   deleteJobSkill(id: number): Promise<boolean>;
 
-  // Proposals
-  getProposal(id: string): Promise<Proposal | undefined>;
-  createProposal(proposal: InsertProposal): Promise<Proposal>;
-  updateProposal(id: string, updates: Partial<InsertProposal>): Promise<Proposal | undefined>;
-  listProposalsByJob(jobId: string): Promise<Proposal[]>;
-  listProposalsByTalent(talentId: string): Promise<Proposal[]>;
 
-  // Contracts
-  getContract(id: string): Promise<Contract | undefined>;
-  createContract(contract: InsertContract): Promise<Contract>;
-  updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract | undefined>;
-  listContractsByClient(clientId: string): Promise<Contract[]>;
-  listContractsByTalent(talentId: string): Promise<Contract[]>;
 
-  // Milestones
-  getMilestone(id: string): Promise<Milestone | undefined>;
-  createMilestone(milestone: InsertMilestone): Promise<Milestone>;
-  updateMilestone(id: string, updates: Partial<InsertMilestone>): Promise<Milestone | undefined>;
-  listMilestonesByContract(contractId: string): Promise<Milestone[]>;
 
-  // Time Entries
-  getTimeEntry(id: string): Promise<TimeEntry | undefined>;
-  createTimeEntry(timeEntry: InsertTimeEntry): Promise<TimeEntry>;
-  updateTimeEntry(id: string, updates: Partial<InsertTimeEntry>): Promise<TimeEntry | undefined>;
-  listTimeEntriesByContract(contractId: string): Promise<TimeEntry[]>;
-  listTimeEntriesByTalent(talentId: string, startDate?: Date, endDate?: Date): Promise<TimeEntry[]>;
 
   // Messages
   getMessageThread(id: string): Promise<MessageThread | undefined>;
@@ -223,7 +194,6 @@ export interface IStorage {
   getReview(id: string): Promise<Review | undefined>;
   createReview(review: InsertReview): Promise<Review>;
   listReviewsByUser(userId: string, asReviewer?: boolean): Promise<Review[]>;
-  listReviewsByContract(contractId: string): Promise<Review[]>;
 
   // Portfolio
   getPortfolioItem(id: string): Promise<PortfolioItem | undefined>;
@@ -239,18 +209,7 @@ export interface IStorage {
   updateCertification(id: string, updates: Partial<InsertCertification>): Promise<Certification | undefined>;
   deleteCertification(id: string): Promise<boolean>;
 
-  // Payments
-  getPayment(id: string): Promise<Payment | undefined>;
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined>;
-  listPaymentsByUser(userId: string, asPayer?: boolean): Promise<Payment[]>;
 
-  // Disputes
-  getDispute(id: string): Promise<Dispute | undefined>;
-  createDispute(dispute: InsertDispute): Promise<Dispute>;
-  updateDispute(id: string, updates: Partial<InsertDispute>): Promise<Dispute | undefined>;
-  listDisputesByUser(userId: string): Promise<Dispute[]>;
-  listOpenDisputes(): Promise<Dispute[]>;
 
   // Notifications
   getNotification(id: string): Promise<Notification | undefined>;
@@ -428,14 +387,6 @@ export class MemStorage implements IStorage {
 
   private jobSkills: Map<number, JobSkill>;
 
-  private proposals: Map<string, Proposal>;
-
-  private contracts: Map<string, Contract>;
-
-  private milestones: Map<string, Milestone>;
-
-  private timeEntries: Map<string, TimeEntry>;
-
   private messageThreads: Map<string, MessageThread>;
 
   private messages: Map<string, Message>;
@@ -445,10 +396,6 @@ export class MemStorage implements IStorage {
   private portfolioItems: Map<string, PortfolioItem>;
 
   private certifications: Map<string, Certification>;
-
-  private payments: Map<string, Payment>;
-
-  private disputes: Map<string, Dispute>;
 
   private notifications: Map<string, Notification>;
 
@@ -474,17 +421,11 @@ export class MemStorage implements IStorage {
     this.userSkills = new Map();
     this.jobs = new Map();
     this.jobSkills = new Map();
-    this.proposals = new Map();
-    this.contracts = new Map();
-    this.milestones = new Map();
-    this.timeEntries = new Map();
     this.messageThreads = new Map();
     this.messages = new Map();
     this.reviews = new Map();
     this.portfolioItems = new Map();
     this.certifications = new Map();
-    this.payments = new Map();
-    this.disputes = new Map();
     this.notifications = new Map();
     this.linkedinProfiles = new Map();
     this.leadIntakes = new Map();
@@ -1652,207 +1593,10 @@ export class MemStorage implements IStorage {
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
-  // Proposal Methods
-  async getProposal(id: string): Promise<Proposal | undefined> {
-    return this.proposals.get(id);
-  }
 
-  async createProposal(insertProposal: InsertProposal): Promise<Proposal> {
-    const id = randomUUID();
-    const now = new Date();
-    const proposal: Proposal = {
-      ...insertProposal,
-      id,
-      proposedRate: insertProposal.proposedRate ?? null,
-      proposedBudget: insertProposal.proposedBudget ?? null,
-      estimatedDuration: insertProposal.estimatedDuration ?? null,
-      clientResponse: insertProposal.clientResponse ?? null,
-      status: insertProposal.status ?? "submitted",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.proposals.set(id, proposal);
 
-    // Increment proposal count on job
-    const job = this.jobs.get(insertProposal.jobId);
-    if (job) {
-      job.proposalCount = (job.proposalCount || 0) + 1;
-      this.jobs.set(job.id, job);
-    }
 
-    return proposal;
-  }
 
-  async updateProposal(id: string, updates: Partial<InsertProposal>): Promise<Proposal | undefined> {
-    const proposal = this.proposals.get(id);
-    if (!proposal) return undefined;
-
-    const updatedProposal: Proposal = {
-      ...proposal,
-      ...updates,
-      updatedAt: new Date()
-    };
-    this.proposals.set(id, updatedProposal);
-    return updatedProposal;
-  }
-
-  async listProposalsByJob(jobId: string): Promise<Proposal[]> {
-    return Array.from(this.proposals.values())
-      .filter(proposal => proposal.jobId === jobId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  async listProposalsByTalent(talentId: string): Promise<Proposal[]> {
-    return Array.from(this.proposals.values())
-      .filter(proposal => proposal.talentId === talentId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  // Contract Methods
-  async getContract(id: string): Promise<Contract | undefined> {
-    return this.contracts.get(id);
-  }
-
-  async createContract(insertContract: InsertContract): Promise<Contract> {
-    const id = randomUUID();
-    const now = new Date();
-    const contract: Contract = {
-      ...insertContract,
-      id,
-      description: insertContract.description ?? null,
-      rate: insertContract.rate ?? null,
-      totalBudget: insertContract.totalBudget ?? null,
-      startDate: insertContract.startDate ?? null,
-      endDate: insertContract.endDate ?? null,
-      terms: insertContract.terms ?? null,
-      status: insertContract.status ?? "active",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.contracts.set(id, contract);
-    return contract;
-  }
-
-  async updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract | undefined> {
-    const contract = this.contracts.get(id);
-    if (!contract) return undefined;
-
-    const updatedContract: Contract = {
-      ...contract,
-      ...updates,
-      updatedAt: new Date()
-    };
-    this.contracts.set(id, updatedContract);
-    return updatedContract;
-  }
-
-  async listContractsByClient(clientId: string): Promise<Contract[]> {
-    return Array.from(this.contracts.values())
-      .filter(contract => contract.clientId === clientId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  async listContractsByTalent(talentId: string): Promise<Contract[]> {
-    return Array.from(this.contracts.values())
-      .filter(contract => contract.talentId === talentId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  // Milestone Methods
-  async getMilestone(id: string): Promise<Milestone | undefined> {
-    return this.milestones.get(id);
-  }
-
-  async createMilestone(insertMilestone: InsertMilestone): Promise<Milestone> {
-    const id = randomUUID();
-    const now = new Date();
-    const milestone: Milestone = {
-      ...insertMilestone,
-      id,
-      description: insertMilestone.description ?? null,
-      dueDate: insertMilestone.dueDate ?? null,
-      submissionNote: insertMilestone.submissionNote ?? null,
-      approvalNote: insertMilestone.approvalNote ?? null,
-      status: insertMilestone.status ?? "pending",
-      createdAt: now,
-      updatedAt: now
-    };
-    this.milestones.set(id, milestone);
-    return milestone;
-  }
-
-  async updateMilestone(id: string, updates: Partial<InsertMilestone>): Promise<Milestone | undefined> {
-    const milestone = this.milestones.get(id);
-    if (!milestone) return undefined;
-
-    const updatedMilestone: Milestone = {
-      ...milestone,
-      ...updates,
-      updatedAt: new Date()
-    };
-    this.milestones.set(id, updatedMilestone);
-    return updatedMilestone;
-  }
-
-  async listMilestonesByContract(contractId: string): Promise<Milestone[]> {
-    return Array.from(this.milestones.values())
-      .filter(milestone => milestone.contractId === contractId)
-      .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
-  }
-
-  // Time Entry Methods
-  async getTimeEntry(id: string): Promise<TimeEntry | undefined> {
-    return this.timeEntries.get(id);
-  }
-
-  async createTimeEntry(insertTimeEntry: InsertTimeEntry): Promise<TimeEntry> {
-    const id = randomUUID();
-    const timeEntry: TimeEntry = {
-      ...insertTimeEntry,
-      id,
-      description: insertTimeEntry.description ?? null,
-      endTime: insertTimeEntry.endTime ?? null,
-      duration: insertTimeEntry.duration ?? null,
-      amount: insertTimeEntry.amount ?? null,
-      status: insertTimeEntry.status ?? "logged",
-      createdAt: new Date()
-    };
-    this.timeEntries.set(id, timeEntry);
-    return timeEntry;
-  }
-
-  async updateTimeEntry(id: string, updates: Partial<InsertTimeEntry>): Promise<TimeEntry | undefined> {
-    const timeEntry = this.timeEntries.get(id);
-    if (!timeEntry) return undefined;
-
-    const updatedTimeEntry: TimeEntry = {
-      ...timeEntry,
-      ...updates
-    };
-    this.timeEntries.set(id, updatedTimeEntry);
-    return updatedTimeEntry;
-  }
-
-  async listTimeEntriesByContract(contractId: string): Promise<TimeEntry[]> {
-    return Array.from(this.timeEntries.values())
-      .filter(entry => entry.contractId === contractId)
-      .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
-  }
-
-  async listTimeEntriesByTalent(talentId: string, startDate?: Date, endDate?: Date): Promise<TimeEntry[]> {
-    let entries = Array.from(this.timeEntries.values())
-      .filter(entry => entry.talentId === talentId);
-
-    if (startDate) {
-      entries = entries.filter(entry => entry.startTime >= startDate);
-    }
-
-    if (endDate) {
-      entries = entries.filter(entry => entry.startTime <= endDate);
-    }
-
-    return entries.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
-  }
 
   // Message Methods
   async getMessageThread(id: string): Promise<MessageThread | undefined> {
@@ -1866,7 +1610,6 @@ export class MemStorage implements IStorage {
       ...insertThread,
       id,
       jobId: insertThread.jobId ?? null,
-      contractId: insertThread.contractId ?? null,
       subject: insertThread.subject ?? null,
       lastMessageAt: now,
       createdAt: now
@@ -1993,12 +1736,6 @@ export class MemStorage implements IStorage {
       .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
   }
 
-  async listReviewsByContract(contractId: string): Promise<Review[]> {
-    return Array.from(this.reviews.values())
-      .filter(review => review.contractId === contractId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
   // Portfolio Methods
   async getPortfolioItem(id: string): Promise<PortfolioItem | undefined> {
     return this.portfolioItems.get(id);
@@ -2081,95 +1818,6 @@ export class MemStorage implements IStorage {
 
   async deleteCertification(id: string): Promise<boolean> {
     return this.certifications.delete(id);
-  }
-
-  // Payment Methods
-  async getPayment(id: string): Promise<Payment | undefined> {
-    return this.payments.get(id);
-  }
-
-  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
-    const id = randomUUID();
-    const payment: Payment = {
-      ...insertPayment,
-      id,
-      contractId: insertPayment.contractId ?? null,
-      milestoneId: insertPayment.milestoneId ?? null,
-      paymentMethod: insertPayment.paymentMethod ?? null,
-      stripePaymentIntentId: insertPayment.stripePaymentIntentId ?? null,
-      description: insertPayment.description ?? null,
-      fees: "0",
-      currency: insertPayment.currency ?? "USD",
-      status: insertPayment.status ?? "pending",
-      createdAt: new Date(),
-      completedAt: null
-    };
-    this.payments.set(id, payment);
-    return payment;
-  }
-
-  async updatePayment(id: string, updates: Partial<InsertPayment>): Promise<Payment | undefined> {
-    const payment = this.payments.get(id);
-    if (!payment) return undefined;
-
-    const updatedPayment: Payment = {
-      ...payment,
-      ...updates
-    };
-    this.payments.set(id, updatedPayment);
-    return updatedPayment;
-  }
-
-  async listPaymentsByUser(userId: string, asPayer?: boolean): Promise<Payment[]> {
-    const field = asPayer ? 'payerId' : 'payeeId';
-    return Array.from(this.payments.values())
-      .filter(payment => payment[field] === userId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  // Dispute Methods
-  async getDispute(id: string): Promise<Dispute | undefined> {
-    return this.disputes.get(id);
-  }
-
-  async createDispute(insertDispute: InsertDispute): Promise<Dispute> {
-    const id = randomUUID();
-    const dispute: Dispute = {
-      ...insertDispute,
-      id,
-      evidence: insertDispute.evidence ?? null,
-      resolution: insertDispute.resolution ?? null,
-      resolvedBy: insertDispute.resolvedBy ?? null,
-      status: insertDispute.status ?? "open",
-      createdAt: new Date(),
-      resolvedAt: null
-    };
-    this.disputes.set(id, dispute);
-    return dispute;
-  }
-
-  async updateDispute(id: string, updates: Partial<InsertDispute>): Promise<Dispute | undefined> {
-    const dispute = this.disputes.get(id);
-    if (!dispute) return undefined;
-
-    const updatedDispute: Dispute = {
-      ...dispute,
-      ...updates
-    };
-    this.disputes.set(id, updatedDispute);
-    return updatedDispute;
-  }
-
-  async listDisputesByUser(userId: string): Promise<Dispute[]> {
-    return Array.from(this.disputes.values())
-      .filter(dispute => dispute.raisedById === userId)
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
-  }
-
-  async listOpenDisputes(): Promise<Dispute[]> {
-    return Array.from(this.disputes.values())
-      .filter(dispute => dispute.status === "open")
-      .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
   }
 
   // Notification Methods
