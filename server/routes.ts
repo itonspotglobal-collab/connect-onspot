@@ -7580,6 +7580,30 @@ export async function registerRoutes(
         submittedAt:       row.submitted_at,
       }));
 
+      // ── 3. Vetted status audit history ─────────────────────────────────────
+      // Keep this separate from the profile's current status so admins can see
+      // every grant/revoke event, including the reason and acting admin.
+      const vettingHistoryResult = await query(`
+        SELECT
+          id,
+          new_role    AS action,
+          notes       AS reason,
+          changed_by,
+          changed_at
+        FROM admin_role_changes
+        WHERE user_id = $1
+          AND change_type = 'vetting_status'
+        ORDER BY changed_at DESC
+      `, [userId]);
+
+      const vettingHistory = vettingHistoryResult.rows.map(row => ({
+        id:        row.id,
+        action:    row.action === 'vetted' ? 'granted' : 'revoked',
+        reason:    row.reason,
+        changedBy: row.changed_by,
+        changedAt: row.changed_at,
+      }));
+
       res.json({
         talent: {
           id:                 profileRow.id,
@@ -7621,6 +7645,7 @@ export async function registerRoutes(
           vettedByMechanism:  profileRow.vetted_by_mechanism ?? null,
         },
         applications,
+        vettingHistory,
       });
     } catch (err: any) {
       console.error("GET /api/admin/talent/:id error:", err);

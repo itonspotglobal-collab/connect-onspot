@@ -32,6 +32,14 @@ interface Application {
   submittedAt: string | null;
 }
 
+interface VettingHistoryEntry {
+  id: string;
+  action: 'granted' | 'revoked';
+  reason: string | null;
+  changedBy: string;
+  changedAt: string;
+}
+
 interface TalentProfile {
   id: string;
   email: string;
@@ -75,6 +83,7 @@ interface TalentProfile {
 interface TalentDetailResponse {
   talent: TalentProfile;
   applications: Application[];
+  vettingHistory: VettingHistoryEntry[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -143,7 +152,7 @@ export default function AdminTalentDetail() {
     enabled: !!userId,
   });
 
-  const { talent: t, applications } = data;
+  const { talent: t, applications, vettingHistory } = data;
 
   const displayName =
     (t.firstName || t.lastName)
@@ -387,6 +396,39 @@ export default function AdminTalentDetail() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Vetted status audit history */}
+              <div className="border-t pt-3" data-testid="vetting-history">
+                <p className="text-xs font-medium text-muted-foreground mb-2">History</p>
+                {vettingHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No vetting history yet</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {vettingHistory.map(event => (
+                      <div
+                        key={event.id}
+                        className="border-b last:border-0 pb-2.5 last:pb-0"
+                        data-testid="vetting-history-entry"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-xs font-semibold ${event.action === 'granted' ? 'text-[#474EAD]' : 'text-destructive'}`}>
+                            {event.action === 'granted' ? 'Granted' : 'Revoked'}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                            {new Date(event.changedAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {event.reason || 'No reason provided'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          By {event.changedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
