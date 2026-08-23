@@ -51,6 +51,7 @@ const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
   { href: "/amazing",             label: "Stories" },
   { href: "/insights",            label: "Insights" },
+  { href: "/how-it-works",        label: "How It Works" },
   { href: "/hire-talent",         label: "Hire Talent" },
   { href: "/find-work/jobs",      label: "Find Work" },
   { href: "/affiliate-marketing", label: "Affiliate" },

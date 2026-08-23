@@ -1,0 +1,214 @@
+# How It Works — FAQ Page Draft
+
+*Three collapsible groups: What is OnSpot / How It Works for Clients / How It Works for Contractors*
+
+---
+
+## What Is OnSpot
+
+**Q: What is OnSpot?**
+OnSpot is a workforce platform that connects businesses with skilled independent professionals — quickly, reliably, and without the friction of traditional hiring or outsourcing. We call it Work Without Limits: no geography, no rigid employment models, no fragmented tools.
+
+**Q: How is OnSpot different from a freelance marketplace or a BPO?**
+Freelance marketplaces help you find people. Traditional outsourcing gives you a managed team but little visibility or control. OnSpot combines both — AI-matched contractors (with vetted profiles available), direct relationships, and the technology to manage the whole engagement in one place.
+
+**Q: Who is OnSpot for?**
+Two sides:
+- **Clients** — solopreneurs, growing teams, and larger companies looking to hire remote contractors without the usual hiring cycle.
+- **Contractor** — independent contractors looking for real, well-paying work with reliable clients and transparent pay.
+
+**Q: What kinds of roles can I hire for (or find work in)?**
+Customer Support, Virtual Assistants, Developers, Designers, Marketing Specialists, Accountants, Healthcare Professionals, Sales Representatives, Operations Specialists, and IT & Technical Support — with new categories added as the platform grows.
+
+**Q: Is OnSpot available outside the Philippines?**
+The Philippines is our starting contractor pool, not a permanent limit — OnSpot's long-term goal is sourcing contractors globally.
+
+---
+
+## How It Works for Clients
+
+### Getting Started
+
+**Q: What kinds of Client accounts does OnSpot support?**
+Two types:
+- **Solopreneurs** — hiring as an individual, fully supported today.
+- **Companies & Organizations** — hiring under a company name, also fully supported today.
+
+*(Note: multi-user team access for Company/Organization accounts — inviting teammates, assigning roles like HR, Hiring Manager, or Finance — is coming soon. Today, one person manages the account.)*
+
+**Q: Do I need to sign anything before I can hire?**
+Yes — before your first hire, you'll review and accept OnSpot's Master Service Agreement (MSA). It's a one-time step; once accepted, you won't need to do it again.
+
+### The Hiring Process
+
+**Q: Are Contractors vetted before I can hire them?**
+Not all Contractors on OnSpot are vetted. If you specifically want vetted Contractors, look for profiles with the **"Vetted"** mark — these have gone through OnSpot's internal review process in addition to AI-based matching.
+
+**Q: How do I find contractors?**
+Search or browse AI-matched profiles based on the role, skills, and experience you need. Every result shows a match score and a masked profile — full identity is revealed once a real interview is confirmed.
+
+**Q: What's the difference between "Shortlist" and "Interview this contractor"?**
+- **Shortlist** — a lightweight way to save a promising profile for a specific role. No commitment, and the Contractor isn't notified.
+- **Interview this contractor** — this starts the actual hiring process: you propose an interview time, and if you haven't already, you'll complete the one-time MSA step first.
+
+**Q: How does interview scheduling work?**
+You propose a time when you invite someone to interview. They can accept it, decline, or suggest a different time — the same screen handles all of it. Once a time is confirmed, you'll see their full profile and can message directly.
+
+**Q: What happens after the interview?**
+If you'd like to move forward, you send an Offer with your terms. Your Contractor can accept, decline, or counter with different terms — you'll see any counter-offer and can respond.
+
+**Q: Who handles the contract?**
+Once an Offer is accepted, OnSpot generates the contract. Your Contractor signs first, then OnSpot countersigns to finalize — at that point, they're officially hired.
+
+**Q: What happens once someone is hired?**
+OnSpot handles billing, attendance verification, and ongoing support for the length of the engagement.
+
+### Pricing
+
+**Q: How much does OnSpot cost?**
+OnSpot charges a Service Fee of 10–20%, added on top of your Contractor's rate — never deducted from what they're paid. The exact rate depends on your engagement history and tier over time.
+
+**Q: What does the Service Fee actually cover?**
+- AI-powered contractor matching and search
+- Interview scheduling and coordination tools
+- Contract drafting and administration
+- Onboarding support for new engagements
+- Dedicated account management
+- Managed engagement oversight
+- Dispute and issue resolution
+- Performance reporting and analytics
+- Secure payment handling
+- Invoicing and billing administration
+- Security deposit handling
+- MSA and legal document administration
+- Identity protection and data security
+- In-platform messaging infrastructure
+- Attendance and engagement verification systems
+- Ongoing platform development and improvements
+
+**Q: Is there a security deposit?**
+Yes — a refundable security deposit is collected before your Contractor's first day. It's held by OnSpot and applied against your final invoice at the end of a proper engagement (30 days' notice, no lock-in period). If a payment is ever late, the deposit can be drawn on to keep your Contractor paid on time — with an obligation to replenish it within 5 days. The deposit is never forfeited.
+
+**Q: What if I don't pay an invoice on time?**
+There's a grace period before any service interruption. If payment lapses significantly, services may be suspended until the account is brought current.
+
+### Support
+
+**Q: What if something goes wrong during an engagement?**
+Reach out to your dedicated account manager, or contact hiretalent@onspotglobal.com — OnSpot can help mediate and resolve issues directly.
+
+---
+
+## How It Works for Contractors
+
+### Getting Started
+
+**Q: What kinds of Contractor accounts does OnSpot support?**
+Two types:
+- **Independent Contractors** — individuals working on their own, fully supported today.
+- **Companies & BPOs** — organizations bringing their own roster of contractors onto the platform, **coming soon**.
+
+**Q: How do I create a strong profile?**
+Complete your profile with your skills, experience, and availability. AI resume parsing helps speed this up. The more complete your profile, the more visible you are to Clients searching for your skillset.
+
+**Q: Does OnSpot review my profile before Clients can see it?**
+Not every profile goes through this — vetting is selective, not automatic. If your profile carries the **"Vetted"** mark, it means it's gone through OnSpot's internal review process, which can make you more attractive to Clients specifically looking for vetted Contractors. You can become Vetted in a few ways: by reaching out to your account manager to request a review, by being proactively selected by OnSpot based on strong performance, or automatically once you reach a tenure/engagement milestone.
+
+### Getting Matched & Hired
+
+**Q: How do Clients find me?**
+Clients search by skill, category, and availability. Your profile stays identity-masked until a real interview is confirmed — your work history and qualifications are visible, but your name and contact details are protected until then.
+
+**Q: What does it mean if I've been "Shortlisted"?**
+A Client has saved your profile for a role they're considering. You won't be notified when this happens — it's not a commitment yet, just the Client keeping track. You'll hear from them if they move forward to an actual interview invitation.
+
+**Q: How does interview scheduling work?**
+When a Client invites you to interview, they'll propose a time. You can accept it, decline, or suggest a different time that works better for you — the negotiation happens right in the same flow until you both agree.
+
+**Q: When does the Client see my real name?**
+Only once an interview time is actually confirmed — not before, and not just because you responded to a proposal.
+
+### Offers & Pay
+
+**Q: How does pay work?**
+You set your own rate. OnSpot's Service Fee is added on top of what the Client pays — it is never deducted from your rate. What you're offered is what you receive, in full.
+
+**Q: What are Engagement Types?**
+OnSpot uses two flat-rate engagement types instead of hourly billing:
+- **Lite** — 4 hours a day / 20 hours a week
+- **Standard** — 8 hours a day / 40 hours a week
+
+**Q: Can I negotiate an Offer?**
+Yes — if the terms don't work for you, you can counter with your own terms. The Client will see your counter and can accept, decline, or counter back.
+
+**Q: How and when do I get paid?**
+Clients pay OnSpot directly, and OnSpot pays you — in full, on schedule. This protects your pay even if a Client's payment is delayed.
+
+### Contracts & Ongoing Support
+
+**Q: Who handles my contract?**
+Once you accept an Offer, OnSpot generates the contract. You sign first, then OnSpot countersigns to finalize the engagement.
+
+**Q: What support do I get once I'm hired?**
+A dedicated account manager, access to Contractor Counselling, plus OnSpot Plus (group-rate savings on HMO/insurance) and OnSpot Loyalty (tenure and performance-based rewards, including better terms over time).
+
+**Q: What if my engagement ends early?**
+OnSpot offers redeployment support to help you find your next opportunity.
+
+### Support
+
+**Q: Who do I contact if I have questions or an issue?**
+Reach out to your dedicated account manager, or contact findwork@onspotglobal.com any time.
+
+---
+
+## BLOCKED — DO NOT PUBLISH UNTIL RESOLVED
+
+**"Vetted" badge/mark does NOT exist in the live product today (confirmed).**
+The FAQ currently describes a visible "Vetted" mark on Contractor profiles
+that Clients can look for. This does not exist yet. Per this build's own
+standard (every claim on screen must be true the instant someone sees it),
+the following content CANNOT be published until the badge is real:
+
+- Client-side: "Are Contractors vetted before I can hire them?"
+- Contractor-side: "Does OnSpot review my profile before Clients can see
+  it?"
+- The top-level pitch line "(with vetted profiles available)"
+
+REQUIRED BEFORE PUBLISHING: a real "Vetted" badge/mark must be built —
+see the separate Replit feature request below. Once live, re-confirm this
+FAQ content is accurate and matches the real implementation before
+publishing this section.
+
+## OPEN ITEMS BEFORE THIS IS FINAL
+
+Content is now FULLY COMPLETE — every question has a real, final written
+answer. Nothing left is a content gap. Two things remain, both build
+dependencies, not content work:
+
+1. **"Lite"/"Standard" naming** — content already uses this terminology
+   throughout as the target state. Do not publish until the actual
+   platform rename ships (queued, not yet sent to Replit).
+2. **"Vetted" badge** — content correctly describes selective vetting
+   with a visible mark. Do not publish until this badge is a real,
+   built, visible feature on Contractor profiles (see BLOCKED section
+   above — not yet sent to Replit as a feature request).
+
+PUBLISH GATE: this page does not go live until BOTH of the above have
+shipped to the live product. All content-writing work on this page is
+done.
+
+## RESOLVED DECISIONS — do not revisit without explicit re-confirmation
+
+- **"Vetted" language scope**: confirmed real and current (an internal manual
+  review process exists today) — but "vetted" stays EXCLUSIVE to this FAQ
+  page for now. Do NOT add "vetted" language to the homepage carousel,
+  "AI-matched profile" copy, or any other product surface. Once the vetting
+  process becomes an automated, in-platform system (no longer manual),
+  revisit adding "vetted" language everywhere else consistently. Until then,
+  this FAQ is the only place it appears.
+- **Vetting is SELECTIVE, not universal** — not all Contractors are vetted;
+  only some are, identified by the "Vetted" mark once it's built.
+- **"Talent" → "Contractor"**: this replacement applies ONLY within this FAQ
+  page's content. The product UI, admin tools, and every other surface keep
+  "Talent" as the established term, unchanged.

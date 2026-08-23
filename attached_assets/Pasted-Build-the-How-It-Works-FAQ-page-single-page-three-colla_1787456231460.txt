@@ -1,0 +1,41 @@
+Build the "How It Works" FAQ page — single page, three collapsible
+sections in this exact order: "What Is OnSpot," "How It Works for
+Clients," "How It Works for Contractors."
+
+Content is fully finalized — attached is the complete draft
+(how_it_works_faq_draft.md). Use it verbatim for all Q&A content.
+
+STRUCTURE:
+- Single URL, no sub-routes per section.
+- Sticky in-page navigation or jump-links between the three sections.
+- Each section renders as a set of collapsible/expandable FAQ items
+  (accordion pattern), not one long scroll of always-visible text.
+- Consistent with the established design system (purple/gold/navy,
+  Bricolage Grotesque + Inter, CX Standard restraint principles) — match
+  the visual language of other public marketing pages already built this
+  session, not a new direction.
+
+FOOTER: add a single "How It Works" link to the shared Footer component,
+pointing to this page. Re-verify footer link list consistency across all
+in-scope pages after this addition, same standard as every other footer
+change this session.
+
+LIVE-BOUND CONTENT (per earlier scoping): the Service Fee range and
+Engagement Type names/hours should pull from real platform settings
+rather than being hardcoded static text, where such settings genuinely
+exist today. Audit and report which specific answers can actually be
+live-bound versus which are only ever referenced in prose — do not
+fabricate a settings table just to make static text look dynamic.
+
+DO NOT PUBLISH THIS PAGE YET — build and stage it, but hold publishing
+until both of these ship separately:
+1. The Lite/Standard engagement-type rename (queued separately)
+2. The "Vetted" badge feature (queued separately)
+
+The content currently describes both as if they're live — it must not go
+public until they actually are. Confirm you understand this sequencing
+before building, and flag clearly once built that it's staged/unpublished
+pending those two dependencies.
+
+Report back with a preview screenshot and confirmation of the live-
+binding audit before this is considered ready (not published) for review.
