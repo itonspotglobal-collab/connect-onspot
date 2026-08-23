@@ -1,0 +1,68 @@
+Build the Payments/Invoicing engine — proceeding WITHOUT waiting on the
+Loyalty-tier discount decision. Flat 20% standard commission for every
+engagement right now; the discount-toward-10% mechanism is deferred, not
+abandoned — build so it can be layered in later without a schema rewrite.
+
+CONFIRMED, BUILD AGAINST THIS — don't re-derive:
+
+1. Money flow: Client pays OnSpot → OnSpot pays Talent. No direct
+   Client-to-Talent rail, ever.
+
+2. Commission: flat 20% for now, ALWAYS added on top of the Talent's
+   rate, never deducted from it. Store this as an explicit
+   commission_rate value on each invoice/engagement record — NOT a
+   hardcoded constant baked into calculation logic — so a future
+   Loyalty-tier discount just means computing and writing a different
+   number into that same field, not restructuring anything.
+
+3. Invoice = Talent's rate + commission, billed to the Client as ONE
+   all-in number — commission is priced in, never itemized as a separate
+   line the Client sees.
+
+4. Payout = Talent's full rate, untouched by commission.
+
+5. Rate adjustment engine (Extended Hours, Deductions): flat_rate ÷
+   standard period hours, computed at invoicing time, never exposed as a
+   selectable rate to either party. AUDIT FIRST — confirm whether this
+   currently exists as real invoicing logic anywhere in the codebase, or
+   only as a design description. Build it for real if it doesn't exist
+   yet.
+
+6. Security deposit lifecycle — use the CORRECTED version only: 30 days'
+   notice to terminate, no lock-in, deposit held and applied to the final
+   invoice on proper termination, drawn on late payment with a 5-day
+   replenishment obligation, NEVER forfeited under any circumstance. An
+   earlier design (deposit depleting via wage-draw with full forfeiture
+   on termination without cause) was explicitly superseded — do not use
+   it.
+
+7. Client-side payment collection: Wire + Credit Card only (no ACH until
+   the Delaware entity is confirmed formed).
+
+8. Talent-side payout rails: build as a per-region configurable rule,
+   not hardcoded to Philippines-specific rails, given the stated global-
+   sourcing ambition — even though PH is the only real rail needed today.
+
+9. Reconciliation: semi-manual is explicitly acceptable at this stage
+   per the platform's own original MVP scope — no payment processor
+   integration required yet. Focus on building the real LEDGER (who's
+   invoiced, who's paid, what commission applied, deposit state) as real
+   spine data, even if actually moving money stays manual/external for
+   now.
+
+10. GTV = Revenue — full Client billing is top-line revenue, not a
+    pass-through metric. The commission is gross margin on top.
+
+AUDIT FIRST, report before building:
+1. Confirm current schema state — does anything resembling invoices,
+   payouts, or a ledger already exist anywhere in this codebase?
+2. Confirm whether the rate-adjustment engine (point 5) is real or
+   design-only today.
+3. Propose the core schema: invoices, payouts, and how they link to
+   hiring_contracts/job_submissions — plus the explicit commission_rate
+   field per point 2.
+4. Propose a phased build plan (schema → ledger logic → admin/Client-
+   facing views), same discipline as every other multi-phase build this
+   session — verified at each stage before moving to the next.
+
+Report audit findings and phased plan before implementing anything.
