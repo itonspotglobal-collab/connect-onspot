@@ -338,7 +338,7 @@ export interface QuickTrustIndicatorsProps {
 
 export function QuickTrustIndicators({
   showPaymentProtected = true,
-  showVerified = true,
+  showVerified = false,
   showTopRated = false,
   showFeatured = false,
   size = "sm",

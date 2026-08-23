@@ -1474,6 +1474,24 @@ export async function registerRoutes(
     console.warn("⚠️  candidates vetting migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: candidates verification columns ─────────────────
+  // Canonical three-tier: No Classification → Verified → Vetted.
+  // Verified = admin-confirmed identity/certifications; prerequisite for Vetted.
+  try {
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS is_verified boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verified_at timestamptz`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verified_by text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verified_by_mechanism text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verification_notes text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verification_status text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verification_doc_url text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verification_doc_name text`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS verification_rejection_reason text`);
+    console.log("✅ Migration: candidates verification columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  candidates verification migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: 1-Click Apply — application_questions + answers ──
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_questions jsonb`);
@@ -2087,6 +2105,43 @@ export async function registerRoutes(
     console.log("✅ Migration: admin_role_changes.change_type column ready");
   } catch (migErr: any) {
     console.warn("⚠️  admin_role_changes change_type migration skipped:", migErr.message);
+  }
+
+  // ── One-time safe migration: grandfather already-Vetted contractors with is_verified ──
+  // Contractors who were Vetted before the Verified tier existed are automatically
+  // considered Verified. Their Vetted review was more thorough than identity-only
+  // Verification. change_type = 'verification_status' so the audit history surface
+  // shows the event. Applies only forward — new Vetted grants require is_verified=true.
+  try {
+    const toGrandfather = await query(`
+      SELECT c.id, c.user_id, c.vetted_at, COALESCE(u.email, 'unknown') AS email
+      FROM candidates c
+      LEFT JOIN users u ON u.id = c.user_id
+      WHERE c.is_vetted = true AND (c.is_verified IS NULL OR c.is_verified = false)
+    `);
+    if (toGrandfather.rows.length > 0) {
+      await query(`
+        UPDATE candidates
+        SET is_verified = true,
+            verified_at = COALESCE(vetted_at, NOW()),
+            verified_by_mechanism = 'grandfathered_pre_verified'
+        WHERE is_vetted = true AND (is_verified IS NULL OR is_verified = false)
+      `);
+      for (const row of toGrandfather.rows) {
+        await query(
+          `INSERT INTO admin_role_changes
+             (user_id, email, previous_role, new_role, mechanism, changed_by, notes, change_type)
+           VALUES ($1, $2, 'unverified', 'verified', 'grandfathered_pre_verified', 'system',
+                   'Grandfathered: was Vetted before Verified tier existed', 'verification_status')`,
+          [row.user_id, row.email]
+        );
+      }
+      console.log(`✅ Migration: grandfathered ${toGrandfather.rows.length} Vetted contractor(s) with is_verified=true`);
+    } else {
+      console.log("✅ Migration: no Vetted contractors needed grandfathering");
+    }
+  } catch (migErr: any) {
+    console.warn("⚠️  verification grandfathering migration skipped:", migErr.message);
   }
 
   // ── Phase 0: admin_sub_role column on users ───────────────────────────────
@@ -6078,6 +6133,10 @@ export async function registerRoutes(
       isVetted:         c.isVetted         ?? c.is_vetted         ?? false,
       vettedAt:         c.vettedAt         ?? c.vetted_at         ?? null,
 
+      // Verified tier — identity/certifications confirmed by admin
+      isVerified:         c.isVerified         ?? c.is_verified         ?? false,
+      verificationStatus: c.verificationStatus ?? c.verification_status ?? null,
+
       // Timestamps
       createdAt: c.createdAt ?? c.created_at ?? null,
       updatedAt: c.updatedAt ?? c.updated_at ?? null,
@@ -7951,7 +8010,7 @@ export async function registerRoutes(
 
       // Fetch current candidate row
       const candidateResult = await client.query(
-        `SELECT c.id AS candidate_id, c.is_vetted, u.email
+        `SELECT c.id AS candidate_id, c.is_vetted, c.is_verified, u.email
          FROM users u
          LEFT JOIN candidates c ON c.user_id = u.id
          WHERE u.id = $1 AND u.role = 'talent'`,
@@ -7962,12 +8021,21 @@ export async function registerRoutes(
         client.release();
         return res.status(404).json({ error: "Talent not found" });
       }
-      const { candidate_id: candidateId, is_vetted: currentlyVetted, email } = candidateResult.rows[0];
+      const { candidate_id: candidateId, is_vetted: currentlyVetted, is_verified: currentlyVerified, email } = candidateResult.rows[0];
 
       if (!candidateId) {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({ error: "This talent has no candidate profile yet" });
+      }
+
+      // Prerequisite enforcement: Vetted requires Verified first.
+      // This check applies to NEW grants only — existing Vetted contractors are
+      // grandfathered with is_verified=true via the startup migration.
+      if (action === 'grant' && !currentlyVerified) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(422).json({ error: "Contractor must be Verified before Vetted status can be granted." });
       }
 
       const newIsVetted = action === 'grant';
@@ -8008,6 +8076,421 @@ export async function registerRoutes(
       client.release();
       console.error("PATCH /api/admin/talent/:id/vetted error:", err);
       res.status(500).json({ error: "Failed to update vetting status" });
+    }
+  });
+
+  // ── Verification tier endpoints ──────────────────────────────────────────────
+  // Three-tier model: No Classification → Verified → Vetted.
+  // Verified = admin has confirmed identity doc + certifications.
+  // Raw documents are deleted from storage immediately after any decision (confirm/reject).
+  // Access: contractor endpoints use authenticateJWT; admin endpoints require Super Admin
+  //         (requireSuperAdmin), never Talent Acquisition.
+  // Every raw-document view is written to admin_file_access_log, no exceptions.
+
+  // Helper: extract candidate ID from talent JWT (type:'candidate') or regular talent JWT.
+  async function extractCandidateId(req: any): Promise<string | null> {
+    const user = req.user;
+    if (user?.type === 'candidate' && user?.candidateId) return user.candidateId as string;
+    if (user?.role === 'talent' || user?.userRole === 'talent') {
+      const uid = user.id ?? user.userId;
+      const r = await query(`SELECT id FROM candidates WHERE user_id = $1`, [uid]);
+      return r.rows[0]?.id ?? null;
+    }
+    return null;
+  }
+
+  // GET /api/talent/verification/status — contractor checks their own verification state
+  app.get("/api/talent/verification/status", authenticateJWT, async (req: any, res: Response) => {
+    try {
+      const candidateId = await extractCandidateId(req);
+      if (!candidateId) return res.status(401).json({ error: 'Only Contractors can access this endpoint' });
+      const result = await query(
+        `SELECT is_verified, verified_at, verified_by_mechanism,
+                verification_status, verification_doc_name, verification_rejection_reason
+         FROM candidates WHERE id = $1`,
+        [candidateId]
+      );
+      if (!result.rows.length) return res.status(404).json({ error: 'Candidate not found' });
+      const row = result.rows[0];
+      res.json({
+        isVerified:       row.is_verified,
+        verifiedAt:       row.verified_at,
+        mechanism:        row.verified_by_mechanism ?? null,
+        status:           row.verification_status   ?? null,
+        docName:          row.verification_doc_name ?? null,
+        rejectionReason:  row.verification_rejection_reason ?? null,
+      });
+    } catch (err: any) {
+      console.error('GET /api/talent/verification/status error:', err);
+      res.status(500).json({ error: 'Failed to fetch verification status' });
+    }
+  });
+
+  // POST /api/talent/verification/submit — contractor uploads government-issued ID doc
+  app.post("/api/talent/verification/submit", authenticateJWT, upload.single('idDocument'), async (req: any, res: Response) => {
+    try {
+      const candidateId = await extractCandidateId(req);
+      if (!candidateId) return res.status(401).json({ error: 'Only Contractors can submit verification documents' });
+
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: 'No document uploaded (field: idDocument)' });
+
+      const ALLOWED_MIME = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!ALLOWED_MIME.includes(file.mimetype)) {
+        return res.status(400).json({ error: 'Document must be a JPEG, PNG, or PDF' });
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ error: 'Document must be under 10 MB' });
+      }
+
+      const current = await query(
+        `SELECT is_verified, verification_status, verification_doc_url FROM candidates WHERE id = $1`,
+        [candidateId]
+      );
+      if (!current.rows.length) return res.status(404).json({ error: 'Candidate not found' });
+      const { is_verified, verification_doc_url: oldDocUrl } = current.rows[0];
+      if (is_verified) return res.status(409).json({ error: 'This contractor is already Verified' });
+
+      // Delete any existing pending doc before replacing
+      if (oldDocUrl) {
+        try {
+          const svc = new ObjectStorageService();
+          const f = await svc.getObjectEntityFile(oldDocUrl);
+          await f.delete({ ignoreNotFound: true });
+        } catch {}
+      }
+
+      // Save new document to private storage
+      const svc = new ObjectStorageService();
+      const objectId = randomUUID();
+      const privateDir = svc.getPrivateObjectDir();
+      const fullPath = `${privateDir}/candidate-verification-docs/${objectId}`;
+      const parts = fullPath.split('/').filter((p: string) => p);
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join('/');
+      const bucket = objectStorageClient.bucket(bucketName);
+      const objectFile = bucket.file(objectName);
+      await objectFile.save(file.buffer, {
+        metadata: { contentType: file.mimetype, metadata: { originalName: file.originalname } },
+      });
+      await setObjectAclPolicy(objectFile, { visibility: 'private' });
+      const docUrl = `/objects/candidate-verification-docs/${objectId}`;
+
+      await query(
+        `UPDATE candidates SET
+           verification_status = 'pending',
+           verification_doc_url = $1,
+           verification_doc_name = $2,
+           verification_rejection_reason = NULL,
+           updated_at = NOW()
+         WHERE id = $3`,
+        [docUrl, file.originalname, candidateId]
+      );
+      console.log(`✅ POST /api/talent/verification/submit: candidate ${candidateId} submitted ID doc`);
+      res.json({ success: true, status: 'pending', docName: file.originalname });
+    } catch (err: any) {
+      console.error('POST /api/talent/verification/submit error:', err);
+      res.status(500).json({ error: 'Failed to submit verification document' });
+    }
+  });
+
+  // DELETE /api/talent/verification/submission — contractor cancels their pending submission
+  app.delete("/api/talent/verification/submission", authenticateJWT, async (req: any, res: Response) => {
+    try {
+      const candidateId = await extractCandidateId(req);
+      if (!candidateId) return res.status(401).json({ error: 'Only Contractors can cancel a verification submission' });
+      const current = await query(
+        `SELECT verification_status, verification_doc_url FROM candidates WHERE id = $1`,
+        [candidateId]
+      );
+      if (!current.rows.length) return res.status(404).json({ error: 'Candidate not found' });
+      const { verification_status, verification_doc_url } = current.rows[0];
+      if (verification_status !== 'pending') {
+        return res.status(409).json({ error: 'No pending submission to cancel' });
+      }
+      if (verification_doc_url) {
+        try {
+          const svc = new ObjectStorageService();
+          const f = await svc.getObjectEntityFile(verification_doc_url);
+          await f.delete({ ignoreNotFound: true });
+        } catch {}
+      }
+      await query(
+        `UPDATE candidates SET
+           verification_status = NULL,
+           verification_doc_url = NULL,
+           verification_doc_name = NULL,
+           updated_at = NOW()
+         WHERE id = $1`,
+        [candidateId]
+      );
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('DELETE /api/talent/verification/submission error:', err);
+      res.status(500).json({ error: 'Failed to cancel submission' });
+    }
+  });
+
+  // GET /api/admin/verification/queue — Super Admin: list pending verifications
+  app.get("/api/admin/verification/queue", authenticateAdminFlexible, requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+      const result = await query(`
+        SELECT c.id AS candidate_id, u.id AS user_id, u.email,
+               u.first_name, u.last_name, c.display_name, c.target_position, c.category,
+               c.profile_photo_url, c.verification_doc_name, c.updated_at AS submitted_at
+        FROM candidates c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.verification_status = 'pending'
+        ORDER BY c.updated_at ASC
+      `);
+      res.json({ queue: result.rows });
+    } catch (err: any) {
+      console.error('GET /api/admin/verification/queue error:', err);
+      res.status(500).json({ error: 'Failed to fetch verification queue' });
+    }
+  });
+
+  // GET /api/admin/talent/:id/verification-status — Super Admin: get a contractor's verification state
+  app.get("/api/admin/talent/:id/verification-status", authenticateAdminFlexible, requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const result = await query(
+        `SELECT c.is_verified, c.verified_at, c.verified_by, c.verified_by_mechanism,
+                c.verification_notes, c.verification_status, c.verification_doc_name,
+                c.verification_rejection_reason
+         FROM candidates c
+         JOIN users u ON u.id = c.user_id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (!result.rows.length) return res.status(404).json({ error: 'Talent not found' });
+      const row = result.rows[0];
+      res.json({
+        isVerified:          row.is_verified,
+        verifiedAt:          row.verified_at,
+        verifiedBy:          row.verified_by,
+        verifiedByMechanism: row.verified_by_mechanism,
+        verificationNotes:   row.verification_notes,
+        status:              row.verification_status    ?? null,
+        docName:             row.verification_doc_name  ?? null,
+        rejectionReason:     row.verification_rejection_reason ?? null,
+      });
+    } catch (err: any) {
+      console.error('GET /api/admin/talent/:id/verification-status error:', err);
+      res.status(500).json({ error: 'Failed to fetch verification status' });
+    }
+  });
+
+  // GET /api/admin/talent/:id/verification-document — Super Admin: stream raw ID doc
+  // MANDATORY audit log entry before every stream — no exceptions.
+  app.get("/api/admin/talent/:id/verification-document", authenticateAdminFlexible, requireSuperAdmin, async (req: any, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const adminUserId = req.user?.id ?? req.user?.userId;
+      const docResult = await query(
+        `SELECT c.verification_doc_url, c.verification_doc_name
+         FROM candidates c
+         JOIN users u ON u.id = c.user_id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (!docResult.rows.length || !docResult.rows[0].verification_doc_url) {
+        return res.status(404).json({ error: 'No verification document on file' });
+      }
+      const { verification_doc_url, verification_doc_name } = docResult.rows[0];
+      // Mandatory audit log — must succeed before streaming
+      await query(
+        `INSERT INTO admin_file_access_log (object_path, accessed_by, context_note)
+         VALUES ($1, $2, $3)`,
+        [verification_doc_url, adminUserId, `verification-doc-review:talent:${userId}`]
+      );
+      const svc = new ObjectStorageService();
+      const objectFile = await svc.getObjectEntityFile(verification_doc_url);
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = (metadata as any)?.contentType || 'application/octet-stream';
+      const safeName = (verification_doc_name || 'id-document').replace(/[^a-zA-Z0-9._\- ]/g, '_');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
+      objectFile.createReadStream().pipe(res);
+    } catch (err: any) {
+      console.error('GET /api/admin/talent/:id/verification-document error:', err);
+      res.status(500).json({ error: 'Failed to stream verification document' });
+    }
+  });
+
+  // GET /api/admin/talent/:id/verification-history — Super Admin: audit history
+  app.get("/api/admin/talent/:id/verification-history", authenticateAdminFlexible, requireSuperAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const result = await query(
+        `SELECT id, new_role AS action, notes AS reason, changed_by, changed_at
+         FROM admin_role_changes
+         WHERE user_id = $1 AND change_type = 'verification_status'
+         ORDER BY changed_at DESC`,
+        [userId]
+      );
+      res.json({
+        history: result.rows.map((row: any) => ({
+          id:        row.id,
+          action:    row.action === 'verified' ? 'confirmed' : 'rejected_or_grandfathered',
+          reason:    row.reason,
+          changedBy: row.changed_by,
+          changedAt: row.changed_at,
+        })),
+      });
+    } catch (err: any) {
+      console.error('GET /api/admin/talent/:id/verification-history error:', err);
+      res.status(500).json({ error: 'Failed to fetch verification history' });
+    }
+  });
+
+  // POST /api/admin/talent/:id/verification/confirm — Super Admin: confirm verification
+  // Writes is_verified=true, clears doc fields, deletes raw doc from storage.
+  app.post("/api/admin/talent/:id/verification/confirm", authenticateAdminFlexible, requireSuperAdmin, async (req: any, res: Response) => {
+    const client = await pool.connect();
+    try {
+      const userId = req.params.id;
+      const { notes } = req.body;
+      const adminUserId = req.user?.id ?? req.user?.userId;
+      const changedBy = req.user?.email ?? adminUserId ?? 'admin';
+
+      await client.query("BEGIN");
+      const candidateResult = await client.query(
+        `SELECT c.id AS candidate_id, c.verification_status, c.verification_doc_url, u.email
+         FROM users u
+         LEFT JOIN candidates c ON c.user_id = u.id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (!candidateResult.rows.length) {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(404).json({ error: 'Talent not found' });
+      }
+      const { candidate_id: candidateId, verification_status, verification_doc_url, email } = candidateResult.rows[0];
+      if (!candidateId) {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(400).json({ error: 'No candidate profile found' });
+      }
+      if (verification_status !== 'pending') {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(409).json({ error: 'No pending verification to confirm' });
+      }
+
+      await client.query(
+        `UPDATE candidates SET
+           is_verified = true,
+           verified_at = NOW(),
+           verified_by = $1,
+           verified_by_mechanism = 'manual_admin',
+           verification_notes = $2,
+           verification_status = NULL,
+           verification_doc_url = NULL,
+           verification_doc_name = NULL,
+           verification_rejection_reason = NULL,
+           updated_at = NOW()
+         WHERE id = $3`,
+        [adminUserId, notes?.trim() || null, candidateId]
+      );
+      await client.query(
+        `INSERT INTO admin_role_changes
+           (user_id, email, previous_role, new_role, mechanism, changed_by, notes, change_type)
+         VALUES ($1, $2, 'unverified', 'verified', 'admin_ui_verification', $3, $4, 'verification_status')`,
+        [userId, email, changedBy, notes?.trim() || null]
+      );
+      await client.query("COMMIT");
+      client.release();
+
+      // Delete raw document AFTER commit — non-fatal if storage delete fails
+      if (verification_doc_url) {
+        try {
+          const svc = new ObjectStorageService();
+          const f = await svc.getObjectEntityFile(verification_doc_url);
+          await f.delete({ ignoreNotFound: true });
+        } catch (delErr) {
+          console.warn('⚠️  verify-confirm: storage delete failed (non-fatal):', delErr);
+        }
+      }
+      console.log(`✅ POST /api/admin/talent/${userId}/verification/confirm: ${email} → verified (by ${changedBy})`);
+      res.json({ success: true });
+    } catch (err: any) {
+      try { await client.query("ROLLBACK"); } catch {}
+      client.release();
+      console.error('POST /api/admin/talent/:id/verification/confirm error:', err);
+      res.status(500).json({ error: 'Failed to confirm verification' });
+    }
+  });
+
+  // POST /api/admin/talent/:id/verification/reject — Super Admin: reject verification
+  // Reason is mandatory. Raw doc deleted from storage.
+  app.post("/api/admin/talent/:id/verification/reject", authenticateAdminFlexible, requireSuperAdmin, async (req: any, res: Response) => {
+    const client = await pool.connect();
+    try {
+      const userId = req.params.id;
+      const { reason } = req.body;
+      if (!reason || typeof reason !== 'string' || !reason.trim()) {
+        return res.status(400).json({ error: 'A reason is required when rejecting a verification' });
+      }
+      const adminUserId = req.user?.id ?? req.user?.userId;
+      const changedBy = req.user?.email ?? adminUserId ?? 'admin';
+
+      await client.query("BEGIN");
+      const candidateResult = await client.query(
+        `SELECT c.id AS candidate_id, c.verification_status, c.verification_doc_url, u.email
+         FROM users u
+         LEFT JOIN candidates c ON c.user_id = u.id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (!candidateResult.rows.length) {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(404).json({ error: 'Talent not found' });
+      }
+      const { candidate_id: candidateId, verification_status, verification_doc_url, email } = candidateResult.rows[0];
+      if (!candidateId) {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(400).json({ error: 'No candidate profile found' });
+      }
+      if (verification_status !== 'pending') {
+        await client.query("ROLLBACK"); client.release();
+        return res.status(409).json({ error: 'No pending verification to reject' });
+      }
+
+      await client.query(
+        `UPDATE candidates SET
+           verification_status = 'rejected',
+           verification_rejection_reason = $1,
+           verification_doc_url = NULL,
+           verification_doc_name = NULL,
+           updated_at = NOW()
+         WHERE id = $2`,
+        [reason.trim(), candidateId]
+      );
+      await client.query(
+        `INSERT INTO admin_role_changes
+           (user_id, email, previous_role, new_role, mechanism, changed_by, notes, change_type)
+         VALUES ($1, $2, 'unverified', 'unverified', 'admin_ui_verification', $3, $4, 'verification_status')`,
+        [userId, email, changedBy, `REJECTED: ${reason.trim()}`]
+      );
+      await client.query("COMMIT");
+      client.release();
+
+      // Delete raw document AFTER commit — non-fatal if storage delete fails
+      if (verification_doc_url) {
+        try {
+          const svc = new ObjectStorageService();
+          const f = await svc.getObjectEntityFile(verification_doc_url);
+          await f.delete({ ignoreNotFound: true });
+        } catch (delErr) {
+          console.warn('⚠️  verify-reject: storage delete failed (non-fatal):', delErr);
+        }
+      }
+      console.log(`✅ POST /api/admin/talent/${userId}/verification/reject: ${email} rejected (by ${changedBy})`);
+      res.json({ success: true });
+    } catch (err: any) {
+      try { await client.query("ROLLBACK"); } catch {}
+      client.release();
+      console.error('POST /api/admin/talent/:id/verification/reject error:', err);
+      res.status(500).json({ error: 'Failed to reject verification' });
     }
   });
 

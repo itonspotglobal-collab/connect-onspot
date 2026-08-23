@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { isInvitableJob, type InvitationPickerJob, type InvitationReadiness } from "@/lib/invitationReadiness";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2, ShieldCheck } from "lucide-react";
+import { Search, Check, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
 import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
@@ -40,6 +40,7 @@ interface TalentResult {
     secondary_skills?: string[];
     category?: string;
     isVetted?: boolean;
+    isVerified?: boolean;
   };
 }
 
@@ -140,7 +141,13 @@ function ResultRow({
         </p>
       </div>
 
-      {/* Vetted badge */}
+      {/* Verified / Vetted badges */}
+      {candidate.isVerified && (
+        <span className="shrink-0 inline-flex items-center gap-[4px] rounded-full bg-green-500/10 px-2.5 py-[4px] text-[11.5px] font-semibold text-green-700 border border-green-500/20">
+          <CheckCircle2 className="h-3 w-3" />
+          Verified
+        </span>
+      )}
       {candidate.isVetted && (
         <span className="shrink-0 inline-flex items-center gap-[4px] rounded-full bg-[#474ead]/10 px-2.5 py-[4px] text-[11.5px] font-semibold text-[#474ead] border border-[#474ead]/20">
           <ShieldCheck className="h-3 w-3" />

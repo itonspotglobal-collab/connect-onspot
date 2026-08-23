@@ -1,0 +1,44 @@
+Naming fix, footer fix, and Vetted-prerequisite enforcement work
+accepted — good, precise distinction between the display label
+("Not vetted" → "No Classification") and the internal storage value
+('unvetted', correctly left untouched since it never surfaces to a
+human). Footer fix confirmed correct.
+
+Both open decisions on the Verified tier audit are now confirmed:
+
+#2 — Access control: Super Admin only (not Talent Acquisition) for
+viewing raw ID documents, with mandatory audit log via
+admin_file_access_log on every single access, no exceptions.
+
+#3 — Retention: delete the raw document immediately on verification
+confirmation. Retain only is_verified, verified_at, verified_by, and an
+optional verification_notes field. No indefinite storage of the actual
+document under any circumstance.
+
+Proceed with full implementation across all seven audit points:
+- The TalentCard.tsx verified-default-true fix — confirm with real
+  evidence how many real Contractor profiles are currently showing a
+  false "OnSpot Verified" badge before the fix, and confirm zero show it
+  incorrectly after.
+- The Vetted→Verified prerequisite enforcement (422 on missing
+  is_verified for new Vetted grants).
+- The grandfathering migration for already-Vetted Contractors, logged
+  with change_type = 'verification_status' and the
+  'grandfathered_pre_verified' notation exactly as proposed.
+- The verification_status audit trail convention, mirroring
+  vetting_status.
+- Full submission → pending → admin review → confirm/reject workflow,
+  with the asymmetric reason-field requirement (optional on confirm,
+  mandatory on reject).
+- All three badge surfaces (TalentProfile, TalentPool, SearchToShortlist)
+  wired to real isVerified data, alongside the existing Vetted pill.
+- "No Classification" naming for the base tier used consistently
+  wherever else it's displayed to admins.
+
+Report back with real evidence for all of this, same standard as every
+other feature this session: real seeded test data, an actual document
+upload → admin review → confirm/reject cycle traced end-to-end, real
+screenshots of all three badge surfaces, confirmation the raw document is
+genuinely deleted from storage (not just marked deleted in the DB) after
+confirmation, and confirmation of the exact number of real Contractor
+profiles corrected by the TalentCard default-true fix.

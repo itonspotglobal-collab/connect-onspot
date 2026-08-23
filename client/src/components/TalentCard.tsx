@@ -44,7 +44,7 @@ export function TalentCard({
   avatarUrl,
   experience,
   availability,
-  verified = true,
+  verified = false,
   featured = false,
   topRated = false,
   paymentProtected = true,

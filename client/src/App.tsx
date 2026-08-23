@@ -54,6 +54,7 @@ import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminTalent from "@/pages/AdminTalent";
 import AdminTalentDetail from "@/pages/AdminTalentDetail";
+import AdminVerification from "@/pages/AdminVerification";
 import VanessaResponses from "@/pages/VanessaResponses";
 import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
@@ -274,6 +275,7 @@ function PublicRouter() {
           <Route path="/admin/inquiries" component={() => <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
           <Route path="/admin/scaffold-jobs" component={() => <AdminProtectedRoute><AdminScaffoldJobs /></AdminProtectedRoute>} />
           <Route path="/admin/flagged-messages" component={() => <AdminProtectedRoute><AdminFlaggedMessages /></AdminProtectedRoute>} />
+          <Route path="/admin/verification" component={() => <AdminProtectedRoute><AdminVerification /></AdminProtectedRoute>} />
           {/* Service pages — with TopNavigation */}
           <Route path="/services/managed" component={ManagedServicesPage} />
           <Route path="/services/resourced" component={ResourcedServicesPage} />

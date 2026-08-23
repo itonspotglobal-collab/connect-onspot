@@ -612,6 +612,12 @@ function TalentCard({
                       {candidate.cultureScore}% values fit
                     </span>
                   )}
+                  {(candidate as any).isVerified && (
+                    <span className="inline-flex items-center gap-[4px] rounded-full bg-green-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-green-700 border border-green-500/20">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Verified
+                    </span>
+                  )}
                   {candidate.isVetted && (
                     <span className="inline-flex items-center gap-[4px] rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead] border border-[#474ead]/20">
                       <ShieldCheck className="h-3 w-3" />

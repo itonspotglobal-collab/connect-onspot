@@ -1353,9 +1353,23 @@ export const candidates = pgTable("candidates", {
   displayName: text("display_name"),
   // Auth — bcrypt hash, nullable until candidate sets a password
   passwordHash: text("password_hash"),
+  // Verified status — admin-confirmed identity and certifications (prerequisite for Vetted).
+  // Canonical three-tier model: No Classification → Verified → Vetted.
+  // Mechanism values: 'manual_admin' | 'grandfathered_pre_verified'
+  isVerified: boolean("is_verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
+  verifiedBy: text("verified_by"),                          // admin user_id who confirmed
+  verifiedByMechanism: text("verified_by_mechanism"),       // 'manual_admin' | 'grandfathered_pre_verified'
+  verificationNotes: text("verification_notes"),            // optional admin note on confirm
+  verificationStatus: text("verification_status"),          // 'pending' | 'rejected' | null
+  verificationDocUrl: text("verification_doc_url"),         // cleared after any decision
+  verificationDocName: text("verification_doc_name"),       // cleared after any decision
+  verificationRejectionReason: text("verification_rejection_reason"), // set on reject, cleared on resubmit
+
   // Vetted status — admin-granted; shows a visible "Vetted" badge on the profile.
   // Eligibility paths: manual admin grant, proactive OnSpot selection, or automatic
   // milestone (threshold configured in platform_settings.vetted_auto_hire_threshold).
+  // Requires is_verified = true as a prerequisite.
   isVetted: boolean("is_vetted").notNull().default(false),
   vettedAt: timestamp("vetted_at"),
   // Discriminates how the badge was granted: 'manual_admin' | 'automatic_milestone'

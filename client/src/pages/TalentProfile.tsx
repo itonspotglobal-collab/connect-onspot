@@ -10,7 +10,7 @@ import {
   MapPin, Briefcase, Calendar, Globe2, Mail, Phone, Linkedin,
   Github, Link2, Star, ChevronRight, Pencil, Check,
   X, Plus, Trash2, Award, BookOpen, User, ExternalLink,
-  Clock, ChevronDown, Camera, Shield, AlertCircle, Download, Eye, EyeOff,
+  Clock, ChevronDown, Camera, Shield, CheckCircle2, AlertCircle, Download, Eye, EyeOff,
   FileText, Video, Upload, Square, RotateCcw, Loader2, Play, UserPlus,
 } from "lucide-react";
 import {
@@ -1300,6 +1300,12 @@ export default function TalentProfile() {
               {candidate.cultureScore != null && (
                 <Badge className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-900/20 dark:text-emerald-400">
                   {candidate.cultureScore}% values fit
+                </Badge>
+              )}
+              {(candidate as any).isVerified && (
+                <Badge className="rounded-full border-green-500/25 bg-green-500/10 text-green-700 dark:text-green-400 inline-flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Verified
                 </Badge>
               )}
               {(candidate as any).isVetted && (

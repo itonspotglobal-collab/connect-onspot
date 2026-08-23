@@ -254,6 +254,18 @@ export default function ProfileSettings() {
   const [videoDeleting,   setVideoDeleting]   = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef  = useRef<HTMLInputElement>(null);
+  const idDocFileInputRef  = useRef<HTMLInputElement>(null);
+
+  // ── Identity verification document state ─────────────────────────────────
+  const [idDocUploading,  setIdDocUploading]  = useState(false);
+  const [idDocCancelling, setIdDocCancelling] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<{
+    isVerified: boolean;
+    verifiedAt: string | null;
+    status: string | null;
+    docName: string | null;
+    rejectionReason: string | null;
+  } | null>(null);
 
   // ── Camera recording state ──────────────────────────────────────────────
   const [videoRecordingState, setVideoRecordingState] = useState<'idle' | 'camera' | 'recording' | 'recorded'>('idle');
@@ -285,6 +297,75 @@ export default function ProfileSettings() {
    */
   const invalidateCandidate = () =>
     candidateId ? invalidateCandidateQueries(queryClient, candidateId) : Promise.resolve();
+
+  // ── Fetch contractor's own verification status ────────────────────────────
+  useEffect(() => {
+    if (!candidateId) return;
+    const token = talentAuth?.token
+      ? `Bearer ${talentAuth.token}`
+      : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+    fetch('/api/talent/verification/status', { headers: { Authorization: token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setVerificationStatus(data); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateId, talentAuth?.token]);
+
+  // ── Upload contractor identity verification document ─────────────────────
+  const uploadIdDoc = async (file: File) => {
+    if (!candidateId) return;
+    setIdDocUploading(true);
+    try {
+      const token = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const fd = new FormData();
+      fd.append('idDocument', file);
+      const res = await fetch('/api/talent/verification/submit', {
+        method: 'POST',
+        headers: { Authorization: token },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+      const result = await res.json();
+      setVerificationStatus(prev => ({
+        isVerified: prev?.isVerified ?? false,
+        verifiedAt: prev?.verifiedAt ?? null,
+        status: result.status,
+        docName: result.docName,
+        rejectionReason: null,
+      }));
+      toast({ title: 'Document submitted', description: 'Your ID has been submitted for admin review.' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIdDocUploading(false);
+    }
+  };
+
+  const cancelIdDocSubmission = async () => {
+    if (!candidateId) return;
+    setIdDocCancelling(true);
+    try {
+      const token = talentAuth?.token
+        ? `Bearer ${talentAuth.token}`
+        : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
+      const res = await fetch('/api/talent/verification/submission', {
+        method: 'DELETE',
+        headers: { Authorization: token },
+      });
+      if (!res.ok) throw new Error('Failed to cancel');
+      setVerificationStatus(prev => prev ? { ...prev, status: null, docName: null } : null);
+      toast({ title: 'Submission cancelled' });
+    } catch (err: any) {
+      toast({ title: 'Failed to cancel', description: err.message, variant: 'destructive' });
+    } finally {
+      setIdDocCancelling(false);
+    }
+  };
 
   const uploadResume = async (file: File) => {
     if (!candidateId) return;
@@ -1551,6 +1632,124 @@ export default function ProfileSettings() {
                               <RotateCcw style={{ width: 14, height: 14 }} /> Retake
                             </button>
                           </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Separator style={{ borderColor: BORDER }} />
+
+                    {/* ── Identity Verification ── */}
+                    <div className="space-y-3 mt-5">
+                      <div>
+                        <p className="text-[15px] font-semibold" style={{ color: TEXT }}>
+                          Identity Verification
+                        </p>
+                        <p className="text-[13px] mt-0.5" style={{ color: MUTED }}>
+                          Submit a government-issued ID or certification to become Verified on OnSpot.
+                          Verified status is required before Vetted can be granted.
+                        </p>
+                      </div>
+
+                      {verificationStatus?.isVerified ? (
+                        /* ── Already verified ── */
+                        <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          Identity Verified
+                          {verificationStatus.verifiedAt && (
+                            <span className="text-xs font-normal text-green-600 ml-auto">
+                              {new Date(verificationStatus.verifiedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      ) : verificationStatus?.status === 'pending' ? (
+                        /* ── Pending review ── */
+                        <div className="rounded-lg border px-3 py-2.5 space-y-2" style={{ borderColor: BORDER }}>
+                          <div className="flex items-center gap-2 text-sm font-medium text-amber-700">
+                            <Clock className="w-4 h-4 shrink-0" />
+                            Under review — waiting for admin confirmation
+                          </div>
+                          {verificationStatus.docName && (
+                            <p className="text-xs flex items-center gap-1" style={{ color: MUTED }}>
+                              <FileText className="w-3 h-3" />
+                              {verificationStatus.docName}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            disabled={idDocCancelling}
+                            onClick={cancelIdDocSubmission}
+                            className="inline-flex items-center gap-1.5 text-xs rounded-full px-3 py-1.5 disabled:opacity-60 transition-colors"
+                            style={{ border: `1.5px solid ${BORDER}`, background: '#fff', color: TEXT }}
+                          >
+                            {idDocCancelling
+                              ? <><Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> Cancelling…</>
+                              : <><X style={{ width: 12, height: 12 }} /> Cancel submission</>}
+                          </button>
+                        </div>
+                      ) : verificationStatus?.status === 'rejected' ? (
+                        /* ── Rejected — allow resubmission ── */
+                        <div className="rounded-lg border px-3 py-2.5 space-y-2 border-red-200 bg-red-50">
+                          <div className="flex items-center gap-2 text-sm font-medium text-red-700">
+                            <X style={{ width: 16, height: 16 }} className="shrink-0" />
+                            Verification rejected
+                          </div>
+                          {verificationStatus.rejectionReason && (
+                            <p className="text-xs text-red-600">{verificationStatus.rejectionReason}</p>
+                          )}
+                          <p className="text-xs" style={{ color: MUTED }}>
+                            You can upload a new document to reapply.
+                          </p>
+                          <input
+                            ref={idDocFileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,application/pdf"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadIdDoc(file);
+                              e.target.value = '';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={idDocUploading}
+                            onClick={() => idDocFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 text-xs rounded-full px-3 py-1.5 font-semibold text-white disabled:opacity-60 transition-colors"
+                            style={{ background: '#4f46e5' }}
+                          >
+                            {idDocUploading
+                              ? <><Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> Uploading…</>
+                              : <><Upload style={{ width: 12, height: 12 }} /> Upload new document</>}
+                          </button>
+                        </div>
+                      ) : (
+                        /* ── Not started ── */
+                        <div className="space-y-2">
+                          <input
+                            ref={idDocFileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,application/pdf"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadIdDoc(file);
+                              e.target.value = '';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={idDocUploading}
+                            onClick={() => idDocFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 text-[13px] rounded-full px-4 font-semibold disabled:opacity-60 transition-colors"
+                            style={{ height: 38, background: '#4f46e5', color: '#fff' }}
+                          >
+                            {idDocUploading
+                              ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Uploading…</>
+                              : <><Upload style={{ width: 14, height: 14 }} /> Upload ID document</>}
+                          </button>
+                          <p className="text-xs" style={{ color: MUTED }}>
+                            Accepted: JPEG, PNG, or PDF · Max 10 MB
+                          </p>
                         </div>
                       )}
                     </div>

@@ -18,6 +18,7 @@ import {
   Shield,
   CheckCircle2,
   Circle,
+  Clock,
   FileText,
   Video,
 } from 'lucide-react';
@@ -35,6 +36,25 @@ interface Application {
 interface VettingHistoryEntry {
   id: string;
   action: 'granted' | 'revoked';
+  reason: string | null;
+  changedBy: string;
+  changedAt: string;
+}
+
+interface VerificationStatusData {
+  isVerified: boolean;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  verifiedByMechanism: string | null;
+  verificationNotes: string | null;
+  status: string | null;
+  docName: string | null;
+  rejectionReason: string | null;
+}
+
+interface VerificationHistoryEntry {
+  id: string;
+  action: string;
   reason: string | null;
   changedBy: string;
   changedAt: string;
@@ -78,6 +98,8 @@ interface TalentProfile {
   isVetted: boolean;
   vettedAt: string | null;
   vettedByMechanism: string | null;
+  isVerified: boolean;
+  verificationStatus: string | null;
 }
 
 interface TalentDetailResponse {
@@ -133,6 +155,33 @@ export default function AdminTalentDetail() {
     enabled: !!userId,
   });
 
+  // Verification status — Super Admin only; non-Super-Admins get a 403 (retry:false)
+  const {
+    data: verificationStatus,
+    refetch: refetchVerification,
+    error: verificationStatusError,
+  } = useQuery<VerificationStatusData>({
+    queryKey: ['/api/admin/talent', userId, 'verification-status'],
+    queryFn: () => authAPI.get(`/api/admin/talent/${userId}/verification-status`),
+    enabled: !!userId,
+    retry: false,
+  });
+
+  const {
+    data: verificationHistoryData,
+    refetch: refetchVerificationHistory,
+  } = useQuery<{ history: VerificationHistoryEntry[] }>({
+    queryKey: ['/api/admin/talent', userId, 'verification-history'],
+    queryFn: () => authAPI.get(`/api/admin/talent/${userId}/verification-history`),
+    enabled: !!userId,
+    retry: false,
+  });
+
+  const [verifyNotes,        setVerifyNotes]        = useState('');
+  const [verifyRejectReason, setVerifyRejectReason] = useState('');
+  const [verifyLoading,      setVerifyLoading]      = useState(false);
+  const [verifyError,        setVerifyError]        = useState<string | null>(null);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -180,6 +229,50 @@ export default function AdminTalentDetail() {
       setVettingError(err?.message ?? 'Failed to update vetting status.');
     } finally {
       setVettingLoading(false);
+    }
+  }
+
+  async function handleVerificationAction(action: 'confirm' | 'reject') {
+    if (action === 'reject' && !verifyRejectReason.trim()) {
+      setVerifyError('A reason is required when rejecting.');
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyError(null);
+    try {
+      if (action === 'confirm') {
+        await authAPI.post(`/api/admin/talent/${userId}/verification/confirm`, { notes: verifyNotes.trim() || undefined });
+      } else {
+        await authAPI.post(`/api/admin/talent/${userId}/verification/reject`, { reason: verifyRejectReason.trim() });
+      }
+      setVerifyNotes('');
+      setVerifyRejectReason('');
+      await Promise.all([
+        refetchVerification(),
+        refetchVerificationHistory(),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/talent', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/talent'] }),
+      ]);
+    } catch (err: any) {
+      setVerifyError(err?.message ?? 'Failed to update verification status.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  }
+
+  async function handleViewDocument() {
+    const token = localStorage.getItem('onspot_jwt_token') || '';
+    try {
+      const response = await fetch(`/api/admin/talent/${userId}/verification-document`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Access denied or no document found');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+    } catch (err: any) {
+      setVerifyError(`Could not load document: ${err.message}`);
     }
   }
 
@@ -320,6 +413,157 @@ export default function AdminTalentDetail() {
                 <span>Member since</span>
                 <span>{new Date(t.createdAt).toLocaleDateString()}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Verification Status ─────────────────────────────────────── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />Verification Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {/* Super Admin restriction */}
+              {verificationStatusError && (
+                <p className="text-xs text-muted-foreground italic">
+                  {(verificationStatusError as any)?.response?.status === 403
+                    ? 'Verification management is restricted to Super Admins.'
+                    : 'Failed to load verification status.'}
+                </p>
+              )}
+
+              {verificationStatus && (
+                <>
+                  {/* Current status row */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Status</span>
+                    {verificationStatus.isVerified ? (
+                      <span className="flex items-center gap-1 font-semibold text-green-600">
+                        <CheckCircle2 className="w-3.5 h-3.5" />Verified
+                      </span>
+                    ) : verificationStatus.status === 'pending' ? (
+                      <span className="flex items-center gap-1 font-semibold text-amber-600">
+                        <Clock className="w-3.5 h-3.5" />Pending review
+                      </span>
+                    ) : verificationStatus.status === 'rejected' ? (
+                      <span className="flex items-center gap-1 font-semibold text-destructive">
+                        <Circle className="w-3.5 h-3.5" />Rejected
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Circle className="w-3.5 h-3.5" />No Classification
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Verified details */}
+                  {verificationStatus.isVerified && verificationStatus.verifiedAt && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Verified on</span>
+                      <span>{new Date(verificationStatus.verifiedAt).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {verificationStatus.isVerified && verificationStatus.verifiedByMechanism && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Mechanism</span>
+                      <span className="capitalize text-right max-w-[140px] truncate">
+                        {verificationStatus.verifiedByMechanism.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  )}
+                  {verificationStatus.verificationNotes && (
+                    <div className="flex items-start justify-between gap-2 text-muted-foreground">
+                      <span>Notes</span>
+                      <span className="text-right text-xs">{verificationStatus.verificationNotes}</span>
+                    </div>
+                  )}
+
+                  {/* Pending: doc + action panel */}
+                  {verificationStatus.status === 'pending' && (
+                    <div className="space-y-2.5 pt-1">
+                      {verificationStatus.docName && (
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <span>Document</span>
+                          <button
+                            onClick={handleViewDocument}
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            <FileText className="w-3 h-3" />
+                            {verificationStatus.docName}
+                          </button>
+                        </div>
+                      )}
+                      <textarea
+                        value={verifyNotes}
+                        onChange={e => { setVerifyNotes(e.target.value); setVerifyError(null); }}
+                        placeholder="Confirm notes (optional)…"
+                        rows={2}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                      />
+                      <textarea
+                        value={verifyRejectReason}
+                        onChange={e => { setVerifyRejectReason(e.target.value); setVerifyError(null); }}
+                        placeholder="Rejection reason (required to reject)…"
+                        rows={2}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                      />
+                      {verifyError && <p className="text-xs text-destructive">{verifyError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleVerificationAction('confirm')}
+                          disabled={verifyLoading}
+                          className="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60 hover:bg-green-700 transition-colors"
+                        >
+                          {verifyLoading ? 'Saving…' : 'Confirm Verified'}
+                        </button>
+                        <button
+                          onClick={() => handleVerificationAction('reject')}
+                          disabled={verifyLoading}
+                          className="flex-1 rounded-md border border-destructive px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-60 hover:bg-destructive/10 transition-colors"
+                        >
+                          {verifyLoading ? 'Saving…' : 'Reject'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rejected: reason */}
+                  {verificationStatus.status === 'rejected' && verificationStatus.rejectionReason && (
+                    <div className="text-xs text-red-700 bg-red-50 rounded-md p-2 border border-red-100">
+                      <p className="font-medium mb-0.5">Rejection reason:</p>
+                      <p>{verificationStatus.rejectionReason}</p>
+                    </div>
+                  )}
+
+                  {/* Verification history */}
+                  <div className="border-t pt-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">History</p>
+                    {!verificationHistoryData?.history?.length ? (
+                      <p className="text-xs text-muted-foreground">No verification history yet</p>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {verificationHistoryData.history.map(event => (
+                          <div key={event.id} className="border-b last:border-0 pb-2.5 last:pb-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-xs font-semibold ${event.action === 'confirmed' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                {event.action === 'confirmed' ? 'Confirmed' : 'Rejected / Grandfathered'}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                {new Date(event.changedAt).toLocaleString()}
+                              </span>
+                            </div>
+                            {event.reason && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{event.reason}</p>
+                            )}
+                            <p className="text-[11px] text-muted-foreground mt-0.5">By {event.changedBy}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
