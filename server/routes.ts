@@ -63,6 +63,12 @@ import {
   updateHiringContract,
   voidHiringContract,
 } from "./services/hiringContractService";
+import {
+  loadClientFormalSubmission,
+  FORMAL_PIPELINE_PREDICATE,
+  FORMAL_PIPELINE_ACTIVE_STATUS_SQL,
+  nameRevealExistsSQL,
+} from "./services/formalPipelineGuard.js";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -8293,17 +8299,7 @@ export async function registerRoutes(
          (u.role = 'talent' OR EXISTS (
            SELECT 1 FROM candidates c WHERE c.user_id = u.id
          )) AS is_talent,
-         EXISTS (
-           SELECT 1
-             FROM job_submissions js
-            WHERE ((js.client_id = $2 AND js.talent_id = u.id)
-                OR (js.client_id = u.id AND js.talent_id = $2))
-           AND js.workflow_type = 'client_invitation'
-              AND js.status IN (
-             'new', 'under_review', 'reviewed', 'interviewing',
-                'offer_extended', 'offer_accepted', 'contract_sent', 'hired'
-              )
-         ) AS name_revealed
+         ${nameRevealExistsSQL("$2", "u.id")} AS name_revealed
        FROM users u
       WHERE u.id = $1
       LIMIT 1`,
@@ -8492,8 +8488,8 @@ export async function registerRoutes(
       const rel = await query(
         `SELECT job_id, client_id, talent_id FROM job_submissions
          WHERE ((client_id = $1 AND talent_id = $2) OR (client_id = $2 AND talent_id = $1))
-           AND workflow_type = 'client_invitation'
-           AND status IN ('new', 'under_review', 'reviewed', 'interviewing', 'offer_extended', 'offer_accepted', 'contract_sent', 'hired')
+           AND ${FORMAL_PIPELINE_PREDICATE}
+           AND status IN (${FORMAL_PIPELINE_ACTIVE_STATUS_SQL})
          ORDER BY updated_at DESC NULLS LAST
          LIMIT 1`,
         [userId, otherId],
@@ -8610,14 +8606,7 @@ export async function registerRoutes(
              TRIM(CONCAT(u.first_name, ' ', u.last_name))   AS raw_name,
              u.username,
              -- Revealed once the talent has accepted a client-initiated invitation
-             EXISTS (
-               SELECT 1 FROM job_submissions js
-               WHERE ((js.client_id = $2 AND js.talent_id = u.id)
-                   OR (js.client_id = u.id AND js.talent_id = $2))
-                AND js.workflow_type = 'client_invitation'
-                AND js.status IN ('new','under_review','reviewed',
-                                  'interviewing','offer_extended','offer_accepted','contract_sent','hired')
-             ) AS name_revealed,
+             ${nameRevealExistsSQL("$2", "u.id")} AS name_revealed,
              -- Clients are never masked; only talent participants need masking
              EXISTS (SELECT 1 FROM candidates c WHERE c.user_id = u.id) AS is_talent
            FROM users u
@@ -15963,19 +15952,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "interviewType must be one of: " + validTypes.join(", ") });
       }
 
-      // Ownership: submission must belong to this client
-      const subResult = await query(
-        `SELECT js.id, js.status, js.workflow_type, js.client_id, js.talent_id, js.email, j.title AS job_title
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.client_id = $2
-           AND js.workflow_type = 'client_invitation'`,
-        [submissionId, userId],
-      );
-      if (subResult.rows.length === 0) {
-        return res.status(404).json({ error: "Submission not found or forbidden" });
-      }
-      const submission = subResult.rows[0];
+      // Ownership: submission must belong to this client (formal pipeline guard)
+      const subGuard = await loadClientFormalSubmission(submissionId, userId, {
+        extraCols: ", j.title AS job_title",
+        joinClause: "JOIN jobs j ON j.id = js.job_id",
+      });
+      if (!subGuard.ok) return res.status(subGuard.status).json({ error: subGuard.error });
+      const submission = subGuard.row;
 
       // Guard: can only schedule interviews for submissions that are in a scheduleable state
       const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing"];
@@ -16052,16 +16035,9 @@ export async function registerRoutes(
       const { submissionId } = req.query as { submissionId?: string };
       if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
-      // Ownership check
-      const ownerCheck = await query(
-        `SELECT id FROM job_submissions
-         WHERE id = $1 AND client_id = $2
-           AND workflow_type = 'client_invitation'`,
-        [submissionId, userId],
-      );
-      if (ownerCheck.rows.length === 0) {
-        return res.status(404).json({ error: "Submission not found or forbidden" });
-      }
+      // Ownership check (formal pipeline guard)
+      const ownerCheck = await loadClientFormalSubmission(submissionId, userId);
+      if (!ownerCheck.ok) return res.status(ownerCheck.status).json({ error: ownerCheck.error });
 
       const result = await query(
         `SELECT * FROM interviews WHERE submission_id = $1 ORDER BY round_number ASC, created_at ASC`,
@@ -16094,7 +16070,7 @@ export async function registerRoutes(
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
            WHERE i.id = $1 AND js.client_id = $2
-             AND js.workflow_type = 'client_invitation'
+             AND js.${FORMAL_PIPELINE_PREDICATE}
            FOR UPDATE OF i`,
           [id, userId],
         );
@@ -16308,7 +16284,7 @@ export async function registerRoutes(
            JOIN interviews i ON i.id = ip.interview_id
            JOIN job_submissions js ON js.id = i.submission_id
           WHERE ip.interview_id = $1 AND js.client_id = $2
-            AND js.workflow_type = 'client_invitation'
+            AND js.${FORMAL_PIPELINE_PREDICATE}
           ORDER BY ip.created_at ASC`,
         [req.params.id, userId],
       );
@@ -16335,13 +16311,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "outcome must be one of: " + validOutcomes.join(", ") });
       }
 
-      // Load interview + verify ownership
+      // Load interview + verify ownership (formal pipeline guard)
       const interviewResult = await query(
         `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
          FROM interviews i
          JOIN job_submissions js ON js.id = i.submission_id
          WHERE i.id = $1 AND js.client_id = $2
-           AND js.workflow_type = 'client_invitation'`,
+           AND js.${FORMAL_PIPELINE_PREDICATE}`,
         [id, userId],
       );
       if (interviewResult.rows.length === 0) {
@@ -16418,20 +16394,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "rateCurrency must be a 3-letter uppercase currency code" });
       }
 
-      // Ownership + submission state
-      const subResult = await query(
-        `SELECT js.id, js.status, js.workflow_type, js.talent_id, js.email, js.job_id,
-                j.engagement_type AS job_engagement_type
-         FROM job_submissions js
-         JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND js.client_id = $2
-           AND js.workflow_type = 'client_invitation'`,
-        [submissionId, userId],
-      );
-      if (subResult.rows.length === 0) {
-        return res.status(404).json({ error: "Submission not found or forbidden" });
-      }
-      const submission = subResult.rows[0];
+      // Ownership + submission state (formal pipeline guard)
+      const subGuard = await loadClientFormalSubmission(submissionId, userId, {
+        extraCols: ", j.engagement_type AS job_engagement_type",
+        joinClause: "JOIN jobs j ON j.id = js.job_id",
+      });
+      if (!subGuard.ok) return res.status(subGuard.status).json({ error: subGuard.error });
+      const submission = subGuard.row;
 
       // Guard: offer only from states where an offer makes sense.
       // offer_declined allows a re-offer (new row).
@@ -16665,20 +16634,14 @@ export async function registerRoutes(
       const { submissionId } = req.query as { submissionId?: string };
       if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
-      const ownerCheck = await query(
-        `SELECT id FROM job_submissions
-         WHERE id = $1 AND client_id = $2
-           AND workflow_type = 'client_invitation'`,
-        [submissionId, userId],
-      );
-      if (ownerCheck.rows.length === 0) {
-        return res.status(404).json({ error: "Submission not found or forbidden" });
-      }
+      // Ownership check (formal pipeline guard)
+      const ownerCheck = await loadClientFormalSubmission(submissionId, userId);
+      if (!ownerCheck.ok) return res.status(ownerCheck.status).json({ error: ownerCheck.error });
 
       const result = await query(
         `SELECT o.* FROM offers o
          JOIN job_submissions js ON js.id = o.submission_id
-         WHERE o.submission_id = $1 AND js.workflow_type = 'client_invitation'
+         WHERE o.submission_id = $1 AND js.${FORMAL_PIPELINE_PREDICATE}
          ORDER BY o.sent_at DESC, o.created_at DESC`,
         [submissionId],
       );
@@ -16725,7 +16688,7 @@ export async function registerRoutes(
            JOIN job_submissions js ON js.id = o.submission_id
           WHERE o.id = $1
             AND js.client_id = $2
-            AND js.workflow_type = 'client_invitation'
+            AND js.${FORMAL_PIPELINE_PREDICATE}
             AND o.status = 'sent'
             AND o.proposer_role = 'talent'
             AND o.parent_offer_id IS NOT NULL`,
@@ -16913,7 +16876,7 @@ export async function registerRoutes(
            ($1::text IS NOT NULL AND js.talent_id = $1::text)
            OR (js.talent_id IS NULL AND lower(js.email) = lower($2))
          )
-         AND js.workflow_type = 'client_invitation'
+         AND js.${FORMAL_PIPELINE_PREDICATE}
          ORDER BY o.sent_at DESC NULLS LAST`,
         [linkedUserId, candidateEmail],
       );
@@ -17246,7 +17209,7 @@ export async function registerRoutes(
          JOIN offers o ON o.id = hc.offer_id
          JOIN job_submissions js ON js.id = hc.submission_id
          WHERE hc.submission_id = $1
-           AND js.workflow_type = 'client_invitation'
+           AND js.${FORMAL_PIPELINE_PREDICATE}
          ORDER BY hc.created_at DESC`,
         [submissionId],
       );

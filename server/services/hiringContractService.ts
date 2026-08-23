@@ -21,6 +21,7 @@
  */
 import { getClient } from "../db.ts";
 import type { PoolClient } from "pg";
+import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
 
 export class ContractError extends Error {
   status: number;
@@ -108,21 +109,29 @@ export async function createHiringContract(params: {
     const signingEntity = await getContractSigningEntity(client);
     const submissionId: string = offer.submission_id;
 
-    const subResult = await client.query(
-      `SELECT id, status, workflow_type
-         FROM job_submissions
-        WHERE id = $1
-        FOR UPDATE`,
-      [submissionId],
-    );
-    if (subResult.rows.length === 0) throw new ContractError(404, { error: "Submission not found" });
-    if (subResult.rows[0].workflow_type !== "client_invitation") {
+    // Lock and verify the submission is a formal client_invitation.
+    // loadAdminFormalSubmission enforces the pipeline predicate atomically — a
+    // shortlist or application row returns not-found rather than a locked row with
+    // the wrong workflow_type. The secondary lookup distinguishes "truly missing"
+    // (404) from "wrong workflow_type" (409) when the guard rejects.
+    const subGuard = await loadAdminFormalSubmission(submissionId, {
+      forUpdate: true,
+      txClient: client,
+    });
+    if (!subGuard.ok) {
+      const anyRow = await client.query(
+        `SELECT id FROM job_submissions WHERE id = $1`,
+        [submissionId],
+      );
+      if (!anyRow.rows.length) {
+        throw new ContractError(404, { error: "Submission not found" });
+      }
       throw new ContractError(409, {
         error: "formal_invitation_required",
         message: "A hiring contract can only be created for a formally invited submission.",
       });
     }
-    const previousStatus: string = subResult.rows[0].status;
+    const previousStatus: string = subGuard.row.status;
 
     let insert;
     try {
