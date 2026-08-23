@@ -7366,6 +7366,7 @@ export async function registerRoutes(
   //                     contain this value (case-sensitive array containment)
   //   applicationStatus — filter to talent who have at least one submission
   //                       with this status value
+  //   vetted          — when true, filter to talent with the Vetted badge
   //   page, limit     — pagination
   //
   // Response item fields (all admin-accessible, none redacted):
@@ -7375,6 +7376,7 @@ export async function registerRoutes(
   //   top_skills        — first 3 elements of core_skills (full array visible in detail)
   //   total_applications — count of job_submissions where talent_id = u.id
   //   last_active_at    — GREATEST(users.updated_at, latest submission.submitted_at)
+  //   is_vetted        — whether the talent has the Vetted badge
   //
   // Note: profile_completed is the stored boolean; the full completion percentage
   // is computed and shown on the talent detail page (Phase 4).
@@ -7386,6 +7388,7 @@ export async function registerRoutes(
       const search            = String(req.query.search            ?? "").trim();
       const skill             = String(req.query.skill             ?? "").trim();
       const applicationStatus = String(req.query.applicationStatus ?? "").trim();
+      const vetted            = String(req.query.vetted            ?? "").trim().toLowerCase() === "true";
       const page   = Math.max(1, parseInt(String(req.query.page  ?? 1),  10));
       const limit  = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? 50), 10)));
       const offset = (page - 1) * limit;
@@ -7419,17 +7422,29 @@ export async function registerRoutes(
         );
       }
 
+      if (vetted) {
+        conditions.push("c.is_vetted = true");
+      }
+
       const whereSQL   = `WHERE ${conditions.join(" AND ")}`;
       const limitIdx   = filterParams.length + 1;
       const offsetIdx  = filterParams.length + 2;
       const listParams = [...filterParams, limit, offset];
 
-      const [countResult, listResult] = await Promise.all([
+      const [countResult, vettedCountResult, listResult] = await Promise.all([
         query(
           `SELECT COUNT(*)::int AS total
            FROM   users u
            LEFT JOIN candidates c ON c.user_id = u.id
            ${whereSQL}`,
+          filterParams
+        ),
+        query(
+          `SELECT COUNT(*)::int AS total
+           FROM   users u
+           LEFT JOIN candidates c ON c.user_id = u.id
+           ${whereSQL}
+             AND c.is_vetted = true`,
           filterParams
         ),
         query(
@@ -7447,6 +7462,7 @@ export async function registerRoutes(
              c.seniority,
              c.headline,
              c.availability,
+              COALESCE(c.is_vetted, false) AS is_vetted,
              c.core_skills[1:3]      AS top_skills,
              COALESCE(
                (SELECT COUNT(*)::int FROM job_submissions js
@@ -7469,6 +7485,7 @@ export async function registerRoutes(
 
       res.json({
         total: countResult.rows[0]?.total ?? 0,
+        vettedTotal: vettedCountResult.rows[0]?.total ?? 0,
         page,
         limit,
         items: listResult.rows,

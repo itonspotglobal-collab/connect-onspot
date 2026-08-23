@@ -40,6 +40,7 @@ interface TalentItem {
   seniority: string | null;
   headline: string | null;
   availability: string | null;
+  is_vetted: boolean;
   top_skills: string[] | null;
   total_applications: number;
   last_active_at: string | null;
@@ -47,6 +48,7 @@ interface TalentItem {
 
 interface TalentListResponse {
   total: number;
+  vettedTotal: number;
   page: number;
   limit: number;
   items: TalentItem[];
@@ -87,6 +89,7 @@ export default function AdminTalent() {
   const [skillFilter, setSkillFilter]             = useState('');
   const [debouncedSkill, setDebouncedSkill]       = useState('');
   const [statusFilter, setStatusFilter]           = useState('');
+  const [vettedFilter, setVettedFilter]           = useState(false);
   const [page, setPage]                           = useState(1);
   const LIMIT = 50;
 
@@ -103,17 +106,19 @@ export default function AdminTalent() {
     setSearch(''); setDebouncedSearch('');
     setSkillFilter(''); setDebouncedSkill('');
     setStatusFilter('');
+    setVettedFilter(false);
     setPage(1);
   };
-  const hasFilters = debouncedSearch || debouncedSkill || statusFilter;
+  const hasFilters = debouncedSearch || debouncedSkill || statusFilter || vettedFilter;
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<TalentListResponse>({
-    queryKey: ['/api/admin/talent', debouncedSearch, debouncedSkill, statusFilter, page],
+    queryKey: ['/api/admin/talent', debouncedSearch, debouncedSkill, statusFilter, vettedFilter, page],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (debouncedSkill)  params.set('skill',  debouncedSkill);
       if (statusFilter)    params.set('applicationStatus', statusFilter);
+      if (vettedFilter)    params.set('vetted', 'true');
       return authAPI.get(`/api/admin/talent?${params}`);
     },
   });
@@ -183,6 +188,25 @@ export default function AdminTalent() {
             ))}
           </SelectContent>
         </Select>
+
+        {/* Vetted filter */}
+        <Button
+          type="button"
+          variant={vettedFilter ? 'default' : 'outline'}
+          size="sm"
+          className="h-9 rounded-full gap-1.5"
+          onClick={() => { setVettedFilter(value => !value); setPage(1); }}
+          aria-pressed={vettedFilter}
+          data-testid="talent-vetted-filter"
+        >
+          Vetted
+          <Badge
+            variant={vettedFilter ? 'secondary' : 'outline'}
+            className="px-1.5 py-0 text-xs"
+          >
+            {data?.vettedTotal ?? '…'}
+          </Badge>
+        </Button>
 
         {/* Clear filters */}
         {hasFilters && (
