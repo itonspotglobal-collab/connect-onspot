@@ -67,7 +67,7 @@ const SECTIONS: Section[] = [
           },
           {
             q: "What kinds of roles can I hire for (or find work in)?",
-            a: "Customer Support, Virtual Assistants, Developers, Designers, Marketing Specialists, Accountants, Healthcare Professionals, Sales Representatives, Operations Specialists, and IT & Technical Support — with new categories added as the platform grows.",
+            a: "In principle, any role that can be done remotely — OnSpot isn't limited to a fixed list of job types. Today, the platform's categories include Customer Support, Virtual Assistants, Developers, Designers, Marketing Specialists, Accountants, Healthcare Professionals, Sales Representatives, Operations Specialists, and IT & Technical Support, with new categories added as the platform grows.",
           },
           {
             q: "Is OnSpot available outside the Philippines?",
