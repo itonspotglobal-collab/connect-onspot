@@ -1,0 +1,62 @@
+Build the "Verified" tier — government ID and certification upload for
+Contractors, cleared by legal. This is the prerequisite tier beneath
+"Vetted" (already built and shipped) in the confirmed three-tier model:
+Regular → Verified → Vetted.
+
+AUDIT FIRST, report before writing any code:
+
+1. TrustBadges.tsx already has a variant="verified" referenced from an
+   earlier audit ("TalentCard.tsx already renders TrustBadge
+   variant='verified' from props"). Confirm exactly what this currently
+   does — is anything real wired to it today, or is it unused/
+   placeholder? Don't assume it's related to this feature just because
+   the name matches.
+
+2. Access control — this is MORE sensitive than the resume/video access
+   already built (which itself needed a real fix earlier this session:
+   an ACL bug, then a scoped admin bypass with mandatory audit logging).
+   Propose whether raw ID documents need an EVEN NARROWER access scope
+   than the existing Talent Acquisition sub-role has for resumes/videos —
+   e.g., a dedicated "Verification" permission tier, or Super Admin only.
+   Do not default to reusing the existing Talent-detail access pattern
+   without an explicit recommendation and reasoning.
+
+3. Retention policy — this is a real decision, not a technical default.
+   Options to weigh: keep the raw document indefinitely (real ongoing
+   liability), delete it once verification is confirmed and keep only a
+   status + timestamp, or a time-limited retention window. Propose a
+   recommendation with reasoning; flag this explicitly for confirmation
+   before implementing either way — do not silently pick the "keep
+   forever" default just because it's simplest to build.
+
+4. Propose the actual verification workflow: how does a Contractor
+   submit ID/certifications, and what does the admin review/grant flow
+   look like? Does it need a required reason field like Vetted's grant/
+   revoke flow, or is a document-verification checkbox sufficient given
+   it's confirming a document rather than making a judgment call? Propose
+   and justify.
+
+5. CRITICAL — close the existing gap: the already-shipped Vetted feature
+   currently has ZERO enforcement that Verified happened first, because
+   Verified didn't exist yet when Vetted was built. Now that Verified is
+   real, the Vetted grant endpoint (PATCH /api/admin/talent/:id/vetted)
+   MUST be updated to check is_verified = true before allowing a Vetted
+   grant. Propose how to handle any ALREADY-VETTED Contractors who were
+   granted Vetted status before this enforcement existed — do they need
+   to be retroactively Verified, or does the new check apply only to
+   future grants?
+
+6. Reuse the existing audit trail pattern from Vetted (admin_role_changes
+   with the change_type discriminator) for consistency — propose the
+   appropriate change_type value for verification events.
+
+7. Reuse the badge rendering pattern (same three surfaces confirmed for
+   Vetted: TalentProfile pill row, TalentPool ResultRow, SearchToShortlist
+   ResultRow) for the Verified badge, visually distinct from Vetted per
+   the existing indigo Vetted styling — propose a complementary but
+   different treatment.
+
+Report all seven findings and proposed designs before implementing
+anything. Given the sensitivity of real government ID data, do not
+proceed to code until access control (#2) and retention (#3) are
+explicitly confirmed, not assumed.
