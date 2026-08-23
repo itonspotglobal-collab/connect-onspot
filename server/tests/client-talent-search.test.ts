@@ -910,7 +910,11 @@ describe("PII regression — sanitizeSearchCandidate (imports real shared module
 // raw rankTalentForJob results (bypassing sanitizeSearchCandidate), these fail
 // even if the unit tests above still pass.
 
-describe("PII regression — HTTP endpoint response (integration, requires running server)", () => {
+describe("PII regression — HTTP endpoint response (integration)", () => {
+  // npm test provisions an isolated server and passes its URL through the
+  // environment. Keep the preview URL as a fallback for running this file
+  // directly during local debugging.
+  const testServerBaseUrl = (process.env.TEST_SERVER_URL ?? "http://localhost:5000").replace(/\/$/, "");
 
   async function getTestClientUser(): Promise<{ id: string; email: string } | null> {
     const r = await query(`SELECT id, email FROM users WHERE role = 'client' LIMIT 1`);
@@ -924,7 +928,7 @@ describe("PII regression — HTTP endpoint response (integration, requires runni
   }
 
   async function searchRequest(token: string, body: object): Promise<Response> {
-    return fetch("http://localhost:5000/api/client/talent-search", {
+    return fetch(`${testServerBaseUrl}/api/client/talent-search`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
@@ -996,7 +1000,7 @@ describe("PII regression — HTTP endpoint response (integration, requires runni
 
     try {
       // Now PATCH to rescore with a different engagement type
-      const patchRes = await fetch(`http://localhost:5000/api/client/talent-search/${jobId}`, {
+      const patchRes = await fetch(`${testServerBaseUrl}/api/client/talent-search/${jobId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ engagementType: "Part-Time" }),
