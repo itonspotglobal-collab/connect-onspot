@@ -116,10 +116,17 @@ async function createFixtures() {
   );
   jobId = jobRow.rows[0].id;
 
+  // Hiring pipeline endpoints intentionally operate only on formally invited
+  // submissions. Keep this fixture explicit so it does not silently fall back
+  // to the schema default ('application') when the workflow guard changes.
   const makeSubmission = async (status = "offer_extended") => {
     const row = await query(
-      `INSERT INTO job_submissions (job_id, talent_id, client_id, applicant_name, email, status)
-       VALUES ($1, $2, $3, 'HC Test Talent', 'hc-talent@test.local', $4) RETURNING id`,
+      `INSERT INTO job_submissions
+         (job_id, talent_id, client_id, applicant_name, email, status,
+          initiated_by, workflow_type)
+       VALUES ($1, $2, $3, 'HC Test Talent', 'hc-talent@test.local', $4,
+               'client', 'client_invitation')
+       RETURNING id`,
       [jobId, TALENT_ID, CLIENT_ID, status],
     );
     return row.rows[0].id as string;
@@ -310,8 +317,10 @@ describe("hiring-contracts workflow (production routes)", () => {
   it("(b2) talent counter → client confirm advances an invited submission before an offer", async () => {
     const submission = await query(
       `INSERT INTO job_submissions
-         (job_id, talent_id, client_id, applicant_name, email, status)
-       VALUES ($1, $2, $3, 'HC Counter Talent', 'hc-talent@test.local', 'invited')
+          (job_id, talent_id, client_id, applicant_name, email, status,
+           initiated_by, workflow_type)
+        VALUES ($1, $2, $3, 'HC Counter Talent', 'hc-talent@test.local', 'invited',
+                'client', 'client_invitation')
        RETURNING id`,
       [jobId, TALENT_ID, CLIENT_ID],
     );
