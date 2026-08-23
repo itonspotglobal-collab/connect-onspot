@@ -115,6 +115,24 @@ export default function AdminTalentDetail() {
     enabled: !!userId,
   });
 
+  const queryClient = useQueryClient();
+  const [vettingReason, setVettingReason] = useState('');
+  const [vettingLoading, setVettingLoading] = useState(false);
+  const [vettingError, setVettingError] = useState<string | null>(null);
+
+  const { data: eligibility, refetch: refetchEligibility } = useQuery<{
+    isVetted: boolean;
+    vettedAt: string | null;
+    vettedByMechanism: string | null;
+    completedHireCount: number;
+    autoThreshold: number | null;
+    meetsAutoThreshold: boolean;
+  }>({
+    queryKey: ['/api/admin/talent', userId, 'vetted-eligibility'],
+    queryFn: () => authAPI.get(`/api/admin/talent/${userId}/vetted-eligibility`),
+    enabled: !!userId,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -133,24 +151,6 @@ export default function AdminTalentDetail() {
       </div>
     );
   }
-
-  const queryClient = useQueryClient();
-  const [vettingReason, setVettingReason] = useState('');
-  const [vettingLoading, setVettingLoading] = useState(false);
-  const [vettingError, setVettingError] = useState<string | null>(null);
-
-  const { data: eligibility, refetch: refetchEligibility } = useQuery<{
-    isVetted: boolean;
-    vettedAt: string | null;
-    vettedByMechanism: string | null;
-    completedHireCount: number;
-    autoThreshold: number | null;
-    meetsAutoThreshold: boolean;
-  }>({
-    queryKey: ['/api/admin/talent', userId, 'vetted-eligibility'],
-    queryFn: () => authAPI.get(`/api/admin/talent/${userId}/vetted-eligibility`),
-    enabled: !!userId,
-  });
 
   const { talent: t, applications, vettingHistory } = data;
 
@@ -174,6 +174,7 @@ export default function AdminTalentDetail() {
       await Promise.all([
         refetchEligibility(),
         queryClient.invalidateQueries({ queryKey: ['/api/admin/talent', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/talent'] }),
       ]);
     } catch (err: any) {
       setVettingError(err?.message ?? 'Failed to update vetting status.');
@@ -188,7 +189,13 @@ export default function AdminTalentDetail() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setLocation('/admin/talent')} className="p-1 h-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation('/admin/talent')}
+            className="p-1 h-auto"
+            aria-label="Back to Talent"
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <Users className="w-7 h-7 text-primary" />
