@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { isInvitableJob, type InvitationPickerJob, type InvitationReadiness } from "@/lib/invitationReadiness";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Check, Loader2 } from "lucide-react";
+import { Search, Check, Loader2, ShieldCheck } from "lucide-react";
 import { TopNavigation } from "@/components/TopNavigation";
 import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
 import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
@@ -39,6 +39,7 @@ interface TalentResult {
     secondarySkills?: string[];
     secondary_skills?: string[];
     category?: string;
+    isVetted?: boolean;
   };
 }
 
@@ -138,6 +139,14 @@ function ResultRow({
           {desc}
         </p>
       </div>
+
+      {/* Vetted badge */}
+      {candidate.isVetted && (
+        <span className="shrink-0 inline-flex items-center gap-[4px] rounded-full bg-[#474ead]/10 px-2.5 py-[4px] text-[11.5px] font-semibold text-[#474ead] border border-[#474ead]/20">
+          <ShieldCheck className="h-3 w-3" />
+          Vetted
+        </span>
+      )}
 
       {/* Separate shortlist and interview actions */}
       <button

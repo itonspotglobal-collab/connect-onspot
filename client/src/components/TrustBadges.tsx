@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface TrustBadgeProps {
-  variant?: "verified" | "payment-protected" | "premium" | "quality" | "security" | "featured";
+  variant?: "verified" | "payment-protected" | "premium" | "quality" | "security" | "featured" | "vetted";
   size?: "sm" | "md" | "lg";
   showIcon?: boolean;
   showLabel?: boolean;
@@ -86,6 +86,15 @@ export function TrustBadge({
           textColor: "text-orange-700 dark:text-orange-400",
           borderColor: "border-orange-200 dark:border-orange-500/30",
           iconColor: "text-orange-600 dark:text-orange-400"
+        };
+      case "vetted":
+        return {
+          icon: Shield,
+          label: "Vetted",
+          bgColor: "bg-[#474EAD]/10 dark:bg-[#474EAD]/20",
+          textColor: "text-[#474EAD] dark:text-[#8B91E8]",
+          borderColor: "border-[#474EAD]/25 dark:border-[#474EAD]/40",
+          iconColor: "text-[#474EAD] dark:text-[#8B91E8]"
         };
       default:
         return {

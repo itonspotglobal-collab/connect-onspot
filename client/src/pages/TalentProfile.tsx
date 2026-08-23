@@ -1302,6 +1302,12 @@ export default function TalentProfile() {
                   {candidate.cultureScore}% values fit
                 </Badge>
               )}
+              {(candidate as any).isVetted && (
+                <Badge className="rounded-full border-[#474ead]/25 bg-[#474ead]/10 text-[#474ead] inline-flex items-center gap-1">
+                  <Shield className="h-3 w-3" />
+                  Vetted
+                </Badge>
+              )}
             </div>
           </div>
 

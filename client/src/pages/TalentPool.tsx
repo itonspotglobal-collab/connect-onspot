@@ -612,6 +612,12 @@ function TalentCard({
                       {candidate.cultureScore}% values fit
                     </span>
                   )}
+                  {candidate.isVetted && (
+                    <span className="inline-flex items-center gap-[4px] rounded-full bg-[#474ead]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#474ead] border border-[#474ead]/20">
+                      <ShieldCheck className="h-3 w-3" />
+                      Vetted
+                    </span>
+                  )}
                 </div>
                 {/* Name / Position */}
                 <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-white">

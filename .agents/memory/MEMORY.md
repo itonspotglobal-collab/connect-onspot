@@ -31,3 +31,4 @@
 - [Flat-rate compensation language](flat-rate-compensation-language.md) — public OnSpot copy must never imply hourly billing; use flat period-based terminology.
 - [Invitation/interview smoke coverage](invite-interview-smoke.md) — production-route fixtures should verify eligibility, role filtering, consent, and timezone propagation without touching real hiring data.
 - [Formal pipeline guard](formal-pipeline-guard.md) — centralised module (formalPipelineGuard.ts) for the workflow_type='client_invitation' rule; all 15 pipeline enforcement points now import from it; new routes must too.
+- [Vetted badge](vetted-badge.md) — admin-grantable "Vetted" badge on contractor profiles; schema, migrations, endpoints, and three badge surfaces.

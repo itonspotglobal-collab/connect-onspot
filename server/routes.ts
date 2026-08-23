@@ -1394,6 +1394,16 @@ export async function registerRoutes(
     console.warn("⚠️  candidates more_about_me migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: candidates vetting columns ──────────────────────
+  try {
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS is_vetted boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS vetted_at timestamptz`);
+    await query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS vetted_by_mechanism text`);
+    console.log("✅ Migration: candidates vetting columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  candidates vetting migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: 1-Click Apply — application_questions + answers ──
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_questions jsonb`);
@@ -1958,6 +1968,17 @@ export async function registerRoutes(
     console.log("✅ Migration: admin_role_changes table ready");
   } catch (err: any) {
     console.error("❌ admin_role_changes migration failed:", err.message);
+  }
+
+  // ── One-time safe migration: admin_role_changes.change_type discriminator ──
+  // Distinguishes 'role_change' (admin sub-role assignments) from 'vetting_status'
+  // (Vetted badge grants/revocations) so the two event classes remain queryable
+  // independently without conflating them in the new_role column.
+  try {
+    await query(`ALTER TABLE admin_role_changes ADD COLUMN IF NOT EXISTS change_type text NOT NULL DEFAULT 'role_change'`);
+    console.log("✅ Migration: admin_role_changes.change_type column ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  admin_role_changes change_type migration skipped:", migErr.message);
   }
 
   // ── Phase 0: admin_sub_role column on users ───────────────────────────────
@@ -5946,6 +5967,8 @@ export async function registerRoutes(
       profileCompleted: c.profileCompleted ?? c.profile_completed ?? false,
       accountCreated:   c.accountCreated   ?? c.account_created   ?? false,
       cultureScore:     c.cultureScore     ?? c.culture_score     ?? null,
+      isVetted:         c.isVetted         ?? c.is_vetted         ?? false,
+      vettedAt:         c.vettedAt         ?? c.vetted_at         ?? null,
 
       // Timestamps
       createdAt: c.createdAt ?? c.created_at ?? null,
@@ -7512,7 +7535,10 @@ export async function registerRoutes(
           c.video_intro_url      IS NOT NULL AS has_video,
           c.resume_file_name,
           c.video_intro_file_name,
-          c.updated_at           AS profile_updated_at
+          c.updated_at           AS profile_updated_at,
+          c.is_vetted,
+          c.vetted_at,
+          c.vetted_by_mechanism
         FROM   users u
         LEFT JOIN candidates c ON c.user_id = u.id
         WHERE  u.id   = $1
@@ -7590,6 +7616,9 @@ export async function registerRoutes(
           resumeFileName:     profileRow.resume_file_name,
           videoIntroFileName: profileRow.video_intro_file_name,
           profileUpdatedAt:   profileRow.profile_updated_at,
+          isVetted:           profileRow.is_vetted ?? false,
+          vettedAt:           profileRow.vetted_at ?? null,
+          vettedByMechanism:  profileRow.vetted_by_mechanism ?? null,
         },
         applications,
       });
@@ -7672,6 +7701,146 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/admin/talent/:id/video error:", err);
       if (!res.headersSent) res.status(500).json({ error: "Failed to serve video" });
+    }
+  });
+
+  // ── GET /api/admin/talent/:id/vetted-eligibility ─────────────────────────────
+  // Returns current vetting status and completed-hire count so AdminTalentDetail
+  // can display eligibility context alongside the grant/revoke action.
+  // The auto-threshold (platform_settings.vetted_auto_hire_threshold) is returned
+  // as null when not yet configured — auto-promotion stays dormant.
+  app.get("/api/admin/talent/:id/vetted-eligibility", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+
+      // Fetch vetting status + candidate id
+      const candidateResult = await query(
+        `SELECT c.id AS candidate_id, c.is_vetted, c.vetted_at, c.vetted_by_mechanism
+         FROM users u
+         LEFT JOIN candidates c ON c.user_id = u.id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (candidateResult.rows.length === 0) {
+        return res.status(404).json({ error: "Talent not found" });
+      }
+      const row = candidateResult.rows[0];
+
+      // Count completed hires: contracts that OnSpot has countersigned
+      const hireCountResult = await query(
+        `SELECT COUNT(*)::int AS completed_hire_count
+         FROM hiring_contracts hc
+         JOIN job_submissions js ON js.id = hc.submission_id
+         WHERE js.talent_id = $1
+           AND hc.onspot_signed_at IS NOT NULL`,
+        [userId]
+      );
+      const completedHireCount: number = hireCountResult.rows[0]?.completed_hire_count ?? 0;
+
+      // Auto-threshold from platform_settings (NULL = dormant; never auto-promotes)
+      const thresholdResult = await query(
+        `SELECT value FROM platform_settings WHERE key = 'vetted_auto_hire_threshold'`
+      );
+      const autoThreshold: number | null = thresholdResult.rows.length > 0
+        ? parseInt(thresholdResult.rows[0].value, 10) || null
+        : null;
+
+      const meetsAutoThreshold = autoThreshold !== null && completedHireCount >= autoThreshold;
+
+      res.json({
+        isVetted:          row.is_vetted ?? false,
+        vettedAt:          row.vetted_at ?? null,
+        vettedByMechanism: row.vetted_by_mechanism ?? null,
+        completedHireCount,
+        autoThreshold,
+        meetsAutoThreshold,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/talent/:id/vetted-eligibility error:", err);
+      res.status(500).json({ error: "Failed to fetch vetting eligibility" });
+    }
+  });
+
+  // ── PATCH /api/admin/talent/:id/vetted ──────────────────────────────────────
+  // Grants or revokes the Vetted badge for a contractor.
+  // Body: { action: 'grant' | 'revoke', reason: string (required, non-empty) }
+  // Audited to admin_role_changes with change_type = 'vetting_status'.
+  app.patch("/api/admin/talent/:id/vetted", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    const client = await pool.connect();
+    try {
+      const userId = req.params.id;
+      const { action, reason } = req.body;
+
+      if (action !== 'grant' && action !== 'revoke') {
+        return res.status(400).json({ error: "action must be 'grant' or 'revoke'" });
+      }
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        return res.status(400).json({ error: "A non-empty reason is required" });
+      }
+
+      const changedBy = (req as any).user?.email ?? (req as any).user?.userId ?? 'admin';
+
+      await client.query("BEGIN");
+
+      // Fetch current candidate row
+      const candidateResult = await client.query(
+        `SELECT c.id AS candidate_id, c.is_vetted, u.email
+         FROM users u
+         LEFT JOIN candidates c ON c.user_id = u.id
+         WHERE u.id = $1 AND u.role = 'talent'`,
+        [userId]
+      );
+      if (candidateResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(404).json({ error: "Talent not found" });
+      }
+      const { candidate_id: candidateId, is_vetted: currentlyVetted, email } = candidateResult.rows[0];
+
+      if (!candidateId) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({ error: "This talent has no candidate profile yet" });
+      }
+
+      const newIsVetted = action === 'grant';
+
+      // Update candidate
+      await client.query(
+        `UPDATE candidates
+         SET is_vetted = $1,
+             vetted_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
+             vetted_by_mechanism = CASE WHEN $1 THEN 'manual_admin' ELSE NULL END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [newIsVetted, candidateId]
+      );
+
+      // Audit to admin_role_changes with change_type = 'vetting_status'
+      await client.query(
+        `INSERT INTO admin_role_changes
+           (user_id, email, previous_role, new_role, mechanism, changed_by, notes, change_type)
+         VALUES ($1, $2, $3, $4, 'admin_ui_vetted_status', $5, $6, 'vetting_status')`,
+        [
+          userId,
+          email,
+          currentlyVetted ? 'vetted' : 'unvetted',
+          newIsVetted ? 'vetted' : 'unvetted',
+          changedBy,
+          reason.trim(),
+        ]
+      );
+
+      await client.query("COMMIT");
+      client.release();
+
+      console.log(`✅ PATCH /api/admin/talent/${userId}/vetted: ${email} → ${newIsVetted ? 'vetted' : 'unvetted'} (by ${changedBy})`);
+      res.json({ success: true, isVetted: newIsVetted });
+    } catch (err: any) {
+      try { await client.query("ROLLBACK"); } catch {}
+      client.release();
+      console.error("PATCH /api/admin/talent/:id/vetted error:", err);
+      res.status(500).json({ error: "Failed to update vetting status" });
     }
   });
 

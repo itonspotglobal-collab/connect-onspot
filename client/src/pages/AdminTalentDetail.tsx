@@ -1,5 +1,6 @@
 import { useLocation, useParams } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { authAPI } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,9 @@ interface TalentProfile {
   resumeFileName: string | null;
   videoIntroFileName: string | null;
   profileUpdatedAt: string | null;
+  isVetted: boolean;
+  vettedAt: string | null;
+  vettedByMechanism: string | null;
 }
 
 interface TalentDetailResponse {
@@ -121,6 +125,24 @@ export default function AdminTalentDetail() {
     );
   }
 
+  const queryClient = useQueryClient();
+  const [vettingReason, setVettingReason] = useState('');
+  const [vettingLoading, setVettingLoading] = useState(false);
+  const [vettingError, setVettingError] = useState<string | null>(null);
+
+  const { data: eligibility, refetch: refetchEligibility } = useQuery<{
+    isVetted: boolean;
+    vettedAt: string | null;
+    vettedByMechanism: string | null;
+    completedHireCount: number;
+    autoThreshold: number | null;
+    meetsAutoThreshold: boolean;
+  }>({
+    queryKey: ['/api/admin/talent', userId, 'vetted-eligibility'],
+    queryFn: () => authAPI.get(`/api/admin/talent/${userId}/vetted-eligibility`),
+    enabled: !!userId,
+  });
+
   const { talent: t, applications } = data;
 
   const displayName =
@@ -129,6 +151,27 @@ export default function AdminTalentDetail() {
       : t.fullName || t.displayName || t.email;
 
   const hiredCount = applications.filter(a => a.applicationStatus === 'hired').length;
+
+  async function handleVettingAction(action: 'grant' | 'revoke') {
+    if (!vettingReason.trim()) {
+      setVettingError('A reason is required.');
+      return;
+    }
+    setVettingLoading(true);
+    setVettingError(null);
+    try {
+      await authAPI.patch(`/api/admin/talent/${userId}/vetted`, { action, reason: vettingReason.trim() });
+      setVettingReason('');
+      await Promise.all([
+        refetchEligibility(),
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/talent', userId] }),
+      ]);
+    } catch (err: any) {
+      setVettingError(err?.message ?? 'Failed to update vetting status.');
+    } finally {
+      setVettingLoading(false);
+    }
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-5xl space-y-6" data-testid="admin-talent-detail">
@@ -260,6 +303,90 @@ export default function AdminTalentDetail() {
               <div className="flex justify-between text-muted-foreground">
                 <span>Member since</span>
                 <span>{new Date(t.createdAt).toLocaleDateString()}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Vetted Status ─────────────────────────────────────────── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" />Vetted Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {/* Current status */}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                {eligibility?.isVetted
+                  ? <span className="flex items-center gap-1 font-semibold text-[#474EAD]">
+                      <CheckCircle2 className="w-3.5 h-3.5" />Vetted
+                    </span>
+                  : <span className="flex items-center gap-1 text-muted-foreground">
+                      <Circle className="w-3.5 h-3.5" />Not vetted
+                    </span>}
+              </div>
+
+              {/* Completed hires + threshold */}
+              {eligibility && (
+                <>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Completed hires</span>
+                    <span className="font-medium text-foreground">{eligibility.completedHireCount}</span>
+                  </div>
+                  {eligibility.autoThreshold !== null && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Auto-threshold</span>
+                      <span className={eligibility.meetsAutoThreshold ? "font-medium text-green-600" : "font-medium text-foreground"}>
+                        {eligibility.completedHireCount}/{eligibility.autoThreshold}
+                        {eligibility.meetsAutoThreshold && " ✓ eligible"}
+                      </span>
+                    </div>
+                  )}
+                  {eligibility.isVetted && eligibility.vettedAt && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Vetted on</span>
+                      <span>{new Date(eligibility.vettedAt).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {eligibility.isVetted && eligibility.vettedByMechanism && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>Mechanism</span>
+                      <span className="capitalize">{eligibility.vettedByMechanism.replace('_', ' ')}</span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Action */}
+              <div className="pt-1 space-y-2">
+                <textarea
+                  value={vettingReason}
+                  onChange={e => { setVettingReason(e.target.value); setVettingError(null); }}
+                  placeholder="Reason (required)…"
+                  rows={2}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+                {vettingError && <p className="text-xs text-destructive">{vettingError}</p>}
+                <div className="flex gap-2">
+                  {!eligibility?.isVetted ? (
+                    <button
+                      onClick={() => handleVettingAction('grant')}
+                      disabled={vettingLoading}
+                      className="flex-1 rounded-md bg-[#474EAD] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60 hover:bg-[#383E90] transition-colors"
+                    >
+                      {vettingLoading ? 'Saving…' : 'Grant Vetted'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleVettingAction('revoke')}
+                      disabled={vettingLoading}
+                      className="flex-1 rounded-md border border-destructive px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-60 hover:bg-destructive/10 transition-colors"
+                    >
+                      {vettingLoading ? 'Saving…' : 'Revoke Vetted'}
+                    </button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

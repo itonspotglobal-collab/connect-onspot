@@ -1353,6 +1353,13 @@ export const candidates = pgTable("candidates", {
   displayName: text("display_name"),
   // Auth — bcrypt hash, nullable until candidate sets a password
   passwordHash: text("password_hash"),
+  // Vetted status — admin-granted; shows a visible "Vetted" badge on the profile.
+  // Eligibility paths: manual admin grant, proactive OnSpot selection, or automatic
+  // milestone (threshold configured in platform_settings.vetted_auto_hire_threshold).
+  isVetted: boolean("is_vetted").notNull().default(false),
+  vettedAt: timestamp("vetted_at"),
+  // Discriminates how the badge was granted: 'manual_admin' | 'automatic_milestone'
+  vettedByMechanism: text("vetted_by_mechanism"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
