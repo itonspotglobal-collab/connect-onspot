@@ -1,0 +1,66 @@
+Content update for the "How It Works" page. No staging/feature-flag
+mechanism needed — I'll manage when this actually goes live myself.
+
+═══════════════════════════════════════
+CONTRACTOR SIDE — "Getting Started" section
+═══════════════════════════════════════
+
+INSERT this new question right after "How do I create a strong profile?":
+
+**Q: How do I get Verified?**
+"Verified" confirms your identity and credentials — you'll upload a
+government-issued ID and any relevant certifications, and OnSpot reviews
+them to confirm you are who you say you are. It's the foundation for
+building trust with Clients, and it's required before you can become
+Vetted.
+
+REPLACE the existing "How do I get Vetted?" answer with:
+
+**Q: How do I get Vetted?**
+"Vetted" goes further than Verified — it confirms your skills,
+experience, and work history are accurate, through OnSpot's internal
+review. You must be Verified first. From there, there's more than one
+path:
+- **Request it** — reach out to your account manager and ask for a
+  review.
+- **Get selected** — OnSpot may proactively offer it to Contractors with
+  strong performance.
+- **Reach a milestone** — it can also be granted automatically once you
+  hit a tenure or engagement threshold.
+
+INSERT this new question right after "How do I get Vetted?":
+
+**Q: What's the difference between Verified and Vetted?**
+Verified confirms *who you are* — your identity and certifications are
+on file and reviewed. Vetted confirms *how you perform* — your skills,
+experience, and work history have been reviewed by OnSpot. Verified is
+the foundation; Vetted is the deeper layer built on top of it.
+
+═══════════════════════════════════════
+CLIENT SIDE — "The Hiring Process" section
+═══════════════════════════════════════
+
+REPLACE the existing "Are Contractors vetted before I can hire them?"
+question (including its title) with:
+
+**Q: Are Contractors verified or vetted before I can hire them?**
+Not every Contractor carries these marks — both are optional, not
+automatic.
+- **Verified** means OnSpot has confirmed their identity and
+  certifications.
+- **Vetted** means OnSpot has gone further, reviewing their skills,
+  experience, and work history — and requires that they're already
+  Verified first.
+
+Look for either mark on a profile if trust signals matter for your
+hiring decision.
+
+═══════════════════════════════════════
+
+Apply all four changes exactly as written above. Take screenshots of the
+updated sections for my review.
+
+Note for context, no action needed: the Verified feature (ID/
+certification upload) itself is not yet built — this is content-only for
+now, ahead of that feature. I'll handle the timing of when this content
+actually goes public.

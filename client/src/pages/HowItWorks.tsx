@@ -180,6 +180,10 @@ const SECTIONS: Section[] = [
             ),
           },
           {
+            q: "What if my Contractor works more or less than their committed hours?",
+            a: "OnSpot tracks this through two mechanisms. If your Contractor works beyond their committed hours, those are logged as Extended Hours — billed at the same flat rate as their regular hours, with no overtime premium. If they work fewer hours than committed, a proportional Deduction is applied automatically against that period's invoice. Both are calculated through OnSpot's attendance and engagement verification systems and reflected in your billing without any manual adjustment on your end.",
+          },
+          {
             q: "Is there a security deposit?",
             a: "Yes — a refundable security deposit is collected before your Contractor's first day. It's held by OnSpot and applied against your final invoice at the end of a proper engagement (30 days' notice, no lock-in period). If a payment is ever late, the deposit can be drawn on to keep your Contractor paid on time — with an obligation to replenish it within 5 days. The deposit is never forfeited.",
           },
@@ -226,8 +230,8 @@ const SECTIONS: Section[] = [
             a: "Complete your profile with your skills, experience, and availability. AI resume parsing helps speed this up. The more complete your profile, the more visible you are to Clients searching for your skillset.",
           },
           {
-            q: "Does OnSpot review my profile before Clients can see it?",
-            a: 'Not every profile goes through this — vetting is selective, not automatic. If your profile carries the "Vetted" mark, it means it\'s gone through OnSpot\'s internal review process, which can make you more attractive to Clients specifically looking for vetted Contractors. You can become Vetted in a few ways: by reaching out to your account manager to request a review, by being proactively selected by OnSpot based on strong performance, or automatically once you reach a tenure/engagement milestone.',
+            q: "How do I get Vetted?",
+            a: 'Getting the "Vetted" mark isn\'t automatic — it\'s granted by OnSpot after an internal review of your profile and work history. There are three paths: you reach out to your account manager to request a review; OnSpot proactively selects you based on strong performance and a complete profile; or you reach a tenure and engagement milestone that triggers an automatic review. Until then, your profile is fully visible and searchable — Vetted is an added distinction that makes you more attractive to Clients specifically looking for vetted Contractors, not a prerequisite for being hired.',
           },
         ],
       },
@@ -270,6 +274,10 @@ const SECTIONS: Section[] = [
                 </ul>
               </>
             ),
+          },
+          {
+            q: "What if I work more or less than my committed hours?",
+            a: "OnSpot tracks this through two mechanisms. If you work beyond your engagement's committed hours, those are logged as Extended Hours — billed at the same flat rate as your regular hours, with no premium. If you work fewer hours than committed, a proportional Deduction is applied automatically for that period. Both are calculated through OnSpot's attendance and engagement verification systems — neither requires negotiation or manual adjustment after the fact.",
           },
           {
             q: "Can I negotiate an Offer?",

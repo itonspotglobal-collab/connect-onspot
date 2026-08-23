@@ -1,0 +1,48 @@
+Four content updates to the already-built "How It Works" page — updated
+draft attached (how_it_works_faq_draft.md), use it as the new source of
+truth for all affected sections.
+
+CORRECTION 1 — "What kinds of roles can I hire for (or find work in)?"
+(What Is OnSpot section):
+OLD: listed only the 10 categories as if they were the full scope.
+NEW: "In principle, any role that can be done remotely — OnSpot isn't
+limited to a fixed list of job types. Today, the platform's categories
+include Customer Support, Virtual Assistants, Developers, Designers,
+Marketing Specialists, Accountants, Healthcare Professionals, Sales
+Representatives, Operations Specialists, and IT & Technical Support, with
+new categories added as the platform grows."
+
+CORRECTION 2 — Client account types (How It Works for Clients section):
+Multi-user Organization team access (invite teammates, assign HR/Hiring
+Manager/Finance roles with different permissions) is CONFIRMED LIVE
+TODAY, not "coming soon." Before applying this text: verify directly with
+real evidence — invite a real teammate to an Organization account, assign
+one of the three roles, confirm the role-based permission difference is
+actually enforced, not just a UI label. Apply the corrected text only
+after that's confirmed.
+
+ADDITION 1 — new "How do I get Vetted?" question (How It Works for
+Contractors, right after "How do I create a strong profile?"):
+Full text is in the attached draft. This REPLACES the old "Does OnSpot
+review my profile before Clients can see it?" question entirely — remove
+that one so there's a single, consolidated answer rather than two that
+could drift out of sync.
+
+ADDITION 2 — Extended Hours / Deductions, added on BOTH sides:
+- Contractor side (Offers & Pay section): "What if I work more or less
+  than my committed hours?" — placed right after "What are Engagement
+  Types?"
+- Client side (Pricing section): "What if my Contractor works more or
+  less than their committed hours?" — placed right after the Service Fee
+  coverage list, before the security deposit question.
+Both describe the same mechanism from each audience's perspective —
+Extended Hours (same flat rate, no premium) and Deductions (proportional,
+automatic). Deliberately does NOT use "overtime" or "undertime" — those
+aren't real platform terminology; "Extended Hours" and "Deductions" are
+the actual established terms used everywhere else in this build.
+
+Apply all four updates, then re-take screenshots of every affected
+section (What Is OnSpot, Client account types, Client Pricing, Contractor
+Getting Started, Contractor Offers & Pay) as part of the final review
+package before this page is considered ready for the go/no-go publish
+decision.
