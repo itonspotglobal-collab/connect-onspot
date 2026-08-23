@@ -7646,7 +7646,8 @@ export async function registerRoutes(
              c.seniority,
              c.headline,
              c.availability,
-              COALESCE(c.is_vetted, false) AS is_vetted,
+              COALESCE(c.is_vetted,    false) AS is_vetted,
+              COALESCE(c.is_verified, false) AS is_verified,
              c.core_skills[1:3]      AS top_skills,
              COALESCE(
                (SELECT COUNT(*)::int FROM job_submissions js

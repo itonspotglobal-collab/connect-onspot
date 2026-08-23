@@ -54,7 +54,8 @@ export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<
     preferences:     candidate.preferences     ?? {},
     experienceYears: candidate.experienceYears ?? null,
     // Public trust signal — not PII; same visibility tier as seniority/category
-    isVetted:        candidate.isVetted        ?? candidate.is_vetted ?? false,
+    isVetted:        candidate.isVetted        ?? candidate.is_vetted    ?? false,
+    isVerified:      candidate.isVerified      ?? candidate.is_verified  ?? false,
 
     // Explicitly omitted (never returned to the client through this flow):
     // email, phone, phoneNumber, resumeUrl, resumeFileName, linkedinUrl,
@@ -107,7 +108,8 @@ export function sanitizeFullProfileForClient(candidate: Record<string, any>): Re
     education:      candidate.education      ?? [],
     certifications: candidate.certifications ?? [],
     // Public trust signal — not PII; same visibility tier as seniority/category
-    isVetted:       candidate.isVetted       ?? candidate.is_vetted ?? false,
+    isVetted:       candidate.isVetted       ?? candidate.is_vetted    ?? false,
+    isVerified:     candidate.isVerified     ?? candidate.is_verified  ?? false,
 
     // Explicitly omitted (never returned through this flow):
     // email, phone, resumeUrl, resumeFileName, linkedinUrl, githubUrl,

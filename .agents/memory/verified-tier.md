@@ -3,6 +3,15 @@ name: Verified tier implementation
 description: Full implementation of the Verified identity tier — DB schema, server endpoints, admin UI, contractor UI, and grandfathering.
 ---
 
+## API gaps found and fixed (post-implementation audit)
+- `GET /api/admin/talent` list query was missing `COALESCE(c.is_verified, false) AS is_verified` — added.
+- `sanitizeSearchCandidate` and `sanitizeFullProfileForClient` in `server/lib/clientSearchSanitize.ts` were missing `isVerified` — added alongside `isVetted`.
+- Without these, TalentPool and SearchToShortlist badge cards would never show the Verified pill even for verified contractors.
+
+## Test script JWT claim requirements
+- Admin JWT (`authenticateAdminFlexible`): **must include `email`** — line 570 of routes.ts checks `!decoded.email`.
+- Talent JWT (`authenticateJWT` candidate path): **must include `email`** — line 270 uses email to look up user row; without it, the server falls back to using candidateId as userId, breaking `extractCandidateId`'s `WHERE user_id = $1` lookup.
+
 ## Canonical three-tier model
 No Classification → Verified → Vetted
 
