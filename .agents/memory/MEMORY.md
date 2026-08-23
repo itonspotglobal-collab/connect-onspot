@@ -34,3 +34,4 @@
 - [Vetted badge](vetted-badge.md) — admin-grantable "Vetted" badge on contractor profiles; schema, migrations, endpoints, and three badge surfaces.
 - [Verified tier](verified-tier.md) — full Verified identity tier; 9 DB columns, 9 endpoints, grandfathering, doc-delete-on-decision, Super Admin gate, fake-badge default fixes.
 - [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.
+- [Billing engine](billing-engine.md) — Phase 1 complete: 5 tables, billing.ts pure functions, security deposit ladder, commission_rate always explicit per-row.

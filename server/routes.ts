@@ -2207,6 +2207,224 @@ export async function registerRoutes(
     console.error("❌ Admin bootstrap migration failed:", err.message);
   }
 
+  // ── Billing engine tables — Phase 1 (Payments / Invoicing) ───────────────
+  // Money model: Client pays OnSpot → OnSpot pays Talent.
+  // Commission is added ON TOP of talent rate (never deducted).
+  // commission_rate stored explicitly on every period/invoice row — not a
+  // hardcoded constant — so a future Loyalty-tier discount is a data change only.
+  try {
+    // 1. payout_region_configs — per-region configurable payout rail
+    await query(`
+      CREATE TABLE IF NOT EXISTS payout_region_configs (
+        region_code       text PRIMARY KEY,
+        available_methods text[]      NOT NULL DEFAULT '{}',
+        default_method    text        NOT NULL,
+        currency          text        NOT NULL,
+        notes             text,
+        updated_at        timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+
+    // 2. invoice_periods — one row per billing cycle per contract; the ledger spine.
+    await query(`
+      CREATE TABLE IF NOT EXISTS invoice_periods (
+        id                      uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        hiring_contract_id      uuid        NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
+        offer_id                uuid        NOT NULL REFERENCES offers(id)           ON DELETE RESTRICT,
+
+        -- Billing window
+        period_start            date        NOT NULL,
+        period_end              date        NOT NULL,
+
+        -- Rate snapshot (from offers.rate at period creation; never re-derived)
+        talent_rate             numeric(12,2) NOT NULL,
+        talent_rate_currency    text          NOT NULL DEFAULT 'PHP',
+
+        -- Rate-adjustment engine inputs
+        -- standard_period_hours = 160 (Standard) or 80 (Lite) — derived from engagement_type
+        standard_period_hours   int           NOT NULL,
+        extended_hours          numeric(8,2)  NOT NULL DEFAULT 0,
+        deduction_hours         numeric(8,2)  NOT NULL DEFAULT 0,
+
+        -- Derived amounts — computed by billing.ts, stored here for consistency
+        -- hourly_equivalent   = talent_rate / standard_period_hours  (for extended/deduction use only)
+        -- adjustedTalentPayout= talent_rate + (extended − deduction) × hourly_equivalent
+        -- clientInvoiceAmount  = adjustedTalentPayout × (1 + commission_rate)
+        -- commissionEarned     = clientInvoiceAmount − adjustedTalentPayout
+        hourly_equivalent       numeric(12,4) NOT NULL,
+        adjusted_talent_payout  numeric(12,2) NOT NULL,
+        commission_rate         numeric(5,4)  NOT NULL,    -- e.g. 0.2000 for 20%
+        client_invoice_amount   numeric(12,2) NOT NULL,
+        commission_earned       numeric(12,2) NOT NULL,
+
+        -- Lifecycle
+        status                  text          NOT NULL DEFAULT 'draft'
+                                    CHECK (status IN ('draft','ready','invoiced','payout_scheduled','closed')),
+        notes                   text,
+        created_at              timestamptz   NOT NULL DEFAULT now(),
+        updated_at              timestamptz   NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_invoice_periods_contract ON invoice_periods(hiring_contract_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_invoice_periods_status   ON invoice_periods(status)`);
+
+    // Invoice number sequence — human-readable INV-YYYY-NNNN generated in Phase 2
+    await query(`CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1`);
+
+    // 3. invoices — client-facing billing document (one per invoice_period)
+    await query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id                    uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+        period_id             uuid          REFERENCES invoice_periods(id) ON DELETE RESTRICT,
+        hiring_contract_id    uuid          NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
+        client_id             text          NOT NULL REFERENCES users(id),
+
+        -- invoice_number generated as 'INV-' || to_char(now(),'YYYY') || '-' || lpad(nextval('invoice_number_seq')::text,4,'0')
+        invoice_number        text          UNIQUE,
+
+        -- Amount mirrors invoice_periods.client_invoice_amount
+        amount                numeric(12,2) NOT NULL,
+        currency              text          NOT NULL DEFAULT 'PHP',
+        commission_rate       numeric(5,4)  NOT NULL,   -- copied from period row for auditability
+
+        -- Payment details
+        payment_method        text          CHECK (payment_method IN ('wire','credit_card')),
+        external_ref          text,         -- wire reference # or card charge ID
+
+        -- Lifecycle
+        status                text          NOT NULL DEFAULT 'draft'
+                                CHECK (status IN ('draft','sent','paid','overdue','void')),
+        issued_at             timestamptz,
+        due_date              timestamptz,
+        paid_at               timestamptz,
+        voided_at             timestamptz,
+        notes                 text,
+        created_at            timestamptz   NOT NULL DEFAULT now(),
+        updated_at            timestamptz   NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_invoices_contract ON invoices(hiring_contract_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_invoices_status   ON invoices(status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_invoices_client   ON invoices(client_id)`);
+
+    // 4. payouts — talent-facing disbursement record (one per invoice_period)
+    await query(`
+      CREATE TABLE IF NOT EXISTS payouts (
+        id                    uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+        period_id             uuid          REFERENCES invoice_periods(id) ON DELETE RESTRICT,
+        hiring_contract_id    uuid          NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
+        talent_id             text          NOT NULL REFERENCES users(id),
+
+        -- Amount = invoice_periods.adjusted_talent_payout (commission never deducted)
+        amount                numeric(12,2) NOT NULL,
+        currency              text          NOT NULL DEFAULT 'PHP',
+
+        -- Payout rail — per-region configurable, never hardcoded to PH
+        payout_region         text          REFERENCES payout_region_configs(region_code),
+        payout_method         text,         -- e.g. 'gcash','bank_transfer','wise'
+        external_ref          text,         -- transaction ID or receipt reference
+
+        -- Lifecycle
+        status                text          NOT NULL DEFAULT 'pending'
+                                CHECK (status IN ('pending','scheduled','disbursed','failed')),
+        scheduled_at          timestamptz,
+        disbursed_at          timestamptz,
+        failed_reason         text,
+        notes                 text,
+        created_at            timestamptz   NOT NULL DEFAULT now(),
+        updated_at            timestamptz   NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_payouts_contract ON payouts(hiring_contract_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_payouts_talent   ON payouts(talent_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_payouts_status   ON payouts(status)`);
+
+    // 5. security_deposits — one per hiring_contract
+    // Deposit = 30 days of daily rate = (talent_rate / 20 working days) × 30
+    // Status escalation ladder:
+    //   pending → held → drawn → replenishment_pending → suspended → forfeited  (nonpayment breach)
+    //   held → applied  (normal / mutual termination — deposit offsets final invoice)
+    // CRITICAL: forfeiture applies ONLY when termination_reason = 'nonpayment_breach'.
+    //           Any other termination always results in 'applied' (deposit credited).
+    await query(`
+      CREATE TABLE IF NOT EXISTS security_deposits (
+        id                      uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
+        hiring_contract_id      uuid          NOT NULL UNIQUE REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
+
+        amount                  numeric(12,2) NOT NULL,
+        currency                text          NOT NULL DEFAULT 'PHP',
+
+        -- Status lifecycle (see header comment above)
+        status                  text          NOT NULL DEFAULT 'pending'
+                                    CHECK (status IN (
+                                      'pending',
+                                      'held',
+                                      'drawn',
+                                      'replenishment_pending',
+                                      'suspended',
+                                      'forfeited',
+                                      'applied',
+                                      'void'
+                                    )),
+
+        -- Clock 1: Day-5 replenishment deadline (triggered by draw event)
+        held_at                 timestamptz,
+        drawn_at                timestamptz,
+        drawn_reason            text,
+        replenishment_due_at    timestamptz,    -- drawn_at + 5 days
+
+        -- Clock 2: Day-15 suspension + cure window (separate clock, not same as Clock 1)
+        suspended_at            timestamptz,
+        cure_deadline_at        timestamptz,    -- suspended_at + deposit_cure_period_days (platform_settings)
+
+        -- Terminal state disambiguation
+        -- 'normal_termination' | 'mutual_end' | 'nonpayment_breach' | 'admin_void'
+        terminal_reason         text,
+
+        -- Normal-termination path (deposit credited to client's final invoice)
+        notice_given_at         timestamptz,    -- when 30-day termination notice was logged
+        applied_at              timestamptz,
+        applied_to_invoice_id   uuid            REFERENCES invoices(id),
+
+        -- Non-payment forfeiture path
+        forfeited_at            timestamptz,
+
+        created_at              timestamptz     NOT NULL DEFAULT now(),
+        updated_at              timestamptz     NOT NULL DEFAULT now()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_security_deposits_contract ON security_deposits(hiring_contract_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_security_deposits_status   ON security_deposits(status)`);
+
+    // ── Seed platform_settings ──────────────────────────────────────────────
+    // deposit_cure_period_days: confirmed = 5 (Day 15 suspension → Day 20 forfeiture).
+    // Super-Admin-updatable via platform_settings without a migration.
+    await query(`
+      INSERT INTO platform_settings (key, value)
+      VALUES ('deposit_cure_period_days', '5')
+      ON CONFLICT (key) DO NOTHING
+    `);
+
+    // ── Seed payout_region_configs ──────────────────────────────────────────
+    // PH is the only active rail today; global-sourcing model means new regions
+    // are added as data rows, not code changes.
+    await query(`
+      INSERT INTO payout_region_configs (region_code, available_methods, default_method, currency, notes)
+      VALUES (
+        'PH',
+        ARRAY['gcash','bank_transfer','wise'],
+        'bank_transfer',
+        'PHP',
+        'Philippines — primary sourcing region'
+      )
+      ON CONFLICT (region_code) DO NOTHING
+    `);
+
+    console.log("✅ Migration: billing engine tables ready (invoice_periods, invoices, payouts, security_deposits, payout_region_configs)");
+  } catch (err: any) {
+    console.error("❌ Billing engine migration failed:", err.message);
+  }
+
   app.get(
     "/talent-dashboard",
     authenticateJWT,
