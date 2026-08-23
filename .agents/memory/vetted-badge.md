@@ -43,6 +43,5 @@ The hire-count proxy is `hiring_contracts.onspot_signed_at IS NOT NULL`.
 **Why:** `authAPI.patch` at line 182 of `client/src/lib/api.ts` is the correct method for authenticated PATCH calls from admin pages.
 
 ## Known future work
-- Auto-promote job: background check for candidates who cross the `vetted_auto_hire_threshold` (currently manual-only).
 - Vetted filter on the admin talent list page so admins can browse all vetted contractors at once.
 - Vetting history/audit log tab on AdminTalentDetail showing who granted/revoked and when.

@@ -580,6 +580,28 @@ app.use((req, res, next) => {
   
   await registerRoutes(app, server);
 
+  // Auto-promote contractors who have reached the configured hire milestone.
+  // This is registered after route registration and its startup migrations, so
+  // the first pass can execute immediately. The setting is read on every pass,
+  // allowing changes without a restart.
+  if (runBgJobs) {
+    const VETTED_AUTO_PROMOTION_INTERVAL_MS = 60 * 60 * 1000;
+    const runVettedAutoPromotion = async () => {
+      try {
+        const { autoPromoteVettedCandidates } = await import('./routes');
+        const promoted = await autoPromoteVettedCandidates();
+        if (promoted > 0) {
+          console.log(`✅ Vetted auto-promotion: promoted ${promoted} contractor(s)`);
+        }
+      } catch (err: any) {
+        console.warn('⚠️  Vetted auto-promotion error (non-fatal):', err.message);
+      }
+    };
+    void runVettedAutoPromotion();
+    setInterval(runVettedAutoPromotion, VETTED_AUTO_PROMOTION_INTERVAL_MS);
+    console.log('⏰ Vetted auto-promotion scheduled: startup pass immediately, then every 1 h');
+  }
+
   // ── Organization invitation expiry cleanup ────────────────────────────────
   // Invitations are actionable for 30 days. Reads and responses also expire
   // overdue rows immediately, while this sweep closes invitations that are

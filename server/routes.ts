@@ -136,7 +136,77 @@ export const expireOrganizationInvitations = async (): Promise<number> => {
   return result.rowCount ?? 0;
 };
 
-// JWT Authentication Types
+export const autoPromoteVettedCandidates = async (): Promise<number> => {
+  const thresholdResult = await query(
+    `SELECT value FROM platform_settings
+      WHERE key = 'vetted_auto_hire_threshold'
+      LIMIT 1`,
+  );
+  const rawThreshold = thresholdResult.rows[0]?.value;
+  const threshold = rawThreshold == null
+    ? null
+    : Number.parseInt(String(rawThreshold), 10);
+
+  // Match the eligibility endpoint's dormant behavior: missing, invalid, or
+  // zero thresholds do not accidentally vet every contractor.
+  if (threshold === null || !Number.isInteger(threshold) || threshold <= 0) {
+    return 0;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const promotedResult = await client.query(
+      `WITH eligible_candidates AS (
+         SELECT c.id AS candidate_id, c.user_id, u.email
+           FROM candidates c
+           JOIN users u ON u.id = c.user_id
+           JOIN job_submissions js ON js.talent_id = u.id
+           JOIN hiring_contracts hc ON hc.submission_id = js.id
+          WHERE c.is_vetted = false
+            AND hc.onspot_signed_at IS NOT NULL
+          GROUP BY c.id, c.user_id, u.email
+         HAVING COUNT(*) >= $1
+       )
+       UPDATE candidates c
+          SET is_vetted = true,
+              vetted_by_mechanism = 'automatic_milestone',
+              vetted_at = NOW(),
+              updated_at = NOW()
+         FROM eligible_candidates eligible
+        WHERE c.id = eligible.candidate_id
+          AND c.is_vetted = false
+       RETURNING c.user_id, eligible.email`,
+      [threshold],
+    );
+
+    for (const promoted of promotedResult.rows) {
+      await client.query(
+        `INSERT INTO admin_role_changes
+           (user_id, email, previous_role, new_role, mechanism, changed_by, notes, change_type)
+         VALUES ($1, $2, 'unvetted', 'vetted', 'automatic_milestone_job', 'system', $3, 'vetting_status')`,
+        [
+          promoted.user_id,
+          promoted.email,
+          `Automatically vetted after reaching the ${threshold}-hire milestone.`,
+        ],
+      );
+    }
+
+    await client.query("COMMIT");
+    return promotedResult.rowCount ?? 0;
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original error if rollback itself cannot complete.
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+};
 interface JWTPayload {
   userId: string;
   email: string;
@@ -7130,7 +7200,11 @@ export async function registerRoutes(
 
   app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const ALLOWED_KEYS = new Set(['name_reveal_threshold', 'search_suggestion_threshold']);
+      const ALLOWED_KEYS = new Set([
+        'name_reveal_threshold',
+        'search_suggestion_threshold',
+        'vetted_auto_hire_threshold',
+      ]);
       const VALID_THRESHOLDS = new Set(['new', 'reviewed', 'shortlisted', 'hired']);
       const updates: Array<{ key: string; value: string }> = [];
 
@@ -7148,6 +7222,12 @@ export async function registerRoutes(
           const num = parseInt(value, 10);
           if (isNaN(num) || num < 1 || num > 100000) {
             return res.status(400).json({ error: `search_suggestion_threshold must be a positive integer (1–100000)` });
+          }
+        }
+        if (key === 'vetted_auto_hire_threshold') {
+          const num = Number(value);
+          if (!Number.isInteger(num) || num < 1 || num > 100000) {
+            return res.status(400).json({ error: `vetted_auto_hire_threshold must be a positive integer (1–100000)` });
           }
         }
         updates.push({ key, value });

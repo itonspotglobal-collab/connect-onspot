@@ -386,6 +386,10 @@ export default function AdminDashboard() {
   const [pendingChipThreshold, setPendingChipThreshold] = useState<string | null>(null);
   const effectiveChipThreshold = pendingChipThreshold ?? platformSettings?.search_suggestion_threshold ?? '100';
 
+  const [pendingVettedThreshold, setPendingVettedThreshold] = useState<string | null>(null);
+  const effectiveVettedThreshold =
+    pendingVettedThreshold ?? platformSettings?.vetted_auto_hire_threshold ?? '';
+
   const [seedInput, setSeedInput] = useState('');
   const seedMutation = useMutation({
     mutationFn: (queries: Array<{ query: string; count: number }>) =>
@@ -1203,6 +1207,57 @@ export default function AdminDashboard() {
                       'Save Settings'
                     )}
                   </Button>
+
+                  {/* Automatic Vetted milestone */}
+                  <div className="space-y-2 border-t pt-6">
+                    <label className="text-sm font-medium leading-none">
+                      Automatic Vetted Hire Milestone
+                    </label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Automatically mark a contractor as Vetted after this many completed
+                      hires. Leave unconfigured to keep automatic promotion disabled.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100000}
+                        className="w-32"
+                        placeholder="Disabled"
+                        value={effectiveVettedThreshold}
+                        onChange={(e) => setPendingVettedThreshold(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        disabled={
+                          updateSettingsMutation.isPending ||
+                          pendingVettedThreshold === null
+                        }
+                        onClick={() => {
+                          if (pendingVettedThreshold !== null) {
+                            const n = Number(pendingVettedThreshold);
+                            if (!Number.isInteger(n) || n < 1 || n > 100000) return;
+                            updateSettingsMutation.mutate(
+                              { vetted_auto_hire_threshold: String(n) },
+                              {
+                                onSuccess: () => setPendingVettedThreshold(null),
+                              },
+                            );
+                          }
+                        }}
+                      >
+                        {updateSettingsMutation.isPending ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+                        ) : 'Save milestone'}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Current saved value:{' '}
+                      <span className="font-mono font-semibold">
+                        {platformSettings?.vetted_auto_hire_threshold ?? 'Not configured'}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
