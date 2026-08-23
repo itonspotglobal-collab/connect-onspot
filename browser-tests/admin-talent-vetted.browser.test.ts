@@ -218,6 +218,7 @@ test("admin talent list refreshes the Vetted count after granting and revoking t
   const { page, state } = await newAdminPage();
   try {
     await page.getByTestId("talent-vetted-filter").getByText("0").waitFor();
+    await page.getByTestId(`talent-vetted-status-${TALENT_ID}`).getByText("Not vetted").waitFor();
     const initialListRequests = state.listRequests;
 
     await page.getByTestId(`talent-row-${TALENT_ID}`).click();
@@ -228,6 +229,7 @@ test("admin talent list refreshes the Vetted count after granting and revoking t
 
     await page.getByRole("button", { name: /Back to Talent/ }).click();
     await page.getByTestId("talent-vetted-filter").getByText("1").waitFor();
+    await page.getByTestId(`talent-vetted-status-${TALENT_ID}`).getByText("Vetted").waitFor();
     assert.ok(
       state.listRequests > initialListRequests,
       "returning to the list should refetch its invalidated query",
@@ -241,6 +243,7 @@ test("admin talent list refreshes the Vetted count after granting and revoking t
 
     await page.getByRole("button", { name: /Back to Talent/ }).click();
     await page.getByTestId("talent-vetted-filter").getByText("0").waitFor();
+    await page.getByTestId(`talent-vetted-status-${TALENT_ID}`).getByText("Not vetted").waitFor();
   } finally {
     await page.context().close();
   }

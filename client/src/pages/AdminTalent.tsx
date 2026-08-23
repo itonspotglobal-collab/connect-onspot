@@ -243,6 +243,7 @@ export default function AdminTalent() {
                 <thead className="border-b bg-muted/30">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Vetted</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Skills (top 3)</th>
@@ -269,6 +270,26 @@ export default function AdminTalent() {
                           </div>
                           {t.target_position && (
                             <div className="text-xs text-muted-foreground">{t.target_position}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {t.is_vetted ? (
+                            <Badge
+                              className="gap-1 bg-[#474EAD] text-white hover:bg-[#383E90]"
+                              data-testid={`talent-vetted-status-${t.id}`}
+                            >
+                              <Shield className="w-3.5 h-3.5" />
+                              Vetted
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 text-muted-foreground"
+                              data-testid={`talent-vetted-status-${t.id}`}
+                            >
+                              <Circle className="w-3.5 h-3.5" />
+                              Not vetted
+                            </Badge>
                           )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{t.email}</td>
