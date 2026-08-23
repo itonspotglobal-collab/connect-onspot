@@ -1,0 +1,44 @@
+Audit accepted — good, precise work distinguishing dead tables (payments,
+old contracts/milestones) from real anchors, and confirming the rate-
+adjustment engine is genuinely design-only, not built.
+
+HOLD on Phase 1 — one correction needed to the security_deposits design
+before any schema ships. The deposit forfeiture rule is being actively
+revised right now; do not build against the "never forfeited" version.
+
+CORRECTED escalation ladder for security_deposits, replacing what was
+proposed:
+
+1. Invoice unpaid → deposit draws against to keep Talent paid (unchanged
+   mechanism).
+2. Day 5 → Client must replenish the deposit to its required level.
+3. Day 15, still unresolved → SUSPENSION triggers (services pause) plus
+   a further cure period begins (exact length still being confirmed —
+   do not hardcode a number yet, make it a configurable value).
+4. If Client cures during that window → suspension lifts, deposit stays
+   intact, engagement continues normally.
+5. If Client does NOT cure → engagement terminates SPECIFICALLY for
+   non-payment, and the deposit is FORFEITED IN FULL.
+
+CRITICAL DISTINCTION — forfeiture applies ONLY when termination happens
+because of this non-payment path. A Client terminating for any other
+reason (normal notice, mutual end of engagement, no missed payments)
+still gets the deposit applied to their final invoice as before — this
+is NOT a blanket "any early termination forfeits the deposit" rule.
+
+Schema changes needed:
+- Add 'suspended' and 'forfeited' to the security_deposits status enum
+  (currently: pending | held | drawn | replenishment_pending | applied |
+  void — missing both of these).
+- Add a field distinguishing WHY a deposit reached a terminal state (e.g.
+  termination_reason or forfeiture_reason) so 'applied' (normal end) and
+  'forfeited' (non-payment breach) are unambiguous in the data, not just
+  inferred from status.
+- Add suspended_at and a cure-deadline field (name TBD) tracking the
+  Day-15-triggered cure window separately from the Day-5 replenishment
+  deadline — these are two distinct clocks, not the same one.
+
+Do NOT proceed with Phase 1 until this is incorporated — the exact
+cure-period length is still being confirmed, so build the field as
+configurable, not hardcoded, and hold final implementation until that
+number is locked.
