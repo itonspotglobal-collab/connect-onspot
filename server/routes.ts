@@ -1719,7 +1719,7 @@ export async function registerRoutes(
       CREATE TABLE IF NOT EXISTS offers (
         id                         uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
         submission_id              varchar       NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
-        engagement_type            text          NOT NULL CHECK (engagement_type IN ('Half-Day', 'Full-Time')),
+        engagement_type            text          NOT NULL CHECK (engagement_type IN ('Lite', 'Standard')),
         rate                       numeric(12,2) NOT NULL,
         rate_currency              text          NOT NULL DEFAULT 'PHP',
         proposed_start_date        date,
@@ -1818,31 +1818,48 @@ export async function registerRoutes(
   // ── Migrate stale status values → canonical names, then add CHECK constraint ─
   try {
     // Step 0: normalize legacy engagement_type values in the jobs table.
-    // 'full-time' and 'part-time' (lowercase) were written by an older version of
-    // The legacy job form before ENGAGEMENT_TYPE_OPTIONS was standardised to 'Full-Time'/'Half-Day'.
-    const ftMigration = await query(`
-      UPDATE jobs SET engagement_type = 'Full-Time', updated_at = NOW()
+    // Three legacy forms are normalised here, in order of age:
+    //   'full-time'  (old lowercase form) → 'Standard'
+    //   'part-time'  (old lowercase form) → 'Lite'
+    //   'Full-Time'  (pre-2026-08 label)  → 'Standard'  (backwards-compat: if code
+    //   'Half-Day'   (pre-2026-08 label)  → 'Lite'       wrote old values after Phase-1 rename)
+    const ftLowerMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Standard', updated_at = NOW()
       WHERE  engagement_type = 'full-time'
     `);
-    if ((ftMigration.rowCount ?? 0) > 0) {
-      console.log(`✅ Migration: normalized ${ftMigration.rowCount} jobs.engagement_type 'full-time' → 'Full-Time'`);
+    if ((ftLowerMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ftLowerMigration.rowCount} jobs.engagement_type 'full-time' → 'Standard'`);
     }
-    // 'part-time' → 'Half-Day': consistent with the contract_type normalization precedent
-    // established earlier in this build (part-time mapped to Half-Day there too).
-    const ptMigration = await query(`
-      UPDATE jobs SET engagement_type = 'Half-Day', updated_at = NOW()
+    const ptLowerMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Lite', updated_at = NOW()
       WHERE  engagement_type = 'part-time'
     `);
-    if ((ptMigration.rowCount ?? 0) > 0) {
-      console.log(`✅ Migration: normalized ${ptMigration.rowCount} jobs.engagement_type 'part-time' → 'Half-Day'`);
+    if ((ptLowerMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ptLowerMigration.rowCount} jobs.engagement_type 'part-time' → 'Lite'`);
+    }
+    // Backwards-compat: rename old labels to new ones in case any row was written
+    // between the Phase-1 DB pre-normalization and this code deploy.
+    const ftMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Standard', updated_at = NOW()
+      WHERE  engagement_type = 'Full-Time'
+    `);
+    if ((ftMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ftMigration.rowCount} jobs.engagement_type 'Full-Time' → 'Standard'`);
+    }
+    const hdMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Lite', updated_at = NOW()
+      WHERE  engagement_type = 'Half-Day'
+    `);
+    if ((hdMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${hdMigration.rowCount} jobs.engagement_type 'Half-Day' → 'Lite'`);
     }
 
     // Pre-flight: confirm zero non-canonical rows before adding CHECK constraint.
-    const canonicalEngagementTypes = ["Half-Day", "Full-Time"];
+    const canonicalEngagementTypes = ["Lite", "Standard"];
     const violatingJobs = await query(
       `SELECT id, engagement_type FROM jobs
        WHERE  engagement_type IS NOT NULL
-         AND  engagement_type NOT IN ('Half-Day', 'Full-Time')
+         AND  engagement_type NOT IN ('Lite', 'Standard')
        LIMIT  20`
     );
     if ((violatingJobs.rowCount ?? 0) > 0) {
@@ -1852,23 +1869,44 @@ export async function registerRoutes(
         `${violatingJobs.rowCount} row(s) still have non-canonical values: ${details}`
       );
     } else {
-      // Add CHECK constraint if it doesn't already exist
-      const constraintExists = await query(`
-        SELECT 1 FROM pg_constraint
-        WHERE  conrelid = 'jobs'::regclass
-          AND  conname  = 'jobs_engagement_type_check'
-        LIMIT  1
+      // Drop old constraint (Half-Day/Full-Time) if it still exists, then add new one.
+      await query(`ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_engagement_type_check`);
+      await query(`
+        ALTER TABLE jobs
+        ADD CONSTRAINT jobs_engagement_type_check
+        CHECK (engagement_type IS NULL OR engagement_type IN ('Lite', 'Standard'))
       `);
-      if ((constraintExists.rowCount ?? 0) > 0) {
-        console.log("✅ Migration: jobs.engagement_type CHECK constraint already exists — skipping");
-      } else {
-        await query(`
-          ALTER TABLE jobs
-          ADD CONSTRAINT jobs_engagement_type_check
-          CHECK (engagement_type IS NULL OR engagement_type IN ('Half-Day', 'Full-Time'))
-        `);
-        console.log("✅ Migration: jobs.engagement_type CHECK constraint added");
-      }
+      console.log("✅ Migration: jobs.engagement_type CHECK constraint set to ('Lite', 'Standard')");
+    }
+
+    // Offers engagement_type constraint: normalize any stale values then rebuild.
+    await query(`
+      UPDATE offers SET engagement_type = 'Standard' WHERE engagement_type = 'Full-Time'
+    `);
+    await query(`
+      UPDATE offers SET engagement_type = 'Lite' WHERE engagement_type = 'Half-Day'
+    `);
+    await query(`
+      UPDATE offers SET talent_expected_engagement = 'Standard' WHERE talent_expected_engagement = 'Full-Time'
+    `);
+    await query(`
+      UPDATE offers SET talent_expected_engagement = 'Lite' WHERE talent_expected_engagement = 'Half-Day'
+    `);
+    await query(`ALTER TABLE offers DROP CONSTRAINT IF EXISTS offers_engagement_type_check`);
+    const offersViolating = await query(
+      `SELECT id, engagement_type FROM offers
+       WHERE  engagement_type NOT IN ('Lite', 'Standard') LIMIT 20`
+    );
+    if ((offersViolating.rowCount ?? 0) > 0) {
+      const details = offersViolating.rows.map((r: any) => `${r.id}:${r.engagement_type}`).join(", ");
+      console.error(`❌ Migration: offers.engagement_type has non-canonical values: ${details}`);
+    } else {
+      await query(`
+        ALTER TABLE offers
+        ADD CONSTRAINT offers_engagement_type_check
+        CHECK (engagement_type IN ('Lite', 'Standard'))
+      `);
+      console.log("✅ Migration: offers.engagement_type CHECK constraint set to ('Lite', 'Standard')");
     }
 
     // Step 0b: drop the now-empty non-canonical compensation columns.
@@ -6973,10 +7011,10 @@ export async function registerRoutes(
       try {
         // Guard: published jobs must have a valid engagement type
         const effectiveStatus = req.body.status ?? "open";
-        if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(req.body.engagementType)) {
+        if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(req.body.engagementType)) {
           return res.status(400).json({
             error: "Engagement Type required",
-            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+            message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
         }
 
@@ -7005,11 +7043,11 @@ export async function registerRoutes(
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
       if (
         ["open", "published"].includes(effectiveStatus as string) &&
-        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+        !["Lite", "Standard"].includes(effectiveEngagementType as string)
       ) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
       }
 
@@ -8005,10 +8043,10 @@ export async function registerRoutes(
 
       // Guard: published jobs must have a valid engagement type
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+      if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(body.engagementType)) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
       }
 
@@ -8051,11 +8089,11 @@ export async function registerRoutes(
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
       if (
         ["open", "published"].includes(effectiveStatus as string) &&
-        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+        !["Lite", "Standard"].includes(effectiveEngagementType as string)
       ) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
       }
 
@@ -8086,10 +8124,10 @@ export async function registerRoutes(
       // Guard: published jobs must have a valid engagement type
       if (["open", "published"].includes(status)) {
         const existingJob = await storage.getJob(req.params.id);
-        if (!existingJob || !["Half-Day", "Full-Time"].includes(existingJob.engagementType as string)) {
+        if (!existingJob || !["Lite", "Standard"].includes(existingJob.engagementType as string)) {
           return res.status(400).json({
             error: "Engagement Type required",
-            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+            message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
         }
       }
@@ -8150,10 +8188,10 @@ export async function registerRoutes(
       // Guard: published jobs must have a valid engagement type
       const jobToApprove = await storage.getJob(req.params.id);
       if (!jobToApprove) return res.status(404).json({ error: "Job not found" });
-      if (!["Half-Day", "Full-Time"].includes(jobToApprove.engagementType as string)) {
+      if (!["Lite", "Standard"].includes(jobToApprove.engagementType as string)) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before approving a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before approving a job.",
         });
       }
       const result = await query(
@@ -12925,10 +12963,10 @@ export async function registerRoutes(
 
       // Guard: published jobs must have a valid engagement type
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !["Half-Day", "Full-Time"].includes(body.engagementType)) {
+      if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(body.engagementType)) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
       }
 
@@ -12961,11 +12999,11 @@ export async function registerRoutes(
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
       if (
         ["open", "published"].includes(effectiveStatus as string) &&
-        !["Half-Day", "Full-Time"].includes(effectiveEngagementType as string)
+        !["Lite", "Standard"].includes(effectiveEngagementType as string)
       ) {
         return res.status(400).json({
           error: "Engagement Type required",
-          message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
       }
 
@@ -13006,10 +13044,10 @@ export async function registerRoutes(
             message: "Search result jobs are internal records and cannot be published as job postings.",
           });
         }
-        if (!existingJob || !["Half-Day", "Full-Time"].includes(existingJob.engagementType as string)) {
+        if (!existingJob || !["Lite", "Standard"].includes(existingJob.engagementType as string)) {
           return res.status(400).json({
             error: "Engagement Type required",
-            message: "An Engagement Type (Half-Day or Full-Time) must be set before publishing a job.",
+            message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
         }
       }
@@ -13341,7 +13379,7 @@ export async function registerRoutes(
   // and re-runs via the authenticated endpoint below.
   app.post("/api/talent-search", publicSearchLimiter, async (req: Request, res: Response) => {
     try {
-      const { searchText, category, engagementType = "Full-Time" } = req.body;
+      const { searchText, category, engagementType = "Standard" } = req.body;
       if (!searchText?.trim()) return res.status(400).json({ error: "searchText is required" });
 
       const title = String(searchText).trim().slice(0, 120);
@@ -13399,7 +13437,7 @@ export async function registerRoutes(
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-      const { searchText, category, engagementType = "Full-Time" } = req.body;
+      const { searchText, category, engagementType = "Standard" } = req.body;
       if (!searchText?.trim()) return res.status(400).json({ error: "searchText is required" });
 
       const title = String(searchText).trim().slice(0, 120);
@@ -16725,12 +16763,12 @@ export async function registerRoutes(
       }
 
       // Snapshot engagement_type from the jobs row — the DB CHECK only accepts
-      // 'Half-Day' | 'Full-Time'; legacy jobs with NULL/other values cannot get offers.
+      // 'Lite' | 'Standard'; legacy jobs with NULL/other values cannot get offers.
       const engagementType: string | null = submission.job_engagement_type;
-      if (engagementType !== "Half-Day" && engagementType !== "Full-Time") {
+      if (engagementType !== "Lite" && engagementType !== "Standard") {
         return res.status(409).json({
           error: "job_missing_engagement_type",
-          message: "The job for this submission has no valid engagement type (Half-Day or Full-Time). " +
+          message: "The job for this submission has no valid engagement type (Lite or Standard). " +
             "Update the job before extending an offer.",
         });
       }

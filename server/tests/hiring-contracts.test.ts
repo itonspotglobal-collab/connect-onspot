@@ -111,7 +111,7 @@ async function createFixtures() {
   );
   const jobRow = await query(
     `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type)
-     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open', 'Full-Time') RETURNING id`,
+     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open', 'Standard') RETURNING id`,
     [CLIENT_ID],
   );
   jobId = jobRow.rows[0].id;
@@ -145,7 +145,7 @@ async function createFixtures() {
   const makeOffer = async (subId: string, status: string) => {
     const row = await query(
       `INSERT INTO offers (submission_id, engagement_type, rate, status)
-       VALUES ($1, 'Full-Time', 1000, $2) RETURNING id`,
+       VALUES ($1, 'Standard', 1000, $2) RETURNING id`,
       [subId, status],
     );
     return row.rows[0].id as string;

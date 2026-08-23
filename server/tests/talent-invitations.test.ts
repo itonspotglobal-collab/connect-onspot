@@ -201,7 +201,7 @@ async function insertScaffoldJob(clientId: string): Promise<string> {
        (id, title, professional_role_name, category, job_function, engagement_type,
         status, approval_status, is_client_submitted, client_id, created_via, description,
         skill_tags, experience_level)
-     VALUES (gen_random_uuid(), '__test_inv_job', '__test_inv_job', 'other', 'other', 'Full-Time',
+     VALUES (gen_random_uuid(), '__test_inv_job', '__test_inv_job', 'other', 'other', 'Standard',
              'draft', 'approved', true, $1, 'search_scaffold', '', '{}', 'intermediate')
      RETURNING id`,
     [clientId],

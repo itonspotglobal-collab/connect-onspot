@@ -108,7 +108,7 @@ describe("Admin approval finalization after a delivered email", () => {
       `INSERT INTO jobs
          (client_id, title, description, category, experience_level, engagement_type, status, approval_status)
        VALUES ($1, 'Approval finalize test job', 'Recovery test job', 'Technical', 'intermediate',
-               'Full-Time', 'open', 'approved')
+               'Standard', 'open', 'approved')
        RETURNING id`,
       [CLIENT_ID],
     );

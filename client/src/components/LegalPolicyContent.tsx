@@ -198,7 +198,7 @@ export function TermsContent() {
       </PolicySection>
 
       <PolicySection n={8} title="Fees, Payments & Taxes">
-        <p>Fees are as described on the Platform or in a Statement of Work. Billing for resourced engagements is in Half-Day or Full-Day increments. Each User is solely responsible for their own taxes. Fees are non-refundable except as stated in a Statement of Work or required by law.</p>
+        <p>Fees are as described on the Platform or in a Statement of Work. Billing for resourced engagements is in Lite (4-hour) or Standard (8-hour) increments. Each User is solely responsible for their own taxes. Fees are non-refundable except as stated in a Statement of Work or required by law.</p>
       </PolicySection>
 
       <PolicySection n={9} title="AI Features & Automated Tools">

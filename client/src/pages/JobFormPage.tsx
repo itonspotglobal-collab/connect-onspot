@@ -196,8 +196,8 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   const updateField = (field: keyof JobFormData, value: any) => {
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
-      // Switching to Full Time: duration is irrelevant — clear it.
-      if (field === "engagementType" && value === "Half-Day") {
+      // Switching to Lite: duration is irrelevant — clear it.
+      if (field === "engagementType" && value === "Lite") {
         next.duration = "";
       }
       return next;

@@ -183,7 +183,7 @@ function ResultRow({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const ENGAGEMENT_OPTIONS = ["All", "Full-Time", "Half-Day"] as const;
+const ENGAGEMENT_OPTIONS = ["All", "Standard", "Lite"] as const;
 type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
 
 export default function SearchToShortlist() {
@@ -203,7 +203,7 @@ export default function SearchToShortlist() {
 
   // ── Search inputs ─────────────────────────────────────────────────────────────
   const [searchText, setSearchText] = useState("");
-  const [engagementType, setEngagementType] = useState<"Full-Time" | "Half-Day">("Full-Time");
+  const [engagementType, setEngagementType] = useState<"Standard" | "Lite">("Standard");
 
   // ── Post-search filters (client-side) ─────────────────────────────────────────
   const [categoryFilter, setCategoryFilter] = useState<TalentBrowseCategory | null>(null);
@@ -257,7 +257,7 @@ export default function SearchToShortlist() {
       isBaseSearch,
     }: {
       text: string;
-      engType: "Full-Time" | "Half-Day";
+      engType: "Standard" | "Lite";
       isBaseSearch: boolean;
     }) => {
       const res = await apiRequest("POST", "/api/client/talent-search", {
@@ -297,7 +297,7 @@ export default function SearchToShortlist() {
   }, [searchResults, categoryFilter]);
 
   // ── Trigger search ────────────────────────────────────────────────────────────
-  function runSearch(text?: string, engType?: "Full-Time" | "Half-Day", isBaseSearch = true) {
+  function runSearch(text?: string, engType?: "Standard" | "Lite", isBaseSearch = true) {
     const q = (text ?? searchText).trim();
     if (!q) { toast({ title: "Enter a search term" }); return; }
     const et = engType ?? engagementType;

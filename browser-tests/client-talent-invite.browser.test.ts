@@ -96,7 +96,7 @@ async function routeApi(route: Route): Promise<void> {
         title: "Operations Lead",
         status: "open",
         approvalStatus: "approved",
-        engagementType: "Full-Time",
+        engagementType: "Standard",
       },
     ]);
   }

@@ -82,10 +82,10 @@ export type WorkSetup = (typeof WORK_SETUPS)[number];
 
 // ── Engagement Types ──────────────────────────────────────────────────────────
 // The two canonical engagement types. "Hourly", "fixed", "part-time", etc. are
-// retired — all jobs use Half-Day or Full-Time going forward.
+// retired — all jobs use Lite or Standard going forward.
 export const ENGAGEMENT_TYPE_OPTIONS = [
-  { value: "Full-Time", label: "Full-Time" },
-  { value: "Half-Day",  label: "Half-Day"  },
+  { value: "Standard", label: "Standard" },
+  { value: "Lite",     label: "Lite"     },
 ] as const;
 
 export type EngagementTypeValue = (typeof ENGAGEMENT_TYPE_OPTIONS)[number]["value"];
@@ -191,6 +191,6 @@ export function resolveBrowseCategory(raw: string | null | undefined): TalentBro
 // ── Filter engagement-type options (public FindWork page) ─────────────────────
 export const FILTER_CONTRACT_TYPES = [
   { value: "All Types", label: "All Types" },
-  { value: "Full-Time", label: "Full-Time" },
-  { value: "Half-Day",  label: "Half-Day"  },
+  { value: "Standard",  label: "Standard"  },
+  { value: "Lite",      label: "Lite"      },
 ] as const;

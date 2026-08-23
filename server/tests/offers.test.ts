@@ -43,7 +43,7 @@ async function setupFixture() {
 
   const job = await query(
     `INSERT INTO jobs (client_id, title, description, category, engagement_type, experience_level, status)
-     VALUES ($1, 'Offer Test Job', 'test', 'IT', 'Full-Time', 'intermediate', 'draft')
+     VALUES ($1, 'Offer Test Job', 'test', 'IT', 'Standard', 'intermediate', 'draft')
      RETURNING id`,
     [clientId],
   );
@@ -130,7 +130,7 @@ describe("offers — single-pending guarantee and transitions", () => {
     );
     assert.ok(hist.rows.length >= 1, "history entry for offer_extended must exist");
     const offer = await query(`SELECT engagement_type FROM offers WHERE submission_id = $1 AND status = 'sent'`, [submissionId]);
-    assert.equal(offer.rows[0].engagement_type, "Full-Time", "engagement_type snapshotted from the jobs row");
+    assert.equal(offer.rows[0].engagement_type, "Standard", "engagement_type snapshotted from the jobs row");
   });
 
   it("(c) mismatch flag rules: NULL when currencies differ, computed when they match", async () => {
@@ -142,11 +142,11 @@ describe("offers — single-pending guarantee and transitions", () => {
       const expected = Number(expRate);
       return { below: rate < expected, delta: (rate - expected).toFixed(2) };
     };
-    assert.deepEqual(compute(250, "PHP", "300", "USD", "Full-Time", "Full-Time"), { below: null, delta: null }, "currency mismatch → NULL");
-    assert.deepEqual(compute(250, "PHP", "300", "PHP", "Full-Time", "Half-Day"), { below: null, delta: null }, "engagement mismatch → NULL");
-    assert.deepEqual(compute(250, "PHP", null, null, "Full-Time", null), { below: null, delta: null }, "no expectation → NULL");
-    assert.deepEqual(compute(250, "PHP", "300", "PHP", "Full-Time", "Full-Time"), { below: true, delta: "-50.00" }, "below expectation");
-    assert.deepEqual(compute(350, "PHP", "300", "PHP", "Full-Time", "Full-Time"), { below: false, delta: "50.00" }, "at/above expectation");
+    assert.deepEqual(compute(250, "PHP", "300", "USD", "Standard", "Standard"), { below: null, delta: null }, "currency mismatch → NULL");
+    assert.deepEqual(compute(250, "PHP", "300", "PHP", "Standard", "Lite"), { below: null, delta: null }, "engagement mismatch → NULL");
+    assert.deepEqual(compute(250, "PHP", null, null, "Standard", null), { below: null, delta: null }, "no expectation → NULL");
+    assert.deepEqual(compute(250, "PHP", "300", "PHP", "Standard", "Standard"), { below: true, delta: "-50.00" }, "below expectation");
+    assert.deepEqual(compute(350, "PHP", "300", "PHP", "Standard", "Standard"), { below: false, delta: "50.00" }, "at/above expectation");
   });
 
   it("(d) respond: conditional UPDATE wins once; double-respond updates 0 rows", async () => {

@@ -3760,7 +3760,9 @@ export class DbStorage extends MemStorage {
     }
 
     // Engagement type — normalized comparison: strips hyphens/spaces/underscores so
-    // "Half-Day", "halfday", and "half-day" all resolve to "halfday".
+    // "Lite", "lite", "Standard", "standard", "Half-Day", "Full-Time" etc. all resolve
+    // to the same internal key ("lite" / "standard"). Old label aliases are kept so
+    // any cached/stale value in transit does not break scoring.
     if (filters.engagementType) {
       const normEngagement = filters.engagementType.toLowerCase().replace(/[^a-z0-9]/g, "");
       conditions.push(sqlOp`regexp_replace(lower(COALESCE(${jobsTable.engagementType}, '')), '[^a-z0-9]', '', 'g') = ${normEngagement}`);

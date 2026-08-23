@@ -733,11 +733,11 @@ export default function EnhancedProfileOnboarding({
                           <FormLabel>Availability *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value || ""}>
                             <SelectTrigger data-testid="select-engagement-type">
-                              <SelectValue placeholder="Half-Day or Full-Time" />
+                              <SelectValue placeholder="Lite or Standard" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Full-Time">Full-Time</SelectItem>
-                              <SelectItem value="Half-Day">Half-Day</SelectItem>
+                              <SelectItem value="Standard">Standard</SelectItem>
+                              <SelectItem value="Lite">Lite</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -775,8 +775,8 @@ export default function EnhancedProfileOnboarding({
                               <SelectValue placeholder="Select…" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Full-Time">Full-Time</SelectItem>
-                              <SelectItem value="Half-Day">Half-Day</SelectItem>
+                              <SelectItem value="Standard">Standard</SelectItem>
+                              <SelectItem value="Lite">Lite</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground mt-1">

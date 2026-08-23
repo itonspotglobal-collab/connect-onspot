@@ -813,7 +813,7 @@ function DbJobCard({
                 <Layers className="h-3 w-3" /> Type
               </div>
               <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
-                {job.engagementType ?? "Full-Time"}
+                {job.engagementType ?? "Standard"}
               </div>
             </div>
           </div>
@@ -1125,7 +1125,7 @@ export default function OnSpotFindWorkRedesign() {
                       const title = isDbJob ? job.title : role.title;
                       const pay = isDbJob ? buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined }) : role.pay;
                       const shift = isDbJob
-                        ? (job.engagementType ?? "Full-Time")
+                        ? (job.engagementType ?? "Standard")
                         : role.shift;
                       const market = isDbJob
                         ? (job.location ?? "Remote")

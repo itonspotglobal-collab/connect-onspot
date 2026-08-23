@@ -1256,7 +1256,7 @@ function scoreJobMatch(job: Job, profile: CandidateProfile): PostedJobMatch {
     prefReasons.push("Remote setup");
   } else if (profile.preferredSetup === "Remote" && !isRemote) prefScore -= 2;
 
-  const isFixedFull = job.engagementType === "Full-Time";
+  const isFixedFull = job.engagementType === "Standard";
   if (profile.preferredJobType === "Full-time" && isFixedFull) prefScore += 3;
   else if (profile.preferredJobType === "Part-time" && !isFixedFull)
     prefScore += 3;

@@ -89,7 +89,7 @@ const jobPayload = (clientId: string, title = "Client authorization test job") =
   description: "A job used to verify job-owner authorization.",
   category: "Technical",
   experienceLevel: "intermediate",
-  engagementType: "Full-Time",
+  engagementType: "Standard",
   status: "draft",
 });
 
@@ -121,7 +121,7 @@ async function createFixtures() {
     `INSERT INTO jobs
        (client_id, title, description, category, experience_level, engagement_type, status, approval_status)
      VALUES ($1, 'Other client private job', 'Private test job', 'Technical', 'intermediate',
-             'Full-Time', 'draft', 'pending')
+             'Standard', 'draft', 'pending')
      RETURNING id`,
     [OTHER_CLIENT_ID],
   );
@@ -133,13 +133,13 @@ async function createFixtures() {
         status, approval_status, created_via)
      VALUES
        ($1, $2, 'Pending approval job', 'Pending test job', 'Technical', 'intermediate',
-        'Full-Time', 'open', 'pending', 'manual'),
+        'Standard', 'open', 'pending', 'manual'),
        ($3, $2, 'Approved invitation job', 'Approved test job', 'Technical', 'intermediate',
-        'Full-Time', 'open', 'approved', 'manual'),
+        'Standard', 'open', 'approved', 'manual'),
         ($4, $2, 'Revision-needed job', 'Revision-needed test job', 'Technical', 'intermediate',
-         'Full-Time', 'open', 'revision_needed', 'manual'),
+         'Standard', 'open', 'revision_needed', 'manual'),
         ($5, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
-        'Full-Time', 'closed', 'pending', 'search_scaffold')`,
+        'Standard', 'closed', 'pending', 'search_scaffold')`,
      [PENDING_JOB_ID, CLIENT_ID, READY_JOB_ID, REVISION_JOB_ID, SCAFFOLD_JOB_ID],
   );
   await query(

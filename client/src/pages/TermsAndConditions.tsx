@@ -281,7 +281,7 @@ export default function TermsAndConditions() {
             Use of certain Platform features, and engagement of Talent through OnSpot's resourced
             services, is subject to fees as described on the Platform or in an applicable Statement of
             Work. OnSpot does not bill on an hourly basis for resourced engagements; billing is
-            calculated in fixed Half-Day or Full-Day increments as described in the applicable
+            calculated in fixed Lite (4-hour) or Standard (8-hour) increments as described in the applicable
             Statement of Work.
           </SubSection>
           <SubSection id="8.2" title="Payment Processing">

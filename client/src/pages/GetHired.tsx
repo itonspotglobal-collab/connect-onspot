@@ -671,8 +671,8 @@ export default function GetHired() {
                                 <SelectValue placeholder="Select…" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Full-Time">Full-Time</SelectItem>
-                                <SelectItem value="Half-Day">Half-Day</SelectItem>
+                                <SelectItem value="Standard">Standard</SelectItem>
+                                <SelectItem value="Lite">Lite</SelectItem>
                               </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground mt-1">

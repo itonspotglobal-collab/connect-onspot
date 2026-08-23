@@ -797,7 +797,7 @@ function DbJobDetail({
               {
                 icon: Layers,
                 label: "Engagement",
-                value: job.engagementType ?? "Full-Time",
+                value: job.engagementType ?? "Standard",
               },
             ].map(({ icon: Icon, label, value }) => (
               <div

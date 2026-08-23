@@ -196,13 +196,13 @@ async function createFixtures() {
         engagement_type, status, approval_status, skill_tags)
      VALUES
        ($1, $2, 'Smoke open approved job', 'Synthetic smoke fixture', 'Technical',
-        'intermediate', 'Full-Time', 'open', 'approved', $5),
+        'intermediate', 'Standard', 'open', 'approved', $5),
        ($3, $2, 'Smoke pending job', 'Synthetic smoke fixture', 'Technical',
-        'intermediate', 'Full-Time', 'open', 'pending', $5),
+        'intermediate', 'Standard', 'open', 'pending', $5),
        ($4, $2, 'Smoke closed job', 'Synthetic smoke fixture', 'Technical',
-        'intermediate', 'Full-Time', 'closed', 'approved', $5),
+        'intermediate', 'Standard', 'closed', 'approved', $5),
        ($6, $7, 'Smoke other-client job', 'Synthetic smoke fixture', 'Technical',
-        'intermediate', 'Full-Time', 'open', 'approved', $5)`,
+        'intermediate', 'Standard', 'open', 'approved', $5)`,
     [
       OPEN_JOB_ID,
       CLIENT_ID,
@@ -241,7 +241,7 @@ describe("invitation and interview timezone production smoke path", () => {
     const response = await request(server, "POST", "/api/client/talent-search", clientToken, {
       searchText: SEARCH_TERM,
       category: "Technical",
-      engagementType: "Full-Time",
+      engagementType: "Standard",
     });
 
     assert.equal(response.status, 200, JSON.stringify(response.json));

@@ -184,7 +184,7 @@ export const jobs = pgTable("jobs", {
   company: text("company").default("OnSpot"),
   location: text("location").default("Remote"),
   category: text("category").notNull(),
-  engagementType: text("engagement_type"), // Half-Day | Full-Time (nullable: unreviewed legacy rows stay NULL)
+  engagementType: text("engagement_type"), // Lite | Standard (nullable: unreviewed legacy rows stay NULL)
   budget: decimal("budget", { precision: 10, scale: 2 }),
   budgetCurrency: text("budget_currency").default("PHP"), // PHP, USD, EUR, etc.
   customCurrencyCode: text("custom_currency_code"), // 3-letter code when budgetCurrency = 'OTHER'

@@ -180,7 +180,7 @@ export function JobDetailModal({
                     <span className="text-blue-100 text-xs">4.9</span>
                   </div>
                   <Badge variant="secondary" className={`text-[10px] ${getJobTypeColor(job.engagementType ?? "")}`}>
-                    {job.engagementType ?? "Full-Time"}
+                    {job.engagementType ?? "Standard"}
                   </Badge>
                 </div>
               </div>
@@ -207,7 +207,7 @@ export function JobDetailModal({
             <Briefcase className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Contract</div>
-              <div className="text-sm font-semibold truncate">{job.engagementType ?? "Full-Time"}</div>
+              <div className="text-sm font-semibold truncate">{job.engagementType ?? "Standard"}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-3">

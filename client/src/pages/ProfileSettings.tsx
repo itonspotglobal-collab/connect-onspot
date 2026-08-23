@@ -1101,8 +1101,8 @@ export default function ProfileSettings() {
                               </StyledSelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Full-Time">Full-Time</SelectItem>
-                              <SelectItem value="Half-Day">Half-Day</SelectItem>
+                              <SelectItem value="Standard">Standard</SelectItem>
+                              <SelectItem value="Lite">Lite</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-[12px] mt-1" style={{ color: MUTED }}>

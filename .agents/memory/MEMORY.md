@@ -32,3 +32,4 @@
 - [Invitation/interview smoke coverage](invite-interview-smoke.md) — production-route fixtures should verify eligibility, role filtering, consent, and timezone propagation without touching real hiring data.
 - [Formal pipeline guard](formal-pipeline-guard.md) — centralised module (formalPipelineGuard.ts) for the workflow_type='client_invitation' rule; all 15 pipeline enforcement points now import from it; new routes must too.
 - [Vetted badge](vetted-badge.md) — admin-grantable "Vetted" badge on contractor profiles; schema, migrations, endpoints, and three badge surfaces.
+- [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.

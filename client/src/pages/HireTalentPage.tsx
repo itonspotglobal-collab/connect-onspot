@@ -710,7 +710,7 @@ function ResultRow({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const ENGAGEMENT_OPTIONS = ["All", "Full-Time", "Half-Day"] as const;
+const ENGAGEMENT_OPTIONS = ["All", "Standard", "Lite"] as const;
 type EngagementFilter = (typeof ENGAGEMENT_OPTIONS)[number];
 
 export default function HireTalentPage() {
@@ -733,7 +733,7 @@ export default function HireTalentPage() {
 
   // ── Search inputs ─────────────────────────────────────────────────────────────
   const [searchText, setSearchText] = useState("");
-  const [engagementType, setEngagementType] = useState<"Full-Time" | "Half-Day">("Full-Time");
+  const [engagementType, setEngagementType] = useState<"Standard" | "Lite">("Standard");
 
   // ── Post-search filters (client-side) ─────────────────────────────────────────
   const [categoryFilter, setCategoryFilter] = useState<TalentBrowseCategory | null>(null);
@@ -834,7 +834,7 @@ export default function HireTalentPage() {
       pendingTalentName,
     }: {
       text: string;
-      engType: "Full-Time" | "Half-Day";
+      engType: "Standard" | "Lite";
       isBaseSearch: boolean;
       pendingTalentId?: string | null;
       pendingTalentName?: string | null;
@@ -940,7 +940,7 @@ export default function HireTalentPage() {
       didAutoSearch.current = true;
 
       const engType =
-        saved.engagementType === "Half-Day" ? "Half-Day" : "Full-Time";
+        saved.engagementType === "Lite" ? "Lite" : "Standard";
 
       setSearchText(saved.query);
       setEngagementType(engType);
@@ -986,7 +986,7 @@ export default function HireTalentPage() {
     if (!q) return;
     didAutoSearch.current = true;
 
-    const engType: "Full-Time" | "Half-Day" = type === "Half-Day" ? "Half-Day" : "Full-Time";
+    const engType: "Standard" | "Lite" = type === "Lite" ? "Lite" : "Standard";
     setSearchText(q);
     setEngagementType(engType);
     setStage("active");
@@ -995,7 +995,7 @@ export default function HireTalentPage() {
   }, [isLoading]);
 
   // ── Trigger search ────────────────────────────────────────────────────────────
-  function runSearch(text?: string, engType?: "Full-Time" | "Half-Day", isBaseSearch = true) {
+  function runSearch(text?: string, engType?: "Standard" | "Lite", isBaseSearch = true) {
     const q = (text ?? searchText).trim();
     if (!q) { toast({ title: "Enter a search term" }); return; }
     const et = engType ?? engagementType;
@@ -1329,7 +1329,7 @@ export default function HireTalentPage() {
                   ))}
                 </div>
 
-                {/* Engagement Type — Half-Day / Full-Time only */}
+                {/* Engagement Type — Lite / Standard only */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[13px] text-slate-400 font-semibold">Engagement Type:</span>
                   {ENGAGEMENT_OPTIONS.map((et) => (

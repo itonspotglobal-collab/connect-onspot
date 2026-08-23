@@ -63,8 +63,8 @@ describe("Vetted automatic milestone promotion", () => {
       `INSERT INTO jobs
          (id, client_id, title, description, category, experience_level, status, engagement_type)
        VALUES
-         ($1, $3, 'Vetted Test Job 1', 'test', 'Engineering', 'senior', 'open', 'Full-Time'),
-         ($2, $3, 'Vetted Test Job 2', 'test', 'Engineering', 'senior', 'open', 'Full-Time')`,
+         ($1, $3, 'Vetted Test Job 1', 'test', 'Engineering', 'senior', 'open', 'Standard'),
+         ($2, $3, 'Vetted Test Job 2', 'test', 'Engineering', 'senior', 'open', 'Standard')`,
       [JOB_ID_1, JOB_ID_2, CLIENT_ID],
     );
     await query(
@@ -86,7 +86,7 @@ describe("Vetted automatic milestone promotion", () => {
     );
     const offers = await query(
       `INSERT INTO offers (submission_id, engagement_type, rate, status)
-       VALUES ($1, 'Full-Time', 100, 'accepted'), ($2, 'Full-Time', 100, 'accepted')
+       VALUES ($1, 'Standard', 100, 'accepted'), ($2, 'Standard', 100, 'accepted')
        RETURNING id`,
       [SUBMISSION_ID_1, SUBMISSION_ID_2],
     );

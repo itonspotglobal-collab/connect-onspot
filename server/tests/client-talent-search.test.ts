@@ -35,7 +35,7 @@ describe("client talent-search — scaffold job INSERT (PostgreSQL integration)"
     const clientUserId = await getClientUserId();
     const skillTags = ["React", "TypeScript", "Node.js"];
     const safeCategory = "Technical";
-    const engagementType = "Full-Time";
+    const engagementType = "Standard";
     const title = "React TypeScript developer";
 
     // Insert exactly as the route handler does (skill_tags passed as JS array, not JSON.stringify)
@@ -76,7 +76,7 @@ describe("client talent-search — scaffold job INSERT (PostgreSQL integration)"
             skill_tags, experience_level)
          VALUES (gen_random_uuid(), $1, $1, $2, $2, $3, 'draft', 'approved', true, $4, 'search_scaffold', $5, $6, 'intermediate')
          RETURNING id, category`,
-        ["No-category search", safeCategory, "Full-Time", clientUserId, "Search scaffold test", []],
+        ["No-category search", safeCategory, "Standard", clientUserId, "Search scaffold test", []],
       );
 
       assert.equal(result.rows.length, 1, "INSERT without category should succeed");
@@ -112,7 +112,7 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
          (id, title, professional_role_name, category, job_function, engagement_type,
           status, approval_status, is_client_submitted, client_id, created_via, description,
           skill_tags, experience_level)
-       VALUES (gen_random_uuid(), 'Test scaffold', 'Test scaffold', 'other', 'other', 'Full-Time',
+       VALUES (gen_random_uuid(), 'Test scaffold', 'Test scaffold', 'other', 'other', 'Standard',
                'draft', 'approved', true, $1, 'search_scaffold', 'test', '{}', 'intermediate')
        RETURNING id`,
       [clientId],
@@ -147,7 +147,7 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
          (id, title, professional_role_name, category, job_function, engagement_type,
           status, approval_status, is_client_submitted, client_id, created_via, description,
           skill_tags, experience_level)
-       VALUES (gen_random_uuid(), 'Regular job', 'Regular job', 'Technical', 'Technical', 'Full-Time',
+       VALUES (gen_random_uuid(), 'Regular job', 'Regular job', 'Technical', 'Technical', 'Standard',
                'draft', 'approved', true, $1, 'client_post', 'test', '{}', 'intermediate')
        RETURNING id`,
       [clientId],
@@ -233,7 +233,7 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
       assert.equal(discovered.rows.length, 0,
         "candidate rows linked to non-talent users must not enter discovery results");
       const ranked = await new DbStorage().rankTalentByParams(
-        { title: "UniqueLegacySkill", category: "other", engagementType: "Full-Time" },
+        { title: "UniqueLegacySkill", category: "other", engagementType: "Standard" },
         100,
       );
       assert.ok(!ranked.some((result) => result.candidateId === candidateId),
@@ -272,7 +272,7 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
       assert.equal(discovered.rows[0]?.id, candidateId);
       assert.equal(discovered.rows[0]?.user_id, userId);
       const ranked = await new DbStorage().rankTalentByParams(
-        { title: "UniqueLegacySkill", category: "other", engagementType: "Full-Time" },
+        { title: "UniqueLegacySkill", category: "other", engagementType: "Standard" },
         100,
       );
       assert.ok(ranked.some((result) => result.candidateId === candidateId),
@@ -306,7 +306,7 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
             status, approval_status, is_client_submitted, client_id, created_via, description,
             skill_tags, experience_level)
          VALUES ($1, 'UniqueLegacySkill role', 'UniqueLegacySkill role', 'other', 'other',
-                 'Full-Time', 'open', 'approved', true, $2, 'test', 'test', $3, 'intermediate')`,
+                 'Standard', 'open', 'approved', true, $2, 'test', 'test', $3, 'intermediate')`,
         [jobId, clientId, ["UniqueLegacySkill"]],
       );
 
@@ -450,7 +450,7 @@ describe("client talent-search — scaffold job lifecycle (PostgreSQL integratio
     return r.rows[0].id as string;
   }
 
-  async function insertScaffold(clientId: string, title: string, engType = "Full-Time"): Promise<string> {
+  async function insertScaffold(clientId: string, title: string, engType = "Standard"): Promise<string> {
     const r = await query(
       `INSERT INTO jobs
          (id, title, professional_role_name, category, job_function, engagement_type,
@@ -519,7 +519,7 @@ describe("client talent-search — scaffold job lifecycle (PostgreSQL integratio
   it("reuse query finds an existing scaffold for same client+title+engagementType", async () => {
     const clientId = await getClientUserId();
     const title = `__test_reuse_${Date.now()}`;
-    const scaffoldId = await insertScaffold(clientId, title, "Full-Time");
+    const scaffoldId = await insertScaffold(clientId, title, "Standard");
     try {
       const found = await query(
         `SELECT id FROM jobs
@@ -528,7 +528,7 @@ describe("client talent-search — scaffold job lifecycle (PostgreSQL integratio
            AND engagement_type = $3
            AND created_via    = 'search_scaffold'
          LIMIT 1`,
-        [clientId, title, "Full-Time"],
+        [clientId, title, "Standard"],
       );
       assert.equal(found.rows.length, 1, "reuse query must find the existing scaffold");
       assert.equal(found.rows[0].id, scaffoldId, "reuse query must return the correct scaffold id");
@@ -942,7 +942,7 @@ describe("PII regression — HTTP endpoint response (integration)", () => {
       return;
     }
     const token = makeClientJwt(user.id, user.email);
-    const res = await searchRequest(token, { searchText: "React developer", engagementType: "Full-Time" });
+    const res = await searchRequest(token, { searchText: "React developer", engagementType: "Standard" });
 
     assert.ok(
       res.ok || res.status === 500, // 500 is acceptable if no candidates exist; 200 or 500 both prove routing works
@@ -992,7 +992,7 @@ describe("PII regression — HTTP endpoint response (integration)", () => {
     const token = makeClientJwt(user.id, user.email);
 
     // First: create a scaffold job via POST
-    const postRes = await searchRequest(token, { searchText: "Virtual assistant", engagementType: "Full-Time" });
+    const postRes = await searchRequest(token, { searchText: "Virtual assistant", engagementType: "Standard" });
     if (!postRes.ok) return; // scorer not available — skip
     const postData = await postRes.json() as any;
     const jobId: string | null = postData.jobId ?? null;

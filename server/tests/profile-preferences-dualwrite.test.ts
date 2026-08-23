@@ -13,8 +13,8 @@
  *  (c) Only hourlyRate present → only rateAmount written
  *  (d) rateCurrency written alongside hourlyRate
  *  (e) Empty / null fields → nothing written (returns null)
- *  (f) rateEngagementType of "Full-Time" is preserved verbatim
- *  (g) rateEngagementType of "Half-Day" is preserved verbatim
+ *  (f) rateEngagementType of "Standard" is preserved verbatim
+ *  (g) rateEngagementType of "Lite" is preserved verbatim
  *  (h) Numeric hourlyRate coerced to string for JSONB consistency
  *
  * Run with:  npm test
@@ -29,23 +29,23 @@ describe("buildPreferencesUpdate — onboarding dual-write to candidates.prefere
   it("(a) all three fields present → all three written", () => {
     const result = buildPreferencesUpdate({
       hourlyRate: "3000",
-      rateEngagementType: "Full-Time",
+      rateEngagementType: "Standard",
       rateCurrency: "USD",
     });
     assert.ok(result, "should return a non-null object");
     assert.equal(result.rateAmount, "3000");
-    assert.equal(result.rateEngagementType, "Full-Time");
+    assert.equal(result.rateEngagementType, "Standard");
     assert.equal(result.rateCurrency, "USD");
   });
 
   it("(b) only rateEngagementType → only that field written", () => {
     const result = buildPreferencesUpdate({
       hourlyRate: null,
-      rateEngagementType: "Half-Day",
+      rateEngagementType: "Lite",
       rateCurrency: null,
     });
     assert.ok(result, "should return a non-null object");
-    assert.equal(result.rateEngagementType, "Half-Day");
+    assert.equal(result.rateEngagementType, "Lite");
     assert.equal(Object.keys(result).length, 1, "only one key expected");
   });
 
@@ -81,16 +81,16 @@ describe("buildPreferencesUpdate — onboarding dual-write to candidates.prefere
     assert.equal(result, null);
   });
 
-  it("(f) 'Full-Time' engagement type preserved verbatim", () => {
-    const result = buildPreferencesUpdate({ rateEngagementType: "Full-Time" });
+  it("(f) 'Standard' engagement type preserved verbatim", () => {
+    const result = buildPreferencesUpdate({ rateEngagementType: "Standard" });
     assert.ok(result);
-    assert.equal(result.rateEngagementType, "Full-Time");
+    assert.equal(result.rateEngagementType, "Standard");
   });
 
-  it("(g) 'Half-Day' engagement type preserved verbatim", () => {
-    const result = buildPreferencesUpdate({ rateEngagementType: "Half-Day" });
+  it("(g) 'Lite' engagement type preserved verbatim", () => {
+    const result = buildPreferencesUpdate({ rateEngagementType: "Lite" });
     assert.ok(result);
-    assert.equal(result.rateEngagementType, "Half-Day");
+    assert.equal(result.rateEngagementType, "Lite");
   });
 
   it("(h) numeric hourlyRate coerced to string", () => {
@@ -103,14 +103,14 @@ describe("buildPreferencesUpdate — onboarding dual-write to candidates.prefere
   it("(i) result serialises to valid JSON (safe for JSONB $1 param)", () => {
     const result = buildPreferencesUpdate({
       hourlyRate: "4000",
-      rateEngagementType: "Full-Time",
+      rateEngagementType: "Standard",
       rateCurrency: "USD",
     });
     assert.ok(result);
     const serialised = JSON.stringify(result);
     const parsed = JSON.parse(serialised);
     assert.equal(parsed.rateAmount, "4000");
-    assert.equal(parsed.rateEngagementType, "Full-Time");
+    assert.equal(parsed.rateEngagementType, "Standard");
     assert.equal(parsed.rateCurrency, "USD");
   });
 });

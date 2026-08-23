@@ -2337,7 +2337,7 @@ function OpenJobsSection() {
     const regular  = all.filter((j: any) => !j.isFeatured);
     return [...shuffle(featured), ...shuffle(regular)].slice(0, 4).map((j: any) => ({
       title: j.title,
-      type:  j.engagementType || "Full-Time",
+      type:  j.engagementType || "Standard",
       loc:   j.location || "Remote",
       pay:   j.budget
         ? `${j.budgetCurrency ?? "PHP"} ${j.budget}`

@@ -555,8 +555,8 @@ function ProfileStep({ form, onSubmit, skills, availableSkills, toggleSkill, isU
                           <SelectValue placeholder="Select…" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Full-Time">Full-Time</SelectItem>
-                          <SelectItem value="Half-Day">Half-Day</SelectItem>
+                          <SelectItem value="Standard">Standard</SelectItem>
+                          <SelectItem value="Lite">Lite</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>

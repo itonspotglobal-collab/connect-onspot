@@ -29,7 +29,7 @@ function makeJob(overrides: Partial<Job & { skills: string[] }> = {}): Job & { s
     title: "Test Job",
     description: "desc",
     category: "Technical",
-    engagementType: "Full-Time",
+    engagementType: "Standard",
     budget: "500",
     budgetCurrency: "USD",
     company: "OnSpot",
@@ -50,7 +50,7 @@ function makeCandidate(overrides: Partial<Candidate> = {}): Candidate {
     coreSkills: ["JavaScript"],
     secondarySkills: [],
     preferences: {
-      rateEngagementType: "Full-Time",
+      rateEngagementType: "Standard",
       rateAmount: "500",
       rateCurrency: "USD",
     },
@@ -93,7 +93,7 @@ describe("talent-facing matches: candidateOverride + factors", () => {
   it("factors mirror applied bonuses: no engagement match, rate outside ±20%", async () => {
     const s = new TestStorage();
     s.injectedJobs = [makeJob({ engagementType: "Part-Time", budget: "1000" })];
-    const candidate = makeCandidate(); // prefers Full-Time @ 500 USD → ratio 0.5
+    const candidate = makeCandidate(); // prefers Standard @ 500 USD → ratio 0.5
 
     const [m] = await s.calculateJobMatches("cand-legacy", undefined, candidate);
     assert.equal(m.factors.engagementMatch, false);

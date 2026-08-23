@@ -87,10 +87,10 @@ export default function JobApplicationModal({
         jobId: job.id,
         coverLetter: data.coverLetter.trim(),
         // Keep numeric fields as numbers (not strings)
-        ...(job.engagementType === 'Half-Day' && data.proposedRate !== undefined && {
+        ...(job.engagementType === 'Lite' && data.proposedRate !== undefined && {
           proposedRate: data.proposedRate
         }),
-        ...(job.engagementType === 'Full-Time' && data.proposedBudget !== undefined && {
+        ...(job.engagementType === 'Standard' && data.proposedBudget !== undefined && {
           proposedBudget: data.proposedBudget
         }),
         ...(data.estimatedDuration && {
@@ -161,18 +161,18 @@ export default function JobApplicationModal({
     }
 
     // Validate contract-specific fields
-    if (job.engagementType === 'Half-Day' && (data.proposedRate === undefined || data.proposedRate === null)) {
+    if (job.engagementType === 'Lite' && (data.proposedRate === undefined || data.proposedRate === null)) {
       form.setError('proposedRate', {
         type: 'required',
-        message: 'Rate expectation is required for Half-Day roles'
+        message: 'Rate expectation is required for Lite roles'
       });
       return;
     }
 
-    if (job.engagementType === 'Full-Time' && (data.proposedBudget === undefined || data.proposedBudget === null)) {
+    if (job.engagementType === 'Standard' && (data.proposedBudget === undefined || data.proposedBudget === null)) {
       form.setError('proposedBudget', {
         type: 'required', 
-        message: 'Proposed budget is required for Full-Time roles'
+        message: 'Proposed budget is required for Standard roles'
       });
       return;
     }
@@ -260,7 +260,7 @@ export default function JobApplicationModal({
 
           {/* Rate/Budget Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {job.engagementType === 'Half-Day' ? (
+            {job.engagementType === 'Lite' ? (
               <div className="space-y-2">
                 <Label htmlFor="proposedRate">Your Rate Expectation *</Label>
                 <div className="relative">

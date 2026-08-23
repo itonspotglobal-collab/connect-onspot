@@ -133,11 +133,11 @@ function normaliseExperience(raw: string | undefined): string {
 }
 
 function normaliseContractType(raw: string | undefined): string {
-  if (!raw) return "Full-Time";
+  if (!raw) return "Standard";
   const key = raw.trim().toLowerCase();
-  return (key.includes("hourly") || key.includes("half") || key.includes("part"))
-    ? "Half-Day"
-    : "Full-Time";
+  return (key.includes("hourly") || key.includes("half") || key.includes("part") || key.includes("lite"))
+    ? "Lite"
+    : "Standard";
 }
 
 function textToArray(text: string | undefined): string[] {
@@ -611,7 +611,7 @@ async function parsePdf(file: File): Promise<ParsedJobRecord[]> {
     requirements,
     culturalFit,
     skillTags:        [],
-    engagementType:     "Full-Time",
+    engagementType:     "Standard",
     experienceLevel:  sec["jobLevel"]?.trim(),
   };
 

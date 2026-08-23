@@ -139,7 +139,7 @@ export function ExpandableJobCard({
                     variant="secondary"
                     className={`text-[10px] ${getJobTypeColor(job.engagementType ?? "")}`}
                   >
-                    {job.engagementType ?? "Full-Time"}
+                    {job.engagementType ?? "Standard"}
                   </Badge>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export function ExpandableJobCard({
                   Contract
                 </div>
                 <div className="text-sm font-semibold truncate">
-                  {job.engagementType ?? "Full-Time"}
+                  {job.engagementType ?? "Standard"}
                 </div>
               </div>
             </div>
