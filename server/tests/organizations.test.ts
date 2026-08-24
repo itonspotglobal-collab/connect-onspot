@@ -728,12 +728,15 @@ describe("Client organization routes", () => {
       process.env.MICROSOFT_CLIENT_SECRET = "test-secret";
       process.env.MICROSOFT_SENDER_EMAIL = "careers@onspotglobal.com";
       process.env.PUBLIC_APP_URL = "https://test.example";
-      globalThis.fetch = (async (input) => {
+
+      // Capture the raw Graph sendMail payload so we can inspect the invitation URL.
+      let capturedSendMailBody: string | null = null;
+      globalThis.fetch = (async (input, init) => {
         const url = typeof input === "string"
           ? input
           : input instanceof URL
             ? input.toString()
-            : input.url;
+            : (input as Request).url;
         if (url.includes("/oauth2/v2.0/token")) {
           return new Response(
             JSON.stringify({ access_token: "test-access-token", expires_in: 3600 }),
@@ -741,6 +744,7 @@ describe("Client organization routes", () => {
           );
         }
         if (url.includes("graph.microsoft.com")) {
+          capturedSendMailBody = typeof init?.body === "string" ? init.body : null;
           return new Response(null, { status: 202 });
         }
         throw new Error(`Unexpected email provider request: ${url}`);
@@ -760,6 +764,31 @@ describe("Client organization routes", () => {
       assert.equal(
         new Date(retried.json.invitation.expiresAt).getTime(),
         new Date(beforeRetry.rows[0].expires_at).getTime(),
+      );
+
+      // Assert the Graph sendMail body carries the tokenized invitation URL.
+      assert.ok(capturedSendMailBody, "Graph sendMail must have been called with a request body");
+      const sendMailPayload = JSON.parse(capturedSendMailBody);
+      const emailHtml: string = sendMailPayload?.message?.body?.content ?? "";
+      assert.ok(
+        emailHtml.includes("/organization-invite/"),
+        `email body must contain /organization-invite/ path — got: ${emailHtml.slice(0, 200)}`,
+      );
+
+      // Extract the raw token from the captured URL and verify it matches the stored hash.
+      const inviteUrlMatch = emailHtml.match(/\/organization-invite\/([^"'<>\s&]+)/);
+      assert.ok(inviteUrlMatch, "email body must contain a /organization-invite/<token> URL");
+      const capturedRawToken = decodeURIComponent(inviteUrlMatch[1]);
+      const capturedHash = createHash("sha256").update(capturedRawToken).digest("hex");
+      const newTokenRow = await query(
+        `SELECT token_hash FROM organization_invitations WHERE id = $1`,
+        [invitation.json.invitation.id],
+      );
+      assert.ok(newTokenRow.rows[0]?.token_hash, "invitation must have a token_hash after retry");
+      assert.equal(
+        capturedHash,
+        newTokenRow.rows[0].token_hash,
+        "token embedded in the invitation email URL must hash to the stored token_hash",
       );
 
       const pendingRows = await query(
