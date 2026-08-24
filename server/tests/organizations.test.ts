@@ -224,13 +224,62 @@ describe("Client organization routes", () => {
   });
 
   it("lets owners invite Clients, lets invitees accept, and keeps administration owner-only", async () => {
-    const invitation = await request(
-      server,
-      "POST",
-      `/api/organizations/${createdOrganizationId}/invitations`,
-      clientToken,
-      { email: `${INVITEE_ID}@test.example` },
-    );
+    // Install a Graph fetch mock so the initial sendMail call is captured.
+    const initialEmailEnvKeys = [
+      "MICROSOFT_TENANT_ID",
+      "MICROSOFT_CLIENT_ID",
+      "MICROSOFT_CLIENT_SECRET",
+      "MICROSOFT_SENDER_EMAIL",
+      "PUBLIC_APP_URL",
+    ] as const;
+    const savedInitialEmailEnv = Object.fromEntries(
+      initialEmailEnvKeys.map((k) => [k, process.env[k]]),
+    ) as Record<(typeof initialEmailEnvKeys)[number], string | undefined>;
+    const savedInitialFetch = globalThis.fetch;
+
+    process.env.MICROSOFT_TENANT_ID = "test-tenant";
+    process.env.MICROSOFT_CLIENT_ID = "test-client";
+    process.env.MICROSOFT_CLIENT_SECRET = "test-secret";
+    process.env.MICROSOFT_SENDER_EMAIL = "careers@onspotglobal.com";
+    process.env.PUBLIC_APP_URL = "https://test.example";
+
+    let capturedInitialSendMailBody: string | null = null;
+    globalThis.fetch = (async (input, init) => {
+      const url = typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : (input as Request).url;
+      if (url.includes("/oauth2/v2.0/token")) {
+        return new Response(
+          JSON.stringify({ access_token: "test-access-token", expires_in: 3600 }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("graph.microsoft.com")) {
+        capturedInitialSendMailBody = typeof init?.body === "string" ? init.body : null;
+        return new Response(null, { status: 202 });
+      }
+      throw new Error(`Unexpected fetch request during initial invitation: ${url}`);
+    }) as typeof fetch;
+
+    let invitation: { status: number; json: any };
+    try {
+      invitation = await request(
+        server,
+        "POST",
+        `/api/organizations/${createdOrganizationId}/invitations`,
+        clientToken,
+        { email: `${INVITEE_ID}@test.example` },
+      );
+    } finally {
+      globalThis.fetch = savedInitialFetch;
+      for (const k of initialEmailEnvKeys) {
+        if (savedInitialEmailEnv[k] === undefined) delete process.env[k];
+        else process.env[k] = savedInitialEmailEnv[k];
+      }
+    }
+
     assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
     assert.equal(invitation.json.invitation.status, "pending");
     assert.ok(invitation.json.invitation.expiresAt, "pending invitations must have an expiry");
@@ -245,6 +294,25 @@ describe("Client organization routes", () => {
       [invitation.json.invitation.id],
     );
     assert.ok(tokenRow.rows[0]?.token_hash, "invitation must have a stored token_hash");
+
+    // The initial send goes through the same Graph email path as retries — confirm
+    // the tokenized URL was embedded and its raw token hashes to the stored value.
+    assert.ok(capturedInitialSendMailBody, "Graph sendMail must have been called for the initial invitation");
+    const initialSendMailPayload = JSON.parse(capturedInitialSendMailBody as string);
+    const initialEmailHtml: string = initialSendMailPayload?.message?.body?.content ?? "";
+    assert.ok(
+      initialEmailHtml.includes("/organization-invite/"),
+      `initial invitation email body must contain /organization-invite/ path — got: ${initialEmailHtml.slice(0, 200)}`,
+    );
+    const initialInviteUrlMatch = initialEmailHtml.match(/\/organization-invite\/([^"'<>\s&]+)/);
+    assert.ok(initialInviteUrlMatch, "initial invitation email body must contain a /organization-invite/<token> URL");
+    const initialRawToken = decodeURIComponent(initialInviteUrlMatch[1]);
+    const initialCapturedHash = createHash("sha256").update(initialRawToken).digest("hex");
+    assert.equal(
+      initialCapturedHash,
+      tokenRow.rows[0].token_hash,
+      "token embedded in the initial invitation email URL must hash to the stored token_hash",
+    );
 
     const ownerView = await request(
       server,
