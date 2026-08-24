@@ -24,7 +24,8 @@ export default function OrganizationInvitations() {
     queryKey: ["/api/organization-invitations"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/organization-invitations");
-      return response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 
