@@ -15,7 +15,7 @@ import { NewUserOnboardingWrapper } from "@/components/NewUserOnboardingWrapper"
 import { DomainRouter } from "@/components/DomainRouter";
 import { VanessaChat } from "@/components/VanessaChat";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { HeadSEO } from "@/components/HeadSEO";
 import Home from "@/pages/Home";
 import TalentSearch from "@/pages/TalentSearch";
@@ -104,6 +104,8 @@ import PortalLogin from "@/pages/PortalLogin";
 
 // Scroll to the top of the page whenever the route changes
 import Messages from "@/pages/Messages";
+import Billing from "@/pages/client/Billing";
+import Payouts from "@/pages/talent/Payouts";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -348,6 +350,8 @@ function ClientRouter() {
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/client-profile" component={ClientProfile} />
+          <Route path="/client/billing/invoices/:id" component={Billing} />
+          <Route path="/client/billing" component={Billing} />
           <Route path="/organization/create" component={OrganizationCreate} />
           <Route path="/organization-invitations" component={OrganizationInvitations} />
           <Route path="/organization/:organizationId" component={OrganizationDetail} />
@@ -388,21 +392,49 @@ function ClientRouter() {
 
 // Talent Routes (protected by authentication and role)
 function TalentRouter() {
-  return (
-    <TalentProtectedRoute>
-      <div className="min-h-screen bg-background">
-        <Switch>
-          <Route path="/" component={TalentPortal} />
-          <Route path="/get-hired" component={TalentPortal} />
-          <Route path="/talent-portal" component={TalentPortal} />
-          <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
-          <Route path="/hired-talent-portal" component={HiredTalentPortal} />
-          <Route path="/settings" component={ProfileSettings} />
-          {/* Redirect any other paths to talent portal */}
-          <Route component={TalentPortal} />
-        </Switch>
+  const { isLoading, user } = useAuth();
+  const [, navigate] = useLocation();
+  // Candidate-portal sessions are stored separately from AuthContext. Keep
+  // this route accessible for those sessions while rejecting stale portal
+  // tokens when a client or admin is the active user.
+  const [talentOnlyAuth] = useState(() => loadTalentAuth());
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (user && user.role !== "talent") {
+      navigate(user.role === "client" ? "/dashboard" : "/");
+    } else if (!user && !talentOnlyAuth) {
+      navigate("/get-hired");
+    }
+  }, [isLoading, user, talentOnlyAuth, navigate]);
+
+  const hasTalentAccess = user?.role === "talent" || (!user && !!talentOnlyAuth);
+  if (isLoading && !talentOnlyAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading talent portal...</p>
+        </div>
       </div>
-    </TalentProtectedRoute>
+    );
+  }
+  if (!hasTalentAccess) return null;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Switch>
+        <Route path="/" component={TalentPortal} />
+        <Route path="/get-hired" component={TalentPortal} />
+        <Route path="/talent-portal" component={TalentPortal} />
+        <Route path="/talent/payouts" component={Payouts} />
+        <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
+        <Route path="/hired-talent-portal" component={HiredTalentPortal} />
+        <Route path="/settings" component={ProfileSettings} />
+        {/* Redirect any other paths to talent portal */}
+        <Route component={TalentPortal} />
+      </Switch>
+    </div>
   );
 }
 
@@ -522,6 +554,7 @@ function AppContent() {
       <Route path="/inbox" component={Inbox} />
       <Route path="/talent/signup" component={TalentSignupFromApplication} />
       <Route path="/get-hired" component={PublicRouter} />
+      <Route path="/talent/payouts" component={TalentRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
@@ -542,6 +575,8 @@ function AppContent() {
       
       {/* Client Protected Routes */}
       <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
+      <Route path="/client/billing/invoices/:id" component={ClientRouter} />
+      <Route path="/client/billing" component={ClientRouter} />
       <Route path="/client-profile" component={ClientRouter} />
       <Route path="/dashboard" component={ClientRouter} />
       <Route path="/organization/create" component={ClientRouter} />

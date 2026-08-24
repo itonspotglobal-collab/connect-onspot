@@ -1,6 +1,8 @@
 import { 
   BarChart3, 
   Briefcase, 
+  DollarSign,
+  FileText,
   Home, 
   Search, 
   Settings, 
@@ -8,7 +10,8 @@ import {
   Target,
   Shield,
   Upload,
-  MessageSquare
+  MessageSquare,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +65,21 @@ const managementItems = [
     title: "Client Management",
     url: "/clients",
     icon: Users,
+  },
+  {
+    title: "Contracts",
+    url: "/contracts",
+    icon: FileText,
+  },
+  {
+    title: "Payments",
+    url: "/payments",
+    icon: DollarSign,
+  },
+  {
+    title: "Billing",
+    url: "/client/billing",
+    icon: Receipt,
   },
   {
     title: "ROI Analytics",

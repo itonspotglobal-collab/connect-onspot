@@ -31,6 +31,14 @@ description: Durable money, identity, lifecycle, and concurrency rules for billi
 
 **How to apply:** Keep the duplicate check and insert transactional, retain the unique index, and translate a unique-conflict error into a safe conflict response.
 
+
+## Customer-facing ledger views
+
+Customer invoice and talent payout responses must use explicit public-field allow-lists. Never expose commission fields, internal references, admin notes, or failure details; customer payment instructions are separate from those internal fields, with card links accepted only as http(s) URLs.
+
+**Why:** The billing tables intentionally contain audit and operations data that is not part of either audience's self-service view. Keeping public serialization separate prevents accidental leakage as the ledger grows.
+
+**How to apply:** Any future client invoice or talent payout endpoint should filter ownership in SQL and serialize only customer-facing fields before returning JSON.
 ## Phase 3 surface — client invoice view + talent payout history
 
 - `GET /api/client/invoices` — `authenticateJWT` + `role==="client"`, filters by `invoices.client_id`; joins `invoice_periods`, `offers`, talent `users`. Page: `client/src/pages/ClientInvoices.tsx` at client route `/payments`.

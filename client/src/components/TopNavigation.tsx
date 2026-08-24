@@ -383,6 +383,7 @@ export function TopNavigation() {
       { label: "Talent Profile",       route: talentProfileRoute,   icon: User },
       { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
       { label: "Messages",             route: "/messages",          icon: MessageSquare },
+      { label: "Payout History",       route: "/talent/payouts",    icon: DollarSign },
       { label: "Finish Profile Setup", route: finishSetupRoute,     icon: CheckCircle2 },
       { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
       { label: "Settings",             route: "/settings",          icon: Settings },

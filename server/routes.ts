@@ -289,6 +289,12 @@ const authenticateJWT = async (
         const u = talentUserResult.rows[0];
         (req as any).user = { id: u.id, email: u.email, role: u.role };
       }
+      // Preserve the auth form for billing routes that distinguish a
+      // candidate-portal identity from a standard users.id JWT.
+      (req as any).talentAuth = {
+        candidateId: (decoded as any).candidateId,
+        email: candidateEmail,
+      };
 
       console.log(`✅ JWT Auth (talent token) [${(req as any).requestId}]:`, {
         candidateId: (decoded as any).candidateId,
@@ -2388,6 +2394,11 @@ export async function registerRoutes(
         updated_at            timestamptz   NOT NULL DEFAULT now()
       )
     `);
+    // Keep customer-facing payment instructions separate from internal notes
+    // and references. These additive columns support wire details and hosted
+    // card checkout URLs without exposing internal ledger metadata.
+    await query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_instructions text`);
+    await query(`ALTER TABLE invoices ADD COLUMN IF NOT EXISTS card_payment_url text`);
     await query(`CREATE INDEX IF NOT EXISTS idx_invoices_contract ON invoices(hiring_contract_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_invoices_status   ON invoices(status)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_invoices_client   ON invoices(client_id)`);
@@ -2509,6 +2520,157 @@ export async function registerRoutes(
   } catch (err: any) {
     console.error("❌ Billing engine migration failed:", err.message);
   }
+
+  // ── Customer billing and talent payout views — Phase 3 ────────────────────
+  // These read-only routes deliberately select an allow-list of fields. In
+  // particular, commission_rate and commission_earned are never selected or
+  // serialized for either audience.
+  const serializeClientInvoice = (row: any) => ({
+    id: row.id,
+    invoiceNumber: row.invoice_number,
+    amount: row.amount,
+    currency: row.currency,
+    status: row.display_status ?? row.status,
+    paymentMethod: row.payment_method ?? null,
+    paymentInstructions: row.payment_instructions ?? null,
+    cardPaymentUrl: row.payment_method === "credit_card" &&
+      typeof row.card_payment_url === "string" &&
+      /^https?:\/\//i.test(row.card_payment_url)
+      ? row.card_payment_url
+      : null,
+    issuedAt: row.issued_at ?? null,
+    dueDate: row.due_date ?? null,
+    paidAt: row.paid_at ?? null,
+    periodStart: row.period_start ?? null,
+    periodEnd: row.period_end ?? null,
+    jobTitle: row.job_title ?? null,
+  });
+
+  const getTalentBillingUserId = async (req: Request): Promise<string | null> => {
+    const authenticatedUser = (req as any).user;
+    if (!authenticatedUser?.id) return null;
+
+    // Standard talent JWTs already carry the exact users.id used by payouts.
+    // They must not depend on a candidate profile row existing.
+    if (!(req as any).talentAuth) return authenticatedUser.id;
+
+    // Candidate-portal JWTs carry candidates.id, so resolve that identity to
+    // the linked users.id before querying the payout ledger.
+    const result = await query(
+      `SELECT COALESCE(c.user_id, u.id) AS user_id
+         FROM candidates c
+         LEFT JOIN users u ON LOWER(u.email) = LOWER(c.email)
+        WHERE c.id = $1
+           OR c.user_id = $1
+           OR LOWER(c.email) = LOWER($2)
+        ORDER BY CASE
+          WHEN c.user_id = $1 THEN 0
+          WHEN LOWER(c.email) = LOWER($2) THEN 1
+          ELSE 2
+        END
+        LIMIT 1`,
+      [authenticatedUser.id, authenticatedUser.email ?? ""],
+    );
+    return result.rows[0]?.user_id ?? null;
+  };
+
+  // GET /api/client/invoices — only invoices owned by the authenticated client.
+  app.get("/api/client/invoices", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      const result = await query(
+        `SELECT i.id, i.invoice_number, i.amount, i.currency,
+                i.status, i.payment_method, i.payment_instructions,
+                i.card_payment_url, i.issued_at, i.due_date, i.paid_at,
+                ip.period_start, ip.period_end, j.title AS job_title,
+                CASE
+                  WHEN i.status = 'sent' AND i.due_date < NOW() THEN 'overdue'
+                  ELSE i.status
+                END AS display_status
+           FROM invoices i
+           LEFT JOIN invoice_periods ip ON ip.id = i.period_id
+           LEFT JOIN hiring_contracts hc ON hc.id = i.hiring_contract_id
+           LEFT JOIN job_submissions js ON js.id = hc.submission_id
+           LEFT JOIN jobs j ON j.id = js.job_id
+          WHERE i.client_id = $1
+          ORDER BY COALESCE(i.due_date, i.created_at) DESC, i.created_at DESC`,
+        [clientId],
+      );
+
+      return res.json(result.rows.map(serializeClientInvoice));
+    } catch (err: any) {
+      console.error("GET /api/client/invoices error:", err);
+      return res.status(500).json({ error: "Failed to load invoices" });
+    }
+  });
+
+  // GET /api/client/invoices/:id — ownership is part of the lookup so an
+  // invoice belonging to another client is indistinguishable from not found.
+  app.get("/api/client/invoices/:id", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      const result = await query(
+        `SELECT i.id, i.invoice_number, i.amount, i.currency,
+                i.status, i.payment_method, i.payment_instructions,
+                i.card_payment_url, i.issued_at, i.due_date, i.paid_at,
+                ip.period_start, ip.period_end, j.title AS job_title,
+                CASE
+                  WHEN i.status = 'sent' AND i.due_date < NOW() THEN 'overdue'
+                  ELSE i.status
+                END AS display_status
+           FROM invoices i
+           LEFT JOIN invoice_periods ip ON ip.id = i.period_id
+           LEFT JOIN hiring_contracts hc ON hc.id = i.hiring_contract_id
+           LEFT JOIN job_submissions js ON js.id = hc.submission_id
+           LEFT JOIN jobs j ON j.id = js.job_id
+          WHERE i.id = $1 AND i.client_id = $2
+          LIMIT 1`,
+        [req.params.id, clientId],
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: "Invoice not found" });
+
+      return res.json(serializeClientInvoice(result.rows[0]));
+    } catch (err: any) {
+      console.error("GET /api/client/invoices/:id error:", err);
+      return res.status(500).json({ error: "Failed to load invoice" });
+    }
+  });
+
+  // GET /api/talent/payouts — only payouts associated with the authenticated
+  // talent's resolved users.id. No internal references or commission fields
+  // are returned.
+  app.get("/api/talent/payouts", authenticateJWT, requireTalent, async (req: Request, res: Response) => {
+    try {
+      const talentId = await getTalentBillingUserId(req);
+      if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+
+      const result = await query(
+        `SELECT id, amount, currency, status, scheduled_at, disbursed_at, created_at
+           FROM payouts
+          WHERE talent_id = $1
+          ORDER BY COALESCE(scheduled_at, created_at) DESC, created_at DESC`,
+        [talentId],
+      );
+
+      return res.json(result.rows.map((row: any) => ({
+        id: row.id,
+        amount: row.amount,
+        currency: row.currency,
+        status: row.status,
+        scheduledAt: row.scheduled_at ?? null,
+        disbursedAt: row.disbursed_at ?? null,
+        createdAt: row.created_at ?? null,
+      })));
+    } catch (err: any) {
+      console.error("GET /api/talent/payouts error:", err);
+      return res.status(500).json({ error: "Failed to load payouts" });
+    }
+  });
+
   app.get(
     "/talent-dashboard",
     authenticateJWT,
