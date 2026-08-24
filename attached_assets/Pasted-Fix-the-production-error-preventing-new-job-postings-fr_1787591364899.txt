@@ -1,0 +1,193 @@
+Fix the production error preventing new job postings from being created.
+
+## Problem
+
+When submitting a new job from the **Post a Job** flow, the API request:
+
+`POST /api/admin/jobs`
+
+returns:
+
+`500 Internal Server Error`
+
+with the database error:
+
+`new row for relation "jobs" violates check constraint "jobs_engagement_type_check"`
+
+This is **not a job-count limit**. The failure is caused by the `jobs.engagement_type` database constraint being out of sync with the current application values.
+
+The current application uses these engagement type values:
+
+* `Lite`
+* `Standard`
+
+The current shared schema also documents `engagement_type` as:
+
+`Lite | Standard`
+
+However, an older migration used legacy values such as:
+
+* `Half-Day`
+* `Full-Time`
+
+The production PostgreSQL constraint `jobs_engagement_type_check` may still be validating against those old values.
+
+## What to do
+
+Please investigate and fix this end-to-end without changing unrelated functionality.
+
+### 1. Inspect the current database constraint
+
+Check the definition of:
+
+`jobs_engagement_type_check`
+
+using PostgreSQL metadata.
+
+Confirm which values the constraint currently allows.
+
+### 2. Inspect existing data before changing the constraint
+
+Run a query equivalent to:
+
+```sql
+SELECT engagement_type, COUNT(*)
+FROM jobs
+GROUP BY engagement_type
+ORDER BY engagement_type;
+```
+
+Determine whether any existing rows still contain legacy values such as:
+
+* `Half-Day`
+* `Full-Time`
+* `full-time`
+* `part-time`
+* `fixed`
+* `hourly`
+
+Do not blindly replace or delete production data.
+
+### 3. Make `Lite` and `Standard` the canonical values
+
+The application should use only:
+
+```text
+Lite
+Standard
+```
+
+for new and updated job postings.
+
+Update the database constraint so that it accepts:
+
+```sql
+engagement_type IS NULL
+OR engagement_type IN ('Lite', 'Standard')
+```
+
+Create a proper migration for this rather than relying only on a manual production SQL change.
+
+For example, the resulting constraint should effectively be:
+
+```sql
+ALTER TABLE jobs
+DROP CONSTRAINT IF EXISTS jobs_engagement_type_check;
+
+ALTER TABLE jobs
+ADD CONSTRAINT jobs_engagement_type_check
+CHECK (
+  engagement_type IS NULL
+  OR engagement_type IN ('Lite', 'Standard')
+);
+```
+
+### 4. Safely handle legacy records
+
+If existing records still use `Half-Day` or `Full-Time`, do not guess their new value unless the mapping is already explicitly defined somewhere in the repository.
+
+Investigate the repository history/migrations and determine whether there is an approved mapping.
+
+If there is no safe mapping, preserve those records and design the migration so production data is not corrupted.
+
+Document any legacy records requiring manual review.
+
+### 5. Verify all application layers use the same vocabulary
+
+Audit the following for engagement type values:
+
+* `client/src/pages/JobFormPage.tsx`
+* job form components
+* `client/src/lib/jobFormUtils.ts`
+* `client/src/lib/jobConstants.ts`
+* `shared/schema.ts`
+* server-side POST `/api/admin/jobs`
+* server-side POST `/api/client/jobs`
+* PATCH/update job endpoints
+* Zod validation schemas
+* SQL migrations
+* seeds/test data
+
+Remove stale validation that still expects `Half-Day` / `Full-Time` if it applies to the current job posting flow.
+
+Do not introduce duplicate engagement-type constants if a shared constant can be used.
+
+### 6. Improve server-side error handling
+
+The API should not expose a vague 500 for a predictable validation mismatch.
+
+Add server-side validation before the insert/update so invalid `engagementType` values return a clear `400 Bad Request`, for example:
+
+```json
+{
+  "error": "Invalid engagement type",
+  "message": "engagementType must be Lite or Standard"
+}
+```
+
+Database constraints should remain as the final safety layer.
+
+### 7. Verify there is no job posting count limit
+
+Search the codebase for any hard-coded restriction such as:
+
+```text
+40
+41
+max jobs
+job limit
+posting limit
+MAX_JOBS
+```
+
+Confirm whether there is any intentional maximum number of jobs.
+
+Do not add or remove a posting limit unless one already exists as a documented business rule.
+
+### 8. Test the fix
+
+After implementing the migration and code changes, verify:
+
+1. An admin can create a new job with `Lite`.
+2. An admin can create a new job with `Standard`.
+3. A client can create a job with the same valid engagement types.
+4. Editing an existing job still works.
+5. Invalid engagement types are rejected with HTTP 400.
+6. Existing job records remain intact.
+7. Creating job number 42 or higher works normally.
+8. No other job fields or approval workflow behavior are changed.
+
+## Important constraints
+
+* Do not delete existing legitimate jobs.
+* Do not reset the database.
+* Do not modify unrelated tables or workflows.
+* Preserve the current admin/client job creation flow.
+* Preserve the approval workflow.
+* Use a versioned SQL migration.
+* Keep production compatibility in mind.
+* Report exactly which files were changed.
+* Report the old constraint definition and the new constraint definition.
+* Report whether any legacy `engagement_type` values were found and how they were handled.
+
+Before applying destructive or ambiguous data migrations, stop and explain what legacy values exist rather than guessing.
