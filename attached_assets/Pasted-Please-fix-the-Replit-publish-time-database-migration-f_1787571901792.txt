@@ -1,0 +1,94 @@
+Please fix the Replit publish-time database migration failure safely, without copying or overwriting production data.
+
+Current migration failure:
+
+```sql
+ALTER TABLE "message_threads"
+DROP CONSTRAINT "message_threads_contract_id_contracts_id_fk";
+```
+
+Production returns:
+
+```text
+constraint "message_threads_contract_id_contracts_id_fk" of relation "message_threads" does not exist
+```
+
+Required fix:
+
+1. Make the migration tolerant of schema drift by changing the constraint drop to:
+
+```sql
+ALTER TABLE "message_threads"
+DROP CONSTRAINT IF EXISTS "message_threads_contract_id_contracts_id_fk";
+```
+
+2. Review the legacy cleanup migration affecting:
+
+   * `message_threads.contract_id`
+   * `reviews.contract_id`
+   * legacy tables:
+
+     * `contracts`
+     * `milestones`
+     * `payments`
+     * `proposals`
+     * `disputes`
+     * `time_entries`
+
+3. DO NOT copy the development database schema/data over production.
+
+4. DO NOT delete production data just to make the migration pass.
+
+5. Before dropping `message_threads.contract_id`, inspect production and confirm the existing 11 non-null values belong only to the obsolete legacy `contracts` model and are not used by the current messaging/hiring flow.
+
+Use read-only checks equivalent to:
+
+```sql
+SELECT id, contract_id
+FROM message_threads
+WHERE contract_id IS NOT NULL;
+```
+
+```sql
+SELECT
+  mt.id AS thread_id,
+  mt.contract_id,
+  c.id AS legacy_contract_exists
+FROM message_threads mt
+LEFT JOIN contracts c
+  ON c.id = mt.contract_id
+WHERE mt.contract_id IS NOT NULL;
+```
+
+Also inspect:
+
+```sql
+SELECT COUNT(*) AS reviews_with_contract_id
+FROM reviews
+WHERE contract_id IS NOT NULL;
+```
+
+6. Preserve the new billing/payment engine tables and do not rename any legacy table into them:
+
+* `invoice_periods`
+* `invoices`
+* `payouts`
+* `security_deposits`
+* `payout_region_configs`
+* `invoice_number_seq`
+
+`payout_region_configs` is a NEW table, not a rename of `payments`, `contracts`, or any other legacy table.
+
+7. Keep the legacy-table cleanup fail-closed. If any legacy table contains rows, the migration must stop rather than silently drop that table and its data.
+
+8. If `message_threads.contract_id` or `reviews.contract_id` still contains meaningful live relationships, do not drop those columns yet. Migrate those associations safely first.
+
+9. After fixing the migration, report:
+
+   * the exact SQL/schema change made;
+   * whether the 11 `message_threads.contract_id` values are safe to remove;
+   * whether `reviews.contract_id` contains data;
+   * whether any legacy table still contains rows;
+   * whether the migration is now safe to retry against production.
+
+Do not deploy automatically. Stop after fixing the development migration/schema and reporting the results so I can review before republishing.
