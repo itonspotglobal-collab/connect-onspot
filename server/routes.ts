@@ -112,7 +112,13 @@ import {
   inquiries as inquiriesTable,
   candidates as candidatesTable,
 } from "@shared/schema";
-import { computePeriodAmounts, computeDepositAmount } from "./lib/billing.js";
+import {
+  computeDepositAmount,
+  computePeriodAmounts,
+  computeCureDeadline,
+  computeReplenishmentDeadline,
+  type EngagementType,
+} from "./lib/billing.js";
 import { z } from "zod";
 
 // Organization invitations remain actionable for 30 days. Expiration is a
@@ -534,6 +540,76 @@ const requireAdminSubRole = (allowedSubRoles: string[]) => {
     }
   };
 };
+
+async function withLedgerTransaction<T>(fn: (client: any) => Promise<T>): Promise<T> {
+  const client = await getClient();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original error if the connection is already unhealthy.
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+function parseLedgerNumber(value: unknown, field: string, options: { min?: number } = {}): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || (options.min !== undefined && parsed < options.min)) {
+    throw Object.assign(new Error(`${field} must be a valid number${options.min !== undefined ? ` greater than or equal to ${options.min}` : ""}`), {
+      status: 422,
+    });
+  }
+  return parsed;
+}
+
+function parseLedgerDate(value: unknown, field: string): Date {
+  const date = new Date(String(value ?? ""));
+  if (!value || Number.isNaN(date.getTime())) {
+    throw Object.assign(new Error(`${field} must be a valid date`), { status: 422 });
+  }
+  return date;
+}
+
+async function refreshInvoicePeriodStatus(client: any, periodId: string): Promise<void> {
+  const result = await client.query(
+    `SELECT ip.status AS current_status,
+            inv.status AS invoice_status,
+            p.status AS payout_status
+       FROM invoice_periods ip
+       LEFT JOIN LATERAL (
+         SELECT status FROM invoices WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1
+       ) inv ON true
+       LEFT JOIN LATERAL (
+         SELECT status FROM payouts WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1
+       ) p ON true
+      WHERE ip.id = $1`,
+    [periodId],
+  );
+  const row = result.rows[0];
+  if (!row || row.current_status === "draft" || row.current_status === "ready") return;
+
+  let status = "invoiced";
+  if (row.invoice_status === "paid" && row.payout_status === "disbursed") {
+    status = "closed";
+  } else if (row.payout_status === "pending" || row.payout_status === "scheduled") {
+    status = "payout_scheduled";
+  } else if (row.payout_status === "disbursed" || row.invoice_status) {
+    status = "invoiced";
+  }
+  await client.query(
+    `UPDATE invoice_periods SET status = $1, updated_at = NOW() WHERE id = $2`,
+    [status, periodId],
+  );
+}
+
 
 /**
  * Flexible admin auth middleware — accepts either:
@@ -1430,6 +1506,16 @@ export async function registerRoutes(
     console.warn("⚠️  video introduction migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: application commercial terms ──────────────────
+  try {
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS proposed_rate numeric(12,2)`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS proposed_budget numeric(12,2)`);
+    await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS estimated_duration text`);
+    console.log("✅ Migration: application commercial terms columns ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  application commercial terms migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: email sender tracking fields ────────────────
   try {
     await query(`ALTER TABLE job_application_emails ADD COLUMN IF NOT EXISTS sender_email text`);
@@ -2262,6 +2348,10 @@ export async function registerRoutes(
     `);
     await query(`CREATE INDEX IF NOT EXISTS idx_invoice_periods_contract ON invoice_periods(hiring_contract_id)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_invoice_periods_status   ON invoice_periods(status)`);
+    await query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_periods_contract_dates_unique
+        ON invoice_periods(hiring_contract_id, period_start, period_end)
+    `);
 
     // Invoice number sequence — human-readable INV-YYYY-NNNN generated in Phase 2
     await query(`CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1`);
@@ -2419,26 +2509,6 @@ export async function registerRoutes(
   } catch (err: any) {
     console.error("❌ Billing engine migration failed:", err.message);
   }
-
-
-  // ── Remove orphaned freelance-marketplace schema ────────────────────────────
-  // Tables confirmed empty (0 rows) during Phase 1 billing audit. Drop in FK order.
-  try {
-    await query(`ALTER TABLE message_threads DROP CONSTRAINT IF EXISTS "message_threads_contract_id_contracts_id_fk"`);
-    await query(`ALTER TABLE message_threads DROP COLUMN IF EXISTS contract_id`);
-    await query(`ALTER TABLE reviews DROP CONSTRAINT IF EXISTS "reviews_contract_id_contracts_id_fk"`);
-    await query(`ALTER TABLE reviews DROP COLUMN IF EXISTS contract_id`);
-    await query(`DROP TABLE IF EXISTS disputes`);
-    await query(`DROP TABLE IF EXISTS time_entries`);
-    await query(`DROP TABLE IF EXISTS payments`);
-    await query(`DROP TABLE IF EXISTS milestones`);
-    await query(`DROP TABLE IF EXISTS contracts`);
-    await query(`DROP TABLE IF EXISTS proposals`);
-    console.log("\u2705 Migration: removed orphaned marketplace tables (proposals, contracts, milestones, time_entries, payments, disputes)");
-  } catch (err: any) {
-    console.error("\u274C Marketplace table cleanup migration failed:", err.message);
-  }
-
   app.get(
     "/talent-dashboard",
     authenticateJWT,
@@ -15231,6 +15301,27 @@ export async function registerRoutes(
       if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
       if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
 
+      const parseOptionalApplicationAmount = (value: unknown, field: string, minimum: number, maximum: number) => {
+        if (value === undefined || value === null || String(value).trim() === "") return null;
+        const amount = Number(value);
+        if (!Number.isFinite(amount) || amount < minimum || amount > maximum) {
+          throw Object.assign(new Error(`${field} must be between ${minimum} and ${maximum}`), { status: 400 });
+        }
+        return amount;
+      };
+      let proposedRate: number | null;
+      let proposedBudget: number | null;
+      try {
+        proposedRate = parseOptionalApplicationAmount(req.body.proposedRate, "proposedRate", 1, 1000);
+        proposedBudget = parseOptionalApplicationAmount(req.body.proposedBudget, "proposedBudget", 10, 100000);
+      } catch (amountError: any) {
+        return res.status(amountError.status ?? 400).json({ error: amountError.message });
+      }
+      const estimatedDuration = req.body.estimatedDuration?.trim() || null;
+      if (estimatedDuration && estimatedDuration.length > 200) {
+        return res.status(400).json({ error: "estimatedDuration must be 200 characters or fewer" });
+      }
+
       const normalizedEmail = email.trim().toLowerCase();
 
       // Use the result from the early auth check (done before CV validation)
@@ -15356,8 +15447,9 @@ export async function registerRoutes(
              (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
               resume_url, resume_file_name,
               video_introduction_url, video_introduction_file_name,
-              status, registration_status, talent_id, is_repeat_application, answers)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', 'linked', $13, $14, $15)
+             status, registration_status, talent_id, is_repeat_application, answers,
+             proposed_rate, proposed_budget, estimated_duration)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', 'linked', $13, $14, $15, $16, $17, $18)
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -15372,6 +15464,9 @@ export async function registerRoutes(
             authedUser.id,
             isRepeat,
             validatedAnswersAuth !== null ? JSON.stringify(validatedAnswersAuth) : null,
+            proposedRate,
+            proposedBudget,
+            estimatedDuration,
           ],
         );
 
@@ -15485,8 +15580,9 @@ export async function registerRoutes(
            (id, job_id, client_id, first_name, last_name, applicant_name, email, phone, cover_letter,
             resume_url, resume_file_name,
             video_introduction_url, video_introduction_file_name,
-            status, registration_status, is_repeat_application, answers)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', $13, $14, $15)
+            status, registration_status, is_repeat_application, answers,
+            proposed_rate, proposed_budget, estimated_duration)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', $13, $14, $15, $16, $17, $18)
          RETURNING id`,
         [
           jobId, job.clientId || null,
@@ -15501,6 +15597,9 @@ export async function registerRoutes(
           registrationStatus,
           isRepeat,
           validatedAnswersUnauth !== null ? JSON.stringify(validatedAnswersUnauth) : null,
+          proposedRate,
+          proposedBudget,
+          estimatedDuration,
         ],
       );
       const submissionId = insertResult.rows[0].id;
@@ -16437,6 +16536,9 @@ export async function registerRoutes(
 
       // Non-PII application fields — revealed alongside name.
       expectedSalary: nameRevealed ? (row.expectedSalary ?? row.expected_salary ?? null) : null,
+      proposedRate: nameRevealed ? (row.proposedRate ?? row.proposed_rate ?? null) : null,
+      proposedBudget: nameRevealed ? (row.proposedBudget ?? row.proposed_budget ?? null) : null,
+      estimatedDuration: nameRevealed ? (row.estimatedDuration ?? row.estimated_duration ?? null) : null,
       availability:   nameRevealed ? (row.availability   ?? null)                         : null,
     };
   }
@@ -16459,6 +16561,9 @@ export async function registerRoutes(
       js.portfolio_url            AS "portfolioUrl",
       js.cover_letter             AS "coverLetter",
       js.expected_salary          AS "expectedSalary",
+      js.proposed_rate            AS "proposedRate",
+      js.proposed_budget          AS "proposedBudget",
+      js.estimated_duration       AS "estimatedDuration",
       js.availability,
       js.status,
       js.workflow_type            AS "workflowType",
@@ -17981,369 +18086,643 @@ export async function registerRoutes(
   });
 
   // ── Phase 3: Contract Flow ───────────────────────────────────────────────────
-  // ── Admin Billing / Ledger Endpoints (Phase 2) ──────────────────────────────
-  // All routes: authenticateJWT + requireAdmin.
-  // Amounts computed by billing.ts — commission_rate always explicit per row.
+  // ── Admin billing ledger operations (Phase 2) ────────────────────────────
+  // These routes intentionally derive all client/talent identities from the
+  // contract and submission. No ledger party is accepted from request bodies.
+  app.get("/api/admin/billing-contracts", authenticateAdminFlexible, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const result = await query(
+        `SELECT hc.id AS hiring_contract_id, hc.status AS contract_status,
+                hc.onspot_signed_at, o.engagement_type, o.rate AS talent_rate,
+                o.rate_currency AS talent_rate_currency,
+                COALESCE(NULLIF(TRIM(CONCAT(client.first_name, ' ', client.last_name)), ''), client.email) AS client_name,
+                client.email AS client_email,
+                COALESCE(NULLIF(TRIM(CONCAT(talent.first_name, ' ', talent.last_name)), ''), talent.email) AS talent_name,
+                talent.email AS talent_email,
+                j.title AS job_title,
+                COUNT(ip.id)::int AS period_count,
+                MAX(ip.period_end) AS last_period_end,
+                sd.id AS deposit_id, sd.status AS deposit_status,
+                sd.amount AS deposit_amount, sd.currency AS deposit_currency
+           FROM hiring_contracts hc
+           JOIN offers o ON o.id = hc.offer_id
+           JOIN job_submissions js ON js.id = hc.submission_id
+           LEFT JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users client ON client.id = js.client_id
+           LEFT JOIN users talent ON talent.id = js.talent_id
+           LEFT JOIN invoice_periods ip ON ip.hiring_contract_id = hc.id
+           LEFT JOIN security_deposits sd ON sd.hiring_contract_id = hc.id
+          WHERE hc.status = 'signed'
+          GROUP BY hc.id, o.id, client.id, talent.id, j.id, sd.id
+          ORDER BY hc.onspot_signed_at DESC NULLS LAST, hc.created_at DESC`,
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET billing contracts error:", err);
+      return res.status(500).json({ error: "Unable to load signed contracts" });
+    }
+  });
 
-  // POST /api/admin/hiring-contracts/:hcId/billing-periods
-  app.post("/api/admin/hiring-contracts/:hcId/billing-periods", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { hcId } = req.params;
-        const { periodStart, periodEnd, extendedHours = 0, deductionHours = 0, notes } = req.body;
-        if (!periodStart || !periodEnd)
-          return res.status(400).json({ error: "periodStart and periodEnd are required" });
-        const hcRow = await query(
-          `SELECT hc.id, hc.offer_id, o.rate, o.rate_currency, o.engagement_type
-           FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
-           WHERE hc.id = $1 AND hc.status NOT IN ('void','voided')`, [hcId]);
-        if (!hcRow.rows.length) return res.status(404).json({ error: "Hiring contract not found or voided" });
-        const hc = hcRow.rows[0];
-        const engType = hc.engagement_type as "Standard" | "Lite";
-        if (!["Standard","Lite"].includes(engType))
-          return res.status(422).json({ error: `Unknown engagement_type: ${hc.engagement_type}` });
-        const settingRow = await query(`SELECT value FROM platform_settings WHERE key='commission_rate' LIMIT 1`);
-        const commissionRate = settingRow.rows[0] ? parseFloat(settingRow.rows[0].value) : 0.20;
-        const amounts = computePeriodAmounts(parseFloat(hc.rate), engType, extendedHours, deductionHours, commissionRate);
-        const result = await query(
-          `INSERT INTO invoice_periods (
-             hiring_contract_id, offer_id, period_start, period_end,
-             talent_rate, talent_rate_currency, standard_period_hours,
-             extended_hours, deduction_hours, hourly_equivalent,
-             adjusted_talent_payout, commission_rate, client_invoice_amount,
-             commission_earned, notes, status
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'draft') RETURNING *`,
-          [hcId, hc.offer_id, periodStart, periodEnd,
-           parseFloat(hc.rate), hc.rate_currency,
-           amounts.standardPeriodHours, extendedHours, deductionHours,
-           amounts.hourlyEquivalent, amounts.adjustedTalentPayout, amounts.commissionRate,
-           amounts.clientInvoiceAmount, amounts.commissionEarned, notes ?? null]);
-        return res.status(201).json(result.rows[0]);
-      } catch (err: any) { console.error("POST billing-periods error:", err); return res.status(500).json({ error: err.message }); }
-    });
+  app.post("/api/admin/contracts/:hcId/billing-periods", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const periodStart = parseLedgerDate(req.body.periodStart ?? req.body.period_start, "periodStart");
+      const periodEnd = parseLedgerDate(req.body.periodEnd ?? req.body.period_end, "periodEnd");
+      if (periodEnd < periodStart) {
+        return res.status(422).json({ error: "periodEnd must be on or after periodStart" });
+      }
 
-  // PATCH /api/admin/billing-periods/:id — update hours or draft→ready
-  app.patch("/api/admin/billing-periods/:id", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { extendedHours, deductionHours, status, notes } = req.body;
-        const existing = await query(
-          `SELECT ip.*, o.engagement_type FROM invoice_periods ip
-           JOIN offers o ON o.id = ip.offer_id WHERE ip.id=$1`, [id]);
-        if (!existing.rows.length) return res.status(404).json({ error: "Billing period not found" });
-        const period = existing.rows[0];
-        if (!["draft","ready"].includes(period.status))
-          return res.status(422).json({ error: `Cannot edit period in status '${period.status}'` });
-        const newExt = extendedHours ?? parseFloat(period.extended_hours);
-        const newDed = deductionHours ?? parseFloat(period.deduction_hours);
-        const amounts = computePeriodAmounts(parseFloat(period.talent_rate),
-          period.engagement_type as "Standard"|"Lite", newExt, newDed, parseFloat(period.commission_rate));
-        if (status && !["draft","ready"].includes(status))
-          return res.status(400).json({ error: `Invalid status '${status}'` });
-        const result = await query(
-          `UPDATE invoice_periods SET extended_hours=$1, deduction_hours=$2,
-             hourly_equivalent=$3, adjusted_talent_payout=$4,
-             client_invoice_amount=$5, commission_earned=$6,
-             status=COALESCE($7,status), notes=COALESCE($8,notes), updated_at=now()
-           WHERE id=$9 RETURNING *`,
-          [newExt,newDed,amounts.hourlyEquivalent,amounts.adjustedTalentPayout,
-           amounts.clientInvoiceAmount,amounts.commissionEarned,status??null,notes??null,id]);
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
+      const extendedHours = parseLedgerNumber(req.body.extendedHours ?? req.body.extended_hours ?? 0, "extendedHours", { min: 0 });
+      const deductionHours = parseLedgerNumber(req.body.deductionHours ?? req.body.deduction_hours ?? 0, "deductionHours", { min: 0 });
+      const commissionInput = req.body.commissionRate ?? req.body.commission_rate;
+      const commissionRate = commissionInput === undefined
+        ? undefined
+        : parseLedgerNumber(commissionInput, "commissionRate", { min: 0 });
+      if (commissionRate !== undefined && commissionRate > 1) {
+        return res.status(422).json({ error: "commissionRate must be between 0 and 1" });
+      }
 
-  // GET /api/admin/billing-periods/:id
-  app.get("/api/admin/billing-periods/:id", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const result = await query(
-          `SELECT ip.*, inv.id AS invoice_id, inv.invoice_number, inv.status AS invoice_status,
-             inv.amount AS invoice_amount, inv.paid_at,
-             po.id AS payout_id, po.status AS payout_status, po.disbursed_at
-           FROM invoice_periods ip
-           LEFT JOIN invoices inv ON inv.period_id=ip.id
-           LEFT JOIN payouts po ON po.period_id=ip.id
-           WHERE ip.id=$1`, [req.params.id]);
-        if (!result.rows.length) return res.status(404).json({ error: "Period not found" });
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
+      const contract = await query(
+        `SELECT hc.id, hc.offer_id, hc.status AS contract_status,
+                o.rate, o.rate_currency, o.engagement_type
+           FROM hiring_contracts hc
+           JOIN offers o ON o.id = hc.offer_id
+          WHERE hc.id = $1`,
+        [req.params.hcId],
+      );
+      if (contract.rows.length === 0) return res.status(404).json({ error: "Hiring contract not found" });
+      const linked = contract.rows[0];
+      if (linked.contract_status !== "signed") {
+        return res.status(409).json({ error: "contract_not_active", message: "Billing periods can only be created for signed contracts." });
+      }
+      if (linked.engagement_type !== "Lite" && linked.engagement_type !== "Standard") {
+        return res.status(422).json({ error: "invalid_engagement_type", message: "The linked offer does not have a supported engagement type." });
+      }
 
-  // POST /api/admin/billing-periods/:id/invoices — issue a client invoice
-  app.post("/api/admin/billing-periods/:id/invoices", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { paymentMethod, dueDate, notes } = req.body;
-        if (!paymentMethod || !["wire","credit_card"].includes(paymentMethod))
-          return res.status(400).json({ error: "paymentMethod must be 'wire' or 'credit_card'" });
-        const pRow = await query(
-          `SELECT ip.*, js.client_id
-           FROM invoice_periods ip
-           JOIN hiring_contracts hc ON hc.id=ip.hiring_contract_id
-           JOIN job_submissions js ON js.id=hc.submission_id
-           WHERE ip.id=$1`, [id]);
-        if (!pRow.rows.length) return res.status(404).json({ error: "Billing period not found" });
-        const period = pRow.rows[0];
-        if (period.status !== "ready")
-          return res.status(422).json({ error: `Period must be status='ready' (currently '${period.status}')` });
-        const existing = await query(`SELECT id FROM invoices WHERE period_id=$1`, [id]);
-        if (existing.rows.length)
-          return res.status(409).json({ error: "Invoice already exists", invoiceId: existing.rows[0].id });
-        const seqRow = await query(`SELECT nextval('invoice_number_seq') AS seq`);
-        const invoiceNumber = `INV-${new Date().getFullYear()}-${String(seqRow.rows[0].seq).padStart(4,"0")}`;
-        const due = dueDate ? new Date(dueDate) : (() => { const d=new Date(); d.setDate(d.getDate()+30); return d; })();
-        const invResult = await query(
-          `INSERT INTO invoices (period_id, hiring_contract_id, client_id, invoice_number,
-             amount, currency, commission_rate, payment_method, status, issued_at, due_date, notes)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'sent',now(),$9,$10) RETURNING *`,
-          [id, period.hiring_contract_id, period.client_id, invoiceNumber,
-           period.client_invoice_amount, period.talent_rate_currency,
-           period.commission_rate, paymentMethod, due, notes??null]);
-        await query(`UPDATE invoice_periods SET status='invoiced', updated_at=now() WHERE id=$1`, [id]);
-        return res.status(201).json(invResult.rows[0]);
-      } catch (err: any) { console.error("POST invoices error:", err); return res.status(500).json({ error: err.message }); }
-    });
+      const talentRate = parseLedgerNumber(linked.rate, "offer rate", { min: 0 });
+      const amounts = commissionRate === undefined
+        ? computePeriodAmounts(talentRate, linked.engagement_type as EngagementType, extendedHours, deductionHours)
+        : computePeriodAmounts(talentRate, linked.engagement_type as EngagementType, extendedHours, deductionHours, commissionRate);
 
-  // PATCH /api/admin/invoices/:id — pay or void
-  app.patch("/api/admin/invoices/:id", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { action, externalRef, paymentMethod, notes } = req.body;
-        if (!action || !["pay","void"].includes(action))
-          return res.status(400).json({ error: "action must be 'pay' or 'void'" });
-        const row = await query(`SELECT * FROM invoices WHERE id=$1`, [id]);
-        if (!row.rows.length) return res.status(404).json({ error: "Invoice not found" });
-        const inv = row.rows[0];
-        if (action === "pay") {
-          if (inv.status === "paid") return res.status(409).json({ error: "Invoice already paid" });
-          const result = await query(
-            `UPDATE invoices SET status='paid', paid_at=now(),
-               external_ref=COALESCE($1,external_ref), payment_method=COALESCE($2,payment_method),
-               notes=COALESCE($3,notes), updated_at=now() WHERE id=$4 RETURNING *`,
-            [externalRef??null, paymentMethod??null, notes??null, id]);
-          return res.json(result.rows[0]);
+      const inserted = await withLedgerTransaction(async (client) => {
+        const duplicate = await client.query(
+          `SELECT id FROM invoice_periods
+            WHERE hiring_contract_id = $1 AND period_start = $2 AND period_end = $3
+            LIMIT 1
+            FOR UPDATE`,
+          [linked.id, periodStart.toISOString().slice(0, 10), periodEnd.toISOString().slice(0, 10)],
+        );
+        if (duplicate.rows.length > 0) {
+          const error = new Error("billing_period_exists");
+          Object.assign(error, { status: 409, periodId: duplicate.rows[0].id });
+          throw error;
         }
-        if (["paid","void"].includes(inv.status))
-          return res.status(409).json({ error: `Cannot void invoice with status '${inv.status}'` });
-        const result = await query(
-          `UPDATE invoices SET status='void', voided_at=now(), notes=COALESCE($1,notes), updated_at=now()
-           WHERE id=$2 RETURNING *`, [notes??null, id]);
-        await query(`UPDATE invoice_periods SET status='ready', updated_at=now() WHERE id=$1`, [inv.period_id]);
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
 
-  // POST /api/admin/billing-periods/:id/payouts — create talent payout record
-  app.post("/api/admin/billing-periods/:id/payouts", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { payoutRegion, payoutMethod, scheduledAt, notes } = req.body;
-        const pRow = await query(
-          `SELECT ip.*, js.talent_id
+        return (await client.query(
+          `INSERT INTO invoice_periods
+             (hiring_contract_id, offer_id, period_start, period_end,
+              talent_rate, talent_rate_currency, standard_period_hours,
+              extended_hours, deduction_hours, hourly_equivalent,
+              adjusted_talent_payout, commission_rate, client_invoice_amount,
+              commission_earned, status, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'draft', $15)
+           RETURNING *`,
+          [
+            linked.id, linked.offer_id, periodStart.toISOString().slice(0, 10),
+            periodEnd.toISOString().slice(0, 10), talentRate.toFixed(2),
+            linked.rate_currency || "PHP", amounts.standardPeriodHours,
+            extendedHours.toFixed(2), deductionHours.toFixed(2),
+            amounts.hourlyEquivalent.toFixed(4), amounts.adjustedTalentPayout.toFixed(2),
+            amounts.commissionRate.toFixed(4), amounts.clientInvoiceAmount.toFixed(2),
+            amounts.commissionEarned.toFixed(2), req.body.notes?.trim() || null,
+          ],
+        )).rows[0];
+      });
+      return res.status(201).json(inserted);
+    } catch (err: any) {
+      const status = err.status || (err.code === "23505" ? 409 : err.code === "22P02" ? 422 : 500);
+      console.error("POST billing period error:", err);
+      return res.status(status).json({
+        error: err.code === "23505" ? "billing_period_exists" : status === 500 ? "Unable to create billing period" : err.message,
+        ...(err.periodId ? { periodId: err.periodId } : {}),
+      });
+    }
+  });
+
+  app.post("/api/admin/billing-periods/:id/invoices", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const invoice = await withLedgerTransaction(async (client) => {
+        const periodResult = await client.query(
+          `SELECT ip.*, hc.submission_id, js.client_id
+             FROM invoice_periods ip
+             JOIN hiring_contracts hc ON hc.id = ip.hiring_contract_id
+             JOIN job_submissions js ON js.id = hc.submission_id
+            WHERE ip.id = $1
+            FOR UPDATE`,
+          [req.params.id],
+        );
+        if (periodResult.rows.length === 0) {
+          const error = new Error("Billing period not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const period = periodResult.rows[0];
+        if (!period.client_id) {
+          const error = new Error("The linked submission has no client account");
+          Object.assign(error, { status: 422 });
+          throw error;
+        }
+        if (!["draft", "ready"].includes(period.status)) {
+          const error = new Error(`Only draft or ready periods can be invoiced (current status: ${period.status})`);
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        const existing = await client.query(
+          `SELECT id FROM invoices WHERE period_id = $1 AND status <> 'void' LIMIT 1`,
+          [period.id],
+        );
+        if (existing.rows.length > 0) {
+          const error = new Error("An invoice already exists for this billing period");
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+
+        const dueDate = req.body.dueDate ?? req.body.due_date;
+        const dueAt = dueDate ? parseLedgerDate(dueDate, "dueDate") : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const numberResult = await client.query(
+          `SELECT 'INV-' || to_char(CURRENT_DATE, 'YYYY') || '-' ||
+                  lpad(nextval('invoice_number_seq')::text, 4, '0') AS invoice_number`,
+        );
+        const inserted = await client.query(
+          `INSERT INTO invoices
+             (period_id, hiring_contract_id, client_id, invoice_number, amount,
+              currency, commission_rate, status, issued_at, due_date, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'sent', NOW(), $8, $9)
+           RETURNING *`,
+          [
+            period.id, period.hiring_contract_id, period.client_id,
+            numberResult.rows[0].invoice_number, period.client_invoice_amount,
+            period.talent_rate_currency, period.commission_rate, dueAt,
+            req.body.notes?.trim() || null,
+          ],
+        );
+        await client.query(
+          `UPDATE invoice_periods SET status = 'invoiced', updated_at = NOW() WHERE id = $1`,
+          [period.id],
+        );
+        return inserted.rows[0];
+      });
+      return res.status(201).json(invoice);
+    } catch (err: any) {
+      console.error("POST invoice error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to issue invoice" });
+    }
+  });
+
+  app.patch("/api/admin/invoices/:id", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const action = String(req.body.action ?? req.body.status ?? "").toLowerCase();
+      if (action !== "paid" && action !== "void") {
+        return res.status(422).json({ error: "status must be paid or void" });
+      }
+      const updated = await withLedgerTransaction(async (client) => {
+        const existing = await client.query(`SELECT * FROM invoices WHERE id = $1 FOR UPDATE`, [req.params.id]);
+        if (existing.rows.length === 0) {
+          const error = new Error("Invoice not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const invoice = existing.rows[0];
+        if (action === "paid") {
+          if (!["sent", "overdue"].includes(invoice.status)) {
+            const error = new Error(`Only sent or overdue invoices can be marked paid (current status: ${invoice.status})`);
+            Object.assign(error, { status: 409 });
+            throw error;
+          }
+          const paymentMethod = String(req.body.paymentMethod ?? req.body.payment_method ?? "");
+          if (!["wire", "credit_card"].includes(paymentMethod)) {
+            const error = new Error("paymentMethod must be wire or credit_card");
+            Object.assign(error, { status: 422 });
+            throw error;
+          }
+          if (!String(req.body.externalRef ?? req.body.external_ref ?? "").trim()) {
+            const error = new Error("externalRef is required when marking an invoice paid");
+            Object.assign(error, { status: 422 });
+            throw error;
+          }
+          const result = await client.query(
+            `UPDATE invoices
+                SET status = 'paid', payment_method = $1, external_ref = $2,
+                    paid_at = NOW(), updated_at = NOW()
+              WHERE id = $3 RETURNING *`,
+            [paymentMethod, String(req.body.externalRef ?? req.body.external_ref).trim(), invoice.id],
+          );
+          await refreshInvoicePeriodStatus(client, invoice.period_id);
+          return result.rows[0];
+        }
+        if (["paid", "void"].includes(invoice.status)) {
+          const error = new Error(`A ${invoice.status} invoice cannot be voided`);
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        const result = await client.query(
+          `UPDATE invoices SET status = 'void', voided_at = NOW(), updated_at = NOW()
+            WHERE id = $1 RETURNING *`,
+          [invoice.id],
+        );
+        await client.query(
+          `UPDATE invoice_periods SET status = 'ready', updated_at = NOW() WHERE id = $1`,
+          [invoice.period_id],
+        );
+        return result.rows[0];
+      });
+      return res.json(updated);
+    } catch (err: any) {
+      console.error("PATCH invoice error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to update invoice" });
+    }
+  });
+
+  app.post("/api/admin/billing-periods/:id/payouts", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const payout = await withLedgerTransaction(async (client) => {
+        const periodResult = await client.query(
+          `SELECT ip.*, hc.submission_id, js.talent_id
+             FROM invoice_periods ip
+             JOIN hiring_contracts hc ON hc.id = ip.hiring_contract_id
+             JOIN job_submissions js ON js.id = hc.submission_id
+            WHERE ip.id = $1
+            FOR UPDATE`,
+          [req.params.id],
+        );
+        if (periodResult.rows.length === 0) {
+          const error = new Error("Billing period not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const period = periodResult.rows[0];
+        if (!period.talent_id) {
+          const error = new Error("The linked submission has no talent account");
+          Object.assign(error, { status: 422 });
+          throw error;
+        }
+        const invoiceResult = await client.query(
+          `SELECT status FROM invoices
+            WHERE period_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1`,
+          [period.id],
+        );
+        if (invoiceResult.rows[0]?.status !== "paid") {
+          const error = new Error("The client invoice must be paid before a talent payout can be scheduled");
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        if (["closed"].includes(period.status)) {
+          const error = new Error("A closed billing period cannot receive another payout");
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        const existing = await client.query(`SELECT id FROM payouts WHERE period_id = $1 LIMIT 1`, [period.id]);
+        if (existing.rows.length > 0) {
+          const error = new Error("A payout already exists for this billing period");
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+
+        const region = String(req.body.payoutRegion ?? req.body.payout_region ?? "");
+        const regionResult = region
+          ? await client.query(`SELECT * FROM payout_region_configs WHERE region_code = $1`, [region])
+          : await client.query(`SELECT * FROM payout_region_configs ORDER BY region_code LIMIT 1`);
+        if (regionResult.rows.length === 0) {
+          const error = new Error("No payout region is configured");
+          Object.assign(error, { status: 422 });
+          throw error;
+        }
+        const regionConfig = regionResult.rows[0];
+        const payoutMethod = String(req.body.payoutMethod ?? req.body.payout_method ?? regionConfig.default_method);
+        if (!regionConfig.available_methods.includes(payoutMethod)) {
+          const error = new Error(`payoutMethod is not available in region ${regionConfig.region_code}`);
+          Object.assign(error, { status: 422 });
+          throw error;
+        }
+        const scheduledAtValue = req.body.scheduledAt ?? req.body.scheduled_at;
+        const scheduledAt = scheduledAtValue ? parseLedgerDate(scheduledAtValue, "scheduledAt") : new Date();
+        const inserted = await client.query(
+          `INSERT INTO payouts
+             (period_id, hiring_contract_id, talent_id, amount, currency,
+              payout_region, payout_method, status, scheduled_at, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'scheduled', $8, $9)
+           RETURNING *`,
+          [
+            period.id, period.hiring_contract_id, period.talent_id,
+            period.adjusted_talent_payout, period.talent_rate_currency,
+            regionConfig.region_code, payoutMethod, scheduledAt,
+            req.body.notes?.trim() || null,
+          ],
+        );
+        await client.query(
+          `UPDATE invoice_periods SET status = 'payout_scheduled', updated_at = NOW() WHERE id = $1`,
+          [period.id],
+        );
+        return inserted.rows[0];
+      });
+      return res.status(201).json(payout);
+    } catch (err: any) {
+      console.error("POST payout error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to create payout" });
+    }
+  });
+
+  app.patch("/api/admin/payouts/:id", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const action = String(req.body.action ?? req.body.status ?? "").toLowerCase();
+      if (action !== "disbursed" && action !== "failed") {
+        return res.status(422).json({ error: "status must be disbursed or failed" });
+      }
+      const updated = await withLedgerTransaction(async (client) => {
+        const existing = await client.query(`SELECT * FROM payouts WHERE id = $1 FOR UPDATE`, [req.params.id]);
+        if (existing.rows.length === 0) {
+          const error = new Error("Payout not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const payout = existing.rows[0];
+        if (!["pending", "scheduled"].includes(payout.status)) {
+          const error = new Error(`Only pending or scheduled payouts can be updated (current status: ${payout.status})`);
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        let result;
+        if (action === "disbursed") {
+          const invoiceResult = await client.query(
+            `SELECT status FROM invoices
+              WHERE period_id = $1
+              ORDER BY created_at DESC
+              LIMIT 1`,
+            [payout.period_id],
+          );
+          if (invoiceResult.rows[0]?.status !== "paid") {
+            const error = new Error("The client invoice must be paid before a talent payout can be disbursed");
+            Object.assign(error, { status: 409 });
+            throw error;
+          }
+          const externalRef = String(req.body.externalRef ?? req.body.external_ref ?? "").trim();
+          if (!externalRef) {
+            const error = new Error("externalRef is required when marking a payout disbursed");
+            Object.assign(error, { status: 422 });
+            throw error;
+          }
+          result = await client.query(
+            `UPDATE payouts SET status = 'disbursed', external_ref = $1,
+                    disbursed_at = NOW(), updated_at = NOW()
+              WHERE id = $2 RETURNING *`,
+            [externalRef, payout.id],
+          );
+        } else {
+          const reason = String(req.body.failedReason ?? req.body.failed_reason ?? "").trim();
+          if (!reason) {
+            const error = new Error("failedReason is required when marking a payout failed");
+            Object.assign(error, { status: 422 });
+            throw error;
+          }
+          result = await client.query(
+            `UPDATE payouts SET status = 'failed', failed_reason = $1, updated_at = NOW()
+              WHERE id = $2 RETURNING *`,
+            [reason, payout.id],
+          );
+        }
+        await refreshInvoicePeriodStatus(client, payout.period_id);
+        return result.rows[0];
+      });
+      return res.json(updated);
+    } catch (err: any) {
+      console.error("PATCH payout error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to update payout" });
+    }
+  });
+
+  app.post("/api/admin/contracts/:hcId/security-deposit", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const result = await withLedgerTransaction(async (client) => {
+        const contract = await client.query(
+          `SELECT hc.id, hc.status, o.rate, o.rate_currency
+             FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
+            WHERE hc.id = $1 FOR UPDATE`,
+          [req.params.hcId],
+        );
+        if (contract.rows.length === 0) {
+          const error = new Error("Hiring contract not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const linked = contract.rows[0];
+        if (linked.status !== "signed") {
+          const error = new Error("A security deposit can only be collected for an active signed contract");
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        const amount = computeDepositAmount(parseLedgerNumber(linked.rate, "offer rate", { min: 0 })).toFixed(2);
+        const existing = await client.query(`SELECT * FROM security_deposits WHERE hiring_contract_id = $1 FOR UPDATE`, [linked.id]);
+        if (existing.rows.length === 0) {
+          const inserted = await client.query(
+            `INSERT INTO security_deposits
+               (hiring_contract_id, amount, currency, status, held_at)
+             VALUES ($1, $2, $3, 'held', NOW()) RETURNING *`,
+            [linked.id, amount, linked.rate_currency || "PHP"],
+          );
+          return inserted.rows[0];
+        }
+        if (existing.rows[0].status === "pending") {
+          const updated = await client.query(
+            `UPDATE security_deposits SET status = 'held', held_at = NOW(), updated_at = NOW()
+              WHERE id = $1 RETURNING *`,
+            [existing.rows[0].id],
+          );
+          return updated.rows[0];
+        }
+        if (existing.rows[0].status !== "held") {
+          const error = new Error(`Deposit cannot be collected from its current status: ${existing.rows[0].status}`);
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        return existing.rows[0];
+      });
+      return res.status(201).json(result);
+    } catch (err: any) {
+      console.error("POST security deposit error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to record security deposit" });
+    }
+  });
+
+  app.patch("/api/admin/security-deposits/:id", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const requested = String(req.body.action ?? req.body.status ?? "").toLowerCase();
+      const target = requested === "draw"
+        ? "drawn"
+        : requested === "suspend"
+          ? "suspended"
+          : requested === "cure"
+            ? "held"
+            : requested;
+      const allowedTargets = ["held", "drawn", "replenishment_pending", "suspended", "applied", "forfeited"];
+      if (!allowedTargets.includes(target)) {
+        return res.status(422).json({ error: "status must be cure, draw, replenishment_pending, suspend, apply, or forfeit" });
+      }
+
+      const result = await withLedgerTransaction(async (client) => {
+        const existing = await client.query(`SELECT * FROM security_deposits WHERE id = $1 FOR UPDATE`, [req.params.id]);
+        if (existing.rows.length === 0) {
+          const error = new Error("Security deposit not found");
+          Object.assign(error, { status: 404 });
+          throw error;
+        }
+        const deposit = existing.rows[0];
+        const transitions: Record<string, string[]> = {
+          pending: ["held"],
+          held: ["drawn", "applied"],
+          drawn: ["replenishment_pending"],
+          replenishment_pending: ["suspended"],
+          suspended: ["held", "forfeited"],
+        };
+        if (!(transitions[deposit.status] || []).includes(target)) {
+          const error = new Error(`Cannot advance a ${deposit.status} deposit to ${target}`);
+          Object.assign(error, { status: 409 });
+          throw error;
+        }
+        const sets: string[] = ["status = $1", "updated_at = NOW()"];
+        const params: any[] = [target];
+        let p = 2;
+        if (target === "held") {
+          sets.push(`held_at = NOW()`, `cure_deadline_at = NULL`);
+        } else if (target === "drawn") {
+          sets.push(`drawn_at = NOW()`, `drawn_reason = $${p++}`, `replenishment_due_at = $${p++}`);
+          params.push(String(req.body.drawnReason ?? req.body.drawn_reason ?? "client payment shortfall").trim());
+          params.push(computeReplenishmentDeadline(new Date()));
+        } else if (target === "suspended") {
+          const setting = await client.query(
+            `SELECT value FROM platform_settings WHERE key = 'deposit_cure_period_days' LIMIT 1`,
+          );
+          const cureDays = Number(setting.rows[0]?.value ?? 5);
+          sets.push(`suspended_at = NOW()`, `cure_deadline_at = $${p++}`);
+          params.push(computeCureDeadline(new Date(), Number.isFinite(cureDays) ? cureDays : 5));
+        } else if (target === "applied") {
+          const terminalReason = String(req.body.terminalReason ?? req.body.terminal_reason ?? "").trim();
+          if (!["normal_termination", "mutual_end"].includes(terminalReason)) {
+            const error = new Error("terminalReason must be normal_termination or mutual_end when applying a deposit");
+            Object.assign(error, { status: 422 });
+            throw error;
+          }
+          sets.push(`applied_at = NOW()`, `terminal_reason = $${p++}`);
+          params.push(terminalReason);
+          if (req.body.appliedToInvoiceId ?? req.body.applied_to_invoice_id) {
+            const appliedInvoiceId = req.body.appliedToInvoiceId ?? req.body.applied_to_invoice_id;
+            const invoice = await client.query(
+              `SELECT id FROM invoices
+                WHERE id = $1 AND hiring_contract_id = $2
+                LIMIT 1`,
+              [appliedInvoiceId, deposit.hiring_contract_id],
+            );
+            if (invoice.rows.length === 0) {
+              const error = new Error("appliedToInvoiceId must belong to the deposit's hiring contract");
+              Object.assign(error, { status: 422 });
+              throw error;
+            }
+            sets.push(`applied_to_invoice_id = $${p++}`);
+            params.push(appliedInvoiceId);
+          }
+        } else if (target === "forfeited") {
+          const terminalReason = String(req.body.terminalReason ?? req.body.terminal_reason ?? "").trim();
+          if (terminalReason !== "nonpayment_breach") {
+            return Promise.reject(Object.assign(new Error("Forfeiture requires terminalReason = nonpayment_breach"), { status: 422 }));
+          }
+          sets.push(`forfeited_at = NOW()`, `terminal_reason = $${p++}`);
+          params.push(terminalReason);
+        }
+        const updated = await client.query(
+          `UPDATE security_deposits SET ${sets.join(", ")} WHERE id = $${p} RETURNING *`,
+          [...params, deposit.id],
+        );
+        return updated.rows[0];
+      });
+      return res.json(result);
+    } catch (err: any) {
+      console.error("PATCH security deposit error:", err);
+      return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to update security deposit" });
+    }
+  });
+
+  app.get("/api/admin/ledger", authenticateAdminFlexible, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit ?? req.query.pageSize) || 25));
+      const offset = (page - 1) * limit;
+      const status = typeof req.query.status === "string" && req.query.status !== "all" ? req.query.status : null;
+      const filter = status ? "WHERE ip.status = $1" : "";
+      const filterParams = status ? [status] : [];
+      const count = await query(`SELECT COUNT(*)::int AS total FROM invoice_periods ip ${filter}`, filterParams);
+      const summary = await query(
+        `SELECT
+           COALESCE(SUM(ip.client_invoice_amount), 0)::numeric AS gtv,
+           COALESCE(SUM(CASE
+             WHEN inv.status IS NULL OR inv.status IN ('draft','sent','overdue')
+             THEN COALESCE(inv.amount, ip.client_invoice_amount) ELSE 0 END), 0)::numeric AS outstanding_invoices,
+           COALESCE(SUM(CASE WHEN p.status IN ('pending','scheduled') THEN p.amount ELSE 0 END), 0)::numeric AS pending_payouts,
+           COUNT(DISTINCT sd.id) FILTER (WHERE sd.status IN ('drawn','suspended'))::int AS deposits_at_risk
+         FROM invoice_periods ip
+         LEFT JOIN LATERAL (SELECT status, amount FROM invoices WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) inv ON true
+         LEFT JOIN LATERAL (SELECT status, amount FROM payouts WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) p ON true
+         LEFT JOIN security_deposits sd ON sd.hiring_contract_id = ip.hiring_contract_id
+         ${filter}`,
+        filterParams,
+      );
+      const rows = await query(
+        `SELECT ip.id, ip.hiring_contract_id, ip.period_start, ip.period_end, ip.status,
+                ip.talent_rate, ip.talent_rate_currency, ip.adjusted_talent_payout,
+                ip.commission_rate, ip.client_invoice_amount, ip.commission_earned,
+                hc.submission_id,
+                COALESCE(NULLIF(TRIM(CONCAT(client.first_name, ' ', client.last_name)), ''), client.email) AS client_name,
+                client.email AS client_email,
+                COALESCE(NULLIF(TRIM(CONCAT(talent.first_name, ' ', talent.last_name)), ''), talent.email) AS talent_name,
+                talent.email AS talent_email,
+                inv.id AS invoice_id, inv.invoice_number, inv.status AS invoice_status,
+                inv.amount AS invoice_amount, inv.currency AS invoice_currency,
+                inv.due_date, inv.paid_at,
+                p.id AS payout_id, p.status AS payout_status, p.amount AS payout_amount,
+                p.currency AS payout_currency, p.payout_method, p.external_ref AS payout_external_ref,
+                p.scheduled_at, p.disbursed_at, p.failed_reason,
+                sd.id AS deposit_id, sd.status AS deposit_status, sd.amount AS deposit_amount,
+                sd.currency AS deposit_currency, sd.replenishment_due_at, sd.cure_deadline_at,
+                CASE
+                  WHEN inv.status IS NULL OR inv.status IN ('draft','sent','overdue')
+                    THEN COALESCE(inv.amount, ip.client_invoice_amount)
+                  ELSE 0
+                END AS outstanding_invoice_amount,
+                CASE WHEN p.status IN ('pending','scheduled') THEN p.amount ELSE 0 END AS outstanding_payout_amount
            FROM invoice_periods ip
-           JOIN hiring_contracts hc ON hc.id=ip.hiring_contract_id
-           JOIN job_submissions js ON js.id=hc.submission_id
-           WHERE ip.id=$1`, [id]);
-        if (!pRow.rows.length) return res.status(404).json({ error: "Billing period not found" });
-        const period = pRow.rows[0];
-        if (!["invoiced","ready"].includes(period.status))
-          return res.status(422).json({ error: `Cannot create payout for period in status '${period.status}'` });
-        const existing = await query(`SELECT id FROM payouts WHERE period_id=$1`, [id]);
-        if (existing.rows.length)
-          return res.status(409).json({ error: "Payout already exists", payoutId: existing.rows[0].id });
-        const region = payoutRegion ?? "PH";
-        const regionRow = await query(`SELECT default_method FROM payout_region_configs WHERE region_code=$1`, [region]);
-        const method = payoutMethod ?? regionRow.rows[0]?.default_method ?? "bank_transfer";
-        const result = await query(
-          `INSERT INTO payouts (period_id, hiring_contract_id, talent_id, amount, currency,
-             payout_region, payout_method, status, scheduled_at, notes)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9) RETURNING *`,
-          [id, period.hiring_contract_id, period.talent_id,
-           period.adjusted_talent_payout, period.talent_rate_currency,
-           region, method, scheduledAt?new Date(scheduledAt):null, notes??null]);
-        await query(`UPDATE invoice_periods SET status='payout_scheduled', updated_at=now() WHERE id=$1`, [id]);
-        return res.status(201).json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
+           JOIN hiring_contracts hc ON hc.id = ip.hiring_contract_id
+           JOIN job_submissions js ON js.id = hc.submission_id
+           LEFT JOIN users client ON client.id = js.client_id
+           LEFT JOIN users talent ON talent.id = js.talent_id
+           LEFT JOIN LATERAL (SELECT * FROM invoices WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) inv ON true
+           LEFT JOIN LATERAL (SELECT * FROM payouts WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) p ON true
+           LEFT JOIN security_deposits sd ON sd.hiring_contract_id = ip.hiring_contract_id
+           ${filter}
+          ORDER BY ip.period_start DESC, ip.created_at DESC
+          LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}`,
+        [...filterParams, limit, offset],
+      );
+      const total = count.rows[0]?.total ?? 0;
+      return res.json({
+        page, limit, total, pages: Math.max(1, Math.ceil(total / limit)),
+        summary: summary.rows[0] ?? { gtv: "0", outstanding_invoices: "0", pending_payouts: "0", deposits_at_risk: 0 },
+        items: rows.rows,
+      });
+    } catch (err: any) {
+      console.error("GET admin ledger error:", err);
+      return res.status(500).json({ error: "Unable to load billing ledger" });
+    }
+  });
 
-  // PATCH /api/admin/payouts/:id — schedule, disburse, or fail
-  app.patch("/api/admin/payouts/:id", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { action, scheduledAt, externalRef, failedReason, notes } = req.body;
-        if (!action || !["schedule","disburse","fail"].includes(action))
-          return res.status(400).json({ error: "action must be 'schedule', 'disburse', or 'fail'" });
-        const row = await query(`SELECT * FROM payouts WHERE id=$1`, [id]);
-        if (!row.rows.length) return res.status(404).json({ error: "Payout not found" });
-        const payout = row.rows[0];
-        if (action === "schedule") {
-          const result = await query(
-            `UPDATE payouts SET status='scheduled', scheduled_at=COALESCE($1,now()),
-               notes=COALESCE($2,notes), updated_at=now() WHERE id=$3 RETURNING *`,
-            [scheduledAt?new Date(scheduledAt):null, notes??null, id]);
-          return res.json(result.rows[0]);
-        }
-        if (action === "disburse") {
-          if (payout.status === "disbursed") return res.status(409).json({ error: "Already disbursed" });
-          const result = await query(
-            `UPDATE payouts SET status='disbursed', disbursed_at=now(),
-               external_ref=COALESCE($1,external_ref), notes=COALESCE($2,notes), updated_at=now()
-             WHERE id=$3 RETURNING *`, [externalRef??null, notes??null, id]);
-          await query(`UPDATE invoice_periods SET status='closed', updated_at=now() WHERE id=$1`, [payout.period_id]);
-          return res.json(result.rows[0]);
-        }
-        if (!failedReason) return res.status(400).json({ error: "failedReason required for action='fail'" });
-        const result = await query(
-          `UPDATE payouts SET status='failed', failed_reason=$1, notes=COALESCE($2,notes), updated_at=now()
-           WHERE id=$3 RETURNING *`, [failedReason, notes??null, id]);
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
-
-  // POST /api/admin/hiring-contracts/:hcId/security-deposit — create/upsert deposit
-  app.post("/api/admin/hiring-contracts/:hcId/security-deposit", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { hcId } = req.params;
-        const hcRow = await query(
-          `SELECT hc.id, o.rate, o.rate_currency
-           FROM hiring_contracts hc JOIN offers o ON o.id=hc.offer_id
-           WHERE hc.id=$1 AND hc.status NOT IN ('void','voided')`, [hcId]);
-        if (!hcRow.rows.length) return res.status(404).json({ error: "Contract not found or voided" });
-        const { rate, rate_currency } = hcRow.rows[0];
-        const depositAmount = computeDepositAmount(parseFloat(rate));
-        const result = await query(
-          `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status)
-           VALUES ($1,$2,$3,'pending')
-           ON CONFLICT (hiring_contract_id) DO UPDATE SET updated_at=now()
-           RETURNING *`, [hcId, depositAmount, rate_currency]);
-        return res.status(result.rows[0].held_at ? 200 : 201).json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
-
-  // PATCH /api/admin/security-deposits/:id — advance lifecycle
-  // Actions: collect | draw | replenishment_pending | suspend | cure | forfeit | apply | void
-  app.patch("/api/admin/security-deposits/:id", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const { id } = req.params;
-        const { action, drawnReason, appliedToInvoiceId, notes } = req.body;
-        const validActions = ["collect","draw","replenishment_pending","suspend","cure","forfeit","apply","void"];
-        if (!action || !validActions.includes(action))
-          return res.status(400).json({ error: `action must be one of: ${validActions.join(", ")}` });
-        const row = await query(`SELECT * FROM security_deposits WHERE id=$1`, [id]);
-        if (!row.rows.length) return res.status(404).json({ error: "Security deposit not found" });
-        const dep = row.rows[0];
-        const cpRow = await query(`SELECT value FROM platform_settings WHERE key='deposit_cure_period_days'`);
-        const cureWindowDays = cpRow.rows[0] ? parseInt(cpRow.rows[0].value, 10) : 5;
-        let sql = "", params: any[] = [];
-        if (action === "collect") {
-          if (dep.status !== "pending") return res.status(422).json({ error: `Cannot collect in status '${dep.status}'` });
-          sql = `UPDATE security_deposits SET status='held', held_at=now(), updated_at=now() WHERE id=$1 RETURNING *`;
-          params = [id];
-        } else if (action === "draw") {
-          if (dep.status !== "held") return res.status(422).json({ error: `Can only draw from 'held'` });
-          if (!drawnReason) return res.status(400).json({ error: "drawnReason required" });
-          const drawnAt = new Date();
-          const repDue = new Date(drawnAt); repDue.setDate(repDue.getDate() + 5);
-          sql = `UPDATE security_deposits SET status='drawn', drawn_at=$1, drawn_reason=$2, replenishment_due_at=$3, updated_at=now() WHERE id=$4 RETURNING *`;
-          params = [drawnAt, drawnReason, repDue, id];
-        } else if (action === "replenishment_pending") {
-          if (dep.status !== "drawn") return res.status(422).json({ error: `Can only mark replenishment_pending from 'drawn'` });
-          sql = `UPDATE security_deposits SET status='replenishment_pending', updated_at=now() WHERE id=$1 RETURNING *`;
-          params = [id];
-        } else if (action === "suspend") {
-          if (dep.status !== "replenishment_pending") return res.status(422).json({ error: `Can only suspend from 'replenishment_pending'` });
-          const suspAt = new Date(); const cureDl = new Date(suspAt); cureDl.setDate(cureDl.getDate() + cureWindowDays);
-          sql = `UPDATE security_deposits SET status='suspended', suspended_at=$1, cure_deadline_at=$2, updated_at=now() WHERE id=$3 RETURNING *`;
-          params = [suspAt, cureDl, id];
-        } else if (action === "cure") {
-          if (dep.status !== "suspended") return res.status(422).json({ error: `Can only cure from 'suspended'` });
-          sql = `UPDATE security_deposits SET status='held', cure_deadline_at=null, suspended_at=null, updated_at=now() WHERE id=$1 RETURNING *`;
-          params = [id];
-        } else if (action === "forfeit") {
-          if (dep.status !== "suspended") return res.status(422).json({ error: `Can only forfeit from 'suspended'` });
-          sql = `UPDATE security_deposits SET status='forfeited', forfeited_at=now(), terminal_reason='nonpayment_breach', updated_at=now() WHERE id=$1 RETURNING *`;
-          params = [id];
-        } else if (action === "apply") {
-          if (!["held","drawn","replenishment_pending"].includes(dep.status))
-            return res.status(422).json({ error: `Cannot apply deposit in status '${dep.status}'` });
-          if (!appliedToInvoiceId) return res.status(400).json({ error: "appliedToInvoiceId required" });
-          sql = `UPDATE security_deposits SET status='applied', applied_at=now(), applied_to_invoice_id=$1, notice_given_at=COALESCE(notice_given_at,now()), terminal_reason='normal_termination', updated_at=now() WHERE id=$2 RETURNING *`;
-          params = [appliedToInvoiceId, id];
-        } else if (action === "void") {
-          sql = `UPDATE security_deposits SET status='void', terminal_reason='admin_void', updated_at=now() WHERE id=$1 RETURNING *`;
-          params = [id];
-        }
-        const result = await query(sql, params);
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
-
-  // GET /api/admin/ledger/summary — registered before /ledger to avoid route collision
-  app.get("/api/admin/ledger/summary", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const result = await query(`
-          SELECT
-            COALESCE(SUM(ip.client_invoice_amount),0) AS total_gtv,
-            COALESCE(SUM(ip.commission_earned),0) AS total_commission,
-            COALESCE(SUM(ip.adjusted_talent_payout),0) AS total_talent_payouts,
-            COUNT(*) AS total_periods,
-            COUNT(*) FILTER (WHERE ip.status='draft') AS draft_periods,
-            COUNT(*) FILTER (WHERE ip.status='ready') AS ready_periods,
-            COUNT(*) FILTER (WHERE ip.status='invoiced') AS invoiced_periods,
-            COUNT(*) FILTER (WHERE ip.status='payout_scheduled') AS payout_scheduled_periods,
-            COUNT(*) FILTER (WHERE ip.status='closed') AS closed_periods,
-            COALESCE(SUM(ip.client_invoice_amount) FILTER (
-              WHERE EXISTS (SELECT 1 FROM invoices i WHERE i.period_id=ip.id AND i.status NOT IN ('paid','void'))
-            ),0) AS outstanding_invoice_amount,
-            COUNT(*) FILTER (
-              WHERE EXISTS (SELECT 1 FROM payouts p WHERE p.period_id=ip.id AND p.status='pending')
-            ) AS pending_payout_count,
-            (SELECT COUNT(*) FROM security_deposits WHERE status IN ('drawn','replenishment_pending','suspended')) AS deposits_at_risk
-          FROM invoice_periods ip`);
-        return res.json(result.rows[0]);
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
-
-  // GET /api/admin/ledger — paginated invoice_periods with joined context
-  app.get("/api/admin/ledger", authenticateJWT, requireAdmin,
-    async (req: Request, res: Response) => {
-      try {
-        const page  = Math.max(1, parseInt(String(req.query.page??"1"), 10));
-        const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit??"25"), 10)));
-        const offset = (page - 1) * limit;
-        const sf = req.query.status ? String(req.query.status) : null;
-        const cntParams: any[] = sf ? [sf] : [];
-        const cntWhere = sf ? "WHERE ip.status=$1" : "";
-        const dataParams: any[] = sf ? [limit, offset, sf] : [limit, offset];
-        const dataWhere = sf ? "WHERE ip.status=$3" : "";
-        const countRow = await query(`SELECT COUNT(*) AS total FROM invoice_periods ip ${cntWhere}`, cntParams);
-        const rows = await query(
-          `SELECT ip.*,
-             hc.status AS contract_status, o.engagement_type,
-             js.client_id, js.talent_id,
-             inv.id AS invoice_id, inv.invoice_number, inv.status AS invoice_status, inv.paid_at,
-             po.id AS payout_id, po.status AS payout_status, po.disbursed_at,
-             sd.id AS deposit_id, sd.status AS deposit_status, sd.amount AS deposit_amount
-           FROM invoice_periods ip
-           JOIN hiring_contracts hc ON hc.id=ip.hiring_contract_id
-           JOIN offers o ON o.id=ip.offer_id
-           JOIN job_submissions js ON js.id=hc.submission_id
-           LEFT JOIN invoices inv ON inv.period_id=ip.id
-           LEFT JOIN payouts po ON po.period_id=ip.id
-           LEFT JOIN security_deposits sd ON sd.hiring_contract_id=ip.hiring_contract_id
-           ${dataWhere} ORDER BY ip.created_at DESC LIMIT $1 OFFSET $2`, dataParams);
-        const total = parseInt(countRow.rows[0].total, 10);
-        return res.json({ periods: rows.rows, total, page, limit, pages: Math.ceil(total/limit) });
-      } catch (err: any) { return res.status(500).json({ error: err.message }); }
-    });
 
 
   //

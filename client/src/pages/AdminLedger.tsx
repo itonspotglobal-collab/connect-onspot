@@ -1,648 +1,629 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { authAPI } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import { DollarSign, TrendingUp, AlertCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  FileCheck2,
+  Loader2,
+  RefreshCw,
+  ShieldAlert,
+  WalletCards,
+} from "lucide-react";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface LedgerSummary {
-  total_gtv: string;
-  total_commission: string;
-  total_talent_payouts: string;
-  total_periods: string;
-  draft_periods: string;
-  ready_periods: string;
-  invoiced_periods: string;
-  payout_scheduled_periods: string;
-  closed_periods: string;
-  outstanding_invoice_amount: string;
-  pending_payout_count: string;
-  deposits_at_risk: string;
-}
-
-interface LedgerPeriod {
+interface LedgerRow {
   id: string;
   hiring_contract_id: string;
   period_start: string;
   period_end: string;
+  status: string;
+  client_name: string | null;
+  client_email: string | null;
+  talent_name: string | null;
+  talent_email: string | null;
   talent_rate: string;
   talent_rate_currency: string;
-  standard_period_hours: number;
-  extended_hours: string;
-  deduction_hours: string;
   adjusted_talent_payout: string;
-  commission_rate: string;
   client_invoice_amount: string;
   commission_earned: string;
-  status: string;
-  engagement_type: string;
   invoice_id: string | null;
   invoice_number: string | null;
   invoice_status: string | null;
+  invoice_amount: string | null;
+  invoice_currency: string | null;
+  due_date: string | null;
   paid_at: string | null;
   payout_id: string | null;
   payout_status: string | null;
+  payout_amount: string | null;
+  payout_currency: string | null;
+  payout_method: string | null;
+  payout_external_ref: string | null;
   disbursed_at: string | null;
+  failed_reason: string | null;
   deposit_id: string | null;
   deposit_status: string | null;
   deposit_amount: string | null;
-  notes: string | null;
-  created_at: string;
+  deposit_currency: string | null;
+  outstanding_invoice_amount: string;
+  outstanding_payout_amount: string;
 }
 
 interface LedgerResponse {
-  periods: LedgerPeriod[];
-  total: number;
   page: number;
   pages: number;
-  limit: number;
+  total: number;
+  summary: {
+    gtv: string;
+    outstanding_invoices: string;
+    pending_payouts: string;
+    deposits_at_risk: number;
+  };
+  items: LedgerRow[];
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const PHP = (v: string | number | null | undefined) =>
-  v == null ? "—" : `₱${parseFloat(String(v)).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
-
-const PCT = (v: string | number) => `${(parseFloat(String(v)) * 100).toFixed(0)}%`;
-
-const fDate = (s: string | null) =>
-  s ? new Date(s).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" }) : "—";
-
-const PERIOD_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  ready: "bg-blue-100 text-blue-700",
-  invoiced: "bg-yellow-100 text-yellow-800",
-  payout_scheduled: "bg-purple-100 text-purple-700",
-  closed: "bg-green-100 text-green-800",
-};
-
-const INV_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  sent: "bg-blue-100 text-blue-700",
-  paid: "bg-green-100 text-green-700",
-  overdue: "bg-red-100 text-red-700",
-  void: "bg-gray-200 text-gray-500 line-through",
-};
-
-const DEP_COLORS: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-600",
-  held: "bg-green-100 text-green-700",
-  drawn: "bg-yellow-100 text-yellow-800",
-  replenishment_pending: "bg-orange-100 text-orange-700",
-  suspended: "bg-red-100 text-red-700",
-  forfeited: "bg-red-200 text-red-900 font-bold",
-  applied: "bg-green-100 text-green-700",
-  void: "bg-gray-200 text-gray-500",
-};
-
-// ── Create Billing Period Modal ────────────────────────────────────────────────
-
-function CreatePeriodModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [hcId, setHcId] = useState("");
-  const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState("");
-  const [extHours, setExtHours] = useState("0");
-  const [dedHours, setDedHours] = useState("0");
-  const [notes, setNotes] = useState("");
-  const [error, setError] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      authAPI.post(`/api/admin/hiring-contracts/${hcId.trim()}/billing-periods`, {
-        periodStart, periodEnd,
-        extendedHours: parseFloat(extHours),
-        deductionHours: parseFloat(dedHours),
-        notes: notes || undefined,
-      }),
-    onSuccess: () => { onCreated(); onClose(); },
-    onError: (e: any) => setError(e?.response?.data?.error ?? e.message ?? "Failed"),
-  });
-
-  return (
-    <DialogContent className="max-w-lg">
-      <DialogHeader>
-        <DialogTitle>Create Billing Period</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-3 py-2">
-        <div>
-          <label className="text-sm font-medium">Hiring Contract ID</label>
-          <Input placeholder="UUID" value={hcId} onChange={e => setHcId(e.target.value)} className="mt-1" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium">Period Start</label>
-            <Input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Period End</label>
-            <Input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className="mt-1" />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium">Extended Hours</label>
-            <Input type="number" min="0" step="0.5" value={extHours} onChange={e => setExtHours(e.target.value)} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Deduction Hours</label>
-            <Input type="number" min="0" step="0.5" value={dedHours} onChange={e => setDedHours(e.target.value)} className="mt-1" />
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Notes (optional)</label>
-          <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !hcId || !periodStart || !periodEnd}>
-          {mutation.isPending ? "Creating…" : "Create"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  );
+interface SignedContract {
+  hiring_contract_id: string;
+  contract_status: string;
+  onspot_signed_at: string | null;
+  engagement_type: string;
+  talent_rate: string;
+  talent_rate_currency: string;
+  client_name: string | null;
+  client_email: string | null;
+  talent_name: string | null;
+  talent_email: string | null;
+  job_title: string | null;
+  period_count: number;
+  last_period_end: string | null;
+  deposit_id: string | null;
+  deposit_status: string | null;
+  deposit_amount: string | null;
+  deposit_currency: string | null;
 }
 
-// ── Issue Invoice Modal ────────────────────────────────────────────────────────
+const PAGE_SIZE = 20;
 
-function IssueInvoiceModal({ periodId, onClose, onDone }: { periodId: string; onClose: () => void; onDone: () => void }) {
-  const [method, setMethod] = useState<"wire" | "credit_card">("wire");
-  const [notes, setNotes] = useState("");
-  const [error, setError] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      authAPI.post(`/api/admin/billing-periods/${periodId}/invoices`, { paymentMethod: method, notes: notes || undefined }),
-    onSuccess: () => { onDone(); onClose(); },
-    onError: (e: any) => setError(e?.response?.data?.error ?? e.message ?? "Failed"),
-  });
-
-  return (
-    <DialogContent className="max-w-sm">
-      <DialogHeader><DialogTitle>Issue Invoice</DialogTitle></DialogHeader>
-      <div className="space-y-3 py-2">
-        <div>
-          <label className="text-sm font-medium">Payment Method</label>
-          <Select value={method} onValueChange={v => setMethod(v as any)}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="wire">Wire Transfer</SelectItem>
-              <SelectItem value="credit_card">Credit Card</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Notes (optional)</label>
-          <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? "Issuing…" : "Issue Invoice"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  );
+function money(value: string | number | null | undefined, currency: string | null = "PHP") {
+  const amount = Number(value ?? 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "PHP",
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-// ── Mark Paid Modal ────────────────────────────────────────────────────────────
-
-function MarkPaidModal({ invoiceId, onClose, onDone }: { invoiceId: string; onClose: () => void; onDone: () => void }) {
-  const [externalRef, setExternalRef] = useState("");
-  const [notes, setNotes] = useState("");
-  const [error, setError] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      authAPI.patch(`/api/admin/invoices/${invoiceId}`, { action: "pay", externalRef: externalRef || undefined, notes: notes || undefined }),
-    onSuccess: () => { onDone(); onClose(); },
-    onError: (e: any) => setError(e?.response?.data?.error ?? e.message ?? "Failed"),
-  });
-
-  return (
-    <DialogContent className="max-w-sm">
-      <DialogHeader><DialogTitle>Mark Invoice Paid</DialogTitle></DialogHeader>
-      <div className="space-y-3 py-2">
-        <div>
-          <label className="text-sm font-medium">Payment Reference</label>
-          <Input placeholder="Wire ref # or charge ID" value={externalRef} onChange={e => setExternalRef(e.target.value)} className="mt-1" />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Notes (optional)</label>
-          <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? "Saving…" : "Mark Paid"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  );
+function date(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value));
 }
 
-// ── Create Payout Modal ────────────────────────────────────────────────────────
-
-function CreatePayoutModal({ periodId, onClose, onDone }: { periodId: string; onClose: () => void; onDone: () => void }) {
-  const [region, setRegion] = useState("PH");
-  const [method, setMethod] = useState("bank_transfer");
-  const [notes, setNotes] = useState("");
-  const [error, setError] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      authAPI.post(`/api/admin/billing-periods/${periodId}/payouts`, {
-        payoutRegion: region, payoutMethod: method, notes: notes || undefined,
-      }),
-    onSuccess: () => { onDone(); onClose(); },
-    onError: (e: any) => setError(e?.response?.data?.error ?? e.message ?? "Failed"),
-  });
-
-  return (
-    <DialogContent className="max-w-sm">
-      <DialogHeader><DialogTitle>Create Payout Record</DialogTitle></DialogHeader>
-      <div className="space-y-3 py-2">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-sm font-medium">Region</label>
-            <Input value={region} onChange={e => setRegion(e.target.value)} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Method</label>
-            <Select value={method} onValueChange={setMethod}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                <SelectItem value="gcash">GCash</SelectItem>
-                <SelectItem value="wise">Wise</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Notes (optional)</label>
-          <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1" />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
-          {mutation.isPending ? "Creating…" : "Create Payout"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  );
+function statusClass(status: string | null | undefined) {
+  if (status === "paid" || status === "disbursed" || status === "closed" || status === "held") {
+    return "bg-emerald-100 text-emerald-800 border-emerald-200";
+  }
+  if (status === "failed" || status === "void" || status === "forfeited") {
+    return "bg-red-100 text-red-800 border-red-200";
+  }
+  if (status === "drawn" || status === "suspended" || status === "overdue") {
+    return "bg-amber-100 text-amber-800 border-amber-200";
+  }
+  return "bg-slate-100 text-slate-700 border-slate-200";
 }
 
-// ── Summary Cards ─────────────────────────────────────────────────────────────
-
-function SummaryCards({ summary }: { summary: LedgerSummary }) {
-  const cards = [
-    {
-      label: "Total GTV",
-      value: PHP(summary.total_gtv),
-      sub: `${summary.total_periods} periods`,
-      icon: <DollarSign className="w-5 h-5 text-green-600" />,
-      color: "border-l-green-500",
-    },
-    {
-      label: "Commission Earned",
-      value: PHP(summary.total_commission),
-      sub: `${PCT(parseFloat(summary.total_commission) / Math.max(1, parseFloat(summary.total_gtv)))} margin`,
-      icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
-      color: "border-l-blue-500",
-    },
-    {
-      label: "Outstanding Invoices",
-      value: PHP(summary.outstanding_invoice_amount),
-      sub: `${summary.pending_payout_count} payouts pending`,
-      icon: <Clock className="w-5 h-5 text-yellow-600" />,
-      color: "border-l-yellow-500",
-    },
-    {
-      label: "Deposits at Risk",
-      value: summary.deposits_at_risk,
-      sub: "drawn / suspended / replenishment",
-      icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-      color: parseInt(summary.deposits_at_risk) > 0 ? "border-l-red-500" : "border-l-gray-300",
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {cards.map(c => (
-        <Card key={c.label} className={`border-l-4 ${c.color}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{c.label}</span>
-              {c.icon}
-            </div>
-            <div className="text-2xl font-bold text-gray-900">{c.value}</div>
-            <div className="text-xs text-gray-500 mt-1">{c.sub}</div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+function currentMonthDates() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return {
+    start: `${year}-${pad(month + 1)}-01`,
+    end: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+  };
 }
-
-// ── Status Pipeline Bar ────────────────────────────────────────────────────────
-
-function PipelineBar({ summary }: { summary: LedgerSummary }) {
-  const stages = [
-    { key: "draft_periods", label: "Draft" },
-    { key: "ready_periods", label: "Ready" },
-    { key: "invoiced_periods", label: "Invoiced" },
-    { key: "payout_scheduled_periods", label: "Payout Sched." },
-    { key: "closed_periods", label: "Closed" },
-  ] as const;
-
-  return (
-    <div className="flex gap-2 mb-6 flex-wrap">
-      {stages.map(s => (
-        <div key={s.key} className="flex items-center gap-1.5 bg-gray-50 border rounded-lg px-3 py-2">
-          <span className="text-xl font-bold text-gray-800">{(summary as any)[s.key]}</span>
-          <span className="text-xs text-gray-500">{s.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Period Row Actions ─────────────────────────────────────────────────────────
-
-function PeriodActions({
-  period, onRefresh,
-}: {
-  period: LedgerPeriod;
-  onRefresh: () => void;
-}) {
-  const [modal, setModal] = useState<"invoice" | "paid" | "payout" | null>(null);
-  const qc = useQueryClient();
-  const refresh = () => { qc.invalidateQueries({ queryKey: ["ledger"] }); onRefresh(); };
-
-  const advanceMutation = useMutation({
-    mutationFn: (body: object) => authAPI.patch(`/api/admin/billing-periods/${period.id}`, body),
-    onSuccess: refresh,
-  });
-
-  return (
-    <div className="flex gap-1 flex-wrap">
-      {/* draft → ready */}
-      {period.status === "draft" && (
-        <Button size="sm" variant="outline" className="text-xs"
-          onClick={() => advanceMutation.mutate({ status: "ready" })}>
-          Mark Ready
-        </Button>
-      )}
-      {/* ready → issue invoice */}
-      {period.status === "ready" && !period.invoice_id && (
-        <Button size="sm" className="text-xs" onClick={() => setModal("invoice")}>
-          Issue Invoice
-        </Button>
-      )}
-      {/* invoice exists, not paid */}
-      {period.invoice_id && period.invoice_status && !["paid", "void"].includes(period.invoice_status) && (
-        <Button size="sm" variant="outline" className="text-xs" onClick={() => setModal("paid")}>
-          Mark Paid
-        </Button>
-      )}
-      {/* create payout */}
-      {["invoiced", "ready"].includes(period.status) && !period.payout_id && (
-        <Button size="sm" variant="outline" className="text-xs" onClick={() => setModal("payout")}>
-          Create Payout
-        </Button>
-      )}
-
-      <Dialog open={modal === "invoice"} onOpenChange={o => !o && setModal(null)}>
-        {modal === "invoice" && <IssueInvoiceModal periodId={period.id} onClose={() => setModal(null)} onDone={refresh} />}
-      </Dialog>
-      <Dialog open={modal === "paid"} onOpenChange={o => !o && setModal(null)}>
-        {modal === "paid" && period.invoice_id && (
-          <MarkPaidModal invoiceId={period.invoice_id} onClose={() => setModal(null)} onDone={refresh} />
-        )}
-      </Dialog>
-      <Dialog open={modal === "payout"} onOpenChange={o => !o && setModal(null)}>
-        {modal === "payout" && <CreatePayoutModal periodId={period.id} onClose={() => setModal(null)} onDone={refresh} />}
-      </Dialog>
-    </div>
-  );
-}
-
-// ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function AdminLedger() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [createOpen, setCreateOpen] = useState(false);
-  const qc = useQueryClient();
+  const [status, setStatus] = useState("all");
+  const monthDates = currentMonthDates();
+  const [periodDraft, setPeriodDraft] = useState({
+    contractId: "",
+    start: monthDates.start,
+    end: monthDates.end,
+    extendedHours: "0",
+    deductionHours: "0",
+    commissionRate: "",
+    notes: "",
+  });
 
-  const queryKey = ["ledger", page, statusFilter];
-  const { data: ledger, isLoading: ledgerLoading } = useQuery<LedgerResponse>({
-    queryKey,
+  const { data, isFetching, refetch } = useQuery<LedgerResponse>({
+    queryKey: ["/api/admin/ledger", { page, status }],
     queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), limit: "25" });
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      return authAPI.get(`/api/admin/ledger?${params}`);
+      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+      if (status !== "all") params.set("status", status);
+      return authAPI.get(`/api/admin/ledger?${params.toString()}`);
     },
   });
 
-  const { data: summary } = useQuery<LedgerSummary>({
-    queryKey: ["ledger-summary"],
-    queryFn: () => authAPI.get("/api/admin/ledger/summary"),
-    refetchInterval: 30_000,
+  const { data: signedContracts = [], isFetching: contractsFetching } = useQuery<SignedContract[]>({
+    queryKey: ["/api/admin/billing-contracts"],
+    queryFn: () => authAPI.get("/api/admin/billing-contracts"),
   });
 
-  const refresh = () => {
-    qc.invalidateQueries({ queryKey: ["ledger"] });
-    qc.invalidateQueries({ queryKey: ["ledger-summary"] });
+  const mutation = useMutation({
+    mutationFn: async (input: { endpoint: string; body: Record<string, unknown> }) =>
+      authAPI.patch(input.endpoint, input.body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/billing-contracts"] });
+      toast({ title: "Ledger updated", description: "The billing record was updated successfully." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Ledger update failed",
+        description: error?.response?.data?.error || "Please check the record and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const postMutation = useMutation({
+    mutationFn: async (input: { endpoint: string; body?: Record<string, unknown> }) =>
+      authAPI.post(input.endpoint, input.body || {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/billing-contracts"] });
+      toast({ title: "Ledger updated", description: "The billing record was updated successfully." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Ledger update failed",
+        description: error?.response?.data?.error || "Please check the record and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const issueInvoice = (row: LedgerRow) => {
+    postMutation.mutate({ endpoint: `/api/admin/billing-periods/${row.id}/invoices` });
   };
 
+  const schedulePayout = (row: LedgerRow) => {
+    postMutation.mutate({ endpoint: `/api/admin/billing-periods/${row.id}/payouts` });
+  };
+
+  const collectDeposit = (row: LedgerRow) => {
+    postMutation.mutate({ endpoint: `/api/admin/contracts/${row.hiring_contract_id}/security-deposit` });
+  };
+
+  const collectContractDeposit = (contract: SignedContract) => {
+    postMutation.mutate({ endpoint: `/api/admin/contracts/${contract.hiring_contract_id}/security-deposit` });
+  };
+
+  const createPeriod = () => {
+    if (!periodDraft.contractId) {
+      toast({ title: "Choose a signed contract", description: "Select the contract this billing period belongs to.", variant: "destructive" });
+      return;
+    }
+    const body: Record<string, unknown> = {
+      periodStart: periodDraft.start,
+      periodEnd: periodDraft.end,
+      extendedHours: Number(periodDraft.extendedHours || 0),
+      deductionHours: Number(periodDraft.deductionHours || 0),
+    };
+    if (periodDraft.commissionRate.trim()) body.commissionRate = Number(periodDraft.commissionRate);
+    if (periodDraft.notes.trim()) body.notes = periodDraft.notes.trim();
+    postMutation.mutate({
+      endpoint: `/api/admin/contracts/${periodDraft.contractId}/billing-periods`,
+      body,
+    });
+  };
+
+  const updateInvoice = (row: LedgerRow, action: "paid" | "void") => {
+    if (!row.invoice_id) return;
+    if (action === "void" && !window.confirm(`Void invoice ${row.invoice_number}?`)) return;
+    const body: Record<string, unknown> = { action };
+    if (action === "paid") {
+      const paymentMethod = window.prompt("Payment method: wire or credit_card", "wire");
+      if (!paymentMethod) return;
+      const externalRef = window.prompt("Payment reference", "");
+      if (!externalRef) return;
+      body.paymentMethod = paymentMethod;
+      body.externalRef = externalRef;
+    }
+    mutation.mutate({ endpoint: `/api/admin/invoices/${row.invoice_id}`, body });
+  };
+
+  const updatePayout = (row: LedgerRow, action: "disbursed" | "failed") => {
+    if (!row.payout_id) return;
+    const value = window.prompt(
+      action === "disbursed" ? "Disbursement reference" : "Reason the payout failed",
+      "",
+    );
+    if (!value) return;
+    mutation.mutate({
+      endpoint: `/api/admin/payouts/${row.payout_id}`,
+      body: action === "disbursed" ? { action, externalRef: value } : { action, failedReason: value },
+    });
+  };
+
+  const advanceDeposit = (row: LedgerRow, action: string) => {
+    if (!row.deposit_id) return;
+    const body: Record<string, unknown> = { action };
+    if (action === "draw") {
+      body.drawnReason = window.prompt("Reason for drawing the deposit", "Client payment shortfall") || "";
+    }
+    if (action === "apply") {
+      body.terminalReason = window.prompt("Terminal reason: normal_termination or mutual_end", "normal_termination") || "";
+    }
+    if (action === "forfeit") {
+      body.terminalReason = window.prompt("Terminal reason (must be nonpayment_breach)", "nonpayment_breach") || "";
+    }
+    mutation.mutate({ endpoint: `/api/admin/security-deposits/${row.deposit_id}`, body });
+  };
+
+  const summary = data?.summary;
+  const rows = data?.items ?? [];
+
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing Ledger</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Invoice periods · Client invoices · Talent payouts · Security deposits
-          </p>
+    <div className="container mx-auto max-w-7xl space-y-6 p-6" data-testid="admin-ledger-page">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/admin/dashboard")} className="h-auto p-1">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <CircleDollarSign className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Billing Ledger</h1>
+            <p className="text-sm text-muted-foreground">Invoices, talent payouts, and security deposits in one place.</p>
+          </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>+ New Billing Period</Button>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} data-testid="button-refresh-ledger">
+          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
 
-      {/* Summary */}
-      {summary && (
-        <>
-          <SummaryCards summary={summary} />
-          <PipelineBar summary={summary} />
-        </>
-      )}
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-44"><SelectValue placeholder="All statuses" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="ready">Ready</SelectItem>
-            <SelectItem value="invoiced">Invoiced</SelectItem>
-            <SelectItem value="payout_scheduled">Payout Scheduled</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-        {ledger && (
-          <span className="text-sm text-gray-500">{ledger.total} period{ledger.total !== 1 ? "s" : ""}</span>
-        )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">GTV</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{money(summary?.gtv)}</p><p className="text-xs text-muted-foreground">Client billing value</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Outstanding invoices</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{money(summary?.outstanding_invoices)}</p><p className="text-xs text-muted-foreground">Not paid or void</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending payouts</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{money(summary?.pending_payouts)}</p><p className="text-xs text-muted-foreground">Pending or scheduled</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Deposits at risk</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{summary?.deposits_at_risk ?? 0}</p><p className="text-xs text-muted-foreground">Drawn or suspended</p></CardContent>
+        </Card>
       </div>
 
-      {/* Table */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Invoice Periods</CardTitle>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileCheck2 className="h-5 w-5 text-primary" />
+            Start a billing period
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Select a signed contract to calculate a draft period from its offer rate and engagement type.
+          </p>
         </CardHeader>
-        <CardContent className="p-0">
-          {ledgerLoading ? (
-            <div className="p-8 text-center text-gray-500">Loading…</div>
-          ) : !ledger?.periods.length ? (
-            <div className="p-8 text-center text-gray-400">No billing periods yet.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="text-xs">
-                    <TableHead>Period</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Talent Payout</TableHead>
-                    <TableHead className="text-right">Client Invoice</TableHead>
-                    <TableHead className="text-right">Commission</TableHead>
-                    <TableHead>Period Status</TableHead>
-                    <TableHead>Invoice</TableHead>
-                    <TableHead>Payout</TableHead>
-                    <TableHead>Deposit</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ledger.periods.map(p => (
-                    <TableRow key={p.id} className="text-sm align-top">
-                      <TableCell className="whitespace-nowrap">
-                        <div className="font-medium">{fDate(p.period_start)}</div>
-                        <div className="text-xs text-gray-400">→ {fDate(p.period_end)}</div>
-                        <div className="text-[10px] text-gray-300 font-mono mt-0.5">{p.id.slice(0, 8)}…</div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <div>{p.engagement_type}</div>
-                        <div className="text-xs text-gray-400">{p.standard_period_hours}h</div>
-                        {(parseFloat(p.extended_hours) > 0 || parseFloat(p.deduction_hours) > 0) && (
-                          <div className="text-[10px] text-blue-600">
-                            {parseFloat(p.extended_hours) > 0 && `+${p.extended_hours}h ext`}
-                            {parseFloat(p.deduction_hours) > 0 && ` -${p.deduction_hours}h ded`}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-medium whitespace-nowrap">
-                        {PHP(p.adjusted_talent_payout)}
-                        <div className="text-xs text-gray-400">{p.talent_rate_currency}</div>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold whitespace-nowrap text-gray-800">
-                        {PHP(p.client_invoice_amount)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        <div>{PHP(p.commission_earned)}</div>
-                        <div className="text-xs text-gray-400">{PCT(p.commission_rate)} rate</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`text-xs ${PERIOD_COLORS[p.status] ?? "bg-gray-100 text-gray-600"}`}>
-                          {p.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {p.invoice_number ? (
-                          <>
-                            <div className="font-mono text-xs">{p.invoice_number}</div>
-                            <Badge className={`text-xs mt-0.5 ${INV_COLORS[p.invoice_status ?? ""] ?? ""}`}>
-                              {p.invoice_status}
-                            </Badge>
-                            {p.paid_at && <div className="text-[10px] text-green-600">{fDate(p.paid_at)}</div>}
-                          </>
-                        ) : <span className="text-gray-300 text-xs">—</span>}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {p.payout_status ? (
-                          <>
-                            <Badge className={`text-xs ${p.payout_status === "disbursed" ? "bg-green-100 text-green-700" : p.payout_status === "failed" ? "bg-red-100 text-red-700" : "bg-purple-100 text-purple-700"}`}>
-                              {p.payout_status}
-                            </Badge>
-                            {p.disbursed_at && <div className="text-[10px] text-green-600">{fDate(p.disbursed_at)}</div>}
-                          </>
-                        ) : <span className="text-gray-300 text-xs">—</span>}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {p.deposit_status ? (
-                          <>
-                            <Badge className={`text-xs ${DEP_COLORS[p.deposit_status] ?? ""}`}>
-                              {p.deposit_status}
-                            </Badge>
-                            {p.deposit_amount && (
-                              <div className="text-[10px] text-gray-400">{PHP(p.deposit_amount)}</div>
-                            )}
-                          </>
-                        ) : <span className="text-gray-300 text-xs">—</span>}
-                      </TableCell>
-                      <TableCell>
-                        <PeriodActions period={p} onRefresh={refresh} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Signed contract</span>
+              <select
+                value={periodDraft.contractId}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, contractId: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+                aria-label="Select signed contract"
+                data-testid="select-billing-contract"
+                disabled={contractsFetching}
+              >
+                <option value="">{contractsFetching ? "Loading contracts…" : "Choose a contract"}</option>
+                {signedContracts.map((contract) => (
+                  <option key={contract.hiring_contract_id} value={contract.hiring_contract_id}>
+                    {contract.job_title || "Untitled job"} · {contract.talent_name || contract.talent_email || "Talent"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Period start</span>
+              <input
+                type="date"
+                value={periodDraft.start}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, start: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+                data-testid="input-period-start"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Period end</span>
+              <input
+                type="date"
+                value={periodDraft.end}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, end: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+                data-testid="input-period-end"
+              />
+            </label>
+            <div className="flex items-end">
+              <Button onClick={createPeriod} disabled={postMutation.isPending || contractsFetching} data-testid="button-create-period">
+                {postMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Create draft period
+              </Button>
             </div>
-          )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Extended hours</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={periodDraft.extendedHours}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, extendedHours: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Deduction hours</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={periodDraft.deductionHours}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, deductionHours: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Commission rate (optional)</span>
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                placeholder="Use billing default"
+                value={periodDraft.commissionRate}
+                onChange={(event) => setPeriodDraft((draft) => ({ ...draft, commissionRate: event.target.value }))}
+                className="h-9 w-full rounded-md border bg-background px-3"
+              />
+            </label>
+          </div>
+          <label className="block space-y-1 text-sm">
+            <span className="font-medium">Notes (optional)</span>
+            <textarea
+              value={periodDraft.notes}
+              onChange={(event) => setPeriodDraft((draft) => ({ ...draft, notes: event.target.value }))}
+              className="min-h-16 w-full rounded-md border bg-background px-3 py-2"
+              placeholder="Add reconciliation notes for this period"
+            />
+          </label>
+        </CardContent>
+      </Card>
 
-          {/* Pagination */}
-          {ledger && ledger.pages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">
-                Page {ledger.page} of {ledger.pages}
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" disabled={page >= ledger.pages} onClick={() => setPage(p => p + 1)}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-primary" />
+            Signed contract work queue
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Signed contracts remain visible here even before their first billing period exists.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {contractsFetching ? (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading signed contracts…</div>
+          ) : signedContracts.length === 0 ? (
+            <p className="py-4 text-sm text-muted-foreground">No signed contracts are ready for billing.</p>
+          ) : (
+            <div className="space-y-3">
+              {signedContracts.map((contract) => (
+                <div key={contract.hiring_contract_id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3" data-testid={`billing-contract-${contract.hiring_contract_id}`}>
+                  <div>
+                    <div className="font-medium">{contract.job_title || "Untitled job"}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {contract.client_name || contract.client_email || "Client"} · {contract.talent_name || contract.talent_email || "Talent"} · {money(contract.talent_rate, contract.talent_rate_currency)}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>{contract.period_count} period{contract.period_count === 1 ? "" : "s"}</span>
+                      {contract.last_period_end ? <span>Last through {date(contract.last_period_end)}</span> : <span>No period yet</span>}
+                      <Badge variant="outline" className={statusClass(contract.deposit_status)}>{contract.deposit_status?.replaceAll("_", " ") || "deposit missing"}</Badge>
+                    </div>
+                  </div>
+                  {contract.deposit_status === "pending" || !contract.deposit_id ? (
+                    <Button size="sm" variant="outline" onClick={() => collectContractDeposit(contract)} disabled={postMutation.isPending} data-testid={`button-collect-contract-deposit-${contract.hiring_contract_id}`}>
+                      Collect deposit
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Create Period Modal */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <CreatePeriodModal onClose={() => setCreateOpen(false)} onCreated={refresh} />
-      </Dialog>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Billing periods</h2>
+          <p className="text-sm text-muted-foreground">{data?.total ?? 0} total period{data?.total === 1 ? "" : "s"}</p>
+        </div>
+        <select
+          value={status}
+          onChange={(event) => { setStatus(event.target.value); setPage(1); }}
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+          aria-label="Filter billing periods by status"
+          data-testid="select-ledger-status"
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft</option>
+          <option value="invoiced">Invoiced</option>
+          <option value="payout_scheduled">Payout scheduled</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {isFetching && rows.length === 0 ? (
+            <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : rows.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground">No billing periods match this filter.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1100px] text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50 text-left">
+                    <th className="px-4 py-3 font-medium">Period / parties</th>
+                    <th className="px-4 py-3 font-medium">GTV / commission</th>
+                    <th className="px-4 py-3 font-medium">Invoice</th>
+                    <th className="px-4 py-3 font-medium">Talent payout</th>
+                    <th className="px-4 py-3 font-medium">Deposit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id} className="border-b align-top last:border-0 hover:bg-muted/20" data-testid={`ledger-row-${row.id}`}>
+                      <td className="space-y-1 px-4 py-4">
+                        <div className="font-medium">{date(row.period_start)} – {date(row.period_end)}</div>
+                        <div className="text-xs text-muted-foreground">Client: {row.client_name || row.client_email || "—"}</div>
+                        <div className="text-xs text-muted-foreground">Talent: {row.talent_name || row.talent_email || "—"}</div>
+                        <Badge variant="outline" className={statusClass(row.status)}>{row.status.replaceAll("_", " ")}</Badge>
+                      </td>
+                      <td className="space-y-1 px-4 py-4">
+                        <div className="font-semibold">{money(row.client_invoice_amount, row.talent_rate_currency)}</div>
+                        <div className="text-xs text-muted-foreground">Commission {money(row.commission_earned, row.talent_rate_currency)}</div>
+                        <div className="text-xs text-muted-foreground">Rate {money(row.talent_rate, row.talent_rate_currency)}</div>
+                      </td>
+                      <td className="space-y-1 px-4 py-4">
+                        {row.invoice_id && row.invoice_status !== "void" ? (
+                          <>
+                            <div className="font-medium">{row.invoice_number}</div>
+                            <Badge variant="outline" className={statusClass(row.invoice_status)}>{row.invoice_status}</Badge>
+                            <div className="text-xs text-muted-foreground">{money(row.invoice_amount, row.invoice_currency)} · Due {date(row.due_date)}</div>
+                            {row.invoice_status === "sent" || row.invoice_status === "overdue" ? (
+                              <div className="flex gap-2 pt-1">
+                                <Button size="sm" onClick={() => updateInvoice(row, "paid")} disabled={mutation.isPending} data-testid={`button-pay-invoice-${row.id}`}>Mark paid</Button>
+                                <Button size="sm" variant="outline" onClick={() => updateInvoice(row, "void")} disabled={mutation.isPending}>Void</Button>
+                              </div>
+                            ) : null}
+                          </>
+                        ) : row.invoice_id && row.invoice_status === "void" ? (
+                          <>
+                            <div className="font-medium">{row.invoice_number}</div>
+                            <Badge variant="outline" className={statusClass(row.invoice_status)}>void</Badge>
+                            <Button size="sm" onClick={() => issueInvoice(row)} disabled={postMutation.isPending} data-testid={`button-reissue-invoice-${row.id}`}>
+                              Issue replacement
+                            </Button>
+                          </>
+                        ) : (
+                          <Button size="sm" onClick={() => issueInvoice(row)} disabled={postMutation.isPending} data-testid={`button-issue-invoice-${row.id}`}>
+                            Issue invoice
+                          </Button>
+                        )}
+                      </td>
+                      <td className="space-y-1 px-4 py-4">
+                        <div className="font-semibold">{money(row.adjusted_talent_payout, row.talent_rate_currency)}</div>
+                        {row.payout_id ? (
+                          <>
+                            <Badge variant="outline" className={statusClass(row.payout_status)}>{row.payout_status}</Badge>
+                            <div className="text-xs text-muted-foreground">{row.payout_method || "—"}</div>
+                            {row.payout_status === "pending" || row.payout_status === "scheduled" ? (
+                              row.invoice_status === "paid" ? (
+                                <div className="flex gap-2 pt-1">
+                                  <Button size="sm" onClick={() => updatePayout(row, "disbursed")} disabled={mutation.isPending} data-testid={`button-disburse-payout-${row.id}`}>Disburse</Button>
+                                  <Button size="sm" variant="outline" onClick={() => updatePayout(row, "failed")} disabled={mutation.isPending}>Fail</Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Pay invoice before disbursing</span>
+                              )
+                            ) : null}
+                          </>
+                        ) : (
+                          row.invoice_status === "paid" ? (
+                            <Button size="sm" variant="outline" onClick={() => schedulePayout(row)} disabled={postMutation.isPending} data-testid={`button-schedule-payout-${row.id}`}>
+                              Schedule payout
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Pay invoice before scheduling</span>
+                          )
+                        )}
+                      </td>
+                      <td className="space-y-1 px-4 py-4">
+                        {row.deposit_id ? (
+                          <>
+                            <div className="font-medium">{money(row.deposit_amount, row.deposit_currency)}</div>
+                            <Badge variant="outline" className={statusClass(row.deposit_status)}>{row.deposit_status?.replaceAll("_", " ")}</Badge>
+                            {row.deposit_status === "held" ? (
+                              <div className="flex gap-2 pt-1">
+                                <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "draw")} disabled={mutation.isPending}>Draw</Button>
+                                <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "apply")} disabled={mutation.isPending}>Apply</Button>
+                              </div>
+                            ) : null}
+                            {row.deposit_status === "pending" ? (
+                              <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
+                                Collect deposit
+                              </Button>
+                            ) : null}
+                            {row.deposit_status === "drawn" ? (
+                              <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "replenishment_pending")} disabled={mutation.isPending}>
+                                Mark replenishment due
+                              </Button>
+                            ) : null}
+                            {row.deposit_status === "replenishment_pending" ? (
+                              <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "suspend")} disabled={mutation.isPending}>Suspend</Button>
+                            ) : null}
+                            {row.deposit_status === "suspended" ? (
+                              <div className="flex gap-2 pt-1">
+                                <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "cure")} disabled={mutation.isPending}>Cure / hold</Button>
+                                <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "forfeit")} disabled={mutation.isPending}>Forfeit</Button>
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
+                            Collect deposit
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Page {data?.page ?? page} of {data?.pages ?? 1}</p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1 || isFetching}>
+            <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setPage((value) => Math.min(data?.pages ?? value, value + 1))} disabled={page >= (data?.pages ?? 1) || isFetching}>
+            Next <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -669,6 +669,9 @@ export const jobSubmissions = pgTable("job_submissions", {
   videoIntroductionFileName: text("video_introduction_file_name"),
   portfolioUrl: text("portfolio_url"),
   coverLetter: text("cover_letter"),
+  proposedRate: decimal("proposed_rate", { precision: 12, scale: 2 }),
+  proposedBudget: decimal("proposed_budget", { precision: 12, scale: 2 }),
+  estimatedDuration: text("estimated_duration"),
   expectedSalary: text("expected_salary"),
   availability: text("availability"),
   status: text("status").notNull().default("new"), // new, reviewed, shortlisted, rejected, hired, invited

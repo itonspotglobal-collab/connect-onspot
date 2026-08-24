@@ -22,6 +22,7 @@
 import { getClient } from "../db.ts";
 import type { PoolClient } from "pg";
 import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
+import { computeDepositAmount } from "../lib/billing.js";
 
 export class ContractError extends Error {
   status: number;
@@ -280,6 +281,27 @@ export async function updateHiringContract(
              (application_id, previous_status, new_status, note, changed_by)
            VALUES ($1, $2, 'hired', 'Hiring contract fully signed by OnSpot and talent', $3)`,
           [contract.submission_id, previousStatus, adminId ?? null],
+        );
+      }
+
+      // Contract activation starts the deposit lifecycle. Keep this in the
+      // same transaction as the signing transition so an active contract
+      // cannot exist without its ledger deposit.
+      const offerForDeposit = await client.query(
+        `SELECT rate, rate_currency FROM offers WHERE id = $1`,
+        [contract.offer_id],
+      );
+      const talentRate = Number(offerForDeposit.rows[0]?.rate);
+      if (Number.isFinite(talentRate) && talentRate >= 0) {
+        await client.query(
+          `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status)
+           VALUES ($1, $2, $3, 'pending')
+           ON CONFLICT (hiring_contract_id) DO NOTHING`,
+          [
+            contract.id,
+            computeDepositAmount(talentRate).toFixed(2),
+            offerForDeposit.rows[0]?.rate_currency || "PHP",
+          ],
         );
       }
     }

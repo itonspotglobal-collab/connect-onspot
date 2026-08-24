@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,8 @@ interface JobApplicationModalProps {
   onSuccess?: () => void;
 }
 
-// Application form schema (proposals table is retired; schema is local)
+// The modal keeps its compact legacy form, but submits through the canonical
+// job application endpoint.
 const applicationFormSchema = z.object({
   coverLetter: z.string()
     .min(50, "Cover letter must be at least 50 characters")
@@ -48,6 +49,8 @@ const applicationFormSchema = z.object({
   estimatedDuration: z.string()
     .max(200, "Duration description must be less than 200 characters")
     .optional(),
+  phone: z.string()
+    .min(3, "Phone number is required"),
 });
 
 type ApplicationFormData = z.infer<typeof applicationFormSchema>;
@@ -68,47 +71,67 @@ export default function JobApplicationModal({
       proposedRate: undefined,
       proposedBudget: undefined,
       estimatedDuration: "",
+      phone: "",
     },
   });
 
-  // Submit proposal mutation
-  const submitProposal = useMutation({
+  // Submit through the canonical job-application flow. The old proposals API
+  // was retired; this route creates the linked job_submission record.
+  const submitApplication = useMutation({
     mutationFn: async (data: ApplicationFormData) => {
       if (!job || !user) {
         throw new Error("Missing job or user information");
       }
 
-      // Send only the proposal data - server will derive talentId from authentication
-      const proposalData = {
-        jobId: job.id,
-        coverLetter: data.coverLetter.trim(),
-        // Keep numeric fields as numbers (not strings)
-        ...(job.engagementType === 'Lite' && data.proposedRate !== undefined && {
-          proposedRate: data.proposedRate
-        }),
-        ...(job.engagementType === 'Standard' && data.proposedBudget !== undefined && {
-          proposedBudget: data.proposedBudget
-        }),
-        ...(data.estimatedDuration && {
-          estimatedDuration: data.estimatedDuration.trim()
-        }),
-      };
+      const token = localStorage.getItem("onspot_jwt_token") || (() => {
+        try {
+          const raw = localStorage.getItem("talent_profile_token");
+          return raw ? (JSON.parse(raw) as { token?: string }).token || null : null;
+        } catch {
+          return null;
+        }
+      })();
+      const formData = new FormData();
+      const firstName = user.firstName?.trim() || "OnSpot";
+      const lastName = user.lastName?.trim() || "Talent";
+      formData.set("firstName", firstName);
+      formData.set("lastName", lastName);
+      formData.set("email", user.email);
+      formData.set("phone", data.phone.trim());
+      formData.set("coverLetter", data.coverLetter.trim());
+      if (job.engagementType === "Lite" && data.proposedRate !== undefined) {
+        formData.set("proposedRate", String(data.proposedRate));
+      }
+      if (job.engagementType === "Standard" && data.proposedBudget !== undefined) {
+        formData.set("proposedBudget", String(data.proposedBudget));
+      }
+      if (data.estimatedDuration) {
+        formData.set("estimatedDuration", data.estimatedDuration.trim());
+      }
 
-      const response = await apiRequest('POST', '/api/proposals', proposalData);
+      const response = await fetch(`/api/jobs/${job.id}/apply`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = (await response.text()) || response.statusText;
+        throw new Error(`${response.status}: ${text}`);
+      }
       return response.json();
     },
     onSuccess: () => {
       trackPilotActivity("appliedToJob");
       // Invalidate queries to refresh job data and applications
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/search'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/proposals'] });
       if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ['/api/talents', user.id, 'proposals'] });
+        queryClient.invalidateQueries({ queryKey: ['talent-applications'] });
       }
       
       toast({
         title: "Application submitted successfully!",
-        description: "Your proposal has been sent to the client. You'll be notified of any updates.",
+        description: "Your application has been sent to the client. You'll be notified of any updates.",
       });
 
       // Reset form and close modal
@@ -125,7 +148,7 @@ export default function JobApplicationModal({
       // Handle specific HTTP status error cases (from apiRequest error format)
       if (error.message.includes('409:')) {
         title = "Already Applied";
-        description = "You have already submitted a proposal for this job.";
+        description = "You have already submitted an application for this job.";
       } else if (error.message.includes('401:')) {
         title = "Authentication Required";
         description = "Please log in to submit an application.";
@@ -174,7 +197,7 @@ export default function JobApplicationModal({
     }
 
     // Use mutation's isPending state instead of local state
-    await submitProposal.mutateAsync(data);
+    await submitApplication.mutateAsync(data);
   };
 
   const formatBudgetRange = (job: Job) => {
@@ -252,6 +275,23 @@ export default function JobApplicationModal({
               </span>
               <span>{form.watch('coverLetter')?.length || 0}/2000</span>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="application-phone">Phone *</Label>
+            <Input
+              id="application-phone"
+              type="tel"
+              placeholder="+1 555 123 4567"
+              data-testid="input-application-phone"
+              {...form.register('phone')}
+            />
+            {form.formState.errors.phone && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {form.formState.errors.phone.message}
+              </p>
+            )}
           </div>
 
           {/* Rate/Budget Fields */}
@@ -340,7 +380,7 @@ export default function JobApplicationModal({
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="flex-1"
-              disabled={submitProposal.isPending}
+              disabled={submitApplication.isPending}
               data-testid="button-cancel-application"
             >
               Cancel
@@ -348,10 +388,10 @@ export default function JobApplicationModal({
             <Button
               type="submit"
               className="flex-1"
-              disabled={submitProposal.isPending}
+              disabled={submitApplication.isPending}
               data-testid="button-submit-application"
             >
-              {submitProposal.isPending ? (
+              {submitApplication.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Submitting...

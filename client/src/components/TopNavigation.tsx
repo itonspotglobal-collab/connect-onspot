@@ -30,6 +30,7 @@ import {
   ClipboardList,
   Flag,
   MessageSquare,
+  DollarSign,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -349,6 +350,7 @@ export function TopNavigation() {
     ];
     if (user?.role === "admin") return [
       { label: "Admin Dashboard",   route: "/admin/dashboard",          icon: Shield },
+      { label: "Billing Ledger",    route: "/admin/ledger",              icon: DollarSign },
       { label: "Find Work",         route: "/admin/find-work",          icon: Briefcase },
       { label: "Job Applications",  route: "/admin/job-applications",   icon: Users },
       { label: "Email Templates",   route: "/admin/email-templates",    icon: Mail },

@@ -168,6 +168,13 @@ async function destroyFixtures() {
   }
   const submissionIds = [...new Set(fixtureSubmissionIds)];
   if (submissionIds.length) {
+    await query(
+      `DELETE FROM security_deposits
+        WHERE hiring_contract_id IN (
+          SELECT id FROM hiring_contracts WHERE submission_id = ANY($1::varchar[])
+        )`,
+      [submissionIds],
+    );
     await query(`DELETE FROM hiring_contracts WHERE submission_id = ANY($1::varchar[])`, [submissionIds]);
     await query(`DELETE FROM offers WHERE submission_id = ANY($1::varchar[])`, [submissionIds]);
     await query(`DELETE FROM job_application_status_history WHERE application_id = ANY($1::varchar[])`, [submissionIds]);

@@ -533,6 +533,10 @@ export default function AdminDashboard() {
                 <DollarSign className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Inquiries &amp; Payments
               </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/ledger')} data-testid="button-open-billing-ledger">
+                <FileText className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Billing Ledger
+              </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/csv-import')}>
                 <Upload className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 CSV Import
