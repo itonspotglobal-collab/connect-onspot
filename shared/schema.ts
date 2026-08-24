@@ -108,9 +108,15 @@ export const organizations = pgTable("organizations", {
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Deletion lifecycle — set when an owner schedules deletion; cleared on cancel;
+  // rows whose delete_due_at has passed are permanently removed by scheduled cleanup.
+  deleteRequestedAt: timestamp("delete_requested_at"),
+  deleteRequestedBy: varchar("delete_requested_by").references(() => users.id),
+  deleteDueAt: timestamp("delete_due_at"),
 }, (table) => [
   index("idx_organizations_created_by").on(table.createdBy),
   index("idx_organizations_created_at").on(table.createdAt),
+  index("idx_organizations_delete_due_at").on(table.deleteDueAt),
 ]);
 
 export const organizationMembers = pgTable("organization_members", {
@@ -143,6 +149,8 @@ export const organizationInvitations = pgTable("organization_invitations", {
   expiresAt: timestamp("expires_at").notNull().default(sql`NOW() + INTERVAL '30 days'`),
   respondedAt: timestamp("responded_at"),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // SHA-256 hash of the raw token embedded in invitation URLs; raw token is never stored.
+  tokenHash: text("token_hash"),
 }, (table) => [
   index("idx_organization_invitations_organization_id").on(table.organizationId),
   index("idx_organization_invitations_email").on(table.email),

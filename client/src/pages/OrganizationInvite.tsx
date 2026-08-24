@@ -71,6 +71,11 @@ export default function OrganizationInvite() {
       queryClient.invalidateQueries({ queryKey: ["/api/organization-invitations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/organizations/me"] });
       if (action === "accept" && data.organization?.id) {
+        // Refresh the organization detail and members list so the new member appears
+        // immediately in OrganizationDetail without requiring a manual reload.
+        // Prefix invalidation on [orgId, "members"] covers all invitationStatusFilter variants.
+        queryClient.invalidateQueries({ queryKey: ["/api/organizations", data.organization.id, "members"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/organizations", data.organization.id] });
         toast({
           title: "Invitation accepted",
           description: `You are now a member of ${data.organization.name}.`,

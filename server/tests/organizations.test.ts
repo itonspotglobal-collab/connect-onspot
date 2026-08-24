@@ -419,6 +419,46 @@ describe("Client organization routes", () => {
     assert.equal(ownerView.json.invitations[0].status, "revoked");
   });
 
+  it("normalizes invitation email to lowercase and deduplicates case-insensitively", async () => {
+    const mixedCaseEmail = `Mixed.Case-${suffix}@EXAMPLE.Test`;
+    const expectedLower = mixedCaseEmail.toLowerCase();
+
+    // First invite — mixed case must be accepted and stored as lowercase
+    const first = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: mixedCaseEmail },
+    );
+    assert.equal(first.status, 201, JSON.stringify(first.json));
+    assert.equal(
+      first.json.invitation.email,
+      expectedLower,
+      "stored email must be lowercased",
+    );
+
+    // Second invite with the same address in all-uppercase must be rejected as duplicate
+    const duplicate = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: mixedCaseEmail.toUpperCase() },
+    );
+    assert.equal(
+      duplicate.status,
+      409,
+      `expected 409 for duplicate case-insensitive email, got ${duplicate.status}: ${JSON.stringify(duplicate.json)}`,
+    );
+
+    // Clean up so subsequent tests are not affected
+    await query(
+      `UPDATE organization_invitations SET status = 'revoked' WHERE id = $1`,
+      [first.json.invitation.id],
+    );
+  });
+
   it("allows invitations to Talent and Admin email addresses (Client-only rejection at acceptance)", async () => {
     // Inviting a Talent email must now succeed (rejection happens at acceptance)
     const talentInvite = await request(
