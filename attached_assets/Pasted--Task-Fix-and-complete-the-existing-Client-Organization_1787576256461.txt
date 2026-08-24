@@ -1,0 +1,1400 @@
+## Task
+
+Fix and complete the existing **Client Organization backend** in the OnSpot application.
+
+Use the current repository implementation as the starting point.
+
+Do NOT rebuild the organization feature from scratch.
+
+The repository already contains:
+
+* `organizations`
+* `organization_members`
+* `organization_invitations`
+* organization creation
+* organization detail page
+* organization invitation UI
+* member listing
+* invitation acceptance/decline
+* member removal
+* `/api/organizations/me`
+
+Inspect the existing implementation first and make targeted changes.
+
+The most important requirement is:
+
+**Do not break existing Client, Talent, Admin, authentication, Client Profile, Hire Talent, Messages, Jobs, Dashboard, or Settings functionality.**
+
+---
+
+# 1. Fix the current invitation backend error
+
+The Organization page currently produces an error similar to:
+
+```text
+400: {"error":"Only Client accounts can join an organization"}
+```
+
+when the owner tries to invite an email address.
+
+This validation is occurring too early.
+
+## Correct behavior
+
+An organization owner must be allowed to send an invitation to **any valid email address**, even if that person has not created an OnSpot account yet.
+
+Do NOT require a matching Client account when the invitation is initially created.
+
+Change the flow to:
+
+```text
+Organization owner enters email
+        ↓
+Validate email format
+        ↓
+Ensure they are not already an active member
+        ↓
+Ensure there is not already a valid pending invitation
+        ↓
+Create organization invitation
+        ↓
+Generate secure invitation token
+        ↓
+Send invitation email
+        ↓
+Recipient opens invitation URL
+        ↓
+Recipient logs in or creates account
+        ↓
+Verify authenticated account email matches invited email
+        ↓
+Verify account role is client
+        ↓
+Accept invitation
+        ↓
+Create organization_members row
+```
+
+The **Client account requirement should happen on acceptance**, not while sending the invitation.
+
+---
+
+# 2. Existing accounts
+
+If the invited email already belongs to an existing user:
+
+### Existing Client user
+
+Allow invitation normally.
+
+```text
+user.role = client
+→ invitation can be accepted
+```
+
+### Existing Talent user
+
+The invitation email may still be created/sent, but they cannot accept it using a Talent account.
+
+When accepting, return a clear error such as:
+
+```text
+This invitation requires a Client account.
+Please sign in with or create a Client account using the invited email address.
+```
+
+Do NOT convert Talent users into Client users automatically.
+
+### Existing Admin
+
+Same rule.
+
+Do not alter their role automatically.
+
+---
+
+# 3. Email address matching
+
+Normalize email addresses before comparing them.
+
+Use:
+
+```ts
+email.trim().toLowerCase()
+```
+
+Do this consistently for:
+
+* invitations
+* existing users
+* acceptance validation
+* duplicate invitation detection
+
+Do not allow:
+
+```text
+Val@OnSpotGlobal.com
+```
+
+and
+
+```text
+val@onspotglobal.com
+```
+
+to be treated as different invitations.
+
+---
+
+# 4. Send a real invitation email
+
+Organization invitations must send a real email.
+
+Sender:
+
+```text
+Careers@onspotglobal.com
+```
+
+Display name:
+
+```text
+OnSpot Careers
+```
+
+Preferred From header:
+
+```text
+OnSpot Careers <Careers@onspotglobal.com>
+```
+
+Inspect the repository and existing environment/configuration first.
+
+Reuse an existing email provider/service if the application already has one.
+
+Do NOT create a fake email sender or pretend an email was sent.
+
+If no working provider exists yet, implement the project's supported provider using environment variables/secrets rather than hard-coded API keys.
+
+Possible secret naming should follow the existing app conventions.
+
+The sender address itself may be configured as:
+
+```env
+ORGANIZATION_INVITE_FROM_EMAIL=Careers@onspotglobal.com
+ORGANIZATION_INVITE_FROM_NAME=OnSpot Careers
+```
+
+Do not hard-code provider credentials in source code.
+
+---
+
+# 5. Invitation email contents
+
+Use an OnSpot-branded HTML email.
+
+Subject:
+
+```text
+You're invited to join {Organization Name} on OnSpot
+```
+
+Suggested body:
+
+```text
+Hi,
+
+{Inviter Name} invited you to join {Organization Name} on OnSpot.
+
+Once you join, you'll be able to collaborate with your organization's team inside the OnSpot Client workspace.
+
+[Accept Invitation]
+
+This invitation was sent to:
+{invited email}
+
+The invitation expires in 30 days.
+
+If you do not yet have an OnSpot Client account, you can create one using this email address and then accept the invitation.
+
+If you weren't expecting this invitation, you can ignore this email.
+
+— OnSpot
+```
+
+Use a real clickable invitation URL.
+
+Example:
+
+```text
+https://<app-domain>/organization-invitations/{token}
+```
+
+Do NOT put raw database IDs alone in the email if a secure random invitation token can be used.
+
+---
+
+# 6. Secure invitation tokens
+
+Add a secure invitation token if the existing system does not already have one.
+
+Recommended:
+
+```text
+organization_invitations.token_hash
+```
+
+Generate the raw token server-side using a cryptographically secure random generator.
+
+Example approach:
+
+```ts
+crypto.randomBytes(32)
+```
+
+Store only a hash of the token if practical.
+
+Do not expose predictable IDs as authorization tokens.
+
+The invitation page should resolve the invitation from the token.
+
+---
+
+# 7. Invitation acceptance flow
+
+When the recipient opens the link:
+
+### Not logged in
+
+Show:
+
+```text
+You've been invited to join OnSpot Testing
+```
+
+with options:
+
+```text
+Sign In
+Create Client Account
+```
+
+Preserve the invitation token through the auth flow.
+
+After login/signup, return to the invitation acceptance page.
+
+### Logged in
+
+Before accepting, backend must verify:
+
+```text
+authenticated user's email
+===
+invitation.email
+```
+
+after normalization.
+
+Then verify:
+
+```text
+user.role === "client"
+```
+
+If both pass:
+
+Create or activate:
+
+```text
+organization_members
+```
+
+with:
+
+```text
+organizationId = invitation.organizationId
+userId = current authenticated user
+role = "member"
+status = "active"
+joinedAt = NOW()
+```
+
+Then update invitation:
+
+```text
+status = "accepted"
+acceptedBy = current user id
+respondedAt = NOW()
+updatedAt = NOW()
+```
+
+This should happen atomically in one database transaction.
+
+---
+
+# 8. Accepted user must immediately appear in Team Members
+
+This is required.
+
+The current Organization Detail UI already renders:
+
+```text
+teamData.members
+```
+
+including the owner.
+
+Preserve that behavior.
+
+After an invitation is accepted, the owner should see something like:
+
+```text
+Team members
+
+Val Client
+test.clientval@onspotglobal.com
+Owner
+
+John Smith
+john@company.com
+Member
+```
+
+The accepted person must appear directly with the owner in the same Team Members list.
+
+Do not leave accepted users only under Invitation History.
+
+Make sure:
+
+```http
+GET /api/organizations/:organizationId/members
+```
+
+returns all active members.
+
+Recommended ordering:
+
+```text
+Owner first
+then other members by joined date or name
+```
+
+Example backend ordering:
+
+```sql
+ORDER BY
+  CASE WHEN om.role = 'owner' THEN 0 ELSE 1 END,
+  om.joined_at ASC
+```
+
+---
+
+# 9. Refresh both users' organization data
+
+After acceptance, invalidate/refetch:
+
+```text
+/api/organization-invitations
+/api/organizations/me
+/api/organizations/:organizationId
+/api/organizations/:organizationId/members
+```
+
+The invitee should immediately see the organization in their organization list.
+
+The owner should see the new member after refresh without requiring manual database changes.
+
+---
+
+# 10. Continue supporting member removal
+
+Preserve the existing functionality that allows an owner to remove non-owner members.
+
+The owner must not be removable using the ordinary member removal endpoint.
+
+Return a clear error if attempted.
+
+Example:
+
+```text
+The organization owner cannot be removed.
+```
+
+Do not allow an owner to accidentally remove themselves through the team member remove button.
+
+---
+
+# 11. Support owning multiple organizations
+
+A single Client user must be allowed to own:
+
+```text
+0 organizations
+1 organization
+2 organizations
+3+ organizations
+```
+
+There must be NO rule such as:
+
+```text
+one Client = one organization
+```
+
+Example:
+
+```text
+Val Client
+
+Owner:
+- OnSpot Testing
+- OnSpot Global
+- Another Business
+
+Member:
+- Partner Company
+```
+
+The current schema's membership relationship should remain many-to-many.
+
+Do NOT add a unique constraint on:
+
+```text
+organization_members.user_id
+```
+
+The only correct uniqueness rule is:
+
+```text
+organization_id + user_id
+```
+
+because the same user can belong to multiple organizations.
+
+---
+
+# 12. Organization list response
+
+`GET /api/organizations/me`
+
+must return **all active organizations** the logged-in Client belongs to.
+
+Do not return only the first organization.
+
+Example:
+
+```json
+[
+  {
+    "organization": {
+      "id": "org-1",
+      "name": "OnSpot Testing"
+    },
+    "membership": {
+      "role": "owner",
+      "status": "active"
+    }
+  },
+  {
+    "organization": {
+      "id": "org-2",
+      "name": "OnSpot Global"
+    },
+    "membership": {
+      "role": "owner",
+      "status": "active"
+    }
+  }
+]
+```
+
+Preserve the selected organization/workspace behavior already used by the Client UI.
+
+---
+
+# 13. Creating additional organizations
+
+Do not hide or disable organization creation merely because the Client already owns one.
+
+The Client should always have access to an option such as:
+
+```text
+Create Organization
+```
+
+from the Organizations page/dropdown.
+
+If the current dropdown changes to `My Organization` after one organization is created, update this behavior to support multiple workspaces.
+
+Recommended UI:
+
+```text
+Organizations
+
+OnSpot Testing
+Owner
+
+OnSpot Global
+Owner
+
+Partner Company
+Member
+
++ Create organization
+```
+
+Do not force a user into only one organization.
+
+---
+
+# 14. Add Organization removal/deletion
+
+Organization owners need the ability to remove an organization.
+
+Only an **owner** may request organization deletion.
+
+Add a destructive action under the organization page, ideally under:
+
+```text
+Organization Settings
+```
+
+or a clear:
+
+```text
+Danger Zone
+```
+
+Do not put the delete button beside everyday actions where it can be clicked accidentally.
+
+---
+
+# 15. Organization deletion is NOT immediate
+
+When the owner requests deletion:
+
+Do NOT immediately delete the organization.
+
+Give them:
+
+```text
+3 days
+```
+
+before permanent deletion.
+
+Implement this as a scheduled deletion / soft-delete grace period.
+
+Add fields such as:
+
+```ts
+deletionRequestedAt: timestamp("deletion_requested_at")
+deletionScheduledFor: timestamp("deletion_scheduled_for")
+deletionRequestedBy: varchar("deletion_requested_by")
+```
+
+Optionally:
+
+```ts
+status: text("status").default("active")
+```
+
+Values may include:
+
+```text
+active
+pending_deletion
+```
+
+Use the least disruptive schema change that fits the current implementation.
+
+---
+
+# 16. Request deletion endpoint
+
+Add something like:
+
+```http
+POST /api/organizations/:organizationId/request-deletion
+```
+
+Only an active owner may call it.
+
+Backend:
+
+```text
+deletionRequestedAt = NOW()
+deletionScheduledFor = NOW() + 3 days
+deletionRequestedBy = currentUser.id
+status = pending_deletion
+```
+
+Return:
+
+```json
+{
+  "status": "pending_deletion",
+  "deletionScheduledFor": "..."
+}
+```
+
+Do not trust a deletion date supplied by the frontend.
+
+Calculate it on the server.
+
+---
+
+# 17. Deletion confirmation modal
+
+Before requesting deletion, show a confirmation modal.
+
+Example:
+
+```text
+Delete OnSpot Testing?
+
+This organization will be scheduled for permanent deletion.
+
+You will have 3 days to cancel this request.
+
+After the 3-day grace period, the organization and organization-specific membership/invitation data will be permanently removed.
+
+Type the organization name to confirm:
+[________________]
+```
+
+Require exact organization name confirmation.
+
+Button:
+
+```text
+Schedule deletion
+```
+
+Use destructive styling.
+
+---
+
+# 18. Show the 3-day countdown
+
+When deletion is pending, display a prominent warning.
+
+Example:
+
+```text
+Organization scheduled for deletion
+
+This organization will be permanently deleted on:
+August 27, 2026 at 6:40 PM
+
+2 days 23 hours remaining
+
+[Cancel deletion]
+```
+
+Calculate using `deletionScheduledFor`.
+
+Do not calculate the authoritative deletion deadline only on the frontend.
+
+Backend timestamp is the source of truth.
+
+---
+
+# 19. Allow deletion cancellation
+
+During the 3-day period, the owner must be able to cancel.
+
+Add:
+
+```http
+POST /api/organizations/:organizationId/cancel-deletion
+```
+
+Backend clears:
+
+```text
+deletionRequestedAt = null
+deletionScheduledFor = null
+deletionRequestedBy = null
+status = active
+```
+
+Show toast:
+
+```text
+Organization deletion cancelled.
+```
+
+Organization continues working normally.
+
+---
+
+# 20. What happens during the 3-day grace period
+
+Keep the organization accessible during the grace period.
+
+Owners and members may still open it.
+
+But clearly show:
+
+```text
+Scheduled for deletion
+```
+
+Do NOT silently lock everyone out immediately.
+
+This makes accidental deletion recoverable.
+
+If the owner cancels deletion, everything should continue normally.
+
+---
+
+# 21. Permanent deletion after 3 days
+
+After:
+
+```text
+NOW() >= deletionScheduledFor
+```
+
+the organization must be permanently removed.
+
+This must be enforced server-side.
+
+Do not rely on a browser being open.
+
+Implement a backend cleanup mechanism compatible with the existing project.
+
+Preferred options, in order:
+
+1. existing scheduled job/worker infrastructure if present
+2. server-side cleanup job using the project's existing scheduler
+3. safe periodic backend cleanup
+4. lazy cleanup on API access as an additional safeguard
+
+It is acceptable to use both periodic cleanup and lazy cleanup for reliability.
+
+Do not implement this only as:
+
+```ts
+setTimeout(... 3 days ...)
+```
+
+because server restarts would lose it.
+
+The scheduled timestamp must live in PostgreSQL.
+
+---
+
+# 22. Permanent delete transaction
+
+When deletion becomes due, perform deletion safely in a transaction.
+
+The schema already uses cascade relationships for organization membership and invitations where appropriate.
+
+Still inspect ALL foreign keys referencing organizations before deleting.
+
+Delete only organization-owned records.
+
+Do not delete user accounts.
+
+For example:
+
+```text
+DELETE organization invitations
+DELETE organization memberships
+DELETE organization-specific dependent records
+DELETE organization
+```
+
+or rely on verified FK cascades.
+
+Never delete:
+
+```text
+users
+client_profiles
+personal account data
+Talent accounts
+Admin accounts
+```
+
+simply because an organization is deleted.
+
+A person may belong to other organizations.
+
+---
+
+# 23. Multiple organization deletion isolation
+
+This is critical.
+
+Example:
+
+```text
+Val Client owns:
+- Organization A
+- Organization B
+```
+
+If Organization A is deleted:
+
+```text
+Organization B MUST remain intact.
+Val Client's account MUST remain intact.
+Organization B memberships MUST remain intact.
+```
+
+Never query deletion using only:
+
+```text
+created_by = userId
+```
+
+when permanently deleting an individual organization.
+
+Use the exact:
+
+```text
+organization.id
+```
+
+being deleted.
+
+---
+
+# 24. Invitation duplicate handling
+
+Do not create multiple pending invitations for the same:
+
+```text
+organization + normalized email
+```
+
+If there is already a valid pending invitation, return:
+
+```text
+An invitation is already pending for this email.
+```
+
+Allow resend using the current resend mechanism.
+
+If invitation is:
+
+```text
+expired
+declined
+revoked
+```
+
+a new invitation may be created.
+
+---
+
+# 25. Already-active member handling
+
+If an owner attempts to invite someone already in the organization:
+
+return:
+
+```text
+This person is already a member of the organization.
+```
+
+Do not create another invitation.
+
+---
+
+# 26. Owner cannot invite themselves
+
+If:
+
+```text
+normalized invited email === current owner's email
+```
+
+and they are already a member:
+
+return the same:
+
+```text
+This person is already a member of the organization.
+```
+
+Do not create a redundant invitation.
+
+---
+
+# 27. Invitation email delivery state
+
+Keep/use the existing:
+
+```text
+emailStatus
+emailError
+emailSentAt
+```
+
+behavior.
+
+Valid statuses:
+
+```text
+pending
+sent
+failed
+```
+
+If database invitation creation succeeds but email delivery fails:
+
+Do not discard the invitation.
+
+Store:
+
+```text
+emailStatus = failed
+emailError = sanitized delivery error
+```
+
+Allow the owner to click:
+
+```text
+Resend
+```
+
+Never expose API keys or full provider secrets inside error messages.
+
+---
+
+# 28. Improve user-facing errors
+
+Do not show raw responses such as:
+
+```text
+400: {"error":"Only Client accounts can join an organization"}
+```
+
+inside the toast.
+
+Parse backend JSON errors and show only the useful message.
+
+Example:
+
+```text
+Invitation could not be sent
+
+An invitation is already pending for this email.
+```
+
+or:
+
+```text
+Invitation email could not be delivered. You can try again.
+```
+
+---
+
+# 29. Invitation page behavior for new users
+
+If the invited person has no account:
+
+Opening the link should NOT fail.
+
+Show:
+
+```text
+You've been invited to join
+OnSpot Testing
+
+Invited email:
+john@company.com
+
+[Create Client Account]
+[Sign In]
+```
+
+When creating the account:
+
+* pre-fill/lock the invited email if compatible with the existing signup flow
+* create a normal `role = client` user
+* preserve the invitation token
+* return to acceptance after authentication
+
+Do not create shared organization credentials.
+
+---
+
+# 30. Preserve independent Client accounts
+
+A Client still does not need an organization.
+
+This must remain valid:
+
+```text
+Client user
+organizations = []
+```
+
+Do not make organization membership mandatory for Client login.
+
+---
+
+# 31. Do not migrate Jobs yet
+
+Continue preserving the current job ownership implementation.
+
+Do NOT make this task a jobs migration.
+
+Do NOT rewrite:
+
+```text
+jobs.clientId
+```
+
+unless an organization-specific job migration already exists and is required by current production code.
+
+The current task is:
+
+```text
+organization membership
+organization invitation
+email invite
+multi-organization support
+organization deletion lifecycle
+```
+
+Keep it scoped.
+
+---
+
+# 32. Database migration safety
+
+Create an additive migration.
+
+Likely additions:
+
+```text
+organization_invitations token/token_hash if missing
+
+organizations:
+deletion_requested_at
+deletion_scheduled_for
+deletion_requested_by
+status if needed
+```
+
+Add indexes for:
+
+```text
+deletion_scheduled_for
+organization invitation token
+```
+
+Do not:
+
+* drop users
+* recreate users
+* drop client_profiles
+* reset database
+* remove existing memberships
+* remove existing invitations
+* alter password data
+* destructively rewrite Client data
+
+---
+
+# 33. Backend authorization rules
+
+All organization routes must validate membership.
+
+### View organization
+
+Active member only.
+
+### Invite
+
+Owner only for now.
+
+### Revoke invitation
+
+Owner only.
+
+### Resend invitation
+
+Owner only.
+
+### Remove member
+
+Owner only.
+
+### Request organization deletion
+
+Owner only.
+
+### Cancel organization deletion
+
+Owner only.
+
+### Accept invitation
+
+Authenticated matching Client account only.
+
+Do not rely on frontend role checks for security.
+
+---
+
+# 34. Existing Team Members UI
+
+Preserve the existing Organization Detail layout.
+
+The page already has:
+
+```text
+Team members
+Invite a colleague
+Member cards
+Invitation history
+```
+
+Do not redesign it unnecessarily.
+
+Once accepted, cards should look like:
+
+```text
+Val Client
+test.clientval@onspotglobal.com
+Owner
+
+John Smith
+john@company.com
+Member
+```
+
+Use the existing styling.
+
+---
+
+# 35. Organization ownership display
+
+For organizations a user owns, keep:
+
+```text
+Owner
+```
+
+For organizations they joined:
+
+```text
+Member
+```
+
+If the user owns multiple organizations, each one should independently show their corresponding membership role.
+
+Do not infer ownership from:
+
+```text
+organizations.createdBy
+```
+
+for authorization if `organization_members.role` is available.
+
+Membership role should remain the operational authorization source.
+
+---
+
+# 36. Update tests
+
+The repository already has:
+
+```text
+server/tests/organizations.test.ts
+```
+
+Expand those tests instead of replacing them.
+
+Add coverage for:
+
+### Invitation creation
+
+* owner can invite unknown/unregistered email
+* owner can invite existing Client
+* email address is normalized
+* duplicate pending invitation rejected
+* existing member rejected
+* non-owner cannot invite
+
+### Acceptance
+
+* matching Client can accept
+* mismatched email cannot accept
+* Talent cannot accept
+* Admin cannot accept
+* expired invitation cannot accept
+* accepted member appears in member endpoint
+
+### Email
+
+Mock the provider.
+
+Verify sender:
+
+```text
+OnSpot Careers <Careers@onspotglobal.com>
+```
+
+Verify recipient.
+
+Verify organization name.
+
+Verify invitation URL/token.
+
+Verify failed delivery sets `email_status = failed`.
+
+### Multiple organizations
+
+Verify one Client can create two organizations:
+
+```text
+Organization A
+Organization B
+```
+
+and:
+
+```text
+GET /api/organizations/me
+```
+
+returns both.
+
+Verify membership ownership for each.
+
+### Deletion
+
+Verify:
+
+```text
+request deletion → +3 days
+```
+
+Verify non-owner cannot request deletion.
+
+Verify owner can cancel during grace period.
+
+Verify organization remains visible before the deadline.
+
+Verify permanent cleanup only happens when due.
+
+Verify deleting Organization A does NOT delete Organization B.
+
+Verify deleting an organization does NOT delete its users.
+
+---
+
+# 37. Run regression checks
+
+Before completion, run:
+
+```text
+organization route tests
+TypeScript type checking
+project build
+existing relevant tests
+```
+
+Fix all issues introduced by this task.
+
+Do not alter unrelated working code simply to force tests to pass.
+
+---
+
+# 38. Expected final workflow
+
+## Invite existing Client
+
+```text
+Val owns OnSpot Testing
+        ↓
+Val invites client@example.com
+        ↓
+Email sent from Careers@onspotglobal.com
+        ↓
+Client clicks link
+        ↓
+Client signs in
+        ↓
+Accepts
+        ↓
+Client appears directly below/beside Val in Team Members
+```
+
+## Invite person with no account
+
+```text
+Val invites newperson@example.com
+        ↓
+Email sent
+        ↓
+New person clicks link
+        ↓
+Creates Client account
+        ↓
+Returns to invitation
+        ↓
+Accepts
+        ↓
+Becomes active organization member
+```
+
+## Multiple organizations
+
+```text
+Val Client
+├── OnSpot Testing — Owner
+├── OnSpot Global — Owner
+└── Partner Company — Member
+```
+
+## Organization deletion
+
+```text
+Owner clicks Delete Organization
+        ↓
+Confirms organization name
+        ↓
+Scheduled for deletion in 3 days
+        ↓
+Warning + countdown shown
+        ↓
+Owner may Cancel
+        ↓
+If not cancelled
+        ↓
+Backend permanently deletes only that organization after 3 days
+```
+
+---
+
+# 39. Final completion report
+
+When finished, report:
+
+* root cause of the current 400 invitation error
+* backend invitation validation changed
+* email provider/service used
+* sender configuration
+* invitation URL structure
+* files modified
+* database migration added
+* acceptance flow
+* member listing behavior after acceptance
+* multiple-organization behavior
+* deletion lifecycle
+* cleanup mechanism used for the 3-day deadline
+* tests added/updated
+* typecheck/build results
+* any required Replit Secrets/environment variables
+
+Most important:
+
+**Fix the existing implementation incrementally. Do not rewrite or break unrelated working functionality.**
