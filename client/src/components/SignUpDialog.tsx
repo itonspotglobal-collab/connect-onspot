@@ -29,6 +29,10 @@ interface SignUpDialogProps {
   hideTrigger?: boolean;
   onSignInInstead?: () => void;
   returnTo?: string;
+  /** Pre-select user type and skip straight to the signup form. */
+  defaultUserType?: UserType;
+  /** Pre-fill the email field. */
+  defaultEmail?: string;
 }
 
 export function SignUpDialog({
@@ -37,6 +41,8 @@ export function SignUpDialog({
   hideTrigger = false,
   onSignInInstead,
   returnTo,
+  defaultUserType,
+  defaultEmail,
 }: SignUpDialogProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -47,12 +53,12 @@ export function SignUpDialog({
     if (!isControlled) setInternalOpen(value);
     onOpenChangeProp?.(value);
   }
-  const [currentStep, setCurrentStep] = useState<SignupStep>("user-type");
-  const [userType, setUserType] = useState<UserType>(null);
+  const [currentStep, setCurrentStep] = useState<SignupStep>(defaultUserType ? "signup" : "user-type");
+  const [userType, setUserType] = useState<UserType>(defaultUserType ?? null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
+    email: defaultEmail ?? "",
     password: "",
     confirmPassword: "",
     company: "",
@@ -65,12 +71,12 @@ export function SignUpDialog({
   useAuth(); // Keep context available for potential future use
 
   const resetDialog = () => {
-    setCurrentStep("user-type");
-    setUserType(null);
+    setCurrentStep(defaultUserType ? "signup" : "user-type");
+    setUserType(defaultUserType ?? null);
     setFormData({
       firstName: "",
       lastName: "",
-      email: "",
+      email: defaultEmail ?? "",
       password: "",
       confirmPassword: "",
       company: "",
