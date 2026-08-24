@@ -87,9 +87,6 @@ All indexes applied via `CREATE INDEX IF NOT EXISTS` — safe on existing data.
 | `idx_jobs_created_at` | `jobs` | `created_at` | Sort by date |
 | `idx_jobs_posted_at` | `jobs` | `posted_at` | Sort by post date |
 | `idx_jobs_status_approval` | `jobs` | `status, approval_status` | Common compound filter |
-| `idx_proposals_job_id` | `proposals` | `job_id` | Proposals per job |
-| `idx_proposals_talent_id` | `proposals` | `talent_id` | Talent's proposals |
-| `idx_proposals_status` | `proposals` | `status` | Status filter |
 | `idx_user_skills_user_id` | `user_skills` | `user_id` | Skills per user |
 | `idx_user_skills_skill_id` | `user_skills` | `skill_id` | Users per skill |
 | `idx_job_skills_job_id` | `job_skills` | `job_id` | Skills per job |

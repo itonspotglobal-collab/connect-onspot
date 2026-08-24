@@ -85,7 +85,6 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
-import ClientInvoices from "@/pages/ClientInvoices";
 import TalentPayouts from "@/pages/TalentPayouts";
 import OrganizationCreate from "@/pages/OrganizationCreate";
 import OrganizationDetail from "@/pages/OrganizationDetail";
@@ -356,8 +355,6 @@ function ClientRouter() {
           <Route path="/projects" component={() => <div className="p-6">Projects Module - Coming Soon</div>} />
           <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />
           <Route path="/clients" component={() => <div className="p-6">Client Management Module - Coming Soon</div>} />
-          <Route path="/contracts" component={() => <div className="p-6">Contracts Module - Coming Soon</div>} />
-          <Route path="/payments" component={ClientInvoices} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
           <Route path="/insights/:slug" component={InsightPost} />
@@ -553,8 +550,6 @@ function AppContent() {
       <Route path="/projects" component={ClientRouter} />
       <Route path="/performance" component={ClientRouter} />
       <Route path="/clients" component={ClientRouter} />
-      <Route path="/contracts" component={ClientRouter} />
-      <Route path="/payments" component={ClientRouter} />
       <Route path="/roi" component={ClientRouter} />
       {/* Messages — available for both client (sidebar layout) and talent (standalone) */}
       <Route path="/messages/:threadId" component={MessagesRoute} />

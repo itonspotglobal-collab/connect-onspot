@@ -1,8 +1,6 @@
 import { 
   BarChart3, 
   Briefcase, 
-  DollarSign, 
-  FileText, 
   Home, 
   Search, 
   Settings, 
@@ -64,16 +62,6 @@ const managementItems = [
     title: "Client Management",
     url: "/clients",
     icon: Users,
-  },
-  {
-    title: "Contracts",
-    url: "/contracts",
-    icon: FileText,
-  },
-  {
-    title: "Payments",
-    url: "/payments",
-    icon: DollarSign,
   },
   {
     title: "ROI Analytics",

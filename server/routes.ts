@@ -9489,7 +9489,6 @@ export async function registerRoutes(
         return res.status(201).json({
           id: created.rows[0].id,
           jobId: created.rows[0].job_id,
-          contractId: created.rows[0].contract_id ?? null,
           participants: created.rows[0].participants,
           subject: created.rows[0].subject,
           lastMessageAt: created.rows[0].last_message_at,

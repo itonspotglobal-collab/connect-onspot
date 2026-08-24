@@ -3749,7 +3749,6 @@ export class DbStorage extends MemStorage {
       `SELECT
          mt.id,
          mt.job_id AS "jobId",
-         mt.contract_id AS "contractId",
          mt.participants,
          mt.subject,
          mt.last_message_at AS "lastMessageAt",
