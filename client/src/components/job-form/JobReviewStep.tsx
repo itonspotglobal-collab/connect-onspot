@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, AlertTriangle } from "lucide-react";
 import type { JobFormData } from "@/lib/jobFormUtils";
 import { isEmptyQuill } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
@@ -92,12 +92,35 @@ export function JobReviewStep({
     reqParts.push(`${currSymbol}${formData.salaryDisplay}/month`);
   if (formData.workDays || formData.timeZone) reqParts.push("Schedule added");
 
+  const missingEngagementType = !formData.engagementType?.trim();
+
   return (
     <div>
       <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Review &amp; post</h2>
       <p className="text-sm text-muted-foreground mb-6">
         Here's how your post will look. Tap any field to jump back and edit.
       </p>
+
+      {missingEngagementType && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700/50 dark:bg-amber-900/10 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              Engagement type required before publishing
+            </p>
+            <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
+              An Engagement Type (Lite or Standard) must be set before publishing a job.{" "}
+              <button
+                type="button"
+                className="font-bold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200"
+                onClick={() => onGoToStep(0)}
+              >
+                Go to Basics to fix this
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Live preview card */}
       <div className="rounded-2xl border border-border overflow-hidden mb-5">

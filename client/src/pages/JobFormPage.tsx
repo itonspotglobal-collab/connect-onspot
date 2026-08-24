@@ -614,7 +614,7 @@ function validateStep(
       errors.professionalRoleName = "Job title is required";
     if (!formData.company.trim()) errors.company = "Company name is required";
     if (!formData.jobFunction.trim()) errors.jobFunction = "Function is required";
-    if (!formData.engagementType?.trim()) errors.engagementType = "Engagement type is required";
+    if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
   }
 

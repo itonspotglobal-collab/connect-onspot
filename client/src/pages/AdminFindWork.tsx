@@ -1327,7 +1327,18 @@ export default function AdminFindWork() {
                   key={job.id}
                   job={job}
                   onEdit={() => openEdit(job as unknown as Job)}
-                  onToggle={() => toggleStatusMutation.mutate({ id: job.id, status: job.status === "open" ? "closed" : "open" })}
+                  onToggle={() => {
+                    // Guard: reopening a job without an engagement type must be blocked client-side
+                    if (job.status !== "open" && !job.engagementType?.trim()) {
+                      toast({
+                        title: "Engagement type required",
+                        description: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    toggleStatusMutation.mutate({ id: job.id, status: job.status === "open" ? "closed" : "open" });
+                  }}
                   onDelete={() => deleteMutation.mutate(job.id)}
                   onCopy={() => copy(job.id)}
                   onApprove={() => setApproveConfirmJobId(job.id)}
