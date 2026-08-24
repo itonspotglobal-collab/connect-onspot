@@ -28,6 +28,15 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Drop the obsolete foreign-key constraints before removing their columns.
+-- IF EXISTS makes each drop idempotent so the migration is safe to retry
+-- regardless of whether a previous publish attempt partially applied it or
+-- whether the constraint was never present in this environment.
+ALTER TABLE IF EXISTS message_threads
+  DROP CONSTRAINT IF EXISTS message_threads_contract_id_contracts_id_fk;
+ALTER TABLE IF EXISTS reviews
+  DROP CONSTRAINT IF EXISTS reviews_contract_id_contracts_id_fk;
+
 -- These nullable associations belonged only to the removed contract model.
 ALTER TABLE IF EXISTS message_threads DROP COLUMN IF EXISTS contract_id;
 ALTER TABLE IF EXISTS reviews DROP COLUMN IF EXISTS contract_id;
