@@ -13,6 +13,7 @@
 - [Grouped message alerts](message-notification-grouping.md) — Bell `new_message` alerts group by recipient/thread; persisted message `readBy` remains the unread source of truth.
 - [Client↔talent messaging gate](client-talent-messaging.md) — threads only after accepted client-initiated invitation; conditional UPDATE + advisory lock for accepts; tests need --test-concurrency=1.
 - [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
+- [Drizzle schema preview limitation](drizzle-schema-preview.md) — Drizzle 0.39.1 cannot inspect the pending organization-invitation partial index; do not treat its preview failure as a migration diff.
 - [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.
 - [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.

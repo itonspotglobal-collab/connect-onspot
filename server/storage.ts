@@ -1610,6 +1610,7 @@ export class MemStorage implements IStorage {
       ...insertThread,
       id,
       jobId: insertThread.jobId ?? null,
+      contractId: insertThread.contractId ?? null,
       subject: insertThread.subject ?? null,
       lastMessageAt: now,
       createdAt: now

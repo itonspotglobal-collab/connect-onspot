@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid, date, check, pgSequence } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -271,6 +271,29 @@ export const jobs = pgTable("jobs", {
   index("idx_jobs_status_approval").on(table.status, table.approvalStatus),
 ]);
 
+// Legacy freelance marketplace schema — retained temporarily to keep Publish
+// additive-only. Application routes do not use these models; they remain here
+// solely so existing production data and relationships are never scheduled for
+// removal until a separately reviewed migration is approved.
+export const proposals = pgTable("proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  coverLetter: text("cover_letter").notNull(),
+  proposedRate: decimal("proposed_rate", { precision: 8, scale: 2 }),
+  proposedBudget: decimal("proposed_budget", { precision: 10, scale: 2 }),
+  estimatedDuration: text("estimated_duration"),
+  status: text("status").notNull().default("submitted"),
+  clientResponse: text("client_response"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("proposals_job_talent_unique").on(table.jobId, table.talentId),
+  index("idx_proposals_job_id").on(table.jobId),
+  index("idx_proposals_talent_id").on(table.talentId),
+  index("idx_proposals_status").on(table.status),
+]);
+
 // Job Skills (normalized for better querying)
 export const jobSkills = pgTable("job_skills", {
   id: serial("id").primaryKey(),
@@ -375,10 +398,90 @@ export const waitlist = pgTable("waitlist", {
   index("idx_waitlist_created_at").on(table.createdAt),
 ]);
 
+export const contracts = pgTable("contracts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  proposalId: varchar("proposal_id").notNull().references(() => proposals.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  contractType: text("contract_type").notNull(),
+  rate: decimal("rate", { precision: 8, scale: 2 }),
+  totalBudget: decimal("total_budget", { precision: 10, scale: 2 }),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  status: text("status").notNull().default("active"),
+  terms: text("terms"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const milestones = pgTable("milestones", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").notNull().references(() => contracts.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date"),
+  status: text("status").notNull().default("pending"),
+  submissionNote: text("submission_note"),
+  approvalNote: text("approval_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const timeEntries = pgTable("time_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").notNull().references(() => contracts.id),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  description: text("description"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"),
+  hourlyRate: decimal("hourly_rate", { precision: 8, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  status: text("status").notNull().default("logged"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").references(() => contracts.id),
+  milestoneId: varchar("milestone_id").references(() => milestones.id),
+  payerId: varchar("payer_id").notNull().references(() => users.id),
+  payeeId: varchar("payee_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  fees: decimal("fees", { precision: 12, scale: 2 }).default("0"),
+  currency: text("currency").default("USD"),
+  paymentMethod: text("payment_method"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  status: text("status").notNull().default("pending"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const disputes = pgTable("disputes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").notNull().references(() => contracts.id),
+  raisedById: varchar("raised_by_id").notNull().references(() => users.id),
+  disputeType: text("dispute_type").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  evidence: text("evidence").array(),
+  status: text("status").notNull().default("open"),
+  resolution: text("resolution"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
 // Messages & Communication
 export const messageThreads = pgTable("message_threads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").references(() => jobs.id),
+  contractId: varchar("contract_id").references(() => contracts.id),
   participants: text("participants").array().notNull(), // Array of user IDs
   subject: text("subject"),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
@@ -400,6 +503,7 @@ export const messages = pgTable("messages", {
 // Reviews & Ratings
 export const reviews = pgTable("reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").notNull().references(() => contracts.id),
   reviewerId: varchar("reviewer_id").notNull().references(() => users.id),
   revieweeId: varchar("reviewee_id").notNull().references(() => users.id),
   rating: integer("rating").notNull(), // 1-5 stars
@@ -1550,6 +1654,125 @@ export const hiringContracts = pgTable("hiring_contracts", {
   index("idx_hiring_contracts_offer_id").on(table.offerId),
   index("idx_hiring_contracts_submission_id").on(table.submissionId),
   index("idx_hiring_contracts_status").on(table.status),
+]);
+
+// ── Billing engine — additive schema ─────────────────────────────────────────
+// These tables are distinct from the preserved legacy payments/contracts models.
+// They are the current ledger for the OnSpot hiring-contract workflow.
+export const invoiceNumberSeq = pgSequence("invoice_number_seq", { startWith: 1 });
+
+export const payoutRegionConfigs = pgTable("payout_region_configs", {
+  regionCode: text("region_code").primaryKey(),
+  availableMethods: text("available_methods").array().notNull().default([]),
+  defaultMethod: text("default_method").notNull(),
+  currency: text("currency").notNull(),
+  notes: text("notes"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const invoicePeriods = pgTable("invoice_periods", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  offerId: uuid("offer_id").notNull().references(() => offers.id, { onDelete: "restrict" }),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  talentRate: decimal("talent_rate", { precision: 12, scale: 2 }).notNull(),
+  talentRateCurrency: text("talent_rate_currency").notNull().default("PHP"),
+  standardPeriodHours: integer("standard_period_hours").notNull(),
+  extendedHours: decimal("extended_hours", { precision: 8, scale: 2 }).notNull().default("0"),
+  deductionHours: decimal("deduction_hours", { precision: 8, scale: 2 }).notNull().default("0"),
+  hourlyEquivalent: decimal("hourly_equivalent", { precision: 12, scale: 4 }).notNull(),
+  adjustedTalentPayout: decimal("adjusted_talent_payout", { precision: 12, scale: 2 }).notNull(),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull(),
+  clientInvoiceAmount: decimal("client_invoice_amount", { precision: 12, scale: 2 }).notNull(),
+  commissionEarned: decimal("commission_earned", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default("draft"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_invoice_periods_contract").on(table.hiringContractId),
+  index("idx_invoice_periods_status").on(table.status),
+  uniqueIndex("idx_invoice_periods_contract_dates_unique").on(table.hiringContractId, table.periodStart, table.periodEnd),
+  check("invoice_periods_status_check", sql`${table.status} IN ('draft', 'ready', 'invoiced', 'payout_scheduled', 'closed')`),
+]);
+
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  periodId: uuid("period_id").references(() => invoicePeriods.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  invoiceNumber: text("invoice_number").unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("PHP"),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull(),
+  paymentMethod: text("payment_method"),
+  externalRef: text("external_ref"),
+  status: text("status").notNull().default("draft"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  voidedAt: timestamp("voided_at", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  paymentInstructions: text("payment_instructions"),
+  cardPaymentUrl: text("card_payment_url"),
+}, (table) => [
+  index("idx_invoices_contract").on(table.hiringContractId),
+  index("idx_invoices_status").on(table.status),
+  index("idx_invoices_client").on(table.clientId),
+  check("invoices_payment_method_check", sql`${table.paymentMethod} IN ('wire', 'credit_card')`),
+  check("invoices_status_check", sql`${table.status} IN ('draft', 'sent', 'paid', 'overdue', 'void')`),
+]);
+
+export const payouts = pgTable("payouts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  periodId: uuid("period_id").references(() => invoicePeriods.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("PHP"),
+  payoutRegion: text("payout_region").references(() => payoutRegionConfigs.regionCode),
+  payoutMethod: text("payout_method"),
+  externalRef: text("external_ref"),
+  status: text("status").notNull().default("pending"),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+  disbursedAt: timestamp("disbursed_at", { withTimezone: true }),
+  failedReason: text("failed_reason"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_payouts_contract").on(table.hiringContractId),
+  index("idx_payouts_talent").on(table.talentId),
+  index("idx_payouts_status").on(table.status),
+  check("payouts_status_check", sql`${table.status} IN ('pending', 'scheduled', 'disbursed', 'failed')`),
+]);
+
+export const securityDeposits = pgTable("security_deposits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().unique().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("PHP"),
+  status: text("status").notNull().default("pending"),
+  heldAt: timestamp("held_at", { withTimezone: true }),
+  drawnAt: timestamp("drawn_at", { withTimezone: true }),
+  drawnReason: text("drawn_reason"),
+  replenishmentDueAt: timestamp("replenishment_due_at", { withTimezone: true }),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  cureDeadlineAt: timestamp("cure_deadline_at", { withTimezone: true }),
+  terminalReason: text("terminal_reason"),
+  noticeGivenAt: timestamp("notice_given_at", { withTimezone: true }),
+  appliedAt: timestamp("applied_at", { withTimezone: true }),
+  appliedToInvoiceId: uuid("applied_to_invoice_id").references(() => invoices.id),
+  forfeitedAt: timestamp("forfeited_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_security_deposits_contract").on(table.hiringContractId),
+  index("idx_security_deposits_status").on(table.status),
+  check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
 ]);
 
 export const insertHiringContractSchema = createInsertSchema(hiringContracts).omit({

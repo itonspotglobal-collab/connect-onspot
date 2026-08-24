@@ -1,0 +1,138 @@
+# Fix Publish Database Conflicts — Additive Billing Migration Only
+
+Fix the current development/production schema conflict so I can publish safely.
+
+## Goal
+
+This deployment must be **additive only** for the new Payments/Billing engine.
+
+Do NOT remove, rename, migrate, or overwrite any existing production tables or columns in this deployment.
+
+## New billing objects that SHOULD be added
+
+Preserve and deploy the new billing/payment engine objects:
+
+* `invoice_number_seq`
+* `payout_region_configs`
+* `invoice_periods`
+* `invoices`
+* `payouts`
+* `security_deposits`
+* any required billing indexes, constraints, configuration rows, and foreign keys
+
+`payout_region_configs` is definitely a **NEW TABLE**.
+
+It is NOT a rename of:
+
+* `payments`
+* `contracts`
+* `proposals`
+* `milestones`
+* `disputes`
+* `time_entries`
+
+## Temporarily preserve legacy production schema
+
+The following existing tables must remain in the development schema for now so Replit does NOT generate DROP TABLE statements during publishing:
+
+* `time_entries`
+* `proposals`
+* `contracts`
+* `milestones`
+* `payments`
+* `disputes`
+
+Do not modify their existing production data.
+
+Legacy cleanup can happen in a separate reviewed migration later.
+
+## Preserve legacy relationship columns for this deployment
+
+Do NOT drop:
+
+* `message_threads.contract_id`
+* `reviews.contract_id`
+
+Do NOT generate:
+
+```sql
+ALTER TABLE "message_threads"
+DROP CONSTRAINT "message_threads_contract_id_contracts_id_fk";
+```
+
+Do not remove any related foreign-key constraint in this deployment.
+
+Production currently has data in `message_threads.contract_id`, so preserve the column and its values.
+
+The previous publish failed because production does not contain the generated constraint:
+
+```text
+message_threads_contract_id_contracts_id_fk
+```
+
+Do not try to work around this by forcing the constraint drop. Instead, exclude the entire legacy-column removal from this deployment.
+
+## Required migration behavior
+
+After this fix, the generated production migration should primarily contain:
+
+```text
+CREATE SEQUENCE ...
+CREATE TABLE payout_region_configs ...
+CREATE TABLE invoice_periods ...
+CREATE TABLE invoices ...
+CREATE TABLE payouts ...
+CREATE TABLE security_deposits ...
+CREATE INDEX ...
+ADD CONSTRAINT ...
+```
+
+for the NEW billing system.
+
+It should NOT contain destructive statements against the existing legacy system such as:
+
+```text
+DROP TABLE contracts
+DROP TABLE payments
+DROP TABLE proposals
+DROP TABLE milestones
+DROP TABLE disputes
+DROP TABLE time_entries
+
+DROP COLUMN message_threads.contract_id
+DROP COLUMN reviews.contract_id
+```
+
+and it should not attempt to drop the missing:
+
+```text
+message_threads_contract_id_contracts_id_fk
+```
+
+## Important
+
+Do NOT:
+
+* copy development database data over production;
+* delete production data;
+* rename a legacy table to a billing table;
+* reset the production database;
+* drop legacy tables;
+* drop populated legacy columns;
+* deploy automatically.
+
+Adjust the DEVELOPMENT schema/migrations only.
+
+## Verification
+
+After making the fix:
+
+1. Generate/review the schema diff again.
+2. Confirm `payout_region_configs` appears only as a new table.
+3. Confirm the six legacy tables are no longer shown as removed.
+4. Confirm `message_threads.contract_id` is no longer scheduled for deletion.
+5. Confirm `reviews.contract_id` is no longer scheduled for deletion.
+6. Confirm the nonexistent `message_threads_contract_id_contracts_id_fk` is not being dropped.
+7. Confirm the new billing tables are still included.
+
+Stop and report the resulting migration summary before deploying.
