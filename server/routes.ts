@@ -126,6 +126,32 @@ import { z } from "zod";
 // the same address without revoking or deleting invitation history.
 export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
 
+// Permanently remove organizations whose deletion due date has passed.
+// This function is restart-safe: it deletes only the organization-owned
+// records in one isolated transaction per due organization, leaving users,
+// client profiles, and other organizations untouched.
+export const cleanupDueOrganizations = async (): Promise<number> => {
+  const due = await query(
+    `SELECT id, name FROM organizations
+      WHERE delete_due_at IS NOT NULL AND delete_due_at <= NOW()
+      LIMIT 50`,
+  );
+  if (!due.rows.length) return 0;
+
+  let cleaned = 0;
+  for (const org of due.rows) {
+    const dbClient = await query(
+      `DELETE FROM organizations WHERE id = $1 AND delete_due_at IS NOT NULL AND delete_due_at <= NOW() RETURNING id`,
+      [org.id],
+    );
+    if (dbClient.rows.length) {
+      cleaned++;
+      console.log(`🗑️  Organization deleted after grace period: ${org.name} (${org.id})`);
+    }
+  }
+  return cleaned;
+};
+
 export const expireOrganizationInvitations = async (): Promise<number> => {
   const result = await query(
     `UPDATE organization_invitations
@@ -1206,6 +1232,14 @@ export async function registerRoutes(
         ON organization_invitations (organization_id, lower(email))
         WHERE status = 'pending'
     `);
+    // ── Organization invitation tokens (secure token-based invite links) ──────
+    await query(`ALTER TABLE organization_invitations ADD COLUMN IF NOT EXISTS token_hash text`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organization_invitations_token_hash ON organization_invitations(token_hash)`);
+    // ── Organization deletion lifecycle columns ────────────────────────────────
+    await query(`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS delete_requested_at timestamp`);
+    await query(`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS delete_requested_by varchar REFERENCES users(id)`);
+    await query(`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS delete_due_at timestamp`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_organizations_delete_due_at ON organizations(delete_due_at) WHERE delete_due_at IS NOT NULL`);
   } catch (migErr: any) {
     console.warn("⚠️  organization tables migration skipped:", migErr.message);
   }
@@ -12722,6 +12756,9 @@ export async function registerRoutes(
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    deleteRequestedAt: row.delete_requested_at ?? null,
+    deleteRequestedBy: row.delete_requested_by ?? null,
+    deleteDueAt: row.delete_due_at ?? null,
   });
 
   const mapOrganizationMembership = (row: any) => ({
@@ -12958,13 +12995,22 @@ export async function registerRoutes(
     | { invitation: ReturnType<typeof mapOrganizationInvitation> }
     | { error: string; status: number };
 
+  // Build a secure raw+hash token pair for tokenized invitation links.
+  const generateOrganizationInvitationToken = () => {
+    const raw = randomBytes(32).toString("hex");
+    const hash = createHash("sha256").update(raw).digest("hex");
+    return { raw, hash };
+  };
+
   const deliverOrganizationInvitation = async ({
     invitation,
+    invitationRawToken,
     organizationName,
     inviterName,
     recipientName,
   }: {
     invitation: any;
+    invitationRawToken?: string;
     organizationName: string;
     inviterName: string;
     recipientName?: string | null;
@@ -12983,7 +13029,10 @@ export async function registerRoutes(
         throw new Error("No public application URL is configured.");
       }
       const baseUrl = rawBase.replace(/\/$/, "");
-      const signInUrl = `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(invitation.email)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
+      // Use tokenized URL when available; fall back to generic sign-in URL.
+      const signInUrl = invitationRawToken
+        ? `${baseUrl}/organization-invite/${encodeURIComponent(invitationRawToken)}`
+        : `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(invitation.email)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
       const { isEmailServiceConfigured, sendOrganizationInvitationEmail } =
         await import("./services/microsoftGraphEmailService.ts");
       if (!isEmailServiceConfigured()) {
@@ -13042,14 +13091,15 @@ export async function registerRoutes(
       [normalizedEmail],
     );
 
-    if (targetUser.rows[0]?.role && targetUser.rows[0].role !== "client") {
-      return { status: 400, error: "Only Client accounts can join an organization" };
-    }
+    // Self-invite check (must be before the membership check below).
     if (targetUser.rows[0]?.id === userId) {
       return { status: 400, error: "You are already an owner of this organization" };
     }
 
-    if (targetUser.rows[0]) {
+    // Allow Talent and Admin email addresses to receive invitations — the Client
+    // role is enforced at acceptance time so the invited person can read the
+    // reason even when they arrive at the invitation page as a non-Client user.
+    if (targetUser.rows[0] && targetUser.rows[0].role === "client") {
       const existingMembership = await query(
         `SELECT status FROM organization_members
           WHERE organization_id = $1 AND user_id = $2
@@ -13074,11 +13124,14 @@ export async function registerRoutes(
       return { status: 409, error: "An invitation is already pending for this email" };
     }
 
+    // Generate a secure raw token; only the SHA-256 hash is stored in the DB.
+    const { raw: rawToken, hash: tokenHash } = generateOrganizationInvitationToken();
+
     const invitationResult = await query(
-      `INSERT INTO organization_invitations (organization_id, email, invited_by, expires_at)
-       VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 day'))
+      `INSERT INTO organization_invitations (organization_id, email, invited_by, expires_at, token_hash)
+       VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 day'), $5)
        RETURNING *`,
-      [organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS],
+      [organizationId, normalizedEmail, userId, ORGANIZATION_INVITATION_EXPIRY_DAYS, tokenHash],
     );
     const invitation = invitationResult.rows[0];
     const organization = await query(
@@ -13091,7 +13144,7 @@ export async function registerRoutes(
 
     // Registered Client invitees also receive an in-app notification. The
     // invitation remains usable for people who sign up after the invite.
-    if (targetUser.rows[0]?.id) {
+    if (targetUser.rows[0]?.id && targetUser.rows[0].role === "client") {
       await storage.createNotification({
         userId: targetUser.rows[0].id,
         type: "organization_invitation",
@@ -13104,6 +13157,7 @@ export async function registerRoutes(
 
     const deliveredInvitation = await deliverOrganizationInvitation({
       invitation,
+      invitationRawToken: rawToken,
       organizationName: organization.rows[0]?.name ?? "an OnSpot organization",
       inviterName,
       recipientName: targetUser.rows[0]
@@ -13175,8 +13229,15 @@ export async function registerRoutes(
       const existingInvitation = invitationResult.rows[0];
 
       if (existingInvitation.status === "pending") {
+        // Regenerate the invitation token so the retry link is always fresh.
+        const { raw: rawToken, hash: newTokenHash } = generateOrganizationInvitationToken();
+        await query(
+          `UPDATE organization_invitations SET token_hash = $1, updated_at = NOW() WHERE id = $2`,
+          [newTokenHash, existingInvitation.id],
+        );
         const invitation = await deliverOrganizationInvitation({
           invitation: existingInvitation,
+          invitationRawToken: rawToken,
           organizationName: existingInvitation.organization_name,
           inviterName: existingInvitation.inviter_name || "An organization owner",
           recipientName: [
@@ -13252,6 +13313,191 @@ export async function registerRoutes(
     }
   });
 
+  // ── Public token-based invitation lookup (no authentication required) ────────
+  // Allows any visitor (signed-out or signed-in) to see invitation details
+  // before deciding whether to sign in or create an account.
+  app.get("/api/organization-invitations/public/:token", async (req: Request, res: Response) => {
+    try {
+      await expireOrganizationInvitations();
+      const tokenHash = createHash("sha256").update(req.params.token).digest("hex");
+      const result = await query(
+        `SELECT oi.id, oi.organization_id, oi.email, oi.status, oi.expires_at, oi.created_at,
+                o.name AS organization_name,
+                TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS inviter_name
+           FROM organization_invitations oi
+           INNER JOIN organizations o ON o.id = oi.organization_id
+           INNER JOIN users u ON u.id = oi.invited_by
+          WHERE oi.token_hash = $1
+          LIMIT 1`,
+        [tokenHash],
+      );
+      if (!result.rows.length) {
+        return res.status(404).json({ error: "Invitation not found or the link is invalid" });
+      }
+      const row = result.rows[0];
+      return res.json({
+        id: row.id,
+        organizationId: row.organization_id,
+        organizationName: row.organization_name,
+        email: row.email,
+        status: row.status,
+        inviterName: row.inviter_name || null,
+        expiresAt: row.expires_at,
+        createdAt: row.created_at,
+      });
+    } catch (err: any) {
+      console.error("GET organization-invitations/public/:token failed:", err);
+      return res.status(500).json({ error: "Failed to load invitation" });
+    }
+  });
+
+  // ── Token-based invitation acceptance ─────────────────────────────────────
+  // Accepts an invitation using the raw token in the URL, without requiring the
+  // invitation ID. The signed-in user must be a Client whose email matches the
+  // invitation. Talent and Admin accounts receive a specific role-mismatch error.
+  app.post("/api/organization-invitations/accept-by-token", authenticateJWT, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+    const userEmail = (req as any).user?.email;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const rawToken = req.body?.token;
+    if (!rawToken || typeof rawToken !== "string") {
+      return res.status(400).json({ error: "token is required" });
+    }
+
+    const action = req.body?.action;
+    if (action !== "accept" && action !== "decline") {
+      return res.status(400).json({ error: "action must be 'accept' or 'decline'" });
+    }
+
+    const dbClient = await getClient();
+    try {
+      await dbClient.query("BEGIN");
+      const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+      const invitationResult = await dbClient.query(
+        `SELECT oi.*, o.name AS organization_name
+           FROM organization_invitations oi
+           INNER JOIN organizations o ON o.id = oi.organization_id
+          WHERE oi.token_hash = $1
+          FOR UPDATE OF oi`,
+        [tokenHash],
+      );
+      if (!invitationResult.rows.length) {
+        await dbClient.query("ROLLBACK");
+        return res.status(404).json({ error: "Invitation not found or the link is invalid" });
+      }
+      const invitation = invitationResult.rows[0];
+
+      // Verify email match before any role check so the message is accurate.
+      if (userEmail?.toLowerCase() !== invitation.email.toLowerCase()) {
+        await dbClient.query("ROLLBACK");
+        return res.status(403).json({
+          error: "email_mismatch",
+          message: `This invitation was sent to ${invitation.email}. Sign in with that email address to accept it.`,
+        });
+      }
+
+      // Only Client accounts can join an organization. Give Talent/Admin a clear
+      // role explanation rather than a generic 403.
+      if (userRole !== "client") {
+        await dbClient.query("ROLLBACK");
+        return res.status(403).json({
+          error: "wrong_role",
+          message: "Only Client accounts can join an organization. This invitation cannot be accepted with a Talent or Admin account.",
+        });
+      }
+
+      // Expire check
+      const expiredResult = await dbClient.query(
+        `UPDATE organization_invitations
+            SET status = 'expired', responded_at = NOW(), updated_at = NOW()
+          WHERE id = $1 AND status = 'pending' AND expires_at <= NOW()
+          RETURNING id`,
+        [invitation.id],
+      );
+      if (expiredResult.rows.length) {
+        await dbClient.query("COMMIT");
+        return res.status(409).json({ error: "This invitation has expired" });
+      }
+      if (invitation.status !== "pending") {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({
+          error: invitation.status === "expired"
+            ? "This invitation has expired"
+            : "This invitation is no longer pending",
+        });
+      }
+
+      if (action === "decline") {
+        await dbClient.query(
+          `UPDATE organization_invitations
+              SET status = 'declined', responded_at = NOW(), updated_at = NOW()
+            WHERE id = $1`,
+          [invitation.id],
+        );
+        await dbClient.query("COMMIT");
+        return res.json({ status: "declined" });
+      }
+
+      // Accept: upsert membership
+      const existingMembership = await dbClient.query(
+        `SELECT id, role, status FROM organization_members
+          WHERE organization_id = $1 AND user_id = $2
+          FOR UPDATE`,
+        [invitation.organization_id, userId],
+      );
+      let membership;
+      if (existingMembership.rows[0]?.role === "owner") {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({ error: "You already own this organization" });
+      } else if (existingMembership.rows[0]) {
+        const membershipResult = await dbClient.query(
+          `UPDATE organization_members
+              SET status = 'active', role = 'member', joined_at = NOW(), updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, organization_id, user_id, role, status, joined_at`,
+          [existingMembership.rows[0].id],
+        );
+        membership = membershipResult.rows[0];
+      } else {
+        const membershipResult = await dbClient.query(
+          `INSERT INTO organization_members (organization_id, user_id, role, status)
+           VALUES ($1, $2, 'member', 'active')
+           RETURNING id, organization_id, user_id, role, status, joined_at`,
+          [invitation.organization_id, userId],
+        );
+        membership = membershipResult.rows[0];
+      }
+
+      await dbClient.query(
+        `UPDATE organization_invitations
+            SET status = 'accepted', accepted_by = $2, responded_at = NOW(), updated_at = NOW()
+          WHERE id = $1`,
+        [invitation.id, userId],
+      );
+      await dbClient.query("COMMIT");
+      return res.json({
+        status: "accepted",
+        organization: { id: invitation.organization_id, name: invitation.organization_name },
+        membership: {
+          id: membership.id,
+          organizationId: membership.organization_id,
+          userId: membership.user_id,
+          role: membership.role,
+          status: membership.status,
+          joinedAt: membership.joined_at,
+        },
+      });
+    } catch (err: any) {
+      await dbClient.query("ROLLBACK").catch(() => {});
+      console.error("POST organization-invitations/accept-by-token failed:", err);
+      return res.status(500).json({ error: "Failed to respond to organization invitation" });
+    } finally {
+      dbClient.release();
+    }
+  });
+
   // Invitee-only endpoints. Both the email match and the Client role are
   // checked server-side; the invitation id alone never grants access.
   app.get("/api/organization-invitations", authenticateJWT, requireClient, async (req: Request, res: Response) => {
@@ -13277,8 +13523,9 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/organization-invitations/:invitationId/respond", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.post("/api/organization-invitations/:invitationId/respond", authenticateJWT, async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
     const action = req.body?.action;
     if (action !== "accept" && action !== "decline") {
@@ -13331,6 +13578,17 @@ export async function registerRoutes(
         );
         await dbClient.query("COMMIT");
         return res.json({ status: "declined" });
+      }
+
+      // Role enforcement happens here at acceptance time, not at invitation time,
+      // so Talent/Admin users can receive and see the invitation before they
+      // understand why they cannot accept it.
+      if (userRole !== "client") {
+        await dbClient.query("ROLLBACK");
+        return res.status(403).json({
+          error: "wrong_role",
+          message: "Only Client accounts can join an organization. This invitation cannot be accepted with a Talent or Admin account.",
+        });
       }
 
       const existingMembership = await dbClient.query(
@@ -13387,6 +13645,82 @@ export async function registerRoutes(
       return res.status(500).json({ error: "Failed to respond to organization invitation" });
     } finally {
       dbClient.release();
+    }
+  });
+
+  // ── Organization deletion lifecycle ──────────────────────────────────────
+  // Only the owner can schedule deletion. A three-day grace period allows
+  // cancellation. Due organizations are cleaned up by background cleanup
+  // (cleanupDueOrganizations exported below) without affecting users or
+  // other organizations.
+  const ORGANIZATION_DELETION_GRACE_DAYS = 3;
+
+  app.post("/api/organizations/:organizationId/request-deletion", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can request deletion" });
+
+      const orgResult = await query(
+        `SELECT name, delete_requested_at FROM organizations WHERE id = $1 LIMIT 1`,
+        [req.params.organizationId],
+      );
+      if (!orgResult.rows.length) return res.status(404).json({ error: "Organization not found" });
+      const org = orgResult.rows[0];
+      if (org.delete_requested_at) {
+        return res.status(409).json({ error: "Deletion is already scheduled for this organization" });
+      }
+
+      const confirmName = (req.body?.confirmName ?? "").trim();
+      if (!confirmName || confirmName !== org.name) {
+        return res.status(400).json({ error: "Confirmation name does not match the organization name" });
+      }
+
+      const updated = await query(
+        `UPDATE organizations
+            SET delete_requested_at = NOW(),
+                delete_requested_by = $1,
+                delete_due_at = NOW() + ($2 * INTERVAL '1 day'),
+                updated_at = NOW()
+          WHERE id = $3
+          RETURNING id, name, delete_requested_at, delete_due_at`,
+        [userId, ORGANIZATION_DELETION_GRACE_DAYS, req.params.organizationId],
+      );
+      return res.json({
+        status: "deletion_scheduled",
+        deleteDueAt: updated.rows[0].delete_due_at,
+      });
+    } catch (err: any) {
+      console.error("POST organization request-deletion failed:", err);
+      return res.status(500).json({ error: "Failed to schedule organization deletion" });
+    }
+  });
+
+  app.delete("/api/organizations/:organizationId/request-deletion", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const owner = await requireOrganizationOwner(req.params.organizationId, userId);
+      if (!owner) return res.status(403).json({ error: "Only organization owners can cancel deletion" });
+
+      const result = await query(
+        `UPDATE organizations
+            SET delete_requested_at = NULL,
+                delete_requested_by = NULL,
+                delete_due_at = NULL,
+                updated_at = NOW()
+          WHERE id = $1 AND delete_requested_at IS NOT NULL
+          RETURNING id`,
+        [req.params.organizationId],
+      );
+      if (!result.rows.length) {
+        return res.status(404).json({ error: "No pending deletion request found for this organization" });
+      }
+      return res.json({ status: "deletion_cancelled" });
+    } catch (err: any) {
+      console.error("DELETE organization request-deletion failed:", err);
+      return res.status(500).json({ error: "Failed to cancel organization deletion" });
     }
   });
 

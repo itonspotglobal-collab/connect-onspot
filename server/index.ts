@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/node";
 import { v4 as uuidv4 } from "uuid";
 import { createServer } from "http";
 import path from "path";
-import { expireOrganizationInvitations, registerRoutes } from "./routes";
+import { expireOrganizationInvitations, cleanupDueOrganizations, registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 import { ogMiddleware } from "./ogMiddleware";
@@ -620,6 +620,24 @@ app.use((req, res, next) => {
   setTimeout(runOrganizationInvitationCleanup, 5000);
   setInterval(runOrganizationInvitationCleanup, ORGANIZATION_INVITATION_CLEANUP_INTERVAL_MS);
   console.log("⏰ Organization invitation expiry scheduled: startup pass in 5 s, then every 1 h");
+
+  // ── Due-organization permanent deletion cleanup ────────────────────────────
+  // Organizations with delete_due_at <= NOW() are permanently removed without
+  // affecting users, client profiles, or other organizations.
+  const ORGANIZATION_DELETION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const runOrganizationDeletionCleanup = async () => {
+    try {
+      const deleted = await cleanupDueOrganizations();
+      if (deleted > 0) {
+        console.log(`⏰ Organization deletion cleanup: permanently deleted ${deleted} organization(s)`);
+      }
+    } catch (err: any) {
+      console.warn("⚠️ Organization deletion cleanup error (non-fatal):", err.message);
+    }
+  };
+  setTimeout(runOrganizationDeletionCleanup, 10000);
+  setInterval(runOrganizationDeletionCleanup, ORGANIZATION_DELETION_CLEANUP_INTERVAL_MS);
+  console.log("⏰ Organization deletion cleanup scheduled: startup pass in 10 s, then every 1 h");
 
   // ── Scaffold-job TTL cleanup ────────────────────────────────────────────────
   // Removes search_scaffold rows older than 7 days that have no job_submissions

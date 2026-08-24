@@ -1,7 +1,7 @@
 import { useLocation, useParams, Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Building2, Globe2, Loader2, Mail, RefreshCw, UserMinus, Users, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AlertTriangle, ArrowLeft, Building2, Globe2, Loader2, Mail, RefreshCw, Trash2, UserMinus, Users, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -30,6 +38,8 @@ type OrganizationResponse = {
     about: string | null;
     timezone: string | null;
     createdAt: string | null;
+    deleteRequestedAt: string | null;
+    deleteDueAt: string | null;
   };
   membership: {
     role: string;
@@ -81,6 +91,9 @@ export default function OrganizationDetail() {
   const { setSelectedOrganizationId } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitationStatusFilter, setInvitationStatusFilter] = useState<InvitationStatusFilter>("all");
+  const [deletionDialogOpen, setDeletionDialogOpen] = useState(false);
+  const [deletionConfirmName, setDeletionConfirmName] = useState("");
+  const confirmInputRef = useRef<HTMLInputElement>(null);
   const { data, isLoading, isError } = useQuery<OrganizationResponse>({
     queryKey: ["/api/organizations", organizationId],
     queryFn: async () => {
@@ -188,6 +201,53 @@ export default function OrganizationDetail() {
     }),
   });
 
+  const requestDeletionMutation = useMutation({
+    mutationFn: async (confirmName: string) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/organizations/${organizationId}/request-deletion`,
+        { confirmName },
+      );
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Failed to schedule deletion");
+      return json;
+    },
+    onSuccess: () => {
+      setDeletionDialogOpen(false);
+      setDeletionConfirmName("");
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations/me"] });
+      toast({ title: "Deletion scheduled", description: "This organization will be permanently deleted after the grace period." });
+    },
+    onError: (error: Error) => toast({
+      title: "Deletion could not be scheduled",
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/organizations/${organizationId}/request-deletion`,
+      );
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Failed to cancel deletion");
+      return json;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/organizations/me"] });
+      toast({ title: "Deletion cancelled", description: "The organization deletion has been cancelled." });
+    },
+    onError: (error: Error) => toast({
+      title: "Deletion could not be cancelled",
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
   if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -227,6 +287,8 @@ export default function OrganizationDetail() {
   ].filter(([, value]) => value);
 
   const isOwner = data.membership.role === "owner";
+  const isPendingDeletion = Boolean(organization.deleteDueAt);
+  const deleteDueAt = organization.deleteDueAt ? new Date(organization.deleteDueAt) : null;
   const selectedInvitationStatusLabel =
     INVITATION_STATUS_FILTERS.find(({ value }) => value === invitationStatusFilter)?.label ?? "All statuses";
   const handleInvite = (event: FormEvent<HTMLFormElement>) => {
@@ -236,8 +298,19 @@ export default function OrganizationDetail() {
     inviteMutation.mutate(email);
   };
 
+  // Countdown rendering for pending-deletion banner
+  const formatDeletionCountdown = (dueAt: Date) => {
+    const msLeft = dueAt.getTime() - Date.now();
+    if (msLeft <= 0) return "imminently";
+    const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
+    const daysLeft = Math.floor(hoursLeft / 24);
+    if (daysLeft >= 2) return `in ${daysLeft} days`;
+    if (hoursLeft >= 1) return `in ${hoursLeft} hour${hoursLeft !== 1 ? "s" : ""}`;
+    return "very soon";
+  };
+
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <Link
         href="/dashboard"
         className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
@@ -245,6 +318,34 @@ export default function OrganizationDetail() {
         <ArrowLeft className="h-4 w-4" />
         Back to dashboard
       </Link>
+
+      {/* Pending-deletion warning banner */}
+      {isPendingDeletion && deleteDueAt && (
+        <div className="flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-800">
+              This organization is scheduled for deletion {formatDeletionCountdown(deleteDueAt)}.
+            </p>
+            <p className="mt-0.5 text-xs text-red-600">
+              All members, invitations, and workspace data will be permanently removed.
+              The due date is {deleteDueAt.toLocaleString()}.
+            </p>
+          </div>
+          {isOwner && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-red-300 text-red-700 hover:bg-red-100"
+              disabled={cancelDeletionMutation.isPending}
+              onClick={() => cancelDeletionMutation.mutate()}
+            >
+              {cancelDeletionMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cancel deletion"}
+            </Button>
+          )}
+        </div>
+      )}
 
       <Card className="overflow-hidden border-slate-200 shadow-sm">
         <div className="bg-gradient-to-br from-[#474ead] to-[#6366c8] px-6 py-8 text-white sm:px-8">
@@ -493,6 +594,89 @@ export default function OrganizationDetail() {
           </Card>
         </CardContent>
       </Card>
+
+      {/* Danger zone — owner-only deletion */}
+      {isOwner && !isPendingDeletion && (
+        <Card className="border-red-200 shadow-sm">
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-semibold text-red-700">
+                <Trash2 className="h-4 w-4" />
+                Delete organization
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Permanently remove this organization, its members, and all invitation history after a 3-day grace period.
+                This action cannot be undone.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 border-red-300 text-red-700 hover:bg-red-50"
+              onClick={() => {
+                setDeletionConfirmName("");
+                setDeletionDialogOpen(true);
+                setTimeout(() => confirmInputRef.current?.focus(), 50);
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete organization
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Deletion confirmation dialog */}
+      <Dialog open={deletionDialogOpen} onOpenChange={(open) => {
+        setDeletionDialogOpen(open);
+        if (!open) setDeletionConfirmName("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete &ldquo;{organization.name}&rdquo;</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the organization, remove all members, and cancel all pending invitations
+              after a 3-day grace period. You can cancel during this window.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 space-y-3">
+            <Label htmlFor="deletion-confirm-name">
+              Type the organization name to confirm:
+              <span className="ml-1 font-semibold text-slate-900">{organization.name}</span>
+            </Label>
+            <Input
+              id="deletion-confirm-name"
+              ref={confirmInputRef}
+              value={deletionConfirmName}
+              onChange={(e) => setDeletionConfirmName(e.target.value)}
+              placeholder={organization.name}
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeletionDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletionConfirmName !== organization.name || requestDeletionMutation.isPending}
+              onClick={() => requestDeletionMutation.mutate(deletionConfirmName)}
+            >
+              {requestDeletionMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Schedule deletion
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

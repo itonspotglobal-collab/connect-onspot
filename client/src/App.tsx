@@ -89,6 +89,7 @@ import TalentPayouts from "@/pages/TalentPayouts";
 import OrganizationCreate from "@/pages/OrganizationCreate";
 import OrganizationDetail from "@/pages/OrganizationDetail";
 import OrganizationInvitations from "@/pages/OrganizationInvitations";
+import OrganizationInvite from "@/pages/OrganizationInvite";
 import InquiryPage from "@/pages/InquiryPage";
 import InquiryReview from "@/pages/InquiryReview";
 import InquiryPayment from "@/pages/InquiryPayment";
@@ -563,6 +564,8 @@ function AppContent() {
       <Route path="/payment-protection" component={PublicRouter} />
       <Route path="/client-verification" component={PublicRouter} />
       <Route path="/trust-safety" component={PublicRouter} />
+      {/* Public token-based organization invitation page — accessible to all visitors */}
+      <Route path="/organization-invite/:token" component={OrganizationInvite} />
       <Route path="/lead-intake" component={PublicRouter} />
       <Route path="/inquiry" component={PublicRouter} />
       <Route path="/inquiry/:id/review" component={PublicRouter} />

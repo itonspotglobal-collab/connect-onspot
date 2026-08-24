@@ -334,9 +334,7 @@ export function TopNavigation() {
   const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { label: "Client Profile", route: "/client-profile", icon: Building },
-      ...(clientOrganizations.length === 0
-        ? [{ label: "Create Organization", route: "/organization/create", icon: Building2 }]
-        : []),
+      { label: "Create Organization", route: "/organization/create", icon: Building2 },
       {
         label: organizationInvitations.length
           ? `Organization Invitations (${organizationInvitations.length})`

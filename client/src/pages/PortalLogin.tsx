@@ -150,6 +150,17 @@ export default function PortalLogin() {
     catch { return ""; }
   });
 
+  // Preserve org invite token through the login flow so the user lands back on
+  // the token-based invitation page after authentication.
+  const [orgInviteToken] = useState(() => {
+    try {
+      // Extract from returnTo if it points to /organization-invite/:token
+      const rt = new URLSearchParams(window.location.search).get("returnTo") || "";
+      const match = rt.match(/^\/organization-invite\/([^/?#]+)/);
+      return match ? match[1] : "";
+    } catch { return ""; }
+  });
+
   // Optional return destination after login (e.g. the job detail page the user came from)
   const [returnTo] = useState(() => {
     try { return new URLSearchParams(window.location.search).get("returnTo") || ""; }

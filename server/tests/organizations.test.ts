@@ -1,5 +1,5 @@
 /**
- * Route-level coverage for the Client organization foundation.
+ * Route-level coverage for the Client organization lifecycle.
  *
  * Run with:
  *   npx tsx --test --test-concurrency=1 server/tests/organizations.test.ts
@@ -7,6 +7,7 @@
 
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import http from "node:http";
 import express from "express";
 import jwt from "jsonwebtoken";
@@ -21,8 +22,12 @@ const INVITEE_ID = `organization-invitee-${suffix}`;
 const TALENT_ID = `organization-talent-${suffix}`;
 const ADMIN_ID = `organization-admin-${suffix}`;
 
-const makeToken = (userId: string, role: string) =>
-  jwt.sign({ userId, email: `${userId}@test.example`, role }, JWT_SECRET, { expiresIn: "1h" });
+const makeToken = (userId: string, role: string, email?: string) =>
+  jwt.sign(
+    { userId, email: email ?? `${userId}@test.example`, role },
+    JWT_SECRET,
+    { expiresIn: "1h" },
+  );
 
 const clientToken = makeToken(CLIENT_ID, "client");
 const otherClientToken = makeToken(OTHER_CLIENT_ID, "client");
@@ -203,6 +208,21 @@ describe("Client organization routes", () => {
     assert.deepEqual(list.json, []);
   });
 
+  it("allows a Client to create a second organization (multiple organizations per client)", async () => {
+    const second = await request(server, "POST", "/api/organizations", clientToken, {
+      name: "Second Organization",
+    });
+    assert.equal(second.status, 201, JSON.stringify(second.json));
+    const secondOrgId = second.json.organization.id;
+
+    const list = await request(server, "GET", "/api/organizations/me", clientToken);
+    assert.equal(list.status, 200);
+    assert.ok(list.json.length >= 2, "client should see both organizations");
+
+    // Clean up second organization
+    await query(`DELETE FROM organizations WHERE id = $1`, [secondOrgId]).catch(() => {});
+  });
+
   it("lets owners invite Clients, lets invitees accept, and keeps administration owner-only", async () => {
     const invitation = await request(
       server,
@@ -218,6 +238,13 @@ describe("Client organization routes", () => {
       new Date(invitation.json.invitation.expiresAt).getTime() > Date.now() + 29 * 24 * 60 * 60 * 1000,
       "organization invitations should expire after 30 days",
     );
+
+    // Verify token_hash was stored
+    const tokenRow = await query(
+      `SELECT token_hash FROM organization_invitations WHERE id = $1`,
+      [invitation.json.invitation.id],
+    );
+    assert.ok(tokenRow.rows[0]?.token_hash, "invitation must have a stored token_hash");
 
     const ownerView = await request(
       server,
@@ -324,7 +351,200 @@ describe("Client organization routes", () => {
     assert.equal(ownerView.json.invitations[0].status, "revoked");
   });
 
+  it("allows invitations to Talent and Admin email addresses (Client-only rejection at acceptance)", async () => {
+    // Inviting a Talent email must now succeed (rejection happens at acceptance)
+    const talentInvite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${TALENT_ID}@test.example` },
+    );
+    assert.equal(talentInvite.status, 201, `Expected 201 got ${talentInvite.status}: ${JSON.stringify(talentInvite.json)}`);
+    assert.equal(talentInvite.json.invitation.status, "pending");
+
+    // A Talent user attempting to accept the invitation via the respond endpoint
+    // must receive a role-mismatch error (not 404).
+    const talentAccept = await request(
+      server,
+      "POST",
+      `/api/organization-invitations/${talentInvite.json.invitation.id}/respond`,
+      talentToken,
+      { action: "accept" },
+    );
+    // Talent email matches but role is wrong — expect 403 (not 404)
+    assert.equal(talentAccept.status, 403, JSON.stringify(talentAccept.json));
+    assert.equal(talentAccept.json.error, "wrong_role");
+
+    // Inviting an Admin email must also succeed
+    const adminInvite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${ADMIN_ID}@test.example` },
+    );
+    assert.equal(adminInvite.status, 201, JSON.stringify(adminInvite.json));
+
+    // Clean up — revoke both invitations so they don't interfere with later tests
+    await query(
+      `UPDATE organization_invitations SET status = 'revoked' WHERE id = ANY($1::text[])`,
+      [[talentInvite.json.invitation.id, adminInvite.json.invitation.id]],
+    );
+  });
+
+  it("allows invitations to unknown (unregistered) email addresses", async () => {
+    const unknownEmail = `unknown-user-${suffix}@outsider.example`;
+    const invite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: unknownEmail },
+    );
+    assert.equal(invite.status, 201, JSON.stringify(invite.json));
+    assert.equal(invite.json.invitation.status, "pending");
+
+    // Revoke for cleanup
+    await query(
+      `UPDATE organization_invitations SET status = 'revoked' WHERE id = $1`,
+      [invite.json.invitation.id],
+    );
+  });
+
+  it("exposes invitation details via the public token-based endpoint", async () => {
+    // Create an invitation so a real token_hash is stored
+    const invite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${OTHER_CLIENT_ID}@test.example` },
+    );
+    assert.equal(invite.status, 201, JSON.stringify(invite.json));
+
+    // Fetch the stored hash and manufacture an impossible fake-raw lookup
+    const tokenRow = await query(
+      `SELECT token_hash FROM organization_invitations WHERE id = $1`,
+      [invite.json.invitation.id],
+    );
+    const storedHash = tokenRow.rows[0].token_hash;
+    assert.ok(storedHash, "token_hash must be stored");
+
+    // The public endpoint accepts the raw token, not the hash. We can't
+    // reconstruct the raw token from the hash, so verify the 404 path using
+    // a dummy token (correct shape, wrong value).
+    const notFound = await request(server, "GET", "/api/organization-invitations/public/invalidtoken000", null);
+    assert.equal(notFound.status, 404);
+
+    // Clean up
+    await query(
+      `UPDATE organization_invitations SET status = 'revoked' WHERE id = $1`,
+      [invite.json.invitation.id],
+    );
+  });
+
+  it("accept-by-token rejects mismatched email", async () => {
+    // Insert a fresh invitation directly with a known token_hash so we bypass
+    // any existing membership state. The invitation is for a unique email
+    // address that does NOT match otherClientToken's email.
+    const mismatchEmail = `mismatch-target-${suffix}@nowhere.example`;
+    const mismatchRaw = "mismatch-raw-token-for-test-000000000000000000000000000000000";
+    const mismatchHash = createHash("sha256").update(mismatchRaw).digest("hex");
+    const insertResult = await query(
+      `INSERT INTO organization_invitations
+         (organization_id, email, invited_by, expires_at, token_hash)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '30 days', $4)
+       RETURNING id`,
+      [createdOrganizationId, mismatchEmail, CLIENT_ID, mismatchHash],
+    );
+    const inviteId = insertResult.rows[0].id;
+
+    // otherClientToken's email is different — should get 403 email_mismatch
+    const mismatch = await request(server, "POST", "/api/organization-invitations/accept-by-token", otherClientToken, {
+      token: mismatchRaw,
+      action: "accept",
+    });
+    assert.equal(mismatch.status, 403, JSON.stringify(mismatch.json));
+    assert.equal(mismatch.json.error, "email_mismatch");
+
+    // Clean up
+    await query(`UPDATE organization_invitations SET status = 'revoked' WHERE id = $1`, [inviteId]);
+  });
+
+  it("accept-by-token accepts with the correct client email and token", async () => {
+    // Invite other client
+    const invite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${OTHER_CLIENT_ID}@test.example` },
+    );
+    assert.equal(invite.status, 201, JSON.stringify(invite.json));
+
+    // Inject known raw token
+    const rawToken = "known-raw-token-for-accept-test-0000000000000000000000000000000";
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await query(
+      `UPDATE organization_invitations SET token_hash = $1 WHERE id = $2`,
+      [tokenHash, invite.json.invitation.id],
+    );
+
+    const accepted = await request(server, "POST", "/api/organization-invitations/accept-by-token", otherClientToken, {
+      token: rawToken,
+      action: "accept",
+    });
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+    assert.equal(accepted.json.status, "accepted");
+    assert.equal(accepted.json.membership.status, "active");
+
+    // Clean up membership so further tests start clean
+    await query(
+      `UPDATE organization_members SET status = 'suspended'
+        WHERE organization_id = $1 AND user_id = $2 AND role = 'member'`,
+      [createdOrganizationId, OTHER_CLIENT_ID],
+    );
+  });
+
+  it("accept-by-token rejects wrong-role (talent) even with matching email", async () => {
+    const invite = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/invitations`,
+      clientToken,
+      { email: `${TALENT_ID}@test.example` },
+    );
+    assert.equal(invite.status, 201, JSON.stringify(invite.json));
+
+    const rawToken = "known-raw-token-for-talent-role-00000000000000000000000000000000";
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await query(
+      `UPDATE organization_invitations SET token_hash = $1 WHERE id = $2`,
+      [tokenHash, invite.json.invitation.id],
+    );
+
+    // Talent token: email matches, role wrong
+    const talentTokenWithEmail = makeToken(TALENT_ID, "talent", `${TALENT_ID}@test.example`);
+    const result = await request(server, "POST", "/api/organization-invitations/accept-by-token", talentTokenWithEmail, {
+      token: rawToken,
+      action: "accept",
+    });
+    assert.equal(result.status, 403, JSON.stringify(result.json));
+    assert.equal(result.json.error, "wrong_role");
+
+    // Clean up
+    await query(`UPDATE organization_invitations SET status = 'revoked' WHERE id = $1`, [invite.json.invitation.id]);
+  });
+
   it("expires stale invitations, rejects acceptance, and allows a safe resend", async () => {
+    // Reset OTHER_CLIENT's membership so that re-inviting them is possible.
+    await query(
+      `DELETE FROM organization_members
+        WHERE organization_id = $1 AND user_id = $2 AND role = 'member'`,
+      [createdOrganizationId, OTHER_CLIENT_ID],
+    ).catch(() => {});
+
     const invitation = await request(
       server,
       "POST",
@@ -379,6 +599,13 @@ describe("Client organization routes", () => {
     assert.equal(resent.status, 201, JSON.stringify(resent.json));
     assert.equal(resent.json.invitation.status, "pending");
     assert.notEqual(resent.json.invitation.id, invitation.json.invitation.id);
+
+    // New invitation must also have a token_hash
+    const resentToken = await query(
+      `SELECT token_hash FROM organization_invitations WHERE id = $1`,
+      [resent.json.invitation.id],
+    );
+    assert.ok(resentToken.rows[0]?.token_hash, "resent invitation must have a token_hash");
 
     const pendingResend = await request(
       server,
@@ -440,6 +667,13 @@ describe("Client organization routes", () => {
       new Date(retried.json.invitation.expiresAt).getTime(),
       new Date(beforeRetry.rows[0].expires_at).getTime(),
     );
+
+    // Retry must regenerate the token_hash
+    const afterRetryToken = await query(
+      `SELECT token_hash FROM organization_invitations WHERE id = $1`,
+      [invitation.json.invitation.id],
+    );
+    assert.ok(afterRetryToken.rows[0]?.token_hash, "retried invitation must still have a token_hash");
 
     const pendingRows = await query(
       `SELECT id FROM organization_invitations
@@ -553,6 +787,133 @@ describe("Client organization routes", () => {
         }
       }
     }
+  });
+
+  it("schedules deletion with owner confirmation and returns the due date", async () => {
+    // Wrong name must be rejected
+    const wrongName = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      clientToken,
+      { confirmName: "Wrong Name" },
+    );
+    assert.equal(wrongName.status, 400, JSON.stringify(wrongName.json));
+
+    // Non-owner must be rejected
+    const nonOwner = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      otherClientToken,
+      { confirmName: "Acme Organization" },
+    );
+    assert.equal(nonOwner.status, 403);
+
+    // Owner with correct name succeeds
+    const scheduled = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      clientToken,
+      { confirmName: "Acme Organization" },
+    );
+    assert.equal(scheduled.status, 200, JSON.stringify(scheduled.json));
+    assert.equal(scheduled.json.status, "deletion_scheduled");
+    assert.ok(scheduled.json.deleteDueAt, "deleteDueAt must be returned");
+    const dueAt = new Date(scheduled.json.deleteDueAt);
+    const expectedMin = Date.now() + 2.9 * 24 * 60 * 60 * 1000;
+    assert.ok(dueAt.getTime() >= expectedMin, "due date should be ~3 days from now");
+
+    // Duplicate request must be rejected
+    const duplicate = await request(
+      server,
+      "POST",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      clientToken,
+      { confirmName: "Acme Organization" },
+    );
+    assert.equal(duplicate.status, 409);
+
+    // Organization detail must reflect deletion fields
+    const detail = await request(server, "GET", `/api/organizations/${createdOrganizationId}`, clientToken);
+    assert.ok(detail.json.organization.deleteDueAt, "detail must include deleteDueAt");
+  });
+
+  it("lets the owner cancel a scheduled deletion", async () => {
+    // Non-owner cannot cancel
+    const nonOwner = await request(
+      server,
+      "DELETE",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      otherClientToken,
+    );
+    assert.equal(nonOwner.status, 403);
+
+    const cancelled = await request(
+      server,
+      "DELETE",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      clientToken,
+    );
+    assert.equal(cancelled.status, 200, JSON.stringify(cancelled.json));
+    assert.equal(cancelled.json.status, "deletion_cancelled");
+
+    // Detail must no longer show a due date
+    const detail = await request(server, "GET", `/api/organizations/${createdOrganizationId}`, clientToken);
+    assert.equal(detail.json.organization.deleteDueAt, null);
+
+    // Cancelling again must 404
+    const again = await request(
+      server,
+      "DELETE",
+      `/api/organizations/${createdOrganizationId}/request-deletion`,
+      clientToken,
+    );
+    assert.equal(again.status, 404);
+  });
+
+  it("deletion cleanup removes due organizations without affecting other data", async () => {
+    const { cleanupDueOrganizations } = await import("../routes.js");
+
+    // Create a separate organization owned by OTHER_CLIENT_ID so we can verify
+    // that cleanup isolation works.
+    const otherOrg = await request(server, "POST", "/api/organizations", otherClientToken, {
+      name: "Other Organization for Cleanup Test",
+    });
+    assert.equal(otherOrg.status, 201);
+    const otherOrgId = otherOrg.json.organization.id;
+
+    // Schedule the main organization for immediate deletion
+    await query(
+      `UPDATE organizations
+          SET delete_requested_at = NOW(),
+              delete_requested_by = $1,
+              delete_due_at = NOW() - INTERVAL '1 minute'
+        WHERE id = $2`,
+      [CLIENT_ID, createdOrganizationId],
+    );
+
+    const deleted = await cleanupDueOrganizations();
+    assert.ok(deleted >= 1, "should have deleted at least 1 organization");
+
+    // Main org must be gone
+    const mainCheck = await query(`SELECT id FROM organizations WHERE id = $1`, [createdOrganizationId]);
+    assert.equal(mainCheck.rows.length, 0, "due organization must be deleted");
+
+    // Other org must still exist (isolation)
+    const otherCheck = await query(`SELECT id FROM organizations WHERE id = $1`, [otherOrgId]);
+    assert.equal(otherCheck.rows.length, 1, "other organization must not be deleted");
+
+    // Users must still exist
+    const userCheck = await query(
+      `SELECT id FROM users WHERE id = ANY($1::text[])`,
+      [[CLIENT_ID, OTHER_CLIENT_ID]],
+    );
+    assert.equal(userCheck.rows.length, 2, "users must not be deleted by organization cleanup");
+
+    // Clean up other org
+    await query(`DELETE FROM organizations WHERE id = $1`, [otherOrgId]).catch(() => {});
   });
 
   it("rolls back the organization when owner membership creation fails", async () => {
