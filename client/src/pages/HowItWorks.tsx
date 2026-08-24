@@ -194,11 +194,11 @@ const SECTIONS: Section[] = [
           },
           {
             q: "Is there a security deposit?",
-            a: "Yes — a refundable security deposit is collected before your Contractor's first day. It's held by OnSpot and applied against your final invoice at the end of a proper engagement (30 days' notice, no lock-in period). If a payment is ever late, the deposit can be drawn on to keep your Contractor paid on time — with an obligation to replenish it within 5 days. The deposit is never forfeited.",
+            a: "Yes — a refundable security deposit is collected before your Contractor's first day. It's held by OnSpot and applied against your final invoice at the end of a proper engagement (30 days' notice, no lock-in period).\n\nIf a payment is ever late, the deposit can be drawn on to keep your Contractor paid on time, with an obligation to replenish it within 5 days. If a payment issue reaches 15 days unpaid, the engagement is suspended and a further 5-day window opens to resolve it. If it's still unresolved after that, the engagement is terminated for non-payment and the deposit is forfeited in full.\n\nOutside of this non-payment path, the deposit is never forfeited — it's simply applied to your final invoice.",
           },
           {
             q: "What if I don't pay an invoice on time?",
-            a: "There's a grace period before any service interruption. If payment lapses significantly, services may be suspended until the account is brought current.",
+            a: "See the security deposit answer above — late payment draws on the deposit first, with escalating steps (replenishment, then suspension with a cure window) before it ever reaches termination.",
           },
         ],
       },
@@ -396,7 +396,7 @@ function AccordionItem({
       >
         <div
           className="px-6 pb-5 text-sm leading-relaxed text-slate-600"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          style={{ fontFamily: "Inter, sans-serif", whiteSpace: "pre-wrap" }}
         >
           {qa.a}
         </div>
