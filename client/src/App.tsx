@@ -85,6 +85,8 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
+import ClientInvoices from "@/pages/ClientInvoices";
+import TalentPayouts from "@/pages/TalentPayouts";
 import OrganizationCreate from "@/pages/OrganizationCreate";
 import OrganizationDetail from "@/pages/OrganizationDetail";
 import OrganizationInvitations from "@/pages/OrganizationInvitations";
@@ -355,7 +357,7 @@ function ClientRouter() {
           <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />
           <Route path="/clients" component={() => <div className="p-6">Client Management Module - Coming Soon</div>} />
           <Route path="/contracts" component={() => <div className="p-6">Contracts Module - Coming Soon</div>} />
-          <Route path="/payments" component={() => <div className="p-6">Payments Module - Coming Soon</div>} />
+          <Route path="/payments" component={ClientInvoices} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
           <Route path="/insights/:slug" component={InsightPost} />
@@ -396,6 +398,7 @@ function TalentRouter() {
           <Route path="/" component={TalentPortal} />
           <Route path="/get-hired" component={TalentPortal} />
           <Route path="/talent-portal" component={TalentPortal} />
+          <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
           <Route path="/hired-talent-portal" component={HiredTalentPortal} />
           <Route path="/settings" component={ProfileSettings} />
           {/* Redirect any other paths to talent portal */}

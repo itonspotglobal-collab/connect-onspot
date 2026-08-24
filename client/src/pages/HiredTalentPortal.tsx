@@ -33,6 +33,7 @@ import {
   User,
   Loader2,
   LogOut,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
@@ -76,6 +77,11 @@ const managementItems = [
     title: "Contracts",
     url: "/hired-talent-portal/contracts",
     icon: FileText,
+  },
+  {
+    title: "Earnings",
+    url: "/hired-talent-portal/payouts",
+    icon: Wallet,
   },
 ];
 

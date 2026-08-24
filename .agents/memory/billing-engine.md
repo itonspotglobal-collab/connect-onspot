@@ -30,3 +30,12 @@ description: Durable money, identity, lifecycle, and concurrency rules for billi
 **Why:** Two simultaneous admin requests can both pass an application-level existence check.
 
 **How to apply:** Keep the duplicate check and insert transactional, retain the unique index, and translate a unique-conflict error into a safe conflict response.
+
+## Phase 3 surface — client invoice view + talent payout history
+
+- `GET /api/client/invoices` — `authenticateJWT` + `role==="client"`, filters by `invoices.client_id`; joins `invoice_periods`, `offers`, talent `users`. Page: `client/src/pages/ClientInvoices.tsx` at client route `/payments`.
+- `GET /api/talent/payouts` — `authenticateJWT` (main auth system, not talent-JWT), filters by `payouts.talent_id`; joins `invoice_periods`, `offers`, client `users`. Page: `client/src/pages/TalentPayouts.tsx` at `/hired-talent-portal/payouts`.
+- Talent payouts route added *before* `/hired-talent-portal` in `TalentRouter` — wouter Switch is first-match, so specificity order matters.
+- "Earnings" link added to `managementItems` in `HiredTalentPortal.tsx`; `Wallet` icon imported from lucide-react.
+- `scripts/verify-billing-phase3.ts` — 32/32 pass (client filtering, talent filtering, cross-tenant isolation, status transitions, empty-state).
+- pg DATE columns return JS Date objects at runtime, not strings — check `!= null`, not `typeof === "string"`.

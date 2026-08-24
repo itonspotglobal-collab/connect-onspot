@@ -18723,7 +18723,114 @@ export async function registerRoutes(
     }
   });
 
+  // ── Phase 3: client invoice view + talent payout history ──────────────────
 
+  /**
+   * GET /api/client/invoices
+   * Returns paginated invoices for the authenticated client, newest first.
+   * Includes period dates, engagement type, and talent name for each row.
+   */
+  app.get("/api/client/invoices", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id || user.role !== "client") {
+        return res.status(403).json({ error: "Client access required" });
+      }
+      const clientId: string = user.id;
+      const page  = Math.max(1, Number(req.query.page)  || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+
+      const countResult = await query(
+        `SELECT COUNT(*)::int AS total FROM invoices WHERE client_id = $1`,
+        [clientId],
+      );
+      const rows = await query(
+        `SELECT
+           inv.id, inv.invoice_number, inv.amount, inv.currency, inv.status,
+           inv.payment_method, inv.issued_at, inv.due_date, inv.paid_at,
+           inv.commission_rate, inv.external_ref,
+           ip.period_start, ip.period_end, ip.standard_period_hours,
+           ip.extended_hours, ip.adjusted_talent_payout,
+           ip.talent_rate, ip.talent_rate_currency, ip.client_invoice_amount,
+           o.engagement_type,
+           COALESCE(NULLIF(TRIM(CONCAT(talent.first_name,' ',talent.last_name)),''), talent.email) AS talent_name
+         FROM invoices inv
+         JOIN invoice_periods   ip  ON ip.id  = inv.period_id
+         JOIN hiring_contracts  hc  ON hc.id  = inv.hiring_contract_id
+         JOIN job_submissions   js  ON js.id  = hc.submission_id
+         JOIN offers            o   ON o.id   = hc.offer_id
+         LEFT JOIN users talent ON talent.id = js.talent_id
+         WHERE inv.client_id = $1
+         ORDER BY inv.issued_at DESC NULLS LAST, inv.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [clientId, limit, offset],
+      );
+      const total = countResult.rows[0]?.total ?? 0;
+      return res.json({
+        page, limit, total,
+        pages: Math.max(1, Math.ceil(total / limit)),
+        items: rows.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/client/invoices error:", err);
+      return res.status(500).json({ error: "Unable to load invoices" });
+    }
+  });
+
+  /**
+   * GET /api/talent/payouts
+   * Returns paginated payouts for the authenticated talent user, newest first.
+   * Includes period dates, engagement type, and client name for context.
+   * Auth: standard JWT (talent users authenticated via main auth system).
+   */
+  app.get("/api/talent/payouts", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user?.id) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const talentId: string = user.id;
+      const page  = Math.max(1, Number(req.query.page)  || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+
+      const countResult = await query(
+        `SELECT COUNT(*)::int AS total FROM payouts WHERE talent_id = $1`,
+        [talentId],
+      );
+      const rows = await query(
+        `SELECT
+           p.id, p.amount, p.currency, p.status, p.payout_region,
+           p.payout_method, p.external_ref, p.failed_reason,
+           p.scheduled_at, p.disbursed_at, p.created_at,
+           ip.period_start, ip.period_end, ip.standard_period_hours,
+           ip.extended_hours, ip.talent_rate, ip.talent_rate_currency,
+           ip.client_invoice_amount,
+           o.engagement_type,
+           COALESCE(NULLIF(TRIM(CONCAT(client.first_name,' ',client.last_name)),''), client.email) AS client_name
+         FROM payouts p
+         JOIN invoice_periods   ip  ON ip.id  = p.period_id
+         JOIN hiring_contracts  hc  ON hc.id  = p.hiring_contract_id
+         JOIN job_submissions   js  ON js.id  = hc.submission_id
+         JOIN offers            o   ON o.id   = hc.offer_id
+         LEFT JOIN users client ON client.id = js.client_id
+         WHERE p.talent_id = $1
+         ORDER BY ip.period_start DESC, p.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [talentId, limit, offset],
+      );
+      const total = countResult.rows[0]?.total ?? 0;
+      return res.json({
+        page, limit, total,
+        pages: Math.max(1, Math.ceil(total / limit)),
+        items: rows.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/talent/payouts error:", err);
+      return res.status(500).json({ error: "Unable to load payout history" });
+    }
+  });
 
   //
   // Admin/OnSpot-driven: admin creates the contract from an accepted offer, records
