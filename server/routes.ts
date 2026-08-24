@@ -127,9 +127,21 @@ import { z } from "zod";
 export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
 
 // Permanently remove organizations whose deletion due date has passed.
-// This function is restart-safe: it deletes only the organization-owned
-// records in one isolated transaction per due organization, leaving users,
-// client profiles, and other organizations untouched.
+//
+// Isolation guarantee (confirmed by schema audit and test coverage):
+//   • Only `organization_members` and `organization_invitations` rows whose
+//     `organization_id` matches the deleted org are removed by CASCADE.  Both
+//     columns are NOT NULL, so they can only reference the org being deleted —
+//     memberships a user holds in *other* organizations are completely unaffected.
+//   • `users`, `client_profiles`, and all other tables have no FK reference to
+//     `organizations.id`, so no cross-org or cross-user data is touched.
+//   • A user who is both the owner of the due organization and a member of
+//     another organization retains their second-org membership and full account
+//     access after cleanup runs.
+//
+// This function is restart-safe: it re-checks the due date inside each DELETE
+// statement, so a concurrent restart cannot delete an org whose grace period
+// was extended between the SELECT and the DELETE.
 export const cleanupDueOrganizations = async (): Promise<number> => {
   const due = await query(
     `SELECT id, name FROM organizations

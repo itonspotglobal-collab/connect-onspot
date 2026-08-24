@@ -945,6 +945,81 @@ describe("Client organization routes", () => {
     await query(`DELETE FROM organizations WHERE id = $1`, [otherOrgId]).catch(() => {});
   });
 
+  it("retains a user's membership in Organization B when their Organization A is deleted", async () => {
+    // Isolation scenario: CLIENT_ID owns Org A (due for deletion) AND is a
+    // member of Org B owned by OTHER_CLIENT_ID.  Deleting Org A must not touch
+    // Org B or CLIENT_ID's membership there.
+    const { cleanupDueOrganizations } = await import("../routes.js");
+
+    // Create Org A (owned by CLIENT_ID — the org that will be deleted)
+    const orgA = await request(server, "POST", "/api/organizations", clientToken, {
+      name: "Org A for Multi-Org Deletion Test",
+    });
+    assert.equal(orgA.status, 201, JSON.stringify(orgA.json));
+    const orgAId = orgA.json.organization.id;
+
+    // Create Org B (owned by OTHER_CLIENT_ID — the org that must survive)
+    const orgB = await request(server, "POST", "/api/organizations", otherClientToken, {
+      name: "Org B for Multi-Org Deletion Test",
+    });
+    assert.equal(orgB.status, 201, JSON.stringify(orgB.json));
+    const orgBId = orgB.json.organization.id;
+
+    // Add CLIENT_ID as a member of Org B by direct SQL (simulating an accepted invitation)
+    await query(
+      `INSERT INTO organization_members (organization_id, user_id, role)
+       VALUES ($1, $2, 'member')
+       ON CONFLICT DO NOTHING`,
+      [orgBId, CLIENT_ID],
+    );
+
+    // Confirm CLIENT_ID membership in Org B exists before deletion
+    const beforeCheck = await query(
+      `SELECT 1 FROM organization_members WHERE organization_id = $1 AND user_id = $2`,
+      [orgBId, CLIENT_ID],
+    );
+    assert.equal(beforeCheck.rows.length, 1, "CLIENT_ID should be a member of Org B before cleanup");
+
+    // Schedule Org A for immediate deletion
+    await query(
+      `UPDATE organizations
+          SET delete_requested_at = NOW(),
+              delete_requested_by = $1,
+              delete_due_at = NOW() - INTERVAL '1 minute'
+        WHERE id = $2`,
+      [CLIENT_ID, orgAId],
+    );
+
+    const deleted = await cleanupDueOrganizations();
+    assert.ok(deleted >= 1, "cleanupDueOrganizations should have deleted at least 1 organization");
+
+    // Org A must be gone
+    const orgACheck = await query(`SELECT id FROM organizations WHERE id = $1`, [orgAId]);
+    assert.equal(orgACheck.rows.length, 0, "Org A must be deleted");
+
+    // Org B must still exist
+    const orgBCheck = await query(`SELECT id FROM organizations WHERE id = $1`, [orgBId]);
+    assert.equal(orgBCheck.rows.length, 1, "Org B must not be affected by Org A deletion");
+
+    // CLIENT_ID's membership in Org B must be intact — this is the key isolation assertion
+    const membershipCheck = await query(
+      `SELECT 1 FROM organization_members WHERE organization_id = $1 AND user_id = $2`,
+      [orgBId, CLIENT_ID],
+    );
+    assert.equal(
+      membershipCheck.rows.length,
+      1,
+      "CLIENT_ID must retain their Org B membership after their own Org A is deleted",
+    );
+
+    // CLIENT_ID user account must still exist
+    const userCheck = await query(`SELECT id FROM users WHERE id = $1`, [CLIENT_ID]);
+    assert.equal(userCheck.rows.length, 1, "CLIENT_ID user must not be deleted by organization cleanup");
+
+    // Clean up
+    await query(`DELETE FROM organizations WHERE id = ANY($1::text[])`, [[orgAId, orgBId]]).catch(() => {});
+  });
+
   it("rolls back the organization when owner membership creation fails", async () => {
     const triggerName = `organization_test_failure_${suffix}`;
     const functionName = `${triggerName}_fn`;
