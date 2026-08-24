@@ -126,6 +126,31 @@ import { z } from "zod";
 // the same address without revoking or deleting invitation history.
 export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
 
+/**
+ * Canonical engagement type values shared across all job-write routes.
+ * The DB constraint mirrors this list; keeping one source of truth here
+ * prevents route-level and constraint-level drift from drifting apart again.
+ */
+export const CANONICAL_ENGAGEMENT_TYPES = ["Lite", "Standard"] as const;
+
+/**
+ * Returns a 400-ready error object when `value` is supplied but not canonical,
+ * or null when the value is absent (null/undefined/"") or already canonical.
+ *
+ * Use this before any INSERT/UPDATE so invalid values never reach the database
+ * and callers receive a clear 400 instead of an opaque 500.
+ */
+export function validateEngagementType(
+  value: string | null | undefined,
+): { error: string; message: string } | null {
+  if (!value) return null; // absent / null / "" — allowed (nullable column)
+  if ((CANONICAL_ENGAGEMENT_TYPES as readonly string[]).includes(value)) return null;
+  return {
+    error: "Invalid engagement type",
+    message: `engagementType must be one of: ${CANONICAL_ENGAGEMENT_TYPES.join(", ")}`,
+  };
+}
+
 // Permanently remove organizations whose deletion due date has passed.
 //
 // Isolation guarantee (confirmed by schema audit and test coverage):
@@ -1966,30 +1991,21 @@ export async function registerRoutes(
     console.warn("⚠️  offers.expiry_reminder_sent_at migration skipped:", reminderColErr.message);
   }
 
-  // ── Migrate stale status values → canonical names, then add CHECK constraint ─
+  // ── Migrate stale engagement_type values → canonical names, rebuild constraint ─
+  // IMPORTANT: the old constraint (Half-Day | Full-Time) must be DROPPED FIRST.
+  // UPDATEs that write 'Standard' or 'Lite' are blocked by the old constraint
+  // if we try to normalize before dropping — that is why production stayed stuck.
+  // Safe order: drop → normalize approved values → safety-check → add new constraint.
   try {
-    // Step 0: normalize legacy engagement_type values in the jobs table.
-    // Three legacy forms are normalised here, in order of age:
+    // Step 0: Drop the stale constraint so the normalizing UPDATEs are not blocked.
+    // IF NOT EXISTS makes this a no-op when the constraint is already gone.
+    await query(`ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_engagement_type_check`);
+
+    // Step 1: Normalize every repository-approved legacy value.
+    //   'Full-Time'  (pre-2026-08 label)  → 'Standard'
+    //   'Half-Day'   (pre-2026-08 label)  → 'Lite'
     //   'full-time'  (old lowercase form) → 'Standard'
     //   'part-time'  (old lowercase form) → 'Lite'
-    //   'Full-Time'  (pre-2026-08 label)  → 'Standard'  (backwards-compat: if code
-    //   'Half-Day'   (pre-2026-08 label)  → 'Lite'       wrote old values after Phase-1 rename)
-    const ftLowerMigration = await query(`
-      UPDATE jobs SET engagement_type = 'Standard', updated_at = NOW()
-      WHERE  engagement_type = 'full-time'
-    `);
-    if ((ftLowerMigration.rowCount ?? 0) > 0) {
-      console.log(`✅ Migration: normalized ${ftLowerMigration.rowCount} jobs.engagement_type 'full-time' → 'Standard'`);
-    }
-    const ptLowerMigration = await query(`
-      UPDATE jobs SET engagement_type = 'Lite', updated_at = NOW()
-      WHERE  engagement_type = 'part-time'
-    `);
-    if ((ptLowerMigration.rowCount ?? 0) > 0) {
-      console.log(`✅ Migration: normalized ${ptLowerMigration.rowCount} jobs.engagement_type 'part-time' → 'Lite'`);
-    }
-    // Backwards-compat: rename old labels to new ones in case any row was written
-    // between the Phase-1 DB pre-normalization and this code deploy.
     const ftMigration = await query(`
       UPDATE jobs SET engagement_type = 'Standard', updated_at = NOW()
       WHERE  engagement_type = 'Full-Time'
@@ -2004,9 +2020,22 @@ export async function registerRoutes(
     if ((hdMigration.rowCount ?? 0) > 0) {
       console.log(`✅ Migration: normalized ${hdMigration.rowCount} jobs.engagement_type 'Half-Day' → 'Lite'`);
     }
+    const ftLowerMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Standard', updated_at = NOW()
+      WHERE  engagement_type = 'full-time'
+    `);
+    if ((ftLowerMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ftLowerMigration.rowCount} jobs.engagement_type 'full-time' → 'Standard'`);
+    }
+    const ptLowerMigration = await query(`
+      UPDATE jobs SET engagement_type = 'Lite', updated_at = NOW()
+      WHERE  engagement_type = 'part-time'
+    `);
+    if ((ptLowerMigration.rowCount ?? 0) > 0) {
+      console.log(`✅ Migration: normalized ${ptLowerMigration.rowCount} jobs.engagement_type 'part-time' → 'Lite'`);
+    }
 
-    // Pre-flight: confirm zero non-canonical rows before adding CHECK constraint.
-    const canonicalEngagementTypes = ["Lite", "Standard"];
+    // Step 2: Pre-flight — confirm zero non-canonical rows before adding the new constraint.
     const violatingJobs = await query(
       `SELECT id, engagement_type FROM jobs
        WHERE  engagement_type IS NOT NULL
@@ -2017,17 +2046,17 @@ export async function registerRoutes(
       const details = violatingJobs.rows.map((r: any) => `${r.id}:${r.engagement_type}`).join(", ");
       console.error(
         `❌ Migration: cannot add jobs.engagement_type CHECK constraint — ` +
-        `${violatingJobs.rowCount} row(s) still have non-canonical values: ${details}`
+        `${violatingJobs.rowCount} row(s) still have non-canonical values: ${details}. ` +
+        `Review and reclassify them manually, then restart.`
       );
     } else {
-      // Drop old constraint (Half-Day/Full-Time) if it still exists, then add new one.
-      await query(`ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_engagement_type_check`);
+      // Step 3: Add the new canonical constraint.
       await query(`
         ALTER TABLE jobs
         ADD CONSTRAINT jobs_engagement_type_check
         CHECK (engagement_type IS NULL OR engagement_type IN ('Lite', 'Standard'))
       `);
-      console.log("✅ Migration: jobs.engagement_type CHECK constraint set to ('Lite', 'Standard')");
+      console.log("✅ Migration: jobs.engagement_type CHECK constraint set to (NULL | 'Lite' | 'Standard')");
     }
 
     // Offers engagement_type constraint: normalize any stale values then rebuild.
@@ -7578,9 +7607,13 @@ export async function registerRoutes(
     requireClient,
     async (req: Request, res: Response) => {
       try {
-        // Guard: published jobs must have a valid engagement type
+        // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+        const etErr = validateEngagementType(req.body.engagementType);
+        if (etErr) return res.status(400).json(etErr);
+
+        // Guard 2: published jobs must have an engagement type set.
         const effectiveStatus = req.body.status ?? "open";
-        if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(req.body.engagementType)) {
+        if (["open", "published"].includes(effectiveStatus) && !req.body.engagementType) {
           return res.status(400).json({
             error: "Engagement Type required",
             message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
@@ -7605,7 +7638,11 @@ export async function registerRoutes(
     try {
       const updates = insertJobSchema.partial().parse(req.body);
 
-      // Guard: published jobs must have a valid engagement type
+      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const etErrPatch = validateEngagementType(updates.engagementType);
+      if (etErrPatch) return res.status(400).json(etErrPatch);
+
+      // Guard 2: published jobs must have an engagement type set.
       const existingJob = await storage.getJob(req.params.id);
       const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
@@ -9035,9 +9072,13 @@ export async function registerRoutes(
       const body = { ...req.body, clientId: rawClientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
-      // Guard: published jobs must have a valid engagement type
+      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const adminCreateEtErr = validateEngagementType(body.engagementType);
+      if (adminCreateEtErr) return res.status(400).json(adminCreateEtErr);
+
+      // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(body.engagementType)) {
+      if (["open", "published"].includes(effectiveStatus) && !body.engagementType) {
         return res.status(400).json({
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
@@ -9076,7 +9117,11 @@ export async function registerRoutes(
       const { clientId, ...rest } = req.body;
       const updates = insertJobSchema.partial().parse(rest);
 
-      // Guard: published jobs must have a valid engagement type
+      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const adminPatchEtErr = validateEngagementType(updates.engagementType);
+      if (adminPatchEtErr) return res.status(400).json(adminPatchEtErr);
+
+      // Guard 2: published jobs must have an engagement type set.
       const existingJob = await storage.getJob(req.params.id);
       const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
@@ -14028,9 +14073,13 @@ export async function registerRoutes(
       // Client-created jobs always start as pending approval
       const body = { ...req.body, clientId: userId, approvalStatus: "pending", isClientSubmitted: true };
 
-      // Guard: published jobs must have a valid engagement type
+      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const clientCreateEtErr = validateEngagementType(body.engagementType);
+      if (clientCreateEtErr) return res.status(400).json(clientCreateEtErr);
+
+      // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !["Lite", "Standard"].includes(body.engagementType)) {
+      if (["open", "published"].includes(effectiveStatus) && !body.engagementType) {
         return res.status(400).json({
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
@@ -14059,7 +14108,11 @@ export async function registerRoutes(
       const { clientId: _strip, ...rest } = req.body;
       const updates = insertJobSchema.partial().parse(rest);
 
-      // Guard: published jobs must have a valid engagement type
+      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const clientPatchEtErr = validateEngagementType(updates.engagementType);
+      if (clientPatchEtErr) return res.status(400).json(clientPatchEtErr);
+
+      // Guard 2: published jobs must have an engagement type set.
       const existingJob = await storage.getJob(jobId);
       const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
