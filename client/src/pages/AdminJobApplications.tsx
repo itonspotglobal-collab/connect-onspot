@@ -22,6 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { InterviewSection, ScheduleInterviewDialog } from "@/components/InterviewWorkflowUi";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
@@ -299,6 +300,7 @@ function DetailDialog({
   const [videoPlayerOpen, setVideoPlayerOpen] = useState(false);
   const [videoPlayerUrl, setVideoPlayerUrl] = useState<string | null>(null);
   const [videoPlayerError, setVideoPlayerError] = useState<string | null>(null);
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
 
   // Revoke blob URL and reset player when the dialog closes
   useEffect(() => {
@@ -557,6 +559,7 @@ function DetailDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -614,6 +617,15 @@ function DetailDialog({
                 )
               )}
             </section>
+
+             <InterviewSection
+               role="admin"
+               applicantName={applicantName(detail)}
+               position={detail.jobTitle}
+               company={detail.jobCompany}
+               currentStatus={detail.status}
+               onAction={() => setInterviewDialogOpen(true)}
+             />
 
             {/* Hiring contract */}
             {(detail.status === "offer_accepted" || detail.status === "contract_sent" || detail.status === "hired" ||
@@ -933,6 +945,18 @@ function DetailDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <ScheduleInterviewDialog
+      open={interviewDialogOpen}
+      onOpenChange={setInterviewDialogOpen}
+      mode={detail?.status === "interviewing" ? "view" : "schedule"}
+      context={{
+        applicantName: detail ? applicantName(detail) : "Applicant",
+        position: detail?.jobTitle ?? "Position",
+        company: detail?.jobCompany,
+        currentStatus: detail?.status ?? "under_review",
+      }}
+    />
+    </>
   );
 }
 

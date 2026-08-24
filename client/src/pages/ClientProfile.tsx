@@ -70,6 +70,11 @@ import {
 import type { Job } from "@shared/schema";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { formatInterviewTime } from "@/lib/formatInterviewTime";
+import {
+  InterviewSection,
+  RequestInterviewDialog,
+  canRequestInterview,
+} from "@/components/InterviewWorkflowUi";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -162,6 +167,7 @@ function ViewSubmissionModal({
 
   const [requestedStatus, setRequestedStatus] = useState<string>("");
   const [requestConfirmOpen, setRequestConfirmOpen] = useState(false);
+  const [requestInterviewOpen, setRequestInterviewOpen] = useState(false);
   const { data: pendingRequest, refetch: refetchPendingRequest } = useQuery<any>({
     queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"],
     queryFn: async () => (await apiRequest("GET", `/api/client/job-submissions/${submission.id}/status-change-request`)).json(),
@@ -212,6 +218,10 @@ function ViewSubmissionModal({
     mutationFn: () => apiRequest("PATCH", `/api/client/status-change-requests/${pendingRequest.id}/cancel`),
     onSuccess: () => { refetchPendingRequest(); toast({ title: "Status change request cancelled" }); },
   });
+  const canRequestInterviewNow =
+    canRequestInterview(submission.status) &&
+    !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) &&
+    !submission.interviewId;
 
   const handleResumeDownload = () => {
     if (!submission.resumeUrl) return;
@@ -220,6 +230,7 @@ function ViewSubmissionModal({
   };
 
   return (
+    <>
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -278,8 +289,8 @@ function ViewSubmissionModal({
             )
           )}
 
-          {/* Interview coordination */}
-          {submission.interviewId && (
+           {/* Interview coordination */}
+           {submission.interviewId ? (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Initial interview</p>
@@ -323,7 +334,17 @@ function ViewSubmissionModal({
               )}
               {submission.interviewNudge && <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">Several time proposals have been exchanged. Consider the talent’s suggested availability.</p>}
             </div>
-          )}
+           ) : (
+             <InterviewSection
+               role="client"
+               applicantName={maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold)}
+               position={submission.jobTitle}
+               company={submission.jobCompany}
+               currentStatus={submission.status}
+               onAction={() => setRequestInterviewOpen(true)}
+               actionDisabled={!canRequestInterviewNow}
+             />
+           )}
 
           {/* Applicant details */}
           {isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
@@ -423,6 +444,17 @@ function ViewSubmissionModal({
         </AlertDialog>
       </DialogContent>
     </Dialog>
+    <RequestInterviewDialog
+      open={requestInterviewOpen}
+      onOpenChange={setRequestInterviewOpen}
+      context={{
+        applicantName: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold),
+        position: submission.jobTitle,
+        company: submission.jobCompany,
+        currentStatus: submission.status,
+      }}
+    />
+    </>
   );
 }
 

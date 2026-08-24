@@ -1,0 +1,892 @@
+Implement **Phase 1: UI/UX only** for the new Interview Scheduling workflow in the existing OnSpot / `connect-onspot` application.
+
+## IMPORTANT SCOPE
+
+This phase is specifically for the interview UI and workflow shell.
+
+Do NOT integrate Microsoft Bookings / Microsoft Graph yet.
+
+Do NOT create fake appointments.
+
+Do NOT automatically change `job_submissions.status` to `interviewing` yet.
+
+Do NOT modify the existing working:
+
+* Client → Admin status-change request workflow
+* Admin status approval/email workflow
+* messaging
+* offers
+* notifications
+* withdrawal
+* contracts
+* application status logic
+
+We are preparing the UI first so the Microsoft Bookings integration can be added safely afterward.
+
+---
+
+# PRODUCT MODEL
+
+There are TWO different interview actions depending on account role.
+
+## Admin
+
+Admin can initiate:
+
+`Schedule Interview`
+
+This will eventually connect to Microsoft Bookings.
+
+## Client
+
+Client cannot directly schedule the Talent.
+
+Client instead initiates:
+
+`Request Interview`
+
+This will eventually send an Interview Scheduling Request to Admin for approval/action.
+
+Keep these two concepts clearly separate.
+
+---
+
+# EXISTING PIPELINE RULE
+
+The canonical application status:
+
+`interviewing`
+
+already exists.
+
+It is a pipeline-driven state.
+
+Do NOT add `Interviewing` as a normal manual status option.
+
+Later, when a real interview record is successfully created, the system will automatically move the application to:
+
+`interviewing`.
+
+For this UI-only phase, do not change status.
+
+---
+
+# UI INSPIRATION
+
+Use the supplied inspiration as the UX direction.
+
+Important concepts from the reference:
+
+* prominent `Set up interview` action near applicant header/details
+* dedicated `Interviews` section
+* scheduling status/context inside that section
+* clear CTA rather than hiding interview scheduling inside a generic status dropdown
+
+Do not copy the external product branding/style exactly.
+
+Use OnSpot's existing visual system.
+
+---
+
+# =====================================================
+
+# PART 1 — ADMIN APPLICATION DETAILS
+
+# =====================================================
+
+Target:
+
+`/admin/job-applications`
+
+File:
+
+`client/src/pages/AdminJobApplications.tsx`
+
+Current flow:
+
+```text
+Admin Job Applications
+→ applicant row
+→ View
+→ Application Details
+```
+
+The existing Application Details modal currently shows things such as:
+
+* Applicant
+* Applied for
+* Status
+* Talent profile
+* Resume/CV
+* Status History
+
+Add the interview UI here.
+
+---
+
+# ADMIN — PRIMARY ACTION
+
+Near the top portion of Application Details, after applicant/job/status information, add:
+
+`Schedule Interview`
+
+Use:
+
+* Calendar icon or CalendarClock
+* existing OnSpot primary button styling
+
+Suggested:
+
+```text
+[ 📅 Schedule Interview ]
+```
+
+This should be visually prominent but should not overpower the entire modal.
+
+Do not place it inside the status dropdown.
+
+---
+
+# ADMIN — ELIGIBILITY
+
+For now show `Schedule Interview` for applications in appropriate active/review states such as:
+
+* under_review
+* reviewed
+* shortlisted
+
+If application is already:
+
+`interviewing`
+
+change the primary action conceptually to:
+
+`View Interview`
+
+or:
+
+`Manage Interview`
+
+if an interview UI record exists later.
+
+For Phase 1 with no backend interview records yet, handle this gracefully.
+
+Do not show Schedule Interview for clearly terminal/ineligible states such as:
+
+* withdrawn
+* rejected
+* hired
+* declined invitation
+
+Use shared status helpers where possible.
+
+Do not create another conflicting status system.
+
+---
+
+# ADMIN — INTERVIEWS SECTION
+
+Add a dedicated section below the main application information and before or around Status History.
+
+Example:
+
+```text
+Interviews
+────────────────────────────────
+
+No interview scheduled yet.
+
+Schedule an interview with this applicant using
+the assigned interviewer's availability.
+
+[ Schedule Interview ]
+```
+
+Do not hide the section merely because there are no interviews.
+
+We want this area to become the permanent interview timeline later.
+
+---
+
+# ADMIN — SCHEDULE INTERVIEW MODAL
+
+Clicking:
+
+`Schedule Interview`
+
+should open a new UI dialog.
+
+For this phase it does NOT contact Microsoft.
+
+Suggested title:
+
+`Schedule Interview`
+
+Display contextual information:
+
+```text
+Applicant
+Karyl Ann Ponce Lumanga
+
+Position
+Sales Representative
+
+Company / Client
+Aquavive
+
+Current application status
+Shortlisted
+```
+
+Then provide the future scheduling fields.
+
+---
+
+# ADMIN INTERVIEW FORM
+
+Create the UI for:
+
+### Interview type
+
+Select:
+
+* Video Interview
+* Phone Interview
+* In-Person Interview
+
+Default:
+
+`Video Interview`
+
+### Interviewer
+
+Select/input placeholder:
+
+`Select interviewer`
+
+For Phase 1 this can use existing known users only if such data is already safely available.
+
+Do NOT invent or hard-code OnSpot employees.
+
+If interviewer data is not currently available through an appropriate endpoint, render the field disabled or use a clear placeholder:
+
+`Microsoft Bookings staff will appear here once connected.`
+
+Do not create fake interviewer data.
+
+### Duration
+
+Select:
+
+* 30 minutes
+* 45 minutes
+* 60 minutes
+
+### Time zone
+
+Show/display timezone selection.
+
+Prefer existing timezone helpers if present.
+
+Default should not be hardcoded to one user without context.
+
+### Scheduling window
+
+Future-facing UI such as:
+
+```text
+Allow Talent to choose a time between
+
+Start date
+[            ]
+
+End date
+[            ]
+```
+
+This is important because our intended Microsoft Bookings workflow will likely let the Talent choose from the interviewer's available slots.
+
+---
+
+# ADMIN — SCHEDULING METHOD
+
+Since we have discussed Microsoft Bookings, make the intended workflow visible:
+
+```text
+Scheduling method
+
+● Let Talent choose an available time
+  Recommended
+
+○ Admin chooses a time
+```
+
+For Phase 1:
+
+both may be visual only or the first can be the supported UI state.
+
+Preferred future workflow:
+
+`Let Talent choose an available time`
+
+because Microsoft Bookings can prevent interviewer calendar conflicts.
+
+---
+
+# ADMIN — MICROSOFT BOOKINGS NOTICE
+
+Add a subtle information box:
+
+```text
+Microsoft Bookings
+
+Available interview times will be based on the
+assigned interviewer's Microsoft 365 calendar
+to help prevent schedule conflicts.
+```
+
+Do not say Microsoft is connected if it is not.
+
+If no integration exists yet, say:
+
+`Microsoft Bookings connection will be configured in the next integration phase.`
+
+---
+
+# ADMIN — PHASE 1 SUBMIT BUTTON
+
+Because Microsoft integration is not implemented yet, DO NOT create a fake confirmed interview.
+
+Use either:
+
+`Continue`
+
+opening a safe placeholder state,
+
+OR disable:
+
+`Send Interview Invite`
+
+with helper text:
+
+`Microsoft Bookings integration required`
+
+Preferred for this phase:
+
+Allow Admin to fully interact with the form but use:
+
+```text
+[ Cancel ] [ Continue to Availability ]
+```
+
+When Continue is clicked, show a controlled placeholder:
+
+```text
+Microsoft Bookings availability will be connected in the next phase.
+No interview has been scheduled yet.
+```
+
+Do not write an interview record.
+
+---
+
+# =====================================================
+
+# PART 2 — CLIENT APPLICATION DETAILS
+
+# =====================================================
+
+Target:
+
+Client Profile → Job Submissions → View
+
+File:
+
+`client/src/pages/ClientProfile.tsx`
+
+Current Application Details already handles:
+
+* application
+* current status
+* status-change request
+* applicant information
+* resume
+* offer flow
+
+DO NOT disturb the existing status-request UI.
+
+---
+
+# CLIENT — PRIMARY INTERVIEW ACTION
+
+Add a separate button:
+
+`Request Interview`
+
+Use:
+
+Calendar icon
+
+Suggested placement:
+
+near the top status/application actions.
+
+Example:
+
+```text
+[ 📅 Request Interview ]   [ Message ]
+```
+
+Do not label it:
+
+`Schedule Interview`
+
+because the Client is not directly scheduling.
+
+---
+
+# CLIENT — IMPORTANT COPY
+
+Make the permission model clear.
+
+Button:
+
+`Request Interview`
+
+Helper text / modal:
+
+`Send an interview request to OnSpot Admin. Once approved, the Admin will arrange the interview and send the Talent a scheduling invitation.`
+
+This avoids Client thinking the interview is already booked.
+
+---
+
+# CLIENT — INTERVIEWS SECTION
+
+Also add a dedicated:
+
+`Interviews`
+
+section inside Client Application Details.
+
+Initial empty state:
+
+```text
+Interviews
+──────────────────────────
+
+No interview scheduled yet.
+
+You can request an interview with this applicant.
+
+[ Request Interview ]
+```
+
+---
+
+# CLIENT — REQUEST INTERVIEW MODAL
+
+Clicking Request Interview opens:
+
+`Request an Interview`
+
+Display:
+
+```text
+Applicant
+Frenzy Val Eloise Legaspi
+
+Position
+Social Media Manager
+
+Current Status
+Under Review
+```
+
+Then collect only what the Client should be allowed to request.
+
+Suggested fields:
+
+### Preferred interview format
+
+* Video
+* Phone
+* In Person
+* No preference
+
+### Preferred duration
+
+* 30 minutes
+* 45 minutes
+* 60 minutes
+* No preference
+
+### Requested interviewer / notes
+
+Textarea:
+
+`Add any notes for the OnSpot Admin`
+
+Example placeholder:
+
+`Please have the account manager interview this candidate this week.`
+
+### Preferred date range
+
+Optional:
+
+`Preferred interview window`
+
+Start date / End date.
+
+Do NOT ask the Client to pick a final time from Microsoft availability yet.
+
+Admin controls/approves that later.
+
+---
+
+# CLIENT — SUBMIT UI
+
+Button:
+
+`Send Interview Request`
+
+For Phase 1 UI-only:
+
+do not create a backend request unless an interview-request model already exists.
+
+If no model exists:
+
+show the UI but clearly leave backend wiring for Phase 2.
+
+Do not repurpose the existing application status-change request table.
+
+Interview requests are a separate business concept.
+
+---
+
+# CLIENT — DO NOT REUSE STATUS REQUEST
+
+This is critical.
+
+Do NOT create:
+
+`requestedStatus = interviewing`
+
+through the existing Client Status Change Request workflow.
+
+Scheduling an interview is not a generic status request.
+
+The future flow will be:
+
+```text
+Client requests interview
+        ↓
+Admin reviews interview request
+        ↓
+Admin schedules / sends booking invitation
+        ↓
+Talent selects/receives appointment
+        ↓
+interview record created
+        ↓
+application automatically becomes interviewing
+```
+
+---
+
+# =====================================================
+
+# PART 3 — VISUAL STATES
+
+# =====================================================
+
+Prepare reusable interview-state UI.
+
+Even if only `none` is functional in this phase, design for:
+
+### No interview
+
+```text
+No interview scheduled
+```
+
+### Client requested
+
+```text
+Interview requested
+Pending Admin Review
+```
+
+### Admin preparing invite
+
+```text
+Interview scheduling in progress
+```
+
+### Awaiting Talent scheduling
+
+```text
+Interview invitation sent
+Waiting for Talent to choose a time
+```
+
+### Scheduled
+
+```text
+Interview scheduled
+
+Aug 28, 2026
+10:00 AM – 10:30 AM
+PH Time
+
+Video Interview
+
+[Join Interview]
+```
+
+### Rescheduled
+
+```text
+Interview rescheduled
+```
+
+### Cancelled
+
+```text
+Interview cancelled
+```
+
+Do not fake these states with hard-coded production data.
+
+Create reusable presentation components/types only if helpful.
+
+---
+
+# =====================================================
+
+# PART 4 — FUTURE TALENT UX PREPARATION
+
+# =====================================================
+
+Do NOT fully implement Talent scheduling yet.
+
+But design the Admin/Client UI knowing that Talent will eventually receive:
+
+```text
+Interview invitation
+
+Social Media Manager
+OnSpot
+
+Choose an interview time
+
+[ Choose Schedule ]
+```
+
+This will later use Microsoft Bookings availability.
+
+Do not add fake Talent buttons in this Phase unless explicitly needed for visual testing.
+
+---
+
+# =====================================================
+
+# PART 5 — COMPONENT REUSE
+
+# =====================================================
+
+Avoid duplicating an entire interview UI between Admin and Client.
+
+Prefer reusable components such as:
+
+```text
+InterviewSection
+InterviewStatusCard
+ScheduleInterviewDialog
+RequestInterviewDialog
+```
+
+But do not over-engineer.
+
+Admin and Client actions differ, so shared presentation + role-specific dialogs is reasonable.
+
+---
+
+# =====================================================
+
+# PART 6 — RESPONSIVE / MODAL SIZE
+
+# =====================================================
+
+Current Application Details dialogs can become tall.
+
+Ensure the new Interviews section does not make the modal unusable.
+
+Use:
+
+```text
+max-h-[90vh]
+overflow-y-auto
+```
+
+or existing dialog conventions.
+
+Do not let scheduling dialogs extend beyond viewport.
+
+---
+
+# DESIGN STYLE
+
+Match existing OnSpot:
+
+* blue/purple primary
+* subtle slate borders
+* rounded cards/dialogs
+* existing Button
+* Badge
+* Select
+* Dialog
+* Label
+* Calendar icons
+
+Do not copy the green button from the inspiration screenshot.
+
+Use OnSpot colors.
+
+---
+
+# IMPORTANT — ADMIN CURRENT INTERVIEWING STATUS
+
+The Admin page already recognizes:
+
+`interviewing`
+
+in its status display.
+
+Preserve that.
+
+Do not create another status such as:
+
+`interview_scheduled`
+
+inside `job_submissions.status`.
+
+Actual interview lifecycle will belong to an interview record later.
+
+---
+
+# DO NOT TOUCH BACKEND STATUS WRITES
+
+Phase 1 must NOT write:
+
+```text
+job_submissions.status = interviewing
+```
+
+from button click.
+
+That should happen only in the Microsoft Bookings/backend implementation once an interview appointment is actually confirmed.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+### Admin
+
+`client/src/pages/AdminJobApplications.tsx`
+
+### Client
+
+`client/src/pages/ClientProfile.tsx`
+
+### Shared
+
+`shared/submissionStatuses.ts`
+
+### Existing UI
+
+* Dialog
+* Button
+* Select
+* Badge
+* Calendar components
+
+Search for existing interview/schedule components before creating new ones.
+
+If reusable components already exist, use them.
+
+---
+
+# DO NOT IMPLEMENT MICROSOFT GRAPH YET
+
+Do not add:
+
+* Azure credentials
+* MS Graph secrets
+* Bookings API calls
+* OAuth
+* staff mappings
+* appointment creation
+* calendar availability fetching
+
+This prompt is UI Phase 1 only.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+## Admin
+
+* View Application opens normally
+* `Schedule Interview` button visible for eligible applicant
+* Interviews section exists
+* empty state looks intentional
+* Schedule Interview dialog opens
+* interviewer/type/duration/date-window UI exists
+* Microsoft Bookings future integration is clearly communicated
+* no fake booking is created
+
+## Client
+
+* View Application opens normally
+* `Request Interview` button exists
+* button clearly indicates this is an Admin approval request
+* Interviews section exists
+* Request Interview dialog opens
+* Client can provide interview preferences/notes
+* existing status request UI remains intact
+* Client cannot directly set `interviewing`
+
+## General
+
+* no application status mutation
+* no Microsoft API calls
+* no notification changes yet
+* no email changes yet
+* existing messaging/offers/status workflows still work
+* responsive dialogs
+* build/typecheck passes
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. Admin UI changes
+2. Client UI changes
+3. new reusable interview components
+4. eligible status logic
+5. Admin dialog fields
+6. Client request fields
+7. how existing status-change request was kept separate
+8. files changed
+9. screenshots/visual verification if available
+10. build/typecheck result
+
+Do not proceed into Microsoft Bookings backend integration in this task.
+
+We first want the interview UX approved before connecting Microsoft.
