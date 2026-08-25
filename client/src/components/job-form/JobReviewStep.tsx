@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Pencil, AlertTriangle } from "lucide-react";
 import type { JobFormData } from "@/lib/jobFormUtils";
-import { isEmptyQuill } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
 import { getEngagementTypeLabel, getExperienceLevelLabel } from "@/lib/jobConstants";
 
@@ -78,23 +77,16 @@ export function JobReviewStep({
 
   // Description summary
   const descParts: string[] = [];
-  if (formData.description.trim()) descParts.push("Overview added");
-  if (!isEmptyQuill(formData.responsibilities)) descParts.push("Responsibilities added");
-  const tagCount = formData.skillTags
-    ? formData.skillTags.split(",").filter((t) => t.trim()).length
-    : 0;
-  if (tagCount > 0) descParts.push(`${tagCount} skill tag${tagCount !== 1 ? "s" : ""}`);
+  if (formData.description.trim()) descParts.push("Job description added");
 
   // Requirements summary
   const reqParts: string[] = [];
-  if (!isEmptyQuill(formData.requirements)) reqParts.push("Qualifications added");
   if (formData.salaryDisplay.trim())
     reqParts.push(`${currSymbol}${formData.salaryDisplay}/month`);
-  if (formData.workDays || formData.timeZone) reqParts.push("Schedule added");
   if (formData.minimumEducation) reqParts.push(formData.minimumEducation);
   if (formData.requiredSkills.length > 0) {
     reqParts.push(
-      `${formData.requiredSkills.length} required skill${formData.requiredSkills.length === 1 ? "" : "s"}`,
+      `${formData.requiredSkills.length} skill${formData.requiredSkills.length === 1 ? "" : "s"}`,
     );
   }
   if (formData.requiresUsTimezoneOverlap) reqParts.push("US timezone overlap");
@@ -155,7 +147,7 @@ export function JobReviewStep({
           <p className="text-sm text-muted-foreground leading-relaxed">
             {formData.description || (
               <span className="italic">
-                Your role overview and responsibilities appear here on the public job page, followed by requirements, what you offer, and benefits.
+                Your job description appears here on the public job page, followed by the required education, skills, and availability.
               </span>
             )}
           </p>
@@ -211,8 +203,10 @@ export function JobReviewStep({
               className="mt-0.5 h-3.5 w-3.5 accent-[#474ead]"
             />
             <span>
-              I understand this is an independent contractor engagement, not an
-              employment arrangement.
+              <span className="block text-sm font-semibold text-foreground">This is a contractor engagement</span>
+              <span className="mt-0.5 block">
+                Confirms the standard OnSpot marketplace disclaimer is shown on the public post.
+              </span>
             </span>
           </label>
         </div>

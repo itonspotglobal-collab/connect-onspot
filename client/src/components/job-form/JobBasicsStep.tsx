@@ -13,7 +13,7 @@ import {
   EXPERIENCE_LEVEL_OPTIONS,
   JOB_DURATION_OPTIONS,
   JOB_FORM_WORK_SETUPS,
-  JOB_FUNCTIONS,
+  JOB_FORM_FUNCTION_OPTIONS,
 } from "@/lib/jobConstants";
 import type { JobFormData } from "@/lib/jobFormUtils";
 
@@ -33,6 +33,12 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
   const hasLegacyExperience = Boolean(
     formData.experienceLevel &&
       !EXPERIENCE_LEVEL_OPTIONS.some((option) => option.value === formData.experienceLevel),
+  );
+  const hasLegacyFunction = Boolean(
+    formData.jobFunction &&
+      !JOB_FORM_FUNCTION_OPTIONS.includes(
+        formData.jobFunction as (typeof JOB_FORM_FUNCTION_OPTIONS)[number],
+      ),
   );
 
   return (
@@ -104,11 +110,16 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
               <SelectValue placeholder="Select a function…" />
             </SelectTrigger>
             <SelectContent>
-              {JOB_FUNCTIONS.map((fn) => (
+              {JOB_FORM_FUNCTION_OPTIONS.map((fn) => (
                 <SelectItem key={fn} value={fn}>
                   {fn}
                 </SelectItem>
               ))}
+              {hasLegacyFunction && (
+                <SelectItem value={formData.jobFunction}>
+                  Legacy: {formData.jobFunction}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
           {errors.jobFunction && (
@@ -285,70 +296,6 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
           </div>
         </details>
 
-        {/* Role details (expandable) */}
-        <details className="group border-t border-dashed border-border pt-2">
-          <summary className="flex cursor-pointer list-none items-center gap-2 py-3 text-sm font-bold text-[#474ead] select-none">
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-xs transition-transform group-open:rotate-45">
-              +
-            </span>
-            Role classification details
-            <span className="ml-auto rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-              optional
-            </span>
-          </summary>
-          <div className="pb-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="basics-reporting-to">Reporting To</Label>
-              <Input
-                id="basics-reporting-to"
-                className="mt-1.5"
-                value={formData.reportingTo}
-                onChange={(e) => updateField("reportingTo", e.target.value)}
-                placeholder="e.g. VP of Engineering"
-              />
-            </div>
-            <div>
-              <Label htmlFor="basics-division">Division</Label>
-              <Input
-                id="basics-division"
-                className="mt-1.5"
-                value={formData.division}
-                onChange={(e) => updateField("division", e.target.value)}
-                placeholder="e.g. Product & Engineering"
-              />
-            </div>
-            <div>
-              <Label htmlFor="basics-job-code">Job Code</Label>
-              <Input
-                id="basics-job-code"
-                className="mt-1.5"
-                value={formData.jobCode}
-                onChange={(e) => updateField("jobCode", e.target.value)}
-                placeholder="e.g. ENG-001"
-              />
-            </div>
-            <div>
-              <Label htmlFor="basics-job-grade">Job Grade</Label>
-              <Input
-                id="basics-job-grade"
-                className="mt-1.5"
-                value={formData.jobGrade}
-                onChange={(e) => updateField("jobGrade", e.target.value)}
-                placeholder="e.g. L4"
-              />
-            </div>
-            <div>
-              <Label htmlFor="basics-job-level">Job Level</Label>
-              <Input
-                id="basics-job-level"
-                className="mt-1.5"
-                value={formData.jobLevel}
-                onChange={(e) => updateField("jobLevel", e.target.value)}
-                placeholder="e.g. Senior"
-              />
-            </div>
-          </div>
-        </details>
       </div>
     </div>
   );

@@ -34,7 +34,6 @@ import {
 import {
   defaultFormData,
   jobToFormData,
-  isEmptyQuill,
   type JobFormData,
 } from "@/lib/jobFormUtils";
 import { JobBasicsStep } from "@/components/job-form/JobBasicsStep";
@@ -528,7 +527,6 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
                 formData={formData}
                 updateField={updateField}
                 errors={errors}
-                isEditing={isEditing}
               />
             )}
             {step === 3 && (
@@ -608,35 +606,14 @@ function validateStep(
   }
 
   if (step === 1) {
-    if (!formData.description.trim()) errors.description = "Role overview is required";
+    if (!formData.description.trim() || formData.description === "<p><br></p>") {
+      errors.description = "Job description is required";
+    }
   }
 
   if (step === 2) {
     if (!formData.minimumEducation.trim()) {
       errors.minimumEducation = "Minimum educational attainment is required";
-    }
-    if (!isEditing && !formData.salaryDisplay.trim())
-      errors.salaryDisplay =
-        "Monthly compensation is required for new jobs — enter an amount (e.g. 40,000 – 60,000)";
-    if (formData.currency === "OTHER") {
-      const code = formData.customCurrencyCode.trim().toUpperCase();
-      if (!code)
-        errors.customCurrencyCode =
-          "Currency code is required when 'Other' is selected";
-      else if (!/^[A-Z]{3}$/.test(code))
-        errors.customCurrencyCode =
-          "Enter exactly 3 letters (e.g. NZD, AED, CHF)";
-    }
-    if (
-      formData.applicationMethod === "external_link" &&
-      formData.applyLink.trim()
-    ) {
-      try {
-        new URL(normalizeUrl(formData.applyLink));
-      } catch {
-        errors.applyLink =
-          "Please enter a valid URL (e.g. https://example.com/apply)";
-      }
     }
   }
 
@@ -644,10 +621,9 @@ function validateStep(
 }
 
 function buildPayload(formData: JobFormData): any {
-  const payload: any = {
+  const payload: Record<string, unknown> = {
     professionalRoleName: formData.professionalRoleName.trim(),
     title: formData.professionalRoleName.trim(),
-    originalRoleName: formData.originalRoleName.trim() || null,
     jobFunction: formData.jobFunction.trim(),
     company: formData.company.trim() || "OnSpot",
     location: formData.location,
@@ -655,108 +631,27 @@ function buildPayload(formData: JobFormData): any {
     engagementType: formData.engagementType?.trim() || "",
     experienceLevel: formData.experienceLevel,
     description: formData.description.trim(),
-    jobSummary: formData.jobSummary.trim() || null,
     status: formData.status,
-    budgetCurrency:
-      formData.currency === "OTHER"
-        ? formData.customCurrencyCode.trim().toUpperCase() || "PHP"
-        : formData.currency,
-    customCurrencyCode:
-      formData.currency === "OTHER"
-        ? formData.customCurrencyCode.trim().toUpperCase() || null
-        : null,
+    duration: formData.duration || null,
+    minimumEducation: formData.minimumEducation.trim() || null,
+    requiredSkills: formData.requiredSkills,
+    skillTags: formData.requiredSkills.map((skill) => skill.name),
+    requiresUsTimezoneOverlap: formData.requiresUsTimezoneOverlap,
+    requiresFluentEnglish: formData.requiresFluentEnglish,
+    salaryDisplay: formData.salaryDisplay.trim() || null,
+    compensationDisplayType: formData.compensationDisplayType,
+    contractorEngagementConfirmed: formData.contractorEngagementConfirmed,
+    isCompanyConfidential: formData.isCompanyConfidential,
   };
 
-  payload.salaryDisplay = formData.salaryDisplay.trim() || null;
-  payload.duration = formData.duration || null;
-  payload.minimumEducation = formData.minimumEducation.trim() || null;
-  payload.requiredSkills = formData.requiredSkills;
-  payload.requiresUsTimezoneOverlap = formData.requiresUsTimezoneOverlap;
-  payload.requiresFluentEnglish = formData.requiresFluentEnglish;
-  payload.compensationDisplayType = formData.compensationDisplayType;
-  payload.contractorEngagementConfirmed = formData.contractorEngagementConfirmed;
-
-  payload.responsibilities = !isEmptyQuill(formData.responsibilities)
-    ? [formData.responsibilities]
-    : [];
-  payload.requirements = !isEmptyQuill(formData.requirements)
-    ? [formData.requirements]
-    : [];
-  const matchingSkills = formData.requiredSkills.length > 0
-    ? formData.requiredSkills.map((skill) => skill.name)
-    : formData.skillTags
-      ? formData.skillTags
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-      : [];
-  payload.skillTags = matchingSkills;
-  payload.culturalFit = !isEmptyQuill(formData.culturalFit)
-    ? [formData.culturalFit]
-    : [];
-
-  // Role details — always send so admins can clear existing values
-  payload.reportingTo = formData.reportingTo.trim() || null;
-  payload.division = formData.division.trim() || null;
-  payload.jobCode = formData.jobCode.trim() || null;
-  payload.jobGrade = formData.jobGrade.trim() || null;
-  payload.jobLevel = formData.jobLevel.trim() || null;
-
-  // JSP sections
-  payload.companyOverview = formData.companyOverview.trim();
-  payload.roleMission = formData.roleMission.trim();
-  payload.keyOutcomes = formData.keyOutcomes.trim();
-  payload.keyResponsibilities = formData.keyResponsibilities.trim();
-  payload.skillsAndCompetencies = formData.skillsAndCompetencies.trim();
-  payload.behavioralTraits = formData.behavioralTraits.trim();
-  payload.kpis = formData.kpis.trim();
-  payload.trainingAndSupport = formData.trainingAndSupport.trim();
-  payload.growthPath = formData.growthPath.trim();
-
-  // System requirements
-  payload.minimumInternetSpeed = formData.minimumInternetSpeed.trim() || null;
-  payload.systemRequirements = formData.systemRequirements.trim();
-  payload.requiredToolsSoftware = formData.requiredToolsSoftware.trim() || null;
-  payload.otherEquipmentRequirements = formData.otherEquipmentRequirements.trim() || null;
-
-  // Work schedule
-  payload.workDays = formData.workDays.trim() || null;
-  payload.timeZone = formData.timeZone.trim() || null;
-
-  // Preferred qualifications
-  payload.preferredQualifications = !isEmptyQuill(formData.preferredQualifications)
-    ? formData.preferredQualifications
-    : null;
-
-  // Compensation extras
-  payload.compensationNotes = formData.compensationNotes.trim() || null;
-
-  // What We Offer
-  payload.whatWeOffer = !isEmptyQuill(formData.whatWeOffer)
-    ? formData.whatWeOffer
-    : null;
-
-  // Application method
-  payload.applicationMethod = formData.applicationMethod;
-  if (formData.applicationMethod === "external_link") {
-    payload.applyLink = formData.applyLink.trim()
-      ? normalizeUrl(formData.applyLink)
-      : null;
+  // These are the only optional company descriptions represented by the new
+  // form. All other legacy fields are intentionally omitted so PATCH does not
+  // erase data that a user can no longer see or edit.
+  if (formData.isCompanyConfidential) {
+    payload.confidentialClientOverview = formData.confidentialClientOverview.trim() || null;
   } else {
-    payload.applyLink = null;
+    payload.companyOverview = formData.companyOverview.trim() || null;
   }
-
-  // Flags
-  payload.isFeatured = formData.isFeatured;
-  payload.urgentlyHiring = formData.urgentlyHiring;
-  payload.requiresResume = formData.requiresResume;
-  payload.requiresVideoIntro = formData.requiresVideoIntro;
-  payload.isCompanyConfidential = formData.isCompanyConfidential;
-  payload.confidentialClientOverview =
-    formData.confidentialClientOverview.trim() || null;
-  payload.benefits = formData.benefits.trim() || null;
-  payload.hasCommission = formData.hasCommission;
-  payload.hasEquity = formData.hasEquity;
 
   return payload;
 }

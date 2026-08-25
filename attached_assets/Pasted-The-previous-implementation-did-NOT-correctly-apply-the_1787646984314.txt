@@ -1,0 +1,982 @@
+The previous implementation did NOT correctly apply the attached HTML mockup.
+
+The current form is still showing the old production fields such as:
+
+* Card Preview Summary
+* Key Responsibilities
+* Cultural Fit
+* other legacy description fields
+
+This is incorrect.
+
+I need you to **replace the visible Create/Edit Job Posting form structure so it follows the attached file `client post a job mock up.html` as the source of truth.**
+
+This applies to BOTH:
+
+* Admin Create/Edit Job Posting
+* Client Account Create/Edit Job Posting
+
+Do not only update the Admin page.
+
+The Admin and Client forms should share the same new four-step format wherever possible.
+
+---
+
+# PRIMARY RULE
+
+Use:
+
+`client post a job mock up.html`
+
+as the exact reference for:
+
+* which fields are visible
+* which fields are removed
+* field order
+* step structure
+* required/optional labels
+* visible wording
+* basic layout
+
+Do NOT preserve legacy fields in the visible UI just because they already exist in the database.
+
+Existing backend fields may remain in the database for backward compatibility, but they should NOT appear in the new create/edit form unless they are part of the HTML mockup or specifically required below.
+
+---
+
+# STEP STRUCTURE
+
+The form must have exactly these 4 visible steps:
+
+1. Basics
+2. Description
+3. Requirements
+4. Review
+
+Do not add extra steps.
+
+The Stepper should visually match the existing/new mockup styling.
+
+---
+
+# STEP 1 — BASICS
+
+The visible Step 1 content should follow the HTML mockup.
+
+## Heading
+
+`The basics`
+
+Supporting text:
+
+`Just enough to get your post live. You can polish the rest as you go.`
+
+## Admin-only client selector
+
+For Admin create mode only, keep:
+
+`Post on behalf of *`
+
+This is required because Admin users must select which client owns the job.
+
+Keep this ABOVE the Step 1 fields.
+
+Do not show this in Client Account mode.
+
+Do not show it when editing if ownership is already established unless the current business rules explicitly allow ownership changes.
+
+---
+
+## Job title *
+
+Show:
+
+`Job title *`
+
+Placeholder:
+
+`e.g. Account Executive`
+
+Supporting text:
+
+`Use the title people would search for. Add an alternate name in parentheses if helpful.`
+
+Use the existing canonical title field internally.
+
+If necessary, continue mapping to:
+
+* `professionalRoleName`
+* `title`
+
+for backend compatibility.
+
+### Remove from visible UI
+
+Remove the current separate:
+
+`Original / Alternative Role Name`
+
+field from the visible create/edit form.
+
+Do not delete its database column.
+
+When editing an older job, preserve the existing stored value unless another process explicitly changes it.
+
+---
+
+## Work Setup *
+
+Only show:
+
+`Remote`
+
+Remove:
+
+* Hybrid
+* Onsite
+
+The only available choice is:
+
+`Remote`
+
+New jobs should default to Remote.
+
+Continue storing:
+
+```text
+location = "Remote"
+```
+
+Do not globally break other unrelated pages if they rely on shared Work Setup constants.
+
+If needed, create a form-specific constant.
+
+---
+
+## Function *
+
+Use the Function dropdown shown in the mockup.
+
+Visible options:
+
+* Sales & Business Development
+* Customer Support
+* Marketing
+* Finance & Accounting
+* Operations & Admin
+* Engineering & Tech
+* Design & Creative
+
+If the current system has canonical values required by filters/matching, map the visible labels to those canonical values rather than breaking existing functionality.
+
+---
+
+## Experience level *
+
+Use these visible choices:
+
+* Entry level
+* Mid level
+* Senior
+* Lead / Manager
+
+If the backend currently stores:
+
+* entry
+* intermediate
+* expert
+
+or another vocabulary, use display-label mappings instead of blindly changing persisted data.
+
+Example concept:
+
+```text
+Entry level -> entry
+Mid level -> intermediate
+Senior -> expert
+Lead / Manager -> appropriate existing canonical value if available
+```
+
+Do not guess a persisted value for `Lead / Manager`.
+
+Inspect the current schema and matching logic first.
+
+If no safe canonical value exists, add one properly and update all validation/matching code consistently.
+
+---
+
+## Engagement type *
+
+Display exactly:
+
+* Standard (8 Hours)
+* Lite (4 Hours)
+
+IMPORTANT:
+
+The stored/API values must remain:
+
+```text
+Standard
+Lite
+```
+
+Do NOT store:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+Implementation should be equivalent to:
+
+```tsx
+<SelectItem value="Standard">
+  Standard (8 Hours)
+</SelectItem>
+
+<SelectItem value="Lite">
+  Lite (4 Hours)
+</SelectItem>
+```
+
+This is required to remain compatible with the PostgreSQL constraint.
+
+---
+
+## Duration *
+
+Duration is REQUIRED.
+
+Visible options:
+
+* 1 month
+* 2 months
+* 3 months
+* 4 months
+* 5 months
+* 6 months
+* 7 months
+* 8 months
+* 9 months
+* 10 months
+* 11 months
+* 12 months
+* Continuous
+
+Remove the current visible options:
+
+* Less than 1 month
+* 1–3 months
+* 3–6 months
+* 6–12 months
+* Ongoing
+
+Update validation so Duration is required.
+
+For old jobs that contain a legacy duration value, preserve it safely in edit mode until the user intentionally selects a new value.
+
+---
+
+# ABOUT THE COMPANY
+
+Show:
+
+`ABOUT THE COMPANY`
+
+## Company name *
+
+Keep:
+
+`Company name *`
+
+Preserve the current company prefill behavior for Client Account mode.
+
+---
+
+## Keep company confidential
+
+Keep the checkbox:
+
+`Keep company confidential`
+
+Description:
+
+`Applicants see "Confidential Company" — the real name stays hidden.`
+
+---
+
+## Add a company description
+
+Show the expandable optional control:
+
+`+ Add a company description`
+
+with:
+
+`optional`
+
+Inside, show ONE textarea:
+
+Placeholder:
+
+`Short overview — industry, mission, and what makes it a great place to work…`
+
+Helper text:
+
+`Shown publicly under "About the Company" on the job page.`
+
+If company confidentiality is enabled and the current system requires a safe confidential overview, preserve that security behavior.
+
+But do not add unrelated legacy company fields to the visible form.
+
+---
+
+# REMOVE FROM STEP 1 VISIBLE UI
+
+Remove/hide legacy extras that are not part of the HTML mockup, including things such as:
+
+* Original / Alternative Role Name
+* Reporting To
+* Division
+* Job Code
+* Job Grade
+* Job Level
+* Role classification details
+
+These columns may stay in the database.
+
+Do NOT delete existing stored values from older jobs merely because they are no longer visible.
+
+---
+
+# STEP 2 — DESCRIPTION
+
+THIS IS WHERE THE CURRENT IMPLEMENTATION IS WRONG.
+
+The screenshot currently shows:
+
+* Card Preview Summary
+* Job description
+* Key Responsibilities
+* Cultural Fit
+* additional legacy sections
+
+REMOVE those extra visible sections.
+
+Step 2 must follow the HTML mockup.
+
+## Heading
+
+`Describe the role`
+
+Supporting text:
+
+`Write it the way you'd explain it to a great candidate.`
+
+## ONE main visible field
+
+`Job description *`
+
+That should be the primary visible content of Step 2.
+
+Use the existing rich-text editor or editor component if practical.
+
+Keep toolbar support such as:
+
+* Bold
+* Numbered list
+* Bullet list
+
+Placeholder:
+
+`Describe the role, responsibilities, and what makes it a great opportunity. Bullets read best on the public page…`
+
+The editor should be large, similar to the mockup.
+
+---
+
+# REMOVE FROM STEP 2 VISIBLE UI
+
+Do NOT show:
+
+* Card Preview Summary
+* Key Responsibilities
+* Cultural Fit
+* Role Mission
+* Key Outcomes
+* Skills and Competencies
+* Behavioral Traits
+* KPIs
+* Training and Support
+* Growth Path
+* separate Responsibilities fields
+* any other legacy Job Success Profile sections
+
+Those database fields may remain for compatibility.
+
+When editing an existing job, do not erase them simply because the fields are no longer shown.
+
+The new form should only actively update fields represented in the new UI.
+
+This is critical.
+
+Do not send `null`, `""`, or empty arrays for hidden legacy fields during updates unless the user explicitly changed a corresponding field.
+
+---
+
+# STEP 3 — REQUIREMENTS
+
+Replace the current Requirements content with the structure from the HTML mockup.
+
+## Heading
+
+`Requirements`
+
+Supporting text:
+
+`Pick what a strong applicant needs. These power our matching — just tick what applies.`
+
+---
+
+## Minimum educational attainment *
+
+Required dropdown.
+
+Options:
+
+* No minimum
+* High school graduate
+* Some college / vocational
+* Associate degree
+* Bachelor's degree
+* Master's degree or higher
+
+This needs to persist on both Create and Edit.
+
+Inspect whether a proper field already exists.
+
+If not, add a proper schema field and versioned migration.
+
+Do NOT stuff this value into:
+
+* requirements
+* description
+* notes
+* skillTags
+
+Use a dedicated field.
+
+---
+
+# REQUIRED SKILLS
+
+Show:
+
+`REQUIRED SKILLS`
+
+Helper text:
+
+`Tick each skill and set how many years of experience you'd like.`
+
+Initial visible skill rows from the mockup:
+
+* Graphic design
+* Customer support
+* Sales / cold outreach
+* Bookkeeping / accounting
+* Copywriting
+
+Each row should have:
+
+* checkbox
+* skill name
+* years-of-experience dropdown
+
+Experience choices:
+
+* Any experience
+* 1+ years
+* 2+ years
+* 3+ years
+* 5+ years
+
+Unchecked skills should not be treated as required.
+
+---
+
+## Add another skill
+
+Show:
+
+`+ Add another skill`
+
+When clicked:
+
+* create an additional skill row
+* allow entering a custom skill
+* default it to selected
+* allow setting years of experience
+
+Persist custom skill requirements.
+
+---
+
+## Storage
+
+Inspect the current `skillTags` / skills architecture.
+
+If existing storage only supports a string list but not years of experience, add a structured field.
+
+Preferred shape could be similar to:
+
+```json
+[
+  {
+    "name": "Graphic design",
+    "years": "2+"
+  },
+  {
+    "name": "Copywriting",
+    "years": "any"
+  }
+]
+```
+
+Use JSONB or an existing normalized model.
+
+Do not encode years inside the skill name.
+
+Keep `skillTags` populated if other parts of the platform rely on it for search/matching.
+
+If appropriate, derive:
+
+```text
+skillTags = selected skill names
+```
+
+while structured skill requirements hold the years metadata.
+
+---
+
+# AVAILABILITY
+
+Show:
+
+`AVAILABILITY`
+
+Two checkbox cards.
+
+## Must overlap with US time zones
+
+Description:
+
+`Applicant works hours that align with US business hours.`
+
+## Fluent English (written & spoken)
+
+Description:
+
+`Required for client-facing communication.`
+
+Persist each option.
+
+If no fields exist, add proper booleans or a structured requirements field through migration.
+
+Do not encode them into free text.
+
+---
+
+# COMPENSATION
+
+Show:
+
+`COMPENSATION`
+
+## Monthly rate (PHP) — optional
+
+Input:
+
+`Monthly rate (PHP) — optional`
+
+Placeholder:
+
+`e.g. ₱45,000 – ₱60,000`
+
+Use/reuse `salaryDisplay` if it represents the same public-facing value.
+
+Do not create a duplicate salary field unless needed.
+
+---
+
+## Display as
+
+Dropdown:
+
+* Range
+* Starting from
+* Negotiable
+
+Persist the selection.
+
+If no safe existing field exists, add a dedicated field.
+
+Do not put the display mode inside the salary string.
+
+---
+
+# REMOVE FROM STEP 3 VISIBLE UI
+
+Remove/hide any Requirements fields not present in the HTML mockup, including unrelated legacy sections such as:
+
+* system requirements
+* minimum internet speed
+* required tools/software
+* equipment requirements
+* preferred qualifications
+* separate cultural-fit fields
+* unrelated compensation settings
+* unrelated application settings
+
+Keep underlying database values intact when editing existing jobs.
+
+---
+
+# STEP 4 — REVIEW
+
+Follow the HTML mockup.
+
+Heading:
+
+`Review & post`
+
+Supporting text:
+
+`Here's how your post will look. Tap any field to jump back and edit.`
+
+Show a preview with:
+
+* Company or Confidential Company
+* Remote
+* Job Title
+* Function
+* Experience level
+* Engagement type
+* Duration
+
+Engagement type should display:
+
+* Standard (8 Hours)
+* Lite (4 Hours)
+
+Do not display only the raw canonical value if the friendly label is available.
+
+---
+
+## Review cards
+
+Include summarized cards for:
+
+### Basics
+
+Example:
+
+`Standard (8 Hours) · Entry level · Continuous`
+
+### Description
+
+Example:
+
+`Job description added`
+
+### Requirements
+
+Example:
+
+`Bachelor's degree · 2 skills · US timezone overlap`
+
+Each review card should have:
+
+`Edit`
+
+that navigates back to the correct step.
+
+---
+
+# CONTRACTOR ENGAGEMENT
+
+At the bottom of Review, include:
+
+`This is a contractor engagement`
+
+Description:
+
+`Confirms the standard OnSpot marketplace disclaimer is shown on the public post.`
+
+Inspect whether this already exists.
+
+Reuse existing behavior if possible.
+
+If it needs persistence, add it cleanly.
+
+---
+
+# REMOVE THE MINI LOGO
+
+Remove the small highlighted OnSpot logo/brand block from the job-form header.
+
+Remove:
+
+* gradient O icon
+* OnSpot text
+
+Keep the page title and Save & exit.
+
+Do not remove the main global navigation bar.
+
+---
+
+# ADMIN AND CLIENT MUST BOTH CHANGE
+
+This is critical.
+
+The exact new form structure must be used by:
+
+## Admin
+
+* `/admin/find-work/jobs/new`
+* Admin Edit Job
+
+## Client Account
+
+* Client Create Job Posting
+* Client Edit Job Posting
+
+Do NOT implement a separate outdated Client form.
+
+If both flows already use:
+
+`JobFormPage`
+
+and shared components, update those shared components.
+
+If there are duplicate form components, consolidate them where safe so both Admin and Client use the same field structure.
+
+Admin-only behavior such as:
+
+`Post on behalf of`
+
+should be conditional.
+
+Client mode should not show that field.
+
+---
+
+# CREATE AND EDIT BEHAVIOR
+
+Create mode should populate sensible defaults.
+
+Edit mode must:
+
+* load the saved job
+* map canonical values into the new UI labels
+* allow editing the new visible fields
+* preserve hidden legacy fields
+
+IMPORTANT:
+
+Do NOT build the PATCH payload by blindly sending every `JobFormData` property if hidden fields default to blank values.
+
+For Edit mode, hidden legacy fields must not get erased.
+
+Use one of these approaches:
+
+1. send only fields represented by the current form, or
+2. merge edited values into the loaded existing job safely
+
+Do not overwrite hidden values with empty defaults.
+
+---
+
+# ENGAGEMENT TYPE DATABASE SAFETY
+
+The UI should show:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+The backend/database must receive:
+
+```text
+Standard
+Lite
+```
+
+Check:
+
+* React form values
+* `buildPayload`
+* POST API
+* PATCH API
+* Zod validators
+* shared schema
+* PostgreSQL check constraint
+
+Do not reintroduce:
+
+`jobs_engagement_type_check`
+
+errors.
+
+---
+
+# DO NOT JUST RESTYLE THE EXISTING FORM
+
+This task is NOT:
+
+“make the current form look more like the mockup.”
+
+It is:
+
+**replace the visible field structure with the fields defined by the HTML mockup.**
+
+For example, Step 2 currently displaying:
+
+* Card Preview Summary
+* Job Description
+* Key Responsibilities
+* Cultural Fit
+
+is WRONG.
+
+The finished Step 2 should display essentially:
+
+```text
+Describe the role
+
+Write it the way you'd explain it to a great candidate.
+
+Job description *
+[rich text editor]
+```
+
+and nothing else from the old Step 2.
+
+---
+
+# FILES TO INSPECT AND UPDATE
+
+At minimum inspect:
+
+* `client/src/pages/JobFormPage.tsx`
+* `client/src/components/job-form/JobBasicsStep.tsx`
+* `client/src/components/job-form/JobDescriptionStep.tsx`
+* `client/src/components/job-form/JobRequirementsStep.tsx`
+* `client/src/components/job-form/JobReviewStep.tsx`
+* `client/src/lib/jobFormUtils.ts`
+* `client/src/lib/jobConstants.ts`
+* `shared/schema.ts`
+* Admin job POST/PATCH routes
+* Client job POST/PATCH routes
+* migrations
+
+Search for any older Create Job modal/page that Client Account might still be using.
+
+Ensure both flows route to the new components.
+
+---
+
+# ACCEPTANCE TEST — STEP 2
+
+This is the easiest way to verify the work was actually done.
+
+After implementation, open:
+
+`/admin/find-work/jobs/new`
+
+Click Step 2.
+
+I should NOT see:
+
+* Card Preview Summary
+* Key Responsibilities
+* Cultural Fit
+
+I SHOULD see:
+
+```text
+Describe the role
+Write it the way you'd explain it to a great candidate.
+
+Job description *
+[editor]
+```
+
+Then open the Client Account create-job flow.
+
+It must show the SAME Step 2.
+
+If either page still shows the old fields, the task is not complete.
+
+---
+
+# ACCEPTANCE TEST — STEP 3
+
+Step 3 must visibly contain:
+
+```text
+Requirements
+
+Minimum educational attainment *
+
+REQUIRED SKILLS
+Graphic design
+Customer support
+Sales / cold outreach
+Bookkeeping / accounting
+Copywriting
++ Add another skill
+
+AVAILABILITY
+Must overlap with US time zones
+Fluent English (written & spoken)
+
+COMPENSATION
+Monthly rate (PHP)
+Display as
+```
+
+If Step 3 instead shows the previous Requirements form, the task is not complete.
+
+---
+
+# FINAL VERIFICATION
+
+Before reporting completion:
+
+1. Run the application.
+2. Open Admin Create Job.
+3. Inspect all four steps visually.
+4. Open Admin Edit Job.
+5. Inspect all four steps.
+6. Open Client Create Job.
+7. Inspect all four steps.
+8. Open Client Edit Job.
+9. Confirm both use the new structure.
+10. Verify submitted payloads.
+11. Verify edit payloads do not erase hidden legacy fields.
+12. Verify Standard submits `Standard`.
+13. Verify Lite submits `Lite`.
+14. Verify Duration is required.
+15. Verify education persists.
+16. Verify skills and experience persist.
+17. Verify availability persists.
+18. Verify compensation persists.
+19. Verify Submit for Approval still works.
+20. Verify no 500 database error occurs.
+
+Do not report this task as complete based only on compilation.
+
+The actual rendered Admin and Client forms must visually match the HTML mockup's field structure.

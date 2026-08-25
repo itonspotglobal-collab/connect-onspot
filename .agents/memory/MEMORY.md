@@ -37,3 +37,4 @@
 - [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.
 - [Billing engine](billing-engine.md) — Phase 1 complete: 5 tables, billing.ts pure functions, security deposit ladder, commission_rate always explicit per-row.
 - [Legacy model removal](legacy-model-removal.md) — migrate every remaining caller and test the user-visible flow before deleting a legacy API or table.
+- [Job-form visible fields](job-form-visible-fields.md) — shared Admin/Client form changes must not expose or overwrite hidden legacy job fields.

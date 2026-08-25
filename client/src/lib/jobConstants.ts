@@ -82,6 +82,18 @@ export function resolveJobFunction(raw: string | null | undefined): string {
 export const JOB_FORM_WORK_SETUPS = ["Remote"] as const;
 export type JobFormWorkSetup = (typeof JOB_FORM_WORK_SETUPS)[number];
 
+// These labels are intentionally scoped to the guided job-posting form. The
+// broader JOB_FUNCTIONS list remains available to existing filters and reports.
+export const JOB_FORM_FUNCTION_OPTIONS = [
+  "Sales & Business Development",
+  "Customer Support",
+  "Marketing",
+  "Finance & Accounting",
+  "Operations & Admin",
+  "Engineering & Tech",
+  "Design & Creative",
+] as const;
+
 // ── Engagement Types ──────────────────────────────────────────────────────────
 // The two canonical engagement types. "Hourly", "fixed", "part-time", etc. are
 // retired — all jobs use Lite or Standard going forward.
