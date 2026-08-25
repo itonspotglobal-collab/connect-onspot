@@ -16,14 +16,6 @@ import {
   SKILL_EXPERIENCE_OPTIONS,
 } from "@/lib/jobConstants";
 
-const SUGGESTED_SKILLS = [
-  "Graphic design",
-  "Customer support",
-  "Sales / cold outreach",
-  "Bookkeeping / accounting",
-  "Copywriting",
-] as const;
-
 interface Props {
   formData: JobFormData;
   updateField: (field: keyof JobFormData, value: any) => void;
@@ -31,9 +23,11 @@ interface Props {
 }
 
 export function JobRequirementsStep({ formData, updateField, errors }: Props) {
-  const [newSkill, setNewSkill] = useState("");
-  const [newSkillYears, setNewSkillYears] = useState<RequiredSkillRequirement["years"]>("any");
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [pendingSkillName, setPendingSkillName] = useState("");
+  const [pendingSkillYears, setPendingSkillYears] =
+    useState<RequiredSkillRequirement["years"]>("any");
+  const [nameDrafts, setNameDrafts] = useState<Record<number, string>>({});
 
   const saveSkills = (skills: RequiredSkillRequirement[]) => {
     const cleanSkills = skills
@@ -43,43 +37,30 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
     updateField("skillTags", cleanSkills.map((skill) => skill.name).join(", "));
   };
 
-  const selectedSkill = (name: string) =>
-    formData.requiredSkills.find((skill) => skill.name.toLowerCase() === name.toLowerCase());
-
-  const toggleSuggestedSkill = (name: string, selected: boolean) => {
-    saveSkills(
-      selected
-        ? formData.requiredSkills.filter((skill) => skill.name.toLowerCase() !== name.toLowerCase())
-        : [...formData.requiredSkills, { name, years: "any" }],
-    );
+  const addPendingSkill = () => {
+    const name = pendingSkillName.trim();
+    if (name && !formData.requiredSkills.some((skill) => skill.name.toLowerCase() === name.toLowerCase())) {
+      saveSkills([...formData.requiredSkills, { name, years: pendingSkillYears }]);
+    }
+    setPendingSkillName("");
+    setPendingSkillYears("any");
+    setIsAddingSkill(false);
   };
 
-  const updateYears = (name: string, years: RequiredSkillRequirement["years"]) => {
+  const updateSkillName = (index: number, name: string) => {
+    const nextDrafts = { ...nameDrafts };
+    delete nextDrafts[index];
+    setNameDrafts(nextDrafts);
+    if (!name.trim()) {
+      saveSkills(formData.requiredSkills.filter((_, skillIndex) => skillIndex !== index));
+      return;
+    }
     saveSkills(
-      formData.requiredSkills.map((skill) =>
-        skill.name.toLowerCase() === name.toLowerCase() ? { ...skill, years } : skill,
+      formData.requiredSkills.map((skill, skillIndex) =>
+        skillIndex === index ? { ...skill, name: name.trim() } : skill,
       ),
     );
   };
-
-  const commitNewSkill = () => {
-    const name = newSkill.trim();
-    if (
-      name &&
-      !formData.requiredSkills.some((skill) => skill.name.toLowerCase() === name.toLowerCase())
-    ) {
-      saveSkills([...formData.requiredSkills, { name, years: newSkillYears }]);
-    }
-    if (name) {
-      setNewSkill("");
-      setNewSkillYears("any");
-      setIsAddingSkill(false);
-    }
-  };
-
-  const customSkills = formData.requiredSkills.filter(
-    (skill) => !SUGGESTED_SKILLS.some((suggested) => suggested.toLowerCase() === skill.name.toLowerCase()),
-  );
 
   return (
     <div>
@@ -90,7 +71,7 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
 
       <div className="mb-6">
         <Label htmlFor="req-education">
-          Minimum educational attainment <span className="text-red-500">*</span>
+          Minimum educational attainment <span className="text-xs font-normal text-muted-foreground">— optional</span>
         </Label>
         <Select value={formData.minimumEducation} onValueChange={(value) => updateField("minimumEducation", value)}>
           <SelectTrigger id="req-education" className="mt-1.5">
@@ -112,44 +93,27 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
         </p>
 
         <div className="space-y-2">
-          {SUGGESTED_SKILLS.map((name) => {
-            const selected = selectedSkill(name);
-            return (
-              <div
-                key={name}
-                className={`grid grid-cols-[1fr_140px] items-center gap-3 rounded-xl border p-3 transition-colors ${
-                  selected ? "border-[#474ead] bg-indigo-50/70 dark:bg-indigo-900/20" : "border-border"
-                }`}
+          {formData.requiredSkills.map((skill, index) => (
+            <div key={`${skill.name}-${index}`} className="grid grid-cols-[1fr_140px_auto] items-center gap-3 rounded-xl border border-[#474ead] bg-indigo-50/70 p-3 dark:bg-indigo-900/20">
+              <Input
+                value={nameDrafts[index] ?? skill.name}
+                onChange={(event) => setNameDrafts({ ...nameDrafts, [index]: event.target.value })}
+                onBlur={(event) => updateSkillName(index, event.target.value)}
+                placeholder="Skill name"
+                className="h-9 bg-white"
+              />
+              <Select
+                value={skill.years}
+                onValueChange={(years) =>
+                  saveSkills(
+                    formData.requiredSkills.map((item, skillIndex) =>
+                      skillIndex === index
+                        ? { ...item, years: years as RequiredSkillRequirement["years"] }
+                        : item,
+                    ),
+                  )
+                }
               >
-                <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(selected)}
-                    onChange={(event) => toggleSuggestedSkill(name, event.target.checked)}
-                    className="h-4 w-4 accent-[#474ead]"
-                  />
-                  {name}
-                </label>
-                <Select
-                  value={selected?.years || "any"}
-                  disabled={!selected}
-                  onValueChange={(years) => updateYears(name, years as RequiredSkillRequirement["years"])}
-                >
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SKILL_EXPERIENCE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            );
-          })}
-
-          {customSkills.map((skill) => (
-            <div key={skill.name} className="grid grid-cols-[1fr_140px_auto] items-center gap-3 rounded-xl border border-[#474ead] bg-indigo-50/70 p-3 dark:bg-indigo-900/20">
-              <div className="min-w-0 text-sm font-semibold">{skill.name}</div>
-              <Select value={skill.years} onValueChange={(years) => updateYears(skill.name, years as RequiredSkillRequirement["years"])}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SKILL_EXPERIENCE_OPTIONS.map((option) => (
@@ -159,7 +123,7 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
               </Select>
               <button
                 type="button"
-                onClick={() => saveSkills(formData.requiredSkills.filter((item) => item.name !== skill.name))}
+                onClick={() => saveSkills(formData.requiredSkills.filter((_, skillIndex) => skillIndex !== index))}
                 className="rounded p-1 text-muted-foreground hover:bg-white hover:text-foreground"
                 aria-label={`Remove ${skill.name}`}
               >
@@ -169,21 +133,21 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
           ))}
 
           {isAddingSkill && (
-            <div className="grid grid-cols-[1fr_140px] items-center gap-3 rounded-xl border border-[#474ead] bg-indigo-50/70 p-3 dark:bg-indigo-900/20">
+            <div className="grid grid-cols-[1fr_140px_auto] items-center gap-3 rounded-xl border border-dashed border-[#474ead] bg-indigo-50/50 p-3 dark:bg-indigo-900/20">
               <Input
                 autoFocus
-                value={newSkill}
-                onChange={(event) => setNewSkill(event.target.value)}
+                value={pendingSkillName}
+                onChange={(event) => setPendingSkillName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    commitNewSkill();
+                    addPendingSkill();
                   }
                 }}
-                placeholder="Type a skill…"
+                placeholder="Skill name"
                 className="h-9 bg-white"
               />
-              <Select value={newSkillYears} onValueChange={(years) => setNewSkillYears(years as RequiredSkillRequirement["years"])}>
+              <Select value={pendingSkillYears} onValueChange={(years) => setPendingSkillYears(years as RequiredSkillRequirement["years"])}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SKILL_EXPERIENCE_OPTIONS.map((option) => (
@@ -191,26 +155,34 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingSkillName("");
+                  setPendingSkillYears("any");
+                  setIsAddingSkill(false);
+                }}
+                className="rounded p-1 text-muted-foreground hover:bg-white hover:text-foreground"
+                aria-label="Remove unfinished skill"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
         </div>
 
-        {!isAddingSkill ? (
+        {isAddingSkill ? (
+          <button type="button" onClick={addPendingSkill} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]">
+            <Plus className="h-4 w-4" /> Add skill
+          </button>
+        ) : (
           <button
             type="button"
-            onClick={() => {
-              setNewSkill("");
-              setNewSkillYears("any");
-              setIsAddingSkill(true);
-            }}
+            onClick={() => setIsAddingSkill(true)}
             className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 text-xs">+</span>
             Add another skill
-          </button>
-        ) : (
-          <button type="button" onClick={commitNewSkill} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]">
-            <Plus className="h-4 w-4" /> Add skill
           </button>
         )}
       </div>

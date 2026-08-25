@@ -1,0 +1,559 @@
+Please adjust the newly updated Create/Edit Job Posting form.
+
+This change must apply to BOTH:
+
+* Admin Create/Edit Job Posting
+* Client Account Create/Edit Job Posting
+
+Do not fix only one account type.
+
+The current overall 4-step form structure is correct, but the validation and Required Skills behavior need to be corrected.
+
+# 1. Make these fields OPTIONAL
+
+Do NOT require the following fields anymore:
+
+* Work Setup
+* Duration
+* Company Name
+* Job Description on Step 2
+* Minimum Educational Attainment on Step 3
+* Required Skills
+
+Remove the red required `*` indicator from all of these labels.
+
+Also remove any frontend validation that blocks Continue/Submit when these fields are empty.
+
+Remove any corresponding backend/Zod validation that incorrectly requires them for new job creation or updates.
+
+Do not introduce database `NOT NULL` constraints for these fields.
+
+## Work Setup
+
+Change:
+
+`Work Setup *`
+
+to:
+
+`Work Setup — optional`
+
+or simply:
+
+`Work Setup`
+
+The only visible option may still be:
+
+`Remote`
+
+But users must be allowed to leave Work Setup unselected.
+
+Do not automatically force `Remote` if the user leaves it empty unless the backend absolutely requires a location value.
+
+If the existing database has a default such as `Remote`, inspect the current behavior first. Prefer preserving an intentionally blank selection in the form rather than pretending the user selected Remote.
+
+For create/update payloads, handle an empty Work Setup safely.
+
+## Duration
+
+Change:
+
+`Duration *`
+
+to:
+
+`Duration — optional`
+
+Users may leave it blank.
+
+Keep the current duration options, but remove validation requiring a selection.
+
+## Company Name
+
+Change:
+
+`Company Name *`
+
+to:
+
+`Company Name — optional`
+
+Do not block submission when Company Name is blank.
+
+Do not force `"OnSpot"` simply because the field is empty unless that is an existing intentional backend business rule.
+
+Inspect current payload construction. If code currently does something like:
+
+```ts
+company: formData.company.trim() || "OnSpot"
+```
+
+review whether that still matches the new requirement.
+
+If blank Company Name should remain blank/null, update the create/edit payload safely.
+
+Preserve existing company values when editing old jobs.
+
+## Job Description — Step 2
+
+Change:
+
+`Job description *`
+
+to:
+
+`Job description — optional`
+
+The Description step should still show the same single large editor from the HTML mockup.
+
+However:
+
+* user may click Continue with it empty
+* user may submit the job with it empty
+* frontend validation must not reject it
+* server validation must not reject it solely because it is empty
+
+Important:
+
+The current database schema may have `description NOT NULL`.
+
+Inspect this before changing behavior.
+
+If PostgreSQL requires a non-null description, make a safe schema/migration decision rather than causing another 500 error.
+
+Preferred outcome:
+
+* make `jobs.description` nullable if the new product requirement says Job Description is truly optional
+
+If changing nullability has wider compatibility risks, document them and implement the safest consistent solution.
+
+Do not silently submit fake placeholder text just to satisfy a NOT NULL constraint.
+
+## Minimum Educational Attainment
+
+Change:
+
+`Minimum educational attainment *`
+
+to:
+
+`Minimum educational attainment — optional`
+
+The dropdown should allow no selection.
+
+Do not block Continue or Submit if it is blank.
+
+Store `null` / empty appropriately.
+
+## Required Skills
+
+The entire Required Skills section is optional.
+
+A job can have:
+
+* zero skills
+* one skill
+* multiple skills
+
+Do not require any skill to be added.
+
+Do not show validation errors when no skills exist.
+
+# 2. Remove all hardcoded skills
+
+The current implementation is wrong because it renders these predefined skills automatically:
+
+* Graphic design
+* Customer support
+* Sales / cold outreach
+* Bookkeeping / accounting
+* Copywriting
+
+REMOVE ALL OF THESE DEFAULT/HARDCODED SKILL ROWS.
+
+The HTML mockup only showed those entries as examples of what added skills could look like. They are not intended to be default values.
+
+When the user first opens Step 3, the Required Skills section should be EMPTY.
+
+It should look conceptually like:
+
+```text
+REQUIRED SKILLS
+
+Tick each skill and set how many years of experience you'd like.
+
++ Add another skill
+```
+
+There should be no skill cards until the user adds one.
+
+# 3. Add skill behavior
+
+When the user clicks:
+
+`+ Add another skill`
+
+add one editable skill row.
+
+That row should contain:
+
+* skill name input
+* years of experience dropdown
+* remove/delete control
+
+Example:
+
+```text
+[ Skill name __________________ ] [ Any experience ▼ ] [Remove]
+```
+
+Years options:
+
+* Any experience
+* 1+ years
+* 2+ years
+* 3+ years
+* 5+ years
+
+The newly added skill should NOT require a separate checkbox.
+
+Because the user explicitly clicked Add another skill, the row itself represents a selected/required skill.
+
+This is cleaner than showing an unchecked skill row.
+
+Allow the user to add multiple rows.
+
+Allow the user to remove any row.
+
+If every row is removed, the skills list should return to the empty state.
+
+# 4. Do not save blank skill rows
+
+If the user clicks `+ Add another skill` but leaves the skill name blank:
+
+* do not save that blank skill
+* do not add it to `skillTags`
+* do not persist an empty structured skill object
+
+On payload construction, filter out blank skill names.
+
+Example logic:
+
+```ts
+skills
+  .filter((skill) => skill.name.trim())
+```
+
+Do not block the whole form just because an unfinished blank skill row exists.
+
+# 5. Preserve structured skill experience
+
+If the recent implementation introduced a structured field such as:
+
+```json
+[
+  {
+    "name": "Graphic design",
+    "years": "2+"
+  }
+]
+```
+
+keep that approach.
+
+But the initial value must be:
+
+```json
+[]
+```
+
+not a predefined list.
+
+If the platform also uses `skillTags` for search/matching, derive it from the entered skill names.
+
+Example:
+
+```text
+Structured requirements:
+[
+  { name: "HubSpot", years: "2+" },
+  { name: "Cold calling", years: "1+" }
+]
+
+skillTags:
+["HubSpot", "Cold calling"]
+```
+
+Do not hardcode any skills.
+
+# 6. Edit mode behavior
+
+For existing jobs:
+
+* Load saved skills if they exist.
+* Show only the actual saved skills.
+* Do not append Graphic design, Customer support, or any other default skills.
+* If an existing job has no skills, show an empty Required Skills section.
+* Existing saved years-of-experience values must load correctly.
+
+When editing, removing all skills should intentionally save an empty skill list if the user actually removed them.
+
+Do not confuse this with unrelated hidden legacy fields.
+
+# 7. Update validation
+
+Review `validateStep` and any form schema.
+
+The following should NOT cause validation errors when empty:
+
+```text
+Work Setup
+Duration
+Company Name
+Job Description
+Minimum Educational Attainment
+Required Skills
+```
+
+Fields that are still intentionally required should remain required.
+
+For example, if the current business rules still require:
+
+* Job Title
+* Function
+* Experience Level
+* Engagement Type
+* Admin "Post on behalf of"
+
+keep those required.
+
+Do not make every field optional.
+
+# 8. Update Step 1 labels
+
+The visible Step 1 should now look approximately like:
+
+```text
+Job Title *
+
+Work Setup — optional
+
+Function *
+Experience Level *
+
+Engagement Type *
+Duration — optional
+
+ABOUT THE COMPANY
+
+Company Name — optional
+
+Keep company confidential
+```
+
+Do not show red `*` beside Work Setup, Duration, or Company Name.
+
+# 9. Update Step 2 label
+
+The visible Step 2 should be:
+
+```text
+Describe the role
+
+Write it the way you'd explain it to a great candidate.
+
+Job description — optional
+
+[editor]
+```
+
+Do not show a red `*`.
+
+Do not re-add:
+
+* Card Preview Summary
+* Key Responsibilities
+* Cultural Fit
+* other old sections
+
+# 10. Update Step 3 labels
+
+The visible Step 3 should include:
+
+```text
+Minimum educational attainment — optional
+
+REQUIRED SKILLS
+
+Tick each skill and set how many years of experience you'd like.
+
++ Add another skill
+```
+
+Initially there should be ZERO skill rows.
+
+After clicking `+ Add another skill`, one empty editable row should appear.
+
+# 11. Admin and Client must use the same behavior
+
+This adjustment applies to:
+
+## Admin
+
+* Create Job
+* Edit Job
+
+## Client
+
+* Create Job
+* Edit Job
+
+If both use shared components, update the shared component rather than duplicating logic.
+
+Specifically verify:
+
+* Admin Step 1 optional states
+* Client Step 1 optional states
+* Admin Step 2 optional Job Description
+* Client Step 2 optional Job Description
+* Admin Step 3 blank skill state
+* Client Step 3 blank skill state
+* Admin Edit loads only saved skills
+* Client Edit loads only saved skills
+
+# 12. Files to inspect
+
+At minimum inspect and update as needed:
+
+* `client/src/pages/JobFormPage.tsx`
+* `client/src/components/job-form/JobBasicsStep.tsx`
+* `client/src/components/job-form/JobDescriptionStep.tsx`
+* `client/src/components/job-form/JobRequirementsStep.tsx`
+* `client/src/components/job-form/JobReviewStep.tsx`
+* `client/src/lib/jobFormUtils.ts`
+* `client/src/lib/jobConstants.ts`
+* `shared/schema.ts`
+* server validation for Admin job create/update
+* server validation for Client job create/update
+* any recent migration for education / skill requirements / availability / compensation
+
+# 13. Database safety
+
+Pay special attention to existing `NOT NULL` fields.
+
+The old schema may require values such as:
+
+* `description`
+* `company`
+* `location`
+
+Do not simply remove frontend validation and then allow PostgreSQL to throw a 500.
+
+Audit the database constraints.
+
+If these new optional requirements require a migration, add a proper versioned migration.
+
+API validation and database schema must agree.
+
+Expected behavior is a successful job create even when these newly optional fields are blank.
+
+# 14. Acceptance tests
+
+Before marking complete, test this exact scenario.
+
+## Admin Create Job
+
+Create a job with:
+
+* Job Title filled
+* Function filled
+* Experience Level filled
+* Engagement Type filled
+
+Leave blank:
+
+* Work Setup
+* Duration
+* Company Name
+* Job Description
+* Minimum Educational Attainment
+* Skills
+
+The user must be able to submit successfully.
+
+## Client Create Job
+
+Repeat the same test in Client Account mode.
+
+It must also submit successfully.
+
+## Skills
+
+Open Step 3.
+
+Initial state must show:
+
+```text
+REQUIRED SKILLS
+Tick each skill and set how many years of experience you'd like.
+
++ Add another skill
+```
+
+There must be no:
+
+* Graphic design
+* Customer support
+* Sales / cold outreach
+* Bookkeeping / accounting
+* Copywriting
+
+Click `+ Add another skill`.
+
+One blank row should appear.
+
+Enter:
+
+```text
+HubSpot
+2+ years
+```
+
+Add another:
+
+```text
+Cold calling
+1+ years
+```
+
+Submit.
+
+Reopen the job in Edit mode.
+
+Only these saved skills should appear:
+
+```text
+HubSpot
+Cold calling
+```
+
+with their correct experience values.
+
+No default skills should appear.
+
+# 15. Final report
+
+After implementation, report:
+
+1. Files changed.
+2. Which required validations were removed.
+3. Whether any database nullability changes were required.
+4. Confirmation that hardcoded skills were removed.
+5. Confirmation that new jobs start with an empty skill list.
+6. How skill rows are persisted.
+7. Confirmation that Admin Create/Edit works.
+8. Confirmation that Client Create/Edit works.
+9. Confirmation that jobs can be created with all newly optional fields blank.
+10. Confirmation that no database 500 occurs from newly optional fields.
+
+Do not report completion unless both Admin and Client rendered forms and actual create/update submissions have been tested.

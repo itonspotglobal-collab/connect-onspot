@@ -275,6 +275,39 @@ describe("Engagement-type constraint regression", () => {
     assert.equal(update.status, 200, JSON.stringify(update.json));
     assert.deepEqual(update.json.requiredSkills, [{ name: "Salesforce", years: "5" }]);
     assert.equal(update.json.compensationDisplayType, "negotiable");
+
+    const clearSkills = await request(server, "PATCH", `/api/admin/jobs/${create.json.id}`, adminToken, {
+      requiredSkills: [],
+      skillTags: [],
+    });
+    assert.equal(clearSkills.status, 200, JSON.stringify(clearSkills.json));
+    assert.deepEqual(clearSkills.json.requiredSkills, []);
+    assert.deepEqual(clearSkills.json.skillTags, []);
+  });
+
+  it("(b3) admin can create with every newly optional job-form field blank", async () => {
+    const res = await request(server, "POST", "/api/admin/jobs", adminToken, {
+      title: "Optional field test",
+      professionalRoleName: "Optional field test",
+      category: "Engineering",
+      jobFunction: "Engineering",
+      experienceLevel: "entry",
+      engagementType: "Lite",
+      status: "draft",
+      clientId: CLIENT_ID,
+      description: "",
+      company: null,
+      location: null,
+      duration: null,
+      minimumEducation: null,
+      requiredSkills: [],
+    });
+    assert.equal(res.status, 201, JSON.stringify(res.json));
+    trackJob(res.json.id);
+    assert.equal(res.json.description, "");
+    assert.equal(res.json.company, null);
+    assert.equal(res.json.location, null);
+    assert.deepEqual(res.json.requiredSkills, []);
   });
 
   // ── (e) Invalid → 400 ──────────────────────────────────────────────────────
@@ -348,6 +381,30 @@ describe("Engagement-type constraint regression", () => {
     });
     assert.equal(res.status, 201, JSON.stringify(res.json));
     trackJob(res.json.id);
+  });
+
+  it("(c3) client can create with every newly optional job-form field blank", async () => {
+    const res = await request(server, "POST", "/api/client/jobs", clientToken, {
+      title: "Client optional field test",
+      professionalRoleName: "Client optional field test",
+      category: "Engineering",
+      jobFunction: "Engineering",
+      experienceLevel: "entry",
+      engagementType: "Standard",
+      status: "draft",
+      description: "",
+      company: null,
+      location: null,
+      duration: null,
+      minimumEducation: null,
+      requiredSkills: [],
+    });
+    assert.equal(res.status, 201, JSON.stringify(res.json));
+    trackJob(res.json.id);
+    assert.equal(res.json.description, "");
+    assert.equal(res.json.company, null);
+    assert.equal(res.json.location, null);
+    assert.deepEqual(res.json.requiredSkills, []);
   });
 
   it("(e4) POST /api/client/jobs: 'Full-Time' → 400 Invalid engagement type", async () => {

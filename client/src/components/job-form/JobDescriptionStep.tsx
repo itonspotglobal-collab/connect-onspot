@@ -23,7 +23,9 @@ export function JobDescriptionStep({ formData, updateField, errors }: Props) {
       </p>
 
       <div>
-        <Label>Job description <span className="text-red-500">*</span></Label>
+        <Label>
+          Job description <span className="text-xs font-normal text-muted-foreground">— optional</span>
+        </Label>
         <div className="mt-1.5 overflow-hidden rounded-xl border border-input bg-background">
           <ReactQuill
             theme="snow"

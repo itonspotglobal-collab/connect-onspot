@@ -34,6 +34,7 @@ import {
 import {
   defaultFormData,
   jobToFormData,
+  isEmptyQuill,
   type JobFormData,
 } from "@/lib/jobFormUtils";
 import { JobBasicsStep } from "@/components/job-form/JobBasicsStep";
@@ -597,24 +598,9 @@ function validateStep(
   if (step === 0) {
     if (!formData.professionalRoleName.trim())
       errors.professionalRoleName = "Job title is required";
-    if (!formData.company.trim()) errors.company = "Company name is required";
     if (!formData.jobFunction.trim()) errors.jobFunction = "Function is required";
     if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
-    if (!formData.location) errors.location = "Work setup is required";
-    if (!formData.duration?.trim()) errors.duration = "Duration is required";
-  }
-
-  if (step === 1) {
-    if (!formData.description.trim() || formData.description === "<p><br></p>") {
-      errors.description = "Job description is required";
-    }
-  }
-
-  if (step === 2) {
-    if (!formData.minimumEducation.trim()) {
-      errors.minimumEducation = "Minimum educational attainment is required";
-    }
   }
 
   return errors;
@@ -625,17 +611,17 @@ function buildPayload(formData: JobFormData): any {
     professionalRoleName: formData.professionalRoleName.trim(),
     title: formData.professionalRoleName.trim(),
     jobFunction: formData.jobFunction.trim(),
-    company: formData.company.trim() || "OnSpot",
-    location: formData.location,
+    company: formData.company.trim() || null,
+    location: formData.location || null,
     category: formData.jobFunction.trim(),
     engagementType: formData.engagementType?.trim() || "",
     experienceLevel: formData.experienceLevel,
-    description: formData.description.trim(),
+    description: isEmptyQuill(formData.description) ? "" : formData.description.trim(),
     status: formData.status,
     duration: formData.duration || null,
     minimumEducation: formData.minimumEducation.trim() || null,
-    requiredSkills: formData.requiredSkills,
-    skillTags: formData.requiredSkills.map((skill) => skill.name),
+    requiredSkills: formData.requiredSkills.filter((skill) => skill.name.trim()),
+    skillTags: formData.requiredSkills.filter((skill) => skill.name.trim()).map((skill) => skill.name.trim()),
     requiresUsTimezoneOverlap: formData.requiresUsTimezoneOverlap,
     requiresFluentEnglish: formData.requiresFluentEnglish,
     salaryDisplay: formData.salaryDisplay.trim() || null,

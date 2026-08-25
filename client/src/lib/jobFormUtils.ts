@@ -52,8 +52,8 @@ export const isEmptyQuill = (html: string) =>
 // ─── Default / reset state ────────────────────────────────────────────────────
 export const defaultFormData = {
   title: "",
-  company: "OnSpot",
-  location: "Remote",
+  company: "",
+  location: "",
   professionalRoleName: "",
   originalRoleName: "",
   jobFunction: "",
@@ -140,8 +140,8 @@ export function jobToFormData(job: Job): JobFormData {
 
   return {
     title: job.title || "",
-    company: job.company || "OnSpot",
-    location: job.location || "Remote",
+    company: job.company || "",
+    location: job.location || "",
     professionalRoleName: (job as any).professionalRoleName || job.title || "",
     originalRoleName: (job as any).originalRoleName || "",
     jobFunction: (job as any).jobFunction || job.category || "",

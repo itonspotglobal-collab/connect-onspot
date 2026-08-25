@@ -71,7 +71,7 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
       {/* Work Setup chips */}
       <div className="mb-5">
         <Label>
-          Work Setup <span className="text-red-500">*</span>
+          Work Setup <span className="text-xs font-normal text-muted-foreground">— optional</span>
         </Label>
         <div className="mt-2 flex flex-wrap gap-2">
           {JOB_FORM_WORK_SETUPS.map((setup) => (
@@ -185,7 +185,7 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
 
         <div>
           <Label htmlFor="basics-duration">
-            Duration <span className="text-red-500">*</span>
+            Duration <span className="text-xs font-normal text-muted-foreground">— optional</span>
           </Label>
           <Select
             value={formData.duration || ""}
@@ -221,7 +221,7 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
 
         <div className="mb-4">
           <Label htmlFor="basics-company">
-            Company Name <span className="text-red-500">*</span>
+            Company Name <span className="text-xs font-normal text-muted-foreground">— optional</span>
           </Label>
           <Input
             id="basics-company"
