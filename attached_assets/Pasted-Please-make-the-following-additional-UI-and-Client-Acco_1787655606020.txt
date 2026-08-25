@@ -1,0 +1,779 @@
+Please make the following additional UI and Client Account workflow changes.
+
+These changes should build on the newly updated Create/Edit Job Posting form. Do not undo the previous optional-field or dynamic-skills changes.
+
+This task has two parts:
+
+1. Improve readability of Step 3 — Requirements.
+2. Update the Client Account login and Hire Talent workflow.
+
+---
+
+# PART 1 — IMPROVE STEP 3 REQUIREMENTS FORMATTING
+
+The current Requirements page is functional, but the individual sections blend together too much.
+
+Improve the visual hierarchy so clients can scan the page more easily.
+
+Do not radically redesign the page. Keep it consistent with the existing OnSpot job-posting design.
+
+## Increase section heading size and weight
+
+Increase the font size and make these labels clearly bold:
+
+* Minimum educational attainment
+* Required Skills
+* Availability
+* Compensation
+
+Currently some of these use small uppercase eyebrow-style text. That is too subtle.
+
+Change them into clear section/question headings.
+
+Suggested visual treatment:
+
+```text
+1. Minimum educational attainment
+2. Required Skills
+3. Availability
+4. Compensation
+```
+
+Use approximately:
+
+* `text-base` or `text-lg`
+* `font-bold`
+* strong foreground text
+
+Do not make them oversized like the main `Requirements` page heading.
+
+The hierarchy should be:
+
+```text
+Requirements                     <- main page heading
+
+1. Minimum educational attainment <- section heading
+[field]
+
+2. Required Skills                <- section heading
+[skill controls]
+
+3. Availability                   <- section heading
+[availability cards]
+
+4. Compensation                   <- section heading
+[compensation controls]
+```
+
+---
+
+# Add numbering
+
+Add visible numbering to the four main Requirements sections:
+
+`1. Minimum educational attainment`
+
+`2. Required Skills`
+
+`3. Availability`
+
+`4. Compensation`
+
+The numbering should help users understand the sequence without looking cluttered.
+
+Use the same styling for all four section headers.
+
+---
+
+# Increase vertical separation
+
+Increase spacing between each Requirements section.
+
+There should be clear visual separation between:
+
+1. Education
+2. Skills
+3. Availability
+4. Compensation
+
+Use a combination of:
+
+* larger top/bottom margins
+* divider lines
+* section padding
+
+Avoid having a divider immediately touching a label.
+
+The page should feel easier to scan.
+
+---
+
+# 1. Minimum educational attainment
+
+Keep it optional.
+
+Display:
+
+`1. Minimum educational attainment`
+
+with a smaller optional indicator beside it:
+
+`— optional`
+
+The main label should be bold and larger.
+
+The optional text should remain visually secondary.
+
+Then show the dropdown below it.
+
+Do not restore required validation.
+
+---
+
+# 2. Required Skills
+
+Display:
+
+`2. Required Skills`
+
+Make it bold and larger.
+
+Below it retain the helper text:
+
+`Add the skills you want applicants to have and select the preferred experience level.`
+
+or the current equivalent.
+
+Remember the previous requirement:
+
+The section starts EMPTY.
+
+Do NOT restore hardcoded skills such as:
+
+* Graphic design
+* Customer support
+* Sales / cold outreach
+* Bookkeeping / accounting
+* Copywriting
+
+Initial state should contain only:
+
+`+ Add another skill`
+
+When clicked, add an editable skill row.
+
+---
+
+# 3. Availability
+
+Display:
+
+`3. Availability`
+
+Make it bold and larger.
+
+Keep the two optional cards:
+
+### Must overlap with US time zones
+
+`Applicant works hours that align with US business hours.`
+
+### Fluent English (written & spoken)
+
+`Required for client-facing communication.`
+
+Improve the spacing inside and between these cards if necessary.
+
+Do not make either checkbox required.
+
+---
+
+# 4. Compensation
+
+Display:
+
+`4. Compensation`
+
+Make it bold and larger.
+
+Keep:
+
+### Monthly rate (PHP) — optional
+
+and:
+
+### Display as
+
+with:
+
+* Range
+* Starting from
+* Negotiable
+
+Increase spacing between the Compensation heading and its fields.
+
+---
+
+# Responsive behavior
+
+The Requirements screen must still work properly on:
+
+* desktop
+* tablet
+* mobile
+
+On narrow screens:
+
+* Availability cards should stack vertically if needed.
+* Compensation fields should stack if needed.
+* Section numbering should not wrap awkwardly.
+
+---
+
+# PART 2 — CLIENT LOGIN REDIRECT
+
+Change the Client Account login destination.
+
+## Current behavior
+
+When a Client logs in, they are currently taken to their profile/dashboard.
+
+## New behavior
+
+When a Client logs in, route them directly to the **Talent List / Hire Talent experience** instead.
+
+The client should immediately see available talent rather than landing on their profile dashboard.
+
+Investigate the actual routing structure before changing this.
+
+Relevant areas may include:
+
+* authentication/login callback
+* role-based redirect logic
+* `App.tsx`
+* Client dashboard routing
+* `HireTalentPage.tsx`
+* `TalentPool.tsx`
+
+The repo currently contains both:
+
+* `client/src/pages/HireTalentPage.tsx`
+* `client/src/pages/TalentPool.tsx`
+
+Determine which one is the canonical Client talent-list destination and route Clients there.
+
+Do not create another duplicate talent page.
+
+---
+
+# First login vs every login
+
+The requested UX is:
+
+When the Client logs in, the main destination should be the Talent List rather than Profile Dashboard.
+
+If the existing system differentiates true first login/onboarding from subsequent login, inspect that logic first.
+
+Do not break mandatory onboarding, account activation, MSA acceptance, or profile-completion requirements if they already exist.
+
+The intended behavior after required onboarding is satisfied should be:
+
+```text
+Client Login
+    ↓
+Talent List / Hire Talent
+```
+
+not:
+
+```text
+Client Login
+    ↓
+Profile Dashboard
+```
+
+---
+
+# Preserve Talent and Admin login behavior
+
+Do NOT change login destinations for:
+
+* Talent users
+* Admin users
+
+Only modify the Client role redirect.
+
+Make sure role-based routing still prevents unauthorized pages.
+
+---
+
+# PART 3 — HIRE TALENT SHOULD OFFER “POST A JOB”
+
+When a Client clicks:
+
+`Hire Talent`
+
+they should have an obvious option to:
+
+`Post a Job`
+
+This should be available from the Hire Talent / Talent List experience.
+
+Do not remove talent browsing.
+
+The page should support both client intents:
+
+```text
+Browse Talent
+```
+
+and:
+
+```text
+Post a Job
+```
+
+Add a clear CTA such as:
+
+`Post a Job`
+
+in an appropriate visible location, for example near the Hire Talent page heading/search controls.
+
+Clicking it should route the Client to the existing Client Account Create Job Posting flow.
+
+Reuse the existing shared Client job form.
+
+Do NOT create a new form.
+
+The route should resolve to the same updated 4-step form currently used for Client job creation.
+
+---
+
+# PART 4 — UPDATE TALENT SEARCH ACTION BUTTONS
+
+After a Client uses the search bar in the Hire Talent page and talent results are displayed, change the result-card actions.
+
+## Current action
+
+The current UI uses:
+
+`Shortlist`
+
+Change this to a **Star / Favorite** action.
+
+## New behavior
+
+Instead of a large button labeled `Shortlist`, use a recognizable:
+
+* Star icon
+* Favorite icon/button
+
+Preferred UX:
+
+☆ = not favorited
+
+★ = favorited
+
+Include an accessible tooltip/title such as:
+
+`Add to favorites`
+
+and when active:
+
+`Remove from favorites`
+
+Do not rely only on icon color for accessibility.
+
+Use:
+
+* `aria-label`
+* tooltip/title
+* visible active state
+
+---
+
+# IMPORTANT — PRESERVE EXISTING SHORTLIST DATA LOGIC
+
+The repo already contains shortlist workflow code, including:
+
+* `SearchToShortlist.tsx`
+* `ClientTalentShortlistDialog.tsx`
+* shortlist-related database/storage logic
+
+Do NOT delete the underlying shortlist/favorite functionality just because the visible terminology changes.
+
+Treat this primarily as a UX change unless the business model explicitly requires different storage.
+
+If the existing Shortlist action stores a shortlist record, the new Star/Favorite button may continue using that backend behavior.
+
+The UI terminology should become:
+
+`Favorite`
+
+rather than:
+
+`Shortlist`
+
+where appropriate in the talent search result experience.
+
+Do not unnecessarily migrate or rename database tables just for this UI label change.
+
+---
+
+# PART 5 — CHANGE “INTERVIEW” TO “INVITE TO APPLY”
+
+In talent search results, change the action currently labeled:
+
+`Interview`
+
+to:
+
+`Invite to Apply`
+
+This is important because the Client should first invite the Talent to apply to a job rather than immediately implying an interview.
+
+Visible CTA:
+
+`Invite to Apply`
+
+not:
+
+`Interview`
+
+---
+
+# Invite to Apply behavior
+
+When the Client clicks:
+
+`Invite to Apply`
+
+the workflow should allow the Client to select which active/open job they want to invite the talent to.
+
+Preferred flow:
+
+```text
+Invite to Apply
+      ↓
+Choose Job Opening
+      ↓
+Confirm Invitation
+      ↓
+Talent receives invitation
+```
+
+If only one eligible job exists, you may simplify the selection UX, but do not make assumptions that every Client has only one job.
+
+If the Client has no available jobs, show a helpful state such as:
+
+`You need an active job posting before inviting talent to apply.`
+
+and offer:
+
+`Post a Job`
+
+which routes to the existing Client Create Job form.
+
+---
+
+# Do not simply rename Interview if the action still performs interview logic
+
+Inspect what the existing `Interview` button actually does.
+
+If it currently:
+
+* creates an interview stage
+* changes candidate pipeline stage
+* schedules an interview
+* creates an interview-specific record
+
+then DO NOT merely relabel that exact behavior.
+
+The new action needs to represent an actual job invitation/application workflow.
+
+Search the existing repo for:
+
+* invitation logic
+* candidate invitations
+* job invitations
+* shortlist workflow
+* formal pipeline logic
+* application creation
+* `SearchToShortlist.tsx`
+* `ClientTalentShortlistDialog.tsx`
+* `formalPipelineGuard.ts`
+
+Reuse existing invitation functionality if available.
+
+Do not bypass the formal hiring pipeline.
+
+---
+
+# Search results desired UI
+
+A talent result card should conceptually have actions similar to:
+
+```text
+Talent Name
+Role / Skills / Rate / etc.
+
+[ ☆ Favorite ]   [ Invite to Apply ]
+```
+
+or:
+
+```text
+☆     Invite to Apply
+```
+
+depending on the existing card design.
+
+The Star should not dominate the card visually.
+
+`Invite to Apply` should remain the primary CTA.
+
+---
+
+# Favorites behavior
+
+The Star/Favorite action should:
+
+* toggle on/off
+* persist after refresh
+* load correctly when returning to the talent page
+* not create duplicate shortlist/favorite records
+* work for the currently logged-in Client
+* respect existing organization/client ownership rules
+
+If the existing shortlist system already supports these behaviors, reuse it.
+
+---
+
+# CLIENT NAVIGATION EXPECTED FLOW
+
+The new intended Client experience should be:
+
+```text
+Client logs in
+      ↓
+Talent List / Hire Talent
+      ↓
+Search/Browse Talent
+      ↓
+☆ Favorite candidate
+        OR
+Invite to Apply
+      ↓
+Choose existing job
+```
+
+The Client should also have:
+
+```text
+Hire Talent
+      ↓
+Post a Job
+      ↓
+Client Create Job Form
+```
+
+---
+
+# ROUTING SAFETY
+
+Review route guards and redirects carefully.
+
+Do not create:
+
+* redirect loops
+* `/client-profile` → talent page → `/client-profile` loops
+* unauthorized Admin/Talent redirects
+* duplicated route definitions
+
+Direct navigation and browser refresh must work correctly on the new Client landing route.
+
+---
+
+# FILES TO INSPECT
+
+At minimum inspect:
+
+* `client/src/App.tsx`
+* Client authentication / login callback logic
+* Client role redirect logic
+* `client/src/pages/HireTalentPage.tsx`
+* `client/src/pages/TalentPool.tsx`
+* `client/src/pages/SearchToShortlist.tsx`
+* `client/src/components/ClientTalentShortlistDialog.tsx`
+* Client navigation/header components
+* Client job creation route
+* Client job form route
+* server endpoints used by shortlist/favorites
+* talent invitation APIs
+* application APIs
+* formal hiring pipeline guards
+
+Do not guess which page currently owns Hire Talent behavior. Trace the actual route first.
+
+---
+
+# ACCEPTANCE TEST 1 — Requirements page
+
+Open both:
+
+* Admin Create Job
+* Client Create Job
+
+Go to Step 3.
+
+I should clearly see:
+
+```text
+Requirements
+
+1. Minimum educational attainment
+2. Required Skills
+3. Availability
+4. Compensation
+```
+
+Each should have:
+
+* larger font
+* bold heading
+* clearer spacing
+
+The visual hierarchy should be obviously improved from the current screenshot.
+
+---
+
+# ACCEPTANCE TEST 2 — Client login
+
+Log in as a Client.
+
+After successful authentication/onboarding, the Client should land on:
+
+`Talent List / Hire Talent`
+
+They should NOT land on the profile dashboard by default.
+
+Refresh the page and verify there is no redirect loop.
+
+---
+
+# ACCEPTANCE TEST 3 — Hire Talent
+
+From the Client navigation:
+
+Click:
+
+`Hire Talent`
+
+Verify:
+
+1. Talent list/search appears.
+2. There is a visible `Post a Job` option.
+3. Clicking `Post a Job` routes to the existing Client Create Job form.
+
+---
+
+# ACCEPTANCE TEST 4 — Search result actions
+
+Search for talent.
+
+Each relevant result should use:
+
+`☆ / ★ Favorite`
+
+instead of:
+
+`Shortlist`
+
+and:
+
+`Invite to Apply`
+
+instead of:
+
+`Interview`
+
+Test favoriting:
+
+1. Click star.
+2. Star becomes active.
+3. Refresh.
+4. Favorite remains.
+5. Click again.
+6. Favorite is removed.
+
+---
+
+# ACCEPTANCE TEST 5 — Invite to Apply
+
+Click:
+
+`Invite to Apply`
+
+If Client has eligible jobs:
+
+* show the eligible jobs
+* choose one
+* confirm invitation
+* successfully create/send the correct application invitation
+
+If Client has no eligible jobs:
+
+show:
+
+`You need an active job posting before inviting talent to apply.`
+
+and provide:
+
+`Post a Job`
+
+Test that CTA routes to the Client Create Job form.
+
+---
+
+# IMPORTANT NON-REGRESSION REQUIREMENTS
+
+Do not break:
+
+* Admin job creation
+* Client job creation
+* job editing
+* job approval workflow
+* candidate applications
+* talent search
+* Client shortlist persistence
+* authentication
+* Admin redirects
+* Talent redirects
+* route protection
+* formal hiring pipeline rules
+
+Do not delete shortlist tables or data simply because the UI now calls it Favorite.
+
+---
+
+# FINAL REPORT
+
+After implementation, report:
+
+1. Files changed.
+2. Exact Client login redirect before and after.
+3. Which route is now the canonical Client landing page.
+4. Where the Post a Job CTA was added.
+5. Where it routes.
+6. How Shortlist was changed to Favorite.
+7. Whether underlying shortlist storage was reused.
+8. How Favorite persistence works.
+9. How Interview was replaced by Invite to Apply.
+10. What happens when a Client has no job openings.
+11. How job selection works when inviting talent.
+12. Confirmation that Admin login behavior was unchanged.
+13. Confirmation that Talent login behavior was unchanged.
+14. Confirmation that Admin and Client Step 3 typography was updated.
+15. Confirmation that all acceptance tests were manually verified in the rendered application.
+
+Do not mark this complete based only on successful compilation. Verify the actual Client navigation and talent-result interactions in the running application.
