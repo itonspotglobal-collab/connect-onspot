@@ -1,0 +1,748 @@
+Improve the existing **Schedule Interview** feature in the OnSpot / `connect-onspot` application.
+
+The UI currently exists, but several parts are placeholders or not functional.
+
+## CURRENT PROBLEMS
+
+### 1. Scheduling Method
+
+The current selection UI looks awkward and does not clearly communicate which option is selected.
+
+Current choices:
+
+* Let Talent choose an available time
+* Admin chooses a time
+
+Fix this.
+
+### 2. Time Zone
+
+The Time Zone field visually looks like a dropdown, but no options appear.
+
+Make it a real selectable timezone dropdown.
+
+### 3. Interviewer
+
+The Interviewer field is disabled and says:
+
+`Microsoft Bookings staff will appear here...`
+
+This is no longer sufficient.
+
+Make the field usable and prepare it for Microsoft Outlook / Bookings calendar availability.
+
+---
+
+# IMPORTANT PRODUCT DIRECTION
+
+We are using Microsoft 365 / Outlook as the email/calendar provider.
+
+The Interviewer should be tied to a real Microsoft 365 user or Microsoft Bookings staff member.
+
+The eventual flow should be:
+
+```text
+Choose interviewer
+        ↓
+Choose date range + duration + timezone
+        ↓
+OnSpot asks Microsoft for that interviewer's free/busy schedule
+        ↓
+Only available interview slots are shown
+        ↓
+Admin selects a slot
+OR
+Talent is allowed to choose from those available slots
+```
+
+Do NOT ask users to manually type their availability.
+
+Do NOT let OnSpot offer calendar times that conflict with the selected interviewer's Outlook calendar.
+
+---
+
+# =====================================================
+
+# PART 1 — FIX SCHEDULING METHOD UI
+
+# =====================================================
+
+Replace the current awkward card/radio appearance with a proper selectable option group.
+
+Use either:
+
+* RadioGroup
+* segmented selection cards
+
+but make selection visually obvious.
+
+Suggested design:
+
+```text
+Scheduling method
+
+[ ✓ Let Talent choose a time ]
+    Talent selects from available interviewer slots
+
+[   Admin chooses a time   ]
+    Admin selects one available slot now
+```
+
+Only one can be selected.
+
+---
+
+# SELECTED STATE
+
+Selected option should have:
+
+* primary OnSpot border
+* subtle tinted background
+* check/radio indicator
+* clear text emphasis
+
+Unselected option:
+
+* neutral border
+* white/slate background
+
+Do not make the radio control appear detached from the card.
+
+The ENTIRE card must be clickable.
+
+---
+
+# ACCESSIBILITY
+
+Use a real:
+
+`RadioGroup`
+
+or equivalent semantic controls.
+
+Keyboard selection must work.
+
+---
+
+# =====================================================
+
+# PART 2 — TIMEZONE DROPDOWN
+
+# =====================================================
+
+Fix the Time Zone field so options actually appear.
+
+Do not use a fake disabled select.
+
+Use a proper Select/Combobox.
+
+---
+
+# TIMEZONE SOURCE
+
+Prefer browser-supported IANA timezones.
+
+If supported:
+
+```ts
+Intl.supportedValuesOf("timeZone")
+```
+
+Otherwise use an existing timezone list/library already in the project.
+
+Do not hardcode only:
+
+`Asia/Singapore`
+
+---
+
+# DISPLAY FORMAT
+
+Display options human-readably.
+
+Examples:
+
+```text
+Asia/Manila (GMT+8)
+Asia/Singapore (GMT+8)
+Australia/Perth (GMT+8)
+America/New_York (GMT-4)
+Europe/London (GMT+1)
+```
+
+Prefer current-offset labeling based on selected scheduling date where practical.
+
+---
+
+# DEFAULT TIMEZONE
+
+Default should come from one of:
+
+1. user's saved timezone
+2. browser timezone:
+
+```ts
+Intl.DateTimeFormat().resolvedOptions().timeZone
+```
+
+3. application/company timezone fallback
+
+Do not automatically assume Singapore unless current product data says so.
+
+---
+
+# SEARCHABLE
+
+Timezone dropdown should ideally be searchable because the list is large.
+
+Use Combobox/Command if existing components already support it.
+
+---
+
+# =====================================================
+
+# PART 3 — INTERVIEWER FIELD
+
+# =====================================================
+
+Replace the disabled Interviewer field with a real selector.
+
+Suggested label:
+
+`Interviewer`
+
+Placeholder:
+
+`Select interviewer`
+
+---
+
+# WHO SHOULD APPEAR
+
+Do NOT hardcode people.
+
+Use an interviewer/staff data source.
+
+For the Admin flow, valid interviewers may include:
+
+* OnSpot Admins
+* OnSpot staff
+* assigned recruiter
+* assigned hiring manager
+
+Only include users that are actually allowed to conduct interviews.
+
+---
+
+# REQUIRED DATA PER INTERVIEWER
+
+Each selectable interviewer should eventually have:
+
+```text
+OnSpot user ID
+Display name
+Email
+Microsoft 365 email / UPN
+Microsoft Bookings staff ID (if using Bookings)
+Availability enabled flag
+```
+
+Example conceptual record:
+
+```json
+{
+  "userId": "uuid",
+  "displayName": "Jane Smith",
+  "email": "jane.smith@onspotglobal.com",
+  "microsoftUserPrincipalName": "jane.smith@onspotglobal.com",
+  "bookingsStaffId": "optional-staff-id"
+}
+```
+
+Do not use display name as the calendar lookup key.
+
+---
+
+# INTERVIEWER DROPDOWN UI
+
+Each option may show:
+
+```text
+Jane Smith
+Recruitment Manager
+jane.smith@onspotglobal.com
+```
+
+Keep email secondary/subtle.
+
+---
+
+# =====================================================
+
+# PART 4 — OUTLOOK / MICROSOFT AVAILABILITY
+
+# =====================================================
+
+Implement this behind the backend.
+
+Do NOT call Microsoft Graph directly from the browser using secrets.
+
+Create server-side Microsoft Graph integration.
+
+---
+
+# AVAILABILITY OPTION A — OUTLOOK GETSCHEDULE
+
+Microsoft Graph supports:
+
+```text
+POST /users/{id|userPrincipalName}/calendar/getSchedule
+```
+
+Use this to retrieve free/busy information from the selected interviewer's Outlook calendar.
+
+Least-privilege application permissions should be reviewed carefully.
+
+Conceptual request:
+
+```json
+{
+  "schedules": [
+    "jane.smith@onspotglobal.com"
+  ],
+  "startTime": {
+    "dateTime": "2026-08-28T09:00:00",
+    "timeZone": "Asia/Manila"
+  },
+  "endTime": {
+    "dateTime": "2026-08-30T18:00:00",
+    "timeZone": "Asia/Manila"
+  },
+  "availabilityViewInterval": 30
+}
+```
+
+Use actual Microsoft-compatible timezone handling.
+
+---
+
+# AVAILABILITY OPTION B — MICROSOFT BOOKINGS
+
+If a shared Microsoft Bookings business is configured, Microsoft Graph supports:
+
+```text
+POST /solutions/bookingBusinesses/{businessId}/getStaffAvailability
+```
+
+This accepts:
+
+* staff IDs
+* start range
+* end range
+
+and returns staff availability.
+
+If Bookings is the chosen final integration, map each OnSpot interviewer to:
+
+`bookingsStaffId`.
+
+---
+
+# RECOMMENDATION
+
+Structure the backend so availability comes through an abstraction:
+
+```ts
+getInterviewerAvailability(...)
+```
+
+For example:
+
+```ts
+getInterviewerAvailability({
+  interviewerUserId,
+  startDate,
+  endDate,
+  timezone,
+  durationMinutes
+})
+```
+
+Then internally it can use:
+
+* Bookings staff availability
+  OR
+* Outlook getSchedule
+
+without coupling the frontend to Microsoft API details.
+
+---
+
+# =====================================================
+
+# PART 5 — AVAILABLE SLOTS UI
+
+# =====================================================
+
+After Admin chooses:
+
+* interviewer
+* duration
+* timezone
+* start date
+* end date
+
+enable:
+
+`Continue to Availability`
+
+---
+
+# VALIDATION
+
+Do not enable Continue until required fields exist.
+
+Required:
+
+* interview type
+* interviewer
+* duration
+* timezone
+* scheduling method
+* start date
+* end date
+
+Validate:
+
+`endDate >= startDate`
+
+---
+
+# ON CONTINUE
+
+Replace the current fake:
+
+`Availability preview ready`
+
+message.
+
+Instead call backend:
+
+```text
+GET/POST /api/interviews/availability
+```
+
+or equivalent.
+
+Return normalized available slots.
+
+---
+
+# LOADING STATE
+
+Show:
+
+```text
+Checking interviewer availability...
+```
+
+with spinner/skeleton.
+
+---
+
+# EMPTY STATE
+
+If no available times:
+
+```text
+No available interview times were found for this interviewer in the selected date range.
+
+[Change date range]
+```
+
+Do not silently continue.
+
+---
+
+# AVAILABLE SLOTS
+
+Display actual options grouped by date.
+
+Example:
+
+```text
+Available times
+
+Thursday, Aug 27
+
+[ 9:00 AM ]
+[ 10:30 AM ]
+[ 2:00 PM ]
+
+Friday, Aug 28
+
+[ 11:00 AM ]
+[ 3:30 PM ]
+```
+
+All displayed in the selected timezone.
+
+---
+
+# ADMIN CHOOSES A TIME
+
+If:
+
+`Admin chooses a time`
+
+Admin selects ONE available slot.
+
+Then show:
+
+```text
+Selected interview
+
+Aug 28, 2026
+10:30 AM – 11:00 AM
+Asia/Manila
+
+Interviewer
+Jane Smith
+```
+
+Final scheduling/appointment creation may be wired in the next step if Bookings credentials are not ready yet.
+
+Do not allow selection of a busy slot.
+
+---
+
+# TALENT CHOOSES A TIME
+
+If:
+
+`Let Talent choose an available time`
+
+Admin should NOT choose the exact final time.
+
+Instead OnSpot stores/sends:
+
+* interviewer
+* duration
+* timezone
+* allowed date range
+
+The Talent will later receive a booking invitation and select from live available slots.
+
+For now, prepare the UI/state but do not fake the Talent selection.
+
+---
+
+# =====================================================
+
+# PART 6 — MICROSOFT CONFIGURATION
+
+# =====================================================
+
+Add server configuration placeholders only if integration is being implemented now.
+
+Expected secrets/config may include:
+
+```text
+MICROSOFT_TENANT_ID
+MICROSOFT_CLIENT_ID
+MICROSOFT_CLIENT_SECRET
+MICROSOFT_BOOKINGS_BUSINESS_ID
+```
+
+Never expose these to frontend code.
+
+---
+
+# GRAPH AUTH
+
+Use Microsoft Entra application authentication server-side.
+
+Do not put Microsoft tokens in localStorage.
+
+Do not send Graph secrets to React.
+
+---
+
+# PERMISSIONS
+
+Use least privilege.
+
+For Outlook free/busy, Microsoft Graph supports calendar availability with permissions such as:
+
+`Calendars.ReadBasic`
+
+depending on authentication model.
+
+For Microsoft Bookings staff availability, the Bookings Graph API requires appropriate Bookings application permissions.
+
+Do not request broad Graph permissions unless necessary.
+
+---
+
+# =====================================================
+
+# PART 7 — INTERVIEWER CALENDAR LINKING
+
+# =====================================================
+
+Do NOT make the Interviewer field a free-form URL field.
+
+Instead create/manage the mapping between OnSpot staff and Microsoft identities.
+
+Preferred future Admin settings concept:
+
+```text
+User:
+Jane Smith
+
+Microsoft calendar:
+Connected
+
+Microsoft account:
+jane.smith@onspotglobal.com
+
+Bookings Staff:
+Connected
+```
+
+For now, if there is no settings screen, store mapping server-side/config/database.
+
+---
+
+# FALLBACK FOR UNLINKED INTERVIEWER
+
+If interviewer exists in OnSpot but has no Microsoft calendar mapping:
+
+show:
+
+```text
+Jane Smith
+Calendar not connected
+```
+
+Disable selection OR allow selection but block availability lookup with:
+
+`This interviewer's Microsoft calendar has not been connected.`
+
+Do not pretend availability exists.
+
+---
+
+# =====================================================
+
+# PART 8 — DO NOT CHANGE STATUS YET
+
+# =====================================================
+
+Do NOT change:
+
+`job_submissions.status = interviewing`
+
+just because Admin opens availability.
+
+Only change status once a real interview appointment/invitation record is successfully created.
+
+---
+
+# DO NOT BREAK CLIENT REQUEST FLOW
+
+Client side still uses:
+
+`Request Interview`
+
+and requires Admin action.
+
+Do not let Client directly query arbitrary staff calendars.
+
+Client should not see private interviewer free/busy details beyond available appointment slots after approval.
+
+---
+
+# =====================================================
+
+# TESTS
+
+# =====================================================
+
+## Scheduling method
+
+* card click selects option
+* selected state obvious
+* only one selected
+* keyboard accessible
+
+## Timezone
+
+* dropdown opens
+* options visible
+* searchable
+* selected value persists
+
+## Interviewer
+
+* dropdown opens
+* real interviewers load
+* user can select one
+* unlinked Microsoft users handled clearly
+
+## Availability
+
+Given interviewer has calendar events:
+
+busy slots are excluded.
+
+Free slots appear.
+
+## Timezone conversion
+
+Same appointment displayed correctly in selected timezone.
+
+## No availability
+
+Shows proper empty state.
+
+## API security
+
+Microsoft secrets never reach browser.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+* Scheduling Method selection looks correct
+* Time Zone dropdown works
+* Interviewer field is selectable
+* interviewer maps to Microsoft identity
+* Continue validates required fields
+* real backend availability endpoint exists if Microsoft integration credentials are configured
+* availability excludes busy Outlook/Bookings time
+* available slots display cleanly
+* no fake "availability ready" state remains
+* Client Interview Request workflow remains untouched
+* application status is not prematurely changed
+* build/typecheck passes
+
+---
+
+# FINAL REPORT
+
+Report:
+
+1. Scheduling method UI fix
+2. Timezone implementation
+3. Interviewer data source
+4. Microsoft identity mapping
+5. whether availability uses Bookings or Outlook getSchedule
+6. backend availability endpoint
+7. Microsoft permissions/config required
+8. unavailable-calendar behavior
+9. files changed
+10. tests run
+11. what remains before creating the actual interview appointment
