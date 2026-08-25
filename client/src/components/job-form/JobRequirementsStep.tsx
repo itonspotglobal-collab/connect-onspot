@@ -22,6 +22,29 @@ interface Props {
   errors: Partial<Record<keyof JobFormData, string>>;
 }
 
+/** Shared section heading for the four numbered Requirements sections. */
+function SectionHeading({
+  number,
+  label,
+  optional,
+}: {
+  number: number;
+  label: string;
+  optional?: boolean;
+}) {
+  return (
+    <p className="text-base font-bold text-foreground leading-snug">
+      <span className="text-muted-foreground font-semibold mr-1">{number}.</span>
+      {label}
+      {optional && (
+        <span className="ml-2 text-sm font-normal text-muted-foreground">
+          — optional
+        </span>
+      )}
+    </p>
+  );
+}
+
 export function JobRequirementsStep({ formData, updateField, errors }: Props) {
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [pendingSkillName, setPendingSkillName] = useState("");
@@ -65,16 +88,18 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
   return (
     <div>
       <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Requirements</h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-8">
         Pick what a strong applicant needs. These power our matching — just tick what applies.
       </p>
 
-      <div className="mb-6">
-        <Label htmlFor="req-education">
-          Minimum educational attainment <span className="text-xs font-normal text-muted-foreground">— optional</span>
-        </Label>
-        <Select value={formData.minimumEducation} onValueChange={(value) => updateField("minimumEducation", value)}>
-          <SelectTrigger id="req-education" className="mt-1.5">
+      {/* ── 1. Education ─────────────────────────────────────────────────────── */}
+      <div className="mb-8">
+        <SectionHeading number={1} label="Minimum educational attainment" optional />
+        <Select
+          value={formData.minimumEducation}
+          onValueChange={(value) => updateField("minimumEducation", value)}
+        >
+          <SelectTrigger id="req-education" className="mt-3">
             <SelectValue placeholder="Select attainment…" />
           </SelectTrigger>
           <SelectContent>
@@ -83,18 +108,24 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             ))}
           </SelectContent>
         </Select>
-        {errors.minimumEducation && <p className="mt-1 text-xs text-red-500">{errors.minimumEducation}</p>}
+        {errors.minimumEducation && (
+          <p className="mt-1 text-xs text-red-500">{errors.minimumEducation}</p>
+        )}
       </div>
 
-      <div className="border-t border-dashed border-border pt-5">
-        <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Required skills</p>
-        <p className="mb-3 text-xs text-muted-foreground">
-          Tick each skill and set how many years of experience you&apos;d like.
+      {/* ── 2. Required Skills ────────────────────────────────────────────────── */}
+      <div className="border-t border-dashed border-border pt-7 mb-8">
+        <SectionHeading number={2} label="Required Skills" />
+        <p className="mt-1.5 mb-4 text-sm text-muted-foreground">
+          Add the skills you want applicants to have and select the preferred experience level.
         </p>
 
         <div className="space-y-2">
           {formData.requiredSkills.map((skill, index) => (
-            <div key={`${skill.name}-${index}`} className="grid grid-cols-[1fr_140px_auto] items-center gap-3 rounded-xl border border-[#474ead] bg-indigo-50/70 p-3 dark:bg-indigo-900/20">
+            <div
+              key={`${skill.name}-${index}`}
+              className="grid grid-cols-[1fr_140px_auto] items-center gap-3 rounded-xl border border-[#474ead] bg-indigo-50/70 p-3 dark:bg-indigo-900/20"
+            >
               <Input
                 value={nameDrafts[index] ?? skill.name}
                 onChange={(event) => setNameDrafts({ ...nameDrafts, [index]: event.target.value })}
@@ -147,7 +178,10 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
                 placeholder="Skill name"
                 className="h-9 bg-white"
               />
-              <Select value={pendingSkillYears} onValueChange={(years) => setPendingSkillYears(years as RequiredSkillRequirement["years"])}>
+              <Select
+                value={pendingSkillYears}
+                onValueChange={(years) => setPendingSkillYears(years as RequiredSkillRequirement["years"])}
+              >
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SKILL_EXPERIENCE_OPTIONS.map((option) => (
@@ -172,7 +206,11 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
         </div>
 
         {isAddingSkill ? (
-          <button type="button" onClick={addPendingSkill} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]">
+          <button
+            type="button"
+            onClick={addPendingSkill}
+            className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]"
+          >
             <Plus className="h-4 w-4" /> Add skill
           </button>
         ) : (
@@ -187,31 +225,64 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
         )}
       </div>
 
-      <div className="border-t border-dashed border-border pt-5 mt-6">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Availability</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+      {/* ── 3. Availability ───────────────────────────────────────────────────── */}
+      <div className="border-t border-dashed border-border pt-7 mb-8">
+        <SectionHeading number={3} label="Availability" />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 hover:border-[#474ead]">
-            <input type="checkbox" checked={formData.requiresUsTimezoneOverlap} onChange={(event) => updateField("requiresUsTimezoneOverlap", event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#474ead]" />
-            <span><span className="block text-sm font-semibold">Must overlap with US time zones</span><span className="mt-0.5 block text-xs text-muted-foreground">Applicant works hours that align with US business hours.</span></span>
+            <input
+              type="checkbox"
+              checked={formData.requiresUsTimezoneOverlap}
+              onChange={(event) => updateField("requiresUsTimezoneOverlap", event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#474ead]"
+            />
+            <span>
+              <span className="block text-sm font-semibold">Must overlap with US time zones</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Applicant works hours that align with US business hours.
+              </span>
+            </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 hover:border-[#474ead]">
-            <input type="checkbox" checked={formData.requiresFluentEnglish} onChange={(event) => updateField("requiresFluentEnglish", event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#474ead]" />
-            <span><span className="block text-sm font-semibold">Fluent English (written &amp; spoken)</span><span className="mt-0.5 block text-xs text-muted-foreground">Required for client-facing communication.</span></span>
+            <input
+              type="checkbox"
+              checked={formData.requiresFluentEnglish}
+              onChange={(event) => updateField("requiresFluentEnglish", event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#474ead]"
+            />
+            <span>
+              <span className="block text-sm font-semibold">Fluent English (written &amp; spoken)</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Required for client-facing communication.
+              </span>
+            </span>
           </label>
         </div>
       </div>
 
-      <div className="border-t border-dashed border-border pt-5 mt-6">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Compensation</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* ── 4. Compensation ───────────────────────────────────────────────────── */}
+      <div className="border-t border-dashed border-border pt-7">
+        <SectionHeading number={4} label="Compensation" optional />
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="req-salary">Monthly rate (PHP) <span className="text-xs font-normal text-muted-foreground">— optional</span></Label>
-            <Input id="req-salary" className="mt-1.5" value={formData.salaryDisplay} onChange={(event) => updateField("salaryDisplay", event.target.value)} placeholder="e.g. ₱45,000 – ₱60,000" />
+            <Label htmlFor="req-salary">Monthly rate (PHP)</Label>
+            <Input
+              id="req-salary"
+              className="mt-1.5"
+              value={formData.salaryDisplay}
+              onChange={(event) => updateField("salaryDisplay", event.target.value)}
+              placeholder="e.g. ₱45,000 – ₱60,000"
+            />
           </div>
           <div>
             <Label htmlFor="req-compensation-display">Display as</Label>
-            <Select value={formData.compensationDisplayType} onValueChange={(value) => updateField("compensationDisplayType", value)}>
-              <SelectTrigger id="req-compensation-display" className="mt-1.5"><SelectValue /></SelectTrigger>
+            <Select
+              value={formData.compensationDisplayType}
+              onValueChange={(value) => updateField("compensationDisplayType", value)}
+            >
+              <SelectTrigger id="req-compensation-display" className="mt-1.5">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {COMPENSATION_DISPLAY_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>

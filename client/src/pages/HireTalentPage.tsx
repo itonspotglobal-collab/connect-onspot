@@ -497,40 +497,32 @@ function ProfilePreviewModal({
         {/* ── Footer CTA ── */}
         <div className="shrink-0 border-t border-slate-100 px-6 py-4 dark:border-white/10 md:px-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Favorite star (modal) */}
             <button
-              disabled={isInvited || isInviting}
+              disabled={isInvited}
               onClick={() => { onShortlist(); onClose(); }}
+              title={isShortlisted ? "Remove from favorites" : "Add to favorites"}
+              aria-label={isShortlisted ? "Remove from favorites" : "Add to favorites"}
+              aria-pressed={isShortlisted}
               className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
-                isInvited || isShortlisted
-                  ? "border border-emerald-400 text-emerald-600 cursor-default"
-                  : "bg-[#474ead] hover:bg-[#3d439c] text-white",
+                "rounded-full px-4 py-2 text-sm font-semibold border transition-colors flex items-center gap-2",
+                isShortlisted
+                  ? "border-amber-400 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-900/20"
+                  : "border-slate-200 dark:border-white/10 text-slate-500 hover:border-amber-400 hover:text-amber-500",
+                isInvited ? "opacity-40 cursor-not-allowed" : "",
               )}
             >
-              {isInviting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing…
-                </span>
-              ) : isInvited ? (
-                <span className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5" /> Invited
-                </span>
-              ) : isShortlisted ? (
-                <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5" /> Shortlisted</span>
-              ) : isAnonymous ? (
-                "Create account to shortlist"
-              ) : (
-                "Shortlist this talent"
-              )}
+              <Star className={cn("h-4 w-4", isShortlisted ? "fill-amber-400 text-amber-400" : "")} />
+              {isShortlisted ? "Favorited" : "Favorite"}
             </button>
             <div className="flex items-center gap-2">
               {!isAnonymous && !isInvited && (
                 <button
                   onClick={() => { onInterview(); onClose(); }}
                   disabled={isInviting}
-                  className="rounded-full border border-[#474ead] px-5 py-2 text-sm font-semibold text-[#474ead] hover:bg-[#474ead] hover:text-white disabled:opacity-50"
+                  className="rounded-full border border-[#474ead] px-5 py-2 text-sm font-semibold text-[#474ead] hover:bg-[#474ead] hover:text-white disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  Interview this talent
+                  {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Invite to Apply"}
                 </button>
               )}
               {!isAnonymous && !fullProfile && (
@@ -676,39 +668,35 @@ function ResultRow({
           Preview
         </button>
 
-        {/* Shortlist */}
+        {/* Favorite (star toggle) */}
       <button
-        disabled={isInvited || isInviting}
+        disabled={isInvited}
         onClick={onShortlist}
+        title={isShortlisted ? "Remove from favorites" : "Add to favorites"}
+        aria-label={isShortlisted ? "Remove from favorites" : "Add to favorites"}
+        aria-pressed={isShortlisted}
         className={cn(
-          "rounded-[10px] px-4 py-[7px] text-[13.5px] font-semibold border transition-colors duration-150",
-          isInvited || isShortlisted
-            ? "border-emerald-400 text-emerald-600 cursor-default"
-            : isAnonymous
-              ? "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white"
-              : "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white",
+          "rounded-[10px] p-[7px] border transition-colors duration-150 flex items-center justify-center shrink-0",
+          isShortlisted
+            ? "border-amber-400 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-500"
+            : "border-slate-200 dark:border-slate-600 text-slate-400 hover:border-amber-400 hover:text-amber-500",
+          isInvited ? "opacity-40 cursor-not-allowed" : "",
         )}
       >
-        {isInviting ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : isInvited ? (
-          <span className="flex items-center gap-1">
-            <Check className="h-3.5 w-3.5" />
-            Invited
-          </span>
-        ) : isShortlisted ? (
-          <span className="flex items-center gap-1"><Check className="h-3.5 w-3.5" /> Shortlisted</span>
-        ) : (
-          "Shortlist"
-        )}
+        <Star
+          className={cn(
+            "h-4 w-4",
+            isShortlisted ? "fill-amber-400 text-amber-400" : "",
+          )}
+        />
       </button>
       {!isAnonymous && !isInvited && (
         <button
           onClick={onInterview}
           disabled={isInviting}
-          className="rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white hover:bg-[#363c87] disabled:opacity-60"
+          className="rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white hover:bg-[#363c87] disabled:opacity-60 flex items-center gap-1.5"
         >
-          Interview
+          {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Invite to Apply"}
         </button>
       )}
       </div>
@@ -1209,6 +1197,25 @@ export default function HireTalentPage() {
               ))}
             </div>
           )}
+          {/* Post a Job CTA — only for authenticated clients */}
+          {isClient && (
+            <div className={cn("mt-4 flex items-center gap-2", isInitial ? "justify-center" : "justify-end")}>
+              <span className="text-[13px] text-slate-400 dark:text-slate-500">
+                {isInitial ? "Or" : ""}
+              </span>
+              <a
+                href="/client/jobs/new"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border font-semibold transition-colors duration-150",
+                  isInitial
+                    ? "border-[#474ead] text-[#474ead] hover:bg-[#474ead] hover:text-white px-5 py-2 text-[13.5px]"
+                    : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-[#474ead] hover:text-[#474ead] px-4 py-1.5 text-[13px]",
+                )}
+              >
+                + Post a Job
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1568,7 +1575,11 @@ export default function HireTalentPage() {
                       Cancel
                     </button>
                     <a
-                      href="/client-profile"
+                      href={
+                        pickerState === "pending_approval" || pickerState === "closed_jobs" || pickerState === "not_ready"
+                          ? "/client-profile"
+                          : "/client/jobs/new"
+                      }
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors"
                     >
                       {pickerState === "pending_approval" || pickerState === "closed_jobs" || pickerState === "not_ready"

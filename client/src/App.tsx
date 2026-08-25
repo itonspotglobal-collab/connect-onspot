@@ -144,7 +144,7 @@ function RoleAwareHome() {
     if (isLoading || !isAuthenticated) return;
 
     if (user?.role === "client") {
-      navigate("/dashboard", { replace: true });
+      navigate("/hire-talent", { replace: true });
     } else if (user?.role === "admin") {
       navigate("/admin/dashboard", { replace: true });
     }

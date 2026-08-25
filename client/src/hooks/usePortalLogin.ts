@@ -107,7 +107,7 @@ export function usePortalLogin() {
           localStorage.setItem("onspot_user", JSON.stringify(data.user));
           await refreshAuth();
           const displayName = data.user?.first_name || data.user?.email || "back";
-          const redirectTo = role === "admin" ? "/admin/find-work" : "/dashboard";
+          const redirectTo = role === "admin" ? "/admin/find-work" : "/hire-talent";
           return { success: true, portal: "client", displayName, redirectTo };
         } else {
           if (data.error === "talent_account") {

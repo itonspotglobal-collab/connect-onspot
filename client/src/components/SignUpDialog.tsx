@@ -153,7 +153,7 @@ export function SignUpDialog({
           if (userType === "talent") {
             window.location.href = "/get-hired";
           } else {
-            window.location.href = returnTo || "/dashboard";
+            window.location.href = returnTo || "/hire-talent";
           }
         } else {
           console.error("❌ Step 2 failed: Signup response missing token", signupResponse);
