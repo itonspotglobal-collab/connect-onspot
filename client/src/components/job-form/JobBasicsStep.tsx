@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { JOB_FUNCTIONS, WORK_SETUPS } from "@/lib/jobConstants";
+import {
+  ENGAGEMENT_TYPE_OPTIONS,
+  EXPERIENCE_LEVEL_OPTIONS,
+  JOB_DURATION_OPTIONS,
+  JOB_FORM_WORK_SETUPS,
+  JOB_FUNCTIONS,
+} from "@/lib/jobConstants";
 import type { JobFormData } from "@/lib/jobFormUtils";
 
 interface Props {
@@ -18,6 +24,17 @@ interface Props {
 }
 
 export function JobBasicsStep({ formData, updateField, errors }: Props) {
+  const hasLegacyLocation = Boolean(
+    formData.location && !JOB_FORM_WORK_SETUPS.includes(formData.location as "Remote"),
+  );
+  const hasLegacyDuration = Boolean(
+    formData.duration && !JOB_DURATION_OPTIONS.includes(formData.duration as (typeof JOB_DURATION_OPTIONS)[number]),
+  );
+  const hasLegacyExperience = Boolean(
+    formData.experienceLevel &&
+      !EXPERIENCE_LEVEL_OPTIONS.some((option) => option.value === formData.experienceLevel),
+  );
+
   return (
     <div>
       <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">The basics</h2>
@@ -35,32 +52,14 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
           className="mt-1.5"
           value={formData.professionalRoleName}
           onChange={(e) => updateField("professionalRoleName", e.target.value)}
-          placeholder="e.g. Senior Account Executive – Salesforce Solutions"
+          placeholder="e.g. Account Executive"
         />
         <p className="mt-1.5 text-xs text-muted-foreground">
-          The polished role title applicants will see publicly.
+          Use the title people would search for. Add an alternate name in parentheses if helpful.
         </p>
         {errors.professionalRoleName && (
           <p className="mt-1 text-xs text-red-500">{errors.professionalRoleName}</p>
         )}
-      </div>
-
-      {/* Original Role Name */}
-      <div className="mb-5">
-        <Label htmlFor="basics-original">
-          Original / Alternative Role Name{" "}
-          <span className="text-xs font-normal text-muted-foreground">— optional</span>
-        </Label>
-        <Input
-          id="basics-original"
-          className="mt-1.5"
-          value={formData.originalRoleName}
-          onChange={(e) => updateField("originalRoleName", e.target.value)}
-          placeholder="e.g. Account Executive / Business Development Representative"
-        />
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          The original client title, internal title, or common alternative names.
-        </p>
       </div>
 
       {/* Work Setup chips */}
@@ -69,7 +68,7 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
           Work Setup <span className="text-red-500">*</span>
         </Label>
         <div className="mt-2 flex flex-wrap gap-2">
-          {WORK_SETUPS.map((setup) => (
+          {JOB_FORM_WORK_SETUPS.map((setup) => (
             <button
               key={setup}
               type="button"
@@ -84,6 +83,11 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
             </button>
           ))}
         </div>
+        {hasLegacyLocation && (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            This older posting uses “{formData.location}”. It will be preserved until you choose Remote.
+          </p>
+        )}
       </div>
 
       {/* Function + Experience row */}
@@ -124,9 +128,16 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="entry">Entry Level</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="expert">Expert / Senior</SelectItem>
+              {EXPERIENCE_LEVEL_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+              {hasLegacyExperience && (
+                <SelectItem value={formData.experienceLevel}>
+                  Legacy: {formData.experienceLevel}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
           {errors.experienceLevel && (
@@ -149,8 +160,11 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
               <SelectValue placeholder="Select type…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Standard">Standard</SelectItem>
-              <SelectItem value="Lite">Lite</SelectItem>
+              {ENGAGEMENT_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           {errors.engagementType && (
@@ -160,24 +174,31 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
 
         <div>
           <Label htmlFor="basics-duration">
-            Duration{" "}
-            <span className="text-xs font-normal text-muted-foreground">— optional</span>
+            Duration <span className="text-red-500">*</span>
           </Label>
           <Select
             value={formData.duration || ""}
             onValueChange={(v) => updateField("duration", v)}
           >
             <SelectTrigger id="basics-duration" className="mt-1.5">
-              <SelectValue placeholder="Optional" />
+              <SelectValue placeholder="Select duration…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="less-than-1-month">Less than 1 month</SelectItem>
-              <SelectItem value="1-3-months">1–3 months</SelectItem>
-              <SelectItem value="3-6-months">3–6 months</SelectItem>
-              <SelectItem value="6-12-months">6–12 months</SelectItem>
-              <SelectItem value="ongoing">Ongoing</SelectItem>
+              {JOB_DURATION_OPTIONS.map((duration) => (
+                <SelectItem key={duration} value={duration}>
+                  {duration}
+                </SelectItem>
+              ))}
+              {hasLegacyDuration && (
+                <SelectItem value={formData.duration}>
+                  Legacy: {formData.duration}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
+          {errors.duration && (
+            <p className="mt-1 text-xs text-red-500">{errors.duration}</p>
+          )}
         </div>
       </div>
 

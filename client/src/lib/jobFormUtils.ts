@@ -5,6 +5,40 @@
  */
 import type { Job } from "@shared/schema";
 
+export interface RequiredSkillRequirement {
+  name: string;
+  years: "any" | "1" | "2" | "3" | "5";
+}
+
+const SKILL_EXPERIENCE_VALUES = new Set<RequiredSkillRequirement["years"]>([
+  "any",
+  "1",
+  "2",
+  "3",
+  "5",
+]);
+
+function normalizeRequiredSkills(value: unknown, legacySkillTags: unknown): RequiredSkillRequirement[] {
+  if (Array.isArray(value)) {
+    const structured = value
+      .filter((skill): skill is { name?: unknown; years?: unknown } => !!skill && typeof skill === "object")
+      .map((skill) => ({
+        name: typeof skill.name === "string" ? skill.name.trim() : "",
+        years: SKILL_EXPERIENCE_VALUES.has(skill.years as RequiredSkillRequirement["years"])
+          ? (skill.years as RequiredSkillRequirement["years"])
+          : "any",
+      }))
+      .filter((skill) => skill.name);
+    if (structured.length > 0) return structured;
+  }
+
+  return Array.isArray(legacySkillTags)
+    ? legacySkillTags
+        .filter((skill): skill is string => typeof skill === "string" && Boolean(skill.trim()))
+        .map((name) => ({ name: name.trim(), years: "any" as const }))
+    : [];
+}
+
 // ─── Quill helpers ────────────────────────────────────────────────────────────
 export const toQuillHtml = (arr: string[] | null | undefined): string => {
   if (!arr || arr.length === 0) return "";
@@ -26,6 +60,12 @@ export const defaultFormData = {
   category: "",
   engagementType: "",
   experienceLevel: "entry",
+  minimumEducation: "",
+  requiredSkills: [] as RequiredSkillRequirement[],
+  requiresUsTimezoneOverlap: false,
+  requiresFluentEnglish: false,
+  compensationDisplayType: "range",
+  contractorEngagementConfirmed: false,
   jobSummary: "",
   description: "",
   salaryDisplay: "",
@@ -93,6 +133,11 @@ export type JobFormData = typeof defaultFormData;
 
 // ─── Helper: seed form from an existing job ───────────────────────────────────
 export function jobToFormData(job: Job): JobFormData {
+  const requiredSkills = normalizeRequiredSkills(
+    (job as any).requiredSkills,
+    (job as any).skillTags,
+  );
+
   return {
     title: job.title || "",
     company: job.company || "OnSpot",
@@ -103,6 +148,12 @@ export function jobToFormData(job: Job): JobFormData {
     category: job.category || "",
     engagementType: (job as any).engagementType || "",
     experienceLevel: job.experienceLevel || "entry",
+    minimumEducation: (job as any).minimumEducation || "",
+    requiredSkills,
+    requiresUsTimezoneOverlap: (job as any).requiresUsTimezoneOverlap ?? false,
+    requiresFluentEnglish: (job as any).requiresFluentEnglish ?? false,
+    compensationDisplayType: (job as any).compensationDisplayType || "range",
+    contractorEngagementConfirmed: (job as any).contractorEngagementConfirmed ?? false,
     jobSummary: (job as any).jobSummary || "",
     description: job.description || "",
     salaryDisplay: (job as any).salaryDisplay || "",
@@ -110,8 +161,10 @@ export function jobToFormData(job: Job): JobFormData {
     status: job.status || "open",
     responsibilities: toQuillHtml(job.responsibilities as string[]),
     requirements: toQuillHtml(job.requirements as string[]),
-    skillTags: Array.isArray(job.skillTags)
-      ? (job.skillTags as string[]).join(", ")
+    skillTags: requiredSkills.length > 0
+      ? requiredSkills.map((skill) => skill.name).join(", ")
+      : Array.isArray(job.skillTags)
+        ? (job.skillTags as string[]).join(", ")
       : "",
     culturalFit: toQuillHtml(job.culturalFit as string[]),
     // Role details

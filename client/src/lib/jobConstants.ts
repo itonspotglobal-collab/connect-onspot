@@ -77,18 +77,76 @@ export function resolveJobFunction(raw: string | null | undefined): string {
 }
 
 // ── Work Setups ───────────────────────────────────────────────────────────────
-export const WORK_SETUPS = ["Remote", "Hybrid", "Onsite"] as const;
-export type WorkSetup = (typeof WORK_SETUPS)[number];
+// This is intentionally scoped to the job-posting form. Other application
+// surfaces may still need to describe legacy Hybrid / Onsite roles.
+export const JOB_FORM_WORK_SETUPS = ["Remote"] as const;
+export type JobFormWorkSetup = (typeof JOB_FORM_WORK_SETUPS)[number];
 
 // ── Engagement Types ──────────────────────────────────────────────────────────
 // The two canonical engagement types. "Hourly", "fixed", "part-time", etc. are
 // retired — all jobs use Lite or Standard going forward.
 export const ENGAGEMENT_TYPE_OPTIONS = [
-  { value: "Standard", label: "Standard" },
-  { value: "Lite",     label: "Lite"     },
+  { value: "Standard", label: "Standard (8 Hours)" },
+  { value: "Lite",     label: "Lite (4 Hours)" },
 ] as const;
 
 export type EngagementTypeValue = (typeof ENGAGEMENT_TYPE_OPTIONS)[number]["value"];
+
+export function getEngagementTypeLabel(value?: string | null): string {
+  return ENGAGEMENT_TYPE_OPTIONS.find((option) => option.value === value)?.label ?? value ?? "";
+}
+
+// Stored values preserve the existing vocabulary used by matching and filters.
+// "lead" is additive; existing entry/intermediate/expert records remain intact.
+export const EXPERIENCE_LEVEL_OPTIONS = [
+  { value: "entry", label: "Entry level" },
+  { value: "intermediate", label: "Mid level" },
+  { value: "expert", label: "Senior" },
+  { value: "lead", label: "Lead / Manager" },
+] as const;
+
+export function getExperienceLevelLabel(value?: string | null): string {
+  return EXPERIENCE_LEVEL_OPTIONS.find((option) => option.value === value)?.label ?? value ?? "";
+}
+
+export const JOB_DURATION_OPTIONS = [
+  "1 month",
+  "2 months",
+  "3 months",
+  "4 months",
+  "5 months",
+  "6 months",
+  "7 months",
+  "8 months",
+  "9 months",
+  "10 months",
+  "11 months",
+  "12 months",
+  "Continuous",
+] as const;
+
+export const MINIMUM_EDUCATION_OPTIONS = [
+  "No minimum",
+  "High school graduate",
+  "Some college / vocational",
+  "Associate degree",
+  "Bachelor's degree",
+  "Master's degree or higher",
+] as const;
+
+export const SKILL_EXPERIENCE_OPTIONS = [
+  { value: "any", label: "Any experience" },
+  { value: "1", label: "1+ years" },
+  { value: "2", label: "2+ years" },
+  { value: "3", label: "3+ years" },
+  { value: "5", label: "5+ years" },
+] as const;
+
+export const COMPENSATION_DISPLAY_OPTIONS = [
+  { value: "range", label: "Range" },
+  { value: "starting_from", label: "Starting from" },
+  { value: "negotiable", label: "Negotiable" },
+] as const;
 
 // ── Talent Browse Categories ──────────────────────────────────────────────────
 // The canonical 10 categories for the Client "Search & Shortlist" page and the

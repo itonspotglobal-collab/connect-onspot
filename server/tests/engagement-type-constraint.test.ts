@@ -19,7 +19,12 @@ import http from "node:http";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { query } from "../db.js";
-import { registerRoutes, CANONICAL_ENGAGEMENT_TYPES, validateEngagementType } from "../routes.js";
+import {
+  registerRoutes,
+  CANONICAL_ENGAGEMENT_TYPES,
+  validateEngagementType,
+  validateJobFormMetadata,
+} from "../routes.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -155,6 +160,23 @@ describe("Engagement-type constraint regression", () => {
   it("(g9) CANONICAL_ENGAGEMENT_TYPES contains exactly Lite and Standard", () => {
     assert.deepEqual([...CANONICAL_ENGAGEMENT_TYPES].sort(), ["Lite", "Standard"]);
   });
+  it("(g10) structured skill metadata accepts supported experience thresholds", () => {
+    assert.equal(
+      validateJobFormMetadata({
+        compensationDisplayType: "range",
+        requiredSkills: [{ name: "Salesforce", years: "3" }],
+      }),
+      null,
+    );
+  });
+  it("(g11) structured skill metadata rejects invalid display or experience values", () => {
+    assert.ok(validateJobFormMetadata({ compensationDisplayType: "weekly" }));
+    assert.ok(
+      validateJobFormMetadata({
+        requiredSkills: [{ name: "Salesforce", years: "four" }],
+      }),
+    );
+  });
 
   // ── (h) DB constraint (direct SQL) ─────────────────────────────────────────
 
@@ -228,6 +250,33 @@ describe("Engagement-type constraint regression", () => {
     trackJob(res.json.id);
   });
 
+  it("(b2) admin create and edit preserve structured job requirements", async () => {
+    const create = await request(server, "POST", "/api/admin/jobs", adminToken, {
+      ...BASE_JOB,
+      clientId: CLIENT_ID,
+      engagementType: "Standard",
+      minimumEducation: "Bachelor's degree",
+      requiredSkills: [{ name: "Salesforce", years: "3" }],
+      requiresUsTimezoneOverlap: true,
+      requiresFluentEnglish: true,
+      compensationDisplayType: "starting_from",
+      contractorEngagementConfirmed: true,
+    });
+    assert.equal(create.status, 201, JSON.stringify(create.json));
+    trackJob(create.json.id);
+    assert.deepEqual(create.json.requiredSkills, [{ name: "Salesforce", years: "3" }]);
+    assert.equal(create.json.minimumEducation, "Bachelor's degree");
+    assert.equal(create.json.requiresUsTimezoneOverlap, true);
+
+    const update = await request(server, "PATCH", `/api/admin/jobs/${create.json.id}`, adminToken, {
+      requiredSkills: [{ name: "Salesforce", years: "5" }],
+      compensationDisplayType: "negotiable",
+    });
+    assert.equal(update.status, 200, JSON.stringify(update.json));
+    assert.deepEqual(update.json.requiredSkills, [{ name: "Salesforce", years: "5" }]);
+    assert.equal(update.json.compensationDisplayType, "negotiable");
+  });
+
   // ── (e) Invalid → 400 ──────────────────────────────────────────────────────
 
   it("(e1) POST /api/admin/jobs: 'Full-Time' → 400 Invalid engagement type", async () => {
@@ -279,10 +328,18 @@ describe("Engagement-type constraint regression", () => {
 
   it("(c1) client can create a job with Lite via /api/client/jobs", async () => {
     const res = await request(server, "POST", "/api/client/jobs", clientToken, {
-      ...BASE_JOB, engagementType: "Lite",
+      ...BASE_JOB,
+      engagementType: "Lite",
+      minimumEducation: "Associate degree",
+      requiredSkills: [{ name: "Customer service", years: "2" }],
+      requiresFluentEnglish: true,
+      compensationDisplayType: "range",
     });
     assert.equal(res.status, 201, JSON.stringify(res.json));
     trackJob(res.json.id);
+    assert.deepEqual(res.json.requiredSkills, [{ name: "Customer service", years: "2" }]);
+    assert.equal(res.json.minimumEducation, "Associate degree");
+    assert.equal(res.json.requiresFluentEnglish, true);
   });
 
   it("(c2) client can create a job with Standard via /api/client/jobs", async () => {

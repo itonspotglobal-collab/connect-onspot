@@ -20,9 +20,9 @@ interface Props {
 export function JobDescriptionStep({ formData, updateField, errors }: Props) {
   return (
     <div>
-      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Describe the role</h2>
+      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Job description</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        Write it the way you'd explain it to a great candidate. Bullets read best on the public page.
+        Tell candidates what the role is, who it supports, and why it matters.
       </p>
 
       {/* Card Preview Summary */}
@@ -46,14 +46,14 @@ export function JobDescriptionStep({ formData, updateField, errors }: Props) {
       {/* Role Overview */}
       <div className="mb-5">
         <Label htmlFor="desc-overview">
-          Role Overview <span className="text-red-500">*</span>
+          Job description <span className="text-red-500">*</span>
         </Label>
         <Textarea
           id="desc-overview"
           className="mt-1.5 resize-y min-h-[96px]"
           value={formData.description}
           onChange={(e) => updateField("description", e.target.value)}
-          placeholder="Brief overview of the role and what makes it great…"
+          placeholder="Start with a concise overview of the role, team, and impact…"
         />
         {errors.description && (
           <p className="mt-1 text-xs text-red-500">{errors.description}</p>
@@ -79,24 +79,6 @@ export function JobDescriptionStep({ formData, updateField, errors }: Props) {
         </div>
         <p className="mt-1.5 text-[11px] text-muted-foreground">
           Use bullet or numbered lists for best readability on the public page.
-        </p>
-      </div>
-
-      {/* Skill Tags */}
-      <div className="mb-5">
-        <Label htmlFor="desc-tags">
-          Skill Tags{" "}
-          <span className="text-xs font-normal text-muted-foreground">— optional</span>
-        </Label>
-        <Input
-          id="desc-tags"
-          className="mt-1.5"
-          value={formData.skillTags}
-          onChange={(e) => updateField("skillTags", e.target.value)}
-          placeholder="e.g. Customer Support, Communication, CRM"
-        />
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          Comma-separated — shown as badges on the card and job page.
         </p>
       </div>
 

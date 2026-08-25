@@ -1,0 +1,507 @@
+Update the **Create Job Opening** and **Edit / Update Job Opening** flows so they use the same revised job form UI and field behavior.
+
+The changes must apply to both:
+
+* Admin create job
+* Admin edit job
+* Client create job
+* Client edit job
+
+Do not update only the create flow. Existing jobs must also render correctly when editing.
+
+## Required changes
+
+### 1. Remove the small OnSpot logo/brand from the job form top bar
+
+In the current job form page, remove the highlighted mini OnSpot logo/brand shown at the top-left of the form header.
+
+Remove the entire branding block, including:
+
+* the colored `O` icon
+* the `OnSpot` text
+
+Keep:
+
+* the centered `Post a Job` / `Edit Job Posting` title
+* the `Save & exit` action on the right
+
+The header should remain visually balanced after removing the logo.
+
+Do not remove the main application navbar outside of this job form page.
+
+---
+
+### 2. Work Setup should only allow Remote
+
+Currently the Work Setup field shows:
+
+* Remote
+* Hybrid
+* Onsite
+
+Change this so the only available option is:
+
+* Remote
+
+Remove both:
+
+* Hybrid
+* Onsite
+
+Do not merely hide them with CSS. Remove them from the selectable options and from any related constants or validation used by the create/edit job form.
+
+For new jobs:
+
+```text
+location = "Remote"
+```
+
+should be the default.
+
+For edit mode:
+
+* Existing Remote jobs should continue to work normally.
+* If a legacy job has `Hybrid` or `Onsite`, do not crash the edit page.
+* Preserve the existing value until the user saves, or handle the legacy value safely.
+* Do not silently overwrite legacy production data just by opening the edit form.
+
+The final create-job UI should display only a single selected chip/button:
+
+```text
+Remote
+```
+
+---
+
+### 3. Update Engagement Type display labels
+
+Change the Engagement Type choices from:
+
+```text
+Standard
+Lite
+```
+
+to the following user-facing labels:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+Important: the database/API values must remain:
+
+```text
+Standard
+Lite
+```
+
+Do NOT store:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+in `jobs.engagement_type`.
+
+The display label and stored value must be separated.
+
+Desired mapping:
+
+```ts
+{
+  label: "Standard (8 Hours)",
+  value: "Standard"
+}
+
+{
+  label: "Lite (4 Hours)",
+  value: "Lite"
+}
+```
+
+This is important because the database `jobs_engagement_type_check` should continue validating the canonical values:
+
+```text
+Lite
+Standard
+```
+
+Do not reintroduce the old `Half-Day` / `Full-Time` vocabulary.
+
+---
+
+### 4. Apply the engagement labels everywhere they are shown
+
+Audit the application for places where engagement type is displayed.
+
+Update the user-facing text where appropriate so:
+
+```text
+Standard
+```
+
+is displayed as:
+
+```text
+Standard (8 Hours)
+```
+
+and:
+
+```text
+Lite
+```
+
+is displayed as:
+
+```text
+Lite (4 Hours)
+```
+
+This should include the job form and review step if they display engagement type.
+
+Also check:
+
+* Create Job form
+* Edit Job form
+* Review step
+* Job preview
+* Admin job details
+* Client job details
+* Public job posting if engagement type is displayed
+* Job cards if engagement type is displayed
+
+Do not change API payloads or database values just to accomplish display formatting.
+
+Prefer a shared display helper or constant instead of duplicating label strings throughout the application.
+
+Example:
+
+```ts
+export const ENGAGEMENT_TYPES = [
+  {
+    value: "Standard",
+    label: "Standard (8 Hours)",
+  },
+  {
+    value: "Lite",
+    label: "Lite (4 Hours)",
+  },
+] as const;
+
+export function getEngagementTypeLabel(value?: string | null) {
+  if (value === "Standard") return "Standard (8 Hours)";
+  if (value === "Lite") return "Lite (4 Hours)";
+  return value || "";
+}
+```
+
+Use the project's existing constants/helpers if there is already an appropriate place for this.
+
+---
+
+### 5. Update both create and edit form population
+
+Make sure the same component is used correctly for both creation and editing.
+
+When editing an existing job with:
+
+```json
+{
+  "engagementType": "Standard"
+}
+```
+
+the dropdown/select should show:
+
+```text
+Standard (8 Hours)
+```
+
+When editing:
+
+```json
+{
+  "engagementType": "Lite"
+}
+```
+
+the dropdown/select should show:
+
+```text
+Lite (4 Hours)
+```
+
+When submitting, the payload must still send:
+
+```json
+{
+  "engagementType": "Standard"
+}
+```
+
+or:
+
+```json
+{
+  "engagementType": "Lite"
+}
+```
+
+Do not send the display labels.
+
+---
+
+### 6. Review the current JobFormPage header
+
+The current React job form has a left-side brand block similar to:
+
+```tsx
+<div className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
+  <div>
+    O
+  </div>
+  <span>OnSpot</span>
+</div>
+```
+
+Remove that branding section.
+
+Refactor the header layout so removing the left element does not cause `Post a Job` to appear incorrectly off-center.
+
+The desired header layout is effectively:
+
+```text
+                Post a Job                     Save & exit
+```
+
+or for edit mode:
+
+```text
+             Edit Job Posting                  Save & exit
+```
+
+Keep responsive behavior intact.
+
+---
+
+### 7. Review JobBasicsStep
+
+Find the component responsible for:
+
+* Work Setup
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Company Name
+
+Most likely this is:
+
+```text
+client/src/components/job-form/JobBasicsStep.tsx
+```
+
+Update that component rather than adding a second implementation.
+
+Work Setup should render only:
+
+```text
+Remote
+```
+
+Engagement Type should render:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+while maintaining the canonical values:
+
+```text
+Standard
+Lite
+```
+
+---
+
+### 8. Keep validation consistent
+
+The form should continue requiring Engagement Type.
+
+Valid values are exactly:
+
+```text
+Standard
+Lite
+```
+
+If server-side validation exists, keep or update it so invalid values return a clean validation error.
+
+Example:
+
+```ts
+z.enum(["Standard", "Lite"])
+```
+
+or equivalent.
+
+Do not validate against the display strings:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+---
+
+### 9. Do not change Duration behavior unless required
+
+The Duration field should remain as currently designed.
+
+If the existing code has special behavior for `Lite`, such as clearing duration automatically, verify whether that is still an intentional business rule before changing it.
+
+Do not alter Duration just because the engagement display labels are changing.
+
+---
+
+### 10. Keep the database schema unchanged for this UI update
+
+The canonical `jobs.engagement_type` values should remain:
+
+```text
+Lite
+Standard
+```
+
+The database constraint should remain compatible with:
+
+```sql
+CHECK (
+  engagement_type IS NULL
+  OR engagement_type IN ('Lite', 'Standard')
+)
+```
+
+This UI update should not create another engagement-type migration unless the current production constraint is still incorrect.
+
+---
+
+## Target Step 1 appearance
+
+The first step should effectively contain:
+
+```text
+Job Title *
+
+Original / Alternative Role Name — optional
+
+Work Setup *
+[ Remote ]
+
+Function *
+[ Select a function... ]
+
+Experience Level *
+[ Entry Level ]
+
+Engagement Type *
+[ Select type... ]
+
+Dropdown:
+Standard (8 Hours)
+Lite (4 Hours)
+
+Duration — optional
+[ Optional ]
+
+ABOUT THE COMPANY
+
+Company Name *
+[ OnSpot ]
+```
+
+There should no longer be:
+
+```text
+Hybrid
+Onsite
+```
+
+and the small OnSpot brand/logo in the internal form header should be removed.
+
+---
+
+## Files to inspect
+
+At minimum inspect:
+
+```text
+client/src/pages/JobFormPage.tsx
+client/src/components/job-form/JobBasicsStep.tsx
+client/src/lib/jobFormUtils.ts
+client/src/lib/jobConstants.ts
+shared/schema.ts
+```
+
+Also search the full repository for:
+
+```text
+Hybrid
+Onsite
+Remote
+Standard
+Lite
+Half-Day
+Full-Time
+engagementType
+engagement_type
+40 hours
+10–20 hours
+```
+
+Update only relevant current job-posting functionality.
+
+---
+
+## Testing requirements
+
+After implementing, verify all of the following:
+
+1. Admin Create Job shows no mini OnSpot logo in the form header.
+2. Admin Edit Job shows no mini OnSpot logo.
+3. Client Create Job shows no mini OnSpot logo.
+4. Client Edit Job shows no mini OnSpot logo.
+5. Work Setup displays only `Remote`.
+6. `Hybrid` cannot be selected.
+7. `Onsite` cannot be selected.
+8. New jobs submit `location: "Remote"`.
+9. Engagement dropdown displays `Standard (8 Hours)`.
+10. Engagement dropdown displays `Lite (4 Hours)`.
+11. Selecting `Standard (8 Hours)` sends `engagementType: "Standard"`.
+12. Selecting `Lite (4 Hours)` sends `engagementType: "Lite"`.
+13. Existing Standard jobs populate correctly when edited.
+14. Existing Lite jobs populate correctly when edited.
+15. Existing legacy location values do not crash the edit page.
+16. Review step displays the new friendly engagement labels.
+17. The database still stores only `Standard` or `Lite`.
+18. Job creation still succeeds without triggering `jobs_engagement_type_check`.
+19. Job update still succeeds.
+20. No unrelated job form functionality is changed.
+
+## Final report
+
+After making the changes, report:
+
+* Every file modified
+* Whether create and edit use the same updated component
+* How Work Setup was restricted to Remote
+* Where the engagement label/value mapping lives
+* Confirmation that the DB still receives only `Lite` / `Standard`
+* How legacy Hybrid/Onsite jobs are handled in edit mode
+* Test results for admin create/edit and client create/edit
+
+Do not modify unrelated application areas.

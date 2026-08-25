@@ -1,0 +1,745 @@
+Update the existing **Create Job Opening** and **Edit Job Opening** forms to match the attached reference file:
+
+`client post a job mock up.html`
+
+Use the mockup as the primary reference for the fields, grouping, labels, required/optional status, step structure, and general UX.
+
+Apply these changes to **both Admin and Client create/edit job flows** wherever they share the same `JobFormPage` and job-form components.
+
+Do not build a second duplicate job form. Update the existing shared form architecture.
+
+## Important
+
+Before making changes, inspect the current implementation, especially:
+
+* `client/src/pages/JobFormPage.tsx`
+* `client/src/components/job-form/JobBasicsStep.tsx`
+* `client/src/components/job-form/JobDescriptionStep.tsx`
+* `client/src/components/job-form/JobRequirementsStep.tsx`
+* `client/src/components/job-form/JobReviewStep.tsx`
+* `client/src/lib/jobFormUtils.ts`
+* `client/src/lib/jobConstants.ts`
+* `shared/schema.ts`
+* Admin create/update job API routes
+* Client create/update job API routes
+* Relevant validation schemas and migrations
+
+Preserve all existing authentication, authorization, client ownership, approval workflow, and database compatibility.
+
+---
+
+# 1. Remove the OnSpot logo from the job form header
+
+The current job form header contains the small OnSpot branding/logo on the left side.
+
+Remove this entire highlighted logo/brand element from the **Post a Job / Edit Job Posting page header**.
+
+Remove both:
+
+* the gradient `O` icon
+* the `OnSpot` text beside it
+
+Do not remove the global site's main navigation/header outside this job form page.
+
+After removing the logo, keep the header visually balanced.
+
+The center title should remain:
+
+* `Post a Job` for creation
+* `Edit Job Posting` for editing
+
+Keep:
+
+* `Save & exit`
+* the sticky header behavior
+* the existing responsive layout
+
+Do not leave an empty visual placeholder where the logo used to be.
+
+---
+
+# 2. Update Work Setup
+
+Current options are:
+
+* Remote
+* Hybrid
+* Onsite
+
+Remove:
+
+* `Hybrid`
+* `Onsite`
+
+The only supported Work Setup for this form should now be:
+
+`Remote`
+
+Since Remote is the only valid option:
+
+* Default new job forms to `Remote`.
+* Existing jobs that are already Remote should continue working.
+* Do not let users submit `Hybrid` or `Onsite` from this form.
+* The API payload should continue using the existing `location` field with the value `Remote`.
+
+If `WORK_SETUPS` is a shared constant used by this form, update it safely so this job posting flow only exposes `Remote`.
+
+Do not accidentally break unrelated screens that might use the same constant. If `WORK_SETUPS` is used elsewhere and those screens still require Hybrid/Onsite, create a job-form-specific constant instead of globally removing values.
+
+Keep the visible section:
+
+`Work Setup *`
+
+with only the `Remote` chip selected.
+
+---
+
+# 3. Update Engagement Type labels
+
+The current Engagement Type dropdown displays:
+
+* Standard
+* Lite
+
+Change the visible options to:
+
+* `Standard (8 Hours)`
+* `Lite (4 Hours)`
+
+## Critical database requirement
+
+These are **display labels only**.
+
+The underlying submitted values MUST remain:
+
+* `Standard`
+* `Lite`
+
+For example:
+
+```tsx
+<SelectItem value="Standard">
+  Standard (8 Hours)
+</SelectItem>
+
+<SelectItem value="Lite">
+  Lite (4 Hours)
+</SelectItem>
+```
+
+Do NOT send these strings to PostgreSQL:
+
+```text
+Standard (8 Hours)
+Lite (4 Hours)
+```
+
+The database/API canonical values must remain exactly:
+
+```text
+Standard
+Lite
+```
+
+This is important because the `jobs.engagement_type` database constraint is intended to accept the canonical `Standard` / `Lite` vocabulary.
+
+Apply the same display formatting everywhere the engagement type appears in this workflow, including:
+
+* create form
+* edit form
+* review step
+* job preview within the form
+
+The UI may display:
+
+`Standard (8 Hours)`
+
+but the stored value must remain:
+
+`Standard`
+
+Likewise:
+
+`Lite (4 Hours)` → stored as `Lite`.
+
+---
+
+# 4. Update Step 1 — Basics
+
+Use the attached HTML mockup as the reference.
+
+Step 1 should be called:
+
+`Basics`
+
+with:
+
+`The basics`
+
+and supporting text similar to the mockup.
+
+The primary fields should be organized in this order.
+
+### Job Title — required
+
+Keep the existing job title field.
+
+Use the public-facing job title.
+
+Placeholder should be concise, similar to:
+
+`e.g. Account Executive`
+
+The current system can continue mapping this to:
+
+* `professionalRoleName`
+* `title`
+
+where required for backward compatibility.
+
+If `originalRoleName` is still needed by the platform internally, preserve its data when editing existing jobs, but the visible create/edit form should follow the new mockup rather than adding extra fields that are not part of the approved design.
+
+Do not delete database columns solely because a field is removed from this UI.
+
+### Work Setup — required
+
+Show only:
+
+`Remote`
+
+Remove Hybrid and Onsite as described above.
+
+### Function — required
+
+Keep the Function dropdown.
+
+Use the existing supported job function values unless the mockup contains a deliberately updated canonical list.
+
+Do not change stored historical values unnecessarily.
+
+### Experience Level — required
+
+The mockup uses these user-facing labels:
+
+* Entry level
+* Mid level
+* Senior
+* Lead / Manager
+
+Update the form to follow these labels.
+
+Before changing stored values, inspect how `experienceLevel` is currently validated and queried.
+
+Prefer separating:
+
+**display label → canonical stored value**
+
+if changing the stored vocabulary would break existing records, matching, filters, APIs, or database constraints.
+
+Do not silently corrupt existing experience-level data.
+
+### Engagement Type — required
+
+Display:
+
+* Standard (8 Hours)
+* Lite (4 Hours)
+
+Store:
+
+* Standard
+* Lite
+
+### Duration — required
+
+Update Duration to match the mockup.
+
+The field should be required and contain:
+
+* 1 month
+* 2 months
+* 3 months
+* 4 months
+* 5 months
+* 6 months
+* 7 months
+* 8 months
+* 9 months
+* 10 months
+* 11 months
+* 12 months
+* Continuous
+
+Replace the current broad duration ranges such as:
+
+* Less than 1 month
+* 1–3 months
+* 3–6 months
+* 6–12 months
+* Ongoing
+
+with the new approved options.
+
+Update validation accordingly.
+
+For edit mode, safely handle legacy duration values. Do not destroy or incorrectly overwrite an old duration merely because it is no longer one of the new dropdown choices.
+
+If necessary, provide a backwards-compatible temporary display option for an existing legacy value until the user selects a new duration.
+
+### About the Company
+
+Keep the section:
+
+`ABOUT THE COMPANY`
+
+Fields:
+
+**Company Name — required**
+
+Keep the current company-name behavior and client prefill behavior.
+
+**Keep company confidential**
+
+Keep the checkbox/toggle.
+
+Description:
+
+`Applicants see "Confidential Company" — the real name stays hidden.`
+
+### Add a company description — optional
+
+Follow the mockup's expandable optional section.
+
+Use a textarea with wording similar to:
+
+`Short overview — industry, mission, and what makes it a great place to work…`
+
+Keep existing confidentiality behavior where appropriate.
+
+Do not expose confidential company information publicly.
+
+---
+
+# 5. Step 2 — Description
+
+Step name:
+
+`Description`
+
+Heading:
+
+`Describe the role`
+
+Supporting copy:
+
+`Write it the way you'd explain it to a great candidate.`
+
+The main required field should be:
+
+`Job description *`
+
+Keep the rich-text capabilities already used by the app if they are working correctly.
+
+At minimum preserve:
+
+* Bold
+* Numbered list
+* Bullet list
+
+The field should support a reasonably large editing area.
+
+Do not remove existing job descriptions when loading Edit Job.
+
+---
+
+# 6. Step 3 — Requirements
+
+Update this step to follow the uploaded mockup.
+
+Heading:
+
+`Requirements`
+
+Supporting text:
+
+`Pick what a strong applicant needs. These power our matching — just tick what applies.`
+
+## Minimum educational attainment — required
+
+Add or expose:
+
+`Minimum educational attainment *`
+
+Options:
+
+* No minimum
+* High school graduate
+* Some college / vocational
+* Associate degree
+* Bachelor's degree
+* Master's degree or higher
+
+Before implementing, inspect the current database/schema.
+
+If an appropriate field already exists, use it.
+
+If it does not exist, add it properly through:
+
+* shared schema
+* form model
+* API validation
+* POST/PATCH payload
+* database migration
+* create handling
+* edit handling
+
+Do not store this information inside an unrelated free-text field.
+
+---
+
+# 7. Required Skills
+
+Add the mockup-style Required Skills section.
+
+The user should be able to select skills and specify desired years of experience for each selected skill.
+
+Each selected skill should support:
+
+* Any experience
+* 1+ years
+* 2+ years
+* 3+ years
+* 5+ years
+
+Include an:
+
+`+ Add another skill`
+
+interaction for entering another skill.
+
+Before changing the implementation, inspect the existing job skill architecture.
+
+If the platform currently uses `skillTags`, existing skill tables, matching data, or another normalized representation, reuse that architecture where practical instead of introducing an incompatible parallel system.
+
+If years-of-experience per skill requires new structured storage, use a proper JSONB or normalized structure with a migration rather than encoding everything into one comma-separated string.
+
+Ensure existing jobs without skill-experience metadata still load correctly.
+
+---
+
+# 8. Availability
+
+Add the Availability section from the mockup.
+
+Two selectable requirements:
+
+### Must overlap with US time zones
+
+Description:
+
+`Applicant works hours that align with US business hours.`
+
+### Fluent English (written & spoken)
+
+Description:
+
+`Required for client-facing communication.`
+
+Inspect the current schema before implementing.
+
+If these already map cleanly to existing fields, reuse them.
+
+Otherwise add explicit boolean fields or an appropriate structured requirements field through a versioned migration.
+
+These should be optional requirements unless an existing business rule says otherwise.
+
+---
+
+# 9. Compensation
+
+Update the compensation section to follow the mockup.
+
+Fields:
+
+### Monthly rate (PHP) — optional
+
+Placeholder similar to:
+
+`e.g. ₱45,000 – ₱60,000`
+
+### Display as
+
+Options:
+
+* Range
+* Starting from
+* Negotiable
+
+Before adding new fields, inspect the current compensation implementation, including:
+
+* `salaryDisplay`
+* `budget`
+* `budgetCurrency`
+* `customCurrencyCode`
+* `compensationNotes`
+
+Reuse existing fields where they represent the same concept.
+
+Do not create duplicate compensation sources of truth.
+
+If `Display as` requires a new persistent value, add it properly through schema/API/migration rather than putting it into unrelated text.
+
+---
+
+# 10. Step 4 — Review
+
+Step name:
+
+`Review`
+
+Heading:
+
+`Review & post`
+
+Supporting text:
+
+`Here's how your post will look. Tap any field to jump back and edit.`
+
+Update the review preview so it reflects the newly approved fields.
+
+At minimum show:
+
+* Company / Confidential Company
+* Remote
+* Job Title
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Description status
+* Education
+* Skills
+* Availability requirements where selected
+
+For Engagement Type, show the friendly label:
+
+* `Standard (8 Hours)`
+* `Lite (4 Hours)`
+
+Do not show the raw stored value alone if a friendly label is available.
+
+Provide Edit actions that return the user to the appropriate step.
+
+---
+
+# 11. Contractor confirmation
+
+The mockup includes:
+
+`This is a contractor engagement`
+
+with explanatory text:
+
+`Confirms the standard OnSpot marketplace disclaimer is shown on the public post.`
+
+Inspect whether this confirmation/disclaimer already exists elsewhere in the current platform.
+
+If it already exists, reuse the existing field/logic.
+
+If it does not exist and requires persistence, implement it explicitly and safely.
+
+Do not create duplicate disclaimers on the public job page.
+
+---
+
+# 12. Create and Edit must use the same form structure
+
+These changes must work for:
+
+### Admin
+
+* Create Job
+* Edit Job
+
+### Client
+
+* Create Job
+* Edit Job
+
+The same reusable form components should be used wherever possible.
+
+Do not fix only `/api/admin/jobs` or only the Admin UI.
+
+Editing an existing job must correctly populate all fields.
+
+Creating a new job must use sensible defaults without modifying existing jobs.
+
+---
+
+# 13. Preserve Admin "Post on behalf of" behavior
+
+For Admin creation, keep:
+
+`Post on behalf of *`
+
+The admin must still select which client owns the new posting.
+
+Do not remove this functionality merely because it is not present in the client-facing HTML mockup.
+
+This is an Admin-only platform requirement and should remain above the Basics fields when creating a job as an Admin.
+
+It should not appear in Client mode.
+
+---
+
+# 14. Validation
+
+Update form validation to match the final approved form.
+
+Required fields should include at least:
+
+* Job Title
+* Work Setup / Remote
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Company Name
+* Job Description
+* Minimum Educational Attainment
+
+Keep Admin client selection required for Admin creation.
+
+Do not require optional fields.
+
+Show validation messages near the appropriate input and automatically move the user to the step containing the first validation error.
+
+---
+
+# 15. Database and API compatibility
+
+Do not blindly rename database values to match display text.
+
+Especially:
+
+```text
+UI: Standard (8 Hours)
+DB/API: Standard
+```
+
+and:
+
+```text
+UI: Lite (4 Hours)
+DB/API: Lite
+```
+
+Verify create and update endpoints validate these canonical values.
+
+The frontend, backend, Zod schemas, shared schema, migrations, and PostgreSQL constraints must agree.
+
+Do not reintroduce the previous:
+
+`jobs_engagement_type_check`
+
+500 error.
+
+Invalid engagement types should return a clean 400 response rather than producing an unhandled database 500.
+
+---
+
+# 16. Existing jobs / backward compatibility
+
+This change affects both creating and editing job postings, so protect existing data.
+
+When opening an older job:
+
+* Do not clear fields that are no longer visible.
+* Do not replace legacy values simply because the form opened.
+* Do not overwrite hidden legacy data with `null` unless the user explicitly changes something that requires it.
+* Correctly map canonical values into the new display labels.
+* Preserve existing descriptions, compensation, company data, skills, approval status, ownership, and posting status.
+
+If an old value cannot be represented by the new UI, handle it gracefully and report it rather than silently changing it.
+
+---
+
+# 17. Do not over-copy the static mockup implementation
+
+The attached HTML is the **design/content reference**, not production code to copy directly.
+
+Use the existing React, TypeScript, Tailwind/shadcn, React Query, form-state, validation, and server architecture.
+
+Do not:
+
+* paste the static HTML wholesale into the React app
+* introduce inline `<style>` blocks
+* add Google Fonts just because the mockup contains them
+* replace working shared components unnecessarily
+* duplicate the current job form
+* replace production submit behavior with the mockup's JavaScript alert
+
+Maintain the application's existing design system while matching the mockup's field structure and content.
+
+---
+
+# 18. Testing checklist
+
+Test all of the following.
+
+1. Admin Create Job opens successfully.
+2. Client Create Job opens successfully.
+3. Admin Edit Job loads an existing job correctly.
+4. Client Edit Job loads an existing job correctly.
+5. The OnSpot mini-logo is no longer displayed in the job-form header.
+6. Work Setup shows only Remote.
+7. Remote is correctly stored as `location = "Remote"`.
+8. Hybrid cannot be selected for a new posting.
+9. Onsite cannot be selected for a new posting.
+10. Engagement dropdown displays `Standard (8 Hours)`.
+11. Engagement dropdown displays `Lite (4 Hours)`.
+12. Selecting Standard submits exactly `"Standard"`.
+13. Selecting Lite submits exactly `"Lite"`.
+14. New duration options work.
+15. Duration is validated as required.
+16. Job Description works in create and edit mode.
+17. Education selection persists.
+18. Skills persist correctly.
+19. Skill years persist correctly if implemented.
+20. Availability requirements persist correctly.
+21. Compensation fields persist correctly.
+22. Review step shows the correct friendly values.
+23. Admin client ownership selection still works.
+24. Submit for Approval workflow still works.
+25. Editing an existing approved/pending job does not reset its workflow fields.
+26. No `jobs_engagement_type_check` 500 error occurs.
+27. Invalid API engagement types return an appropriate validation error.
+28. Existing jobs can still be edited safely.
+29. Refreshing an edit page reloads the saved values correctly.
+30. No unrelated job-search, matching, application, or public job-page functionality regresses.
+
+---
+
+# 19. Deliverables
+
+After implementation, report:
+
+1. Every file changed.
+2. Every database migration added.
+3. Any new database columns added.
+4. Any existing columns reused.
+5. Exact old vs new Work Setup behavior.
+6. Exact UI label → stored-value mapping for Engagement Type.
+7. How existing legacy jobs are handled.
+8. How education is persisted.
+9. How skill experience is persisted.
+10. How availability requirements are persisted.
+11. How compensation display type is persisted.
+12. Confirmation that both Admin and Client create/edit flows were tested.
+13. Confirmation that `Standard (8 Hours)` still stores `Standard`.
+14. Confirmation that `Lite (4 Hours)` still stores `Lite`.
+15. Confirmation that no unrelated production data was deleted or reset.
+
+Do not perform destructive database operations or reset production data.
+
+If the mockup requires a field for which there is no safe existing database representation, add the appropriate schema/migration rather than forcing the data into an unrelated field.

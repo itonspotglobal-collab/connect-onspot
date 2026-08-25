@@ -151,6 +151,45 @@ export function validateEngagementType(
   };
 }
 
+const JOB_COMPENSATION_DISPLAY_TYPES = ["range", "starting_from", "negotiable"] as const;
+const JOB_SKILL_EXPERIENCE_VALUES = ["any", "1", "2", "3", "5"] as const;
+
+/**
+ * Validates the structured metadata added to the shared Admin / Client job form.
+ * Fields are optional here for legacy API compatibility; the current form enforces
+ * its required fields before submit.
+ */
+export function validateJobFormMetadata(
+  value: Record<string, unknown>,
+): { error: string; message: string } | null {
+  if (
+    value.compensationDisplayType !== undefined &&
+    !JOB_COMPENSATION_DISPLAY_TYPES.includes(value.compensationDisplayType as never)
+  ) {
+    return {
+      error: "Invalid compensation display type",
+      message: "compensationDisplayType must be range, starting_from, or negotiable.",
+    };
+  }
+
+  if (value.requiredSkills !== undefined) {
+    if (!Array.isArray(value.requiredSkills) || value.requiredSkills.some((skill) =>
+      !skill ||
+      typeof skill !== "object" ||
+      typeof (skill as any).name !== "string" ||
+      !(skill as any).name.trim() ||
+      !JOB_SKILL_EXPERIENCE_VALUES.includes((skill as any).years),
+    )) {
+      return {
+        error: "Invalid required skills",
+        message: "requiredSkills must contain skill names with a supported experience threshold.",
+      };
+    }
+  }
+
+  return null;
+}
+
 // Permanently remove organizations whose deletion due date has passed.
 //
 // Isolation guarantee (confirmed by schema audit and test coverage):
@@ -9075,6 +9114,8 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const adminCreateEtErr = validateEngagementType(body.engagementType);
       if (adminCreateEtErr) return res.status(400).json(adminCreateEtErr);
+      const adminCreateMetadataErr = validateJobFormMetadata(body);
+      if (adminCreateMetadataErr) return res.status(400).json(adminCreateMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
@@ -9120,6 +9161,8 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const adminPatchEtErr = validateEngagementType(updates.engagementType);
       if (adminPatchEtErr) return res.status(400).json(adminPatchEtErr);
+      const adminPatchMetadataErr = validateJobFormMetadata(updates);
+      if (adminPatchMetadataErr) return res.status(400).json(adminPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
       const existingJob = await storage.getJob(req.params.id);
@@ -14076,6 +14119,8 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientCreateEtErr = validateEngagementType(body.engagementType);
       if (clientCreateEtErr) return res.status(400).json(clientCreateEtErr);
+      const clientCreateMetadataErr = validateJobFormMetadata(body);
+      if (clientCreateMetadataErr) return res.status(400).json(clientCreateMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
@@ -14111,6 +14156,8 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientPatchEtErr = validateEngagementType(updates.engagementType);
       if (clientPatchEtErr) return res.status(400).json(clientPatchEtErr);
+      const clientPatchMetadataErr = validateJobFormMetadata(updates);
+      if (clientPatchMetadataErr) return res.status(400).json(clientPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
       const existingJob = await storage.getJob(jobId);

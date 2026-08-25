@@ -199,6 +199,12 @@ export const jobs = pgTable("jobs", {
   salaryDisplay: text("salary_display"), // Free-text salary shown publicly, e.g. "$800 - $1,200/month"
   duration: text("duration"), // Less than 1 month, 1-3 months, etc.
   experienceLevel: text("experience_level").notNull(), // entry, intermediate, expert
+  minimumEducation: text("minimum_education"),
+  requiredSkills: jsonb("required_skills").$type<Array<{ name: string; years: string }>>().default([]),
+  requiresUsTimezoneOverlap: boolean("requires_us_timezone_overlap").notNull().default(false),
+  requiresFluentEnglish: boolean("requires_fluent_english").notNull().default(false),
+  compensationDisplayType: text("compensation_display_type").default("range"),
+  contractorEngagementConfirmed: boolean("contractor_engagement_confirmed").notNull().default(false),
   responsibilities: text("responsibilities").array(),
   requirements: text("requirements").array(),
   skillTags: text("skill_tags").array(),
@@ -737,6 +743,16 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   proposalCount: true,
   createdAt: true,
   updatedAt: true,
+  requiredSkills: true,
+}).extend({
+  requiredSkills: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(120),
+        years: z.enum(["any", "1", "2", "3", "5"]),
+      }),
+    )
+    .optional(),
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({

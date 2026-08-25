@@ -3,9 +3,11 @@ import { Pencil, AlertTriangle } from "lucide-react";
 import type { JobFormData } from "@/lib/jobFormUtils";
 import { isEmptyQuill } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
+import { getEngagementTypeLabel, getExperienceLevelLabel } from "@/lib/jobConstants";
 
 interface Props {
   formData: JobFormData;
+  updateField: (field: keyof JobFormData, value: any) => void;
   isEditing: boolean;
   onGoToStep: (step: number) => void;
   isPending: boolean;
@@ -55,24 +57,22 @@ function MetaChip({ label }: { label: string }) {
 
 export function JobReviewStep({
   formData,
+  updateField,
   isEditing,
   onGoToStep,
   isPending,
   onSubmit,
 }: Props) {
-  const contractLabel = formData.engagementType || "—";
-
+  const contractLabel = getEngagementTypeLabel(formData.engagementType) || "—";
   const expLabel =
-    formData.experienceLevel === "entry"
-      ? "Entry Level"
-      : formData.experienceLevel === "intermediate"
-        ? "Intermediate"
-        : "Expert / Senior";
+    getExperienceLevelLabel(formData.experienceLevel) ||
+    formData.experienceLevel ||
+    "—";
 
   const currSymbol = getCurrencySymbol(formData.currency, formData.customCurrencyCode);
 
   // Basics summary
-  const basicsSummary = [formData.location, expLabel, contractLabel]
+  const basicsSummary = [formData.location, expLabel, contractLabel, formData.duration]
     .filter(Boolean)
     .join(" · ");
 
@@ -91,6 +91,14 @@ export function JobReviewStep({
   if (formData.salaryDisplay.trim())
     reqParts.push(`${currSymbol}${formData.salaryDisplay}/month`);
   if (formData.workDays || formData.timeZone) reqParts.push("Schedule added");
+  if (formData.minimumEducation) reqParts.push(formData.minimumEducation);
+  if (formData.requiredSkills.length > 0) {
+    reqParts.push(
+      `${formData.requiredSkills.length} required skill${formData.requiredSkills.length === 1 ? "" : "s"}`,
+    );
+  }
+  if (formData.requiresUsTimezoneOverlap) reqParts.push("US timezone overlap");
+  if (formData.requiresFluentEnglish) reqParts.push("Fluent English");
 
   const missingEngagementType = !formData.engagementType?.trim();
 
@@ -139,6 +147,7 @@ export function JobReviewStep({
             {formData.jobFunction && <MetaChip label={formData.jobFunction} />}
             {expLabel && <MetaChip label={expLabel} />}
             {contractLabel && <MetaChip label={contractLabel} />}
+            {formData.duration && <MetaChip label={formData.duration} />}
             {formData.salaryDisplay && (
               <MetaChip label={`${currSymbol}${formData.salaryDisplay}/mo`} />
             )}
@@ -192,6 +201,20 @@ export function JobReviewStep({
               ? "Changes take effect immediately after saving."
               : "An admin will review and approve the posting before it goes live."}
           </p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={formData.contractorEngagementConfirmed}
+              onChange={(event) =>
+                updateField("contractorEngagementConfirmed", event.target.checked)
+              }
+              className="mt-0.5 h-3.5 w-3.5 accent-[#474ead]"
+            />
+            <span>
+              I understand this is an independent contractor engagement, not an
+              employment arrangement.
+            </span>
+          </label>
         </div>
         <Button
           type="button"

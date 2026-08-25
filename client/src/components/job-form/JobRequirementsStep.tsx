@@ -10,8 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Video } from "lucide-react";
-import type { JobFormData } from "@/lib/jobFormUtils";
+import { Plus, Video, X } from "lucide-react";
+import { useState } from "react";
+import type { JobFormData, RequiredSkillRequirement } from "@/lib/jobFormUtils";
+import {
+  COMPENSATION_DISPLAY_OPTIONS,
+  MINIMUM_EDUCATION_OPTIONS,
+  SKILL_EXPERIENCE_OPTIONS,
+} from "@/lib/jobConstants";
 import { SUPPORTED_CURRENCIES, getCurrencySymbol } from "@/lib/jobUtils";
 
 const quillModules = {
@@ -27,12 +33,165 @@ interface Props {
 }
 
 export function JobRequirementsStep({ formData, updateField, errors, isEditing }: Props) {
+  const [newSkill, setNewSkill] = useState("");
+  const suggestedSkills = ["Communication", "Customer service", "CRM", "Excel", "Salesforce"];
+
+  const saveSkills = (skills: RequiredSkillRequirement[]) => {
+    const cleanSkills = skills
+      .map((skill) => ({ ...skill, name: skill.name.trim() }))
+      .filter((skill) => skill.name);
+    updateField("requiredSkills", cleanSkills);
+    // skillTags remains the canonical source for search and matching today.
+    updateField("skillTags", cleanSkills.map((skill) => skill.name).join(", "));
+  };
+
+  const addSkill = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || formData.requiredSkills.some((skill) => skill.name.toLowerCase() === trimmed.toLowerCase())) {
+      return;
+    }
+    saveSkills([...formData.requiredSkills, { name: trimmed, years: "any" }]);
+    setNewSkill("");
+  };
+
   return (
     <div>
       <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Requirements</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        What someone needs to succeed. Keep the required list tight — add setup and schedule only if they matter.
+        Define the baseline for a strong match. Keep requirements specific and practical.
       </p>
+
+      <div className="mb-5">
+        <Label htmlFor="req-education">
+          Minimum educational attainment <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={formData.minimumEducation}
+          onValueChange={(value) => updateField("minimumEducation", value)}
+        >
+          <SelectTrigger id="req-education" className="mt-1.5">
+            <SelectValue placeholder="Select minimum education…" />
+          </SelectTrigger>
+          <SelectContent>
+            {MINIMUM_EDUCATION_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>{option}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.minimumEducation && (
+          <p className="mt-1 text-xs text-red-500">{errors.minimumEducation}</p>
+        )}
+      </div>
+
+      <div className="mb-5">
+        <Label>Required skills</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Add the skills candidates need, then set the minimum relevant experience for each.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {suggestedSkills.map((skill) => {
+            const selected = formData.requiredSkills.some(
+              (item) => item.name.toLowerCase() === skill.toLowerCase(),
+            );
+            return (
+              <button
+                key={skill}
+                type="button"
+                onClick={() =>
+                  selected
+                    ? saveSkills(formData.requiredSkills.filter((item) => item.name.toLowerCase() !== skill.toLowerCase()))
+                    : addSkill(skill)
+                }
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selected
+                    ? "border-[#474ead] bg-indigo-50 text-[#474ead] dark:border-indigo-400 dark:bg-indigo-900/30 dark:text-indigo-200"
+                    : "border-border bg-background hover:border-[#474ead]"
+                }`}
+              >
+                {selected ? "✓ " : "+ "}{skill}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Input
+            value={newSkill}
+            onChange={(event) => setNewSkill(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addSkill(newSkill);
+              }
+            }}
+            placeholder="Add another skill"
+          />
+          <button
+            type="button"
+            onClick={() => addSkill(newSkill)}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#474ead] px-3 text-sm font-semibold text-[#474ead] hover:bg-indigo-50"
+          >
+            <Plus className="h-4 w-4" /> Add
+          </button>
+        </div>
+        {formData.requiredSkills.length > 0 && (
+          <div className="mt-3 space-y-2 rounded-lg border border-border p-3">
+            {formData.requiredSkills.map((skill, index) => (
+              <div key={`${skill.name}-${index}`} className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{skill.name}</span>
+                <Select
+                  value={skill.years}
+                  onValueChange={(years) =>
+                    saveSkills(
+                      formData.requiredSkills.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, years: years as RequiredSkillRequirement["years"] } : item,
+                      ),
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SKILL_EXPERIENCE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => saveSkills(formData.requiredSkills.filter((_, itemIndex) => itemIndex !== index))}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label={`Remove ${skill.name}`}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-5 rounded-xl border border-border bg-muted/20 p-4">
+        <p className="text-sm font-semibold">Availability</p>
+        <div className="mt-3 space-y-3">
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={formData.requiresUsTimezoneOverlap}
+              onChange={(event) => updateField("requiresUsTimezoneOverlap", event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#474ead]"
+            />
+            <span><span className="font-medium">Must overlap with US time zones</span><br /><span className="text-xs text-muted-foreground">Use this when regular collaboration with a US-based team is required.</span></span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={formData.requiresFluentEnglish}
+              onChange={(event) => updateField("requiresFluentEnglish", event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#474ead]"
+            />
+            <span><span className="font-medium">Fluent spoken and written English</span><br /><span className="text-xs text-muted-foreground">Select when the role relies on clear, frequent English communication.</span></span>
+          </label>
+        </div>
+      </div>
 
       {/* Required Qualifications */}
       <div className="mb-5">
@@ -83,74 +242,65 @@ export function JobRequirementsStep({ formData, updateField, errors, isEditing }
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
-            <Label htmlFor="req-currency">Currency</Label>
-            <Select
-              value={formData.currency}
-              onValueChange={(v) => {
-                updateField("currency", v);
-                if (v !== "OTHER") updateField("customCurrencyCode", "");
-              }}
-            >
-              <SelectTrigger id="req-currency" className="mt-1.5">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {formData.currency === "OTHER" && (
-            <div>
-              <Label htmlFor="req-custom-currency">Currency Code</Label>
-              <Input
-                id="req-custom-currency"
-                className="mt-1.5"
-                value={formData.customCurrencyCode}
-                onChange={(e) =>
-                  updateField(
-                    "customCurrencyCode",
-                    e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3)
-                  )
-                }
-                placeholder="e.g. NZD, AED, CHF"
-                maxLength={3}
-              />
-              {errors.customCurrencyCode && (
-                <p className="mt-1 text-xs text-red-500">{errors.customCurrencyCode}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <Label htmlFor="req-salary">
-            Monthly Compensation{" "}
+            <Label htmlFor="req-salary">
+              Monthly rate (PHP){" "}
             {!isEditing && <span className="text-red-500">*</span>}
             {isEditing && (
               <span className="text-xs font-normal text-muted-foreground">— optional when editing</span>
             )}
           </Label>
-          <Input
-            id="req-salary"
-            className="mt-1.5"
-            type="text"
-            value={formData.salaryDisplay}
-            onChange={(e) => updateField("salaryDisplay", e.target.value)}
-            placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}40,000 or 30,000 – 50,000`}
-          />
-          {errors.salaryDisplay ? (
-            <p className="mt-1 text-xs text-red-500">{errors.salaryDisplay}</p>
-          ) : (
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Enter the monthly amount (e.g. 40,000 or 30,000 – 50,000).
-            </p>
-          )}
+            <Input
+              id="req-salary"
+              className="mt-1.5"
+              type="text"
+              value={formData.salaryDisplay}
+              onChange={(e) => updateField("salaryDisplay", e.target.value)}
+              placeholder={`e.g. ${getCurrencySymbol(formData.currency, formData.customCurrencyCode)}40,000 or 30,000 – 50,000`}
+            />
+            {errors.salaryDisplay && <p className="mt-1 text-xs text-red-500">{errors.salaryDisplay}</p>}
+          </div>
+          <div>
+            <Label htmlFor="req-compensation-display">Display as</Label>
+            <Select
+              value={formData.compensationDisplayType}
+              onValueChange={(value) => updateField("compensationDisplayType", value)}
+            >
+              <SelectTrigger id="req-compensation-display" className="mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {COMPENSATION_DISPLAY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        <details className="mb-4">
+          <summary className="cursor-pointer text-xs font-semibold text-[#474ead]">More currency options</summary>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="req-currency">Currency</Label>
+              <Select value={formData.currency} onValueChange={(v) => {
+                updateField("currency", v);
+                if (v !== "OTHER") updateField("customCurrencyCode", "");
+              }}>
+                <SelectTrigger id="req-currency" className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>{SUPPORTED_CURRENCIES.map((currency) => (
+                  <SelectItem key={currency.value} value={currency.value}>{currency.label}</SelectItem>
+                ))}</SelectContent>
+              </Select>
+            </div>
+            {formData.currency === "OTHER" && (
+              <div>
+                <Label htmlFor="req-custom-currency">Currency code</Label>
+                <Input id="req-custom-currency" className="mt-1.5" value={formData.customCurrencyCode}
+                  onChange={(e) => updateField("customCurrencyCode", e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3))}
+                  placeholder="e.g. NZD, AED, CHF" maxLength={3} />
+                {errors.customCurrencyCode && <p className="mt-1 text-xs text-red-500">{errors.customCurrencyCode}</p>}
+              </div>
+            )}
+          </div>
+        </details>
 
         {/* Commission + Equity chips */}
         <div className="flex flex-wrap gap-2 mb-4">

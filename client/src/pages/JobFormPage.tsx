@@ -195,12 +195,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const updateField = (field: keyof JobFormData, value: any) => {
     setFormData((prev) => {
-      const next = { ...prev, [field]: value };
-      // Switching to Lite: duration is irrelevant — clear it.
-      if (field === "engagementType" && value === "Lite") {
-        next.duration = "";
-      }
-      return next;
+      return { ...prev, [field]: value };
     });
     setIsDirty(true);
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -390,17 +385,8 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       <div className="min-h-screen bg-gradient-to-br from-indigo-50/60 via-background to-teal-50/40 dark:from-indigo-950/20 dark:via-background dark:to-teal-950/10">
         {/* ── Top bar ── */}
         <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-[1080px] items-center justify-between px-4 sm:px-6 py-3.5">
-            {/* Brand */}
-            <div className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#474ead] to-teal-400 text-white font-serif italic text-base">
-                O
-              </div>
-              <span className="hidden sm:inline">OnSpot</span>
-            </div>
-
-            {/* Title */}
-            <span className="text-sm font-semibold text-muted-foreground">
+          <div className="relative mx-auto flex max-w-[1080px] items-center px-4 sm:px-6 py-3.5">
+            <span className="w-full text-center text-sm font-semibold text-muted-foreground">
               {isEditing ? "Edit Job Posting" : "Post a Job"}
             </span>
 
@@ -408,7 +394,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
             <button
               type="button"
               onClick={handleSaveAndExit}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="absolute right-4 sm:right-6 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
               <span className="hidden sm:inline">Save &amp; exit</span>
@@ -548,6 +534,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
             {step === 3 && (
               <JobReviewStep
                 formData={formData}
+                updateField={updateField}
                 isEditing={isEditing}
                 onGoToStep={goToStep}
                 isPending={isPending}
@@ -616,6 +603,8 @@ function validateStep(
     if (!formData.jobFunction.trim()) errors.jobFunction = "Function is required";
     if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
+    if (!formData.location) errors.location = "Work setup is required";
+    if (!formData.duration?.trim()) errors.duration = "Duration is required";
   }
 
   if (step === 1) {
@@ -623,6 +612,9 @@ function validateStep(
   }
 
   if (step === 2) {
+    if (!formData.minimumEducation.trim()) {
+      errors.minimumEducation = "Minimum educational attainment is required";
+    }
     if (!isEditing && !formData.salaryDisplay.trim())
       errors.salaryDisplay =
         "Monthly compensation is required for new jobs — enter an amount (e.g. 40,000 – 60,000)";
@@ -677,6 +669,12 @@ function buildPayload(formData: JobFormData): any {
 
   payload.salaryDisplay = formData.salaryDisplay.trim() || null;
   payload.duration = formData.duration || null;
+  payload.minimumEducation = formData.minimumEducation.trim() || null;
+  payload.requiredSkills = formData.requiredSkills;
+  payload.requiresUsTimezoneOverlap = formData.requiresUsTimezoneOverlap;
+  payload.requiresFluentEnglish = formData.requiresFluentEnglish;
+  payload.compensationDisplayType = formData.compensationDisplayType;
+  payload.contractorEngagementConfirmed = formData.contractorEngagementConfirmed;
 
   payload.responsibilities = !isEmptyQuill(formData.responsibilities)
     ? [formData.responsibilities]
@@ -684,12 +682,15 @@ function buildPayload(formData: JobFormData): any {
   payload.requirements = !isEmptyQuill(formData.requirements)
     ? [formData.requirements]
     : [];
-  payload.skillTags = formData.skillTags
-    ? formData.skillTags
+  const matchingSkills = formData.requiredSkills.length > 0
+    ? formData.requiredSkills.map((skill) => skill.name)
+    : formData.skillTags
+      ? formData.skillTags
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
-    : [];
+      : [];
+  payload.skillTags = matchingSkills;
   payload.culturalFit = !isEmptyQuill(formData.culturalFit)
     ? [formData.culturalFit]
     : [];

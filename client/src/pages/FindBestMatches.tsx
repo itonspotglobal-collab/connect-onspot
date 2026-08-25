@@ -901,6 +901,7 @@ const JOB_LEVEL_TIER: Record<string, number> = {
   entry: 0,
   intermediate: 2,
   expert: 3,
+  lead: 4,
 };
 const ACCEPTABLE_TIERS: Record<number, number[]> = {
   0: [0],
@@ -912,6 +913,7 @@ const JOB_LEVEL_LABEL: Record<string, string> = {
   entry: "Entry-level",
   intermediate: "Intermediate-level",
   expert: "Senior-level",
+  lead: "Lead / Manager",
 };
 
 // ── Domain archetype display ──────────────────────────────────────────────────
