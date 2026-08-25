@@ -8025,6 +8025,122 @@ export async function registerRoutes(
     }
   });
 
+  // ── Interviewer availability (Microsoft Graph) ────────────────────────────
+  //
+  // GET /api/admin/interviewers
+  //   Returns the configured OnSpot interviewer list with calendar connection state.
+  //   The list is managed server-side (ONSPOT_INTERVIEWERS_JSON secret).
+  //   No calendar email or raw Graph data is returned to the client.
+  //
+  // GET /api/admin/interviewer-availability
+  //   Query params: interviewerId, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD),
+  //                 duration (30|45|60), timezone (IANA)
+  //   Returns available interview slot windows from the interviewer's Outlook calendar.
+  //   This endpoint NEVER changes any application status.
+  //
+  // Both endpoints are Admin-only.
+
+  app.get("/api/admin/interviewers", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const { getInterviewerList } = await import("./services/microsoftGraphCalendarService");
+      res.json({ interviewers: getInterviewerList() });
+    } catch (err: any) {
+      console.error("GET /api/admin/interviewers error:", err);
+      res.status(500).json({ error: "Failed to load interviewer list" });
+    }
+  });
+
+  app.get("/api/admin/interviewer-availability", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { interviewerId, startDate, endDate, duration, timezone } = req.query as Record<string, string>;
+
+      // Validate required params
+      if (!interviewerId || !startDate || !endDate || !duration || !timezone) {
+        return res.status(400).json({
+          error: "Missing required query parameters",
+          message: "interviewerId, startDate, endDate, duration, and timezone are all required",
+        });
+      }
+
+      // Validate date format (YYYY-MM-DD)
+      const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRe.test(startDate) || !dateRe.test(endDate)) {
+        return res.status(400).json({ error: "startDate and endDate must be in YYYY-MM-DD format" });
+      }
+
+      if (startDate > endDate) {
+        return res.status(400).json({ error: "startDate must not be after endDate" });
+      }
+
+      // Prevent excessively large windows (max 14 days)
+      const startMs = new Date(startDate).getTime();
+      const endMs   = new Date(endDate).getTime();
+      const daysDiff = (endMs - startMs) / (1000 * 60 * 60 * 24);
+      if (daysDiff > 14) {
+        return res.status(400).json({ error: "Date range must not exceed 14 days" });
+      }
+
+      // Validate duration
+      const durationMinutes = parseInt(duration, 10);
+      if (![30, 45, 60].includes(durationMinutes)) {
+        return res.status(400).json({ error: "duration must be 30, 45, or 60" });
+      }
+
+      // Validate timezone (IANA)
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+      } catch {
+        return res.status(400).json({ error: `Invalid timezone: ${timezone}` });
+      }
+
+      const { getInterviewerSlots, findInterviewerConfig } = await import("./services/microsoftGraphCalendarService");
+
+      // Verify interviewer exists and has a calendar configured before hitting Graph
+      const interviewerConfig = findInterviewerConfig(interviewerId);
+      if (!interviewerConfig) {
+        return res.status(404).json({ error: `Interviewer '${interviewerId}' not found` });
+      }
+
+      if (!interviewerConfig.calendarEmail?.trim()) {
+        return res.status(422).json({
+          error: "calendar_not_connected",
+          message: "This interviewer's Outlook calendar is not yet configured.",
+        });
+      }
+
+      // Check Graph credentials before making the call
+      if (!process.env.MICROSOFT_TENANT_ID || !process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
+        return res.status(503).json({
+          error: "microsoft_graph_not_configured",
+          message: "Microsoft Graph credentials are not configured. Contact the system administrator.",
+        });
+      }
+
+      const slots = await getInterviewerSlots({
+        interviewerId,
+        startDate,
+        endDate,
+        durationMinutes,
+        timezone,
+      });
+
+      res.json({ slots, timezone, interviewerId });
+    } catch (err: any) {
+      console.error("GET /api/admin/interviewer-availability error:", err);
+      // Distinguish Graph API failures from internal errors
+      const isGraphError =
+        err.message?.includes("Graph") ||
+        err.message?.includes("Microsoft") ||
+        err.message?.includes("getSchedule");
+      res.status(isGraphError ? 502 : 500).json({
+        error: isGraphError ? "graph_api_error" : "internal_error",
+        message: isGraphError
+          ? "Could not retrieve calendar availability. Check Microsoft Graph permissions."
+          : "Failed to retrieve availability",
+      });
+    }
+  });
+
   // GET /api/admin/clients — paginated, searchable client management list.
   // Phase 5: client_success sub-role required (NULL = super-admin bypass).
   app.get("/api/admin/clients", authenticateJWT, requireAdmin, requireAdminSubRole(["client_success"]), async (req: Request, res: Response) => {

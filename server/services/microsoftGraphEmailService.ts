@@ -294,6 +294,15 @@ export async function testGraphAuth(): Promise<AuthTestResult> {
   }
 }
 
+/**
+ * Shared Graph access token for use by other Graph-powered services (e.g. calendar).
+ * The token is cached at module level; both the email and calendar services share it
+ * so they never double-fetch within the same cache window.
+ */
+export async function getMicrosoftGraphAccessToken(): Promise<string> {
+  return getAccessToken();
+}
+
 /** Returns true if all required environment variables for Graph email are present. */
 export function isEmailServiceConfigured(): boolean {
   return !!(
