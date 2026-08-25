@@ -1,0 +1,951 @@
+Audit and implement the following Client-side UX improvements in the existing OnSpot / `connect-onspot` application.
+
+These changes are based on user feedback and must be applied carefully without breaking the existing hiring pipeline.
+
+## THREE REQUIRED CHANGES
+
+1. After a Client logs in, take them to the Talent/Hire Talent page instead of the Client dashboard.
+2. When a Client clicks Hire Talent, clearly give them an option to Post a Job.
+3. On the Hire Talent search results, replace the main `Shortlist` action with:
+
+   * `Favorite` / Star
+   * `Interview` / `Request Interview`
+
+Do NOT destroy the existing shortlist backend/pipeline because other features already depend on it.
+
+---
+
+# REPO AUDIT FINDINGS
+
+Existing routes/components already exist and should be reused.
+
+## Client landing
+
+`client/src/App.tsx`
+
+Current authenticated Client home behavior sends Client to:
+
+```text
+/dashboard
+```
+
+There is already a consolidated Client talent page:
+
+```text
+/hire-talent
+```
+
+Use that as the Client landing destination.
+
+---
+
+## Post Job
+
+There is already a Client-protected job creation route:
+
+```text
+/client/jobs/new
+```
+
+Do not create another Post Job page.
+
+Reuse:
+
+`JobFormPage mode="client"`
+
+---
+
+## Hire Talent
+
+Main page:
+
+`client/src/pages/HireTalentPage.tsx`
+
+The page already has:
+
+* search
+* profile preview
+* shortlist flow
+* messaging hooks
+* interview callback
+* authentication handling
+
+Do not rebuild the page.
+
+---
+
+## Existing shortlist workflow
+
+The repo already contains:
+
+* `ClientTalentShortlistDialog`
+* `useClientShortlists`
+* shortlist DB migration
+* formal pipeline guard
+
+Do not remove the shortlist data model or server behavior globally.
+
+Only change the Hire Talent search UX so shortlist is no longer the prominent visible action.
+
+---
+
+# =====================================================
+
+# CHANGE 1 — CLIENT LOGIN LANDING
+
+# =====================================================
+
+## CURRENT
+
+Authenticated Client hitting `/` gets redirected to:
+
+```text
+/dashboard
+```
+
+Change this to:
+
+```text
+/hire-talent
+```
+
+The desired behavior is:
+
+```text
+Client logs in
+      ↓
+/hire-talent
+      ↓
+immediately sees Talent list/search
+```
+
+Do not send first-time Clients to Client Profile or dashboard.
+
+---
+
+# IMPORTANT — APPLY CONSISTENTLY
+
+Audit all Client login/signup success flows for redirects such as:
+
+```text
+/dashboard
+/client-profile
+```
+
+Examples may exist in:
+
+* RoleAwareHome
+* PortalLogin
+* LoginDialog
+* Client signup/onboarding
+* auth callback
+* protected-route fallback
+
+The canonical default Client landing route should become:
+
+```text
+/hire-talent
+```
+
+Do not change Admin or Talent login destinations.
+
+---
+
+# EXISTING CLIENT DASHBOARD REMAINS
+
+Do NOT delete:
+
+`/dashboard`
+
+The dashboard remains accessible through the Client sidebar.
+
+This is only changing the DEFAULT landing destination.
+
+---
+
+# FIRST-TIME VS RETURNING CLIENTS
+
+The feedback says:
+
+“once client log in for the first time”
+
+Preferred simple behavior:
+
+All successful Client logins may land at `/hire-talent` unless the app already has a reliable persisted `firstLogin` / onboarding flag.
+
+Do NOT add a complicated first-login database flag solely for this change unless such a flag already exists.
+
+If a reliable first-login state already exists, use it.
+
+Otherwise make `/hire-talent` the default Client landing.
+
+---
+
+# DEEP LINKS MUST BE PRESERVED
+
+If a Client opens a protected deep link such as:
+
+```text
+/messages
+/client-profile
+/client/jobs/:id/edit
+```
+
+then logs in, preserve that intended destination if existing auth logic supports return URLs.
+
+Do not always override explicit deep links with `/hire-talent`.
+
+Default landing only applies when no intended route exists.
+
+---
+
+# =====================================================
+
+# CHANGE 2 — HIRE TALENT SHOULD OFFER POST A JOB
+
+# =====================================================
+
+Target:
+
+`/hire-talent`
+
+Add a clearly visible Client-only action:
+
+```text
+Post a Job
+```
+
+Use existing route:
+
+```text
+/client/jobs/new
+```
+
+---
+
+# PLACEMENT
+
+Recommended placement in the Hire Talent page header/hero:
+
+```text
+Hire Talent
+
+Find the right talent for your team.
+
+[ Search talent ...                    ]
+
+[ Post a Job ]   [ My Job Postings ]
+```
+
+or:
+
+```text
+Hire Talent                                      [ + Post a Job ]
+```
+
+Do not bury Post a Job inside another menu.
+
+---
+
+# CLIENT-ONLY
+
+Show this action only when authenticated user role is:
+
+```text
+client
+```
+
+Do not show it as a functioning Client CTA for:
+
+* Talent
+* anonymous user
+* Admin unless Admin already has a separate Admin job posting flow
+
+---
+
+# OPTIONAL SECOND CTA
+
+If useful and already supported, include:
+
+```text
+View My Jobs
+```
+
+which should navigate to the existing Client job/profile area.
+
+Do not create a duplicate job-management page.
+
+---
+
+# IF CLIENT HAS NO JOBS
+
+This is especially important.
+
+If the Client attempts an action that requires a job, such as inviting/interviewing Talent, and they do not have an eligible open job:
+
+show:
+
+```text
+You need an open job before inviting a Talent.
+
+[ Post a Job ]
+```
+
+Use:
+
+`/client/jobs/new`
+
+---
+
+# =====================================================
+
+# CHANGE 3 — REPLACE SEARCH RESULT SHORTLIST CTA
+
+# =====================================================
+
+## PRODUCT DIRECTION
+
+After a Client searches Talent on `/hire-talent`, the current visible CTA should no longer center around:
+
+```text
+Shortlist
+```
+
+Instead expose two clearer actions:
+
+```text
+☆ Favorite
+📅 Interview
+```
+
+or:
+
+```text
+★ Saved
+Request Interview
+```
+
+depending on state.
+
+---
+
+# IMPORTANT — DO NOT DELETE SHORTLIST BACKEND
+
+The repo already has a formal shortlist workflow.
+
+Keep:
+
+* shortlist tables
+* shortlist APIs
+* shortlist pipeline guards
+* existing shortlist status history
+* existing Admin/Client workflows that depend on shortlist
+
+We are changing the user-facing action on Hire Talent.
+
+Do not globally rename the database status `shortlisted` to `favorite`.
+
+A Favorite is a lightweight saved Talent action.
+
+Shortlisted remains a formal hiring/application state.
+
+These are different concepts.
+
+---
+
+# FAVORITE MODEL
+
+First search the repo for an existing favorite/star/save Talent model.
+
+Search:
+
+* favorite
+* favourite
+* star
+* saved talent
+* bookmarked talent
+* talent favorites
+
+If one already exists:
+
+reuse it.
+
+If none exists:
+
+implement a small Client-owned favorite relationship.
+
+Conceptual model:
+
+```text
+client_talent_favorites
+
+id
+client_user_id
+talent_user_id
+created_at
+```
+
+Unique constraint:
+
+```text
+(client_user_id, talent_user_id)
+```
+
+Do not tie Favorite to a specific job unless existing product behavior requires it.
+
+---
+
+# FAVORITE BUTTON UX
+
+Search result card:
+
+```text
+Talent Name
+Role / Skills
+
+[ Preview ] [ ☆ Favorite ] [ Request Interview ]
+```
+
+Not favorited:
+
+```text
+☆ Favorite
+```
+
+Favorited:
+
+```text
+★ Favorited
+```
+
+Click again may remove favorite.
+
+Use optimistic UI carefully, rollback on error.
+
+---
+
+# FAVORITE MUST NOT CHANGE APPLICATION STATUS
+
+Favoriting someone must NOT:
+
+* create an application
+* create a job submission
+* set shortlisted
+* notify Talent
+* notify Admin
+* send email
+
+It is private Client organization.
+
+---
+
+# FAVORITES SHOULD PERSIST
+
+Refresh `/hire-talent`.
+
+Favorited Talent should remain starred.
+
+If useful, add a filter:
+
+```text
+Favorites
+```
+
+but only if it can be done safely within this task.
+
+Do not build a whole new Favorites page unless necessary.
+
+---
+
+# =====================================================
+
+# INTERVIEW CTA
+
+# =====================================================
+
+The Hire Talent page already has an `onInterview` concept.
+
+Audit exactly what it currently does.
+
+Do not duplicate the new interview feature already being developed elsewhere.
+
+The visible CTA should be role-appropriate:
+
+```text
+Request Interview
+```
+
+for Client.
+
+Not:
+
+```text
+Schedule Interview
+```
+
+because Client interview scheduling requires Admin approval according to the current OnSpot workflow.
+
+---
+
+# WHEN CLIENT CLICKS REQUEST INTERVIEW
+
+Use the existing/new Interview Request flow if already implemented.
+
+Expected:
+
+```text
+Client searches Talent
+        ↓
+Preview / Request Interview
+        ↓
+choose an eligible open job
+        ↓
+send Interview Request
+        ↓
+Admin reviews
+        ↓
+Admin schedules via Microsoft Bookings flow
+```
+
+Do not let Client directly create a Bookings appointment.
+
+---
+
+# IMPORTANT — TALENT MAY NOT HAVE APPLIED YET
+
+Search results can contain Talent who have not applied to one of the Client's jobs.
+
+Before allowing Interview Request, determine whether the current interview-request backend requires an existing:
+
+```text
+job_submission
+```
+
+If it does:
+
+do NOT fabricate one silently.
+
+Instead require the Client to choose an eligible job and use the existing invitation/application workflow first.
+
+Possible UX:
+
+```text
+Request Interview
+
+This Talent is not yet connected to one of your jobs.
+
+Select a job:
+[ Social Media Manager ▼ ]
+
+[ Invite to Apply ]
+```
+
+Then once the formal application exists, Interview Request becomes available.
+
+---
+
+# DO NOT BYPASS FORMAL PIPELINE GUARD
+
+The repo has:
+
+`formalPipelineGuard`
+
+Preserve it.
+
+Do not allow:
+
+```text
+search result
+→ interview
+```
+
+to bypass whatever formal job/application relationship is required by the backend.
+
+Audit the current `onInterview` callback and reuse its safety checks.
+
+---
+
+# IF EXISTING onInterview ALREADY HANDLES THIS
+
+If `HireTalentPage.tsx` already has the correct:
+
+* job selection
+* invitation
+* interview request
+* eligibility behavior
+
+then simply wire the new visible:
+
+`Request Interview`
+
+button to that existing callback.
+
+Do NOT create another interview flow.
+
+---
+
+# =====================================================
+
+# PROFILE PREVIEW MODAL
+
+# =====================================================
+
+Current `ProfilePreviewModal` already receives:
+
+```text
+onShortlist
+onInterview
+isShortlisted
+```
+
+Refactor the visible controls.
+
+Preferred conceptual props:
+
+```text
+onFavorite
+isFavorited
+onInterview
+```
+
+Do not necessarily remove `onShortlist` from internal workflow code if it is still needed elsewhere.
+
+---
+
+# PROFILE MODAL FOOTER
+
+Change visible CTA layout from something like:
+
+```text
+[ Shortlist ]
+```
+
+to:
+
+```text
+[ ☆ Favorite ]   [ Request Interview ]
+```
+
+Keep:
+
+* Preview / Full profile
+* Message where applicable
+
+Do not overload footer with too many equal-priority actions.
+
+Recommended hierarchy:
+
+Primary:
+
+```text
+Request Interview
+```
+
+Secondary:
+
+```text
+Favorite
+```
+
+Tertiary:
+
+```text
+Message
+```
+
+depending on whether a conversation relationship exists.
+
+---
+
+# SEARCH RESULT CARDS
+
+Apply the same action terminology consistently.
+
+Do not have:
+
+search result = Favorite
+
+modal = Shortlist
+
+That would be confusing.
+
+If Hire Talent search UX is now using Favorite, all user-facing search-result shortlist CTAs on this page should reflect that.
+
+---
+
+# =====================================================
+
+# DISTINGUISH FAVORITE VS SHORTLIST
+
+# =====================================================
+
+This distinction is mandatory.
+
+## Favorite
+
+Private Client bookmark.
+
+No hiring status change.
+
+No Talent notification.
+
+## Shortlisted
+
+Formal application pipeline status.
+
+Requires an actual application/submission.
+
+May trigger notifications/status history according to existing system.
+
+Do NOT merge these concepts.
+
+---
+
+# =====================================================
+
+# NAVIGATION / SIDEBAR
+
+# =====================================================
+
+Client sidebar already has:
+
+```text
+OnSpot Talent
+```
+
+which should point to:
+
+```text
+/hire-talent
+```
+
+Verify this remains correct.
+
+TopNavigation:
+
+`Hire Talent`
+
+should also navigate to:
+
+```text
+/hire-talent
+```
+
+Do not create separate Talent browse routes again.
+
+---
+
+# =====================================================
+
+# TEST MATRIX
+
+# =====================================================
+
+## Test 1 — Client login
+
+Login as Client.
+
+Expected:
+
+```text
+/hire-talent
+```
+
+not:
+
+```text
+/dashboard
+```
+
+Dashboard still accessible manually.
+
+---
+
+## Test 2 — explicit deep link
+
+Open `/messages` while logged out.
+
+Login as Client.
+
+If current return-route mechanism exists:
+
+Expected return to `/messages`.
+
+Do not force `/hire-talent`.
+
+---
+
+## Test 3 — Post Job
+
+On `/hire-talent` click:
+
+`Post a Job`
+
+Expected:
+
+```text
+/client/jobs/new
+```
+
+Existing Client Job Form opens.
+
+---
+
+## Test 4 — Favorite
+
+Client favorites Talent A.
+
+Expected:
+
+* star changes
+* refresh preserves favorite
+* no application status changes
+* no Talent notification
+
+---
+
+## Test 5 — Unfavorite
+
+Remove Favorite.
+
+Expected:
+
+relationship removed cleanly.
+
+---
+
+## Test 6 — Request Interview
+
+Client clicks:
+
+`Request Interview`
+
+Expected:
+
+existing interview-request/pipeline flow used.
+
+No direct scheduling by Client.
+
+---
+
+## Test 7 — no eligible job
+
+Client has no open job.
+
+Clicks Request Interview.
+
+Expected:
+
+clear Post a Job CTA.
+
+No crash.
+
+---
+
+## Test 8 — formal pipeline safety
+
+Talent has no application/job relationship.
+
+Ensure Client cannot bypass formal pipeline rules.
+
+---
+
+## Test 9 — existing shortlist
+
+Verify existing formal shortlist workflows elsewhere still work.
+
+Do not break Client/Application/Admin shortlist status.
+
+---
+
+# FILES TO AUDIT
+
+At minimum:
+
+* `client/src/App.tsx`
+* `client/src/pages/HireTalentPage.tsx`
+* `client/src/components/ClientTalentShortlistDialog.tsx`
+* `client/src/hooks/useClientShortlists.ts` or actual hook path
+* `client/src/components/ClientLayout.tsx`
+* `client/src/components/TopNavigation.tsx`
+* `client/src/pages/JobFormPage.tsx`
+* interview request components/services
+* `server/services/formalPipelineGuard.ts`
+* shortlist/favorite storage/routes
+* `shared/schema.ts`
+
+Search before adding anything new.
+
+---
+
+# DO NOT BREAK
+
+Do not break:
+
+* Client dashboard
+* Client Profile
+* Client Job Postings
+* status-change approval workflow
+* Admin Job Applications
+* messaging
+* notifications
+* offers
+* shortlist application status
+* interview request workflow
+* Microsoft Bookings work-in-progress
+* Talent application workflow
+
+---
+
+# ACCEPTANCE CRITERIA
+
+Complete only when:
+
+### Login
+
+* default Client login lands on `/hire-talent`
+* dashboard remains accessible
+* deep-link behavior not broken
+
+### Hire Talent
+
+* Post a Job is obvious
+* Post a Job opens existing Client Job Form
+* no duplicate job form created
+
+### Search actions
+
+* visible Shortlist CTA replaced with Favorite/Star
+* Favorite persists
+* Favorite does not affect formal application status
+* Request Interview is visible
+* Request Interview uses existing safe interview flow
+* no formal pipeline bypass
+
+### Regression
+
+* existing shortlist backend/status functionality remains
+* build/typecheck passes
+
+---
+
+# FINAL REPORT
+
+After implementation report:
+
+1. Client login redirect before/after
+2. all redirect locations audited
+3. Post a Job route used
+4. whether a favorite model already existed
+5. favorite implementation if newly added
+6. user-facing shortlist CTA changes
+7. interview CTA behavior
+8. how formal pipeline guard was preserved
+9. files changed
+10. tests run/results
+11. migration status
+12. any remaining ambiguity around Favorite vs Shortlist
+
+The most important product rule is:
+
+**Favorite is a private Client bookmark. Shortlisted remains a formal application status. Interview Request must respect the formal hiring pipeline.**
