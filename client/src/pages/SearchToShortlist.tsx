@@ -19,6 +19,7 @@ import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistD
 import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
 import { useClientShortlists } from "@/hooks/useClientShortlists";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPrivacySafeTalentDisplayName } from "@/lib/formatPublicTalentName";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,12 @@ interface TalentResult {
   matchReasons: Record<string, any>;
   candidate: {
     maskedName?: string | null;
+    fullName?: string | null;
+    full_name?: string | null;
+    firstName?: string | null;
+    first_name?: string | null;
+    lastName?: string | null;
+    last_name?: string | null;
     targetPosition?: string;
     target_position?: string;
     location?: string;
@@ -66,6 +73,10 @@ function getInitials(name?: string | null): string {
   );
 }
 
+function getResultName(candidate: TalentResult["candidate"]): string {
+  return getPrivacySafeTalentDisplayName(candidate);
+}
+
 // ─── Result Row ───────────────────────────────────────────────────────────────
 
 function ResultRow({
@@ -85,8 +96,7 @@ function ResultRow({
 }) {
   const { candidate } = result;
 
-  // maskedName is server-generated ("Jane S.") — full name never sent to clients.
-  const name = candidate.maskedName ?? null;
+  const name = getResultName(candidate);
   const position = candidate.targetPosition ?? candidate.target_position;
 
   // Availability — use seniority as proxy; most talent is available
@@ -122,7 +132,7 @@ function ResultRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap mb-0.5">
           <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">
-            {name ?? "Talent Profile"}
+            {name}
           </h3>
           <span
             className={cn(
@@ -326,7 +336,9 @@ export default function SearchToShortlist() {
 
   async function handleInvite(talentUserId: string, talentName?: string) {
     // Open picker — fetch client's open jobs and let them choose which role to invite to.
-    const name = talentName ?? searchResults?.results.find((r) => r.userId === talentUserId)?.candidate?.maskedName ?? "Talent";
+    const name = talentName ?? (searchResults
+      ? getResultName(searchResults.results.find((r) => r.userId === talentUserId)?.candidate ?? {})
+      : "Talent");
     setPickerTarget({ talentUserId, talentName: name });
     setPickerLoading(true);
     setPickerError(null);
@@ -574,10 +586,10 @@ export default function SearchToShortlist() {
                       setShortlistTarget({
                         id: r.userId,
                         idType: "talentUser",
-                        name: r.candidate.maskedName ?? "Talent Profile",
+                        name: getResultName(r.candidate),
                       });
                     }}
-                    onInvite={() => handleInvite(r.userId, r.candidate.maskedName ?? undefined)}
+                    onInvite={() => handleInvite(r.userId, getResultName(r.candidate))}
                   />
                 ))}
               </div>

@@ -665,13 +665,17 @@ const SENSITIVE_FIELDS = [
 // Mirrors the server DTO projection in /api/client/talent-search route handler.
 // maskedName replaces fullName so raw talent identity is never sent to clients.
 function projectClientSafeCandidate(candidate: Record<string, any>) {
-  const rawName: string | null = candidate.fullName ?? candidate.full_name ?? null;
-  const maskedName = (() => {
-    if (!rawName || rawName.toLowerCase().startsWith("candidate ")) return null;
-    const parts = rawName.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 1) return parts[0][0] + "••••";
-    return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
-  })();
+  const firstName = candidate.firstName ?? candidate.first_name ?? "";
+  const lastName = candidate.lastName ?? candidate.last_name ?? "";
+  const rawName: string = candidate.fullName ?? candidate.full_name ?? "";
+  const parts = rawName.trim().split(/\s+/).filter(Boolean);
+  const maskedName = firstName
+    ? (lastName ? `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.` : firstName.trim())
+    : parts.length === 1
+      ? parts[0]
+      : parts.length > 1
+        ? `${parts.slice(0, -1).join(" ")} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`
+        : "Talent Profile";
   return {
     maskedName,
     targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
@@ -707,11 +711,9 @@ describe("client talent-search — client-safe DTO sanitization", () => {
     assert.ok(!("full_name" in safe), "full_name must not appear in the client DTO");
   });
 
-  // ── Single-word name masked to initials ───────────────────────────────────────
-  it("masks a single-word name to initial + bullets", () => {
+  it("keeps a single provided first name readable", () => {
     const safe = projectClientSafeCandidate({ fullName: "Beyoncé" });
-    assert.ok(safe.maskedName?.startsWith("B"), "single-word name masked with initial");
-    assert.ok(safe.maskedName?.includes("••••"), "single-word name padded with bullets");
+    assert.equal(safe.maskedName, "Beyoncé");
   });
 
   // ── All sensitive fields absent from the DTO ──────────────────────────────────
@@ -868,13 +870,9 @@ describe("PII regression — sanitizeSearchCandidate (imports real shared module
       "resume filename must not appear anywhere in the serialized response");
   });
 
-  it("masks the talent's real name server-side before the response is sent", () => {
+  it("formats the talent's name server-side before the response is sent", () => {
     const safe = sanitizeSearchCandidate(RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS);
-    // Real name "Jane Smith" → masked "Jane S."
-    assert.ok(
-      safe.fullName === "Jane S." || safe.full_name === "Jane S.",
-      `fullName should be masked to "Jane S." but got "${safe.fullName}"`,
-    );
+    assert.equal(safe.maskedName, "Jane S.");
     assert.ok(
       !JSON.stringify(safe).includes("Jane Smith"),
       'raw full name "Jane Smith" must not appear in the serialized output',
@@ -893,14 +891,22 @@ describe("PII regression — sanitizeSearchCandidate (imports real shared module
 
   it("handles a candidate with no name gracefully", () => {
     const safe = sanitizeSearchCandidate({ fullName: "", targetPosition: "VA" });
-    assert.equal(safe.fullName, "Talent Profile", "empty name → 'Talent Profile'");
+    assert.equal(safe.maskedName, "Talent Profile", "empty name → 'Talent Profile'");
   });
 
-  it("handles a single-word name correctly", () => {
+  it("keeps a single first name readable without asterisks", () => {
     const safe = sanitizeSearchCandidate({ fullName: "Madonna" });
-    assert.ok(safe.fullName.startsWith("M"),   "starts with first initial");
-    assert.ok(safe.fullName.includes("••••"),  "padded with bullet characters");
-    assert.ok(!safe.fullName.includes("Madonna"), "real name must not appear");
+    assert.equal(safe.maskedName, "Madonna");
+  });
+
+  it("uses structured names over an existing legacy masked value", () => {
+    const safe = sanitizeSearchCandidate({
+      firstName: "Robert",
+      lastName: "Smith",
+      fullName: "R****",
+    });
+    assert.equal(safe.maskedName, "Robert S.");
+    assert.ok(!JSON.stringify(safe).includes("R****"));
   });
 });
 

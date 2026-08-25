@@ -9,34 +9,32 @@
  * changed to bypass this, the HTTP-level integration test will still catch it,
  * but the unit tests will also document exactly what the function must do.
  *
- * Rule: contact fields are permanently withheld at every stage. Name is masked
- * server-side (not in the browser) so inspecting the raw API response reveals
- * nothing useful. This is an explicit allowlist — anything not listed is dropped.
+ * Rule: contact fields are permanently withheld at every stage. Names are
+ * formatted server-side as "First Name L." so the browser never receives a
+ * complete surname. This is an explicit allowlist — anything not listed is dropped.
  *
  * Blocked fields (never returned to the client through this flow):
  *   email, phone, phoneNumber, resumeUrl, resumeFileName, linkedinUrl,
  *   githubUrl, portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName,
  *   passwordHash, displayName (may differ from fullName and contain real identity)
  */
-export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<string, any> {
-  const rawName: string = (candidate.fullName ?? candidate.full_name ?? "").trim();
-  const parts = rawName.split(/\s+/).filter(Boolean);
+import { formatTalentDisplayName, formatTalentDisplayNameFromFull } from "../../shared/talentName";
 
-  // Server-side name masking — format mirrors maskInviteName in routes.ts:
-  //   ""          → "Talent Profile"
-  //   "Madonna"   → "M••••"
-  //   "Jane Smith"→ "Jane S."
-  const maskedName =
-    !rawName
-      ? "Talent Profile"
-      : parts.length === 1
-        ? parts[0][0] + "•".repeat(4)
-        : parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+function getSafeTalentName(candidate: Record<string, any>): string {
+  const firstName = candidate.firstName ?? candidate.first_name;
+  const lastName = candidate.lastName ?? candidate.last_name;
+  const structured = formatTalentDisplayName(firstName, lastName);
+  if (structured) return structured;
+
+  return formatTalentDisplayNameFromFull(candidate.fullName ?? candidate.full_name) || "Talent Profile";
+}
+
+export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<string, any> {
+  const maskedName = getSafeTalentName(candidate);
 
   return {
-    // Identity — always masked; name only reveals through the submissions view on acceptance
-    fullName:  maskedName,
-    full_name: maskedName,
+    // Identity — always privacy formatted; raw/structured names are not returned.
+    maskedName,
 
     // Professional profile — safe to expose pre-invite
     targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
@@ -74,19 +72,11 @@ export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<
  * password hash are intentionally absent.
  */
 export function sanitizeFullProfileForClient(candidate: Record<string, any>): Record<string, any> {
-  const rawName: string = (candidate.fullName ?? candidate.full_name ?? "").trim();
-  const parts = rawName.split(/\s+/).filter(Boolean);
-  const maskedName =
-    !rawName
-      ? "Talent Profile"
-      : parts.length === 1
-        ? parts[0][0] + "•".repeat(4)
-        : parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
+  const maskedName = getSafeTalentName(candidate);
 
   return {
-    // Identity — always masked; same pattern as sanitizeSearchCandidate
-    fullName:  maskedName,
-    full_name: maskedName,
+    // Identity — always privacy formatted; raw/structured names are not returned.
+    maskedName,
 
     // Professional profile fields (same set as search results)
     targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
@@ -133,5 +123,8 @@ export const SEARCH_RESULT_BLOCKED_FIELDS: readonly string[] = [
   "videoIntroUrl", "video_intro_url",
   "videoIntroFileName", "video_intro_file_name",
   "displayName",   "display_name",
+  "fullName",      "full_name",
+  "firstName",     "first_name",
+  "lastName",      "last_name",
   "userId",        "user_id",
 ];

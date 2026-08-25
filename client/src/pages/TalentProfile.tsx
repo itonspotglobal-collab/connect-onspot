@@ -32,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isClient } from "@/lib/authUtils";
-import { formatPublicTalentNameMasked } from "@/lib/formatPublicTalentName";
+import { formatPublicTalentName, formatPublicTalentNameMasked } from "@/lib/formatPublicTalentName";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
 import {
@@ -1132,9 +1132,11 @@ export default function TalentProfile() {
     candidate.displayName?.trim() ||
     candidate.fullName?.trim() ||
     `Candidate ${(candidate.id ?? "").slice(0, 6).toUpperCase()}`;
-  const displayName = canEdit
-    ? rawDisplayName
-    : formatPublicTalentNameMasked(rawDisplayName);
+  const publicDisplayName =
+    formatPublicTalentName(candidate.firstName, candidate.lastName) ||
+    formatPublicTalentNameMasked(rawDisplayName) ||
+    "Talent Profile";
+  const displayName = canEdit ? rawDisplayName : publicDisplayName;
   const displayPhoto = localPhoto || candidate.profilePhotoUrl;
   const photoUrl = photoSrc(displayPhoto);
   // Use the shared profileCompletion module — single source of truth for the number.

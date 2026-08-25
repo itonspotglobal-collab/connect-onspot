@@ -22,6 +22,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
 import { useClientShortlists } from "@/hooks/useClientShortlists";
 import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
+import { getPrivacySafeTalentDisplayName } from "@/lib/formatPublicTalentName";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,9 +38,13 @@ interface TalentResult {
   matchReasons: Record<string, any>;
 
   candidate: {
-    // Sanitizer returns fullName (masked "Jane S." or "Talent Profile")
+    maskedName?: string | null;
     fullName?: string | null;
     full_name?: string | null;
+    firstName?: string | null;
+    first_name?: string | null;
+    lastName?: string | null;
+    last_name?: string | null;
     targetPosition?: string;
     target_position?: string;
     location?: string;
@@ -110,6 +115,10 @@ function getInitials(name?: string | null): string {
       .map((w) => w[0].toUpperCase())
       .join("") || "TA"
   );
+}
+
+function getResultName(candidate: TalentResult["candidate"]): string {
+  return getPrivacySafeTalentDisplayName(candidate);
 }
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: "$", PHP: "\u20b1", EUR: "\u20ac", GBP: "\u00a3", AUD: "A$", CAD: "C$",
@@ -184,7 +193,7 @@ function ProfilePreviewModal({
       setLoadingFull(false);
     }
   };
-  const name = candidate.fullName ?? (candidate as any).full_name ?? "Talent Profile";
+  const name = getResultName(candidate);
 
   const prefs = candidate.preferences as Record<string, string> | null | undefined;
   const rateAmount  = prefs?.rateAmount  ?? null;
@@ -602,8 +611,7 @@ function ResultRow({
 }) {
   const { candidate } = result;
 
-  // sanitizeSearchCandidate returns fullName (server-masked to "Jane S." or "Talent Profile")
-  const name = candidate.fullName ?? candidate.full_name ?? null;
+  const name = getResultName(candidate);
   const position = candidate.targetPosition ?? candidate.target_position;
 
   const isAvailable = !candidate.seniority?.toLowerCase().includes("unavailable");
@@ -638,7 +646,7 @@ function ResultRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap mb-0.5">
           <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">
-            {name ?? "Talent Profile"}
+            {name}
           </h3>
           <span
             className={cn(
@@ -1381,13 +1389,13 @@ export default function HireTalentPage() {
                     onShortlist={() =>
                       handleShortlist(
                         r.userId,
-                        r.candidate.fullName ?? r.candidate.full_name ?? "Talent Profile",
+                        getResultName(r.candidate),
                       )
                     }
                     onInterview={() =>
                       handleInterview(
                         r.userId,
-                        r.candidate.fullName ?? r.candidate.full_name ?? "Talent Profile",
+                        getResultName(r.candidate),
                       )
                     }
                   />
@@ -1727,14 +1735,14 @@ export default function HireTalentPage() {
           if (!previewResult) return;
           handleShortlist(
             previewResult.userId,
-            previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+            getResultName(previewResult.candidate),
           );
         }}
         onInterview={() => {
           if (!previewResult) return;
           handleInterview(
             previewResult.userId,
-            previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+            getResultName(previewResult.candidate),
           );
         }}
         onSignIn={() => {
@@ -1746,7 +1754,7 @@ export default function HireTalentPage() {
               query: searchText,
               engagementType,
               pendingTalentId: previewResult.userId,
-              pendingTalentName: previewResult.candidate.fullName ?? (previewResult.candidate as any).full_name ?? "Talent Profile",
+              pendingTalentName: getResultName(previewResult.candidate),
             } satisfies PendingSearchState),
           );
           setShowLogin(true);

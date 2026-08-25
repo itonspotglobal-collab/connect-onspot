@@ -8,6 +8,7 @@ import {
   formatPublicTalentName,
   formatPublicTalentNameFromFull,
   formatPublicTalentNameMasked,
+  getPrivacySafeTalentDisplayName,
 } from "./formatPublicTalentName";
 
 // ─── formatPublicTalentName ───────────────────────────────────────────────────
@@ -106,39 +107,30 @@ describe("formatPublicTalentNameFromFull", () => {
 // ─── formatPublicTalentNameMasked ────────────────────────────────────────────
 
 describe("formatPublicTalentNameMasked", () => {
-  // ── Core behaviour ──
   it("single name → returned as-is", () => {
     expect(formatPublicTalentNameMasked("Cher")).toBe("Cher");
   });
-  it("two names → First S", () => {
-    expect(formatPublicTalentNameMasked("John Smith")).toBe("John S");
+  it("two names → First S.", () => {
+    expect(formatPublicTalentNameMasked("John Smith")).toBe("John S.");
   });
-  it("three names → First A B", () => {
-    expect(formatPublicTalentNameMasked("Frenzy Val Eloise")).toBe("Frenzy V E");
+  it("combined multi-word first name preserves every token before the surname", () => {
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise")).toBe("Frenzy Val E.");
   });
-  it("four names → First A B C", () => {
-    expect(formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi")).toBe("Frenzy V E L");
+  it("does not expose the final surname from a multi-word name", () => {
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi")).toBe("Frenzy Val Eloise L.");
   });
 
-  // ── Names with existing periods ──
   it("strips trailing period from a token before taking its initial", () => {
-    // "Ijeoma O." → first word kept, "O." stripped to "O" then initialled → "O"
-    expect(formatPublicTalentNameMasked("Ijeoma O.")).toBe("Ijeoma O");
-  });
-  it("strips periods from all subsequent tokens", () => {
-    // "Maria E. R. T." → "Maria E R T"
-    expect(formatPublicTalentNameMasked("Maria E. R. T.")).toBe("Maria E R T");
+    expect(formatPublicTalentNameMasked("Ijeoma O.")).toBe("Ijeoma O.");
   });
 
-  // ── Whitespace handling ──
   it("trims leading/trailing whitespace", () => {
-    expect(formatPublicTalentNameMasked("  John Smith  ")).toBe("John S");
+    expect(formatPublicTalentNameMasked("  John Smith  ")).toBe("John S.");
   });
   it("collapses internal whitespace between tokens", () => {
-    expect(formatPublicTalentNameMasked("Van  Carlo   Labanan")).toBe("Van C L");
+    expect(formatPublicTalentNameMasked("Van  Carlo   Labanan")).toBe("Van Carlo L.");
   });
 
-  // ── Empty / null / undefined ──
   it("empty string → empty string", () => {
     expect(formatPublicTalentNameMasked("")).toBe("");
   });
@@ -151,16 +143,38 @@ describe("formatPublicTalentNameMasked", () => {
   it("undefined → empty string", () => {
     expect(formatPublicTalentNameMasked(undefined)).toBe("");
   });
+  it("legacy asterisk masks are discarded rather than rendered", () => {
+    expect(formatPublicTalentNameMasked("R****")).toBe("");
+  });
 
-  // ── Privacy guarantee ──
-  it("never exposes a full subsequent word in the output", () => {
+  it("never exposes the full final surname", () => {
     const result = formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi");
-    expect(result).not.toContain("Val");
-    expect(result).not.toContain("Eloise");
     expect(result).not.toContain("Legaspi");
-    expect(result).toBe("Frenzy V E L");
+    expect(result).toBe("Frenzy Val Eloise L.");
   });
   it("initials are always uppercased", () => {
-    expect(formatPublicTalentNameMasked("anna smith")).toBe("anna S");
+    expect(formatPublicTalentNameMasked("anna smith")).toBe("anna S.");
+  });
+});
+
+describe("getPrivacySafeTalentDisplayName", () => {
+  it("prefers structured names over an old masked display value", () => {
+    expect(getPrivacySafeTalentDisplayName({
+      firstName: "Robert",
+      lastName: "Smith",
+      maskedName: "R****",
+    })).toBe("Robert S.");
+  });
+  it("keeps a multi-word structured first name intact", () => {
+    expect(getPrivacySafeTalentDisplayName({
+      firstName: "Mary Anne",
+      lastName: "Cruz",
+    })).toBe("Mary Anne C.");
+  });
+  it("uses a single full-name fallback without exposing its surname", () => {
+    expect(getPrivacySafeTalentDisplayName({ fullName: "Jane Doe" })).toBe("Jane D.");
+  });
+  it("never renders a legacy mask when no structured name is available", () => {
+    expect(getPrivacySafeTalentDisplayName({ fullName: "R****" })).toBe("Talent Profile");
   });
 });

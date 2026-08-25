@@ -1,0 +1,441 @@
+Fix the talent name display in the latest **Hire Talent** design.
+
+### Problem
+
+Talent names in the match results are supposed to follow this privacy format:
+
+**First Name + Last Name Initial**
+
+Examples:
+
+* `Karyl A.`
+* `Rechelle A.`
+* `Zonniel S.`
+* `Abdul A.`
+* `Robin P.`
+* `John B.`
+* `Aaron T.`
+* `Julie S.`
+
+However, there is currently an incorrect output such as:
+
+`R****`
+
+This should never appear in the Hire Talent candidate/talent list.
+
+The goal is to make the formatting consistent for existing and future talents.
+
+---
+
+## Required Name Format
+
+Display talent names using:
+
+```text
+FirstName L.
+```
+
+Where:
+
+* `FirstName` = full first name
+* `L` = first character of the last name
+* Add a period after the last-name initial
+
+Examples:
+
+```text
+Robert Smith      → Robert S.
+Jane Doe          → Jane D.
+Mary Anne Cruz    → Mary C.
+John Dela Cruz    → John D.
+```
+
+Do not mask the first name using asterisks.
+
+Incorrect:
+
+```text
+R****
+Rob***
+Robert S****
+R*****
+```
+
+Correct:
+
+```text
+Robert S.
+```
+
+---
+
+## 1. Find the Existing Talent Name Logic
+
+Inspect the latest Hire Talent implementation, especially the component rendering the talent match list shown under:
+
+`Matches for "..."`
+
+Look for the code responsible for displaying candidate/talent names near:
+
+* profile initials/avatar
+* `Available now`
+* AI match percentage
+* `Preview`
+* `Shortlist`
+
+Also search for any existing utility that:
+
+* masks names
+* anonymizes names
+* replaces characters with `*`
+* derives initials
+* formats candidate/talent display names
+
+Do not simply patch the specific `R****` record.
+
+This needs to be fixed at the formatter/component level so future talents are handled correctly.
+
+---
+
+## 2. Create or Update a Shared Name Formatter
+
+Prefer a reusable utility/helper such as:
+
+```ts
+formatTalentDisplayName(...)
+```
+
+The formatter should ideally receive structured fields such as:
+
+```ts
+firstName
+lastName
+```
+
+and return:
+
+```text
+FirstName L.
+```
+
+Example implementation:
+
+```ts
+export const formatTalentDisplayName = (
+  firstName?: string | null,
+  lastName?: string | null
+) => {
+  const first = firstName?.trim() ?? "";
+  const last = lastName?.trim() ?? "";
+
+  if (first && last) {
+    return `${first} ${last.charAt(0).toUpperCase()}.`;
+  }
+
+  if (first) {
+    return first;
+  }
+
+  return "";
+};
+```
+
+Use the project's existing helper/util structure if one already exists.
+
+Do not create duplicate formatting utilities unnecessarily.
+
+---
+
+## 3. Do Not Format an Already-Masked Display Name
+
+If the API currently provides both structured name fields and a masked/display name, prefer the structured source fields.
+
+For example, if the object contains:
+
+```ts
+{
+  firstName: "Robert",
+  lastName: "Smith",
+  displayName: "R****"
+}
+```
+
+render:
+
+```text
+Robert S.
+```
+
+Do NOT reuse:
+
+```text
+R****
+```
+
+when proper first and last name fields are available.
+
+Inspect the actual API/data structure first before changing code.
+
+---
+
+## 4. Handle Full-Name-Only Data Safely
+
+If some talent records only provide a single `fullName` field, add a safe fallback.
+
+Example:
+
+```ts
+const parts = fullName.trim().split(/\s+/);
+```
+
+Then:
+
+* first token/group should provide the first name
+* last token should provide the last-name initial
+
+Examples:
+
+```text
+Robert Smith
+→ Robert S.
+
+Mary Cruz
+→ Mary C.
+```
+
+If there is only one name available:
+
+```text
+Robert
+```
+
+display:
+
+```text
+Robert
+```
+
+Do not turn it into:
+
+```text
+R****
+```
+
+---
+
+## 5. Preserve Legitimate Multi-Word First Names
+
+Be careful not to incorrectly truncate structured first names.
+
+If the backend provides:
+
+```ts
+firstName: "Mary Anne"
+lastName: "Cruz"
+```
+
+display:
+
+```text
+Mary Anne C.
+```
+
+Do not change it to:
+
+```text
+Mary C.
+```
+
+Structured `firstName` and `lastName` fields should always take priority over splitting a generic full-name string.
+
+---
+
+## 6. Handle Edge Cases
+
+The formatter should safely handle:
+
+* leading/trailing spaces
+* lowercase last names
+* missing last name
+* missing first name
+* multiple-word first names
+* hyphenated last names
+* apostrophes
+* Unicode/international characters
+
+Examples:
+
+```text
+firstName: "Ana"
+lastName: "de Leon"
+→ Ana D.
+
+firstName: "Jean-Paul"
+lastName: "O'Connor"
+→ Jean-Paul O.
+
+firstName: "Maria"
+lastName: "Santos-Reyes"
+→ Maria S.
+```
+
+Do not use a regular expression that assumes names only contain A-Z English characters.
+
+---
+
+## 7. Update Avatar Initials Separately
+
+The circular avatar initials should remain consistent with the talent display name.
+
+For:
+
+```text
+Karyl A.
+```
+
+avatar:
+
+```text
+KA
+```
+
+For:
+
+```text
+Robert S.
+```
+
+avatar:
+
+```text
+RS
+```
+
+If an existing avatar helper already correctly uses first-name and last-name initials, keep it.
+
+Do not derive avatar initials from asterisks or masked text such as `R****`.
+
+---
+
+## 8. Apply the Fix Across Related Hire Talent Screens
+
+Check all Hire Talent surfaces that display anonymized talent/candidate names, including where applicable:
+
+* AI match results
+* Search results
+* Talent recommendation lists
+* Preview modal/page
+* Shortlist
+* Saved candidates
+* Refined search results
+* Candidate cards
+* Any mobile/tablet variation of the same component
+
+Use the same formatter anywhere the same privacy rule applies.
+
+Do not allow one page to display:
+
+```text
+Robert S.
+```
+
+while another still displays:
+
+```text
+R****
+```
+
+---
+
+## 9. Do Not Change the Underlying Talent Data
+
+This should primarily be a presentation-layer fix.
+
+Do not:
+
+* modify names in the database
+* overwrite first/last name values
+* permanently save abbreviated names
+* change candidate records
+* mutate API responses globally unless the architecture explicitly requires it
+
+The full underlying name should remain available for authorized functionality.
+
+Only the Hire Talent-facing display should follow:
+
+```text
+First Name + Last Name Initial
+```
+
+---
+
+## 10. Privacy Requirement
+
+Do not accidentally expose the full last name while fixing this.
+
+Incorrect:
+
+```text
+Robert Smith
+```
+
+Correct:
+
+```text
+Robert S.
+```
+
+The formatter must reveal:
+
+* full first name
+* only the first character of the last name
+
+---
+
+## 11. Add Tests
+
+If the project has unit tests, add tests for the formatter.
+
+At minimum verify:
+
+```ts
+formatTalentDisplayName("Robert", "Smith")
+// "Robert S."
+
+formatTalentDisplayName("Karyl", "Anderson")
+// "Karyl A."
+
+formatTalentDisplayName("Mary Anne", "Cruz")
+// "Mary Anne C."
+
+formatTalentDisplayName("John", "")
+// "John"
+
+formatTalentDisplayName("  Jane  ", "  doe ")
+// "Jane D."
+```
+
+Also add a regression test ensuring that a record with a legacy masked value such as:
+
+```text
+R****
+```
+
+does not render that value when valid first/last name fields are available.
+
+---
+
+## Acceptance Criteria
+
+After the fix:
+
+1. Hire Talent result names consistently display as `First Name L.`
+2. `R****`-style masked names no longer appear when structured name data is available.
+3. Full last names are never exposed in the Hire Talent list.
+4. Existing correct examples such as `Karyl A.` and `Robin P.` remain unchanged.
+5. Avatar initials remain correct.
+6. Future talents automatically use the same formatter.
+7. The implementation is reusable rather than hardcoded for one record.
+8. No unrelated UI, matching, shortlist, preview, filtering, or search behavior is changed.
+
+Please inspect the actual talent data shape and existing anonymization helpers first, then make the smallest centralized change possible.
