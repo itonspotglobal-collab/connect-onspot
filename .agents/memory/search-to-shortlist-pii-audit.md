@@ -33,4 +33,4 @@ Client-facing Hire Talent surfaces display only `First Name L.`. The server deri
 
 **Why:** The product needs recognizable candidates without exposing full surnames. Legacy asterisk/bullet strings such as `R****` are neither useful nor an acceptable fallback.
 
-**How to apply:** Use the shared talent-name formatter for any new Hire Talent surface. Prefer structured fields over legacy display/full-name strings, preserve multi-word structured first names, and discard pre-existing asterisk/bullet masks rather than rendering them. Avatar initials must be derived from the formatted result, not a legacy mask.
+**How to apply:** Use the shared talent-name formatter for any new Hire Talent surface. Prefer structured fields over legacy display/full-name strings. For a combined full-name fallback, use only its first and final tokens (ignore middle names); preserve a multi-word structured first name when the data model explicitly identifies it as the first-name field. Discard pre-existing asterisk/bullet masks rather than rendering them. Avatar initials must be derived from the formatted result, not a legacy mask.

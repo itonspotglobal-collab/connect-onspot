@@ -84,8 +84,11 @@ describe("formatPublicTalentNameFromFull", () => {
   it("two-word name → First L.", () => {
     expect(formatPublicTalentNameFromFull("Odie Galang")).toBe("Odie G.");
   });
-  it("three-word name → FirstFirst L.", () => {
-    expect(formatPublicTalentNameFromFull("Van Carlo Labanan")).toBe("Van Carlo L.");
+  it("three-word name → first token plus final surname initial", () => {
+    expect(formatPublicTalentNameFromFull("Van Carlo Labanan")).toBe("Van L.");
+  });
+  it("multi-part name ignores middle names", () => {
+    expect(formatPublicTalentNameFromFull("Mary Anne Cruz")).toBe("Mary C.");
   });
   it("single name → returned as-is", () => {
     expect(formatPublicTalentNameFromFull("Cher")).toBe("Cher");
@@ -113,11 +116,11 @@ describe("formatPublicTalentNameMasked", () => {
   it("two names → First S.", () => {
     expect(formatPublicTalentNameMasked("John Smith")).toBe("John S.");
   });
-  it("combined multi-word first name preserves every token before the surname", () => {
-    expect(formatPublicTalentNameMasked("Frenzy Val Eloise")).toBe("Frenzy Val E.");
+  it("combined multi-word name uses only the first and final tokens", () => {
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise")).toBe("Frenzy E.");
   });
   it("does not expose the final surname from a multi-word name", () => {
-    expect(formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi")).toBe("Frenzy Val Eloise L.");
+    expect(formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi")).toBe("Frenzy L.");
   });
 
   it("strips trailing period from a token before taking its initial", () => {
@@ -128,7 +131,7 @@ describe("formatPublicTalentNameMasked", () => {
     expect(formatPublicTalentNameMasked("  John Smith  ")).toBe("John S.");
   });
   it("collapses internal whitespace between tokens", () => {
-    expect(formatPublicTalentNameMasked("Van  Carlo   Labanan")).toBe("Van Carlo L.");
+   expect(formatPublicTalentNameMasked("Van  Carlo   Labanan")).toBe("Van L.");
   });
 
   it("empty string → empty string", () => {
@@ -150,7 +153,7 @@ describe("formatPublicTalentNameMasked", () => {
   it("never exposes the full final surname", () => {
     const result = formatPublicTalentNameMasked("Frenzy Val Eloise Legaspi");
     expect(result).not.toContain("Legaspi");
-    expect(result).toBe("Frenzy Val Eloise L.");
+    expect(result).toBe("Frenzy L.");
   });
   it("initials are always uppercased", () => {
     expect(formatPublicTalentNameMasked("anna smith")).toBe("anna S.");
@@ -162,6 +165,12 @@ describe("getPrivacySafeTalentDisplayName", () => {
     expect(getPrivacySafeTalentDisplayName({
       firstName: "Robert",
       lastName: "Smith",
+      maskedName: "R****",
+    })).toBe("Robert S.");
+  });
+  it("uses a valid full name before a legacy masked display value", () => {
+    expect(getPrivacySafeTalentDisplayName({
+      fullName: "Robert Smith",
       maskedName: "R****",
     })).toBe("Robert S.");
   });

@@ -11,7 +11,7 @@ export function formatTalentDisplayName(
   const first = (firstName ?? "").trim();
   const last = (lastName ?? "").trim();
 
-  if (!first) return "";
+  if (!first || /[•*]/.test(first) || /[•*]/.test(last)) return "";
   if (!last) return first;
 
   return `${first} ${last.charAt(0).toUpperCase()}.`;
@@ -31,5 +31,5 @@ export function formatTalentDisplayNameFromFull(
   const parts = name.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0];
 
-  return formatTalentDisplayName(parts.slice(0, -1).join(" "), parts[parts.length - 1]);
+  return formatTalentDisplayName(parts[0], parts[parts.length - 1]);
 }

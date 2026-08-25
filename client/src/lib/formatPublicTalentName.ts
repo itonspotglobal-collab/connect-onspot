@@ -43,8 +43,11 @@ export function getPrivacySafeTalentDisplayName(name: {
   );
   if (structured) return structured;
 
+  const fromFullName = formatPublicTalentNameFromFull(name.fullName ?? name.full_name);
+  if (fromFullName) return fromFullName;
+
   const preformatted = (name.maskedName ?? "").trim();
   if (preformatted && !/[•*]/.test(preformatted)) return preformatted;
 
-  return formatPublicTalentNameFromFull(name.fullName ?? name.full_name) || "Talent Profile";
+  return "Talent Profile";
 }

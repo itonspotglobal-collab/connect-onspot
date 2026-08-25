@@ -1,0 +1,329 @@
+Fix ONLY the malformed talent name display issue such as:
+
+`R****`
+
+Do NOT change the existing name-formatting rule.
+
+## Existing Correct Rule — KEEP THIS EXACTLY
+
+Talent names must display as:
+
+`First Name + Last Name Initial`
+
+Example:
+
+`Frenzy Val Eloise Legaspi`
+
+must display as:
+
+`Frenzy L.`
+
+NOT:
+
+`Frenzy Val Eloise L.`
+
+NOT:
+
+`Frenzy Val Eloise Legaspi`
+
+NOT:
+
+`F****`
+
+The first name means the person's actual FIRST name only.
+
+The last name should be reduced to its first initial followed by a period.
+
+More examples:
+
+```text
+Robert Smith
+→ Robert S.
+
+Mary Anne Cruz
+→ Mary C.
+
+Jean-Paul O'Connor
+→ Jean-Paul O.
+
+Frenzy Val Eloise Legaspi
+→ Frenzy L.
+```
+
+For a multi-part full name, use:
+
+* first token/name = first name
+* last token/name = last name
+* ignore middle names for display purposes
+
+So:
+
+```text
+Frenzy Val Eloise Legaspi
+```
+
+becomes:
+
+```text
+Frenzy L.
+```
+
+---
+
+## THE ONLY BUG TO FIX
+
+There is currently at least one talent showing as:
+
+```text
+R****
+```
+
+or a similar masked value.
+
+That is incorrect.
+
+Find out why that specific record is falling back to a legacy masked value instead of using the existing correct format.
+
+Do NOT rewrite the entire naming system.
+
+Do NOT change correctly formatted talents such as:
+
+```text
+Karyl A.
+Rechelle A.
+Zonniel S.
+Abdul A.
+Robin P.
+John B.
+Aaron T.
+Julie S.
+```
+
+These are already correct and must remain exactly as they are.
+
+---
+
+## What to Inspect
+
+Find the current name-display logic used in the latest Hire Talent results.
+
+Check for fields such as:
+
+```text
+firstName
+lastName
+fullName
+displayName
+maskedName
+name
+```
+
+and any fallback logic that may currently choose something like:
+
+```text
+R****
+```
+
+The likely issue is that a legacy masked value is being used when the normal first-name / last-initial data is unavailable or incorrectly prioritized.
+
+---
+
+## Required Fix
+
+Preserve the existing formatter if it already correctly produces:
+
+```text
+FirstName L.
+```
+
+Only update the fallback logic so that malformed masked strings like:
+
+```text
+R****
+R*****
+R••••
+```
+
+are NOT shown to the user.
+
+If valid first and last name data exists, always use the existing correct formatter.
+
+Example:
+
+```ts
+firstName: "Robert"
+lastName: "Smith"
+displayName: "R****"
+```
+
+must render:
+
+```text
+Robert S.
+```
+
+NOT:
+
+```text
+R****
+```
+
+---
+
+## If Only a Full Name Is Available
+
+If the record does not have separate `firstName` and `lastName` fields but does have:
+
+```text
+fullName: "Frenzy Val Eloise Legaspi"
+```
+
+then derive:
+
+```text
+Frenzy L.
+```
+
+Use only:
+
+* first name = first part
+* last name = final part
+
+Ignore middle names.
+
+Example logic conceptually:
+
+```ts
+const parts = fullName.trim().split(/\s+/);
+
+const firstName = parts[0];
+const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+
+return lastName
+  ? `${firstName} ${lastName.charAt(0).toUpperCase()}.`
+  : firstName;
+```
+
+Do not use the entire first-name field if that field actually contains multiple names unless the current data model explicitly identifies it as the real first name.
+
+---
+
+## Important: Do NOT Introduce This Incorrect Behavior
+
+Do NOT change:
+
+```text
+Frenzy Val Eloise Legaspi
+```
+
+into:
+
+```text
+Frenzy Val Eloise L.
+```
+
+That is wrong.
+
+The correct display is:
+
+```text
+Frenzy L.
+```
+
+Do NOT change the current correct records just because they contain middle names in the source data.
+
+---
+
+## Legacy Mask Handling
+
+If a value matches a legacy mask pattern such as:
+
+```text
+R****
+J****
+M••••
+```
+
+treat it as an invalid display fallback.
+
+Do not render it if another valid name source exists.
+
+Priority should be:
+
+1. Existing valid first name + last name
+2. Valid full name → derive first name + last initial
+3. Existing already-correct display name such as `Robert S.`
+4. Only use a safe fallback if no usable name data exists
+
+Do NOT prioritize masked values like `R****`.
+
+---
+
+## Avatar Initials
+
+Do not change avatar initials unless they are also incorrectly derived from the masked name.
+
+For:
+
+```text
+Robert S.
+```
+
+avatar should remain:
+
+```text
+RS
+```
+
+For:
+
+```text
+Frenzy L.
+```
+
+avatar should be:
+
+```text
+FL
+```
+
+---
+
+## Scope
+
+Keep this change narrowly scoped.
+
+Do NOT:
+
+* redesign the Hire Talent page
+* change matching logic
+* change candidate data
+* modify database names
+* change shortlist behavior
+* change Preview behavior
+* change filtering
+* change AI match percentages
+* change all naming logic unnecessarily
+* expose full last names
+* display middle names
+
+Only fix the incorrect masked-name fallback.
+
+---
+
+## Acceptance Criteria
+
+After the fix:
+
+* `R****` no longer appears when valid name information exists.
+* `Frenzy Val Eloise Legaspi` displays as `Frenzy L.`
+* `Mary Anne Cruz` displays as `Mary C.`
+* `Robert Smith` displays as `Robert S.`
+* Existing names like `Karyl A.` remain unchanged.
+* Middle names are NOT displayed.
+* Full last names are NOT displayed.
+* No unrelated Hire Talent behavior is changed.
+
+Before making changes, inspect the current formatter and fallback chain first.
+
+Prefer the smallest possible fix to the fallback logic instead of replacing the entire name-formatting implementation.
