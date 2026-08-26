@@ -151,7 +151,7 @@ async function main(): Promise<void> {
 
     testProcess = spawn(
       tsxCommand,
-      ["--test", "--test-concurrency=1", ...serverTestFiles()],
+      ["--test", "--test-concurrency=1", "--experimental-test-module-mocks", ...serverTestFiles()],
       {
         cwd: projectRoot,
         env: {
