@@ -482,7 +482,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
                       </span>
                     </h3>
                     <Label htmlFor="admin-client-select" className="mt-3 block text-sm font-semibold">
-                      Client account <span className="text-red-500">*</span>
+                      Post on behalf of <span className="text-red-500">*</span>
                     </Label>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Select the client that will own this job posting.
