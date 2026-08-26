@@ -1,0 +1,1098 @@
+Fix the existing **Invite Talent to Apply** flow in the Client portal.
+
+There are three issues:
+
+```text
+1. The talent search inside the Invite Talent dialog is not filtering/searching correctly.
+2. When a Client invites a Talent, the Talent does not receive an in-app notification.
+3. The Talent must also receive an invitation email from findwork@onspotglobal.com.
+```
+
+Do NOT redesign or replace the existing invitation system.
+
+Do NOT create another talent-search page.
+
+Do NOT create another notification subsystem.
+
+Do NOT create another email provider/service.
+
+Reuse the existing Client invitation, notification, and email infrastructure.
+
+---
+
+# EXISTING FLOW TO PRESERVE
+
+The existing formal invitation flow already uses:
+
+```text
+POST /api/client/invitations
+```
+
+with data such as:
+
+```ts
+{
+  jobId,
+  talentUserId,
+  proposedTimes
+}
+```
+
+Preserve that endpoint and its existing behavior, including:
+
+```text
+job ownership validation
+MSA / Terms acceptance
+duplicate invite protection
+interview proposedTimes
+existing application/submission creation
+existing talent privacy rules
+```
+
+Do not create a parallel invite endpoint unless the existing one genuinely cannot support the required behavior.
+
+---
+
+# ISSUE 1 — Talent search inside Invite Talent modal does not work
+
+Current UI:
+
+```text
+Invite Talent to Apply
+
+Search talent for Data Entry.
+
+[ Search by role, skill, or experience... ] [Search]
+```
+
+The modal initially shows talent results.
+
+But when a Client enters a known talent/search term, for example:
+
+```text
+Val
+```
+
+the result becomes:
+
+```text
+No matching talent found.
+```
+
+even though talent matching that term visibly exists in the system.
+
+This search must be fixed.
+
+---
+
+# First inspect the actual search flow
+
+Trace the entire path from:
+
+```text
+ClientProfile / Invite Talent dialog
+→ search input
+→ API request
+→ backend query
+→ candidate mapping
+→ PII sanitizer
+→ response
+→ frontend filtering/rendering
+```
+
+Search the codebase for:
+
+```text
+Invite Talent to Apply
+Search talent
+No matching talent found
+talentSearch
+searchTalent
+/api/client/talent-search
+/api/client/jobs
+candidate search
+sanitizeSearchCandidate
+```
+
+Determine whether the search is currently:
+
+```text
+frontend-only filtering
+backend filtering
+or both
+```
+
+Do not guess.
+
+---
+
+# Search requirements
+
+The Client should be able to search by safe professional fields, including where available:
+
+```text
+masked/display name
+target position
+headline
+category
+skills
+core skills
+secondary skills
+experience/seniority
+location
+```
+
+Do NOT search or expose hidden PII such as:
+
+```text
+email
+phone
+resume URL
+LinkedIn
+GitHub
+portfolio
+personal website
+```
+
+---
+
+# Important privacy requirement
+
+Client-facing search results must continue to use the server-side talent sanitizer.
+
+Do NOT bypass:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+The search endpoint may use internal/raw data for matching on the server, but the RESPONSE must remain sanitized.
+
+That means:
+
+```text
+backend can search internal candidate data
+↓
+match candidates
+↓
+sanitize matched candidates
+↓
+return safe Client-facing response
+```
+
+Do not sanitize before searching if doing so removes fields required for proper matching.
+
+---
+
+# Case-insensitive matching
+
+Search must be case-insensitive.
+
+Examples:
+
+```text
+val
+Val
+VAL
+```
+
+should produce the same matches.
+
+Trim whitespace.
+
+Example:
+
+```text
+"  Val  "
+```
+
+must be treated as:
+
+```text
+"Val"
+```
+
+---
+
+# Partial matching
+
+Support practical partial text matches.
+
+Example talent:
+
+```text
+Valerie
+```
+
+Search:
+
+```text
+Val
+```
+
+should match.
+
+Example role:
+
+```text
+Technical Specialist
+```
+
+Search:
+
+```text
+technical
+```
+
+should match.
+
+Example skill:
+
+```text
+Customer Service
+```
+
+Search:
+
+```text
+customer
+```
+
+should match.
+
+---
+
+# Token matching
+
+For a multi-word query:
+
+```text
+customer support
+```
+
+match candidates where those words appear across relevant searchable professional fields.
+
+Do not require the entire query to match one field exactly unless the existing search architecture intentionally does so.
+
+---
+
+# Do not search only the current visible page
+
+If the current dialog initially loads a paginated subset of candidates, do not filter only that subset.
+
+Search must query the actual eligible talent dataset.
+
+Bad:
+
+```ts
+visibleResults.filter(...)
+```
+
+when only 20 candidates have been loaded.
+
+Preferred:
+
+```text
+search query
+→ backend
+→ all eligible candidates
+→ rank/filter
+→ paginated sanitized results
+```
+
+---
+
+# Verify search eligibility filters
+
+Do not accidentally exclude valid Talent due to incorrect eligibility logic.
+
+Inspect filters such as:
+
+```text
+candidate active status
+availability
+talent profile completeness
+verified/vetted status
+role
+job match threshold
+application state
+already invited
+```
+
+A candidate should not disappear merely because the match score is low unless that is an intentional existing requirement.
+
+The screenshot shows candidates with:
+
+```text
+0% match
+5% match
+```
+
+which proves the modal already permits low match scores.
+
+Therefore a valid talent should not be excluded just because search produces a low score.
+
+---
+
+# Search and ranking are separate
+
+The text query determines whether a Talent is a relevant result.
+
+The AI/job match score can still be displayed separately.
+
+Example:
+
+```text
+Val T.            5% match
+```
+
+A result matching `Val` should be returned even if the job match score is low.
+
+Do NOT use something like:
+
+```ts
+if (matchScore < threshold) exclude
+```
+
+unless the existing system explicitly requires it.
+
+---
+
+# Search button and Enter key
+
+Verify both:
+
+```text
+click Search
+press Enter
+```
+
+run the same query.
+
+Prevent stale search state.
+
+If the query is cleared and searched again, return the default eligible talent list.
+
+---
+
+# Loading/error state
+
+While searching:
+
+```text
+Searching talent...
+```
+
+If truly no results:
+
+```text
+No matching talent found.
+Try another search.
+```
+
+If API fails:
+
+```text
+Unable to search talent right now.
+Please try again.
+```
+
+Do not show "No matching talent found" for server/API errors.
+
+---
+
+# ISSUE 2 — Talent must receive an in-app notification when invited
+
+When the Client successfully sends:
+
+```text
+Invite to Apply
+```
+
+the Talent being invited must receive a notification through the EXISTING notification system.
+
+Do not create a special new notification UI.
+
+Use the same notification bell/list infrastructure already used elsewhere.
+
+---
+
+# Notification trigger
+
+Create the notification on the BACKEND after the formal invitation has been successfully created.
+
+Correct architecture:
+
+```text
+Client clicks Invite to Apply
+        ↓
+POST /api/client/invitations
+        ↓
+backend validates Client/job/talent
+        ↓
+backend creates invitation/submission
+        ↓
+backend creates Talent notification
+        ↓
+backend sends Talent email
+```
+
+Do NOT:
+
+```text
+Client frontend manually POST notification
+```
+
+The backend invitation action must be authoritative.
+
+---
+
+# Notification recipient
+
+The recipient is the invited Talent's user account.
+
+Resolve:
+
+```text
+talentUserId
+```
+
+from the invitation payload to the actual notification user ID.
+
+Do not notify:
+
+```text
+the Client
+Admin
+another Talent
+all Talent users
+```
+
+---
+
+# Suggested notification content
+
+Title:
+
+```text
+You've been invited to apply
+```
+
+Message:
+
+```text
+A client has invited you to apply for “{{job_title}}”.
+```
+
+If the Client/company name is intentionally visible to Talent in the existing product, this may be:
+
+```text
+{{company_name}} has invited you to apply for “{{job_title}}”.
+```
+
+Use the actual privacy/business rules already in the project.
+
+Do not expose hidden Client information if the existing Talent workflow masks it.
+
+---
+
+# Suggested notification type
+
+If the existing schema supports it:
+
+```text
+job_invitation
+```
+
+or:
+
+```text
+talent_invited
+```
+
+Use an existing compatible notification type if one already exists.
+
+Do not add a new enum blindly.
+
+---
+
+# Notification deep link
+
+If notification links are supported, clicking it should take the Talent to the existing invitation/application area where they can:
+
+```text
+view invitation
+accept
+decline
+review proposed interview time
+```
+
+Use the actual existing Talent route.
+
+Do not invent a route.
+
+---
+
+# One notification per successful invitation
+
+If the Client attempts to invite the same Talent to the same job again and the backend returns:
+
+```text
+already_invited
+```
+
+DO NOT generate another notification.
+
+Notification creation must happen only after a new invitation is successfully created.
+
+---
+
+# ISSUE 3 — Send invitation email to Talent
+
+After a successful formal invitation, send an email to the invited Talent.
+
+Required sender:
+
+```text
+findwork@onspotglobal.com
+```
+
+The From address must be:
+
+```text
+findwork@onspotglobal.com
+```
+
+Use the project's existing email infrastructure.
+
+Search for:
+
+```text
+microsoftGraphEmailService
+sendEmail
+sendMail
+Graph
+findwork@onspotglobal.com
+email templates
+```
+
+Do not add SendGrid/Resend/Postmark/etc. if Microsoft Graph is already the project mail transport.
+
+---
+
+# Email recipient
+
+Use the real Talent email on the backend.
+
+The Talent email must NEVER be returned to the Client frontend just to send this email.
+
+Correct:
+
+```text
+talentUserId
+↓
+backend loads Talent email
+↓
+backend sends email
+```
+
+Incorrect:
+
+```text
+API returns talent email to Client browser
+↓
+frontend passes it back
+```
+
+Keep PII protected.
+
+---
+
+# Email subject
+
+Recommended:
+
+```text
+You've been invited to apply for {{job_title}}
+```
+
+Example:
+
+```text
+You've been invited to apply for Data Entry
+```
+
+---
+
+# Email body
+
+Use a professional existing OnSpot/Find Work email template style.
+
+Suggested content:
+
+```text
+Hi {{talent_first_name}},
+
+You've been invited to apply for the {{job_title}} opportunity on OnSpot.
+
+Review the invitation in your OnSpot account to accept or decline it.
+
+If an interview time was suggested by the Client, you can review that proposed time and suggest an alternative if needed.
+
+[View Invitation]
+
+— OnSpot Find Work
+```
+
+Use the actual existing URL for the Talent invitation/application page.
+
+Do not hardcode localhost.
+
+Use the existing application/public base URL configuration.
+
+---
+
+# Sender details
+
+Required:
+
+```text
+From email:
+findwork@onspotglobal.com
+```
+
+If the Microsoft Graph email service requires a sender/mailbox configuration, inspect how other system emails select the sending mailbox.
+
+Do not hardcode credentials.
+
+Do not expose Graph client secrets.
+
+---
+
+# Email + notification should use the same successful invitation event
+
+Do not make the Client click separate actions.
+
+One successful:
+
+```text
+Invite to Apply
+```
+
+should result in:
+
+```text
+invitation created
+Talent notification created
+Talent invitation email sent
+```
+
+---
+
+# Invitation success handling
+
+The DB invitation is the primary action.
+
+Recommended handling:
+
+```text
+1. Create formal invitation
+2. Create Talent notification
+3. Attempt email
+4. Return result
+```
+
+If invitation succeeds but email fails, do NOT create another invitation on retry.
+
+Return useful metadata if compatible with the current API:
+
+```json
+{
+  "success": true,
+  "invitationCreated": true,
+  "notificationCreated": true,
+  "emailSent": false
+}
+```
+
+The Client UI may show:
+
+```text
+Invitation sent, but the email notification could not be delivered.
+```
+
+If both succeed:
+
+```text
+Invitation sent successfully.
+```
+
+Do not tell the Client the email was sent if the mail transport failed.
+
+---
+
+# Idempotency / duplicates
+
+The existing system already has duplicate invitation handling.
+
+Preserve:
+
+```text
+same jobId + same talentUserId
+→ already_invited
+```
+
+If duplicate:
+
+```text
+do not create another invitation
+do not create another Talent notification
+do not send another invitation email
+```
+
+unless an explicit "Resend Invitation" feature is added separately in the future.
+
+---
+
+# Suggested interview time
+
+The existing modal contains:
+
+```text
+Suggested first interview time
+```
+
+and the formal invitation flow already supports:
+
+```text
+proposedTimes
+```
+
+Preserve this.
+
+Include the proposed interview time in the notification/email only if one was actually provided.
+
+Example email:
+
+```text
+Suggested interview time:
+August 27, 2026 at 10:00 AM (Asia/Manila)
+```
+
+Use the stored timezone.
+
+Do not invent a time if none was supplied.
+
+---
+
+# Email template reuse
+
+Before creating new raw HTML email content, inspect the existing project email-template system.
+
+If the system already supports reusable templates, add/use a Talent invitation template through that infrastructure.
+
+Potential template identifier:
+
+```text
+talent_job_invitation
+```
+
+only if consistent with the existing schema.
+
+Do not create duplicate template storage.
+
+---
+
+# Logging
+
+Add safe backend logging around the invitation side effects.
+
+Example:
+
+```text
+[TalentInvitation] Created
+jobId=<id>
+talentUserId=<id>
+
+[TalentInvitationNotification] Created
+
+[TalentInvitationEmail] Sent
+sender=findwork@onspotglobal.com
+```
+
+Failure:
+
+```text
+[TalentInvitationEmail] Failed
+jobId=<id>
+talentUserId=<id>
+error=<safe message>
+```
+
+Do not log:
+
+```text
+API secrets
+access tokens
+passwords
+full email bodies
+```
+
+---
+
+# Privacy regression requirement
+
+After this change, verify Client-facing talent APIs STILL do not expose:
+
+```text
+email
+phone
+phoneNumber
+resumeUrl
+linkedinUrl
+githubUrl
+portfolioUrl
+websiteUrl
+videoIntroUrl
+userId
+```
+
+Reuse:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+for Client responses.
+
+The backend invitation route may internally resolve the Talent user ID/email, but that data must not leak into search API responses.
+
+---
+
+# Automated tests — Talent search
+
+Add or update tests for the actual API used by the dialog.
+
+Test:
+
+```text
+Known Talent:
+first name contains "Val"
+```
+
+Query:
+
+```text
+Val
+```
+
+Expected:
+
+```text
+one or more matching sanitized Talent records
+```
+
+Test:
+
+```text
+val
+VAL
+" Val "
+```
+
+Expected same result set.
+
+Test search against:
+
+```text
+role
+skill
+headline
+category
+```
+
+Verify unknown term returns empty results.
+
+Verify server error produces error response, not empty-success response.
+
+---
+
+# Automated tests — Invitation notification
+
+Given:
+
+```text
+Client A
+Job A
+Talent A
+```
+
+When Client A successfully invites Talent A:
+
+Verify:
+
+```text
+invitation row exists
+notification row exists for Talent A
+notification starts unread
+job title is correct
+Client A does not receive the Talent invitation notification
+```
+
+---
+
+# Automated tests — Invitation email
+
+Mock the existing email transport.
+
+Verify:
+
+```text
+recipient = Talent A real backend email
+from = findwork@onspotglobal.com
+subject contains Job A title
+body contains invitation CTA
+```
+
+Do not send a real external email in automated tests.
+
+---
+
+# Duplicate test
+
+Invite Talent A to Job A.
+
+Then attempt same invite again.
+
+Expected:
+
+```text
+second invitation blocked
+second notification NOT created
+second email NOT sent
+```
+
+---
+
+# Notification/email failure test
+
+Simulate email transport failure.
+
+Expected:
+
+```text
+invitation remains created
+notification remains created
+email failure is logged
+API returns useful status
+no duplicate invitation is created
+```
+
+---
+
+# Manual acceptance test
+
+Use an actual known Talent in the development environment.
+
+## Search
+
+1. Login as Client.
+2. Open Job Postings.
+3. Click `Invite Talent`.
+4. Confirm talent results initially load.
+5. Search a known existing Talent by partial first name, e.g. `Val`.
+6. Confirm the correct matching Talent appears.
+7. Search using lowercase.
+8. Search using a role/skill.
+9. Clear search.
+10. Confirm default list returns.
+
+## Invite
+
+1. Select a Talent.
+2. Optionally select a proposed interview time.
+3. Click `Invite to Apply`.
+4. Confirm invitation succeeds.
+5. Login as the invited Talent.
+6. Confirm notification bell shows a new unread notification.
+7. Open notification.
+8. Confirm it says they were invited to the correct job.
+9. Confirm invitation appears in their existing invitation workflow.
+10. Confirm the Talent receives an email from:
+
+```text
+findwork@onspotglobal.com
+```
+
+11. Confirm email references the correct job.
+12. Attempt duplicate invitation.
+13. Confirm no duplicate notification/email is created.
+
+---
+
+# BEFORE CHANGING CODE
+
+First inspect and report:
+
+```text
+1. Component that renders Invite Talent to Apply modal
+2. Current search API endpoint
+3. Exact frontend search request payload/query
+4. Backend fields currently searched
+5. Why "Val" returns no results
+6. Existing invitation endpoint
+7. Existing notification creation helper
+8. Existing Talent notification UI/route
+9. Existing email service
+10. How findwork@onspotglobal.com is currently configured/used
+11. Talent email field source
+```
+
+Then implement.
+
+Do not stop after analysis.
+
+---
+
+# AFTER IMPLEMENTATION
+
+Report:
+
+```text
+Files changed
+
+Talent search:
+- root cause
+- endpoint fixed
+- searchable fields
+- case/partial matching
+- tests
+
+Invitation notification:
+- existing helper reused
+- notification type/title/message
+- Talent route/deep link
+- duplicate protection
+
+Invitation email:
+- email service reused
+- sender confirmed as findwork@onspotglobal.com
+- subject/template
+- failure behavior
+- duplicate protection
+
+Regression:
+- PII sanitizer tests passed
+- existing invitation behavior preserved
+- proposed interview time preserved
+```
+
+Do not mark this fixed unless:
+
+```text
+known Talent search works
+AND
+Talent receives in-app notification
+AND
+Talent receives email from findwork@onspotglobal.com
+```
