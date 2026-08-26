@@ -98,6 +98,13 @@ const TYPE_CONFIG: Record<
     label: "Offer Expired",
     route: "/hire-talent",
   },
+  job_approved: {
+    icon: CheckCircle,
+    color: "#059669",
+    bg: "#D1FAE5",
+    label: "Job Approved",
+    route: "/client-profile",
+  },
   job_application_received: {
     icon: FileText,
     color: "#2563EB",

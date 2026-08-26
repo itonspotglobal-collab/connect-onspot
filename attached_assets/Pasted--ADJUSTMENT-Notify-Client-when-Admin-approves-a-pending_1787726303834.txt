@@ -1,0 +1,473 @@
+# ADJUSTMENT — Notify Client when Admin approves a pending job request
+
+The system already has notification functionality.
+
+Do NOT build a new notification subsystem.
+
+Inspect and reuse the existing:
+
+```text
+notifications table/schema
+notification storage/service
+notification API
+unread count
+notification dropdown/list
+mark-as-read behavior
+existing notification UI
+```
+
+Search the project for:
+
+```text
+notifications
+createNotification
+insertNotification
+unread-notifications
+mark as read
+isRead
+userId
+notification type
+```
+
+Also inspect:
+
+```text
+shared/schema.ts
+server/storage.ts
+server/routes.ts
+```
+
+and existing notification tests.
+
+---
+
+# Required workflow
+
+The expected job approval lifecycle is:
+
+```text
+Client submits job
+        ↓
+approval status = pending
+        ↓
+Admin reviews job
+        ↓
+Admin clicks Approve
+        ↓
+approval status changes pending → approved
+        ↓
+create notification for the Client who owns the job
+        ↓
+Client notification bell/unread count updates
+```
+
+The notification must be created on the BACKEND when the Admin approval succeeds.
+
+Do NOT have the Admin frontend separately call a notification endpoint.
+
+Do NOT have the Client frontend infer that a job was approved and generate its own notification.
+
+The backend approval action is the authoritative event.
+
+---
+
+# Notification recipient
+
+The notification must go to the Client/user that owns the approved job.
+
+Do not send it to:
+
+```text
+the approving Admin
+all Clients
+the talent
+an unrelated organization member
+```
+
+Resolve the owner using the existing job/client/user relationship in the database.
+
+For example:
+
+```text
+job
+→ client_id / clientId
+→ corresponding Client user
+→ notification.user_id
+```
+
+Use the actual schema relationships in this project.
+
+Do not guess field mappings.
+
+---
+
+# Notification content
+
+Recommended notification:
+
+Title:
+
+```text
+Job post approved
+```
+
+Message:
+
+```text
+Your job post “{{job_title}}” has been approved and is now live.
+```
+
+Example:
+
+```text
+Job post approved
+
+Your job post “Customer Support Specialist” has been approved and is now live.
+```
+
+Use the project's existing notification fields/naming conventions.
+
+If notifications support a type/category, use something appropriate such as:
+
+```text
+job_approved
+```
+
+but only if compatible with the existing notification type system.
+
+Do not introduce a new enum/value without checking the schema first.
+
+---
+
+# Deep link
+
+If the existing notification system supports a URL/link/action field, clicking the notification should preferably take the Client to the relevant job area, for example:
+
+```text
+/client-profile
+```
+
+or the existing route that contains the Client's Job Postings.
+
+If job-specific links are supported safely, use the appropriate existing job route.
+
+Do not invent a broken route.
+
+---
+
+# Trigger only on an actual approval transition
+
+This is important.
+
+Create the notification ONLY when the job transitions:
+
+```text
+pending → approved
+```
+
+Do not create another notification when:
+
+```text
+approved → approved
+```
+
+Do not create duplicates when:
+
+* the Admin reloads the page
+* React Query retries
+* the job is edited after approval
+* an already-approved job is saved again
+
+Example logic:
+
+```ts
+const previousApprovalStatus = job.approvalStatus;
+
+updateJob(...);
+
+if (
+  previousApprovalStatus !== "approved" &&
+  newApprovalStatus === "approved"
+) {
+  create client notification;
+}
+```
+
+Prefer an atomic/backend-safe implementation based on the actual database update flow.
+
+---
+
+# If Admin unapproves and approves again
+
+Inspect the intended existing behavior.
+
+Recommended behavior:
+
+If Admin explicitly performs:
+
+```text
+Approved → Pending → Approved
+```
+
+again, it is reasonable to send a new approval notification because this is a real new approval event.
+
+However:
+
+```text
+Approved → save/edit while Approved
+```
+
+must NOT create a new notification.
+
+---
+
+# Preserve current job approval behavior
+
+Do NOT alter these existing states:
+
+```text
+pending
+approved
+rejected
+linked_to_existing
+```
+
+Do not auto-approve Client-created jobs.
+
+Do not change public visibility rules.
+
+The notification must happen AFTER a successful Admin approval, not instead of approval.
+
+Expected result:
+
+```text
+Before Admin approval:
+Client job = Pending Approval
+Public job = hidden
+No approval notification
+
+After Admin approval:
+Client job = Approved
+Public job = visible
+Client gets approval notification
+```
+
+---
+
+# Existing Client notification UI
+
+Use the notification features that are already implemented.
+
+The new job-approved notification must appear in the same place as other notifications.
+
+Verify:
+
+```text
+notification bell badge increments
+unread count increments
+notification appears in notification list/dropdown
+notification can be marked read
+unread count decreases appropriately
+```
+
+Do not create a special standalone "job approved" notification panel.
+
+---
+
+# Query invalidation / refresh
+
+If the Client notification UI uses React Query and something like:
+
+```text
+unread-notifications
+```
+
+make sure the existing invalidation/refetch behavior will pick up the new backend notification.
+
+Do not add aggressive polling if the current notification architecture already has a refresh mechanism.
+
+If the Client must reload before seeing a newly created notification, inspect the existing notification refresh strategy and follow the same pattern used by other notification types.
+
+---
+
+# Notification and email are separate
+
+For this adjustment, the required feature is the IN-APP notification.
+
+Do not automatically add an email unless the existing job-approval workflow already specifies one.
+
+The required behavior is:
+
+```text
+Admin approves Client job
+→ Client receives in-app notification
+```
+
+If an approval email already exists, preserve it.
+
+Do not remove or duplicate it.
+
+---
+
+# Failure handling
+
+The approval operation should remain reliable.
+
+Preferred behavior:
+
+```text
+1. Admin approves job
+2. DB approval update succeeds
+3. Notification record is created
+```
+
+Use the existing project's transaction/service conventions.
+
+Do not return "Approval failed" if the job actually became approved but only a non-critical notification side effect failed, unless the existing architecture treats both operations transactionally.
+
+At minimum, log notification creation failures clearly.
+
+Example:
+
+```text
+[JobApproval] Job <id> approved by admin
+[JobApprovalNotification] Created notification for client <id>
+```
+
+Failure:
+
+```text
+[JobApprovalNotification] Failed for job <id>: <safe error>
+```
+
+Do not log secrets or auth tokens.
+
+---
+
+# Required tests
+
+Add or update tests using the project's existing notification testing patterns.
+
+Test at minimum:
+
+## Test 1 — pending → approved
+
+Given:
+
+```text
+job approval = pending
+owner = Client A
+```
+
+When Admin approves:
+
+Verify:
+
+```text
+job approval = approved
+one notification exists for Client A
+notification references correct job
+notification contains correct title/message
+notification is unread
+```
+
+---
+
+## Test 2 — correct recipient
+
+Client A owns Job A.
+
+Client B exists.
+
+Admin approves Job A.
+
+Verify:
+
+```text
+Client A receives notification
+Client B receives no notification
+Admin receives no Client approval notification
+```
+
+---
+
+## Test 3 — duplicate protection
+
+Given an already approved job:
+
+Save/update it again while remaining approved.
+
+Verify:
+
+```text
+no additional job-approved notification created
+```
+
+---
+
+## Test 4 — rejection
+
+Admin declines a pending job.
+
+Unless rejection notification functionality already exists:
+
+```text
+do not accidentally generate an approval notification
+```
+
+---
+
+## Test 5 — UI
+
+Login as Client after Admin approval.
+
+Verify:
+
+```text
+notification bell unread count increases
+notification list contains:
+"Job post approved"
+correct job title is shown
+notification starts unread
+mark as read works
+```
+
+---
+
+# Before making changes
+
+First inspect and report:
+
+```text
+1. Existing notification schema/table
+2. Existing notification creation helper/storage method
+3. Existing Client notification endpoint
+4. Existing unread-count implementation
+5. Exact Admin job approval route
+6. Exact relationship from job owner → Client user ID
+```
+
+Then implement the notification using those existing mechanisms.
+
+Do not stop after analysis.
+
+---
+
+# After implementation
+
+Report:
+
+```text
+Files changed
+Admin approval route used
+Existing notification helper reused
+How Client recipient is resolved
+Notification title/message
+Notification type
+Deep link if any
+Duplicate protection
+Tests added/run
+Manual verification result
+```
+
+Do not claim success unless the notification is actually persisted and visible in the existing Client notification UI.

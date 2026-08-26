@@ -9435,11 +9435,45 @@ export async function registerRoutes(
           rejection_reason = NULL,
           updated_at = NOW()
          WHERE id = $2
+           AND COALESCE(approval_status, 'pending') <> 'approved'
          RETURNING *`,
         [adminId, req.params.id],
       );
-      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
-      res.json(result.rows[0]);
+      if (result.rows.length === 0) {
+        // An already-approved job is a successful no-op, not a second approval
+        // event. Re-read it so the existing endpoint response remains useful.
+        const current = await query(`SELECT * FROM jobs WHERE id = $1 LIMIT 1`, [req.params.id]);
+        if (current.rows.length === 0) return res.status(404).json({ error: "Job not found" });
+        return res.json(current.rows[0]);
+      }
+
+      const approvedJob = result.rows[0];
+      try {
+        await storage.createNotification({
+          userId: approvedJob.client_id,
+          type: "job_approved",
+          title: "Job post approved",
+          message: `Your job post “${approvedJob.title}” has been approved and is now live.`,
+          relatedId: approvedJob.id,
+          relatedType: "job",
+          eventKey: `job_approved:${approvedJob.id}`,
+        });
+        console.log(`[JobApprovalNotification] Created notification for client ${approvedJob.client_id}`);
+      } catch (notificationError: any) {
+        // The unique event key makes retries/concurrent approval requests
+        // harmless. A notification failure must not turn a committed approval
+        // into a misleading "approval failed" response.
+        if (notificationError?.code === "23505") {
+          console.log(`[JobApprovalNotification] Already exists for job ${approvedJob.id}`);
+        } else {
+          console.error(
+            `[JobApprovalNotification] Failed for job ${approvedJob.id}:`,
+            notificationError?.message ?? notificationError,
+          );
+        }
+      }
+
+      res.json(approvedJob);
       import("./services/ragService")
         .then(({ indexJobListings }) => indexJobListings())
         .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));

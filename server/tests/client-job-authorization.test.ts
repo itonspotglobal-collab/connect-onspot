@@ -27,6 +27,8 @@ const PENDING_JOB_ID = `client-job-pending-${suffix}`;
 const READY_JOB_ID = `client-job-ready-${suffix}`;
 const REVISION_JOB_ID = `client-job-revision-${suffix}`;
 const SCAFFOLD_JOB_ID = `client-job-scaffold-${suffix}`;
+const APPROVAL_NOTIFICATION_JOB_ID = `client-job-approval-notification-${suffix}`;
+const REJECTION_NOTIFICATION_JOB_ID = `client-job-rejection-notification-${suffix}`;
 const CANDIDATE_ID = `client-job-candidate-${suffix}`;
 
 const token = (userId: string, role: string) =>
@@ -138,9 +140,21 @@ async function createFixtures() {
         'Standard', 'open', 'approved', 'manual'),
         ($4, $2, 'Revision-needed job', 'Revision-needed test job', 'Technical', 'intermediate',
          'Standard', 'open', 'revision_needed', 'manual'),
-        ($5, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
-        'Standard', 'closed', 'pending', 'search_scaffold')`,
-     [PENDING_JOB_ID, CLIENT_ID, READY_JOB_ID, REVISION_JOB_ID, SCAFFOLD_JOB_ID],
+       ($5, $2, 'Search placeholder', 'Scaffold test job', 'Technical', 'intermediate',
+        'Standard', 'closed', 'pending', 'search_scaffold'),
+       ($6, $2, 'Approval notification job', 'Notification test job', 'Technical', 'intermediate',
+        'Standard', 'open', 'pending', 'manual'),
+       ($7, $2, 'Rejection notification job', 'Rejected notification test job', 'Technical', 'intermediate',
+        'Standard', 'open', 'pending', 'manual')`,
+      [
+        PENDING_JOB_ID,
+        CLIENT_ID,
+        READY_JOB_ID,
+        REVISION_JOB_ID,
+        SCAFFOLD_JOB_ID,
+        APPROVAL_NOTIFICATION_JOB_ID,
+        REJECTION_NOTIFICATION_JOB_ID,
+      ],
   );
   await query(
     `INSERT INTO candidates
@@ -155,9 +169,22 @@ async function destroyFixtures() {
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
   await query(`DELETE FROM client_talent_favorites WHERE client_id = $1 OR talent_id = $1`, [CLIENT_ID]).catch(() => {});
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
-  await query(`DELETE FROM notifications WHERE user_id = $1`, [TALENT_ID]).catch(() => {});
+  await query(
+    `DELETE FROM notifications WHERE user_id = ANY($1::text[])`,
+    [[ADMIN_ID, CLIENT_ID, OTHER_CLIENT_ID, TALENT_ID]],
+  ).catch(() => {});
   await query(`DELETE FROM candidates WHERE id = $1`, [CANDIDATE_ID]).catch(() => {});
-  await query(`DELETE FROM jobs WHERE id = ANY($1::text[])`, [[PENDING_JOB_ID, READY_JOB_ID, REVISION_JOB_ID, SCAFFOLD_JOB_ID]]).catch(() => {});
+  await query(
+    `DELETE FROM jobs WHERE id = ANY($1::text[])`,
+    [[
+      PENDING_JOB_ID,
+      READY_JOB_ID,
+      REVISION_JOB_ID,
+      SCAFFOLD_JOB_ID,
+      APPROVAL_NOTIFICATION_JOB_ID,
+      REJECTION_NOTIFICATION_JOB_ID,
+    ]],
+  ).catch(() => {});
   await query(
     `DELETE FROM client_profiles WHERE user_id = ANY($1::text[])`,
     [[ADMIN_ID, CLIENT_ID, OTHER_CLIENT_ID, TALENT_ID]],
@@ -662,5 +689,89 @@ describe("client profile and job authorization (production routes)", () => {
       [TALENT_ID],
     );
     assert.equal(finalNotifications.rows[0].count, 0, "shortlist and promotion must not create a platform notification");
+  });
+
+  it("notifies only the owning client when an admin approves a job, without duplicate approval events", async () => {
+    const approval = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${APPROVAL_NOTIFICATION_JOB_ID}/approve`,
+      adminToken,
+    );
+    assert.equal(approval.status, 200, JSON.stringify(approval.json));
+    assert.equal(approval.json.approval_status, "approved");
+
+    const notificationRows = await query(
+      `SELECT user_id, type, title, message, related_id, related_type, event_key, is_read
+         FROM notifications
+        WHERE related_id = $1`,
+      [APPROVAL_NOTIFICATION_JOB_ID],
+    );
+    assert.equal(notificationRows.rows.length, 1, "one approval notification must be persisted");
+    assert.deepEqual(notificationRows.rows[0], {
+      user_id: CLIENT_ID,
+      type: "job_approved",
+      title: "Job post approved",
+      message: "Your job post “Approval notification job” has been approved and is now live.",
+      related_id: APPROVAL_NOTIFICATION_JOB_ID,
+      related_type: "job",
+      event_key: `job_approved:${APPROVAL_NOTIFICATION_JOB_ID}`,
+      is_read: false,
+    });
+
+    const ownerUnread = await request(
+      server,
+      "GET",
+      `/api/users/${CLIENT_ID}/notifications?unread_only=true`,
+      clientToken,
+    );
+    assert.equal(ownerUnread.status, 200, JSON.stringify(ownerUnread.json));
+    assert.ok(
+      ownerUnread.json.some((notification: any) => notification.relatedId === APPROVAL_NOTIFICATION_JOB_ID),
+      "the owning client must receive the unread notification through the existing endpoint",
+    );
+
+    const otherClientUnread = await request(
+      server,
+      "GET",
+      `/api/users/${OTHER_CLIENT_ID}/notifications?unread_only=true`,
+      otherClientToken,
+    );
+    assert.equal(otherClientUnread.status, 200, JSON.stringify(otherClientUnread.json));
+    assert.equal(
+      otherClientUnread.json.some((notification: any) => notification.relatedId === APPROVAL_NOTIFICATION_JOB_ID),
+      false,
+      "another client must not receive the approval notification",
+    );
+
+    const repeatedApproval = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${APPROVAL_NOTIFICATION_JOB_ID}/approve`,
+      adminToken,
+    );
+    assert.equal(repeatedApproval.status, 200, JSON.stringify(repeatedApproval.json));
+    const afterRepeat = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE related_id = $1 AND type = 'job_approved'`,
+      [APPROVAL_NOTIFICATION_JOB_ID],
+    );
+    assert.equal(afterRepeat.rows[0].count, 1, "an already-approved job must not create another event");
+  });
+
+  it("does not create an approval notification when an admin rejects a pending job", async () => {
+    const rejection = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/reject`,
+      adminToken,
+      { rejectionReason: "Needs more detail" },
+    );
+    assert.equal(rejection.status, 200, JSON.stringify(rejection.json));
+    assert.equal(rejection.json.approval_status, "rejected");
+    const notifications = await query(
+      `SELECT id FROM notifications WHERE related_id = $1 AND type = 'job_approved'`,
+      [REJECTION_NOTIFICATION_JOB_ID],
+    );
+    assert.equal(notifications.rows.length, 0);
   });
 });

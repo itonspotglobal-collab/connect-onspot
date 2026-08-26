@@ -13,6 +13,10 @@ const TALENT_ID = "talent-search-ui";
 let browser: Browser;
 let vite: ChildProcess | undefined;
 let invitationPayload: Record<string, unknown> | undefined;
+let showApprovalNotification = false;
+let approvalNotificationRead = false;
+let approvalNotificationMarkReadCount = 0;
+const APPROVAL_NOTIFICATION_ID = "job-approved-notification-ui";
 
 async function waitForUrl(url: string, timeoutMs = 15_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -33,8 +37,29 @@ async function fulfillJson(route: Route, body: unknown, status = 200): Promise<v
 
 async function routeApi(route: Route): Promise<void> {
   const request = route.request();
-  const path = new URL(request.url()).pathname;
+  const url = new URL(request.url());
+  const path = url.pathname;
 
+  if (request.method() === "GET" && path === `/api/users/${CLIENT_ID}/notifications`) {
+    const isUnreadOnly = url.searchParams.get("unread_only") === "true";
+    return fulfillJson(route, showApprovalNotification && (!isUnreadOnly || !approvalNotificationRead)
+      ? [{
+          id: APPROVAL_NOTIFICATION_ID,
+          type: "job_approved",
+          title: "Job post approved",
+          message: "Your job post “Customer Support Specialist” has been approved and is now live.",
+          relatedId: JOB_ID,
+          relatedType: "job",
+          isRead: approvalNotificationRead,
+          createdAt: "2026-08-26T00:00:00.000Z",
+        }]
+      : []);
+  }
+  if (request.method() === "PATCH" && path === `/api/notifications/${APPROVAL_NOTIFICATION_ID}/read`) {
+    approvalNotificationRead = true;
+    approvalNotificationMarkReadCount += 1;
+    return route.fulfill({ status: 204 });
+  }
   if (request.method() === "GET" && path === "/api/client-profile/me") {
     return fulfillJson(route, { companyName: "UI Regression Co.", preferredRoles: [], createdAt: "2026-01-01T00:00:00.000Z" });
   }
@@ -241,5 +266,32 @@ test("Find Work compact cards convert Quill HTML to readable plain text", async 
     assert.equal(await page.getByText("<li>", { exact: true }).count(), 0);
   } finally {
     await context.close();
+  }
+});
+
+test("Client notification bell shows, counts, and marks a job approval notification as read", async () => {
+  showApprovalNotification = true;
+  approvalNotificationRead = false;
+  approvalNotificationMarkReadCount = 0;
+  const page = await newClientPage();
+  try {
+    const bell = page.getByTestId("notification-bell");
+    await page.getByRole("button", { name: "1 unread notifications" }).waitFor();
+    await bell.click();
+    await page.getByText("Job post approved", { exact: true }).waitFor();
+    await page.getByText(
+      "Your job post “Customer Support Specialist” has been approved and is now live.",
+      { exact: true },
+    ).waitFor();
+
+    await page.getByTestId(`notification-${APPROVAL_NOTIFICATION_ID}`).click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="notification-bell"]')?.getAttribute("aria-label") === "Notifications",
+    );
+    assert.equal(approvalNotificationMarkReadCount, 1);
+    assert.match(page.url(), /\/client-profile$/, "approval notifications must link to Client job postings");
+  } finally {
+    showApprovalNotification = false;
+    await page.context().close();
   }
 });
