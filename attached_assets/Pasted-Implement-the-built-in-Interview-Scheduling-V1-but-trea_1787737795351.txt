@@ -1,0 +1,871 @@
+Implement the built-in Interview Scheduling V1, but treat **preservation of all existing working behavior as the highest priority**.
+
+The current system is working well. Do not redesign, replace, remove, rename, or alter existing functionality unless a change is absolutely required for this scheduling feature.
+
+This must be an **additive, backward-compatible implementation**.
+
+# NON-REGRESSION RULE — MOST IMPORTANT
+
+Before making changes, assume every existing feature is production-critical.
+
+Do NOT break or change the behavior of:
+
+* Existing Client invitation flow
+* Existing combined Invite + Interview flow
+* Existing Talent interview response flow
+* Existing counter-proposal flow
+* Existing interview rounds
+* Existing timezone behavior
+* Existing application status transitions
+* Existing formal pipeline guards
+* Existing Talent Applications UI
+* Existing Client application modal
+* Existing meeting-link behavior
+* Existing notifications
+* Existing email sending
+* Existing Microsoft Graph availability functionality
+* Existing Admin Job Applications functionality
+* Existing MSA/Terms gates
+* Existing Talent masking/unmasking rules
+* Existing messaging
+* Existing job/application authorization
+* Existing interview outcome behavior
+* Any unrelated feature in the system
+
+If an existing feature already works, **reuse it exactly as-is wherever possible**.
+
+Do not refactor working code merely for cleanliness.
+
+Do not rename working endpoints, schema fields, statuses, components, or response shapes unless unavoidable.
+
+Do not change existing API contracts consumed by current pages.
+
+New functionality must be layered around the current implementation.
+
+---
+
+# STEP 0 — CREATE A REGRESSION BASELINE FIRST
+
+Before implementation:
+
+1. Run the relevant existing automated tests.
+2. Record which tests currently pass.
+3. Identify existing interview/invitation smoke tests.
+4. Identify existing browser tests for Client → Talent invitation.
+5. Identify existing hiring-pipeline tests.
+6. Identify existing notification/email tests relevant to this feature.
+
+At minimum include the existing:
+
+* Invite/interview timezone test
+* Client/talent invite browser test
+* Hiring pipeline/contract tests where relevant
+* Client authorization tests
+* Message-related tests if touched indirectly
+
+Report the baseline results before modifying code.
+
+If any test is already failing before your changes, clearly mark it as a pre-existing failure.
+
+Do not silently fix unrelated failures as part of this task.
+
+---
+
+# CHANGE STRATEGY
+
+Prefer this order:
+
+1. Reuse
+2. Extend
+3. Add
+4. Only modify existing behavior when absolutely necessary
+
+Avoid broad refactors.
+
+Keep diffs focused.
+
+Do not move unrelated files.
+
+Do not rename unrelated functions.
+
+Do not perform dependency upgrades.
+
+Do not update packages unless absolutely required.
+
+Do not rewrite existing interview logic into a new architecture.
+
+---
+
+# EXISTING SYSTEM TO PRESERVE
+
+The audit confirmed the existing interview system already supports:
+
+* `interviews`
+* `interview_proposals`
+* initial proposals
+* acceptance
+* decline
+* counter-proposal
+* rescheduling
+* multiple interview rounds
+* timezone-aware timestamps
+* confirmed timezone
+* meeting links
+* negotiation history
+* pipeline synchronization
+
+Use these existing mechanisms.
+
+Do NOT create:
+
+* `calendar_events`
+* another interview table
+* another proposal table
+* another notification system
+* another email service
+* another timezone implementation
+
+---
+
+# DATABASE CHANGES
+
+Only add fields genuinely required for the new calendar/scheduling experience.
+
+Add a backward-compatible migration for:
+
+* `duration_minutes integer`
+* `cancelled_at timestamptz`
+* `cancellation_reason text`
+* `completed_at timestamptz`
+
+Important:
+
+Existing records must remain valid.
+
+Do not modify existing interview IDs.
+
+Do not rewrite existing confirmed timestamps.
+
+Do not change existing status values.
+
+Do not change foreign keys unless strictly required.
+
+Do not make new fields `NOT NULL` if that would break legacy records.
+
+Recommended behavior:
+
+`duration_minutes` may be nullable for historical rows.
+
+For new interviews, default to 30 minutes at the application level or safe DB default.
+
+Existing proposal `end` values must continue working exactly as they do now.
+
+Update `shared/schema.ts` additively.
+
+---
+
+# EXISTING CLIENT INVITE FLOW MUST REMAIN UNCHANGED
+
+`POST /api/client/invitations` currently works.
+
+Do not replace this endpoint.
+
+Do not change its existing successful behavior.
+
+Do not remove the ability to create the initial interview proposal through the invitation.
+
+Do not change existing response fields consumed by the Client UI.
+
+If additional metadata such as duration is needed, make it optional and backward compatible.
+
+Existing calls that do not send the new fields must continue succeeding.
+
+---
+
+# EXISTING CLIENT INTERVIEW ROUTES
+
+Preserve all current behavior of:
+
+`POST /api/client/interviews`
+
+`GET /api/client/interviews?submissionId=...`
+
+`PATCH /api/client/interviews/:id`
+
+`GET /api/client/interviews/:id/proposals`
+
+`PATCH /api/client/interviews/:id/outcome`
+
+Do not replace or rename them.
+
+If calendar-wide listing is needed, extend the existing GET route safely.
+
+Example:
+
+Existing:
+
+`GET /api/client/interviews?submissionId=123`
+
+must continue behaving exactly as it does today.
+
+New:
+
+`GET /api/client/interviews`
+
+may return the Client's broader interview list.
+
+Do not change the existing submission-scoped payload unless necessary.
+
+If the new calendar needs a richer shape, consider an optional query parameter or separate additive endpoint rather than breaking the existing response.
+
+---
+
+# EXISTING TALENT FLOW MUST NOT CHANGE
+
+Preserve:
+
+`GET /api/talent/interviews`
+
+`PATCH /api/talent/interviews/:id/respond`
+
+Talent must still be able to:
+
+* Accept
+* Decline
+* Counter-propose
+* See negotiation history
+* See confirmed interview information
+* See timezone-aware formatting
+* Open meeting links
+
+Do not rebuild this workflow.
+
+Do not alter working Talent Applications behavior except for small additive UI improvements if necessary.
+
+Existing Talent users should experience no regression after deployment.
+
+---
+
+# ADMIN SCHEDULING
+
+The existing Admin `ScheduleInterviewDialog` currently checks Microsoft Graph availability.
+
+Preserve this functionality.
+
+Do NOT remove Microsoft Graph.
+
+Do NOT change its existing availability behavior unless needed to fix a bug directly caused by this implementation.
+
+Instead, add persistence underneath/after the current selection flow.
+
+Microsoft Graph remains an **optional availability helper**.
+
+OnSpot remains the source of truth.
+
+If Graph is unavailable:
+
+* Existing UI should fail gracefully as it already does.
+* Admin should still be able to create an OnSpot interview if the scheduling flow permits.
+
+Do not make Graph more tightly coupled than it currently is.
+
+---
+
+# CLIENT SCHEDULING UI
+
+Add built-in scheduling without disrupting the existing Client application modal.
+
+Prefer adding:
+
+* A new Schedule Interview action
+* Or completing the existing stub dialog
+
+Do not redesign the entire Client Profile.
+
+Do not remove current buttons.
+
+Do not change unrelated application actions.
+
+Schedule fields:
+
+* Date
+* Time
+* Duration
+* Timezone
+* Interview type
+* Optional meeting link
+* Optional notes
+
+Client must also be able to manually choose any valid future date/time.
+
+---
+
+# CALENDAR PAGES
+
+Add new pages rather than replacing existing pages.
+
+Create:
+
+`client/src/pages/ClientInterviews.tsx`
+
+`client/src/pages/AdminInterviews.tsx`
+
+Add routes without changing existing route behavior.
+
+These pages are supplementary views of existing interview data.
+
+They are not a replacement for:
+
+* Client Profile
+* Admin Job Applications
+* Talent Applications
+
+Existing interview information should remain available where it already appears.
+
+---
+
+# CLIENT INTERVIEW PAGE
+
+V1:
+
+* Upcoming
+* Calendar
+* Past
+
+Each event/card may show:
+
+* Talent
+* Job
+* Company
+* Interview type
+* Round
+* Date
+* Time
+* Timezone
+* Duration
+* Status
+* Meeting link
+
+Actions should call the existing interview APIs wherever possible.
+
+Do not create parallel scheduling state in the frontend.
+
+After refresh, everything must reload from the existing `interviews` data.
+
+---
+
+# ADMIN INTERVIEW PAGE
+
+V1:
+
+* Upcoming
+* Calendar
+* Past
+
+Filters:
+
+* Status
+* Client
+* Talent
+* Job
+* Date
+
+Admin may:
+
+* View
+* Schedule
+* Reschedule
+* Cancel
+* Open meeting link
+
+Use the same interview records.
+
+Do not duplicate Admin Job Applications behavior.
+
+---
+
+# CONFLICT CHECKING
+
+Add conflict detection carefully and do not interfere with existing historical records.
+
+Use server-side overlap logic:
+
+`existingStart < newEnd AND existingEnd > newStart`
+
+Important non-regression rule:
+
+Do NOT retroactively mark existing interviews invalid.
+
+Conflict checks should apply when creating or confirming a new/changed schedule.
+
+Do not block loading/editing legacy interview records merely because they would not meet today's new validation.
+
+Do not include:
+
+* cancelled
+* completed
+
+as active conflicts.
+
+Check confirmed/reserved interview slots only according to existing status semantics.
+
+Talent conflict check is required.
+
+Client conflict check should only be enabled if participant ownership is reliable.
+
+Admin interviewer conflict check should only be enabled if interviewer identity is already reliably persisted.
+
+Do not introduce an unreliable inferred interviewer mapping.
+
+---
+
+# VALIDATION MUST BE BACKWARD COMPATIBLE
+
+New validation should apply to new schedule submissions.
+
+Do not cause old API consumers to fail unnecessarily.
+
+Validate:
+
+* future time
+* timezone
+* duration
+* meeting URL
+* authorization
+* pipeline eligibility
+
+Meeting link remains optional.
+
+Do not change existing valid meeting-link values already stored.
+
+For new values, validate `http://` or `https://`.
+
+Duration:
+
+* 15–240 minutes for new entries
+
+Do not reject legacy rows where `duration_minutes` is null.
+
+---
+
+# TIMEZONE — DO NOT TOUCH WORKING LOGIC
+
+Reuse exactly:
+
+`server/lib/interviewTime.ts`
+
+`client/src/lib/formatInterviewTime.ts`
+
+Do not rewrite timezone handling.
+
+Do not create a new formatting utility unless absolutely required.
+
+Existing timezone smoke tests must continue passing unchanged.
+
+Store new schedule timestamps using the same normalization conventions already in place.
+
+---
+
+# RESCHEDULING — PRESERVE EXISTING MECHANISM
+
+Use `interview_proposals`.
+
+Do not create another reschedule table.
+
+Do not create a new interview row when rescheduling the same interview.
+
+Do not increment round number because of negotiation.
+
+Do not change immutable proposal-history semantics.
+
+Append to existing proposal history using the same pattern already used.
+
+---
+
+# INTERVIEW ROUNDS
+
+Do not alter existing multiple-round behavior.
+
+A new row is only created when the user intentionally creates a genuinely new interview round.
+
+Examples:
+
+Round 1 — Initial interview
+
+Round 2 — Technical interview
+
+Round 3 — Final interview
+
+A counter-proposal or reschedule is not a new round.
+
+---
+
+# CANCELLATION
+
+Extend existing cancel behavior.
+
+Set new metadata when available:
+
+* `cancelled_at`
+* `cancellation_reason`
+
+Do not change existing cancellation status meaning.
+
+Do not delete interviews.
+
+Do not delete proposal history.
+
+Legacy cancellation flows must still work if they do not provide a reason.
+
+---
+
+# COMPLETION
+
+Extend completion additively.
+
+Set:
+
+`completed_at`
+
+when an interview is explicitly marked completed.
+
+Do not change existing outcome handling.
+
+Do not change rejected/advance pipeline transitions.
+
+Do not automatically mark interviews completed solely because their scheduled time has passed.
+
+---
+
+# NOTIFICATIONS
+
+Preserve all existing notifications.
+
+Do not replace current application-status notifications.
+
+Add dedicated interview events only where missing:
+
+* `interview_proposed`
+* `interview_confirmed`
+* `interview_rescheduled`
+* `interview_cancelled`
+
+Use the current notification service and event-key idempotency.
+
+Do not rename existing notification types.
+
+Do not modify unrelated notification behavior.
+
+If both an existing application status notification and a new interview notification are appropriate, allow both rather than changing the existing one.
+
+---
+
+# EMAIL
+
+Preserve the existing email service.
+
+Do not change email provider.
+
+Do not remove current email templates.
+
+Do not change unrelated email flows.
+
+Add interview-specific templates/events only where missing.
+
+Email failure must not roll back a successful interview persistence operation.
+
+Use existing retry/error handling where available.
+
+---
+
+# REMINDERS
+
+Do not add reminder scheduling unless the application already has a proven production-safe scheduler/queue.
+
+This task must not introduce:
+
+* `setTimeout()`
+* browser timers
+* process-local reminder jobs
+* fragile cron behavior
+
+If no reliable scheduler exists, defer reminders.
+
+---
+
+# AUTHORIZATION
+
+Reuse existing guards.
+
+Do not create a second authorization model.
+
+Client:
+
+Only their own applications/jobs.
+
+Talent:
+
+Only their own submission/interviews.
+
+Admin:
+
+Existing admin permissions.
+
+Do not weaken existing restrictions to make the calendar easier to implement.
+
+---
+
+# APPLICATION STATUS / PIPELINE
+
+This area is especially sensitive.
+
+Do not modify existing pipeline status definitions.
+
+Do not change transition rules unless strictly necessary.
+
+Continue using the existing centralized formal pipeline guards.
+
+Existing behavior must remain:
+
+* eligible interview creation may move submission into `interviewing`
+* interview outcome may advance/reject according to current logic
+
+Do not duplicate transition logic in new calendar pages/routes.
+
+---
+
+# UI NON-REGRESSION
+
+Do not perform broad visual redesigns.
+
+New scheduling UI should use the existing OnSpot visual system.
+
+Avoid changing:
+
+* global navigation behavior
+* Client Profile layout outside affected area
+* Talent Applications layout outside affected area
+* Admin Job Applications unrelated sections
+* existing buttons/actions
+* responsive behavior of unrelated pages
+
+Keep new UI scoped.
+
+---
+
+# ERROR HANDLING
+
+Add specific errors without changing existing ones unnecessarily.
+
+New conflict error:
+
+HTTP `409`
+
+`interview_time_conflict`
+
+UI message:
+
+`That time overlaps another scheduled interview. Please choose another time.`
+
+Existing errors must continue working.
+
+Do not replace all interview errors with a new generic error format.
+
+---
+
+# CONCURRENCY
+
+Protect new confirmation/reschedule operations from stale updates, but avoid rewriting the entire interview system.
+
+Use existing transaction patterns.
+
+Prevent:
+
+* double acceptance
+* stale counter-proposal overwriting confirmed state
+* duplicate confirmation from repeated clicks
+
+Do not alter existing behavior beyond what is needed to make these actions safe.
+
+---
+
+# TESTING — REGRESSION IS REQUIRED
+
+After implementation, rerun the entire baseline test set.
+
+Existing tests that passed before the change must still pass afterward.
+
+Also add tests for the new functionality.
+
+Required new coverage:
+
+1. Client calendar listing.
+2. Admin calendar listing.
+3. Client schedules interview.
+4. Admin schedules interview.
+5. Existing invitation flow still works.
+6. Existing Talent accept works.
+7. Existing Talent decline works.
+8. Existing counter-propose works.
+9. Existing reschedule works.
+10. Existing meeting link works.
+11. Existing interview rounds work.
+12. Existing timezone test still passes.
+13. Existing authorization tests still pass.
+14. Existing pipeline transitions still pass.
+15. Conflict detection rejects overlap.
+16. Back-to-back interviews do not conflict.
+17. Cancellation metadata persists.
+18. Completion metadata persists.
+19. Notification event is idempotent.
+20. Email failure does not roll back schedule.
+21. Legacy interview with null duration still loads.
+22. Existing submission-scoped Client interview endpoint remains compatible.
+23. Existing Talent endpoint response remains compatible.
+24. Existing Admin Graph availability flow still works.
+
+If any previously passing test fails after implementation, treat it as a regression and fix it before declaring completion.
+
+Do not update tests simply to make changed behavior pass unless the new requirement explicitly requires that behavior change.
+
+---
+
+# MANUAL REGRESSION CHECKS
+
+Before completion manually verify:
+
+## Existing Client flow
+
+1. Search/view Talent.
+2. Send Invite with proposed interview time.
+3. Refresh.
+4. Confirm invitation/interview still exists.
+5. Confirm existing application flow still works.
+
+## Existing Talent flow
+
+1. Open Talent Applications.
+2. See proposed interview.
+3. Accept.
+4. Verify confirmed interview.
+5. Counter-propose another test interview.
+6. Verify negotiation flow still behaves exactly as before.
+
+## Existing Client response
+
+1. View Talent counter-proposal.
+2. Confirm proposed time.
+3. Verify timezone.
+4. Save/open meeting link.
+
+## Existing Admin functionality
+
+1. Open Admin Job Applications.
+2. Open existing Schedule Interview dialog.
+3. Confirm interviewer selector still works.
+4. Confirm duration selection still works.
+5. Confirm timezone selection still works.
+6. Confirm Outlook availability still loads where configured.
+7. Confirm existing unrelated application controls still work.
+
+## Pipeline
+
+Verify no change to:
+
+* shortlisted
+* interviewing
+* rejected
+* offer stages
+* contract stages
+* hired flow
+
+---
+
+# NO UNRELATED CLEANUP
+
+Do not:
+
+* rename files unnecessarily
+* reorganize folders
+* reformat entire files
+* upgrade dependencies
+* modernize unrelated code
+* replace existing libraries
+* rewrite route structure
+* alter unrelated schema
+* modify unrelated CSS
+* change authentication
+* change messaging
+* change offers/contracts
+* change job posting logic
+
+Keep the implementation narrowly scoped to built-in interview scheduling/calendar functionality.
+
+---
+
+# IF A CHANGE RISKS BREAKING AN EXISTING FEATURE
+
+Stop that approach and choose the more additive solution.
+
+If there is a choice between:
+
+A. modifying an existing working flow heavily
+
+or
+
+B. adding a small compatibility layer/new optional endpoint/component
+
+choose **B**.
+
+Existing production behavior takes priority over architectural elegance.
+
+---
+
+# COMPLETION REQUIREMENTS
+
+Do not declare the task complete until all of the following are true:
+
+1. Existing Invite + Interview flow still works.
+2. Existing Talent interview response flow still works.
+3. Existing counter-proposal/reschedule flow still works.
+4. Existing timezone behavior still works.
+5. Existing pipeline transitions still work.
+6. Existing notifications still work.
+7. Existing emails still work.
+8. Existing Graph availability still works.
+9. New Admin scheduling persists to `interviews`.
+10. New Client scheduling persists to `interviews`.
+11. New Client calendar reloads correctly after refresh.
+12. New Admin calendar reloads correctly after refresh.
+13. Conflict detection works.
+14. No duplicate calendar/interview subsystem was introduced.
+15. All previously passing regression tests remain passing.
+
+---
+
+# FINAL REPORT
+
+Report:
+
+1. Baseline tests before implementation.
+2. Exact files modified.
+3. Exact files added.
+4. Migration added.
+5. Existing APIs modified, with confirmation that previous request/response behavior remains compatible.
+6. New APIs added.
+7. Existing UI touched and why.
+8. New UI added.
+9. Existing behaviors explicitly verified unchanged.
+10. New tests added.
+11. Full post-change test results.
+12. Any pre-existing failures.
+13. Any new failures.
+14. Manual regression test results.
+15. Known limitations.
+16. Confirmation that Microsoft Graph remains optional.
+17. Confirmation that no new calendar-events system was created.
+18. Confirmation that all interview data still uses the existing `interviews` and `interview_proposals` workflow.
+
+The guiding rule for this entire implementation is:
+
+**Add the scheduling/calendar experience without disturbing the current working system. Existing behavior must remain backward compatible and unchanged unless the new feature absolutely requires an additive extension.**
