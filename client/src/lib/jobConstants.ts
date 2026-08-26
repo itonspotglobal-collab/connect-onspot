@@ -77,9 +77,9 @@ export function resolveJobFunction(raw: string | null | undefined): string {
 }
 
 // ── Work Setups ───────────────────────────────────────────────────────────────
-// This is intentionally scoped to the job-posting form. Other application
-// surfaces may still need to describe legacy Hybrid / Onsite roles.
-export const JOB_FORM_WORK_SETUPS = ["Remote"] as const;
+// This is intentionally scoped to the job-posting form. The values are stored
+// in the existing jobs.location column for backward compatibility.
+export const JOB_FORM_WORK_SETUPS = ["Remote", "Onsite", "Hybrid"] as const;
 export type JobFormWorkSetup = (typeof JOB_FORM_WORK_SETUPS)[number];
 
 // These labels are intentionally scoped to the guided job-posting form. The

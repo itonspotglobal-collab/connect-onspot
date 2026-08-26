@@ -53,7 +53,7 @@ export const isEmptyQuill = (html: string) =>
 export const defaultFormData = {
   title: "",
   company: "",
-  location: "",
+  location: "Remote",
   professionalRoleName: "",
   originalRoleName: "",
   jobFunction: "",

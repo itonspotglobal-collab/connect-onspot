@@ -1,0 +1,235 @@
+Update the **Work Setup** field in the Create/Edit Job Form.
+
+This is a small, focused change. Do not modify unrelated JobFormPage functionality.
+
+## Required UI change
+
+Currently the form displays:
+
+**Work Setup — optional**
+
+with a single `Remote` pill/button.
+
+Replace this with:
+
+**Work Setup**
+
+Remove the `— optional` text completely.
+
+Change the existing Remote pill/button into a dropdown/select.
+
+The dropdown must contain exactly these three user-facing choices:
+
+* Remote
+* Onsite
+* Hybrid
+
+Use the same existing Select/dropdown component and styling already used elsewhere in the Job Form so it visually matches fields such as:
+
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+
+Do not create a custom dropdown if the project already has a shared Select component.
+
+## Important — inspect the existing data mapping first
+
+Before changing the implementation, determine exactly what field currently stores the existing `Remote` Work Setup value.
+
+Trace:
+
+Work Setup UI
+→ JobFormData
+→ create/edit job payload
+→ server route
+→ jobs database column
+→ job display/search/filtering
+
+Do not introduce a new database field unless genuinely necessary.
+
+If the existing field can safely store:
+
+* Remote
+* Onsite
+* Hybrid
+
+continue using that field.
+
+## Required behavior
+
+### Create Job
+
+The Client/Admin can select:
+
+`Remote`
+`Onsite`
+`Hybrid`
+
+The selected value must remain when moving between:
+
+Basics
+→ Description
+→ Requirements
+→ Review
+
+### Edit Job
+
+When editing an existing job:
+
+* Remote → show `Remote`
+* Onsite → show `Onsite`
+* Hybrid → show `Hybrid`
+
+Do not reset the value when opening Edit Job.
+
+### Review
+
+The Review step should display the selected Work Setup correctly.
+
+### Saved job
+
+After creating/updating and refreshing the page, the selected value must still be correct.
+
+## Existing Remote jobs
+
+Backward compatibility is required.
+
+Existing jobs currently stored as Remote must continue loading as:
+
+`Remote`
+
+Do not migrate or rewrite existing Remote jobs unnecessarily.
+
+## Required vs optional
+
+Remove the visible:
+
+`— optional`
+
+from the Work Setup label.
+
+Before changing validation, inspect whether Work Setup is currently genuinely optional at the data/API level.
+
+For this requested change, make the UI require the user to choose one of:
+
+* Remote
+* Onsite
+* Hybrid
+
+If the current form already defaults safely to `Remote`, preserving that default is acceptable.
+
+Do not introduce a breaking database constraint merely to make the field required.
+
+Keep backend compatibility with existing records.
+
+## Do not confuse Work Setup with physical location
+
+`Onsite` and `Hybrid` describe the work arrangement.
+
+Do not automatically invent a city/address.
+
+Do not change unrelated location fields or company address data.
+
+If the existing database currently uses a generic `location` field for `Remote`, audit that usage carefully before changing anything.
+
+Do not create fake values such as:
+
+`Onsite - Unknown`
+
+or
+
+`Hybrid - Unknown`
+
+## Search/filter compatibility
+
+Audit any code that currently assumes:
+
+`workSetup === "Remote"`
+
+or equivalent.
+
+Make the smallest compatibility update necessary so that introducing Onsite and Hybrid does not break:
+
+* Find Work
+* job cards
+* job details
+* job search
+* matching
+* Admin job lists
+* Client job lists
+* job editing
+
+Do not redesign filters as part of this task.
+
+If Find Work currently has a Remote-only filter, preserve its existing meaning: selecting Remote should continue matching Remote jobs.
+
+Do not make Onsite/Hybrid incorrectly appear as Remote.
+
+## Do not change
+
+Do NOT modify:
+
+* Job Title
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Company Name
+* Confidential Company
+* Job Description
+* Requirements
+* Skills
+* Availability
+* Compensation
+* Admin `Post on behalf of`
+* Save & Exit
+* Draft implementation
+* Submit for Approval
+* approval workflow
+* job status
+* invitation logic
+* interview logic
+* notifications
+* email
+* unrelated UI styling
+
+Do not refactor JobFormPage.
+
+Do not rename unrelated fields.
+
+Do not change API response shapes unnecessarily.
+
+## Tests / verification
+
+Verify:
+
+1. Create Job → Remote saves correctly.
+2. Create Job → Onsite saves correctly.
+3. Create Job → Hybrid saves correctly.
+4. Edit Remote job → dropdown shows Remote.
+5. Edit Onsite job → dropdown shows Onsite.
+6. Edit Hybrid job → dropdown shows Hybrid.
+7. Refresh preserves the selected value.
+8. Step navigation preserves the selected value.
+9. Review displays the selected value.
+10. Existing Remote jobs still load correctly.
+11. Admin Create Job still works.
+12. Client Create Job still works.
+13. Existing job approval flow still works.
+14. Existing job search/display does not regress.
+15. `npx tsc --noEmit` passes.
+
+## Completion report
+
+Report:
+
+1. Which existing field/database column stores Work Setup.
+2. Whether any schema change was necessary.
+3. Exact files changed.
+4. How existing Remote jobs remain backward compatible.
+5. How Remote/Onsite/Hybrid are persisted.
+6. Test results.
+7. Confirmation that no unrelated Job Form behavior was changed.
+
+Keep this implementation narrowly scoped to changing **Work Setup** from the existing Remote control into a three-option dropdown and removing the `— optional` label.

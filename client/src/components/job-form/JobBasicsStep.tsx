@@ -25,7 +25,10 @@ interface Props {
 
 export function JobBasicsStep({ formData, updateField, errors }: Props) {
   const hasLegacyLocation = Boolean(
-    formData.location && !JOB_FORM_WORK_SETUPS.includes(formData.location as "Remote"),
+    formData.location &&
+      !JOB_FORM_WORK_SETUPS.includes(
+        formData.location as (typeof JOB_FORM_WORK_SETUPS)[number],
+      ),
   );
   const hasLegacyDuration = Boolean(
     formData.duration && !JOB_DURATION_OPTIONS.includes(formData.duration as (typeof JOB_DURATION_OPTIONS)[number]),
@@ -70,30 +73,35 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
         )}
       </div>
 
-      {/* Work Setup chips */}
+      {/* Work Setup */}
       <div className="mb-5">
-        <Label>
-          Work Setup <span className="text-xs font-normal text-muted-foreground">— optional</span>
+        <Label htmlFor="basics-work-setup">
+          Work Setup
         </Label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {JOB_FORM_WORK_SETUPS.map((setup) => (
-            <button
-              key={setup}
-              type="button"
-              onClick={() => updateField("location", setup)}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-                formData.location === setup
-                  ? "border-[#474ead] bg-indigo-50 text-[#474ead] dark:bg-indigo-900/30 dark:border-indigo-400 dark:text-indigo-300"
-                  : "border-border bg-background text-foreground hover:border-[#474ead]"
-              }`}
-            >
-              {setup}
-            </button>
-          ))}
-        </div>
+        <Select
+          value={
+            JOB_FORM_WORK_SETUPS.includes(
+              formData.location as (typeof JOB_FORM_WORK_SETUPS)[number],
+            )
+              ? formData.location
+              : ""
+          }
+          onValueChange={(value) => updateField("location", value)}
+        >
+          <SelectTrigger id="basics-work-setup" className="mt-1.5">
+            <SelectValue placeholder="Select a work setup…" />
+          </SelectTrigger>
+          <SelectContent>
+            {JOB_FORM_WORK_SETUPS.map((setup) => (
+              <SelectItem key={setup} value={setup}>
+                {setup}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {hasLegacyLocation && (
           <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-            This older posting uses “{formData.location}”. It will be preserved until you choose Remote.
+            This older posting uses “{formData.location}”. Choose a work setup to update it.
           </p>
         )}
       </div>
