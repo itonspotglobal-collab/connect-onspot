@@ -195,7 +195,36 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
     },
   });
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  // Client draft saves deliberately use a dedicated, awaited sequence. The
+  // Admin flow above is already working and remains unchanged.
+  const clientDraftMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = isEditing && jobId
+        ? await apiRequest("PATCH", `/api/client/jobs/${jobId}`, data)
+        : await apiRequest("POST", "/api/client/jobs", data);
+      return response.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/client/jobs"],
+        refetchType: "all",
+      });
+      toast({ title: isEditing ? "Draft updated" : "Draft saved" });
+      navigate(returnPath);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Failed to save draft",
+        description: err?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const isPending =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    clientDraftMutation.isPending;
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const updateField = (field: keyof JobFormData, value: any) => {
@@ -298,7 +327,10 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   };
 
   const handleSaveAndExit = () => {
-    if (isDirty) {
+    // The Client form can receive values from controlled components in the
+    // same event turn as this click. Use the actual form contents as a second
+    // guard so a started Client draft can never be mistaken for an empty form.
+    if (isDirty || (isClientMode && hasMeaningfulDraftData())) {
       setShowExitDialog(true);
     } else {
       navigate(returnPath);
@@ -337,6 +369,10 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
     }
 
     const payload = buildPayload({ ...formData, status: "draft", draftStep: step } as JobFormData);
+    if (isClientMode) {
+      clientDraftMutation.mutate(payload);
+      return;
+    }
     if (!isClientMode && !isEditing) payload.clientId = selectedClientId;
     if (isEditing && jobId) {
       updateMutation.mutate({ id: jobId, data: payload });
@@ -411,7 +447,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
                 >
                   Discard Changes
                 </AlertDialogAction>
-                <AlertDialogAction onClick={saveDraftAndExit}>
+                <AlertDialogAction onClick={saveDraftAndExit} disabled={isPending}>
                   Save &amp; Exit
                 </AlertDialogAction>
               </>
@@ -423,7 +459,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
                 >
                   Discard
                 </AlertDialogAction>
-                <AlertDialogAction onClick={saveDraftAndExit}>
+                <AlertDialogAction onClick={saveDraftAndExit} disabled={isPending}>
                   Save Draft &amp; Exit
                 </AlertDialogAction>
               </>

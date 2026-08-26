@@ -1,0 +1,1000 @@
+# Replit Prompt — Fix Client/Talent Job Draft Saving Only
+
+Fix the existing **Client/Talent Job Draft** functionality in the current OnSpot application **immediately**.
+
+The Draft feature is already implemented and **working correctly for Admin**.
+
+The problem is specifically:
+
+> When an Admin creates and saves an unfinished Job Posting as a Draft, it saves correctly and appears under Admin → Drafts.
+
+But:
+
+> When a Client/Talent account creates an unfinished Job Posting and selects **Save Draft & Exit**, the draft does not appear under Client → Job Postings → Drafts.
+
+The Client dashboard currently shows:
+
+```text
+Drafts 0
+```
+
+even after a Client has created and attempted to save a Draft.
+
+## IMPORTANT — DO NOT AUDIT OR REBUILD
+
+Do **not** perform an audit, architecture review, codebase review report, or implementation proposal.
+
+Do not respond with:
+
+```text
+Here is what I found...
+Here is the issue...
+Here is my plan...
+Would you like me to proceed?
+```
+
+Inspect only the files necessary to locate the Client-specific failure and **immediately fix it**.
+
+Most importantly:
+
+**Do not ruin, refactor unnecessarily, or alter features that are already working.**
+
+The Admin Draft functionality is currently working.
+
+Do not break it.
+
+Existing normal job posting, approval, public Find Work, client ownership, authentication, notifications, job counts, and all other connected features must remain working.
+
+---
+
+# TARGETED FIX
+
+Treat the working **Admin Draft flow as the reference implementation**.
+
+Trace:
+
+```text
+Admin JobFormPage
+→ Save Draft & Exit
+→ frontend mutation
+→ API request
+→ server handler
+→ database insert/update
+→ status = draft
+→ Admin Draft list query
+```
+
+Then trace the equivalent Client/Talent flow:
+
+```text
+Client JobFormPage
+→ Save Draft & Exit
+→ frontend mutation
+→ Client API
+→ authenticated client/company ownership
+→ database
+→ Client Draft list query
+```
+
+Find the exact point where the Client path differs incorrectly.
+
+Do NOT replace the working shared architecture.
+
+Fix only the broken Client-specific integration.
+
+---
+
+# 1. VERIFY THE CLIENT SAVE REQUEST ACTUALLY FIRES
+
+When a Client clicks:
+
+```text
+Save Draft & Exit
+```
+
+make sure the Client version of `JobFormPage` actually executes the Draft mutation before navigating away.
+
+It must NOT do this:
+
+```ts
+navigate(...)
+```
+
+before the async save finishes.
+
+Correct behavior must effectively be:
+
+```ts
+await saveDraft(...);
+
+invalidateClientJobsQueries();
+
+navigate(...);
+```
+
+or the equivalent pattern already used in this application.
+
+If navigation currently happens immediately after starting the request, correct the sequence.
+
+Do not alter the working Admin sequence.
+
+---
+
+# 2. CHECK ADMIN VS CLIENT ROLE DETECTION
+
+Because Admin and Client share `JobFormPage`, verify that Draft save logic is correctly choosing the API/mutation according to the authenticated user's context.
+
+For example, inspect logic similar to:
+
+```ts
+isAdmin
+isClient
+userRole
+dashboardType
+jobOwnerType
+```
+
+Make sure a Client is not accidentally executing an Admin endpoint or falling into a branch that performs no save.
+
+Do not hardcode user IDs or roles.
+
+Reuse the application's existing authenticated role/context logic.
+
+---
+
+# 3. CLIENT DRAFT API
+
+Verify that there is a functioning Client-side request for:
+
+```text
+Create Draft
+Update Draft
+```
+
+The Client Draft request should reuse the existing Client Job API wherever possible.
+
+Do NOT create an entirely new job system.
+
+The request must send the proper Draft state:
+
+```ts
+status: "draft"
+```
+
+along with the partially completed JobFormPage fields.
+
+An incomplete Draft must be allowed.
+
+Do not execute final Job Posting validation when saving a Draft.
+
+---
+
+# 4. CLIENT OWNERSHIP — MOST IMPORTANT
+
+Investigate the Client ownership mapping carefully.
+
+The likely failure may be related to the Job record being saved without the ownership field used by the Client Job Postings query.
+
+Use the **authenticated Client account/server context** to determine ownership.
+
+Check the existing project for whichever relationship is actually used, for example:
+
+```text
+client_id
+created_by
+organization_id
+company_id
+employer_id
+user_id
+```
+
+Do NOT guess the field.
+
+Use the same ownership relationship already used by successfully submitted Client Job Postings.
+
+A Client Draft must be associated with the exact same Client/company/organization identity as a normal Client-created Job.
+
+For example, if normal Client jobs use:
+
+```ts
+organizationId = authenticatedClient.organizationId
+```
+
+then Client Drafts must use that same relationship.
+
+Do not save Drafts with:
+
+```ts
+organizationId: null
+```
+
+if the Client Job Postings query depends on organization ownership.
+
+Likewise, do not mistakenly use:
+
+```ts
+clientId = user.id
+```
+
+if the existing application actually expects a Client Profile ID or Organization ID.
+
+Follow the current working normal Client job creation flow.
+
+---
+
+# 5. DO NOT TRUST OWNERSHIP FROM THE FRONTEND
+
+Do not fix this by merely passing arbitrary ownership information from React.
+
+The server must derive/validate ownership through the authenticated Client session using the same authorization logic already used by normal Client job creation.
+
+The browser may send job form data.
+
+It should not be able to impersonate another Client by sending:
+
+```ts
+clientId
+organizationId
+createdBy
+```
+
+with arbitrary values.
+
+Preserve existing authorization.
+
+---
+
+# 6. COMPARE WITH NORMAL CLIENT JOB CREATION
+
+There is already a working workflow where a Client can create/submit a normal Job Posting.
+
+Use that as the authoritative reference for Client ownership.
+
+Compare:
+
+```text
+Normal Client Job Submit
+```
+
+against:
+
+```text
+Client Save Draft
+```
+
+Specifically compare:
+
+* endpoint
+* request body
+* authenticated user extraction
+* client profile lookup
+* organization lookup
+* ownership fields
+* inserted database fields
+* transaction logic
+
+Draft creation should differ primarily in:
+
+```ts
+status: "draft"
+```
+
+and relaxed validation.
+
+It should NOT use a completely different ownership mechanism.
+
+---
+
+# 7. VERIFY DATABASE INSERT
+
+After pressing **Save Draft & Exit** as a Client, verify that a database record is actually created.
+
+It should contain something equivalent to:
+
+```text
+id = valid job ID
+status = draft
+correct Client/company ownership
+created_at = timestamp
+updated_at = timestamp
+```
+
+plus whatever partial form fields have been completed.
+
+If no record is created, fix the Client create mutation/API.
+
+If a record IS created but does not appear in the Client Draft tab, do NOT create another save system.
+
+Instead fix the Client retrieval/filtering ownership logic.
+
+---
+
+# 8. CHECK STATUS NORMALIZATION
+
+Verify that both saving and retrieving use the exact same Draft status.
+
+Avoid mismatches such as:
+
+```text
+draft
+DRAFT
+Draft
+drafted
+unfinished
+```
+
+Use the same canonical value already working for Admin:
+
+```ts
+"draft"
+```
+
+unless the database enum defines another exact value.
+
+Do not introduce a second Draft status.
+
+---
+
+# 9. CLIENT DRAFT QUERY
+
+Fix the Client Job Postings query so it retrieves the authenticated Client's Draft jobs.
+
+The Draft tab must include:
+
+```ts
+job.status === "draft"
+```
+
+AND the correct Client/company ownership condition.
+
+Conceptually:
+
+```text
+WHERE ownership = authenticated client's ownership
+AND status = 'draft'
+```
+
+Do not remove ownership filtering just to make Drafts appear.
+
+A Client must NEVER see another Client's Draft.
+
+---
+
+# 10. CHECK IF `ALL JOBS` QUERY EXCLUDES DRAFTS
+
+Inspect how the Client dashboard receives its job list.
+
+The Draft tab may currently be filtering a source collection that already excludes Draft jobs.
+
+For example, avoid this architecture:
+
+```ts
+const jobs = getClientJobs(); // backend already returns only submitted jobs
+
+const drafts = jobs.filter(job => job.status === "draft");
+```
+
+That would always produce:
+
+```text
+Drafts 0
+```
+
+if `getClientJobs()` excludes Drafts.
+
+Fix this safely.
+
+Either:
+
+* allow the authenticated Client dashboard jobs query to include that Client's Draft records, then filter tabs in the frontend
+
+OR
+
+* provide/reuse an authenticated Draft query
+
+according to the existing project architecture.
+
+Do not expose Drafts through public job APIs.
+
+---
+
+# 11. CLIENT COUNTERS
+
+The screenshot currently shows Client counters similar to:
+
+```text
+1 open
+0 drafts
+```
+
+Make sure Client counters derive from the same authenticated Client dataset.
+
+After saving a Draft:
+
+```text
+Drafts 0
+```
+
+must become:
+
+```text
+Drafts 1
+```
+
+without requiring a logout/login.
+
+If the dashboard has a top-level counter such as:
+
+```text
+0 drafts
+```
+
+update that too.
+
+Do not count Drafts as:
+
+```text
+Open
+Pending
+Closed
+```
+
+---
+
+# 12. QUERY INVALIDATION / CACHE REFRESH
+
+After Client Draft creation/update/delete/submit, invalidate or refetch all relevant Client job queries.
+
+Inspect the project's existing query keys.
+
+Possible examples only:
+
+```ts
+["client-jobs"]
+["client-job-postings"]
+["client-dashboard"]
+["jobs", clientId]
+```
+
+Use the project's actual keys.
+
+Do NOT blindly invent new query keys.
+
+After:
+
+```text
+Save Draft & Exit
+```
+
+the dashboard must immediately reflect the newly saved Draft.
+
+If React Query/TanStack Query is used, invalidate the proper existing Client query.
+
+If another data-fetching system is used, follow its established refresh pattern.
+
+---
+
+# 13. DO NOT USE LOCALSTORAGE AS THE FIX
+
+The Draft must be persisted server-side.
+
+Do NOT solve this using:
+
+```text
+localStorage
+sessionStorage
+React-only state
+browser cache
+```
+
+as the source of truth.
+
+The expected test is:
+
+```text
+Client saves Draft
+→ logs out / refreshes browser
+→ logs back in
+→ opens Drafts
+→ Draft is still there
+```
+
+---
+
+# 14. EXISTING CLIENT DRAFT UPDATE
+
+When a Client opens an existing Draft and saves it again:
+
+Update the SAME record.
+
+Do not create duplicates.
+
+Use the existing Draft/job ID.
+
+Conceptually:
+
+```text
+POST/create only when there is no existing draft ID.
+
+PATCH/PUT/update when editing an existing draft.
+```
+
+Follow the application's actual API conventions.
+
+---
+
+# 15. RESUME CLIENT DRAFT
+
+Once the Client Draft is visible:
+
+```text
+Client Dashboard
+→ Job Postings
+→ Drafts
+→ Continue Editing
+```
+
+must reopen the existing `JobFormPage`.
+
+Populate the previously saved fields.
+
+Do not create a new empty Job Posting.
+
+The Client must continue editing the same job ID.
+
+---
+
+# 16. CLIENT DRAFT SUBMISSION
+
+When the Client finishes a Draft:
+
+Do not create a new Job record.
+
+Update that Draft record and transition:
+
+```text
+draft
+↓
+existing normal Client submission status
+```
+
+For example:
+
+```text
+pending
+```
+
+or whatever state this project already uses.
+
+Do not guess the status.
+
+Use the exact same workflow as normal Client Job Posting submission.
+
+After final submission:
+
+* Draft count decreases
+* Pending/Open/etc. updates according to existing workflow
+* same Job ID remains
+* Admin approval flow continues to work
+
+---
+
+# 17. KEEP ADMIN DRAFTS UNTOUCHED
+
+Admin Drafts currently work.
+
+Do not refactor the Admin implementation unless a tiny shared change is absolutely necessary.
+
+After the Client fix, verify that Admin still supports:
+
+```text
+Create Draft
+Save Draft
+List Draft
+Continue Editing
+Update Draft
+Delete Draft
+Submit Draft
+```
+
+Admin Draft count and existing Draft records must remain unchanged.
+
+---
+
+# 18. DO NOT BREAK NORMAL CLIENT POSTING
+
+Test the normal Client workflow after making this fix.
+
+A Client who does NOT save a Draft and instead completes all four steps must still be able to submit normally.
+
+Do not accidentally:
+
+* make every Client job a Draft
+* bypass submission validation
+* bypass Admin approval
+* automatically publish Client jobs
+* change permissions
+* change Client organization ownership
+* duplicate jobs
+
+---
+
+# 19. DO NOT BREAK PUBLIC FIND WORK
+
+Client Drafts must remain private.
+
+Do not solve Client Draft retrieval by modifying a public jobs endpoint to return Drafts.
+
+Public endpoints must continue excluding:
+
+```ts
+status === "draft"
+```
+
+Drafts must remain excluded from:
+
+```text
+Find Work
+public job listing
+public job details
+job search
+candidate matching
+recommendations
+SEO job pages
+```
+
+The Client Dashboard must retrieve Drafts through an authenticated Client path.
+
+---
+
+# 20. CHECK CLIENT PROFILE VS USER ACCOUNT IDS
+
+Pay special attention to the application's distinction between:
+
+```text
+users.id
+client_profiles.id
+organizations.id
+organization.created_by
+```
+
+or equivalent fields.
+
+This is a common reason an Admin-created record works while a Client-created one does not.
+
+Do not assume:
+
+```ts
+user.id === clientProfile.id
+```
+
+or:
+
+```ts
+user.id === organization.id
+```
+
+Follow the existing relations.
+
+If normal Client Job creation already resolves something like:
+
+```text
+authenticated user
+→ Client Profile
+→ Organization
+→ Job
+```
+
+reuse that exact chain for Draft creation.
+
+---
+
+# 21. ERROR HANDLING
+
+Do not navigate away as if saving succeeded when the API actually fails.
+
+If Client Draft saving returns an error:
+
+* keep the user on the JobFormPage
+* preserve entered form values
+* show the application's existing error toast/message
+* log an actionable server-side error where appropriate
+
+Only navigate after successful persistence.
+
+Do not silently swallow errors.
+
+---
+
+# 22. CLIENT DRAFT DELETE
+
+Verify Client Draft delete still respects ownership.
+
+The server should effectively enforce:
+
+```text
+draft belongs to authenticated Client
+```
+
+before deletion.
+
+Do not allow:
+
+```text
+/client/jobs/{anotherClientDraftId}
+```
+
+to delete another Client's Draft.
+
+Use existing 403/404 behavior.
+
+---
+
+# 23. MINIMAL CHANGE POLICY
+
+This is a bug fix, not a redesign.
+
+Prefer:
+
+```text
+1–few targeted modifications
+```
+
+over restructuring the job system.
+
+Do not:
+
+* rename unrelated components
+* reorganize unrelated folders
+* replace existing APIs
+* rewrite JobFormPage
+* redesign dashboards
+* change global authentication
+* modify unrelated database tables
+* refactor working Admin logic for style reasons
+
+Only change shared code where required to correctly support both role contexts.
+
+---
+
+# REQUIRED DEBUGGING PATH
+
+Perform this internally while implementing, without giving me an audit first:
+
+```text
+1. Save Client Draft.
+2. Inspect frontend request.
+3. Confirm correct Client endpoint.
+4. Confirm response status.
+5. Inspect server handler.
+6. Confirm authenticated Client identity.
+7. Confirm Client Profile / Organization resolution.
+8. Confirm DB insert/update.
+9. Confirm status = draft.
+10. Confirm ownership fields.
+11. Run Client job/draft retrieval query.
+12. Confirm record is returned.
+13. Confirm frontend Draft filter.
+14. Confirm Draft count.
+15. Confirm query invalidation.
+```
+
+Wherever this chain breaks, make the smallest safe correction.
+
+---
+
+# ACCEPTANCE TESTS
+
+Do not consider the fix complete until these pass.
+
+## Test A — New Client Draft
+
+Login as Client.
+
+```text
+Job Postings
+→ Post a Job
+```
+
+Enter at least:
+
+```text
+Job Title
+Category
+Work Arrangement
+```
+
+Then:
+
+```text
+Save & Exit
+→ Save Draft & Exit
+```
+
+Expected:
+
+```text
+Client Job Postings
+Drafts 1
+```
+
+The Draft appears immediately.
+
+---
+
+## Test B — Database persistence
+
+Hard refresh the Client dashboard.
+
+Expected:
+
+```text
+Drafts 1
+```
+
+still appears.
+
+The Draft must come from the server/database.
+
+---
+
+## Test C — Resume
+
+Click:
+
+```text
+Continue Editing
+```
+
+Expected:
+
+* correct JobFormPage opens
+* same Job ID
+* Job Title restored
+* Category restored
+* Work Arrangement restored
+* all other previously entered fields restored
+
+---
+
+## Test D — Save again
+
+Change a field.
+
+Click:
+
+```text
+Save Draft & Exit
+```
+
+Expected:
+
+```text
+Drafts 1
+```
+
+NOT:
+
+```text
+Drafts 2
+```
+
+The same row is updated.
+
+---
+
+## Test E — Multiple Client Drafts
+
+Create another distinct Client Draft.
+
+Expected:
+
+```text
+Drafts 2
+```
+
+Both belong to the authenticated Client.
+
+---
+
+## Test F — Client isolation
+
+Login as another Client.
+
+Expected:
+
+The other Client's Drafts are NOT visible.
+
+Directly opening another Client's Draft ID must produce the application's existing unauthorized/not-found response.
+
+---
+
+## Test G — Submit Draft
+
+Open one Client Draft.
+
+Complete the required Job Posting fields.
+
+Submit.
+
+Expected:
+
+* same Job ID
+* status leaves `draft`
+* Client Draft count decreases
+* job enters normal Client submission/approval workflow
+* Admin receives/sees it exactly as with a normal Client Job Posting
+
+---
+
+## Test H — Admin regression
+
+Login as Admin.
+
+Verify the existing Admin Drafts still work exactly as they did before this fix.
+
+Do not alter existing Admin Draft records.
+
+---
+
+## Test I — Normal Client posting regression
+
+Create a normal Client Job without using Save Draft.
+
+Expected:
+
+Existing job submission behavior remains unchanged.
+
+---
+
+## Test J — Public privacy
+
+Search Find Work.
+
+Expected:
+
+No Client Draft is publicly visible.
+
+---
+
+# EXPECTED FINAL RESULT
+
+After the fix:
+
+```text
+Admin Drafts → still working
+Client Drafts → working
+```
+
+A Client can:
+
+```text
+Post a Job
+→ partially fill the form
+→ Save Draft & Exit
+→ see it under Drafts
+→ refresh the page
+→ still see it
+→ Continue Editing
+→ save again without duplicates
+→ finish it
+→ submit the same Job record normally
+```
+
+The fix must preserve all currently working:
+
+```text
+Admin Drafts
+Admin Job Management
+Client normal Job Posting
+Client ownership/security
+Admin approval workflow
+Find Work
+public Job visibility
+job counts
+authentication
+notifications
+other connected Job features
+```
+
+Implement the fix now. Do not stop at an explanation or audit.
