@@ -1,0 +1,709 @@
+## Feature: Built-in Interview Calendar & Scheduling
+
+We want to simplify interview scheduling and keep it completely inside the existing OnSpot platform.
+
+Do **NOT** add Calendly, Google Calendar, Microsoft Calendar, or another third-party scheduling provider as a required dependency.
+
+The system already has an interview/invitation workflow, interview timezone handling, notifications, emails, hiring pipeline statuses, and client/talent views.
+
+### FIRST: AUDIT THE EXISTING IMPLEMENTATION
+
+Before changing anything, inspect the current codebase and identify:
+
+1. Existing `interviews` table and its fields.
+2. Existing `interview_proposals` table and negotiation logic.
+3. Existing `/api/client/invitations` flow.
+4. Existing Client interview scheduling UI.
+5. Existing Talent accept / decline / counter-propose UI.
+6. Existing Admin interview-related functionality.
+7. Existing timezone utilities:
+
+   * `server/lib/interviewTime.ts`
+   * `client/src/lib/formatInterviewTime.ts`
+8. Existing notification infrastructure.
+9. Existing email notification/template infrastructure.
+10. Existing hiring pipeline/status transitions associated with interviews.
+
+**Do not create duplicate interview or scheduling tables if the existing tables can support this feature.**
+
+Extend/refactor the current interview system instead.
+
+---
+
+# GOAL
+
+Create a simple built-in interview scheduling/calendar experience for:
+
+* Admin
+* Client
+* Talent/Candidate
+
+The platform itself should be the source of truth for interview schedules.
+
+The basic experience should feel like a lightweight internal Calendly, but only for interviews within OnSpot.
+
+---
+
+# CORE SCHEDULING FLOW
+
+## Option A — Client/Admin proposes a date and time
+
+Admin or Client can open an interview scheduling dialog and choose:
+
+* Date
+* Start time
+* Optional duration
+* Timezone
+* Interview type/round if applicable
+* Optional meeting link
+* Optional notes
+
+Example:
+
+**August 28, 2026**
+**10:00 AM – 10:30 AM**
+**Asia/Manila**
+
+The Talent then receives the interview request.
+
+Talent can:
+
+* Accept
+* Decline
+* Propose another time
+
+---
+
+## Option B — Client prefers their own date/time
+
+The Client should NOT be forced to choose from predefined availability slots.
+
+Include an option such as:
+
+**Choose another date & time**
+
+or
+
+**Pick my own time**
+
+This opens the same date/time picker and allows the Client to manually propose any valid future date/time.
+
+This is important because some Clients may already know exactly when they want the interview.
+
+---
+
+# BUILT-IN CALENDAR VIEW
+
+Create a simple calendar/schedule page using the existing interview records.
+
+Do not create another independent calendar-event database unless there is a genuine data-model requirement that cannot be represented by the interview tables.
+
+Suggested routes:
+
+### Admin
+
+`/admin/interviews`
+
+or integrate it into the existing Admin hiring pipeline.
+
+### Client
+
+`/client/interviews`
+
+or integrate it into the existing Client dashboard/profile hiring area.
+
+The page should support:
+
+### Calendar views
+
+* Upcoming
+* Calendar
+* Past
+
+For the first version, a simple:
+
+* Month view
+* Upcoming interview list
+
+is enough.
+
+Do NOT over-engineer this into a full Google Calendar clone.
+
+---
+
+# UPCOMING INTERVIEW CARD
+
+Each scheduled interview should show:
+
+* Talent name
+* Client/company
+* Job/role
+* Interview round/type
+* Date
+* Time
+* Timezone
+* Duration
+* Status
+* Meeting link, when available
+
+Example:
+
+**Maria Santos**
+
+Virtual Executive Assistant
+
+Aquavive
+
+August 28, 2026
+10:00 AM – 10:30 AM PHT
+
+Status: Confirmed
+
+[Join Interview]
+
+[Reschedule]
+
+[Cancel]
+
+---
+
+# IMPORTANT: TIMEZONE HANDLING
+
+The repo already contains interview timezone normalization and timezone-aware interview storage.
+
+Reuse it.
+
+Do NOT regress to naive timestamps.
+
+Store the actual scheduled instant consistently in UTC/timestamptz and preserve the agreed/source timezone where the current schema supports it.
+
+On display, show interview times in the logged-in user's local timezone.
+
+Examples:
+
+Client in New York:
+
+**August 27 · 10:00 PM EDT**
+
+Talent in Manila:
+
+**August 28 · 10:00 AM PHT**
+
+Both must refer to the exact same instant.
+
+Never display a bare date/time without a timezone indicator.
+
+Use the existing interview time formatting helpers where possible rather than creating separate conflicting timezone logic.
+
+---
+
+# RESCHEDULING
+
+Admin, Client, or Talent should be able to initiate rescheduling where permissions allow.
+
+Rescheduling should reuse the existing interview proposal/counter-proposal mechanism instead of creating another scheduling workflow.
+
+Example:
+
+Client selects:
+
+**Reschedule**
+
+Then chooses:
+
+August 29
+2:00 PM
+
+The other party sees:
+
+**New interview time proposed**
+
+and can:
+
+* Accept
+* Decline
+* Suggest another time
+
+Do not create a new interview round just because the same interview is being rescheduled.
+
+A new round is only for an actual second-stage interview such as:
+
+* Initial interview
+* Technical interview
+* Final interview
+
+---
+
+# DOUBLE-BOOKING PROTECTION
+
+Before confirming an interview time, check the platform's existing confirmed interviews.
+
+Prevent obvious conflicts for the participants.
+
+At minimum check:
+
+### Client/Admin interviewer
+
+Do they already have a confirmed interview overlapping this time?
+
+### Talent
+
+Do they already have another confirmed interview overlapping this time?
+
+If there is a conflict:
+
+Do not silently save it.
+
+Show:
+
+**This time conflicts with another scheduled interview.**
+
+Then allow the user to choose another time.
+
+Use confirmed interview records as the source of truth.
+
+---
+
+# OPTIONAL AVAILABILITY
+
+Keep this simple.
+
+Do not build a complicated recurring availability engine unless one already exists and can be reused safely.
+
+For V1:
+
+Client/Admin can simply choose a date/time directly.
+
+Talent can accept it or counter-propose another date/time.
+
+Later, availability windows can be added.
+
+The current goal is scheduling interviews, not recreating Calendly.
+
+---
+
+# NOTIFICATIONS
+
+Reuse the existing OnSpot notification system.
+
+Generate notifications for events such as:
+
+### Interview proposed
+
+Talent:
+
+**New interview invitation**
+
+Aquavive proposed an interview for August 28 at 10:00 AM PHT.
+
+### Interview confirmed
+
+Both participants:
+
+**Interview confirmed**
+
+Your interview for Virtual Executive Assistant is scheduled for August 28 at 10:00 AM PHT.
+
+### Reschedule requested
+
+**New interview time proposed**
+
+### Interview cancelled
+
+**Interview cancelled**
+
+### Interview reminder
+
+If the application already has a reliable scheduled-job mechanism, add:
+
+* 24-hour reminder
+* Optional 1-hour reminder
+
+If there is no reliable background/scheduled-job infrastructure, do not introduce an unstable timer implementation just for this feature. Report that limitation first.
+
+Notifications must link back to the relevant interview/application when possible.
+
+Reuse the existing notification idempotency/event-key mechanism to prevent duplicates.
+
+---
+
+# EMAIL
+
+Reuse the existing email service and email template infrastructure.
+
+Do not introduce another email provider.
+
+Send email for:
+
+* Interview proposed
+* Interview confirmed
+* Interview rescheduled
+* Interview cancelled
+
+Include:
+
+* Talent
+* Job title
+* Client/company
+* Date
+* Time
+* Timezone
+* Meeting link if available
+* CTA back to OnSpot
+
+Example CTA:
+
+**View Interview**
+
+Do not make email the source of truth.
+
+The confirmed interview record inside OnSpot is the source of truth.
+
+---
+
+# ADMIN FUNCTIONALITY
+
+Admin should be able to see interviews across the platform.
+
+Admin interview page should provide:
+
+* Upcoming interviews
+* Confirmed
+* Awaiting response
+* Reschedule requested
+* Completed
+* Cancelled
+
+Useful filters:
+
+* Client
+* Talent
+* Job
+* Status
+* Date
+
+Admin can:
+
+* Schedule
+* Reschedule
+* Cancel
+* View interview details
+
+Admin should use the SAME interview records as Client/Talent.
+
+Do not create separate admin schedule records.
+
+---
+
+# CLIENT FUNCTIONALITY
+
+Client should be able to:
+
+* Schedule interview
+* Propose another time
+* Pick their own date/time
+* See upcoming interviews
+* See interview status
+* Reschedule
+* Cancel where allowed
+* Open meeting link
+
+Integrate this naturally with the existing hiring pipeline.
+
+If an application has reached the interview stage, the schedule should appear directly in that candidate/application context as well as the calendar/upcoming-interviews page.
+
+---
+
+# TALENT FUNCTIONALITY
+
+Talent should be able to see:
+
+### Upcoming Interviews
+
+Each card should show:
+
+* Company
+* Job
+* Date
+* Local time
+* Timezone
+* Interview type
+* Meeting link
+* Status
+
+Talent can:
+
+* Accept proposed interview
+* Decline
+* Propose a different time
+* View confirmed interview details
+
+Reuse the existing Talent Applications/interview negotiation functionality wherever possible.
+
+---
+
+# MEETING LINK
+
+For V1, allow Admin/Client to optionally enter a meeting link manually.
+
+Examples:
+
+* Google Meet
+* Zoom
+* Microsoft Teams
+* OnSpot video call in the future
+
+Field:
+
+`meetingUrl`
+
+Validate that it is a valid `http://` or `https://` URL.
+
+Do NOT build video conferencing as part of this task.
+
+---
+
+# INTERVIEW STATUS
+
+Reuse the existing interview statuses wherever possible.
+
+Likely lifecycle:
+
+`proposed`
+
+→ `confirmed`
+
+→ `completed`
+
+Additional states:
+
+`cancelled`
+
+`rescheduled` / negotiation pending if already represented by the existing proposal model.
+
+Do not create conflicting duplicate status vocabularies.
+
+Interview negotiation state and hiring pipeline state should stay synchronized with the existing formal pipeline guard/status transition logic.
+
+---
+
+# UI
+
+Use the existing OnSpot design system.
+
+Keep the interface simple and polished.
+
+### Schedule Interview dialog
+
+Fields:
+
+**Interview Date**
+
+[ Date picker ]
+
+**Time**
+
+[ Time picker ]
+
+**Duration**
+
+[ 30 minutes ▼ ]
+
+**Timezone**
+
+[ Asia/Manila ▼ ]
+
+**Interview Type**
+
+[ Initial Interview ▼ ]
+
+**Meeting Link**
+
+[ https://... ]
+
+**Notes**
+
+[ optional ]
+
+Buttons:
+
+[Cancel]
+
+[Schedule Interview]
+
+---
+
+# CALENDAR COMPONENT
+
+Prefer an existing calendar/date library already installed in the project.
+
+Audit `package.json` before adding dependencies.
+
+If the project already has suitable calendar/date components, use them.
+
+If not, keep V1 lightweight.
+
+Do not add a large scheduling dependency just to render a month grid.
+
+---
+
+# DATABASE
+
+Do not immediately add a new `calendar_events` table.
+
+First determine whether:
+
+* `interviews`
+* `interview_proposals`
+* existing interview fields
+
+already contain everything required.
+
+Only propose a migration for genuinely missing fields, for example if absent:
+
+* duration
+* meeting URL
+* cancelledAt
+* cancellationReason
+
+If changes are necessary:
+
+1. Report the current schema.
+2. Explain exactly why each new field is required.
+3. Keep the migration backward compatible.
+4. Preserve existing interview records.
+
+---
+
+# SECURITY / AUTHORIZATION
+
+Enforce server-side authorization.
+
+A Client may only schedule/manage interviews associated with their own jobs/applications.
+
+Talent may only respond to interviews belonging to their own submission/invitation.
+
+Admin may manage all interviews.
+
+Never rely on frontend filtering for authorization.
+
+---
+
+# API DESIGN
+
+Reuse existing interview APIs wherever possible.
+
+Do not duplicate endpoints if the existing invitation/interview negotiation routes already perform the operation.
+
+If additional endpoints are genuinely required, keep them RESTful and scoped appropriately.
+
+Examples only:
+
+`GET /api/client/interviews`
+
+`GET /api/admin/interviews`
+
+`GET /api/talent/interviews`
+
+`PATCH /api/interviews/:id/reschedule`
+
+`PATCH /api/interviews/:id/cancel`
+
+But audit existing routes first and extend them instead when practical.
+
+---
+
+# EDGE CASES
+
+Handle:
+
+* Past dates cannot be proposed.
+* Invalid timezone.
+* Invalid meeting URL.
+* Double booking.
+* Cancelled job.
+* Withdrawn/rejected talent.
+* Application belonging to another Client.
+* Interview already cancelled.
+* Two users responding to the same proposal at nearly the same time.
+* Rescheduling after confirmation.
+* Email failure must NOT roll back an otherwise valid interview schedule.
+
+Persist the interview first.
+
+Treat notifications/email as side effects.
+
+---
+
+# TESTS
+
+Extend the existing interview tests.
+
+At minimum cover:
+
+1. Client schedules interview.
+2. Admin schedules interview.
+3. Talent accepts.
+4. Talent counter-proposes.
+5. Client accepts counter-proposal.
+6. Timezone conversion.
+7. Same instant is displayed correctly in two different timezones.
+8. Cannot schedule in the past.
+9. Cannot manage another Client's interview.
+10. Talent cannot respond to another Talent's interview.
+11. Double-booking conflict.
+12. Reschedule confirmed interview.
+13. Cancel interview.
+14. Notification creation.
+15. Email side-effect failure does not corrupt interview state.
+
+Keep/extend the existing invite-interview timezone smoke coverage.
+
+---
+
+# IMPORTANT IMPLEMENTATION RULE
+
+This is an **extension/refinement of the existing interview hiring pipeline**.
+
+Do not build:
+
+* a separate booking subsystem,
+* a separate scheduling database,
+* a Calendly clone,
+* duplicate interview records,
+* duplicate notification infrastructure,
+* duplicate email infrastructure,
+* or a second timezone implementation.
+
+Reuse the current system.
+
+---
+
+# BEFORE IMPLEMENTING
+
+Report back with:
+
+1. Existing interview schema.
+2. Existing proposal/reschedule schema.
+3. Existing interview API routes.
+4. Existing Client UI.
+5. Existing Talent UI.
+6. Existing Admin UI.
+7. Existing notification/email hooks.
+8. Fields that are actually missing.
+9. Exact files you propose modifying.
+10. Any migration required.
+11. Proposed final user flow.
+
+Then implement once the audit confirms the safest integration path.
+
+After implementation, provide:
+
+* Files changed
+* Migration created, if any
+* API changes
+* UI changes
+* Notification/email changes
+* Test results
+* Known limitations
+* Manual test steps for Admin, Client, and Talent
