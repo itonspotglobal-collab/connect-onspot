@@ -8060,12 +8060,12 @@ export async function registerRoutes(
     }
   });
 
-  // ── Interviewer availability (Microsoft Graph) ────────────────────────────
+  // ── Interviewer management (Admin-only CRUD) ──────────────────────────────
   //
-  // GET /api/admin/interviewers
-  //   Returns the configured OnSpot interviewer list with calendar connection state.
-  //   The list is managed server-side (ONSPOT_INTERVIEWERS_JSON secret).
-  //   No calendar email or raw Graph data is returned to the client.
+  // GET    /api/admin/interviewers            — list with calendar connection state
+  // POST   /api/admin/interviewers            — create interviewer
+  // PATCH  /api/admin/interviewers/:id        — update name/title/calendarEmail/sortOrder
+  // DELETE /api/admin/interviewers/:id        — remove interviewer
   //
   // GET /api/admin/interviewer-availability
   //   Query params: interviewerId, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD),
@@ -8073,15 +8073,123 @@ export async function registerRoutes(
   //   Returns available interview slot windows from the interviewer's Outlook calendar.
   //   This endpoint NEVER changes any application status.
   //
-  // Both endpoints are Admin-only.
+  // All endpoints are Admin-only.
 
   app.get("/api/admin/interviewers", authenticateJWT, requireAdmin, async (_req: Request, res: Response) => {
     try {
       const { getInterviewerList } = await import("./services/microsoftGraphCalendarService");
-      res.json({ interviewers: getInterviewerList() });
+      res.json({ interviewers: await getInterviewerList() });
     } catch (err: any) {
       console.error("GET /api/admin/interviewers error:", err);
       res.status(500).json({ error: "Failed to load interviewer list" });
+    }
+  });
+
+  app.post("/api/admin/interviewers", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { name, title, calendarEmail, sortOrder } = req.body as {
+        name?: string;
+        title?: string;
+        calendarEmail?: string;
+        sortOrder?: number;
+      };
+      if (!name?.trim()) {
+        return res.status(400).json({ error: "name is required" });
+      }
+      const { db } = await import("./db");
+      const { adminInterviewers } = await import("@shared/schema");
+      const [created] = await db
+        .insert(adminInterviewers)
+        .values({
+          name: name.trim(),
+          title: (title ?? "").trim(),
+          calendarEmail: (calendarEmail ?? "").trim(),
+          sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
+        })
+        .returning();
+      // Omit calendarEmail from response (same rule as GET)
+      const { calendarEmail: _ce, ...safe } = created;
+      res.status(201).json({
+        interviewer: {
+          ...safe,
+          isCalendarConnected: !!(
+            process.env.MICROSOFT_TENANT_ID &&
+            process.env.MICROSOFT_CLIENT_ID &&
+            process.env.MICROSOFT_CLIENT_SECRET &&
+            created.calendarEmail?.trim()
+          ),
+        },
+      });
+    } catch (err: any) {
+      console.error("POST /api/admin/interviewers error:", err);
+      res.status(500).json({ error: "Failed to create interviewer" });
+    }
+  });
+
+  app.patch("/api/admin/interviewers/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, title, calendarEmail, sortOrder } = req.body as {
+        name?: string;
+        title?: string;
+        calendarEmail?: string;
+        sortOrder?: number;
+      };
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      if (name !== undefined) updates.name = name.trim();
+      if (title !== undefined) updates.title = title.trim();
+      // Only overwrite calendarEmail when a non-empty value is sent.
+      // A blank field means "keep existing" — never silently wipe a connection.
+      if (calendarEmail !== undefined && calendarEmail.trim() !== "") {
+        updates.calendarEmail = calendarEmail.trim();
+      }
+      if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+
+      const { db } = await import("./db");
+      const { adminInterviewers } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const [updated] = await db
+        .update(adminInterviewers)
+        .set(updates)
+        .where(eq(adminInterviewers.id, id))
+        .returning();
+      if (!updated) {
+        return res.status(404).json({ error: "Interviewer not found" });
+      }
+      const { calendarEmail: _ce, ...safe } = updated;
+      res.json({
+        interviewer: {
+          ...safe,
+          isCalendarConnected: !!(
+            process.env.MICROSOFT_TENANT_ID &&
+            process.env.MICROSOFT_CLIENT_ID &&
+            process.env.MICROSOFT_CLIENT_SECRET &&
+            updated.calendarEmail?.trim()
+          ),
+        },
+      });
+    } catch (err: any) {
+      console.error("PATCH /api/admin/interviewers/:id error:", err);
+      res.status(500).json({ error: "Failed to update interviewer" });
+    }
+  });
+
+  app.delete("/api/admin/interviewers/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { db } = await import("./db");
+      const { adminInterviewers } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      const result = await db
+        .delete(adminInterviewers)
+        .where(eq(adminInterviewers.id, id));
+      if ((result.rowCount ?? 0) === 0) {
+        return res.status(404).json({ error: "Interviewer not found" });
+      }
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("DELETE /api/admin/interviewers/:id error:", err);
+      res.status(500).json({ error: "Failed to delete interviewer" });
     }
   });
 
@@ -8131,7 +8239,7 @@ export async function registerRoutes(
       const { getInterviewerSlots, findInterviewerConfig } = await import("./services/microsoftGraphCalendarService");
 
       // Verify interviewer exists and has a calendar configured before hitting Graph
-      const interviewerConfig = findInterviewerConfig(interviewerId);
+      const interviewerConfig = await findInterviewerConfig(interviewerId);
       if (!interviewerConfig) {
         return res.status(404).json({ error: `Interviewer '${interviewerId}' not found` });
       }

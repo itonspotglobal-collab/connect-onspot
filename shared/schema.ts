@@ -1822,3 +1822,25 @@ export const insertHiringContractSchema = createInsertSchema(hiringContracts).om
 });
 export type InsertHiringContract = z.infer<typeof insertHiringContractSchema>;
 export type HiringContract = typeof hiringContracts.$inferSelect;
+
+// ── Admin Interviewers ────────────────────────────────────────────────────────
+// Self-service interviewer configuration managed from the Admin dashboard.
+// Replaces the ONSPOT_INTERVIEWERS_JSON Replit Secret for new entries.
+// The calendarEmail is the M365 UPN used to query Graph free/busy data.
+export const adminInterviewers = pgTable("admin_interviewers", {
+  id:            uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name:          text("name").notNull(),
+  title:         text("title").notNull().default(""),
+  calendarEmail: text("calendar_email").notNull().default(""),
+  sortOrder:     integer("sort_order").notNull().default(0),
+  createdAt:     timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:     timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_admin_interviewers_sort_order").on(table.sortOrder),
+]);
+
+export const insertAdminInterviewerSchema = createInsertSchema(adminInterviewers).omit({
+  id: true, createdAt: true, updatedAt: true,
+});
+export type InsertAdminInterviewer = z.infer<typeof insertAdminInterviewerSchema>;
+export type AdminInterviewer = typeof adminInterviewers.$inferSelect;

@@ -23,6 +23,9 @@
  */
 
 import { getMicrosoftGraphAccessToken } from "./microsoftGraphEmailService";
+import { db } from "../db";
+import { adminInterviewers as adminInterviewersTable } from "@shared/schema";
+import { asc } from "drizzle-orm";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +36,13 @@ export interface InterviewerRecord {
   title: string;
   /** False when calendarEmail is not configured or Graph credentials are absent. */
   isCalendarConnected: boolean;
+  /**
+   * Origin of this record.
+   * - "db"      — stored in the admin_interviewers table; supports full CRUD.
+   * - "env"     — loaded from ONSPOT_INTERVIEWERS_JSON; read-only from the UI.
+   * - "builtin" — hard-coded placeholder; read-only from the UI.
+   */
+  source: "db" | "env" | "builtin";
 }
 
 export interface AvailableSlot {
@@ -62,29 +72,80 @@ interface InterviewerConfig {
   name: string;
   title: string;
   calendarEmail: string; // M365 UPN; empty string = not connected
+  source: "db" | "env" | "builtin";
 }
 
 /**
- * Built-in placeholder list. Replace or extend via ONSPOT_INTERVIEWERS_JSON.
- * Admins can configure real @onspotglobal.com emails through the Replit Secret.
+ * Built-in placeholder list shown only when the DB table is empty and
+ * ONSPOT_INTERVIEWERS_JSON is not set. Kept for zero-config local dev.
  */
-const BUILTIN_INTERVIEWERS: InterviewerConfig[] = [
+const BUILTIN_INTERVIEWERS: Omit<InterviewerConfig, "source">[] = [
   { id: "ta-lead", name: "Talent Acquisition Lead", title: "Talent Team", calendarEmail: "" },
   { id: "cs-lead", name: "Client Success Lead",    title: "Client Team", calendarEmail: "" },
 ];
 
-function loadInterviewerConfigs(): InterviewerConfig[] {
-  const raw = process.env.ONSPOT_INTERVIEWERS_JSON?.trim();
-  if (!raw) return BUILTIN_INTERVIEWERS;
+/**
+ * Load ALL interviewer configs, merging three sources in priority order:
+ *   1. DB rows    (admin_interviewers table — full CRUD, source="db")
+ *   2. Env var    (ONSPOT_INTERVIEWERS_JSON — read-only, source="env")
+ *   3. Built-ins  (hard-coded placeholders — read-only, source="builtin",
+ *                  only when both DB and env are empty)
+ *
+ * DB rows and env entries are always shown together so that adding a DB entry
+ * never hides an env-configured interviewer. Deduplication is by id: an env
+ * entry whose id already exists in DB is silently dropped (the DB version wins).
+ */
+async function loadInterviewerConfigs(): Promise<InterviewerConfig[]> {
+  // ── 1. DB rows ──────────────────────────────────────────────────────────────
+  let dbRows: InterviewerConfig[] = [];
   try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed as InterviewerConfig[];
-    }
-  } catch {
-    console.warn("[calendarService] ONSPOT_INTERVIEWERS_JSON is not valid JSON — using built-in list");
+    const rows = await db
+      .select()
+      .from(adminInterviewersTable)
+      .orderBy(asc(adminInterviewersTable.sortOrder), asc(adminInterviewersTable.createdAt));
+    dbRows = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      title: r.title,
+      calendarEmail: r.calendarEmail,
+      source: "db" as const,
+    }));
+  } catch (err) {
+    console.warn("[calendarService] DB read failed, continuing with env/built-in only:", err);
   }
-  return BUILTIN_INTERVIEWERS;
+
+  const dbIds = new Set(dbRows.map((r) => r.id));
+
+  // ── 2. Env var (merged alongside DB, deduped by id) ─────────────────────────
+  let envRows: InterviewerConfig[] = [];
+  const raw = process.env.ONSPOT_INTERVIEWERS_JSON?.trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        envRows = (parsed as Array<{ id: string; name: string; title?: string; calendarEmail?: string }>)
+          .filter((e) => e.id && !dbIds.has(e.id)) // DB wins on id collision
+          .map((e) => ({
+            id: e.id,
+            name: e.name ?? "",
+            title: e.title ?? "",
+            calendarEmail: e.calendarEmail ?? "",
+            source: "env" as const,
+          }));
+      }
+    } catch {
+      console.warn("[calendarService] ONSPOT_INTERVIEWERS_JSON is not valid JSON — ignoring");
+    }
+  }
+
+  const merged = [...dbRows, ...envRows];
+
+  // ── 3. Built-ins only when completely empty ──────────────────────────────────
+  if (merged.length === 0) {
+    return BUILTIN_INTERVIEWERS.map((b) => ({ ...b, source: "builtin" as const }));
+  }
+
+  return merged;
 }
 
 function isGraphConfigured(): boolean {
@@ -96,22 +157,25 @@ function isGraphConfigured(): boolean {
 }
 
 /**
- * Return the current interviewer list with connection state.
+ * Return the current interviewer list with connection state and source.
  * The calendarEmail is intentionally omitted from the return value.
  */
-export function getInterviewerList(): InterviewerRecord[] {
+export async function getInterviewerList(): Promise<InterviewerRecord[]> {
   const graphReady = isGraphConfigured();
-  return loadInterviewerConfigs().map(({ id, name, title, calendarEmail }) => ({
+  const configs = await loadInterviewerConfigs();
+  return configs.map(({ id, name, title, calendarEmail, source }) => ({
     id,
     name,
     title,
     isCalendarConnected: graphReady && calendarEmail.trim().length > 0,
+    source,
   }));
 }
 
-/** Lookup a single interviewer config by id. Returns null if not found. */
-export function findInterviewerConfig(id: string): InterviewerConfig | null {
-  return loadInterviewerConfigs().find((i) => i.id === id) ?? null;
+/** Lookup a single interviewer config by id across all sources. Returns null if not found. */
+export async function findInterviewerConfig(id: string): Promise<InterviewerConfig | null> {
+  const configs = await loadInterviewerConfigs();
+  return configs.find((i) => i.id === id) ?? null;
 }
 
 // ── Windows timezone → IANA mapping ──────────────────────────────────────────
@@ -605,7 +669,7 @@ export async function getInterviewerSlots(opts: GetSlotsOptions): Promise<Availa
     throw new Error("Microsoft Graph credentials are not configured.");
   }
 
-  const interviewer = findInterviewerConfig(opts.interviewerId);
+  const interviewer = await findInterviewerConfig(opts.interviewerId);
   if (!interviewer || !interviewer.calendarEmail?.trim()) {
     throw new Error(`Interviewer '${opts.interviewerId}' has no calendar connected.`);
   }

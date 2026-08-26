@@ -482,6 +482,10 @@ export default function AdminDashboard() {
                 <Wrench className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Scaffold Cleanup
               </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/interviewers')}>
+                <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Interviewers
+              </Button>
             </CardContent>
           </Card>
 
