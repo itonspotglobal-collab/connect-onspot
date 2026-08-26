@@ -196,9 +196,10 @@ function findDuplicates(job: EnrichedJob, allJobs: EnrichedJob[]): EnrichedJob[]
 }
 
 // ─── Tabs config ──────────────────────────────────────────────────────────────
-type TabKey = "all" | "pending" | "approved" | "declined";
+type TabKey = "all" | "drafts" | "pending" | "approved" | "declined";
 const TABS: { key: TabKey; label: string }[] = [
   { key: "all", label: "All Jobs" },
+  { key: "drafts", label: "Drafts" },
   { key: "pending", label: "Pending Approvals" },
   { key: "approved", label: "Approved" },
   { key: "declined", label: "Declined" },
@@ -208,6 +209,7 @@ const TABS: { key: TabKey; label: string }[] = [
 function AdminJobRow({
   job,
   onEdit,
+  onPreview,
   onToggle,
   onDelete,
   onCopy,
@@ -224,6 +226,7 @@ function AdminJobRow({
 }: {
   job: Job;
   onEdit: () => void;
+  onPreview: () => void;
   onToggle: () => void;
   onDelete: () => void;
   onCopy: () => void;
@@ -243,6 +246,7 @@ function AdminJobRow({
   const pay = buildRateDisplayWithCode({ ...job, engagementType: job.engagementType ?? undefined });
   const timeAgo = getTimeAgo((job as any).postedAt || job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const isDraft = job.status === "draft";
   const approvalCfg = APPROVAL_CONFIG[approvalStatus] ?? APPROVAL_CONFIG.pending;
 
   return (
@@ -265,12 +269,14 @@ function AdminJobRow({
                   : "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-white/40"
               }`}
             >
-              {isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
+              {isDraft ? "Draft" : isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
             </span>
             {/* Approval badge */}
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${approvalCfg.badge}`}>
-              {approvalCfg.label}
-            </span>
+            {!isDraft && (
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${approvalCfg.badge}`}>
+                {approvalCfg.label}
+              </span>
+            )}
             {/* Featured badge */}
             {(job as any).isFeatured && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
@@ -341,6 +347,20 @@ function AdminJobRow({
 
         {/* Right: action buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Drafts have only actions that make sense for unfinished postings. */}
+          {isDraft ? (
+            <>
+              <Button size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]" onClick={onEdit}>
+                <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                Continue Editing
+              </Button>
+              <Button variant="outline" size="sm" onClick={onPreview}>
+                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                Preview
+              </Button>
+            </>
+          ) : (
+          <>
           {/* ── Approval actions ── */}
           {approvalStatus === "pending" && (
             <>
@@ -387,35 +407,37 @@ function AdminJobRow({
               Approve
             </Button>
           )}
+          </>
+          )}
 
           {/* ── Standard actions ── */}
-          <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
+          {!isDraft && <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
             {isOpen ? (
               <><EyeOff className="w-3.5 h-3.5 mr-1.5" />Close</>
             ) : (
               <><Eye className="w-3.5 h-3.5 mr-1.5" />Reopen</>
             )}
-          </Button>
+          </Button>}
 
-          <Button variant="outline" size="sm" onClick={onEdit}>
+          {!isDraft && <Button variant="outline" size="sm" onClick={onEdit}>
             <Pencil className="w-3.5 h-3.5 mr-1.5" />Edit
-          </Button>
+          </Button>}
 
-          <Button variant="outline" size="sm" asChild>
+          {!isDraft && <Button variant="outline" size="sm" asChild>
             <a href={`/find-work/job/${job.id}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />Preview
             </a>
-          </Button>
+          </Button>}
 
-          <Button variant="outline" size="sm" onClick={onCopy}>
+          {!isDraft && <Button variant="outline" size="sm" onClick={onCopy}>
             {copiedId === job.id ? (
               <><Check className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />Copied</>
             ) : (
               <><Copy className="w-3.5 h-3.5 mr-1.5" />Share</>
             )}
-          </Button>
+          </Button>}
 
-          <AlertDialog>
+          {!isDraft && <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="outline"
@@ -439,7 +461,7 @@ function AdminJobRow({
                 <AlertDialogAction onClick={onRefresh}>Refresh Posting</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+          </AlertDialog>}
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -449,14 +471,16 @@ function AdminJobRow({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove job posting?</AlertDialogTitle>
+                <AlertDialogTitle>{isDraft ? "Delete draft permanently?" : "Remove job posting?"}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will cancel &ldquo;{(job as any).professionalRoleName || job.title}&rdquo;. It will no longer appear on the Find Work page.
+                  {isDraft
+                    ? <>This permanently deletes &ldquo;{(job as any).professionalRoleName || job.title}&rdquo;. This action cannot be undone.</>
+                    : <>This will cancel &ldquo;{(job as any).professionalRoleName || job.title}&rdquo;. It will no longer appear on the Find Work page.</>}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Remove</AlertDialogAction>
+                <AlertDialogAction onClick={onDelete}>{isDraft ? "Delete Draft" : "Remove"}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -792,7 +816,7 @@ export default function AdminFindWork() {
   // ─── Response types ────────────────────────────────────────────────────────
   interface AdminJobStats {
     total: number; open: number; closed: number;
-    pending: number; approved: number; declined: number; clientRequests: number;
+    drafts: number; pending: number; approved: number; declined: number; clientRequests: number;
   }
   interface AdminJobsResponse {
     items: Job[];
@@ -1268,7 +1292,8 @@ export default function AdminFindWork() {
             <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04] flex-wrap">
               {TABS.map((tab) => {
                 const count =
-                  tab.key === "pending" ? (stats?.pending ?? 0)
+                  tab.key === "drafts" ? (stats?.drafts ?? 0)
+                  : tab.key === "pending" ? (stats?.pending ?? 0)
                   : tab.key === "approved" ? (stats?.approved ?? 0)
                   : tab.key === "declined" ? (stats?.declined ?? 0)
                   : (stats?.total ?? 0);
@@ -1340,8 +1365,8 @@ export default function AdminFindWork() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#474ead]/10">
                 {activeTab === "pending" ? <ListFilter className="h-8 w-8 text-[#474ead]" /> : <Briefcase className="h-8 w-8 text-[#474ead]" />}
               </div>
-              <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
-                {activeTab === "pending" ? "No pending approvals" : activeTab === "approved" ? "No approved jobs" : activeTab === "declined" ? "No declined jobs" : "No job postings yet"}
+                <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+                {activeTab === "drafts" ? "No job drafts" : activeTab === "pending" ? "No pending approvals" : activeTab === "approved" ? "No approved jobs" : activeTab === "declined" ? "No declined jobs" : "No job postings yet"}
               </h3>
               <p className="mb-6 max-w-xs text-slate-500 dark:text-slate-400">
                 {activeTab === "all" ? "Create your first job posting to start attracting talent." : "Nothing in this category right now."}
@@ -1382,6 +1407,7 @@ export default function AdminFindWork() {
                   key={job.id}
                   job={job}
                   onEdit={() => openEdit(job as unknown as Job)}
+                  onPreview={() => setViewDetailJobId(job.id)}
                   onToggle={() => {
                     // Guard: reopening a job without an engagement type must be blocked client-side
                     if (job.status !== "open" && !job.engagementType?.trim()) {
@@ -1692,25 +1718,37 @@ export default function AdminFindWork() {
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-white/[0.06]">
-                  <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => { setViewDetailJobId(null); openApproveComposer(dj); }}>
-                    <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Approve
-                  </Button>
-                  <Button size="sm" variant="outline"
-                    className="border-red-200 text-red-600 dark:border-red-900/40 dark:text-red-400"
-                    onClick={() => { setViewDetailJobId(null); setRejectModalJobId(dj.id); setRejectionReason(""); }}>
-                    <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />Decline
-                  </Button>
-                  {dups.length > 0 && (
-                    <Button size="sm" variant="outline"
-                      className="border-violet-200 text-violet-700 dark:border-violet-900/40 dark:text-violet-400"
-                      onClick={() => { setViewDetailJobId(null); setLinkModalJobId(dj.id); setLinkTargetJobId(dups[0]?.id ?? ""); }}>
-                      <Link2 className="w-3.5 h-3.5 mr-1.5" />Link to Existing
-                    </Button>
-                  )}
-                  <Button size="sm" variant="outline" onClick={() => setViewDetailJobId(null)}>Close</Button>
-                </div>
+                  <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-white/[0.06]">
+                    {dj.status === "draft" ? (
+                      <Button
+                        size="sm"
+                        className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+                        onClick={() => { setViewDetailJobId(null); openEdit(dj); }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 mr-1.5" />Continue Editing
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700"
+                          onClick={() => { setViewDetailJobId(null); openApproveComposer(dj); }}>
+                          <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Approve
+                        </Button>
+                        <Button size="sm" variant="outline"
+                          className="border-red-200 text-red-600 dark:border-red-900/40 dark:text-red-400"
+                          onClick={() => { setViewDetailJobId(null); setRejectModalJobId(dj.id); setRejectionReason(""); }}>
+                          <ThumbsDown className="w-3.5 h-3.5 mr-1.5" />Decline
+                        </Button>
+                        {dups.length > 0 && (
+                          <Button size="sm" variant="outline"
+                            className="border-violet-200 text-violet-700 dark:border-violet-900/40 dark:text-violet-400"
+                            onClick={() => { setViewDetailJobId(null); setLinkModalJobId(dj.id); setLinkTargetJobId(dups[0]?.id ?? ""); }}>
+                            <Link2 className="w-3.5 h-3.5 mr-1.5" />Link to Existing
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => setViewDetailJobId(null)}>Close</Button>
+                  </div>
               </div>
             </DialogContent>
           </Dialog>

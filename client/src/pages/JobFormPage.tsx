@@ -102,10 +102,15 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
     staleTime: 0,
     retry: 2,
   });
+  const isExistingDraft = existingJob?.status === "draft";
 
   useEffect(() => {
     if (existingJob) {
       setFormData(jobToFormData(existingJob));
+      const savedStep = Number((existingJob as any).draftStep ?? (existingJob as any).draft_step);
+      if (existingJob.status === "draft" && Number.isInteger(savedStep) && savedStep >= 0 && savedStep < STEPS.length) {
+        setStep(savedStep);
+      }
       setIsDirty(false);
     }
   }, [existingJob]);
@@ -275,7 +280,13 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       return;
     }
 
-    const payload = buildPayload(formData);
+    const payload = buildPayload({
+      ...formData,
+      // A completed draft enters the same pending approval workflow as a
+      // normally submitted posting. The server keeps the same job row.
+      status: isExistingDraft ? "open" : formData.status,
+      draftStep: null,
+    } as JobFormData);
     if (!isClientMode && !isEditing) payload.clientId = selectedClientId;
 
     if (isEditing && jobId) {
@@ -291,6 +302,46 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       setShowExitDialog(true);
     } else {
       navigate(returnPath);
+    }
+  };
+
+  const hasMeaningfulDraftData = () => {
+    const ignored = new Set(["", "Remote", "entry", "range", "PHP", "open", "draft"]);
+    return Object.entries(formData).some(([key, value]) => {
+      if (key === "status" || key === "title" || key === "category" || key === "skillTags") {
+        // These are represented by the canonical form fields below.
+        return false;
+      }
+      if (typeof value === "string") return value.trim() !== "" && !ignored.has(value.trim());
+      if (Array.isArray(value)) return value.length > 0;
+      return value === true || (typeof value === "number" && value !== 0);
+    }) ||
+      Boolean(formData.professionalRoleName.trim() || formData.jobFunction.trim() || formData.company.trim() ||
+        formData.description.trim() || formData.skillTags.trim());
+  };
+
+  const saveDraftAndExit = () => {
+    if (!hasMeaningfulDraftData()) {
+      setShowExitDialog(false);
+      toast({
+        title: "Nothing to save yet",
+        description: "Enter some job details before saving a draft.",
+      });
+      return;
+    }
+    if (!isClientMode && !isEditing && !selectedClientId) {
+      setShowExitDialog(false);
+      setClientSelectionError("Please select the client this job is for");
+      goToStep(0);
+      return;
+    }
+
+    const payload = buildPayload({ ...formData, status: "draft", draftStep: step } as JobFormData);
+    if (!isClientMode && !isEditing) payload.clientId = selectedClientId;
+    if (isEditing && jobId) {
+      updateMutation.mutate({ id: jobId, data: payload });
+    } else {
+      createMutation.mutate(payload);
     }
   };
 
@@ -337,20 +388,46 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Unsaved changes dialog ── */}
+      {/* ── Unsaved changes / draft dialog ── */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isExistingDraft ? "Save changes before leaving?" : "Save this job as a draft?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. If you leave now they will be lost.
+              {isExistingDraft
+                ? "Your changes can be saved to this draft before you return to the jobs dashboard."
+                : "Your progress will be saved and you can finish this job posting later."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate(returnPath)}>
-              Leave
-            </AlertDialogAction>
+            {isExistingDraft ? (
+              <>
+                <AlertDialogAction
+                  className="bg-muted text-foreground hover:bg-muted/80"
+                  onClick={() => navigate(returnPath)}
+                >
+                  Discard Changes
+                </AlertDialogAction>
+                <AlertDialogAction onClick={saveDraftAndExit}>
+                  Save &amp; Exit
+                </AlertDialogAction>
+              </>
+            ) : (
+              <>
+                <AlertDialogAction
+                  className="bg-muted text-foreground hover:bg-muted/80"
+                  onClick={() => navigate(returnPath)}
+                >
+                  Discard
+                </AlertDialogAction>
+                <AlertDialogAction onClick={saveDraftAndExit}>
+                  Save Draft &amp; Exit
+                </AlertDialogAction>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -624,6 +701,7 @@ function buildPayload(formData: JobFormData): any {
     experienceLevel: formData.experienceLevel,
     description: isEmptyQuill(formData.description) ? "" : formData.description.trim(),
     status: formData.status,
+    draftStep: (formData as any).draftStep ?? null,
     duration: formData.duration || null,
     minimumEducation: formData.minimumEducation.trim() || null,
     requiredSkills: formData.requiredSkills.filter((skill) => skill.name.trim()),

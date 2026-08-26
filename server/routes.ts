@@ -216,6 +216,42 @@ export function validateJobFormMetadata(
   return null;
 }
 
+function hasMeaningfulDraftData(value: Record<string, unknown>): boolean {
+  const ignoredDefaults = new Set(["", "Remote", "entry", "range", "PHP", "open", "draft"]);
+  return Object.entries(value).some(([key, raw]) => {
+    if (["status", "approvalStatus", "clientId", "draftStep"].includes(key)) return false;
+    if (typeof raw === "string") return raw.trim() !== "" && !ignoredDefaults.has(raw.trim());
+    if (Array.isArray(raw)) return raw.length > 0;
+    return raw === true || (typeof raw === "number" && raw !== 0);
+  });
+}
+
+function normalizeDraftJobBody(
+  value: Record<string, unknown>,
+  existing?: Record<string, any> | null,
+): Record<string, unknown> {
+  const normalized = { ...value };
+  const fallback = (key: string, valueIfEmpty: unknown) => {
+    const current = normalized[key];
+    if (current === undefined || current === null || (typeof current === "string" && !current.trim())) {
+      normalized[key] = valueIfEmpty;
+    }
+  };
+  fallback("title", existing?.title ?? "Untitled draft");
+  fallback("description", existing?.description ?? "");
+  fallback("category", existing?.category ?? "Uncategorized");
+  fallback("experienceLevel", existing?.experienceLevel ?? "entry");
+  if (!normalized.professionalRoleName && existing?.professional_role_name) {
+    normalized.professionalRoleName = existing.professional_role_name;
+  }
+  if (!normalized.jobFunction && existing?.job_function) {
+    normalized.jobFunction = existing.job_function;
+  }
+  normalized.status = "draft";
+  normalized.approvalStatus = "pending";
+  return normalized;
+}
+
 // Permanently remove organizations whose deletion due date has passed.
 //
 // Isolation guarantee (confirmed by schema audit and test coverage):
@@ -8010,16 +8046,19 @@ export async function registerRoutes(
         total: enriched.length,
         open: enriched.filter((j: any) => j.status === "open").length,
         closed: enriched.filter((j: any) => j.status === "closed" || j.status === "cancelled").length,
-        pending: enriched.filter((j: any) => j.approvalStatus === "pending").length,
-        approved: enriched.filter((j: any) => j.approvalStatus === "approved").length,
-        declined: enriched.filter((j: any) => j.approvalStatus === "rejected" || j.approvalStatus === "linked_to_existing").length,
-        clientRequests: enriched.filter((j: any) => j.isClientSubmitted === true).length,
+        pending: enriched.filter((j: any) => j.status !== "draft" && j.approvalStatus === "pending").length,
+        drafts: enriched.filter((j: any) => j.status === "draft").length,
+        approved: enriched.filter((j: any) => j.status !== "draft" && j.approvalStatus === "approved").length,
+        declined: enriched.filter((j: any) => j.status !== "draft" && (j.approvalStatus === "rejected" || j.approvalStatus === "linked_to_existing")).length,
+        clientRequests: enriched.filter((j: any) => j.status !== "draft" && j.isClientSubmitted === true).length,
       };
 
       // Filter by tab before paginating so totalPages/total reflect the tab's dataset
       let filtered = enriched;
       if (tab === "pending") {
-        filtered = enriched.filter((j: any) => j.approvalStatus === "pending");
+        filtered = enriched.filter((j: any) => j.status !== "draft" && j.approvalStatus === "pending");
+      } else if (tab === "drafts") {
+        filtered = enriched.filter((j: any) => j.status === "draft");
       } else if (tab === "approved") {
         filtered = enriched.filter((j: any) => j.approvalStatus === "approved");
       } else if (tab === "declined") {
@@ -10169,7 +10208,16 @@ export async function registerRoutes(
       }
 
       // Admin-created jobs: isClientSubmitted stays false (distinguishes from self-serve)
-      const body = { ...req.body, clientId: rawClientId, approvalStatus: "pending" };
+      const isDraft = req.body?.status === "draft";
+      if (isDraft && !hasMeaningfulDraftData(req.body)) {
+        return res.status(400).json({
+          error: "Nothing to save",
+          message: "Enter some job details before saving a draft.",
+        });
+      }
+      const body = isDraft
+        ? normalizeDraftJobBody({ ...req.body, clientId: rawClientId }, null)
+        : { ...req.body, clientId: rawClientId, approvalStatus: "pending" };
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
@@ -10180,7 +10228,7 @@ export async function registerRoutes(
 
       // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !body.engagementType) {
+      if (!isDraft && ["open", "published"].includes(effectiveStatus) && !body.engagementType) {
         return res.status(400).json({
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
@@ -10191,7 +10239,7 @@ export async function registerRoutes(
       const job = await storage.createJob(validated);
       res.status(201).json(job);
       // Option C trigger B: fan-out match recompute when a new job is published.
-      if (job.id && ["open", "published"].includes(job.status ?? "")) {
+      if (job.id && !isDraft && ["open", "published"].includes(job.status ?? "")) {
         setImmediate(() => {
           (storage as any).recomputeMatchesForJob(job.id)
             .catch((err: any) => console.error("❌ Background match fan-out (job create):", err));
@@ -10217,7 +10265,18 @@ export async function registerRoutes(
   app.patch("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
       const { clientId, ...rest } = req.body;
-      const updates = insertJobSchema.partial().parse(rest);
+      const existingJob = await storage.getJob(req.params.id);
+      if (!existingJob) return res.status(404).json({ error: "Job not found" });
+      const isDraftUpdate = existingJob.status === "draft" && rest.status === "draft";
+      if (isDraftUpdate && !hasMeaningfulDraftData(rest)) {
+        return res.status(400).json({
+          error: "Nothing to save",
+          message: "Enter some job details before saving a draft.",
+        });
+      }
+      const updates = insertJobSchema.partial().parse(
+        isDraftUpdate ? normalizeDraftJobBody(rest, existingJob as any) : rest,
+      );
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const adminPatchEtErr = validateEngagementType(updates.engagementType);
@@ -10226,7 +10285,6 @@ export async function registerRoutes(
       if (adminPatchMetadataErr) return res.status(400).json(adminPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
-      const existingJob = await storage.getJob(req.params.id);
       const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
@@ -10310,6 +10368,14 @@ export async function registerRoutes(
 
   app.delete("/api/admin/jobs/:id", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
+      const existing = await storage.getJob(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Job not found" });
+      if (existing.status === "draft") {
+        await query(`DELETE FROM job_skills WHERE job_id = $1`, [req.params.id]);
+        const deleted = await query(`DELETE FROM jobs WHERE id = $1 RETURNING id`, [req.params.id]);
+        if (!deleted.rows.length) return res.status(404).json({ error: "Job not found" });
+        return res.json({ success: true });
+      }
       const job = await storage.updateJob(req.params.id, { status: "cancelled" });
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
@@ -15113,7 +15179,8 @@ export async function registerRoutes(
           `SELECT j.*,
              j.proposal_count AS "proposalCount"
             FROM jobs j
-           WHERE j.client_id = $1
+             WHERE j.client_id = $1
+               AND j.status <> 'draft'
              AND (j.created_via IS NULL OR j.created_via != 'search_scaffold')
            ORDER BY j.created_at DESC`,
           [userId],
@@ -15206,7 +15273,7 @@ export async function registerRoutes(
         `SELECT j.*,
           j.proposal_count AS "proposalCount"
          FROM jobs j
-         WHERE j.client_id = $1
+          WHERE j.client_id = $1
            AND (j.created_via IS NULL OR j.created_via != 'search_scaffold')
          ORDER BY j.created_at DESC`,
         [userId],
@@ -15229,7 +15296,7 @@ export async function registerRoutes(
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { jobId } = req.params;
       const r = await query(
-        `SELECT j.*, j.proposal_count AS "proposalCount"
+        `SELECT j.id
          FROM jobs j
          WHERE j.id = $1
            AND j.client_id = $2
@@ -15237,7 +15304,9 @@ export async function registerRoutes(
         [jobId, userId],
       );
       if (!r.rows.length) return res.status(404).json({ error: "Job not found" });
-      return res.json(r.rows[0]);
+      const job = await storage.getJob(jobId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      return res.json(job);
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -15250,14 +15319,29 @@ export async function registerRoutes(
       // Client-created jobs always start as pending approval. The current Client
       // form has no external-link control, so omitted application fields must
       // never inherit legacy external behavior.
-      const body = {
-        ...req.body,
-        clientId: userId,
-        approvalStatus: "pending",
-        isClientSubmitted: true,
-        applicationMethod: "built_in_form",
-        applyLink: null,
-      };
+      const isDraft = req.body?.status === "draft";
+      if (isDraft && !hasMeaningfulDraftData(req.body)) {
+        return res.status(400).json({
+          error: "Nothing to save",
+          message: "Enter some job details before saving a draft.",
+        });
+      }
+      const body = isDraft
+        ? normalizeDraftJobBody({
+            ...req.body,
+            clientId: userId,
+            isClientSubmitted: true,
+            applicationMethod: "built_in_form",
+            applyLink: null,
+          }, null)
+        : {
+            ...req.body,
+            clientId: userId,
+            approvalStatus: "pending",
+            isClientSubmitted: true,
+            applicationMethod: "built_in_form",
+            applyLink: null,
+          };
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientCreateEtErr = validateEngagementType(body.engagementType);
@@ -15267,7 +15351,7 @@ export async function registerRoutes(
 
       // Guard 2: published jobs must have an engagement type set.
       const effectiveStatus = body.status ?? "open";
-      if (["open", "published"].includes(effectiveStatus) && !body.engagementType) {
+      if (!isDraft && ["open", "published"].includes(effectiveStatus) && !body.engagementType) {
         return res.status(400).json({
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
@@ -15294,7 +15378,18 @@ export async function registerRoutes(
       const check = await query("SELECT id, approval_status FROM jobs WHERE id = $1 AND client_id = $2", [jobId, userId]);
       if (check.rows.length === 0) return res.status(403).json({ error: "Forbidden" });
       const { clientId: _strip, ...rest } = req.body;
-      const updates = insertJobSchema.partial().parse(rest);
+      const existingJob = await storage.getJob(jobId);
+      if (!existingJob) return res.status(404).json({ error: "Job not found" });
+      const isDraftUpdate = existingJob.status === "draft" && rest.status === "draft";
+      if (isDraftUpdate && !hasMeaningfulDraftData(rest)) {
+        return res.status(400).json({
+          error: "Nothing to save",
+          message: "Enter some job details before saving a draft.",
+        });
+      }
+      const updates = insertJobSchema.partial().parse(
+        isDraftUpdate ? normalizeDraftJobBody(rest, existingJob as any) : rest,
+      );
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientPatchEtErr = validateEngagementType(updates.engagementType);
@@ -15303,7 +15398,6 @@ export async function registerRoutes(
       if (clientPatchMetadataErr) return res.status(400).json(clientPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
-      const existingJob = await storage.getJob(jobId);
       const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;

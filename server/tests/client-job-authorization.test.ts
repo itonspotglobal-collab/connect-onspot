@@ -100,6 +100,7 @@ const jobPayload = (clientId: string, title = "Client authorization test job") =
 let server: http.Server;
 let otherClientJobId: string;
 let createdClientJobId: string;
+let createdDraftJobId: string;
 
 async function createFixtures() {
   await query(
@@ -179,6 +180,7 @@ async function destroyFixtures() {
     [[COMPOSER_APPROVAL_JOB_ID, COMPOSER_REJECTION_JOB_ID]],
   ).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
+  await query(`DELETE FROM jobs WHERE id = $1`, [createdDraftJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
   await query(`DELETE FROM client_talent_favorites WHERE client_id = $1 OR talent_id = $1`, [CLIENT_ID]).catch(() => {});
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
@@ -495,6 +497,97 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(otherClientList.status, 200, JSON.stringify(otherClientList.json));
     assert.ok(otherClientList.json.some((job: any) => job.id === otherClientJobId));
     assert.ok(!otherClientList.json.some((job: any) => job.id === createdClientJobId));
+  });
+
+  it("persists one owner-scoped draft, resumes it, and submits the same job row", async () => {
+    const empty = await request(server, "POST", "/api/client/jobs", clientToken, {
+      clientId: OTHER_CLIENT_ID,
+      status: "draft",
+      draftStep: 0,
+    });
+    assert.equal(empty.status, 400, JSON.stringify(empty.json));
+
+    const created = await request(server, "POST", "/api/client/jobs", clientToken, {
+      clientId: OTHER_CLIENT_ID,
+      status: "draft",
+      draftStep: 2,
+      professionalRoleName: "Draft UX Researcher",
+      title: "",
+      description: "Partial description",
+      category: "",
+      experienceLevel: "entry",
+      location: "Hybrid",
+      skillTags: ["Research", "Interviews"],
+    });
+    assert.equal(created.status, 201, JSON.stringify(created.json));
+    assert.equal(created.json.clientId, CLIENT_ID, "the authenticated client must own the draft");
+    assert.equal(created.json.status, "draft");
+    assert.equal(created.json.draftStep, 2);
+    const draftId = created.json.id;
+    createdDraftJobId = draftId;
+
+    const updated = await request(server, "PATCH", `/api/client/jobs/${draftId}`, clientToken, {
+      clientId: OTHER_CLIENT_ID,
+      status: "draft",
+      draftStep: 3,
+      professionalRoleName: "Draft UX Researcher",
+      title: "Draft UX Researcher",
+      description: "Expanded partial description",
+      category: "Design",
+      experienceLevel: "intermediate",
+      location: "Hybrid",
+      skillTags: ["Research", "Interviews", "Figma"],
+    });
+    assert.equal(updated.status, 200, JSON.stringify(updated.json));
+    assert.equal(updated.json.id, draftId);
+    assert.equal(updated.json.clientId, CLIENT_ID);
+    assert.equal(updated.json.draftStep, 3);
+
+    const resumed = await request(server, "GET", `/api/client/jobs/${draftId}`, clientToken);
+    assert.equal(resumed.status, 200, JSON.stringify(resumed.json));
+    assert.equal(resumed.json.description, "Expanded partial description");
+    assert.deepEqual(resumed.json.skillTags, ["Research", "Interviews", "Figma"]);
+    assert.equal(resumed.json.draftStep, 3);
+
+    const duplicateCheck = await query(
+      `SELECT COUNT(*)::int AS count FROM jobs WHERE id = $1 AND client_id = $2`,
+      [draftId, CLIENT_ID],
+    );
+    assert.equal(duplicateCheck.rows[0].count, 1, "saving must update the same draft row");
+
+    const otherGet = await request(server, "GET", `/api/client/jobs/${draftId}`, otherClientToken);
+    assert.equal(otherGet.status, 404);
+    const otherPatch = await request(server, "PATCH", `/api/client/jobs/${draftId}`, otherClientToken, {
+      status: "draft",
+      title: "Stolen draft",
+    });
+    assert.equal(otherPatch.status, 403);
+
+    const publicDetail = await request(server, "GET", `/api/jobs/${draftId}`);
+    assert.equal(publicDetail.status, 404, "draft details must never be public");
+    const publicSearch = await request(server, "GET", "/api/jobs/search?status=draft");
+    assert.equal(publicSearch.status, 200, JSON.stringify(publicSearch.json));
+    const publicItems = publicSearch.json.items ?? publicSearch.json.jobs ?? publicSearch.json;
+    assert.ok(!publicItems.some((job: any) => job.id === draftId));
+
+    const submitted = await request(server, "PATCH", `/api/client/jobs/${draftId}`, clientToken, {
+      status: "open",
+      draftStep: null,
+      title: "UX Researcher",
+      professionalRoleName: "UX Researcher",
+      description: "Complete job description",
+      category: "Design",
+      jobFunction: "Design",
+      experienceLevel: "intermediate",
+      engagementType: "Standard",
+      location: "Hybrid",
+      skillTags: ["Research", "Interviews", "Figma"],
+    });
+    assert.equal(submitted.status, 200, JSON.stringify(submitted.json));
+    assert.equal(submitted.json.id, draftId, "submission must retain the original job ID");
+    assert.equal(submitted.json.status, "open");
+    assert.equal(submitted.json.approvalStatus, "pending");
+    assert.equal(submitted.json.draftStep, null);
   });
 
   it("reports a pending job instead of treating it as no jobs, including first-invite Terms status", async () => {

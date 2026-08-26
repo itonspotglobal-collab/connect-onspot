@@ -597,6 +597,7 @@ function ClientJobRow({
   isDeleting: boolean;
 }) {
   const isOpen = job.status === "open";
+  const isDraft = job.status === "draft";
   const pay = buildRateDisplay(job as any);
   const timeAgo = getTimeAgo(job.createdAt);
   const approvalStatus =
@@ -644,7 +645,7 @@ function ClientJobRow({
                   : "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-white/40"
               }`}
             >
-              {isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
+              {isDraft ? "Draft" : isOpen ? "Open" : job.status === "closed" ? "Closed" : job.status}
             </span>
             {/* Approval status badge */}
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${approvalBadge.className}`}>
@@ -695,7 +696,7 @@ function ClientJobRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {canInviteTalent && (
+          {!isDraft && canInviteTalent && (
             <Button
               size="sm"
               className="bg-[#474ead] text-white hover:bg-[#3d439c]"
@@ -704,15 +705,21 @@ function ClientJobRow({
               <Users className="mr-1.5 h-3.5 w-3.5" />Invite Talent
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
+          {!isDraft && <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
             {isOpen ? (
               <><EyeOff className="w-3 h-3 mr-1.5" />Close</>
             ) : (
               <><Eye className="w-3 h-3 mr-1.5" />Reopen</>
             )}
-          </Button>
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Pencil className="w-3 h-3 mr-1.5" />Edit
+          </Button>}
+          <Button
+            variant={isDraft ? "default" : "outline"}
+            size="sm"
+            className={isDraft ? "bg-[#474ead] text-white hover:bg-[#3d439c]" : ""}
+            onClick={onEdit}
+          >
+            <Pencil className="w-3 h-3 mr-1.5" />
+            {isDraft ? "Continue Editing" : "Edit"}
           </Button>
           <Button variant="outline" size="sm" onClick={onView}>
             <Eye className="w-3 h-3 mr-1.5" />View
@@ -922,8 +929,19 @@ export default function ClientProfile() {
   const field = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
+  const draftJobs = jobs.filter((j) => j.status === "draft");
   const openJobs = jobs.filter((j) => j.status === "open");
-  const closedJobs = jobs.filter((j) => j.status !== "open");
+  const closedJobs = jobs.filter((j) => ["closed", "cancelled", "completed"].includes(j.status ?? ""));
+  const [jobTab, setJobTab] = useState<"all" | "drafts" | "pending" | "open" | "closed">("all");
+  const approvalOf = (job: Job) =>
+    (job as any).approvalStatus ?? (job as any).approval_status ?? "pending";
+  const visibleJobs = jobs.filter((job) => {
+    if (jobTab === "drafts") return job.status === "draft";
+    if (jobTab === "pending") return job.status !== "draft" && approvalOf(job) === "pending";
+    if (jobTab === "open") return job.status === "open";
+    if (jobTab === "closed") return ["closed", "cancelled", "completed"].includes(job.status ?? "");
+    return true;
+  });
   const companyName = profile?.companyName || "My Company";
 
   return (
@@ -1161,6 +1179,10 @@ export default function ClientProfile() {
                   {closedJobs.length} closed
                 </div>
               )}
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                <FileText className="h-3.5 w-3.5" />
+                {draftJobs.length} draft{draftJobs.length !== 1 ? "s" : ""}
+              </div>
               <Button
                 size="sm"
                 className="bg-[#474ead] text-white hover:bg-[#3d439c]"
@@ -1172,18 +1194,40 @@ export default function ClientProfile() {
             </div>
           </div>
 
+          <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04]">
+            {([
+              ["all", "All Jobs", jobs.length],
+              ["drafts", "Drafts", draftJobs.length],
+              ["pending", "Pending", jobs.filter((j) => j.status !== "draft" && approvalOf(j) === "pending").length],
+              ["open", "Open", openJobs.length],
+              ["closed", "Closed", closedJobs.length],
+            ] as const).map(([key, label, count]) => (
+              <button
+                key={key}
+                onClick={() => setJobTab(key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  jobTab === key
+                    ? "bg-[#474ead] text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06]"
+                }`}
+              >
+                {label} <span className="ml-1 opacity-75">{count}</span>
+              </button>
+            ))}
+          </div>
+
           {jobsLoading ? (
             <div className="space-y-3">
               {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
             </div>
-          ) : jobs.length === 0 ? (
+          ) : visibleJobs.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10">
                   <Briefcase className="h-7 w-7 text-[#474ead]" />
                 </div>
                 <h3 className="mb-1 text-base font-semibold text-slate-900 dark:text-white">
-                  No job postings yet
+                   {jobTab === "drafts" ? "No job drafts yet" : "No job postings yet"}
                 </h3>
                 <p className="mb-5 max-w-xs text-sm text-slate-500 dark:text-slate-400">
                   Post your first job to start finding talent on OnSpot.
@@ -1199,7 +1243,7 @@ export default function ClientProfile() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {jobs.map((job) => (
+               {visibleJobs.map((job) => (
                 <ClientJobRow
                   key={job.id}
                   job={job}

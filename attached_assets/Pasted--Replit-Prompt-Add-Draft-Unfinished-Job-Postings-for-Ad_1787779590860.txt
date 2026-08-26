@@ -1,0 +1,720 @@
+# Replit Prompt — Add Draft / Unfinished Job Postings for Admin + Client
+
+Implement this feature **immediately in the existing OnSpot application**.
+
+**DO NOT perform an audit, code review, architecture report, analysis phase, or give me recommendations before coding. Do not stop to explain what you found. Inspect only the files necessary to understand the existing implementation, then immediately modify the code and implement the feature. Also make sure not to alter other working feature or don't ruin feature that are properly working.**
+
+Do not create a separate app, separate database, separate authentication flow, or duplicate job-posting system. Reuse the existing OnSpot components, APIs, database models, styles, permissions, and job-posting architecture.
+
+## Goal
+
+Add support for **Draft / Unfinished Job Postings** for **both Admin and Client**.
+
+Both Admin and Client use the Job Posting Form / `JobFormPage`, so draft functionality must work consistently for both roles.
+
+A draft represents a job posting where the user started filling out the multi-step Job Posting Form but has **not completed/submitted the full posting yet**.
+
+The user must be able to:
+
+1. Start creating a job.
+2. Fill out one or more steps.
+3. Leave the form using **Save & exit**.
+4. Save the partially completed form as a Draft.
+5. See that Draft from the appropriate Admin or Client Jobs dashboard.
+6. Click **Continue Editing** / **Resume**.
+7. Return to the Job Posting Form anytime with all previously entered information restored.
+8. Finish the remaining steps and submit normally.
+
+---
+
+## 1. Draft status
+
+Extend the existing job posting status/data model rather than creating a separate draft system.
+
+Use an appropriate status such as:
+
+```ts
+draft
+```
+
+Preserve all existing statuses and existing approval/open/closed behavior.
+
+A Draft:
+
+* is unfinished
+* is editable
+* may contain incomplete data
+* must NOT require all normal publishing/submission validation
+* must NOT appear in the public **Find Work** page
+* must NOT appear in worker/candidate job searches
+* must NOT count as Open
+* must NOT count as Pending Approval
+* must NOT be treated as Approved
+* must NOT trigger normal job approval/publication workflows
+
+Only completed/submitted jobs should enter the existing approval/publication workflow.
+
+---
+
+## 2. Save & exit behavior
+
+The current Job Posting Form already has a **Save & exit** action and currently shows a confirmation modal similar to:
+
+> Leave without saving?
+> You have unsaved changes. If you leave now they will be lost.
+
+Change this workflow.
+
+When the user has started entering job information and clicks **Save & exit**:
+
+### Replace the destructive leave behavior with draft saving.
+
+Expected behavior:
+
+```text
+Save this job as a draft?
+Your progress will be saved and you can finish this job posting later.
+```
+
+Buttons:
+
+```text
+Continue Editing
+Save Draft & Exit
+```
+
+When **Save Draft & Exit** is clicked:
+
+* persist the current JobFormPage values
+* save the posting with status `draft`
+* preserve partially completed fields
+* preserve the current step/progress if practical
+* associate the draft with the correct Admin/Client ownership context
+* exit back to the appropriate Jobs dashboard
+* refresh/invalidate the jobs query so the new Draft appears immediately
+
+Do not require all required Job Posting fields when saving a draft.
+
+---
+
+## 3. Existing draft autosave/update behavior
+
+If the user opens an existing Draft and clicks **Save & exit** again:
+
+Do NOT create another job record.
+
+Update the same Draft record.
+
+There must never be duplicate draft jobs caused by repeatedly opening/saving the same draft.
+
+---
+
+## 4. Resume draft
+
+Add a route/action allowing the existing Draft to reopen inside `JobFormPage`.
+
+When reopening the Draft:
+
+* fetch the existing draft by ID
+* populate all previously saved fields
+* restore arrays such as skills, requirements, benefits, etc.
+* restore selects/toggles/textareas correctly
+* restore the current JobFormPage step if a draft-step value is stored
+* otherwise determine the most appropriate step based on stored progress
+
+The user must be able to continue editing normally.
+
+Example route patterns should reuse the existing project routing conventions, such as:
+
+```text
+/admin/jobs/:jobId/edit
+/client/jobs/:jobId/edit
+```
+
+or whatever equivalent routes already exist.
+
+Do not introduce unnecessary duplicate routes.
+
+---
+
+# ADMIN JOBS DASHBOARD
+
+Update the existing Admin Jobs management page.
+
+The current tabs include concepts similar to:
+
+```text
+All Jobs
+Pending Approvals
+Approved
+Declined
+```
+
+Add:
+
+```text
+Drafts
+```
+
+Suggested presentation:
+
+```text
+All Jobs        Drafts        Pending Approvals        Approved        Declined
+```
+
+Each tab should continue showing its count badge.
+
+Example:
+
+```text
+Drafts  3
+```
+
+---
+
+## 5. Admin Draft filtering
+
+The Admin **Drafts** tab should only contain jobs with:
+
+```ts
+status === "draft"
+```
+
+Drafts should remain visible inside **All Jobs** unless the existing architecture intentionally treats All Jobs as only submitted jobs.
+
+If included in All Jobs, clearly label them as Draft.
+
+---
+
+## 6. Admin Draft card
+
+Draft cards should visually match the existing Admin job cards.
+
+Add a visible badge:
+
+```text
+DRAFT
+```
+
+Use the existing design system and status-badge styling.
+
+For a Draft, do NOT show actions that don't make sense, such as:
+
+```text
+Approve
+Unapprove
+Close
+Refresh publication
+```
+
+Instead show relevant actions such as:
+
+```text
+Continue Editing
+Preview
+Delete
+```
+
+Preview should work with partial content gracefully.
+
+Primary action should be:
+
+```text
+Continue Editing
+```
+
+Clicking it should reopen the draft in `JobFormPage`.
+
+---
+
+# CLIENT JOBS DASHBOARD
+
+Add the same Draft capability to the Client Jobs area.
+
+The Client must have a clearly visible Draft section/tab/filter.
+
+Use the existing Client dashboard layout and styles rather than copying the Admin dashboard blindly.
+
+Example:
+
+```text
+All Jobs
+Drafts
+Pending
+Open
+Closed
+```
+
+Only add/rearrange tabs as necessary to fit the existing Client dashboard structure.
+
+---
+
+## 7. Client Draft permissions
+
+A Client must only be able to:
+
+* view their own drafts
+* edit their own drafts
+* delete their own drafts
+* submit their own drafts
+
+A Client must never be able to fetch or edit another Client's Draft by changing the URL/job ID.
+
+Enforce this on the server/API, not only in the UI.
+
+Admin behavior should continue following the existing Admin permissions.
+
+---
+
+# JOB FORM
+
+The Job Posting Form currently has four steps similar to:
+
+```text
+1. Basics
+2. Description
+3. Requirements
+4. Review
+```
+
+Draft support must work from **every step**.
+
+For example:
+
+A user can:
+
+```text
+Complete Step 1
+Continue to Step 2
+Partially fill Step 2
+Click Save & exit
+```
+
+The draft must save everything entered so far.
+
+Later:
+
+```text
+Dashboard
+→ Drafts
+→ Continue Editing
+```
+
+The user should return with all saved values populated.
+
+---
+
+## 8. Form validation rules
+
+Separate:
+
+```text
+Draft validation
+```
+
+from:
+
+```text
+Final submission validation
+```
+
+### Saving a Draft
+
+Allow incomplete required fields.
+
+Do not block Draft saving because fields from future steps are missing.
+
+At minimum, the system should be able to create a draft once there is meaningful data to save.
+
+If absolutely no user-entered data exists, do not create an empty Draft unnecessarily.
+
+### Final submission
+
+Keep the existing required-field validation exactly as intended.
+
+Draft status must not weaken final submission validation.
+
+---
+
+## 9. Final submission of a Draft
+
+When a user completes an existing Draft and submits the final Review step:
+
+Update that SAME database record.
+
+Do not create a second job.
+
+Transition the Draft into the existing normal submission status/workflow.
+
+For example:
+
+```text
+draft
+↓
+pending / pending_approval / existing equivalent
+```
+
+Use the status currently expected by the application.
+
+Then:
+
+* remove it from Drafts
+* show it under the appropriate submitted/pending section
+* trigger the same existing approval logic as a normally created job
+* invalidate/refetch all relevant job queries/counts
+
+---
+
+## 10. Database/storage
+
+Reuse the existing jobs/job-postings table/model.
+
+Do NOT create a completely separate `draft_jobs` table unless the current architecture makes that absolutely unavoidable.
+
+Prefer extending the existing record with fields such as:
+
+```ts
+status: "draft"
+draftStep?: number
+updatedAt
+```
+
+Only add `draftStep` or similar metadata if required.
+
+All JobFormPage data already entered by the user must be persisted.
+
+Make sure database constraints permit partial Draft records.
+
+If the jobs table currently has database-level NOT NULL requirements that prevent drafts, adjust the schema safely so:
+
+* Drafts can be incomplete
+* final submitted jobs are still validated at the application/API layer
+* existing production records remain compatible
+
+Create the appropriate migration using the project's existing migration system.
+
+---
+
+## 11. APIs
+
+Reuse and extend the current Admin and Client job APIs.
+
+Support:
+
+```text
+Create Draft
+Update Draft
+Fetch Draft
+List Drafts
+Delete Draft
+Submit Draft
+```
+
+Do not create redundant APIs if the existing create/update job endpoints can safely support draft status.
+
+For Client endpoints, preserve all existing authenticated Client ID / organization ownership handling.
+
+For Admin endpoints, preserve current Admin authorization.
+
+Never accept arbitrary ownership IDs from the browser when the authenticated account already determines ownership.
+
+---
+
+## 12. Public Find Work protection
+
+This requirement is critical.
+
+Every public jobs query/API must explicitly exclude:
+
+```ts
+status === "draft"
+```
+
+Draft jobs must never leak into:
+
+* Find Work
+* public job details
+* search
+* filters
+* recommendations
+* candidate matching
+* SEO/public job pages
+* public counts
+
+If someone manually tries to open a public URL for a Draft job, return the application's normal not-found/unavailable behavior.
+
+---
+
+## 13. Dashboard counts
+
+Update all relevant Admin and Client job counters.
+
+For Admin, the Draft count should display in its own Draft tab.
+
+Do not incorrectly include Drafts in:
+
+```text
+Open
+Closed
+Pending
+Approved
+Client Requests
+```
+
+unless an existing metric explicitly means total records regardless of state.
+
+If **Total Jobs** currently represents submitted/manageable jobs, preserve its current semantic behavior.
+
+Do not silently change dashboard metric meanings.
+
+---
+
+## 14. Draft visual design
+
+Match the existing OnSpot UI shown in the Admin Jobs dashboard.
+
+Draft card example concept:
+
+```text
+IT Administrator     DRAFT
+
+Information Technology (IT)
+Remote
+
+Last edited: Aug 27, 2026
+
+[Continue Editing] [Preview] [Delete]
+```
+
+Do not redesign the dashboard.
+
+Reuse:
+
+* existing card
+* typography
+* spacing
+* borders
+* icons
+* badge components
+* button styles
+* responsive behavior
+
+Draft badge should be visually distinct but still consistent with the current design system.
+
+---
+
+## 15. Unsaved-change protection
+
+Keep protection against accidentally losing changes.
+
+However, once Draft support exists:
+
+When the user tries to leave the form with unsaved changes, provide the ability to save the Draft rather than only discard the work.
+
+For an existing Draft:
+
+```text
+Save changes before leaving?
+```
+
+Buttons:
+
+```text
+Stay
+Save & Exit
+Discard Changes
+```
+
+For a brand-new posting:
+
+```text
+Save this job as a draft?
+```
+
+Buttons:
+
+```text
+Continue Editing
+Save Draft & Exit
+Discard
+```
+
+Do not silently discard user-entered job data.
+
+---
+
+## 16. Delete Draft
+
+Allow Admin/Client to delete Drafts using the existing delete confirmation pattern.
+
+Example:
+
+```text
+Delete draft?
+
+This unfinished job posting will be permanently deleted.
+```
+
+Buttons:
+
+```text
+Cancel
+Delete Draft
+```
+
+After deletion:
+
+* remove it immediately from the list
+* update Draft count
+* update All Jobs count if applicable
+* invalidate/refetch relevant queries
+
+---
+
+# IMPLEMENTATION REQUIREMENTS
+
+Make the implementation directly in the current project.
+
+Do not only provide code snippets.
+
+Do not stop after modifying the UI.
+
+Complete the required:
+
+* frontend
+* backend
+* database/schema/migration if needed
+* API logic
+* authorization
+* query invalidation
+* routing
+* form hydration
+* status handling
+* public filtering
+
+Reuse the shared `JobFormPage` architecture for both Admin and Client rather than creating separate duplicate forms.
+
+Preserve all existing Admin and Client differences in:
+
+* authorization
+* API endpoints
+* ownership
+* approval workflows
+* post-submit behavior
+
+---
+
+# IMPORTANT: DO NOT AUDIT FIRST
+
+Again:
+
+**Do not respond with an audit.**
+
+Do not give me:
+
+```text
+Here is what I found...
+Here is my implementation plan...
+Here are the files that need changes...
+Before I proceed...
+I recommend...
+```
+
+Do not wait for approval.
+
+Start modifying the existing project immediately.
+
+You may inspect the necessary source files internally, but that inspection is only for implementation and should not become a separate audit phase.
+
+---
+
+# ACCEPTANCE TESTS
+
+Before considering the feature complete, verify these scenarios.
+
+### Admin — new Draft
+
+1. Admin clicks **Add New Job**.
+2. Admin fills Step 1.
+3. Admin continues to another step.
+4. Admin clicks **Save & exit**.
+5. Admin chooses **Save Draft & Exit**.
+6. Admin returns to Jobs dashboard.
+7. Draft count increments.
+8. Draft appears under **Drafts**.
+9. Draft does not appear publicly.
+
+### Admin — resume
+
+1. Admin clicks **Continue Editing**.
+2. JobFormPage opens.
+3. Previously entered fields are populated.
+4. Admin changes information.
+5. Admin saves again.
+6. Same Draft is updated instead of duplicated.
+
+### Admin — submit
+
+1. Admin opens Draft.
+2. Completes all required steps.
+3. Submits job.
+4. Same job ID remains.
+5. Status changes from Draft to the application's normal submitted state.
+6. Draft disappears from Drafts.
+7. Appropriate dashboard counts refresh.
+
+### Client — new Draft
+
+Repeat the same flow from the Client Job Posting Form.
+
+The Draft must belong to that authenticated Client.
+
+### Client authorization
+
+Attempt to load another Client's Draft ID.
+
+Expected:
+
+```text
+403 / 404 / existing unauthorized behavior
+```
+
+Do not return the Draft data.
+
+### Public
+
+Verify that a Draft does NOT appear in:
+
+```text
+Find Work
+job search
+public job detail
+matching/recommendations
+```
+
+### Validation
+
+Verify:
+
+* incomplete Draft can be saved
+* incomplete Draft cannot be finally submitted
+* completed Draft can be submitted
+* normal non-Draft job creation still works
+
+### Refresh
+
+Hard-refresh the browser after saving a Draft.
+
+The Draft must still exist and reopen correctly. It must not depend on local React state or localStorage as the source of truth.
+
+---
+
+# FINAL EXPECTED RESULT
+
+Both **Admin** and **Client** have a persistent **Drafts** area for unfinished Job Postings.
+
+Users can safely leave the multi-step `JobFormPage`, return later, continue where they left off, and finish the same posting without losing data or creating duplicates.
+
+Drafts remain completely private and excluded from the public Find Work experience until the posting enters the application's normal submission/publication workflow.
+
+Implement this now in the existing codebase.

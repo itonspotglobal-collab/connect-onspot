@@ -142,9 +142,15 @@ export function jobToFormData(job: Job): JobFormData {
     title: job.title || "",
     company: job.company || "",
     location: job.location || "",
-    professionalRoleName: (job as any).professionalRoleName || job.title || "",
+    professionalRoleName:
+      (job as any).professionalRoleName ||
+      ((job.status === "draft" && job.title === "Untitled draft") ? "" : job.title) ||
+      "",
     originalRoleName: (job as any).originalRoleName || "",
-    jobFunction: (job as any).jobFunction || job.category || "",
+    jobFunction:
+      (job as any).jobFunction ||
+      ((job.status === "draft" && job.category === "Uncategorized") ? "" : job.category) ||
+      "",
     category: job.category || "",
     engagementType: (job as any).engagementType || "",
     experienceLevel: job.experienceLevel || "entry",

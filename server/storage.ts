@@ -892,7 +892,7 @@ export class MemStorage implements IStorage {
     status?: string;
     q?: string; // Text search query
   }): Promise<(Job & { skills: string[] })[]> {
-    let jobs = Array.from(this.jobs.values());
+    let jobs = Array.from(this.jobs.values()).filter((job) => job.status !== "draft");
 
     if (filters.category) {
       jobs = jobs.filter(j => j.category === filters.category);
@@ -3141,7 +3141,7 @@ export class DbStorage extends MemStorage {
       .orderBy(desc(jobsTable.createdAt))
       .limit(500);
 
-    let jobs = allDbJobs;
+    let jobs = allDbJobs.filter((job) => job.status !== "draft");
 
     // Normalise a category string the same way the frontend does (normalizeCategory util)
     const normStr = (s: string) =>
@@ -3380,6 +3380,9 @@ export class DbStorage extends MemStorage {
 
     // Status (default: open)
     conditions.push(sqlOp`${jobsTable.status} = ${filters.status ?? "open"}`);
+    // Public discovery never exposes unfinished postings, even if a caller
+    // attempts to request status=draft directly.
+    conditions.push(sqlOp`${jobsTable.status} != 'draft'`);
 
     // Public discovery requires explicit Admin approval. Status=open alone is
     // not sufficient because client-submitted jobs remain open while pending.

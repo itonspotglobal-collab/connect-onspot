@@ -41,3 +41,4 @@
 - [Job approval transition alerts](job-approval-transition-alerts.md) — approval alerts are per-transition events; retries no-op, while later re-entry creates a fresh Client alert.
 - [Job application method](job-application-method.md) — applicationMethod alone selects built-in vs external flow; creator/source must never influence it.
 - [Email companion service](email-companion-service.md) — non-blocking companion emails for job approval, new applications, interview reschedule/cancel, and unread messages; delivery ledger + cooldown tables in Migration 0013.
+- [Job posting drafts](job-posting-drafts.md) — unfinished Admin/Client postings reuse jobs rows with status=draft; drafts stay private and submit in place.

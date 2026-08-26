@@ -244,7 +244,8 @@ export const jobs = pgTable("jobs", {
   // Application link / method (per-job — admin + client controlled)
   applyLink: text("apply_link"),
   applicationMethod: text("application_method").default("built_in_form"), // external_link | built_in_form
-  status: text("status").notNull().default("open"), // open, in_progress, completed, cancelled
+  status: text("status").notNull().default("open"), // draft, open, in_progress, completed, cancelled
+  draftStep: integer("draft_step"),
   // Approval workflow
   approvalStatus: text("approval_status").notNull().default("pending"), // pending | approved | rejected | linked_to_existing
   approvedBy: varchar("approved_by"),
