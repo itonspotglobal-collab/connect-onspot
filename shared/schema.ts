@@ -1580,6 +1580,11 @@ export const interviews = pgTable("interviews", {
   candidateNotes: text("candidate_notes"),
   // Internal notes — not shown to talent
   internalNotes:  text("internal_notes"),
+  // V1 scheduling metadata — nullable for backward compatibility with legacy rows
+  durationMinutes: integer("duration_minutes"),
+  cancelledAt:    timestamp("cancelled_at", { withTimezone: true }),
+  cancellationReason: text("cancellation_reason"),
+  completedAt:    timestamp("completed_at", { withTimezone: true }),
   createdAt:      timestamp("created_at").notNull().defaultNow(),
   updatedAt:      timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [

@@ -1,6 +1,7 @@
 import { 
   BarChart3, 
   Briefcase, 
+  Calendar,
   DollarSign,
   FileText,
   Home, 
@@ -46,6 +47,11 @@ const coreModules = [
     title: "Messages",
     url: "/messages",
     icon: MessageSquare,
+  },
+  {
+    title: "Interviews",
+    url: "/client/interviews",
+    icon: Calendar,
   },
   {
     title: "Projects",

@@ -2041,6 +2041,12 @@ export async function registerRoutes(
       ON CONFLICT (key) DO NOTHING
     `);
 
+    // ── V1 scheduling metadata (additive, backward-compatible) ─────────────────
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS duration_minutes integer`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS cancelled_at timestamptz`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS cancellation_reason text`);
+    await query(`ALTER TABLE interviews ADD COLUMN IF NOT EXISTS completed_at timestamptz`);
+
     console.log("✅ Migration: hiring pipeline tables ready (interviews, offers, hiring_contracts)");
   } catch (pipelineErr: any) {
     console.warn("⚠️  Hiring pipeline table migration skipped:", pipelineErr.message);
@@ -8163,6 +8169,508 @@ export async function registerRoutes(
           ? "Could not retrieve calendar availability. Check Microsoft Graph permissions."
           : "Failed to retrieve availability",
       });
+    }
+  });
+
+  // ── Admin interview calendar routes ──────────────────────────────────────────
+  // Admins can view all interviews across clients, create new interview rows for
+  // any formal-pipeline submission, and update (reschedule/cancel) any interview.
+  // These routes do NOT replace the existing client/talent interview endpoints.
+
+  // GET /api/admin/interviews — cross-client calendar listing with optional filters
+  // Query params: status, clientId, talentId, jobId, dateFrom, dateTo
+  app.get("/api/admin/interviews", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status, clientId, talentId, jobId, dateFrom, dateTo } = req.query as Record<string, string | undefined>;
+
+      const conditions: string[] = [];
+      const params: any[] = [];
+
+      if (status) {
+        params.push(status);
+        conditions.push(`i.status = $${params.length}`);
+      }
+      if (clientId) {
+        params.push(clientId);
+        conditions.push(`js.client_id = $${params.length}`);
+      }
+      if (talentId) {
+        params.push(talentId);
+        conditions.push(`js.talent_id = $${params.length}`);
+      }
+      if (jobId) {
+        params.push(jobId);
+        conditions.push(`js.job_id = $${params.length}`);
+      }
+      if (dateFrom) {
+        params.push(dateFrom);
+        conditions.push(`(i.confirmed_time >= $${params.length}::timestamptz OR (i.confirmed_time IS NULL AND i.created_at >= $${params.length}::timestamptz))`);
+      }
+      if (dateTo) {
+        params.push(dateTo);
+        conditions.push(`(i.confirmed_time <= $${params.length}::timestamptz OR (i.confirmed_time IS NULL AND i.created_at <= $${params.length}::timestamptz))`);
+      }
+
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+      const result = await query(
+        `SELECT i.*,
+                j.title       AS job_title,
+                j.company     AS job_company,
+                j.id          AS job_id,
+                js.client_id  AS client_id,
+                js.talent_id  AS talent_id,
+                c.full_name   AS talent_full_name
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+              AND js.${FORMAL_PIPELINE_PREDICATE}
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN candidates c ON c.id = (
+             SELECT cand.id FROM candidates cand
+              WHERE cand.user_id = js.talent_id LIMIT 1
+           )
+           ${where}
+          ORDER BY
+            CASE WHEN i.confirmed_time IS NOT NULL THEN i.confirmed_time
+                 ELSE i.created_at END DESC
+          LIMIT 500`,
+        params,
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("GET /api/admin/interviews error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/admin/interviews — admin creates an interview for any formal-pipeline submission
+  // Body: { submissionId, interviewType?, proposedTimes, durationMinutes?, candidateNotes?, internalNotes?, meetingLink? }
+  app.post("/api/admin/interviews", pipelineMutationLimiter, authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const {
+        submissionId, interviewType = "initial", proposedTimes,
+        durationMinutes, candidateNotes, internalNotes, meetingLink,
+        confirmedTime, confirmedTimeZone,
+      } = req.body;
+
+      if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
+      if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
+        return res.status(400).json({ error: "proposedTimes must be a non-empty array of time slots" });
+      }
+      const normalizedProposedTimes = normalizeInterviewTimes(proposedTimes);
+      if (!normalizedProposedTimes) {
+        return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+      }
+
+      // Optional: admin confirms a specific slot directly at creation time
+      let directConfirmedTime: string | null = null;
+      let directConfirmedZone: string | null = null;
+      if (confirmedTime) {
+        const ts = parseInterviewTimestamp(confirmedTime);
+        if (Number.isNaN(ts)) {
+          return res.status(400).json({ error: "confirmedTime is not a valid ISO timestamp" });
+        }
+        if (ts < Date.now()) {
+          return res.status(400).json({ error: "confirmedTime must be in the future" });
+        }
+        directConfirmedTime = new Date(ts).toISOString();
+        directConfirmedZone = confirmedTimeZone ? (normalizeInterviewTimeZone(confirmedTimeZone) ?? "UTC") : "UTC";
+      }
+      const validTypes = ["initial", "technical", "final", "culture", "other"];
+      if (!validTypes.includes(interviewType)) {
+        return res.status(400).json({ error: "interviewType must be one of: " + validTypes.join(", ") });
+      }
+
+      let parsedDuration: number | null = null;
+      if (durationMinutes !== undefined && durationMinutes !== null) {
+        parsedDuration = Number(durationMinutes);
+        if (!Number.isInteger(parsedDuration) || parsedDuration < 15 || parsedDuration > 240) {
+          return res.status(400).json({ error: "durationMinutes must be an integer between 15 and 240" });
+        }
+      }
+
+      let normalizedMeetingLink: string | null | undefined;
+      if (meetingLink !== undefined) {
+        normalizedMeetingLink = normalizeMeetingLink(meetingLink);
+        if (normalizedMeetingLink === undefined) {
+          return res.status(400).json({ error: "meetingLink must be a valid http(s) URL no longer than 2048 characters" });
+        }
+      }
+
+      // Verify submission exists and is in a formal pipeline
+      const subResult = await query(
+        `SELECT js.id, js.status, js.talent_id, js.client_id, j.title AS job_title
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+          WHERE js.id = $1 AND js.${FORMAL_PIPELINE_PREDICATE}`,
+        [submissionId],
+      );
+      if (!subResult.rows.length) {
+        return res.status(404).json({ error: "Submission not found or not in the formal pipeline" });
+      }
+      const submission = subResult.rows[0];
+
+      const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing", "new", "in_review"];
+      if (!scheduleable.includes(submission.status)) {
+        return res.status(409).json({
+          error: "cannot_schedule_interview",
+          message: `Submission status '${submission.status}' does not allow scheduling an interview.`,
+        });
+      }
+
+      // For direct-confirm: serialise conflict check + insert with a per-talent advisory lock
+      // inside a transaction so two concurrent admin requests cannot both pass the overlap check.
+      // For talent-led proposals there is no confirmed slot yet, so no lock/check needed.
+      let interview: any;
+      if (directConfirmedTime && submission.talent_id) {
+        const txClient = await pool.connect();
+        try {
+          await txClient.query("BEGIN");
+          // Advisory lock keyed by talent user id (prevents concurrent confirms for same talent)
+          await txClient.query(
+            `SELECT pg_advisory_xact_lock(hashtext($1 || ':interview_confirm'))`,
+            [submission.talent_id],
+          );
+          // Conflict check inside the lock
+          const effectiveDuration = parsedDuration ?? 60;
+          const slotEnd = new Date(new Date(directConfirmedTime).getTime() + effectiveDuration * 60_000).toISOString();
+          const conflict = await txClient.query(
+            `SELECT 1 FROM interviews i
+               JOIN job_submissions js ON js.id = i.submission_id
+              WHERE js.talent_id = $1
+                AND i.status = 'confirmed'
+                AND i.confirmed_time IS NOT NULL
+                AND i.confirmed_time < $3::timestamptz
+                AND (i.confirmed_time + INTERVAL '1 minute' * COALESCE(i.duration_minutes, 60)) > $2::timestamptz
+              LIMIT 1`,
+            [submission.talent_id, directConfirmedTime, slotEnd],
+          );
+          if (conflict.rows.length > 0) {
+            await txClient.query("ROLLBACK");
+            txClient.release();
+            return res.status(409).json({
+              error: "interview_time_conflict",
+              message: "That confirmed time overlaps another scheduled interview. Please choose another time.",
+            });
+          }
+          const roundResult = await txClient.query(
+            `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM interviews WHERE submission_id = $1`,
+            [submissionId],
+          );
+          const roundNumber = roundResult.rows[0].next_round;
+          const insertRow = await txClient.query(
+            `INSERT INTO interviews
+               (submission_id, round_number, interview_type, status, proposed_times,
+                current_proposal_owner, proposal_exchange_count,
+                candidate_notes, internal_notes, created_by, duration_minutes, meeting_link,
+                confirmed_time, confirmed_time_zone)
+             VALUES ($1, $2, $3, 'confirmed', $4, NULL, 0, $5, $6, $7, $8, $9, $10, $11)
+             RETURNING *`,
+            [
+              submissionId, roundNumber, interviewType,
+              JSON.stringify(normalizedProposedTimes),
+              candidateNotes ?? null, internalNotes ?? null, userId, parsedDuration,
+              normalizedMeetingLink ?? null, directConfirmedTime, directConfirmedZone,
+            ],
+          );
+          interview = insertRow.rows[0];
+          await txClient.query(
+            `INSERT INTO interview_proposals
+               (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
+             VALUES ($1, $2, 'admin', 'accepted', $3, $4, $5)`,
+            [interview.id, userId, JSON.stringify(normalizedProposedTimes), directConfirmedTime, directConfirmedZone],
+          );
+          if (!["interviewing"].includes(submission.status)) {
+            await txClient.query(
+              `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
+              [submissionId],
+            );
+            await txClient.query(
+              `INSERT INTO job_application_status_history
+                 (application_id, previous_status, new_status, note, changed_by)
+               VALUES ($1, $2, 'interviewing', $3, $4)`,
+              [submissionId, submission.status,
+               `Round ${roundNumber} interview confirmed by admin (type: ${interviewType})`, userId],
+            );
+          }
+          await txClient.query("COMMIT");
+        } catch (txErr: any) {
+          await txClient.query("ROLLBACK").catch(() => {});
+          txClient.release();
+          throw txErr;
+        }
+        txClient.release();
+      } else {
+        // Talent-led: no confirmed slot yet — just insert proposed interview
+        const roundResult = await query(
+          `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM interviews WHERE submission_id = $1`,
+          [submissionId],
+        );
+        const roundNumber = roundResult.rows[0].next_round;
+        const insertRow = await query(
+          `INSERT INTO interviews
+             (submission_id, round_number, interview_type, status, proposed_times,
+              current_proposal_owner, proposal_exchange_count,
+              candidate_notes, internal_notes, created_by, duration_minutes, meeting_link,
+              confirmed_time, confirmed_time_zone)
+           VALUES ($1, $2, $3, 'proposed', $4, 'talent', 0, $5, $6, $7, $8, $9, NULL, NULL)
+           RETURNING *`,
+          [
+            submissionId, roundNumber, interviewType,
+            JSON.stringify(normalizedProposedTimes),
+            candidateNotes ?? null, internalNotes ?? null, userId, parsedDuration,
+            normalizedMeetingLink ?? null,
+          ],
+        );
+        interview = insertRow.rows[0];
+        await query(
+          `INSERT INTO interview_proposals
+             (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
+           VALUES ($1, $2, 'admin', 'initial', $3, NULL, NULL)`,
+          [interview.id, userId, JSON.stringify(normalizedProposedTimes)],
+        );
+        if (!["interviewing"].includes(submission.status)) {
+          await query(
+            `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
+            [submissionId],
+          );
+          await query(
+            `INSERT INTO job_application_status_history
+               (application_id, previous_status, new_status, note, changed_by)
+             VALUES ($1, $2, 'interviewing', $3, $4)`,
+            [submissionId, submission.status,
+             `Round ${roundNumber} interview proposed by admin (type: ${interviewType})`, userId],
+          );
+        }
+      }
+
+      // Notify talent (fire-and-forget)
+      if (submission.talent_id) {
+        const isDirectConfirm = Boolean(directConfirmedTime);
+        storage.createNotification({
+          userId: submission.talent_id as string,
+          type: isDirectConfirm ? "interview_confirmed" : "interview_proposed",
+          title: isDirectConfirm ? "Interview confirmed" : "Interview proposed",
+          message: isDirectConfirm
+            ? `Your interview for "${submission.job_title}" has been confirmed. Check your email for details.`
+            : `An interview has been proposed for "${submission.job_title}". Please review the suggested times.`,
+          relatedId: String(interview.id),
+          relatedType: "interview",
+        }).catch((e: any) => console.error("admin interview notification failed:", e));
+      }
+
+      return res.status(201).json(interview);
+    } catch (err: any) {
+      console.error("POST /api/admin/interviews error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/admin/interviews/:id — admin reschedule or cancel
+  // Body: { status?, proposedTimes?, confirmedTime?, confirmedTimeZone?, durationMinutes?,
+  //         candidateNotes?, internalNotes?, meetingLink?, cancellationReason? }
+  app.patch("/api/admin/interviews/:id", pipelineMutationLimiter, authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { id } = req.params;
+      const {
+        status, proposedTimes, confirmedTime, confirmedTimeZone,
+        durationMinutes, candidateNotes, internalNotes, meetingLink, cancellationReason,
+      } = req.body;
+
+      const interviewResult = await query(
+        `SELECT i.*, js.talent_id, j.title AS job_title
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+              AND js.${FORMAL_PIPELINE_PREDICATE}
+           JOIN jobs j ON j.id = js.job_id
+          WHERE i.id = $1`,
+        [id],
+      );
+      if (!interviewResult.rows.length) {
+        return res.status(404).json({ error: "Interview not found" });
+      }
+      const interview = interviewResult.rows[0];
+
+      const updates: Record<string, any> = { updated_at: "NOW()" };
+      const params: any[] = [];
+      let notifType: string | null = null;
+      // Confirm path needs atomic conflict-check+write; validated values captured here
+      let confirmedIsoForTx: string | null = null;
+      let confirmedTzForTx: string | null = null;
+
+      if (status) {
+        const validStatuses = ["proposed", "confirmed", "rescheduled", "cancelled"];
+        if (!validStatuses.includes(status)) {
+          return res.status(400).json({ error: "status must be one of: " + validStatuses.join(", ") });
+        }
+        if (status === "confirmed") {
+          if (!confirmedTime) {
+            return res.status(400).json({ error: "confirmedTime is required when confirming" });
+          }
+          const ts = parseInterviewTimestamp(confirmedTime);
+          if (Number.isNaN(ts)) {
+            return res.status(400).json({ error: "confirmedTime is not a valid ISO timestamp" });
+          }
+          confirmedIsoForTx = new Date(ts).toISOString();
+          confirmedTzForTx = confirmedTimeZone ? (normalizeInterviewTimeZone(confirmedTimeZone) ?? "UTC") : "UTC";
+          // These will be applied inside the transaction; pre-add placeholders so setClauses is built
+          params.push(confirmedIsoForTx);
+          updates.confirmed_time = `$${params.length}`;
+          params.push(confirmedTzForTx);
+          updates.confirmed_time_zone = `$${params.length}`;
+          updates.current_proposal_owner = "NULL";
+          notifType = "interview_confirmed";
+        }
+        if (status === "rescheduled" || (status === "proposed" && proposedTimes)) {
+          const normalizedTimes = normalizeInterviewTimes(proposedTimes);
+          if (!normalizedTimes) {
+            return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+          }
+          params.push(JSON.stringify(normalizedTimes));
+          updates.proposed_times = `$${params.length}`;
+          updates.confirmed_time = "NULL";
+          updates.confirmed_time_zone = "NULL";
+          notifType = "interview_rescheduled";
+          // Record in proposal history
+          await query(
+            `INSERT INTO interview_proposals
+               (interview_id, proposer_id, proposer_role, action, proposed_times)
+             VALUES ($1, $2, 'admin', 'reschedule', $3)`,
+            [id, userId, JSON.stringify(normalizedTimes)],
+          );
+        }
+        if (status === "cancelled") {
+          updates.confirmed_time = "NULL";
+          updates.confirmed_time_zone = "NULL";
+          updates.cancelled_at = "NOW()";
+          if (typeof cancellationReason === "string") {
+            params.push(cancellationReason.slice(0, 2000));
+            updates.cancellation_reason = `$${params.length}`;
+          }
+          notifType = "interview_cancelled";
+        }
+        params.push(status);
+        updates.status = `$${params.length}`;
+      }
+
+      if (durationMinutes !== undefined && durationMinutes !== null) {
+        const dur = Number(durationMinutes);
+        if (!Number.isInteger(dur) || dur < 15 || dur > 240) {
+          return res.status(400).json({ error: "durationMinutes must be an integer between 15 and 240" });
+        }
+        params.push(dur);
+        updates.duration_minutes = `$${params.length}`;
+      }
+      if (candidateNotes !== undefined) {
+        params.push(String(candidateNotes).slice(0, 5000));
+        updates.candidate_notes = `$${params.length}`;
+      }
+      if (internalNotes !== undefined) {
+        params.push(String(internalNotes).slice(0, 5000));
+        updates.internal_notes = `$${params.length}`;
+      }
+      if (meetingLink !== undefined) {
+        const normalized = normalizeMeetingLink(meetingLink);
+        if (normalized === undefined) {
+          return res.status(400).json({ error: "meetingLink must be a valid http(s) URL" });
+        }
+        params.push(normalized);
+        updates.meeting_link = `$${params.length}`;
+      }
+
+      if (Object.keys(updates).length === 1) {
+        return res.status(400).json({ error: "No updatable fields provided" });
+      }
+
+      const setClauses = Object.entries(updates)
+        .map(([col, val]) => `${col} = ${val === "NOW()" || val === "NULL" ? val : val}`)
+        .join(", ");
+      params.push(id);
+
+      let updatedRow: any;
+      if (confirmedIsoForTx && interview.talent_id) {
+        // Serialise conflict check + UPDATE with per-talent advisory lock
+        const txClient2 = await pool.connect();
+        try {
+          await txClient2.query("BEGIN");
+          await txClient2.query(
+            `SELECT pg_advisory_xact_lock(hashtext($1 || ':interview_confirm'))`,
+            [interview.talent_id],
+          );
+          const patchDuration = durationMinutes ? Number(durationMinutes) : (interview.duration_minutes ?? 60);
+          const slotEnd = new Date(new Date(confirmedIsoForTx).getTime() + patchDuration * 60_000).toISOString();
+          const conflict = await txClient2.query(
+            `SELECT 1 FROM interviews i2
+               JOIN job_submissions js ON js.id = i2.submission_id
+              WHERE js.talent_id = $1
+                AND i2.id != $4
+                AND i2.status = 'confirmed'
+                AND i2.confirmed_time IS NOT NULL
+                AND i2.confirmed_time < $3::timestamptz
+                AND (i2.confirmed_time + INTERVAL '1 minute' * COALESCE(i2.duration_minutes, 60)) > $2::timestamptz
+              LIMIT 1`,
+            [interview.talent_id, confirmedIsoForTx, slotEnd, id],
+          );
+          if (conflict.rows.length > 0) {
+            await txClient2.query("ROLLBACK");
+            txClient2.release();
+            return res.status(409).json({
+              error: "interview_time_conflict",
+              message: "That confirmed time overlaps another scheduled interview for this talent.",
+            });
+          }
+          const updated2 = await txClient2.query(
+            `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
+            params,
+          );
+          await txClient2.query(
+            `INSERT INTO interview_proposals
+               (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
+             VALUES ($1, $2, 'admin', 'accepted', $3, $4, $5)`,
+            [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedIsoForTx, confirmedTzForTx],
+          );
+          await txClient2.query("COMMIT");
+          updatedRow = updated2.rows[0];
+        } catch (txErr: any) {
+          await txClient2.query("ROLLBACK").catch(() => {});
+          txClient2.release();
+          throw txErr;
+        }
+        txClient2.release();
+      } else {
+        const updated = await query(
+          `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
+          params,
+        );
+        updatedRow = updated.rows[0];
+      }
+
+      // Post-update notification to talent
+      if (notifType && interview.talent_id) {
+        const notifMessages: Record<string, string> = {
+          interview_confirmed: `Your interview for "${interview.job_title}" has been confirmed.`,
+          interview_rescheduled: `New interview times have been proposed for "${interview.job_title}". Please review.`,
+          interview_cancelled: `Your scheduled interview for "${interview.job_title}" has been cancelled.`,
+        };
+        storage.createNotification({
+          userId: interview.talent_id,
+          type: notifType,
+          title: notifType.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          message: notifMessages[notifType] ?? "Your interview has been updated.",
+          relatedId: String(id),
+          relatedType: "interview",
+        }).catch((e: any) => console.error(`${notifType} notification failed:`, e));
+      }
+
+      return res.json(updatedRow);
+    } catch (err: any) {
+      console.error("PATCH /api/admin/interviews/:id error:", err);
+      return res.status(500).json({ error: err.message });
     }
   });
 
@@ -15819,6 +16327,39 @@ export async function registerRoutes(
         }
         const canonicalSelectedTime = new Date(selectedTimestamp).toISOString();
         const selectedTimeZone = normalizeInterviewTimeZone(selectedSlot.timezone) ?? "UTC";
+
+        // Per-talent advisory lock so two concurrent acceptances for the same
+        // talent (different interview rows) cannot both pass the overlap check.
+        await txClient.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1 || ':interview_confirm'))`,
+          [userId],
+        );
+
+        // Conflict check: no other confirmed interview for this talent overlaps the selected slot
+        {
+          const effectiveDuration = interview.duration_minutes ?? 60;
+          const slotEnd = new Date(selectedTimestamp + effectiveDuration * 60_000).toISOString();
+          const conflict = await txClient.query(
+            `SELECT 1 FROM interviews i2
+               JOIN job_submissions js ON js.id = i2.submission_id
+              WHERE js.talent_id = $1
+                AND i2.id != $2
+                AND i2.status = 'confirmed'
+                AND i2.confirmed_time IS NOT NULL
+                AND i2.confirmed_time < $4::timestamptz
+                AND (i2.confirmed_time + INTERVAL '1 minute' * COALESCE(i2.duration_minutes, 60)) > $3::timestamptz
+              LIMIT 1`,
+            [userId, interview.id, canonicalSelectedTime, slotEnd],
+          );
+          if (conflict.rows.length > 0) {
+            await txClient.query("ROLLBACK");
+            return res.status(409).json({
+              error: "interview_time_conflict",
+              message: "That time overlaps another scheduled interview. Please choose another slot.",
+            });
+          }
+        }
+
         await txClient.query(
           `UPDATE interviews
               SET status = 'confirmed', confirmed_time = $1, confirmed_time_zone = $2,
@@ -17825,7 +18366,7 @@ export async function registerRoutes(
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-      const { submissionId, interviewType = "initial", proposedTimes, candidateNotes, internalNotes } = req.body;
+      const { submissionId, interviewType = "initial", proposedTimes, candidateNotes, internalNotes, durationMinutes, meetingLink } = req.body;
       if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
       if (!Array.isArray(proposedTimes) || proposedTimes.length === 0) {
         return res.status(400).json({ error: "proposedTimes must be a non-empty array of time slots" });
@@ -17837,6 +18378,22 @@ export async function registerRoutes(
       const validTypes = ["initial", "technical", "final", "culture", "other"];
       if (!validTypes.includes(interviewType)) {
         return res.status(400).json({ error: "interviewType must be one of: " + validTypes.join(", ") });
+      }
+      // Validate optional duration (15–240 minutes for new interviews)
+      let parsedDuration: number | null = null;
+      if (durationMinutes !== undefined && durationMinutes !== null) {
+        parsedDuration = Number(durationMinutes);
+        if (!Number.isInteger(parsedDuration) || parsedDuration < 15 || parsedDuration > 240) {
+          return res.status(400).json({ error: "durationMinutes must be an integer between 15 and 240" });
+        }
+      }
+      // Validate optional meeting link
+      let normalizedClientMeetingLink: string | null | undefined;
+      if (meetingLink !== undefined) {
+        normalizedClientMeetingLink = normalizeMeetingLink(meetingLink);
+        if (normalizedClientMeetingLink === undefined) {
+          return res.status(400).json({ error: "meetingLink must be a valid http(s) URL no longer than 2048 characters" });
+        }
       }
 
       // Ownership: submission must belong to this client (formal pipeline guard)
@@ -17857,6 +18414,10 @@ export async function registerRoutes(
         });
       }
 
+      // Note: no conflict check on proposed times — the talent may accept any of the
+      // offered slots later. Conflict enforcement happens at the moment of confirmation
+      // (talent accept → PATCH /api/talent/interviews/:id/respond, or admin direct-confirm).
+
       // Determine next round number
       const roundResult = await query(
         `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM interviews WHERE submission_id = $1`,
@@ -17864,16 +18425,17 @@ export async function registerRoutes(
       );
       const roundNumber = roundResult.rows[0].next_round;
 
-      // Create the interview row
+      // Create the interview row (duration_minutes and meeting_link nullable for backward compat)
        const insert = await query(
          `INSERT INTO interviews
             (submission_id, round_number, interview_type, status, proposed_times,
              current_proposal_owner, proposal_exchange_count,
-             candidate_notes, internal_notes, created_by)
-          VALUES ($1, $2, $3, 'proposed', $4, 'talent', 0, $5, $6, $7)
+             candidate_notes, internal_notes, created_by, duration_minutes, meeting_link)
+          VALUES ($1, $2, $3, 'proposed', $4, 'talent', 0, $5, $6, $7, $8, $9)
          RETURNING *`,
         [submissionId, roundNumber, interviewType, JSON.stringify(normalizedProposedTimes),
-         candidateNotes ?? null, internalNotes ?? null, userId],
+         candidateNotes ?? null, internalNotes ?? null, userId, parsedDuration,
+         normalizedClientMeetingLink ?? null],
       );
       const interview = insert.rows[0];
        await query(
@@ -17906,6 +18468,17 @@ export async function registerRoutes(
           newStatus: "interviewing",
         });
       }
+      // Idempotent interview_proposed notification to talent (fire-and-forget)
+      if (submission.talent_id) {
+        storage.createNotification({
+          userId: submission.talent_id as string,
+          type: "interview_proposed",
+          title: "Interview proposed",
+          message: `A ${interviewType} interview has been proposed for "${submission.job_title}". Please review the suggested times.`,
+          relatedId: String(interview.id),
+          relatedType: "interview",
+        }).catch((notifyErr: any) => console.error("interview_proposed notification failed:", notifyErr));
+      }
 
       return res.status(201).json(interview);
     } catch (err: any) {
@@ -17914,21 +18487,49 @@ export async function registerRoutes(
     }
   });
 
-  // GET /api/client/interviews?submissionId= — list all interview rounds for a submission
+  // GET /api/client/interviews — two modes:
+  //   ?submissionId=xxx  → existing submission-scoped listing (backward compatible)
+  //   (no params)        → calendar-wide listing of all this client's interviews
   app.get("/api/client/interviews", authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { submissionId } = req.query as { submissionId?: string };
-      if (!submissionId) return res.status(400).json({ error: "submissionId query param is required" });
 
-      // Ownership check (formal pipeline guard)
-      const ownerCheck = await loadClientFormalSubmission(submissionId, userId);
-      if (!ownerCheck.ok) return res.status(ownerCheck.status).json({ error: ownerCheck.error });
+      if (submissionId) {
+        // ── Existing submission-scoped behavior (unchanged) ──────────────────
+        const ownerCheck = await loadClientFormalSubmission(submissionId, userId);
+        if (!ownerCheck.ok) return res.status(ownerCheck.status).json({ error: ownerCheck.error });
 
+        const result = await query(
+          `SELECT * FROM interviews WHERE submission_id = $1 ORDER BY round_number ASC, created_at ASC`,
+          [submissionId],
+        );
+        return res.json(result.rows);
+      }
+
+      // ── Calendar-wide listing (new, no submissionId) ─────────────────────
+      // Returns all interviews across this client's formal-pipeline submissions,
+      // enriched with job/talent display data for calendar cards.
       const result = await query(
-        `SELECT * FROM interviews WHERE submission_id = $1 ORDER BY round_number ASC, created_at ASC`,
-        [submissionId],
+        `SELECT i.*,
+                j.title     AS job_title,
+                j.company   AS job_company,
+                c.full_name AS talent_full_name
+           FROM interviews i
+           JOIN job_submissions js ON js.id = i.submission_id
+              AND js.client_id = $1
+              AND js.${FORMAL_PIPELINE_PREDICATE}
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN candidates c ON c.id = (
+             SELECT cand.id FROM candidates cand
+              WHERE cand.user_id = js.talent_id
+              LIMIT 1
+           )
+          ORDER BY
+            CASE WHEN i.confirmed_time IS NOT NULL THEN i.confirmed_time
+                 ELSE i.created_at END DESC`,
+        [userId],
       );
       return res.json(result.rows);
     } catch (err: any) {
@@ -17938,13 +18539,14 @@ export async function registerRoutes(
   });
 
   // PATCH /api/client/interviews/:id — confirm, reschedule, or cancel an interview
-  // Body: { status, confirmedTime?, proposedTimes?, candidateNotes?, internalNotes? }
+  // Body: { status, confirmedTime?, proposedTimes?, candidateNotes?, internalNotes?,
+  //         meetingLink?, cancellationReason?, durationMinutes? }
   app.patch("/api/client/interviews/:id", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const { id } = req.params;
-       const { status, confirmedTime, proposedTimes, candidateNotes, internalNotes, meetingLink } = req.body;
+       const { status, confirmedTime, proposedTimes, candidateNotes, internalNotes, meetingLink, cancellationReason, durationMinutes } = req.body;
 
       const txClient = await pool.connect();
       let transactionClosed = false;
@@ -17953,7 +18555,7 @@ export async function registerRoutes(
         // Lock the interview before checking ownership/turn so two responses
         // cannot confirm or counter the same proposal at once.
         const interviewResult = await txClient.query(
-          `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
+          `SELECT i.*, js.client_id, js.talent_id, js.status AS submission_status, js.id AS js_id
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
            WHERE i.id = $1 AND js.client_id = $2
@@ -18011,6 +18613,38 @@ export async function registerRoutes(
           }
           confirmedTimeForHistory = new Date(confirmedTimestamp).toISOString();
           confirmedTimeZoneForHistory = normalizeInterviewTimeZone(selectedSlot.timezone) ?? "UTC";
+
+          // Serialize with per-talent lock — same key used by talent accept and admin confirm
+          if (interview.talent_id) {
+            await txClient.query(
+              `SELECT pg_advisory_xact_lock(hashtext($1 || ':interview_confirm'))`,
+              [interview.talent_id],
+            );
+            // Overlap check: no other confirmed interview for the same talent overlaps this slot
+            const effectiveDuration = (durationMinutes !== undefined ? Number(durationMinutes) : null)
+              ?? interview.duration_minutes ?? 60;
+            const slotEnd = new Date(confirmedTimestamp + effectiveDuration * 60_000).toISOString();
+            const talentConflict = await txClient.query(
+              `SELECT 1 FROM interviews i2
+                 JOIN job_submissions js ON js.id = i2.submission_id
+                WHERE js.talent_id = $1
+                  AND i2.id != $2
+                  AND i2.status = 'confirmed'
+                  AND i2.confirmed_time IS NOT NULL
+                  AND i2.confirmed_time < $4::timestamptz
+                  AND (i2.confirmed_time + INTERVAL '1 minute' * COALESCE(i2.duration_minutes, 60)) > $3::timestamptz
+                LIMIT 1`,
+              [interview.talent_id, interview.id, confirmedTimeForHistory, slotEnd],
+            );
+            if (talentConflict.rows.length > 0) {
+              await txClient.query("ROLLBACK");
+              return res.status(409).json({
+                error: "interview_time_conflict",
+                message: "That time overlaps another scheduled interview for this talent.",
+              });
+            }
+          }
+
           params.push(confirmedTimeForHistory);
           updates.confirmed_time = `$${params.length}`;
           params.push(confirmedTimeZoneForHistory);
@@ -18036,9 +18670,26 @@ export async function registerRoutes(
         if (status === "cancelled") {
           updates.confirmed_time = "NULL";
           updates.confirmed_time_zone = "NULL";
+          updates.cancelled_at = "NOW()";
+          if (cancellationReason !== undefined && typeof cancellationReason === "string") {
+            params.push(cancellationReason.slice(0, 2000));
+            updates.cancellation_reason = `$${params.length}`;
+          }
         }
         params.push(status);
         updates.status = `$${params.length}`;
+      }
+
+      // Optional duration update (15–240 for new values; null preserved for legacy rows)
+      if (durationMinutes !== undefined && durationMinutes !== null) {
+        const dur = Number(durationMinutes);
+        if (!Number.isInteger(dur) || dur < 15 || dur > 240) {
+          await txClient.query("ROLLBACK");
+          transactionClosed = true;
+          return res.status(400).json({ error: "durationMinutes must be an integer between 15 and 240" });
+        }
+        params.push(dur);
+        updates.duration_minutes = `$${params.length}`;
       }
 
       if (candidateNotes !== undefined) {
@@ -18141,6 +18792,48 @@ export async function registerRoutes(
        await txClient.query("COMMIT");
        transactionClosed = true;
         const finalResult = await query(`SELECT * FROM interviews WHERE id = $1`, [id]);
+
+       // ── Post-commit notifications (idempotent side effects) ──────────────
+       // Look up the talent user id from the submission for notifications
+       const subRow = await query(
+         `SELECT js.talent_id, j.title AS job_title
+            FROM job_submissions js
+            JOIN jobs j ON j.id = js.job_id
+           WHERE js.id = $1`,
+         [interview.submission_id],
+       ).catch(() => ({ rows: [] as any[] }));
+       const talentUserId = subRow.rows[0]?.talent_id;
+       const jobTitle = subRow.rows[0]?.job_title ?? "the position";
+
+       if (status === "confirmed" && talentUserId) {
+         storage.createNotification({
+           userId: talentUserId,
+           type: "interview_confirmed",
+           title: "Interview confirmed",
+           message: `Your interview for "${jobTitle}" has been confirmed.`,
+           relatedId: String(id),
+           relatedType: "interview",
+         }).catch((e: any) => console.error("interview_confirmed notification failed:", e));
+       } else if (status === "rescheduled" && talentUserId) {
+         storage.createNotification({
+           userId: talentUserId,
+           type: "interview_rescheduled",
+           title: "Interview rescheduled",
+           message: `New interview times have been proposed for "${jobTitle}". Please review.`,
+           relatedId: String(id),
+           relatedType: "interview",
+         }).catch((e: any) => console.error("interview_rescheduled notification failed:", e));
+       } else if (status === "cancelled" && talentUserId) {
+         storage.createNotification({
+           userId: talentUserId,
+           type: "interview_cancelled",
+           title: "Interview cancelled",
+           message: `Your scheduled interview for "${jobTitle}" has been cancelled.`,
+           relatedId: String(id),
+           relatedType: "interview",
+         }).catch((e: any) => console.error("interview_cancelled notification failed:", e));
+       }
+
        return res.json(finalResult.rows[0] ?? updated.rows[0]);
       } catch (txErr) {
         if (!transactionClosed) {
@@ -18219,10 +18912,11 @@ export async function registerRoutes(
         return res.status(409).json({ error: "Outcome already recorded for this interview" });
       }
 
-      // Mark interview completed
+      // Mark interview completed (completed_at records the instant it was logged)
       const updatedInterview = await query(
         `UPDATE interviews
-         SET status = 'completed', outcome = $1, internal_notes = COALESCE($2, internal_notes), updated_at = NOW()
+         SET status = 'completed', outcome = $1, internal_notes = COALESCE($2, internal_notes),
+             completed_at = NOW(), updated_at = NOW()
          WHERE id = $3
          RETURNING *`,
         [outcome, internalNotes ?? null, id],

@@ -70,6 +70,8 @@ import AdminImageUploader from "@/pages/AdminImageUploader";
 import AdminFindWork from "@/pages/AdminFindWork";
 import JobFormPage from "@/pages/JobFormPage";
 import AdminJobApplications from "@/pages/AdminJobApplications";
+import ClientInterviews from "@/pages/ClientInterviews";
+import AdminInterviews from "@/pages/AdminInterviews";
 import AdminEmailTemplates from "@/pages/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "@/pages/AdminEmailTemplateEditor";
 import ManagedServicesPage from "@/pages/ManagedServicesPage";
@@ -273,6 +275,7 @@ function PublicRouter() {
           <Route path="/admin/find-work/jobs/:jobId/edit" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
           <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
+          <Route path="/admin/interviews" component={() => <AdminProtectedRoute><AdminInterviews /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/:id/edit" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
@@ -369,6 +372,7 @@ function ClientRouter() {
             </AdminProtectedRoute>
           )} />
           <Route path="/settings" component={ProfileSettings} />
+          <Route path="/client/interviews" component={ClientInterviews} />
           <Route path="/messages/:threadId" component={Messages} />
           <Route path="/messages" component={Messages} />
           {/* Public routes accessible from client dashboard */}
@@ -578,6 +582,7 @@ function AppContent() {
       
       {/* Client Protected Routes */}
       <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
+      <Route path="/client/interviews" component={ClientRouter} />
       <Route path="/client/billing/invoices/:id" component={ClientRouter} />
       <Route path="/client/billing" component={ClientRouter} />
       <Route path="/client-profile" component={ClientRouter} />

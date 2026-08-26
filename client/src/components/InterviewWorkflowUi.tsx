@@ -100,6 +100,24 @@ function getBrowserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
+/**
+ * Convert a naive local date+time (as the user typed) in a specific IANA timezone
+ * to an ISO-8601 UTC string.
+ * e.g. ("2024-08-15", "14:30", "Asia/Singapore") → "2024-08-15T06:30:00.000Z"
+ */
+function localDateTimeToUTC(dateStr: string, timeStr: string, ianaTimezone: string): string {
+  // Treat the date+time as if it were UTC to get a starting epoch
+  const naiveUTC = new Date(`${dateStr}T${timeStr}:00Z`);
+  // Format naiveUTC in the target timezone to find what local clock it reads there
+  const localStr = naiveUTC.toLocaleString("sv", { timeZone: ianaTimezone }); // "YYYY-MM-DD HH:MM:SS"
+  // Parse that local string as UTC to get a Date whose epoch is the local clock reading
+  const localAsUTC = new Date(localStr.replace(" ", "T") + "Z");
+  // The offset = difference between what the clock reads in tz and the actual UTC
+  const offsetMs = localAsUTC.getTime() - naiveUTC.getTime();
+  // Subtract offset from naiveUTC to get the true UTC instant
+  return new Date(naiveUTC.getTime() - offsetMs).toISOString();
+}
+
 function formatDateHeading(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00Z`);
   return d.toLocaleDateString("en-US", {
@@ -258,14 +276,18 @@ export function ScheduleInterviewDialog({
   onOpenChange,
   context,
   mode = "schedule",
+  submissionId,
+  onScheduled,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   context: InterviewContext;
   mode?: "schedule" | "view";
+  submissionId?: string;
+  onScheduled?: () => void;
 }) {
   // Form state
-  const [interviewType, setInterviewType]     = useState("video");
+  const [interviewType, setInterviewType]     = useState("initial");
   const [selectedInterviewerId, setSelectedInterviewerId] = useState("");
   const [duration, setDuration]               = useState("30");
   const [timezone, setTimezone]               = useState(getBrowserTimezone);
@@ -286,13 +308,21 @@ export function ScheduleInterviewDialog({
   const [loadingSlots, setLoadingSlots]       = useState(false);
   const [slotsError, setSlotsError]           = useState<string | null>(null);
 
+  // Slot selection + scheduling persistence state
+  const [selectedSlot, setSelectedSlot]       = useState<AvailableSlot | null>(null);
+  const [manualDate, setManualDate]           = useState("");
+  const [manualTime, setManualTime]           = useState("");
+  const [scheduling, setScheduling]           = useState(false);
+  const [scheduleError, setScheduleError]     = useState<string | null>(null);
+  const [scheduled, setScheduled]             = useState(false);
+
   // View-only mode
   const isViewOnly = mode === "view";
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      setInterviewType("video");
+      setInterviewType("initial");
       setSelectedInterviewerId("");
       setDuration("30");
       setTimezone(getBrowserTimezone());
@@ -303,6 +333,12 @@ export function ScheduleInterviewDialog({
       setSlots([]);
       setSlotsError(null);
       setInterviewersError(null);
+      setSelectedSlot(null);
+      setManualDate("");
+      setManualTime("");
+      setScheduling(false);
+      setScheduleError(null);
+      setScheduled(false);
 
       // Fetch interviewers when the dialog opens (admin only)
       if (!isViewOnly) {
@@ -350,6 +386,7 @@ export function ScheduleInterviewDialog({
     setSlots([]);
     setLoadingSlots(true);
     setStep("slots");
+    setSelectedSlot(null);
 
     const params = new URLSearchParams({
       interviewerId: selectedInterviewerId,
@@ -366,6 +403,74 @@ export function ScheduleInterviewDialog({
       setSlotsError(err.message ?? "Failed to load availability");
     } finally {
       setLoadingSlots(false);
+    }
+  }
+
+  // Persist an interview record to the server (admin-creates-on-behalf flow)
+  async function handleSchedule() {
+    if (!submissionId) return;
+    setScheduling(true);
+    setScheduleError(null);
+
+    const token = localStorage.getItem("onspot_jwt_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    try {
+      let confirmedTime: string | undefined;
+      let proposedTimes: Array<{ start: string; end?: string }>;
+
+      if (schedulingMethod === "admin") {
+        if (selectedSlot) {
+          confirmedTime = selectedSlot.start;
+          proposedTimes = [{ start: selectedSlot.start, end: selectedSlot.end }];
+        } else if (manualDate && manualTime) {
+          const iso = localDateTimeToUTC(manualDate, manualTime, timezone);
+          confirmedTime = iso;
+          proposedTimes = [{ start: iso }];
+        } else {
+          setScheduleError("Please select a slot or enter a date and time.");
+          setScheduling(false);
+          return;
+        }
+      } else {
+        // talent-led: send all slots as proposed times
+        if (slots.length === 0 && !(manualDate && manualTime)) {
+          setScheduleError("No slots available. Enter a date and time manually.");
+          setScheduling(false);
+          return;
+        }
+        proposedTimes = slots.length > 0
+          ? slots.map((s) => ({ start: s.start, end: s.end }))
+          : [{ start: localDateTimeToUTC(manualDate, manualTime, timezone) }];
+      }
+
+      const body: Record<string, any> = {
+        submissionId,
+        interviewType,
+        proposedTimes,
+        durationMinutes: Number(duration),
+      };
+      if (schedulingMethod === "admin" && confirmedTime) {
+        body.confirmedTime = confirmedTime;
+        body.confirmedTimeZone = timezone;
+      }
+
+      const res = await fetch("/api/admin/interviews", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
+      }
+      setScheduled(true);
+      onScheduled?.();
+    } catch (err: Error | any) {
+      setScheduleError(err.message ?? "Failed to schedule interview");
+    } finally {
+      setScheduling(false);
     }
   }
 
@@ -417,9 +522,11 @@ export function ScheduleInterviewDialog({
           <Select value={interviewType} onValueChange={setInterviewType}>
             <SelectTrigger id="admin-interview-type"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="video">Video Interview</SelectItem>
-              <SelectItem value="phone">Phone Interview</SelectItem>
-              <SelectItem value="in_person">In-Person Interview</SelectItem>
+              <SelectItem value="initial">Initial Screen</SelectItem>
+              <SelectItem value="technical">Technical</SelectItem>
+              <SelectItem value="culture">Culture Fit</SelectItem>
+              <SelectItem value="final">Final Round</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -615,9 +722,14 @@ export function ScheduleInterviewDialog({
             <div className="flex items-start gap-3 rounded-lg border border-indigo-100 bg-indigo-50/70 px-3.5 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
               <p className="text-xs leading-relaxed text-indigo-900/80 dark:text-indigo-200/80">
-                <span className="font-semibold">Talent-led scheduling:</span> The Talent will receive a scheduling invitation with these open windows and can choose their preferred time. No appointment is created yet.
+                <span className="font-semibold">Talent-led scheduling:</span> The Talent will receive a scheduling invitation with these open windows and can choose their preferred time.{submissionId ? " Click \u2018Send to Talent\u2019 to create the interview record." : " No appointment is created yet."}
               </p>
             </div>
+          )}
+          {schedulingMethod === "admin" && (
+            <p className="text-xs text-indigo-700 dark:text-indigo-300">
+              Click a slot to select it, then click <strong>Schedule Interview</strong> to confirm.
+            </p>
           )}
 
           {sortedDates.map((date) => (
@@ -626,27 +738,85 @@ export function ScheduleInterviewDialog({
                 {formatDateHeading(date)}
               </h4>
               <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                {slotsByDate[date].map((slot) => (
-                  <div
-                    key={slot.start}
-                    className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-white/[0.08] dark:bg-white/[0.02]"
-                  >
-                    <Clock className="h-3.5 w-3.5 shrink-0 text-[#474ead]" />
-                    <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                      {slot.startDisplay}
-                    </span>
-                    <span className="text-xs text-slate-400">–</span>
-                    <span className="text-xs text-slate-600 dark:text-slate-400">{slot.endDisplay}</span>
-                  </div>
-                ))}
+                {slotsByDate[date].map((slot) => {
+                  const isSelected = selectedSlot?.start === slot.start;
+                  return schedulingMethod === "admin" ? (
+                    <button
+                      key={slot.start}
+                      type="button"
+                      onClick={() => setSelectedSlot(isSelected ? null : slot)}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition ${
+                        isSelected
+                          ? "border-[#474ead] bg-[#474ead]/10 ring-1 ring-[#474ead] dark:bg-[#474ead]/20"
+                          : "border-slate-200 bg-slate-50 hover:border-[#474ead]/40 hover:bg-[#474ead]/5 dark:border-white/[0.08] dark:bg-white/[0.02]"
+                      }`}
+                    >
+                      <Clock className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-[#474ead]" : "text-slate-400"}`} />
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                        {slot.startDisplay}
+                      </span>
+                      <span className="text-xs text-slate-400">–</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">{slot.endDisplay}</span>
+                    </button>
+                  ) : (
+                    <div
+                      key={slot.start}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-white/[0.08] dark:bg-white/[0.02]"
+                    >
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-[#474ead]" />
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                        {slot.startDisplay}
+                      </span>
+                      <span className="text-xs text-slate-400">–</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">{slot.endDisplay}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}
 
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {slots.length} slot{slots.length !== 1 ? "s" : ""} available across {sortedDates.length} day{sortedDates.length !== 1 ? "s" : ""}.
-            No interview has been scheduled. No application status has changed.
           </p>
+        </div>
+      )}
+
+      {/* Manual time entry (shown when no slots or as fallback) */}
+      {!loadingSlots && submissionId && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 dark:border-white/[0.08] dark:bg-white/[0.02]">
+          <p className="mb-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {slots.length === 0 ? "Enter interview time manually" : "Or enter a custom time"}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Date</Label>
+              <Input type="date" value={manualDate} onChange={(e) => { setManualDate(e.target.value); setSelectedSlot(null); }} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Time</Label>
+              <Input type="time" value={manualTime} onChange={(e) => { setManualTime(e.target.value); setSelectedSlot(null); }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule success / error feedback */}
+      {scheduled && (
+        <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50/70 p-4 dark:border-green-800/40 dark:bg-green-950/20">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
+          <div>
+            <p className="font-semibold text-green-900 dark:text-green-200">Interview scheduled</p>
+            <p className="mt-1 text-sm leading-relaxed text-green-800/80 dark:text-green-300/80">
+              The interview record has been created and the talent has been notified.
+            </p>
+          </div>
+        </div>
+      )}
+      {scheduleError && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-800/40 dark:bg-red-950/20">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+          <p className="text-sm text-red-800/80 dark:text-red-300/80">{scheduleError}</p>
         </div>
       )}
     </div>
@@ -693,15 +863,33 @@ export function ScheduleInterviewDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setStep("configure")}
+                onClick={() => { setStep("configure"); setSelectedSlot(null); }}
                 className="gap-2"
+                disabled={scheduling}
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back
               </Button>
-              <Button type="button" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
+              {scheduled ? (
+                <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
+              ) : submissionId && !scheduled ? (
+                <Button
+                  type="button"
+                  className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+                  disabled={scheduling || (schedulingMethod === "admin" && !selectedSlot && !(manualDate && manualTime)) || (schedulingMethod === "talent" && slots.length === 0 && !(manualDate && manualTime))}
+                  onClick={handleSchedule}
+                >
+                  {scheduling ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scheduling…</>
+                  ) : schedulingMethod === "admin" ? (
+                    "Schedule Interview"
+                  ) : (
+                    "Send to Talent"
+                  )}
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
+              )}
             </>
           )}
         </DialogFooter>
@@ -716,28 +904,77 @@ export function RequestInterviewDialog({
   open,
   onOpenChange,
   context,
+  submissionId,
+  onScheduled,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   context: InterviewContext;
+  submissionId?: string;
+  onScheduled?: () => void;
 }) {
-  const [submitted, setSubmitted] = useState(false);
-  const [format, setFormat]       = useState("video");
-  const [duration, setDuration]   = useState("30");
+  const [interviewType, setInterviewType] = useState("initial");
+  const [duration, setDuration]   = useState("60");
+  const [date, setDate]           = useState("");
+  const [time, setTime]           = useState("");
+  const [timezone, setTimezone]   = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [meetingLink, setMeetingLink] = useState("");
   const [notes, setNotes]         = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate]     = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduled, setScheduled] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setSubmitted(false);
-      setFormat("video");
-      setDuration("30");
+      setInterviewType("initial");
+      setDuration("60");
+      setDate("");
+      setTime("");
+      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+      setMeetingLink("");
       setNotes("");
-      setStartDate("");
-      setEndDate("");
+      setScheduling(false);
+      setScheduleError(null);
+      setScheduled(false);
     }
   }, [open]);
+
+  async function handleSchedule(e: React.FormEvent) {
+    e.preventDefault();
+    if (!submissionId || !date || !time) return;
+    setScheduling(true);
+    setScheduleError(null);
+
+    const token = localStorage.getItem("onspot_jwt_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    try {
+      const isoTime = localDateTimeToUTC(date, time, timezone);
+      const res = await fetch("/api/client/interviews", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          submissionId,
+          interviewType,
+          durationMinutes: Number(duration),
+          proposedTimes: [{ start: isoTime }],
+          candidateNotes: notes || undefined,
+          meetingLink: meetingLink || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
+      }
+      setScheduled(true);
+      onScheduled?.();
+    } catch (err: Error | any) {
+      setScheduleError(err.message ?? "Failed to schedule interview");
+    } finally {
+      setScheduling(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -755,14 +992,14 @@ export function RequestInterviewDialog({
         <div className="space-y-5">
           <ContextSummary {...context} />
 
-          {submitted ? (
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20">
+          {scheduled ? (
+            <div className="rounded-xl border border-green-200 bg-green-50/70 p-4 dark:border-green-800/40 dark:bg-green-950/20">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
                 <div>
-                  <p className="font-semibold text-indigo-900 dark:text-indigo-200">Request preview complete</p>
-                  <p className="mt-1 text-sm leading-relaxed text-indigo-900/80 dark:text-indigo-200/80">
-                    Interview request delivery will be connected in the next phase. No request was sent and no application status changed.
+                  <p className="font-semibold text-green-900 dark:text-green-200">Interview scheduled</p>
+                  <p className="mt-1 text-sm leading-relaxed text-green-800/80 dark:text-green-300/80">
+                    The interview has been proposed and the talent will be notified. You can track the status in the application detail.
                   </p>
                 </div>
               </div>
@@ -771,83 +1008,96 @@ export function RequestInterviewDialog({
             <form
               id="request-interview-form"
               className="space-y-5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSubmitted(true);
-              }}
+              onSubmit={handleSchedule}
             >
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-3.5 py-3 text-sm leading-relaxed text-indigo-900/80 dark:border-indigo-800/40 dark:bg-indigo-950/20 dark:text-indigo-200/80">
-                Send an interview request to OnSpot Admin. Once approved, the Admin will arrange the interview and send the Talent a scheduling invitation.
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="ci-type">Interview type</Label>
+                  <Select value={interviewType} onValueChange={setInterviewType}>
+                    <SelectTrigger id="ci-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="initial">Initial screen</SelectItem>
+                      <SelectItem value="technical">Technical</SelectItem>
+                      <SelectItem value="final">Final round</SelectItem>
+                      <SelectItem value="culture">Culture fit</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ci-duration">Duration</Label>
+                  <Select value={duration} onValueChange={setDuration}>
+                    <SelectTrigger id="ci-duration"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="45">45 min</SelectItem>
+                      <SelectItem value="60">60 min</SelectItem>
+                      <SelectItem value="90">90 min</SelectItem>
+                      <SelectItem value="120">120 min</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="client-interview-format">Preferred interview format</Label>
-                  <Select value={format} onValueChange={setFormat}>
-                    <SelectTrigger id="client-interview-format"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="video">Video</SelectItem>
-                      <SelectItem value="phone">Phone</SelectItem>
-                      <SelectItem value="in_person">In Person</SelectItem>
-                      <SelectItem value="no_preference">No preference</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="ci-date">Date <span className="text-red-500">*</span></Label>
+                  <Input id="ci-date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="client-interview-duration">Preferred duration</Label>
-                  <Select value={duration} onValueChange={setDuration}>
-                    <SelectTrigger id="client-interview-duration"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="no_preference">No preference</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="ci-time">Time <span className="text-red-500">*</span></Label>
+                  <Input id="ci-time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="client-interview-notes">Requested interviewer / notes</Label>
-                <Textarea
-                  id="client-interview-notes"
-                  rows={4}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Please have the account manager interview this candidate this week."
-                  className="resize-none"
-                />
-                <p className="text-xs text-slate-500">Add guidance for the OnSpot Admin team. Do not choose a final time here.</p>
+                <Label htmlFor="ci-timezone">Timezone</Label>
+                <TimezoneSelect value={timezone} onChange={setTimezone} />
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <Label>Preferred interview window <span className="font-normal text-slate-400">(optional)</span></Label>
-                  <p className="mt-0.5 text-xs text-slate-500">Admin will coordinate the final time after review.</p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="client-interview-start" className="text-xs text-slate-500">Start date</Label>
-                    <Input id="client-interview-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="client-interview-end" className="text-xs text-slate-500">End date</Label>
-                    <Input id="client-interview-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="ci-link">Meeting link <span className="font-normal text-slate-400">(optional)</span></Label>
+                <Input id="ci-link" type="url" placeholder="https://meet.google.com/…" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ci-notes">Notes for talent <span className="font-normal text-slate-400">(optional)</span></Label>
+                <Textarea
+                  id="ci-notes"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Any preparation instructions, topics, or notes for the candidate."
+                  className="resize-none"
+                />
+              </div>
+
+              {scheduleError && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3 text-sm text-red-800 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{scheduleError}</span>
+                </div>
+              )}
             </form>
           )}
         </div>
 
         <DialogFooter>
-          {submitted ? (
+          {scheduled ? (
             <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
           ) : (
             <>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" form="request-interview-form" className="bg-[#474ead] text-white hover:bg-[#3d439c]">
-                Send Interview Request
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={scheduling}>Cancel</Button>
+              <Button
+                type="submit"
+                form="request-interview-form"
+                className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+                disabled={scheduling || !submissionId || !date || !time}
+              >
+                {scheduling ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scheduling…</>
+                ) : "Schedule Interview"}
               </Button>
             </>
           )}

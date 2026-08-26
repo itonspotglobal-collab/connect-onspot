@@ -72,6 +72,7 @@ import {
   Wrench,
   Database,
   Building2,
+  CalendarDays,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -472,6 +473,10 @@ export default function AdminDashboard() {
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/job-applications')}>
                 <ClipboardList className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Full Applications View
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/interviews')}>
+                <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Interview Calendar
               </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/scaffold-jobs')}>
                 <Wrench className="w-3.5 h-3.5 mr-2 text-muted-foreground" />

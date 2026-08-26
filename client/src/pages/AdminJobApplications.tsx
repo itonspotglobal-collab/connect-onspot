@@ -948,7 +948,12 @@ function DetailDialog({
     <ScheduleInterviewDialog
       open={interviewDialogOpen}
       onOpenChange={setInterviewDialogOpen}
-      mode={detail?.status === "interviewing" ? "view" : "schedule"}
+      mode={detail?.status === "interviewing" ? "schedule" : "schedule"}
+      submissionId={applicationId ?? undefined}
+      onScheduled={() => {
+        setInterviewDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+      }}
       context={{
         applicantName: detail ? applicantName(detail) : "Applicant",
         position: detail?.jobTitle ?? "Position",

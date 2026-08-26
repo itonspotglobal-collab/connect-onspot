@@ -447,6 +447,12 @@ function ViewSubmissionModal({
     <RequestInterviewDialog
       open={requestInterviewOpen}
       onOpenChange={setRequestInterviewOpen}
+      submissionId={submission.id}
+      onScheduled={() => {
+        setRequestInterviewOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/client/interviews", submission.id] });
+        queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"] });
+      }}
       context={{
         applicantName: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold),
         position: submission.jobTitle,
