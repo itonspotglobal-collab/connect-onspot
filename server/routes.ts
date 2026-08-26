@@ -8567,7 +8567,7 @@ export async function registerRoutes(
           type: isDirectConfirm ? "interview_confirmed" : "interview_proposed",
           title: isDirectConfirm ? "Interview confirmed" : "Interview proposed",
           message: isDirectConfirm
-            ? `Your interview for "${submission.job_title}" has been confirmed. Check your email for details.`
+            ? `Your interview for "${submission.job_title}" has been confirmed. Log in to the portal to view the details.`
             : `An interview has been proposed for "${submission.job_title}". Please review the suggested times.`,
           relatedId: String(interview.id),
           relatedType: "interview",

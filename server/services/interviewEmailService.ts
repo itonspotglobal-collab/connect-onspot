@@ -11,7 +11,7 @@
  */
 
 import { query } from "../db.js";
-import { sendApplicantEmail } from "./microsoftGraphEmailService.js";
+import { sendApplicantEmail, isEmailServiceConfigured } from "./microsoftGraphEmailService.js";
 import {
   buildEmailContext,
   renderApplicantEmail,
@@ -151,6 +151,13 @@ export interface InterviewConfirmedEmailOptions {
 export async function sendInterviewConfirmedEmail(
   opts: InterviewConfirmedEmailOptions,
 ): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn(
+      `[interviewEmailService] sendInterviewConfirmedEmail: email service not configured (Microsoft 365 credentials missing) — skipping for talent ${opts.talentUserId}`,
+    );
+    return;
+  }
+
   const recipient = await resolveTalentRecipient(opts.talentUserId);
   if (!recipient) {
     console.warn(
@@ -266,6 +273,13 @@ export interface InterviewProposalEmailOptions {
 export async function sendInterviewProposalEmail(
   opts: InterviewProposalEmailOptions,
 ): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn(
+      `[interviewEmailService] sendInterviewProposalEmail: email service not configured (Microsoft 365 credentials missing) — skipping for talent ${opts.talentUserId}`,
+    );
+    return;
+  }
+
   const recipient = await resolveTalentRecipient(opts.talentUserId);
   if (!recipient) {
     console.warn(
