@@ -1,0 +1,807 @@
+STOP adding new features for now.
+
+The latest changes introduced regressions into existing job-posting behavior. This task is a **recovery/regression-fix task**, not a redesign.
+
+Do NOT refactor unrelated areas.
+
+Do NOT change working workflows unless explicitly required below.
+
+The priority is:
+
+1. restore the Client job approval workflow display,
+2. restore the existing Find Work job-card appearance/behavior,
+3. fix rich-text rendering safely without redesigning cards,
+4. remove incorrect generic talent-search implementation if it was introduced by the recent task,
+5. preserve all existing features.
+
+Before editing anything, inspect the current code and compare behavior against existing jobs that still render correctly.
+
+---
+
+# CRITICAL RULE
+
+Do not treat this as an opportunity to redesign the job system.
+
+Existing jobs and existing UI that currently work are the baseline.
+
+Make the **smallest possible changes**.
+
+Do not rewrite:
+
+```text
+FindWorkAllJobs.tsx
+FindWorkJob.tsx
+ClientProfile.tsx
+JobFormPage.tsx
+```
+
+wholesale.
+
+Patch only the affected logic.
+
+---
+
+# REGRESSION 1 — Client-created jobs incorrectly show APPROVED before Admin approval
+
+This must be fixed first.
+
+Current observed behavior:
+
+Client creates a job using:
+
+```text
+Submit for Approval
+```
+
+Admin correctly sees that same job as:
+
+```text
+PENDING
+```
+
+but the Client Profile incorrectly displays:
+
+```text
+OPEN
+APPROVED
+```
+
+for the same job.
+
+Therefore do NOT change the backend approval workflow unless investigation proves it is broken.
+
+The screenshots indicate the Admin side still knows the job is pending.
+
+## Known suspicious code
+
+Inspect:
+
+```text
+client/src/pages/ClientProfile.tsx
+```
+
+Current code contains logic equivalent to:
+
+```ts
+const approvalStatus = (job as any).approvalStatus ?? "approved";
+```
+
+This is unsafe.
+
+A missing or differently named approval field must NEVER automatically mean "approved".
+
+Remove the `"approved"` fallback.
+
+First inspect the actual shape returned by:
+
+```text
+GET /api/client/jobs
+```
+
+Determine whether the API returns:
+
+```text
+approvalStatus
+```
+
+or:
+
+```text
+approval_status
+```
+
+or another canonical field.
+
+Use the actual backend value.
+
+Preferred robust behavior:
+
+```ts
+const approvalStatus =
+  job.approvalStatus ??
+  job.approval_status ??
+  "pending";
+```
+
+ONLY use the snake/camel fallback if both shapes genuinely exist in this codebase.
+
+Ideally normalize the API response to one canonical field instead.
+
+## Required state behavior
+
+Immediately after a Client submits a new job:
+
+Client Profile must show:
+
+```text
+OPEN
+PENDING APPROVAL
+```
+
+and:
+
+```text
+Pending Admin review — not yet visible publicly
+```
+
+The job must NOT appear on the public Find Work job board.
+
+After Admin approves it:
+
+Client Profile must show:
+
+```text
+OPEN
+APPROVED
+```
+
+Only then may it appear publicly.
+
+If Admin declines:
+
+Client Profile must show:
+
+```text
+DECLINED
+```
+
+with the existing rejection reason behavior if available.
+
+## Preserve Submit for Approval
+
+Do NOT remove or bypass:
+
+```text
+Submit for Approval
+```
+
+The expected lifecycle remains:
+
+```text
+Client creates job
+      ↓
+approval = pending
+      ↓
+Admin reviews
+      ↓
+Admin Approves / Declines
+      ↓
+approved job becomes public
+```
+
+Do not auto-approve Client-created jobs.
+
+Do not make `status = open` synonymous with `approval = approved`.
+
+These are separate concepts:
+
+```text
+status:
+open / closed
+
+approval status:
+pending / approved / rejected / linked_to_existing
+```
+
+Keep them separate.
+
+---
+
+# REGRESSION 2 — Public Find Work card must preserve its existing design
+
+The current Find Work card for newly created jobs is displaying raw HTML such as:
+
+```html
+<p>...</p><p>...</p>
+```
+
+Existing jobs render as clean text.
+
+Do NOT redesign the Find Work cards.
+
+The existing featured and regular card designs must stay visually unchanged.
+
+Relevant file:
+
+```text
+client/src/pages/FindWorkAllJobs.tsx
+```
+
+Current preview logic is approximately:
+
+```ts
+const preview =
+  job.jobSummary?.trim() ||
+  job.description?.trim();
+```
+
+and then:
+
+```tsx
+<p>{preview}</p>
+```
+
+This is the problem when `description` contains Quill HTML.
+
+## Required fix
+
+The compact job card should show a PLAIN-TEXT SUMMARY.
+
+It should NOT render full rich HTML inside the compact card.
+
+Preferred behavior:
+
+```text
+jobSummary if available
+otherwise derive plain readable text from description HTML
+```
+
+Example source:
+
+```html
+<p><strong>Role Overview</strong></p>
+<p>We are looking for an experienced account manager.</p>
+<ul>
+  <li>Manage accounts</li>
+  <li>Build client relationships</li>
+</ul>
+```
+
+Compact card preview should become something like:
+
+```text
+Role Overview We are looking for an experienced account manager. Manage accounts Build client relationships…
+```
+
+No `<p>` tags.
+
+No `<li>` tags.
+
+No `&nbsp;`.
+
+No raw HTML.
+
+## Create a reusable helper
+
+Prefer a narrowly scoped helper, e.g.:
+
+```ts
+htmlToPlainText(...)
+```
+
+or reuse an existing project helper if one exists.
+
+It should safely:
+
+* remove tags
+* decode normal HTML entities
+* convert block boundaries to spaces/newlines as appropriate
+* collapse repeated whitespace
+* return plain text
+
+Do NOT use `dangerouslySetInnerHTML` in the compact Find Work card.
+
+The full Job Details page may render sanitized rich HTML.
+
+The compact card should remain plain text.
+
+## Do not alter the card styling
+
+Do not change:
+
+* gradient
+* featured card colors
+* regular card header
+* salary placement
+* badges
+* tags
+* Apply Now button
+* View details button
+* spacing
+* radius
+* shadows
+* featured behavior
+
+Only correct the preview content.
+
+Compare against existing cards in the current Find Work page and preserve their appearance.
+
+---
+
+# REGRESSION 3 — Create/Edit Job Review must render rich text properly
+
+Relevant file:
+
+```text
+client/src/components/job-form/JobReviewStep.tsx
+```
+
+The current Review card renders:
+
+```tsx
+{formData.description}
+```
+
+inside normal React text.
+
+That causes HTML such as:
+
+```html
+<p>...</p>
+```
+
+to appear visibly.
+
+Fix ONLY the description-rendering area.
+
+Do not redesign the Review card.
+
+## Expected behavior
+
+Quill input:
+
+```html
+<p><strong>Role Overview</strong></p>
+<p>This is the job description.</p>
+<ul>
+  <li>Task one</li>
+  <li>Task two</li>
+</ul>
+```
+
+Review should visually show:
+
+```text
+Role Overview
+
+This is the job description.
+
+• Task one
+• Task two
+```
+
+Preserve:
+
+* paragraphs
+* bold
+* italic
+* bullet lists
+* ordered lists
+* line breaks
+
+## Security
+
+Render only sanitized HTML.
+
+The server already uses `sanitize-html` elsewhere in the project.
+
+Reuse an existing approved sanitizer pattern if possible.
+
+Do not inject arbitrary HTML.
+
+---
+
+# REGRESSION 4 — Client job Preview dialog also displays raw HTML
+
+Inspect:
+
+```text
+client/src/pages/ClientProfile.tsx
+```
+
+The Client Job Preview dialog currently prints:
+
+```tsx
+{job.description}
+```
+
+inside a normal `<p>`.
+
+Fix this using the SAME sanitized rich-text renderer used for the Review screen where possible.
+
+Do not create three different HTML-rendering implementations.
+
+Desired reuse:
+
+```text
+JobRichText
+or
+SafeRichText
+```
+
+for full rich-content contexts.
+
+Use:
+
+```text
+htmlToPlainText
+```
+
+for compact summaries/cards.
+
+These are different use cases.
+
+---
+
+# IMPORTANT DISTINCTION
+
+Use rich formatted HTML for:
+
+```text
+Create/Edit Review
+Client Job Preview
+Full public Job Details
+```
+
+Use plain text for:
+
+```text
+Find Work compact job cards
+search result snippets
+other short summaries
+```
+
+Do not render HTML inside compact cards.
+
+---
+
+# REGRESSION 5 — Pending jobs must never appear publicly
+
+Audit public endpoints used by:
+
+```text
+/find-work/jobs
+/jobs
+/find-work/job/:jobId
+```
+
+Public job queries must require BOTH:
+
+```text
+status = open
+```
+
+AND:
+
+```text
+approval_status = approved
+```
+
+or the project's canonical equivalent.
+
+Do not rely on frontend filtering for this.
+
+The backend public query must prevent pending jobs from being returned.
+
+Test using the newly submitted Client job:
+
+Before approval:
+
+```text
+Admin: PENDING
+Client: PENDING APPROVAL
+Public Find Work: NOT PRESENT
+```
+
+After approval:
+
+```text
+Admin: APPROVED
+Client: APPROVED
+Public Find Work: PRESENT
+```
+
+---
+
+# REGRESSION 6 — Preserve Admin approval UI
+
+Do not change the existing Admin approval workflow except where needed to keep status fields consistent.
+
+The Admin currently has:
+
+```text
+Approve
+Decline
+```
+
+and sees Client-created jobs as pending.
+
+Preserve this.
+
+When Admin clicks Approve:
+
+* approval becomes approved
+* public visibility becomes eligible
+* Client can see approved status
+* existing notification behavior should run if already implemented
+
+Do not auto-approve elsewhere.
+
+---
+
+# REGRESSION 7 — Remove the generic Client Profile talent CTA added by the previous task
+
+Current Client Profile contains a generic block similar to:
+
+```text
+Search & Shortlist Talent
+Browse and shortlist candidates from our talent pool.
+
+[Find Talent]
+```
+
+with a redirect to:
+
+```text
+/client-search
+```
+
+If this block was added by the recent task specifically to satisfy the job-specific invitation requirement, remove it.
+
+The desired flow remains:
+
+```text
+Client Profile
+→ specific Job Posting
+→ Invite Talent
+→ inline modal/dialog
+→ search talent for THIS job
+→ Invite to Apply
+```
+
+Do not redirect away from Client Profile for this job-specific workflow.
+
+Do not modify the general `/hire-talent` page.
+
+---
+
+# REGRESSION 8 — Protect existing working features
+
+Do not modify these unless necessary for the exact regression:
+
+```text
+job card visual design
+featured job visual design
+Apply Now flow
+View Details flow
+job filters
+job sorting
+job pagination
+talent application flow
+Admin job management design
+existing job details design
+existing jobs already in database
+existing invitation logic
+existing application logic
+existing interview logic
+```
+
+No unrelated cleanups.
+
+No broad refactor.
+
+---
+
+# DATA COMPATIBILITY
+
+Existing jobs and newly created jobs may contain a mixture of:
+
+```text
+plain-text descriptions
+Quill HTML descriptions
+jobSummary plain text
+legacy rich text
+```
+
+The fix must handle both old and new records.
+
+Do not migrate or rewrite all existing job descriptions unless absolutely necessary.
+
+Renderer rules:
+
+If content is HTML:
+
+```text
+full view → sanitized rich HTML
+compact summary → converted plain text
+```
+
+If content is already plain text:
+
+```text
+full view → plain text with preserved line breaks
+compact summary → plain text
+```
+
+---
+
+# REQUIRED TEST MATRIX
+
+Do not say this is fixed until all of these are tested.
+
+## Test A — New Client job before approval
+
+Create:
+
+```text
+Test Approval Job
+```
+
+from a Client account.
+
+After Submit for Approval verify:
+
+Client Profile:
+
+```text
+OPEN
+PENDING APPROVAL
+```
+
+Admin:
+
+```text
+PENDING
+```
+
+Public Find Work:
+
+```text
+job does not appear
+```
+
+## Test B — Approve
+
+Admin approves it.
+
+Verify:
+
+Client Profile:
+
+```text
+OPEN
+APPROVED
+```
+
+Public Find Work:
+
+```text
+job appears
+```
+
+## Test C — Decline
+
+Create another job and decline it.
+
+Verify:
+
+Client Profile:
+
+```text
+DECLINED
+```
+
+Public:
+
+```text
+not visible
+```
+
+## Test D — Job Review HTML
+
+Create description with:
+
+```text
+bold paragraph
+normal paragraph
+bullet list
+```
+
+Review screen must not show:
+
+```text
+<p>
+</p>
+<br>
+<li>
+<strong>
+&nbsp;
+```
+
+as visible text.
+
+Formatting must remain visible.
+
+## Test E — Find Work card
+
+Approve the test job.
+
+Find Work compact card must:
+
+* retain the current existing card design
+* show readable plain description text
+* not show raw HTML
+* match the appearance of existing regular job cards
+
+## Test F — Client job preview
+
+Open View from Client Profile.
+
+Description must render properly with formatting.
+
+No raw HTML tags.
+
+---
+
+# BEFORE EDITING
+
+Report:
+
+1. Exact response shape of `GET /api/client/jobs`.
+2. Exact approval field name.
+3. Why ClientProfile currently falls back to `"approved"`.
+4. Public jobs query approval filter.
+5. Current Find Work preview fallback.
+6. Current JobReview description renderer.
+7. Current Client Preview description renderer.
+
+Then patch them.
+
+Do NOT stop after reporting.
+
+---
+
+# AFTER IMPLEMENTATION
+
+Provide:
+
+```text
+Files changed
+
+Approval regression:
+- root cause
+- exact fix
+- pending tested
+- approved tested
+- rejected tested
+
+Find Work:
+- HTML root cause
+- summary conversion fix
+- confirmation card design was unchanged
+
+Rich text:
+- reusable renderer/helper
+- Review tested
+- Client Preview tested
+- Full public job tested
+
+Public visibility:
+- confirmation pending job cannot appear publicly
+
+Regression tests:
+- commands run
+- results
+```
+
+If you cannot verify a requirement, state that explicitly instead of claiming success.

@@ -3381,10 +3381,9 @@ export class DbStorage extends MemStorage {
     // Status (default: open)
     conditions.push(sqlOp`${jobsTable.status} = ${filters.status ?? "open"}`);
 
-    // Approval: only approved (or legacy null-value) jobs are shown publicly
-    conditions.push(
-      sqlOp`(${jobsTable.approvalStatus} = 'approved' OR ${jobsTable.approvalStatus} IS NULL)`,
-    );
+    // Public discovery requires explicit Admin approval. Status=open alone is
+    // not sufficient because client-submitted jobs remain open while pending.
+    conditions.push(sqlOp`${jobsTable.approvalStatus} = 'approved'`);
 
     // Structural guard: scaffold jobs are auto-generated scoring artifacts and must never
     // appear in any public or talent-facing listing regardless of their status.

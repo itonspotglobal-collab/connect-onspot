@@ -38,6 +38,7 @@ import {
 import { PILOT_CONFIG, trackPilotActivity } from "@/lib/pilotConfig";
 import { getJobPilotId } from "@/lib/pilotFiltering";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
+import { htmlToPlainText } from "@/lib/htmlToPlainText";
 import {
   loadTalentAuth,
   saveTalentAuth,
@@ -365,7 +366,7 @@ function JobCard({
 
           {/* Card preview summary */}
           {(() => {
-            const preview = (job as any).jobSummary?.trim() || job.description?.trim();
+            const preview = htmlToPlainText((job as any).jobSummary?.trim() || job.description);
             return preview ? (
               <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {preview}

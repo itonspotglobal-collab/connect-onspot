@@ -61,9 +61,7 @@ import {
   Calendar,
   FileText,
   Download,
-  ChevronRight,
   Inbox,
-  Search,
   MessageSquare,
   Loader2,
 } from "lucide-react";
@@ -489,7 +487,10 @@ function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: ()
   if (!job) return null;
 
   const pay = buildRateDisplay(job as any);
-  const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const approvalStatus =
+    (job as any).approvalStatus ??
+    (job as any).approval_status ??
+    "pending";
   const isPublic = job.status === "open" && approvalStatus === "approved";
 
   const statusBadge = ({
@@ -592,7 +593,10 @@ function ClientJobRow({
   const isOpen = job.status === "open";
   const pay = buildRateDisplay(job as any);
   const timeAgo = getTimeAgo(job.createdAt);
-  const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const approvalStatus =
+    (job as any).approvalStatus ??
+    (job as any).approval_status ??
+    "pending";
   const canInviteTalent =
     isOpen &&
     approvalStatus === "approved" &&
@@ -642,9 +646,9 @@ function ClientJobRow({
             </span>
           </div>
           {/* Status messages */}
-          {approvalStatus === "rejected" && (job as any).rejectionReason && (
+          {approvalStatus === "rejected" && ((job as any).rejectionReason ?? (job as any).rejection_reason) && (
             <p className="mb-1 text-xs text-red-600 dark:text-red-400">
-              Reason: {(job as any).rejectionReason}
+              Reason: {(job as any).rejectionReason ?? (job as any).rejection_reason}
             </p>
           )}
           {approvalStatus === "pending" && (
@@ -1125,32 +1129,6 @@ export default function ClientProfile() {
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Find Talent CTA ──────────────────────────────────────────────── */}
-        <Card className="border-[#474ead]/30 bg-gradient-to-r from-[#474ead]/5 to-indigo-500/5 dark:from-[#474ead]/10 dark:to-indigo-500/10">
-          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-5 px-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/15 border border-[#474ead]/25">
-                <Search className="h-5 w-5 text-[#474ead]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                  Search &amp; Shortlist Talent
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Browse and shortlist candidates from our talent pool.
-                </p>
-              </div>
-            </div>
-            <Link href="/client-search">
-              <Button className="shrink-0 bg-[#474ead] text-white shadow-[0_4px_16px_rgba(71,78,173,0.3)] hover:bg-[#3d439c]">
-                <Search className="w-4 h-4 mr-2" />
-                Find Talent
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
           </CardContent>
         </Card>
 

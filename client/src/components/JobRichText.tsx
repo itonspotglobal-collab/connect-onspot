@@ -61,6 +61,11 @@ export function JobRichText({
   html: string | null | undefined;
   className?: string;
 }) {
+  const isHtml = /<\/?[a-z][^>]*>/i.test(html ?? "");
+  if (html?.trim() && !isHtml) {
+    return <div className={`job-rich-text whitespace-pre-wrap text-sm leading-relaxed ${className}`}>{html}</div>;
+  }
+
   const safeHtml = sanitizeJobRichText(html);
   if (!safeHtml) return null;
 

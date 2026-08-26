@@ -7648,11 +7648,15 @@ export async function registerRoutes(
       if (!jobWithSkills) {
         return res.status(404).json({ error: "Job not found" });
       }
-      // Only publicly expose approved + open/published jobs; never expose scaffold jobs
-      const approval = (jobWithSkills as any).approvalStatus;
-      const isApproved = approval === "approved" || approval == null;
-      const isOpen = jobWithSkills.status === "open" || jobWithSkills.status === "published";
-      const isScaffold = (jobWithSkills as any).createdVia === "search_scaffold";
+      // Public job details require the same explicit open + approved gate as
+      // the public search endpoint. A missing field must never mean approved.
+      const approval =
+        (jobWithSkills as any).approvalStatus ??
+        (jobWithSkills as any).approval_status;
+      const isApproved = approval === "approved";
+      const isOpen = jobWithSkills.status === "open";
+      const isScaffold =
+        ((jobWithSkills as any).createdVia ?? (jobWithSkills as any).created_via) === "search_scaffold";
       if (!isApproved || !isOpen || isScaffold) {
         return res.status(404).json({ error: "Job not found" });
       }

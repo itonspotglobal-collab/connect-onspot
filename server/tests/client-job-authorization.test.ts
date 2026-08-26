@@ -238,6 +238,27 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(saved.json.about, "Updated through the client self-service route.");
   });
 
+  it("keeps approval pending in the client response and blocks non-approved jobs from public routes", async () => {
+    const clientJobs = await request(server, "GET", "/api/client/jobs", clientToken);
+    assert.equal(clientJobs.status, 200, JSON.stringify(clientJobs.json));
+    const pendingJob = clientJobs.json.find((job: any) => job.id === PENDING_JOB_ID);
+    assert.equal(pendingJob?.status, "open");
+    assert.equal(pendingJob?.approval_status, "pending");
+    assert.equal(pendingJob?.approvalStatus, undefined, "the client route returns PostgreSQL's snake-case field");
+
+    const publicSearch = await request(server, "GET", "/api/jobs/search?status=open");
+    assert.equal(publicSearch.status, 200, JSON.stringify(publicSearch.json));
+    const publicIds = publicSearch.json.items.map((job: any) => job.id);
+    assert.equal(publicIds.includes(PENDING_JOB_ID), false, "pending jobs must not be publicly searchable");
+    assert.equal(publicIds.includes(REVISION_JOB_ID), false, "non-approved jobs must not be publicly searchable");
+    assert.equal(publicIds.includes(READY_JOB_ID), true, "approved open jobs remain publicly searchable");
+
+    const pendingDetail = await request(server, "GET", `/api/jobs/${PENDING_JOB_ID}`);
+    assert.equal(pendingDetail.status, 404, JSON.stringify(pendingDetail.json));
+    const approvedDetail = await request(server, "GET", `/api/jobs/${READY_JOB_ID}`);
+    assert.equal(approvedDetail.status, 200, JSON.stringify(approvedDetail.json));
+  });
+
   it("searches talent only against an owned approved job and returns sanitized results", async () => {
     const search = await request(
       server,

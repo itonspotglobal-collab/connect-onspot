@@ -49,13 +49,55 @@ async function routeApi(route: Route): Promise<void> {
       id: JOB_ID,
       title: "Customer Support Specialist",
       status: "open",
-      approvalStatus: "approved",
+      approval_status: "approved",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      category: "Customer Support",
+      location: "Remote",
+      engagementType: "Standard",
+      description: "<p><strong>Role Overview</strong></p><p>Customer support description.</p><ul><li>Resolve customer requests</li></ul>",
+      proposalCount: 0,
+    }, {
+      id: "job-pending-ui",
+      title: "Pending approval role",
+      status: "open",
+      approval_status: "pending",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      category: "Customer Support",
+      location: "Remote",
+      engagementType: "Standard",
+      proposalCount: 0,
+    }, {
+      id: "job-rejected-ui",
+      title: "Declined role",
+      status: "open",
+      approval_status: "rejected",
+      rejection_reason: "Please clarify the scope before resubmitting.",
       createdAt: "2026-01-01T00:00:00.000Z",
       category: "Customer Support",
       location: "Remote",
       engagementType: "Standard",
       proposalCount: 0,
     }]);
+  }
+  if (request.method() === "GET" && path === "/api/jobs/search") {
+    return fulfillJson(route, {
+      items: [{
+        id: "job-rich-card-ui",
+        title: "Account Manager",
+        professionalRoleName: "Account Manager",
+        description: "<p><strong>Role Overview</strong></p><p>Readable compact description.</p><ul><li>Manage client accounts</li></ul>",
+        jobSummary: "",
+        status: "open",
+        approvalStatus: "approved",
+        category: "Sales",
+        location: "Remote",
+        engagementType: "Standard",
+        experienceLevel: "mid",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        skills: [],
+      }],
+      meta: { page: 1, pageSize: 12, total: 1, totalPages: 1 },
+    });
   }
   if (request.method() === "POST" && path === `/api/client/jobs/${JOB_ID}/talent-search`) {
     return fulfillJson(route, {
@@ -150,9 +192,20 @@ test("Client Profile keeps job-specific talent search inline and sends one selec
     for (const label of ["Dashboard", "Find Talent", "Messages", "Projects", "Performance", "Team", "Contracts", "Payments", "Billing", "ROI Analytics", "Settings"]) {
       assert.ok(await page.getByText(label, { exact: true }).count(), `${label} must be rendered in Client navigation`);
     }
-    for (const oldLabel of ["OnSpot Talent", "Client Projects", "Client Management"]) {
+    for (const oldLabel of ["OnSpot Talent", "Client Projects", "Client Management", "Search & Shortlist Talent"]) {
       assert.equal(await page.getByText(oldLabel, { exact: true }).count(), 0, `${oldLabel} must not appear in the Client sidebar`);
     }
+    await page.getByText("Pending Admin review — not yet visible publicly").waitFor();
+    await page.getByText("Declined", { exact: true }).waitFor();
+    await page.getByText("Reason: Please clarify the scope before resubmitting.").waitFor();
+    assert.equal(await page.getByRole("button", { name: "Invite Talent" }).count(), 1, "only the approved job can invite talent");
+
+    await page.getByRole("button", { name: "View" }).first().click();
+    await page.getByText("Role Overview", { exact: true }).waitFor();
+    await page.getByText("Resolve customer requests", { exact: true }).waitFor();
+    assert.equal(await page.getByText("<p>", { exact: true }).count(), 0);
+    assert.equal(await page.getByText("<li>", { exact: true }).count(), 0);
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "Invite Talent" }).click();
     await page.getByRole("heading", { name: "Invite Talent to Apply" }).waitFor();
@@ -174,5 +227,19 @@ test("Client Profile keeps job-specific talent search inline and sends one selec
     assert.ok(Array.isArray(invitationPayload?.proposedTimes));
   } finally {
     await page.context().close();
+  }
+});
+
+test("Find Work compact cards convert Quill HTML to readable plain text", async () => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  try {
+    await page.route("**/api/**", routeApi);
+    await page.goto(`${BASE_URL}/find-work/jobs`, { waitUntil: "domcontentloaded" });
+    await page.getByText("Role Overview Readable compact description. Manage client accounts", { exact: true }).waitFor();
+    assert.equal(await page.getByText("<p>", { exact: true }).count(), 0);
+    assert.equal(await page.getByText("<li>", { exact: true }).count(), 0);
+  } finally {
+    await context.close();
   }
 });
