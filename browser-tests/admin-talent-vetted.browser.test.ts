@@ -16,6 +16,7 @@ interface FixtureState {
   listRequests: number;
   listRequestUrls: string[];
   talentItems?: FixtureTalent[];
+  jobItems?: Record<string, unknown>[];
 }
 
 interface FixtureTalent {
@@ -191,6 +192,14 @@ async function routeApi(route: Route, state: FixtureState): Promise<void> {
   const url = new URL(request.url());
   const path = url.pathname;
 
+  if (request.method() === "GET" && path === "/api/admin/jobs" && state.jobItems) {
+    return fulfillJson(route, {
+      items: state.jobItems,
+      meta: { page: 1, pageSize: 25, total: state.jobItems.length, totalPages: 1 },
+      stats: { total: state.jobItems.length, pending: state.jobItems.length, approved: 0, rejected: 0 },
+    });
+  }
+
   if (request.method() === "GET" && path === "/api/admin/talent") {
     state.listRequests += 1;
     await fulfillJson(route, talentListResponse(state, url));
@@ -245,6 +254,48 @@ async function newAdminPage(talentItems?: FixtureTalent[]): Promise<{ page: Page
     );
   });
   await page.goto(`${BASE_URL}/admin/talent`, { waitUntil: "domcontentloaded" });
+  return { page, state };
+}
+
+async function newAdminFindWorkPage(): Promise<{ page: Page; state: FixtureState }> {
+  const state: FixtureState = {
+    isVetted: false,
+    listRequests: 0,
+    listRequestUrls: [],
+    jobItems: [{
+      id: "admin-rich-text-job",
+      title: "Customer Success Manager",
+      professionalRoleName: "Customer Success Manager",
+      description: "<p><strong>Role Overview</strong></p><p>We are looking for an experienced candidate.</p><ul><li>Manage accounts</li><li>Work with clients</li></ul>",
+      status: "open",
+      approvalStatus: "pending",
+      category: "Customer Success",
+      engagementType: "Standard",
+      location: "Remote",
+      clientCompanyName: "Regression Client",
+      clientContactName: "Client Owner",
+      createdAt: "2026-08-20T12:00:00.000Z",
+    }],
+  };
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  await page.route("**/api/**", (route) => routeApi(route, state));
+  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("onspot_jwt_token", "test-admin-find-work-jwt");
+    localStorage.setItem(
+      "onspot_user",
+      JSON.stringify({
+        id: "admin-find-work-regression",
+        email: "admin-find-work-regression@example.test",
+        first_name: "Admin",
+        last_name: "Regression",
+        role: "admin",
+      }),
+    );
+  });
+  await page.goto(`${BASE_URL}/admin/find-work`, { waitUntil: "domcontentloaded" });
   return { page, state };
 }
 
@@ -549,6 +600,40 @@ test("admin talent list keeps Vetted sorting through filters and pagination", as
     assert.equal(filteredRows.length, 27);
     assert.equal(filteredRows[0], "talent-row-talent-sort-1");
     assert.ok(filteredRows.every((id) => !id.includes("decoy")));
+  } finally {
+    await page.context().close();
+  }
+});
+
+test("admin pending approval details render rich job descriptions safely", async () => {
+  const { page } = await newAdminFindWorkPage();
+  try {
+    await page.getByRole("button", { name: "Pending Approvals", exact: true }).click();
+    await page.getByText("Customer Success Manager", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "View Details", exact: true }).click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog.getByText("Role Overview", { exact: true }).waitFor();
+    await dialog.getByText("We are looking for an experienced candidate.", { exact: true }).waitFor();
+    await dialog.getByText("Manage accounts", { exact: true }).waitFor();
+    await dialog.getByText("Work with clients", { exact: true }).waitFor();
+    assert.equal(await dialog.getByText("<p>", { exact: true }).count(), 0);
+    assert.equal(await dialog.getByText("<strong>", { exact: true }).count(), 0);
+    assert.equal(await dialog.getByText("<ul>", { exact: true }).count(), 0);
+    assert.equal(await dialog.getByText("<li>", { exact: true }).count(), 0);
+
+    await dialog.getByRole("button", { name: "Approve", exact: true }).waitFor();
+    await dialog.getByRole("button", { name: "Decline", exact: true }).waitFor();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
+    await dialog.waitFor({ state: "hidden" });
+
+    await page.getByRole("button", { name: "View Details", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Approve", exact: true }).click();
+    await page.getByRole("dialog").filter({ hasText: "Approve this job?" }).getByRole("button", { name: "Cancel", exact: true }).click();
+
+    await page.getByRole("button", { name: "View Details", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Decline", exact: true }).click();
+    await page.getByRole("dialog").filter({ hasText: "Decline Job Request" }).getByRole("button", { name: "Cancel", exact: true }).click();
   } finally {
     await page.context().close();
   }

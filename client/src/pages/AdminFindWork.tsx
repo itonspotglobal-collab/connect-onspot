@@ -60,6 +60,7 @@ import {
 } from "lucide-react";
 import type { Job } from "@shared/schema";
 import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
+import { JobRichText } from "@/components/JobRichText";
 
 // ─── Badge icon map ───────────────────────────────────────────────────────────
 const BADGE_ICONS: Record<string, React.ElementType> = {
@@ -1592,7 +1593,10 @@ export default function AdminFindWork() {
                 {dj.description && (
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Job Description</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line">{dj.description}</p>
+                    <JobRichText
+                      html={dj.description}
+                      className="text-slate-700 dark:text-slate-300"
+                    />
                   </div>
                 )}
 

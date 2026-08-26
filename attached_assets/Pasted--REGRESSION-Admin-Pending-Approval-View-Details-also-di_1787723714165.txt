@@ -1,0 +1,213 @@
+# REGRESSION — Admin Pending Approval → View Details also displays raw HTML
+
+This is confirmed broken.
+
+Path:
+
+```text
+Admin
+→ Jobs Admin
+→ Pending Approvals
+→ View Details
+```
+
+The Job Description currently displays literal rich-text markup such as:
+
+```html
+<p>Job description...</p>
+<p><br></p>
+<p>More description...</p>
+```
+
+This must NOT be displayed as raw text.
+
+## Relevant file
+
+Inspect:
+
+```text
+client/src/pages/AdminFindWork.tsx
+```
+
+Do not change the existing approval workflow.
+
+Preserve:
+
+```text
+Pending Approval
+Approve
+Decline
+Unapprove
+Rejected
+Linked to Existing
+```
+
+and all current Admin actions.
+
+Only correct the job-description rendering in the View Details dialog.
+
+---
+
+## Required behavior
+
+If the saved job description is:
+
+```html
+<p><strong>Role Overview</strong></p>
+<p>We are looking for an experienced candidate.</p>
+<ul>
+  <li>Manage accounts</li>
+  <li>Work with clients</li>
+</ul>
+```
+
+the Admin View Details modal must visually show:
+
+```text
+Role Overview
+
+We are looking for an experienced candidate.
+
+• Manage accounts
+• Work with clients
+```
+
+It must NOT show:
+
+```text
+<p>
+</p>
+<strong>
+<ul>
+<li>
+<br>
+&nbsp;
+```
+
+as visible characters.
+
+---
+
+## Reuse one shared rich-text renderer
+
+Do NOT independently fix this with another ad-hoc `dangerouslySetInnerHTML`.
+
+Create or reuse a shared component/helper for full rich-text job content, for example:
+
+```text
+client/src/components/JobRichText.tsx
+```
+
+or:
+
+```text
+client/src/components/SafeRichText.tsx
+```
+
+Use that same renderer in:
+
+```text
+JobReviewStep.tsx
+ClientProfile.tsx job preview dialog
+AdminFindWork.tsx View Details dialog
+FindWorkJob.tsx full public job details where applicable
+```
+
+The renderer must:
+
+* detect HTML vs plain text
+* sanitize HTML before rendering
+* support Quill formatting
+* preserve paragraphs
+* preserve line breaks
+* preserve bold/italic
+* preserve ordered/unordered lists
+* preserve safe links if the editor supports them
+* safely render legacy plain-text descriptions with line breaks
+
+Do not store modified HTML back into the database as part of this UI fix.
+
+---
+
+## Security
+
+Never render raw unsanitized job HTML.
+
+Allow only expected rich-text tags, for example:
+
+```text
+p
+br
+strong
+b
+em
+i
+ul
+ol
+li
+blockquote
+a
+```
+
+plus any other legitimate formatting tags already produced by the project's editor.
+
+Remove dangerous content such as:
+
+```text
+script
+iframe
+object
+onerror
+onclick
+javascript:
+```
+
+---
+
+## Keep compact cards different
+
+Do NOT use this rich HTML renderer inside:
+
+```text
+/find-work/jobs
+```
+
+compact job cards.
+
+Compact cards must continue using plain text.
+
+Correct architecture:
+
+```text
+Full-content views
+→ sanitized rich-text renderer
+
+Compact cards
+→ HTML-to-plain-text helper
+```
+
+---
+
+## Admin regression test
+
+1. Login as Client.
+2. Create a job with:
+
+   * bold text
+   * paragraphs
+   * bullet list
+3. Submit for Approval.
+4. Login as Admin.
+5. Open:
+   `Jobs Admin → Pending Approvals`.
+6. Confirm the job shows `PENDING`.
+7. Click `View Details`.
+8. Confirm the description is formatted.
+9. Confirm no HTML tags appear as visible text.
+10. Confirm `Approve`, `Decline`, and `Close` still work.
+11. Approve the job.
+12. Confirm approval status becomes approved.
+13. Confirm no unrelated Admin UI changed.
+
+Do not redesign the Admin modal.
+Do not alter approval-state logic while fixing the description renderer.
