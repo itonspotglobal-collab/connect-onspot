@@ -16450,6 +16450,16 @@ export async function registerRoutes(
     if (!["accept", "decline", "counter"].includes(action)) {
       return res.status(400).json({ error: "action must be 'accept', 'decline', or 'counter'" });
     }
+    let confirmedEmailParams: {
+      talentUserId: string;
+      jobTitle: string;
+      confirmedTime: string;
+      confirmedTimeZone: string;
+      durationMinutes: number | null;
+      meetingLink: string | null;
+      interviewType: string | undefined;
+      roundNumber: number | null;
+    } | null = null;
     const txClient = await pool.connect();
     try {
       await txClient.query("BEGIN");
@@ -16549,6 +16559,16 @@ export async function registerRoutes(
             [interview.submission_id, interview.submission_status, userId],
           );
         }
+        confirmedEmailParams = {
+          talentUserId: userId,
+          jobTitle: interview.job_title,
+          confirmedTime: canonicalSelectedTime,
+          confirmedTimeZone: selectedTimeZone,
+          durationMinutes: interview.duration_minutes ?? null,
+          meetingLink: interview.meeting_link ?? null,
+          interviewType: interview.interview_type ?? undefined,
+          roundNumber: interview.round_number ?? null,
+        };
       } else if (action === "counter") {
         const normalized = normalizeInterviewTimes(proposedTimes);
         if (!normalized) {
@@ -16601,6 +16621,13 @@ export async function registerRoutes(
       }
       const updated = await txClient.query(`SELECT * FROM interviews WHERE id = $1`, [interview.id]);
       await txClient.query("COMMIT");
+
+      // Fire-and-forget confirmation email when talent accepts — failure never rolls back the accept
+      if (confirmedEmailParams) {
+        sendInterviewConfirmedEmail(confirmedEmailParams).catch((e: any) =>
+          console.error("talent accept interview confirmation email failed:", e),
+        );
+      }
 
       const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);
       if (interview.client_id) {
