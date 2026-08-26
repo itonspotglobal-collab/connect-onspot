@@ -89,6 +89,7 @@ import {
 import { transitionJobApprovalStatus } from "./services/jobApprovalNotificationService";
 import {
   sendInterviewConfirmedEmail,
+  sendInterviewConfirmedEmailToClient,
   sendInterviewProposalEmail,
 } from "./services/interviewEmailService.js";
 import {
@@ -16622,11 +16623,27 @@ export async function registerRoutes(
       const updated = await txClient.query(`SELECT * FROM interviews WHERE id = $1`, [interview.id]);
       await txClient.query("COMMIT");
 
-      // Fire-and-forget confirmation email when talent accepts — failure never rolls back the accept
+      // Fire-and-forget confirmation emails when talent accepts — failure never rolls back the accept
       if (confirmedEmailParams) {
         sendInterviewConfirmedEmail(confirmedEmailParams).catch((e: any) =>
           console.error("talent accept interview confirmation email failed:", e),
         );
+        // Also notify the client that the talent confirmed a time
+        if (interview.client_id) {
+          sendInterviewConfirmedEmailToClient({
+            clientUserId: interview.client_id,
+            talentUserId: confirmedEmailParams.talentUserId,
+            jobTitle: confirmedEmailParams.jobTitle,
+            confirmedTime: confirmedEmailParams.confirmedTime,
+            confirmedTimeZone: confirmedEmailParams.confirmedTimeZone,
+            durationMinutes: confirmedEmailParams.durationMinutes,
+            meetingLink: confirmedEmailParams.meetingLink,
+            interviewType: confirmedEmailParams.interviewType,
+            roundNumber: confirmedEmailParams.roundNumber,
+          }).catch((e: any) =>
+            console.error("client interview confirmation email failed:", e),
+          );
+        }
       }
 
       const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);

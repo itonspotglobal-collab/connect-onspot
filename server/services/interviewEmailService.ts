@@ -1,11 +1,12 @@
 /**
  * Interview transactional email service.
  *
- * Two functions:
- *   sendInterviewConfirmedEmail  — admin directly confirms a slot (POST or PATCH admin route)
- *   sendInterviewProposalEmail   — client or admin proposes times, talent needs to pick
+ * Three functions:
+ *   sendInterviewConfirmedEmail          — admin directly confirms a slot (POST or PATCH admin route)
+ *   sendInterviewConfirmedEmailToClient  — talent accepts a proposed slot; notifies the client
+ *   sendInterviewProposalEmail           — client or admin proposes times, talent needs to pick
  *
- * Both are fire-and-forget: callers `.catch()` the returned promise and log the
+ * All are fire-and-forget: callers `.catch()` the returned promise and log the
  * error rather than rolling back the scheduling action (consistent with the
  * status-email-retry invariant documented in .agents/memory/status-email-retry.md).
  */
@@ -251,6 +252,144 @@ export async function sendInterviewConfirmedEmail(
   } else {
     console.log(
       `[interviewEmailService] Interview confirmation email sent to ${recipient.email} for job "${opts.jobTitle}"`,
+    );
+  }
+}
+
+// ── Client confirmation email (talent accepted a slot) ────────────────────────
+
+export interface InterviewConfirmedEmailToClientOptions {
+  clientUserId: string;
+  talentUserId: string;   // resolved to name only; never exposed to client
+  jobTitle: string;
+  confirmedTime: string;        // ISO timestamp
+  confirmedTimeZone: string;    // IANA or UTC-offset timezone
+  durationMinutes: number | null;
+  meetingLink: string | null;
+  interviewType?: string;
+  roundNumber?: number | null;
+}
+
+/**
+ * Send a "the talent has confirmed their interview time" email to the client.
+ * Called fire-and-forget after talent accepts via PATCH /api/talent/interviews/:id/respond.
+ */
+export async function sendInterviewConfirmedEmailToClient(
+  opts: InterviewConfirmedEmailToClientOptions,
+): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn(
+      `[interviewEmailService] sendInterviewConfirmedEmailToClient: email service not configured — skipping for client ${opts.clientUserId}`,
+    );
+    return;
+  }
+
+  // Resolve client recipient
+  const clientResult = await query(
+    `SELECT email, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+    [opts.clientUserId],
+  );
+  if (!clientResult.rows.length) {
+    console.warn(
+      `[interviewEmailService] sendInterviewConfirmedEmailToClient: no user row for client ${opts.clientUserId} — skipping`,
+    );
+    return;
+  }
+  const clientRow = clientResult.rows[0];
+  const clientEmail: string = clientRow.email;
+  const clientFirstName: string = clientRow.first_name ?? "there";
+  const clientFullName: string =
+    [clientRow.first_name, clientRow.last_name].filter(Boolean).join(" ") || undefined!;
+
+  // Resolve talent display name
+  const talentResult = await query(
+    `SELECT first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+    [opts.talentUserId],
+  );
+  const talentRow = talentResult.rows[0];
+  const talentName: string = talentRow
+    ? [talentRow.first_name, talentRow.last_name].filter(Boolean).join(" ") || "The talent"
+    : "The talent";
+
+  const safeJobTitle = escapeHtml(opts.jobTitle);
+  const formattedTime = formatConfirmedTime(opts.confirmedTime, opts.confirmedTimeZone);
+  const safeTime = escapeHtml(formattedTime);
+  const duration = opts.durationMinutes ? `${opts.durationMinutes} minutes` : "approx. 60 minutes";
+  const typeLabel = opts.interviewType
+    ? opts.interviewType.charAt(0).toUpperCase() + opts.interviewType.slice(1)
+    : "Interview";
+  const round = opts.roundNumber ? ` (Round ${opts.roundNumber})` : "";
+
+  const meetingSection = opts.meetingLink
+    ? `
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    <strong>Meeting link:</strong>
+    <a href="${escapeHtml(opts.meetingLink)}" style="color:#6d5ef7;">${escapeHtml(opts.meetingLink)}</a>
+  </p>`
+    : `
+  <p style="color:#6b7280;font-size:13px;margin:12px 0;">
+    No meeting link has been attached yet — add one through the OnSpot portal if needed.
+  </p>`;
+
+  const contentHtml = `
+  <h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">
+    Interview time confirmed
+  </h1>
+  <p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(clientFirstName)},</p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    <strong>${escapeHtml(talentName)}</strong> has confirmed their
+    <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+    <strong>${safeJobTitle}</strong>.
+  </p>
+  <table role="presentation" style="border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:20px 0;width:100%;border-spacing:0;">
+    <tr>
+      <td style="padding:6px 0;color:#6b7280;font-size:14px;white-space:nowrap;padding-right:16px;">Date &amp; Time</td>
+      <td style="padding:6px 0;color:#25283d;font-size:15px;font-weight:600;">${safeTime}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#6b7280;font-size:14px;white-space:nowrap;padding-right:16px;">Duration</td>
+      <td style="padding:6px 0;color:#25283d;font-size:15px;">${escapeHtml(duration)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;color:#6b7280;font-size:14px;white-space:nowrap;padding-right:16px;">Role</td>
+      <td style="padding:6px 0;color:#25283d;font-size:15px;">${safeJobTitle}</td>
+    </tr>
+  </table>
+  ${meetingSection}
+  <p style="color:#444;font-size:15px;margin:20px 0 8px;">
+    You can view full interview details in the <strong>OnSpot portal</strong>.
+  </p>
+  <p style="color:#6b7280;font-size:13px;margin:24px 0 0;">
+    If you need to make any changes, please do so through the portal as soon as possible.
+  </p>
+`.trim();
+
+  const subject = `Interview confirmed: ${opts.jobTitle}${round}`;
+
+  const rendered = renderApplicantEmail(
+    { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+    buildEmailContext({
+      applicantName: clientFullName,
+      email: clientEmail,
+      jobTitle: opts.jobTitle,
+    }),
+  );
+
+  const result = await sendApplicantEmail({
+    to: clientEmail,
+    toName: clientFullName,
+    subject: rendered.subject,
+    bodyHtml: rendered.bodyHtml,
+  });
+
+  if (!result.success) {
+    console.error(
+      `[interviewEmailService] sendInterviewConfirmedEmailToClient failed for client ${opts.clientUserId}:`,
+      result.error,
+    );
+  } else {
+    console.log(
+      `[interviewEmailService] Interview confirmation email sent to client ${clientEmail} for job "${opts.jobTitle}"`,
     );
   }
 }
