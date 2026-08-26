@@ -92,7 +92,15 @@ import {
   sendInterviewConfirmedEmailToClient,
   sendInterviewCounterEmailToClient,
   sendInterviewProposalEmail,
+  sendInterviewRescheduledEmail,
+  sendInterviewCancelledEmail,
 } from "./services/interviewEmailService.js";
+import {
+  sendJobApprovalCompanionEmail,
+  sendClientNewApplicationEmail,
+  sendUnreadMessageEmail,
+  resetMessageEmailCooldown,
+} from "./services/emailCompanionService.js";
 import {
   insertUserSchema,
   insertProfileSchema,
@@ -2666,6 +2674,45 @@ export async function registerRoutes(
     console.log("✅ Migration 0012: job form requirement columns and compensation_display_type constraint ready");
   } catch (err: any) {
     console.error("❌ Migration 0012 (job form requirements) failed:", err.message);
+  }
+
+  // ── Migration 0013: email delivery ledger + message email cooldowns ─────────
+  // email_notification_deliveries: idempotency ledger for companion emails.
+  // message_email_cooldowns: per-thread/user cooldown for unread-message emails.
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS email_notification_deliveries (
+        id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_key       text        NOT NULL UNIQUE,
+        event_type      text        NOT NULL,
+        recipient_email text,
+        recipient_user_id text,
+        sender_email    text,
+        template_category text,
+        status          text        NOT NULL DEFAULT 'pending',
+        error           text,
+        attempted_at    timestamptz DEFAULT NOW(),
+        sent_at         timestamptz,
+        created_at      timestamptz DEFAULT NOW()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_event_key  ON email_notification_deliveries(event_key)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_created_at ON email_notification_deliveries(created_at)`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS message_email_cooldowns (
+        id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+        thread_id     text        NOT NULL,
+        user_id       text        NOT NULL,
+        email_sent_at timestamptz NOT NULL DEFAULT NOW(),
+        created_at    timestamptz DEFAULT NOW(),
+        updated_at    timestamptz DEFAULT NOW(),
+        UNIQUE(thread_id, user_id)
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_message_email_cooldowns_lookup ON message_email_cooldowns(thread_id, user_id)`);
+    console.log("✅ Migration 0013: email delivery ledger and message email cooldowns ready");
+  } catch (err: any) {
+    console.error("❌ Migration 0013 (email delivery ledger) failed:", err.message);
   }
 
   // ── Customer billing and talent payout views — Phase 3 ────────────────────
@@ -8767,7 +8814,7 @@ export async function registerRoutes(
       } = req.body;
 
       const interviewResult = await query(
-        `SELECT i.*, js.talent_id, j.title AS job_title
+        `SELECT i.*, js.talent_id, js.client_id, j.title AS job_title
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
               AND js.${FORMAL_PIPELINE_PREDICATE}
@@ -8973,6 +9020,36 @@ export async function registerRoutes(
             roundNumber: interview.round_number ?? null,
           }).catch((e: any) => console.error("admin interview confirmation email (PATCH) failed:", e));
         }
+      }
+
+      // Rescheduled / cancelled emails dispatched independently of talent_id so
+      // the client is always notified even when no talent user is linked yet.
+      if (notifType === "interview_rescheduled") {
+        sendInterviewRescheduledEmail({
+          talentUserId: interview.talent_id ? String(interview.talent_id) : null,
+          clientUserId: interview.client_id ?? null,
+          jobTitle: interview.job_title,
+          proposedTimes: (updatedRow?.proposed_times ?? []),
+          durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : (interview.duration_minutes ?? null),
+          interviewType: interview.interview_type ?? undefined,
+          roundNumber: interview.round_number ?? null,
+          rescheduledBy: "admin",
+          interviewId: id,
+          interviewUpdatedAt: updatedRow?.updated_at ?? null,
+        }).catch((e: any) => console.error("admin interview rescheduled email failed:", e));
+      }
+      if (notifType === "interview_cancelled") {
+        sendInterviewCancelledEmail({
+          talentUserId: interview.talent_id ? String(interview.talent_id) : null,
+          clientUserId: interview.client_id ?? null,
+          jobTitle: interview.job_title,
+          cancellationReason: cancellationReason ?? null,
+          interviewType: interview.interview_type ?? undefined,
+          roundNumber: interview.round_number ?? null,
+          cancelledBy: "admin",
+          interviewId: id,
+          interviewUpdatedAt: updatedRow?.updated_at ?? null,
+        }).catch((e: any) => console.error("admin interview cancelled email failed:", e));
       }
 
       return res.json(updatedRow);
@@ -10244,6 +10321,15 @@ export async function registerRoutes(
         import("./services/ragService")
           .then(({ indexJobListings }) => indexJobListings())
           .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+        if (transition.job.client_id && transition.eventKey) {
+          sendJobApprovalCompanionEmail({
+            jobId: transition.job.id,
+            jobTitle: String(transition.job.title ?? ""),
+            clientUserId: transition.job.client_id,
+            newStatus: "approved",
+            transitionEventKey: transition.eventKey,
+          }).catch((e: any) => console.error("[companion] job approve email failed:", e?.message));
+        }
       }
     } catch (error) {
       console.error("Admin job approve error:", error);
@@ -10268,6 +10354,16 @@ export async function registerRoutes(
         import("./services/ragService")
           .then(({ indexJobListings }) => indexJobListings())
           .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+        if (transition.job.client_id && transition.eventKey) {
+          sendJobApprovalCompanionEmail({
+            jobId: transition.job.id,
+            jobTitle: String(transition.job.title ?? ""),
+            clientUserId: transition.job.client_id,
+            newStatus: "rejected",
+            rejectionReason: transition.job.rejection_reason ?? null,
+            transitionEventKey: transition.eventKey,
+          }).catch((e: any) => console.error("[companion] job reject email failed:", e?.message));
+        }
       }
     } catch (error) {
       console.error("Admin job reject error:", error);
@@ -10892,6 +10988,14 @@ export async function registerRoutes(
             senderName,
             messageId: message.id,
           });
+          // Fire a cooldown-gated unread email — no message body is included.
+          sendUnreadMessageEmail({
+            recipientUserId: recipientId,
+            threadId: message.threadId,
+            senderName,
+          }).catch((emailErr: any) =>
+            console.error("[notify] unread message email failed:", emailErr?.message),
+          );
         })().catch((notifErr) =>
           console.error(
             "[notify] message notification failed for",
@@ -11019,6 +11123,8 @@ export async function registerRoutes(
       } catch {
         // Non-critical — badge will self-correct on next poll
       }
+      // Reset email cooldown — next unread message after reading is eligible for a fresh email.
+      resetMessageEmailCooldown(userId, req.params.threadId).catch(() => {});
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to mark messages as read" });
@@ -17417,6 +17523,14 @@ export async function registerRoutes(
           applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
           jobTitle: job.title,
         });
+        if (job.clientId) {
+          sendClientNewApplicationEmail({
+            submissionId: result.rows[0].id,
+            clientUserId: job.clientId,
+            applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
+            jobTitle: job.title,
+          }).catch((e: any) => console.error("[companion] client application email (auth) failed:", e?.message));
+        }
 
         return res.status(201).json({
           success: true,
@@ -17536,12 +17650,20 @@ export async function registerRoutes(
 
       // Non-blocking: fire application-received email — must not affect response
       fireAutoApplicationEmail(submissionId);
-        await notifyClientOfJobApplication({
+      await notifyClientOfJobApplication({
+        submissionId,
+        clientUserId: job.clientId,
+        applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
+        jobTitle: job.title,
+      });
+      if (job.clientId) {
+        sendClientNewApplicationEmail({
           submissionId,
           clientUserId: job.clientId,
           applicantDisplayName: `${firstName.trim()} ${lastName.trim()}`,
           jobTitle: job.title,
-        });
+        }).catch((e: any) => console.error("[companion] client application email (unauth) failed:", e?.message));
+      }
 
       // Generate a continuation token (base64url, 32 bytes) — 24 h TTL
       const rawToken = randomBytes(32).toString("base64url");
@@ -19269,6 +19391,19 @@ export async function registerRoutes(
            relatedId: String(id),
            relatedType: "interview",
          }).catch((e: any) => console.error("interview_rescheduled notification failed:", e));
+         // Email: talent gets rescheduled proposal; client initiated so no client email
+         sendInterviewRescheduledEmail({
+           talentUserId,
+           clientUserId: null,
+           jobTitle,
+           proposedTimes: (finalResult.rows[0]?.proposed_times ?? proposalTimesForHistory ?? []),
+           durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : (interview.duration_minutes ?? null),
+           interviewType: interview.interview_type ?? undefined,
+           roundNumber: interview.round_number ?? null,
+           rescheduledBy: "client",
+           interviewId: String(id),
+           interviewUpdatedAt: finalResult.rows[0]?.updated_at ?? null,
+         }).catch((e: any) => console.error("client interview rescheduled email failed:", e));
        } else if (status === "cancelled" && talentUserId) {
          storage.createNotification({
            userId: talentUserId,
@@ -19278,6 +19413,18 @@ export async function registerRoutes(
            relatedId: String(id),
            relatedType: "interview",
          }).catch((e: any) => console.error("interview_cancelled notification failed:", e));
+         // Email: talent is notified; client already knows they cancelled
+         sendInterviewCancelledEmail({
+           talentUserId,
+           clientUserId: null,
+           jobTitle,
+           cancellationReason: cancellationReason ?? null,
+           interviewType: interview.interview_type ?? undefined,
+           roundNumber: interview.round_number ?? null,
+           cancelledBy: "client",
+           interviewId: String(id),
+           interviewUpdatedAt: finalResult.rows[0]?.updated_at ?? null,
+         }).catch((e: any) => console.error("client interview cancelled email failed:", e));
        }
 
        return res.json(finalResult.rows[0] ?? updated.rows[0]);

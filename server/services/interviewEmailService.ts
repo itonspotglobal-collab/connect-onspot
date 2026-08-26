@@ -18,6 +18,7 @@ import {
   renderApplicantEmail,
   renderBrandedEmailLayout,
 } from "./emailVariableResolver.js";
+import { claimEmailDelivery, markEmailDeliveryResult } from "./emailCompanionService.js";
 import type { InterviewTimeSlot } from "../lib/interviewTime.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -633,5 +634,401 @@ export async function sendInterviewProposalEmail(
     console.log(
       `[interviewEmailService] Interview proposal email sent to ${recipient.email} for job "${opts.jobTitle}"`,
     );
+  }
+}
+
+// ── Interview Rescheduled Email ────────────────────────────────────────────────
+
+export interface InterviewRescheduledEmailOptions {
+  talentUserId: string | null;
+  /** Client user ID — only populated when admin reschedules */
+  clientUserId?: string | null;
+  jobTitle: string;
+  proposedTimes: Array<{ start: string; end?: string; timezone: string }>;
+  durationMinutes: number | null;
+  interviewType?: string;
+  roundNumber?: number | null;
+  /** Who initiated the reschedule? */
+  rescheduledBy: "admin" | "client" | "talent";
+  /**
+   * Interview row id — used to build a deterministic per-recipient event key
+   * for the delivery ledger. When omitted, delivery is still attempted but not
+   * ledgered (backward-compatible).
+   */
+  interviewId?: string | null;
+  /**
+   * The interview's updated_at after the DB update — combined with interviewId
+   * to form an idempotent event key so retried route handlers cannot send
+   * duplicates. Should be passed as an ISO timestamp string.
+   */
+  interviewUpdatedAt?: string | null;
+}
+
+/**
+ * Send rescheduled-interview emails:
+ *   - Talent always gets a "please review new proposed times" email.
+ *   - Client gets notified only when admin is the initiator (talent counter-proposals
+ *     already use sendInterviewCounterEmailToClient from the talent respond route).
+ *
+ * Per-recipient delivery is guarded by the email_notification_deliveries ledger
+ * via claimEmailDelivery / markEmailDeliveryResult when interviewId is provided.
+ */
+export async function sendInterviewRescheduledEmail(
+  opts: InterviewRescheduledEmailOptions,
+): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn("[interviewEmailService] sendInterviewRescheduledEmail: email not configured — skipping");
+    return;
+  }
+
+  // Build a stable timestamp component for event keys
+  const updatedAtMs = opts.interviewUpdatedAt
+    ? new Date(opts.interviewUpdatedAt).getTime()
+    : null;
+  const baseKey = opts.interviewId && updatedAtMs
+    ? `${opts.interviewId}:${updatedAtMs}`
+    : null;
+
+  const typeLabel = opts.interviewType
+    ? opts.interviewType.charAt(0).toUpperCase() + opts.interviewType.slice(1)
+    : "Interview";
+  const round = opts.roundNumber ? ` (Round ${opts.roundNumber})` : "";
+  const safeJobTitle = escapeHtml(opts.jobTitle);
+  const duration = opts.durationMinutes ? `${opts.durationMinutes} minutes` : null;
+
+  const timeRows = opts.proposedTimes
+    .slice(0, 10)
+    .map((slot, i) => {
+      const label = formatInterviewTime(slot.start, slot.timezone || "UTC", true);
+      return `<li style="margin:4px 0;color:#25283d;font-size:15px;">Option ${i + 1}: ${escapeHtml(label)}</li>`;
+    })
+    .join("\n");
+
+  const durationLine = duration
+    ? `<p style="color:#444;font-size:15px;margin:8px 0;"><strong>Duration:</strong> ${escapeHtml(duration)}</p>`
+    : "";
+
+  // ── Talent email ────────────────────────────────────────────────────────────
+  if (opts.talentUserId) {
+    const talentEventKey = baseKey ? `interview-rescheduled-talent:${baseKey}` : null;
+    let talentClaimed = true; // no ledger → proceed
+    if (talentEventKey) {
+      talentClaimed = await claimEmailDelivery({
+        eventKey: talentEventKey,
+        eventType: "interview_rescheduled_talent",
+        recipientEmail: null,
+        recipientUserId: opts.talentUserId,
+        senderEmail: process.env.MICROSOFT_SENDER_EMAIL ?? "",
+      });
+      if (!talentClaimed) {
+        console.log(`[interviewEmailService] sendInterviewRescheduledEmail talent already claimed (${talentEventKey}) — skipping`);
+      }
+    }
+    if (talentClaimed) {
+      const recipient = await resolveTalentRecipient(opts.talentUserId);
+      if (recipient) {
+        const firstName = recipient.firstName ?? "there";
+        const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ") || undefined;
+        const contentHtml = `
+<h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Interview times updated</h1>
+<p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(firstName)},</p>
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  The proposed times for your <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+  <strong>${safeJobTitle}</strong> have been updated. Please log in to review and respond.
+</p>
+<p style="color:#25283d;font-size:15px;font-weight:600;margin:20px 0 8px;">Available time slots</p>
+<ul style="margin:0;padding-left:20px;">${timeRows}</ul>
+${durationLine}
+<p style="color:#444;font-size:15px;margin:20px 0 8px;">
+  Log in to the <strong>OnSpot portal</strong> to confirm one of these times or propose alternatives.
+</p>
+<p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
+  If you have any questions, contact us through the portal.
+</p>`.trim();
+
+        const subject = `Interview rescheduled: ${opts.jobTitle}${round} — please review new times`;
+        const rendered = renderApplicantEmail(
+          { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle }),
+        );
+        const talentResult = await sendApplicantEmail({
+          to: recipient.email,
+          toName: fullName,
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+        });
+        if (talentEventKey) {
+          await markEmailDeliveryResult({
+            eventKey: talentEventKey,
+            status: talentResult.success ? "sent" : "failed",
+            error: talentResult.success ? null : talentResult.error,
+          });
+        }
+        if (talentResult.success) {
+          console.log(`[interviewEmailService] Interview rescheduled email sent to talent ${recipient.email}`);
+        } else {
+          console.error(`[interviewEmailService] sendInterviewRescheduledEmail talent failed:`, talentResult.error);
+        }
+      }
+    }
+  }
+
+  // ── Client email (admin-initiated reschedule only) ─────────────────────────
+  // Talent-initiated counter-proposals are handled by sendInterviewCounterEmailToClient.
+  if (opts.clientUserId && opts.rescheduledBy === "admin") {
+    const clientEventKey = baseKey ? `interview-rescheduled-client:${baseKey}` : null;
+    let clientClaimed = true;
+    if (clientEventKey) {
+      clientClaimed = await claimEmailDelivery({
+        eventKey: clientEventKey,
+        eventType: "interview_rescheduled_client",
+        recipientEmail: null,
+        recipientUserId: opts.clientUserId,
+        senderEmail: process.env.MICROSOFT_SENDER_EMAIL ?? "",
+      });
+      if (!clientClaimed) {
+        console.log(`[interviewEmailService] sendInterviewRescheduledEmail client already claimed (${clientEventKey}) — skipping`);
+      }
+    }
+    if (clientClaimed) {
+      const clientResult = await query(
+        `SELECT email, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+        [opts.clientUserId],
+      );
+      if (clientResult.rows.length) {
+        const cr = clientResult.rows[0];
+        const clientEmail: string = cr.email;
+        const clientFirstName: string = cr.first_name ?? "there";
+        const clientFullName: string =
+          [cr.first_name, cr.last_name].filter(Boolean).join(" ") || undefined!;
+
+        const contentHtml = `
+<h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Interview rescheduled</h1>
+<p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(clientFirstName)},</p>
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  The <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+  <strong>${safeJobTitle}</strong> has been rescheduled by the OnSpot team.
+  New proposed times have been sent to the talent for confirmation.
+</p>
+<p style="color:#25283d;font-size:15px;font-weight:600;margin:20px 0 8px;">Proposed new time slots</p>
+<ul style="margin:0;padding-left:20px;">${timeRows}</ul>
+${durationLine}
+<p style="color:#444;font-size:15px;margin:20px 0 8px;">
+  You can view full interview details in the <strong>OnSpot portal</strong>.
+</p>`.trim();
+
+        const subject = `Interview rescheduled: ${opts.jobTitle}${round}`;
+        const rendered = renderApplicantEmail(
+          { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle }),
+        );
+        const clientEmailResult = await sendApplicantEmail({
+          to: clientEmail,
+          toName: clientFullName,
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+        });
+        if (clientEventKey) {
+          await markEmailDeliveryResult({
+            eventKey: clientEventKey,
+            status: clientEmailResult.success ? "sent" : "failed",
+            error: clientEmailResult.success ? null : clientEmailResult.error,
+          });
+        }
+        if (clientEmailResult.success) {
+          console.log(`[interviewEmailService] Interview rescheduled email sent to client ${clientEmail}`);
+        } else {
+          console.error(`[interviewEmailService] sendInterviewRescheduledEmail client failed:`, clientEmailResult.error);
+        }
+      }
+    }
+  }
+}
+
+// ── Interview Cancelled Email ─────────────────────────────────────────────────
+
+export interface InterviewCancelledEmailOptions {
+  talentUserId: string | null;
+  /** Client user ID — populated when admin cancels so they are also notified. */
+  clientUserId?: string | null;
+  jobTitle: string;
+  cancellationReason?: string | null;
+  interviewType?: string;
+  roundNumber?: number | null;
+  cancelledBy: "admin" | "client" | "talent";
+  /**
+   * Interview row id — used to build a deterministic per-recipient event key
+   * for the delivery ledger. When omitted, delivery is still attempted but not
+   * ledgered (backward-compatible).
+   */
+  interviewId?: string | null;
+  /**
+   * The interview's updated_at after the DB update — combined with interviewId
+   * to form an idempotent event key so retried route handlers cannot send
+   * duplicates. Should be passed as an ISO timestamp string.
+   */
+  interviewUpdatedAt?: string | null;
+}
+
+/**
+ * Send cancellation emails:
+ *   - Talent is notified when admin or client cancels.
+ *   - Client is notified when admin cancels (they already know if they cancelled themselves).
+ *
+ * Per-recipient delivery is guarded by the email_notification_deliveries ledger
+ * via claimEmailDelivery / markEmailDeliveryResult when interviewId is provided.
+ */
+export async function sendInterviewCancelledEmail(
+  opts: InterviewCancelledEmailOptions,
+): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn("[interviewEmailService] sendInterviewCancelledEmail: email not configured — skipping");
+    return;
+  }
+
+  const updatedAtMs = opts.interviewUpdatedAt
+    ? new Date(opts.interviewUpdatedAt).getTime()
+    : null;
+  const baseKey = opts.interviewId && updatedAtMs
+    ? `${opts.interviewId}:${updatedAtMs}`
+    : null;
+
+  const typeLabel = opts.interviewType
+    ? opts.interviewType.charAt(0).toUpperCase() + opts.interviewType.slice(1)
+    : "Interview";
+  const round = opts.roundNumber ? ` (Round ${opts.roundNumber})` : "";
+  const safeJobTitle = escapeHtml(opts.jobTitle);
+  const reasonSection = opts.cancellationReason?.trim()
+    ? `<p style="color:#444;font-size:15px;margin:12px 0;"><strong>Reason:</strong> ${escapeHtml(opts.cancellationReason.trim())}</p>`
+    : "";
+
+  // ── Talent email (when someone else cancels) ──────────────────────────────
+  if (opts.talentUserId && opts.cancelledBy !== "talent") {
+    const talentEventKey = baseKey ? `interview-cancelled-talent:${baseKey}` : null;
+    let talentClaimed = true;
+    if (talentEventKey) {
+      talentClaimed = await claimEmailDelivery({
+        eventKey: talentEventKey,
+        eventType: "interview_cancelled_talent",
+        recipientEmail: null,
+        recipientUserId: opts.talentUserId,
+        senderEmail: process.env.MICROSOFT_SENDER_EMAIL ?? "",
+      });
+      if (!talentClaimed) {
+        console.log(`[interviewEmailService] sendInterviewCancelledEmail talent already claimed (${talentEventKey}) — skipping`);
+      }
+    }
+    if (talentClaimed) {
+      const recipient = await resolveTalentRecipient(opts.talentUserId);
+      if (recipient) {
+        const firstName = recipient.firstName ?? "there";
+        const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ") || undefined;
+        const contentHtml = `
+<h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Interview cancelled</h1>
+<p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(firstName)},</p>
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  Your <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+  <strong>${safeJobTitle}</strong> has been cancelled.
+</p>
+${reasonSection}
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  If you have any questions, please reach out through the OnSpot portal.
+</p>
+<p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
+  You can track your application status in your portal at any time.
+</p>`.trim();
+
+        const subject = `Interview cancelled: ${opts.jobTitle}${round}`;
+        const rendered = renderApplicantEmail(
+          { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle }),
+        );
+        const talentResult = await sendApplicantEmail({
+          to: recipient.email,
+          toName: fullName,
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+        });
+        if (talentEventKey) {
+          await markEmailDeliveryResult({
+            eventKey: talentEventKey,
+            status: talentResult.success ? "sent" : "failed",
+            error: talentResult.success ? null : talentResult.error,
+          });
+        }
+        if (talentResult.success) {
+          console.log(`[interviewEmailService] Interview cancelled email sent to talent ${recipient.email}`);
+        } else {
+          console.error(`[interviewEmailService] sendInterviewCancelledEmail talent failed:`, talentResult.error);
+        }
+      }
+    }
+  }
+
+  // ── Client email (admin-cancelled only) ───────────────────────────────────
+  if (opts.clientUserId && opts.cancelledBy === "admin") {
+    const clientEventKey = baseKey ? `interview-cancelled-client:${baseKey}` : null;
+    let clientClaimed = true;
+    if (clientEventKey) {
+      clientClaimed = await claimEmailDelivery({
+        eventKey: clientEventKey,
+        eventType: "interview_cancelled_client",
+        recipientEmail: null,
+        recipientUserId: opts.clientUserId,
+        senderEmail: process.env.MICROSOFT_SENDER_EMAIL ?? "",
+      });
+      if (!clientClaimed) {
+        console.log(`[interviewEmailService] sendInterviewCancelledEmail client already claimed (${clientEventKey}) — skipping`);
+      }
+    }
+    if (clientClaimed) {
+      const clientResult = await query(
+        `SELECT email, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+        [opts.clientUserId],
+      );
+      if (clientResult.rows.length) {
+        const cr = clientResult.rows[0];
+        const clientEmail: string = cr.email;
+        const clientFirstName: string = cr.first_name ?? "there";
+        const clientFullName: string =
+          [cr.first_name, cr.last_name].filter(Boolean).join(" ") || undefined!;
+
+        const contentHtml = `
+<h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Interview cancelled</h1>
+<p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(clientFirstName)},</p>
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  The <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+  <strong>${safeJobTitle}</strong> has been cancelled by the OnSpot team.
+</p>
+${reasonSection}
+<p style="color:#444;font-size:15px;margin:12px 0;">
+  If you would like to reschedule or have questions, please contact your OnSpot account manager or log in to the portal.
+</p>`.trim();
+
+        const subject = `Interview cancelled: ${opts.jobTitle}${round}`;
+        const rendered = renderApplicantEmail(
+          { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle }),
+        );
+        const clientEmailResult = await sendApplicantEmail({
+          to: clientEmail,
+          toName: clientFullName,
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+        });
+        if (clientEventKey) {
+          await markEmailDeliveryResult({
+            eventKey: clientEventKey,
+            status: clientEmailResult.success ? "sent" : "failed",
+            error: clientEmailResult.success ? null : clientEmailResult.error,
+          });
+        }
+        if (clientEmailResult.success) {
+          console.log(`[interviewEmailService] Interview cancelled email sent to client ${clientEmail}`);
+        } else {
+          console.error(`[interviewEmailService] sendInterviewCancelledEmail client failed:`, clientEmailResult.error);
+        }
+      }
+    }
   }
 }
