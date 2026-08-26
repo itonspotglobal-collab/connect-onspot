@@ -19,9 +19,7 @@ import { Search, Check, Loader2, AlertCircle, Eye, MapPin, Briefcase, Clock, Clo
 import { TopNavigation } from "@/components/TopNavigation";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { LoginDialog } from "@/components/LoginDialog";
-import { ClientTalentShortlistDialog } from "@/components/ClientTalentShortlistDialog";
-import { useClientShortlists } from "@/hooks/useClientShortlists";
-import type { ClientTalentInviteTarget } from "@/components/ClientTalentInviteDialog";
+import { useClientFavorites } from "@/hooks/useClientFavorites";
 import { getPrivacySafeTalentDisplayName } from "@/lib/formatPublicTalentName";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -145,9 +143,10 @@ function ProfilePreviewModal({
   isInvited,
   isInviting,
   isAnonymous,
-  onShortlist,
+  onFavorite,
   onInterview,
-  isShortlisted,
+  isFavorited,
+  isFavoritePending,
   onSignIn,
   onMessage,
   isMessaging,
@@ -158,9 +157,10 @@ function ProfilePreviewModal({
   isInvited: boolean;
   isInviting: boolean;
   isAnonymous: boolean;
-  onShortlist: () => void;
+  onFavorite: () => void;
   onInterview: () => void;
-  isShortlisted: boolean;
+  isFavorited: boolean;
+  isFavoritePending: boolean;
   onSignIn?: () => void;
   onMessage?: () => void;
   isMessaging?: boolean;
@@ -499,21 +499,21 @@ function ProfilePreviewModal({
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Favorite star (modal) */}
             <button
-              disabled={isInvited}
-              onClick={() => { onShortlist(); onClose(); }}
-              title={isShortlisted ? "Remove from favorites" : "Add to favorites"}
-              aria-label={isShortlisted ? "Remove from favorites" : "Add to favorites"}
-              aria-pressed={isShortlisted}
+              disabled={isFavoritePending}
+              onClick={onFavorite}
+              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              aria-pressed={isFavorited}
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-semibold border transition-colors flex items-center gap-2",
-                isShortlisted
+                isFavorited
                   ? "border-amber-400 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-900/20"
                   : "border-slate-200 dark:border-white/10 text-slate-500 hover:border-amber-400 hover:text-amber-500",
-                isInvited ? "opacity-40 cursor-not-allowed" : "",
+                isFavoritePending ? "opacity-50 cursor-not-allowed" : "",
               )}
             >
-              <Star className={cn("h-4 w-4", isShortlisted ? "fill-amber-400 text-amber-400" : "")} />
-              {isShortlisted ? "Favorited" : "Favorite"}
+              {isFavoritePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className={cn("h-4 w-4", isFavorited ? "fill-amber-400 text-amber-400" : "")} />}
+              {isFavorited ? "Favorited" : "Favorite"}
             </button>
             <div className="flex items-center gap-2">
               {!isAnonymous && !isInvited && (
@@ -522,7 +522,7 @@ function ProfilePreviewModal({
                   disabled={isInviting}
                   className="rounded-full border border-[#474ead] px-5 py-2 text-sm font-semibold text-[#474ead] hover:bg-[#474ead] hover:text-white disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Invite to Apply"}
+                  {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Request Interview"}
                 </button>
               )}
               {!isAnonymous && !fullProfile && (
@@ -587,18 +587,20 @@ function ResultRow({
   isInvited,
   isInviting,
   isAnonymous,
-  onShortlist,
+  onFavorite,
   onInterview,
-  isShortlisted,
+  isFavorited,
+  isFavoritePending,
   onPreview,
 }: {
   result: TalentResult;
   isInvited: boolean;
   isInviting: boolean;
   isAnonymous: boolean;
-  onShortlist: () => void;
+  onFavorite: () => void;
   onInterview: () => void;
-  isShortlisted: boolean;
+  isFavorited: boolean;
+  isFavoritePending: boolean;
   onPreview: () => void;
 }) {
   const { candidate } = result;
@@ -669,36 +671,31 @@ function ResultRow({
         </button>
 
         {/* Favorite (star toggle) */}
-      <button
-        disabled={isInvited}
-        onClick={onShortlist}
-        title={isShortlisted ? "Remove from favorites" : "Add to favorites"}
-        aria-label={isShortlisted ? "Remove from favorites" : "Add to favorites"}
-        aria-pressed={isShortlisted}
-        className={cn(
-          "rounded-[10px] p-[7px] border transition-colors duration-150 flex items-center justify-center shrink-0",
-          isShortlisted
-            ? "border-amber-400 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-500"
-            : "border-slate-200 dark:border-slate-600 text-slate-400 hover:border-amber-400 hover:text-amber-500",
-          isInvited ? "opacity-40 cursor-not-allowed" : "",
-        )}
-      >
-        <Star
-          className={cn(
-            "h-4 w-4",
-            isShortlisted ? "fill-amber-400 text-amber-400" : "",
-          )}
-        />
-      </button>
-      {!isAnonymous && !isInvited && (
         <button
-          onClick={onInterview}
-          disabled={isInviting}
-          className="rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white hover:bg-[#363c87] disabled:opacity-60 flex items-center gap-1.5"
+          onClick={onFavorite}
+          disabled={isFavoritePending}
+          title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+          aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={isFavorited}
+          className={cn(
+            "rounded-[10px] p-[7px] border transition-colors duration-150 flex items-center justify-center shrink-0",
+            isFavorited
+              ? "border-amber-400 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-500"
+              : "border-slate-200 dark:border-slate-600 text-slate-400 hover:border-amber-400 hover:text-amber-500",
+            isFavoritePending ? "opacity-50 cursor-not-allowed" : "",
+          )}
         >
-          {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Invite to Apply"}
+          {isFavoritePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className={cn("h-4 w-4", isFavorited ? "fill-amber-400 text-amber-400" : "")} />}
         </button>
-      )}
+        {!isAnonymous && !isInvited && (
+          <button
+            onClick={onInterview}
+            disabled={isInviting}
+            className="rounded-[10px] bg-[#474ead] px-4 py-[7px] text-[13.5px] font-semibold text-white hover:bg-[#363c87] disabled:opacity-60 flex items-center gap-1.5"
+          >
+            {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Request Interview"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -743,11 +740,10 @@ export default function HireTalentPage() {
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [invitingId, setInvitingId] = useState<string | null>(null);
-  const [shortlistTarget, setShortlistTarget] = useState<ClientTalentInviteTarget | null>(null);
-  const { shortlists } = useClientShortlists(isClient);
-  const shortlistedTalentIds = useMemo(
-    () => new Set(shortlists.flatMap((item) => [item.talentId, item.candidateId].filter(Boolean) as string[])),
-    [shortlists],
+  const { favorites, toggle: toggleFavorite } = useClientFavorites(isClient);
+  const favoritedTalentIds = useMemo(
+    () => new Set(favorites.map((favorite) => favorite.talentId)),
+    [favorites],
   );
 
   // ── Profile preview sheet ──────────────────────────────────────────────────────
@@ -864,7 +860,7 @@ export default function HireTalentPage() {
         setCategoryFilter(null);
         setEngagementFilter("All");
       }
-      // After auth-restore: if the visitor had clicked Shortlist before signing up,
+      // After auth-restore: if the visitor had requested an interview before signing up,
       // surface a confirmation banner — do NOT auto-fire the invite.
       if (pendingTalentId && pendingTalentName) {
         setPendingInvite({
@@ -899,7 +895,7 @@ export default function HireTalentPage() {
             });
           }
         } catch {
-          // Non-critical — silently ignore; the user can still see the Shortlist button
+          // Non-critical — silently ignore; the user can still request an interview.
         }
       }
     },
@@ -916,7 +912,7 @@ export default function HireTalentPage() {
   const didAutoSearch = useRef(false);
 
   // ── Restore pending search state after authentication ────────────────────────
-  // When a visitor clicks Shortlist while logged out, their search params +
+  // When a visitor requests an interview while logged out, their search params +
   // intended talentId are saved to sessionStorage. After they sign up/log in
   // (same tab), this effect fires, restores the search, and queues a confirmation
   // prompt. sessionStorage.removeItem runs immediately to prevent double-fire.
@@ -1026,21 +1022,24 @@ export default function HireTalentPage() {
     openPicker(talentUserId, talentName);
   }
 
-  function handleShortlist(talentUserId: string, talentName: string) {
+  function handleFavorite(talentUserId: string, talentName: string) {
     if (isAnonymous) {
-      sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          query: searchText,
-          engagementType,
-          pendingTalentId: talentUserId,
-          pendingTalentName: talentName,
-        } satisfies PendingSearchState),
-      );
       setShowSignUp(true);
       return;
     }
-    setShortlistTarget({ id: talentUserId, idType: "talentUser", name: talentName });
+    const isFavorited = favoritedTalentIds.has(talentUserId);
+    toggleFavorite.mutate(
+      { talentUserId, isFavorited },
+      {
+        onError: (error) => {
+          toast({
+            title: "Couldn't update favorite",
+            description: error.message || `Please try again to update ${talentName}.`,
+            variant: "destructive",
+          });
+        },
+      },
+    );
   }
 
   // ── Job picker — open, confirm, close ─────────────────────────────────────────
@@ -1391,10 +1390,14 @@ export default function HireTalentPage() {
                     isAnonymous={isAnonymous}
                     isInvited={invitedIds.has(r.userId)}
                     isInviting={invitingId === r.userId}
-                    isShortlisted={shortlistedTalentIds.has(r.userId)}
+                    isFavorited={favoritedTalentIds.has(r.userId)}
+                    isFavoritePending={
+                      toggleFavorite.isPending &&
+                      toggleFavorite.variables?.talentUserId === r.userId
+                    }
                     onPreview={() => setPreviewResult(r)}
-                    onShortlist={() =>
-                      handleShortlist(
+                    onFavorite={() =>
+                      handleFavorite(
                         r.userId,
                         getResultName(r.candidate),
                       )
@@ -1445,7 +1448,7 @@ export default function HireTalentPage() {
               </div>
             )}
 
-            {/* Sign-up nudge for anonymous visitors who haven't clicked Shortlist yet */}
+            {/* Sign-up nudge for anonymous visitors who want to save or contact talent */}
             {isAnonymous && !searchMutation.isPending && searchResults && filteredResults.length > 0 && (
               <p className="mt-8 text-center text-[13.5px] text-slate-400 dark:text-slate-500">
                 Ready to invite?{" "}
@@ -1455,7 +1458,7 @@ export default function HireTalentPage() {
                 >
                   Create a free account
                 </button>{" "}
-                to shortlist and send invitations.
+                to save favorites and request interviews.
               </p>
             )}
 
@@ -1487,7 +1490,7 @@ export default function HireTalentPage() {
       <LoginDialog open={showLogin} onOpenChange={setShowLogin} />
 
       {/* ── Job picker modal ─────────────────────────────────────────────────────
-          Shown when a client clicks Invite/Shortlist on a talent card.
+          Shown when a client requests an interview with a talent card.
           Branches on the count of their open approved job postings:
             0 → "Post a job first" CTA
             1 → single-confirm (no list needed)
@@ -1728,11 +1731,6 @@ export default function HireTalentPage() {
           document.body,
         )}
 
-      <ClientTalentShortlistDialog
-        target={shortlistTarget}
-        onClose={() => setShortlistTarget(null)}
-      />
-
       {/* ── Profile preview modal ── */}
       <ProfilePreviewModal
         result={previewResult}
@@ -1741,10 +1739,15 @@ export default function HireTalentPage() {
         isAnonymous={isAnonymous}
         isInvited={previewResult ? invitedIds.has(previewResult.userId) : false}
         isInviting={previewResult ? invitingId === previewResult.userId : false}
-        isShortlisted={previewResult ? shortlistedTalentIds.has(previewResult.userId) : false}
-        onShortlist={() => {
+        isFavorited={previewResult ? favoritedTalentIds.has(previewResult.userId) : false}
+        isFavoritePending={
+          Boolean(previewResult) &&
+          toggleFavorite.isPending &&
+          toggleFavorite.variables?.talentUserId === previewResult?.userId
+        }
+        onFavorite={() => {
           if (!previewResult) return;
-          handleShortlist(
+          handleFavorite(
             previewResult.userId,
             getResultName(previewResult.candidate),
           );
@@ -1758,7 +1761,8 @@ export default function HireTalentPage() {
         }}
         onSignIn={() => {
           if (!previewResult) return;
-          // Save pending invite state so after login the shortlist flow resumes.
+          // Save the pending interview request so the existing invitation flow
+          // can resume after authentication.
           sessionStorage.setItem(
             STORAGE_KEY,
             JSON.stringify({

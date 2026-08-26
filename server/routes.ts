@@ -1581,6 +1581,33 @@ export async function registerRoutes(
     console.warn("⚠️  approval workflow migration skipped:", migErr.message);
   }
 
+  // ── One-time safe migration: private Client talent favorites ──────────────
+  // Favorites are deliberately independent from job_submissions and jobs. They
+  // are a Client-owned bookmark only, never a pipeline state or notification.
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS client_talent_favorites (
+        id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        client_id  varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        talent_id  varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at timestamp NOT NULL DEFAULT NOW(),
+        CONSTRAINT client_talent_favorites_client_talent_unique
+          UNIQUE (client_id, talent_id)
+      )
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_client_talent_favorites_client_id
+        ON client_talent_favorites (client_id)
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_client_talent_favorites_talent_id
+        ON client_talent_favorites (talent_id)
+    `);
+    console.log("✅ Migration: client_talent_favorites table ready");
+  } catch (migErr: any) {
+    console.warn("⚠️  client talent favorites migration skipped:", migErr.message);
+  }
+
   // ── One-time safe migration: application method / link ────────────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link text`);
@@ -14776,6 +14803,108 @@ export async function registerRoutes(
       return res.json({ invitedIds: result.rows.map((r: any) => r.talent_id) });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Private Client favorites ───────────────────────────────────────────────
+  // Favorites are intentionally not job-specific. Do not convert them into
+  // shortlists, invitations, submissions, messages, or notifications.
+  app.get("/api/client/favorites", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      const result = await query(
+        `SELECT id,
+                talent_id AS "talentId",
+                created_at AS "createdAt"
+           FROM client_talent_favorites
+          WHERE client_id = $1
+          ORDER BY created_at DESC`,
+        [clientId],
+      );
+      return res.json({ favorites: result.rows });
+    } catch (err: any) {
+      console.error("GET /api/client/favorites error:", err);
+      return res.status(500).json({ error: "Failed to load favorites" });
+    }
+  });
+
+  app.post("/api/client/favorites", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      const talentUserId = req.body?.talentUserId;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      if (
+        typeof talentUserId !== "string" ||
+        !talentUserId.trim() ||
+        talentUserId.length > 200 ||
+        talentUserId === clientId
+      ) {
+        return res.status(400).json({ error: "A valid talent user ID is required" });
+      }
+
+      // Only linked talent accounts can be favorited. This prevents a Client
+      // from using this private relationship as an arbitrary user bookmark.
+      const talent = await query(
+        `SELECT u.id
+           FROM users u
+          WHERE u.id = $1
+            AND u.role = 'talent'
+            AND EXISTS (
+              SELECT 1 FROM candidates c WHERE c.user_id = u.id
+            )
+          LIMIT 1`,
+        [talentUserId],
+      );
+      if (!talent.rows.length) {
+        return res.status(404).json({ error: "Talent profile not found" });
+      }
+
+      const inserted = await query(
+        `INSERT INTO client_talent_favorites (client_id, talent_id)
+         VALUES ($1, $2)
+         ON CONFLICT (client_id, talent_id) DO NOTHING
+         RETURNING id, talent_id AS "talentId", created_at AS "createdAt"`,
+        [clientId, talentUserId],
+      );
+      if (inserted.rows.length) {
+        return res.status(201).json({ ...inserted.rows[0], alreadyFavorited: false });
+      }
+
+      const existing = await query(
+        `SELECT id, talent_id AS "talentId", created_at AS "createdAt"
+           FROM client_talent_favorites
+          WHERE client_id = $1 AND talent_id = $2`,
+        [clientId, talentUserId],
+      );
+      return res.json({ ...existing.rows[0], alreadyFavorited: true });
+    } catch (err: any) {
+      console.error("POST /api/client/favorites error:", err);
+      return res.status(500).json({ error: "Failed to save favorite" });
+    }
+  });
+
+  app.delete("/api/client/favorites/:talentUserId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      const talentUserId = req.params.talentUserId;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      if (!talentUserId || talentUserId.length > 200) {
+        return res.status(400).json({ error: "A valid talent user ID is required" });
+      }
+
+      const result = await query(
+        `DELETE FROM client_talent_favorites
+          WHERE client_id = $1 AND talent_id = $2
+          RETURNING id`,
+        [clientId, talentUserId],
+      );
+      if (!result.rows.length) return res.status(404).json({ error: "Favorite not found" });
+      return res.status(204).send();
+    } catch (err: any) {
+      console.error("DELETE /api/client/favorites error:", err);
+      return res.status(500).json({ error: "Failed to remove favorite" });
     }
   });
 

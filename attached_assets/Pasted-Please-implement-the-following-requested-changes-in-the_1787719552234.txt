@@ -1,0 +1,938 @@
+Please implement the following requested changes in the existing **connect-onspot** codebase.
+
+Before changing anything, inspect the current implementation and reuse existing routes, components, APIs, models, helpers, and workflows whenever possible.
+
+Do NOT build duplicate parallel systems if the functionality already exists.
+
+Do NOT make unrelated UI redesigns.
+
+Preserve existing authorization, privacy, invitation, application, messaging, and job-approval behavior.
+
+---
+
+# 1. Rename Client Dashboard sidebar labels
+
+The current Client sidebar is implemented in:
+
+```text
+client/src/components/ClientLayout.tsx
+```
+
+Update the visible labels only as follows:
+
+```text
+OnSpot Talent      → Find Talent
+Client Projects    → Projects
+Client Management  → Team
+```
+
+Keep the existing icons unless there is a clear reason to change them.
+
+Preserve the existing routes unless a route itself is incorrect.
+
+Expected result:
+
+```text
+Core Modules
+- Dashboard
+- Find Talent
+- Messages
+- Projects
+- Performance
+
+Management
+- Team
+- Contracts
+- Payments
+- Billing
+- ROI Analytics
+```
+
+Important:
+
+* Do not leave stale versions of these labels elsewhere in Client navigation.
+* Search for other Client-facing occurrences of:
+
+  * `OnSpot Talent`
+  * `Client Projects`
+  * `Client Management`
+* Rename them where they represent the same dashboard/navigation concepts.
+* Do not rename unrelated marketing copy just because it contains the same words.
+
+---
+
+# 2. Fix formatting of job descriptions in the Review & Post screen and published job posts
+
+There is a formatting bug where saved rich-text HTML is displayed literally.
+
+Example of the broken output:
+
+```html
+<p><strong>Role Overview</strong>&nbsp;</p><p><br></p>...
+```
+
+The user should see formatted content, not raw tags.
+
+The relevant job creation files include:
+
+```text
+client/src/pages/JobFormPage.tsx
+client/src/components/job-form/JobDescriptionStep.tsx
+client/src/components/job-form/JobRequirementsStep.tsx
+client/src/components/job-form/JobReviewStep.tsx
+client/src/pages/FindWorkJob.tsx
+client/src/lib/jobFormUtils.ts
+```
+
+## First inspect the data flow
+
+Determine exactly which fields are:
+
+* plain text
+* Quill HTML
+* legacy HTML
+* arrays converted to HTML/text
+
+Inspect at minimum:
+
+```text
+description
+responsibilities
+requirements
+preferredQualifications
+whatWeOffer
+```
+
+and any equivalent DB fields mapped by `jobToFormData()` / `buildPayload()`.
+
+## Fix the Review & Post preview
+
+`JobReviewStep.tsx` currently displays the main description as regular React text.
+
+If the stored description contains legitimate rich HTML, render it as formatted HTML instead of printing the tags.
+
+The preview must correctly show:
+
+* paragraphs
+* line breaks
+* bold text
+* ordered lists
+* unordered lists
+* list items
+
+Use the same visual typography conventions as the published job page where practical.
+
+Do NOT simply strip all formatting and concatenate the text.
+
+Do NOT blindly render unsafe arbitrary HTML.
+
+Use the project's existing sanitization strategy if one exists. If none exists, introduce a small reusable sanitizer/helper appropriate for job-authored rich text and use it consistently.
+
+## Fix the published job page
+
+Audit:
+
+```text
+client/src/pages/FindWorkJob.tsx
+```
+
+The public job page already contains some HTML-aware rendering.
+
+Make sure ALL long-form job fields coming from the job editor are rendered consistently and never display literal HTML tags.
+
+In particular verify:
+
+```text
+About the Role / description
+Key Responsibilities
+Required Qualifications
+Preferred Qualifications
+What We Offer / compliance plan content
+```
+
+If a helper like `SectionBody`, `isHtml`, or another HTML renderer currently treats a whole HTML blob as one list item, fix it so proper Quill lists render as actual lists.
+
+Example:
+
+Stored:
+
+```html
+<ul>
+  <li>Manage prospects</li>
+  <li>Track opportunities</li>
+</ul>
+```
+
+Expected:
+
+* Manage prospects
+* Track opportunities
+
+NOT:
+
+```text
+<ul><li>Manage prospects</li>...
+```
+
+and not one giant bullet containing the entire HTML string.
+
+## Security requirement
+
+Do not make this fix by directly injecting unsanitized user-controlled HTML.
+
+Preserve legitimate formatting while preventing unsafe script/event-handler injection.
+
+---
+
+# 3. Add talent search/invite access from Client Job Postings
+
+The screenshot requests:
+
+> Add search for talents button in client job postings dashboard.
+> Clients should be able to invite these talents to apply in their job posts.
+
+The project already has a Client talent search workflow on:
+
+```text
+/hire-talent
+```
+
+and formal invitations already use:
+
+```text
+POST /api/client/invitations
+```
+
+Do NOT create a second independent talent-search backend.
+
+Do NOT create a second invitation model/table.
+
+Reuse the existing search and invitation architecture.
+
+## Desired Job Posting UI
+
+For each real Client-owned job posting, add a clear action such as:
+
+```text
+Find Talent
+```
+
+or:
+
+```text
+Invite Talent
+```
+
+Use the exact final wording consistently.
+
+The action should appear alongside the existing job actions such as:
+
+```text
+Close
+Edit
+View
+Delete
+```
+
+when appropriate.
+
+When clicked, take the client into the existing `/hire-talent` experience with the selected job context preselected.
+
+Recommended behavior:
+
+```text
+Client Job Posting
+      ↓
+Find Talent
+      ↓
+/hire-talent?jobId=<selected-job-id>
+      ↓
+Search matching talent
+      ↓
+Preview talent
+      ↓
+Invite to Apply
+      ↓
+Existing POST /api/client/invitations
+```
+
+You may use route state/query parameters/local state if needed, but keep direct URLs reload-safe where practical.
+
+## Job ownership/security
+
+The selected job must be:
+
+* owned by the authenticated client
+* a real posting, not a search scaffold
+* eligible for invitations according to the existing invitation readiness rules
+
+The backend must remain authoritative.
+
+Do not trust a `jobId` supplied by the browser without ownership validation.
+
+## Existing invitation rules must remain intact
+
+The repository already distinguishes:
+
+```text
+shortlist = private client planning
+formal invitation = actual invite sent to talent
+```
+
+Do NOT change that distinction.
+
+A shortlist must still NOT:
+
+* notify the talent
+* create an application
+* create an interview
+* unlock restricted workflow behavior
+
+A formal invitation should continue through the existing invitation route/workflow.
+
+---
+
+# 4. Make the talent action say “Invite to Apply” where appropriate
+
+The requested design shows a talent result with:
+
+```text
+Preview
+Invite to Apply
+```
+
+Currently the existing `/hire-talent` flow has actions such as:
+
+```text
+Preview
+Shortlist
+Interview
+```
+
+and the profile modal has:
+
+```text
+Shortlist this talent
+Interview this talent
+```
+
+Do not remove useful existing workflows globally unless required.
+
+Instead, when `/hire-talent` was opened from a specific Client Job Posting, provide a job-specific primary action:
+
+```text
+Invite to Apply
+```
+
+That should send the existing formal invitation for the preselected job.
+
+Recommended job-context UI:
+
+```text
+Talent Name     Available now · XX% AI-matched profile
+
+[ Preview ]  [ Invite to Apply ]
+```
+
+Shortlisting may remain available as a secondary action if appropriate.
+
+The formal invitation must continue to use:
+
+```text
+POST /api/client/invitations
+```
+
+and must respect existing MSA / invitation-readiness / duplicate-invite checks.
+
+If the applicant was already invited to the selected job, show a non-clickable state such as:
+
+```text
+Invited
+```
+
+Do not allow duplicate invitation records.
+
+---
+
+# 5. Preserve talent privacy and fix name display consistency
+
+The screenshot reports:
+
+> First name last name initial still not fully applied to all listed talents
+
+The intended display is:
+
+```text
+FirstName L.
+```
+
+Examples:
+
+```text
+John B.
+Julie S.
+Van Carlo L.
+Aaron T.
+```
+
+NOT:
+
+```text
+Rhod
+Russel
+Jan
+```
+
+when a last name exists.
+
+## Important privacy architecture
+
+Client-facing talent results are already sanitized server-side.
+
+Do NOT solve this only with frontend string manipulation.
+
+Inspect:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+and all Client-facing talent endpoints.
+
+The existing privacy invariant is that:
+
+* Client-facing endpoints must use a sanitizer.
+* Names are masked.
+* Email, phone, external contact URLs and similar PII must never be returned.
+
+Make the masked name function consistently produce:
+
+```text
+FirstName L.
+```
+
+when the system has a legitimate first and last name.
+
+Examples:
+
+```text
+Rhod D.
+Russel S.
+John Benedict A.
+Jan C.
+Aaron Tristan D.
+Julie S.
+Van Carlo L.
+```
+
+It should be:
+John A.
+Aaron D.
+
+Use the actual stored first/last-name boundaries where available.
+
+Do NOT derive a fake surname initial from an unrelated field.
+
+When the system genuinely lacks a last name, retain the safest existing fallback instead of fabricating one.
+
+## Apply consistently
+
+Audit all Client-facing talent displays, especially:
+
+```text
+/hire-talent result rows
+profile preview modal
+shortlist dialogs
+invite dialogs
+job-specific talent search
+```
+
+The same talent must not appear as:
+
+```text
+Jane S.
+```
+
+in one place and:
+
+```text
+Jane
+```
+
+in another.
+
+Use the server-sanitized display name as the single source of truth wherever possible.
+
+## Do not expose additional PII
+
+While fixing names, DO NOT expose:
+
+* email
+* phone
+* resume URL
+* LinkedIn
+* GitHub
+* portfolio
+* personal website
+* video URLs
+* password/auth fields
+
+Retain all current PII regression protections.
+
+Run the existing client-talent-search privacy tests.
+
+---
+
+# 6. Job approval notification for Clients
+
+The screenshot requests:
+
+> Job posts approved notification.
+> Clients or users should be able to receive notifications once their job posts have been approved by admin.
+
+Implement a real notification for the Client who owns the job.
+
+Do not hardcode another mock notification in `Dashboard.tsx`.
+
+The existing dashboard currently contains mock notification data. Replace or supplement it with real backend notifications where the notification UI is meant to represent actual system events.
+
+## Expected flow
+
+```text
+Client submits job
+       ↓
+job approval_status = pending
+       ↓
+Admin approves job
+       ↓
+backend detects transition to approved
+       ↓
+notification record created for owning Client
+       ↓
+Client dashboard notification UI shows it
+```
+
+Example notification text:
+
+```text
+Your job post “Customer Support Specialist” was approved.
+```
+
+Possible secondary text:
+
+```text
+It is now live and available to applicants.
+```
+
+## Important rules
+
+Only trigger when approval actually transitions into the approved state.
+
+Do not generate duplicate notifications every time an already-approved job is edited.
+
+The backend should handle the event.
+
+Do not rely on the Admin browser to manually call a separate “create notification” endpoint after approval.
+
+## Notification behavior
+
+Use the project's existing notification schema/service if available.
+
+Do not create a duplicate notification subsystem.
+
+The Client should be able to:
+
+* see unread/read state if existing notification architecture supports it
+* see the approved job title
+* know approximately when approval happened
+* click through to the relevant job/job management page if notification deep links are supported
+
+If job rejection notifications already exist, preserve them and keep the behavior consistent.
+
+---
+
+# 7. Make Requirements subheadings stand out more
+
+The screenshot specifically requests stronger subheadings for:
+
+```text
+Minimum educational attainment
+Required Skills
+Availability
+Compensation
+```
+
+Inspect the current Requirements step before implementing.
+
+The current implementation in:
+
+```text
+client/src/components/job-form/JobRequirementsStep.tsx
+```
+
+has sections such as Required Qualifications, Preferred Qualifications, Compensation, etc.
+
+If the requested fields already exist under slightly different names, update their presentation rather than creating duplicates.
+
+If some requested sections existed in an earlier version and are now represented by newer fields, map the requested visual hierarchy onto the current form.
+
+## Styling target
+
+Make section/subsection headings clearly distinguishable from field labels.
+
+Use something visually stronger than tiny muted uppercase text.
+
+Recommended characteristics:
+
+```text
+font-semibold or font-bold
+text-sm or text-base
+strong text color
+reasonable top/bottom spacing
+```
+
+Avoid oversized headings that compete with the main:
+
+```text
+Requirements
+```
+
+page heading.
+
+For example, instead of:
+
+```text
+COMPENSATION
+```
+
+at an almost caption-sized weight, use something closer to:
+
+```text
+Compensation
+```
+
+with:
+
+```text
+text-sm font-bold text-foreground
+```
+
+or equivalent existing design-system styles.
+
+Apply the same hierarchy consistently to:
+
+* Minimum educational attainment
+* Required Skills
+* Availability
+* Compensation
+
+Do not make ordinary input labels equally bold/large.
+
+---
+
+# 8. Calendar/interview scheduling recommendation and implementation direction
+
+The screenshot requests:
+
+> Provide suggestions on what calendar (e.g. Google Meet, Teams), we can use to schedule interviews, otherwise we'll have to build our own.
+
+Do NOT build a new calendar platform in this task unless an existing scheduling implementation is broken and only requires a small fix.
+
+First inspect the repository's current interview/invitation scheduling behavior.
+
+The existing invitation flow already supports:
+
+```ts
+proposedTimes
+```
+
+including timezone information when sending an invitation.
+
+Preserve that.
+
+## Recommendation
+
+Use **Google Calendar + Google Meet** as the preferred first integration.
+
+Reasons:
+
+* simple browser-based experience
+* automatic Meet link generation when Calendar API event conferencing is enabled
+* broad compatibility for clients and talent
+* avoids building a custom video-meeting system
+* timezone handling is mature
+
+Microsoft Teams should be a later optional integration for Clients whose organizations use Microsoft 365.
+
+Recommended phased approach:
+
+```text
+Phase 1
+- Keep existing internal proposed-times flow
+- Add Google Calendar integration
+- On confirmed interview, optionally create Calendar event
+- Generate Google Meet link
+- Save external event ID + meeting URL
+
+Phase 2
+- Add Microsoft Outlook/Teams via Microsoft Graph
+```
+
+Do not replace the existing interview workflow with raw Google Calendar records.
+
+The internal system must remain the source of truth for:
+
+* invitation ownership
+* applicant/talent
+* client
+* job
+* interview status
+* proposed/confirmed time
+* timezone
+
+External calendars should synchronize the confirmed interview.
+
+## If implementing Google Calendar now
+
+Only proceed if the necessary OAuth/integration infrastructure already exists or can be added cleanly.
+
+Store:
+
+* provider
+* external event ID
+* meeting URL
+* calendar sync status
+
+Never store Google credentials in frontend code.
+
+If there is no existing Google OAuth connector, document the required environment variables/scopes instead of hardcoding credentials.
+
+---
+
+# 9. Client Job Postings page must remain coherent
+
+The requested “Find Talent” action needs to live on the actual Client job-posting dashboard.
+
+First identify the current component that renders Client job postings.
+
+Do not assume `/projects` is the Job Postings page: the current `/projects` route is still a placeholder.
+
+Search for the real UI by identifying:
+
+* `Job Postings`
+* `Post a Job`
+* `/api/client/jobs`
+* edit links to `/client/jobs/:jobId/edit`
+
+If the job-post list currently lives inside `ClientProfile` or another dashboard page, update that existing component.
+
+Do not create a second competing “Job Postings” dashboard.
+
+Ensure the flow still supports:
+
+```text
+Post a Job
+Edit
+View
+Close
+Delete
+Find Talent / Invite Talent
+```
+
+according to permissions/status.
+
+---
+
+# 10. Routing cleanup needed for Client Job forms
+
+Audit current route handling.
+
+Client job form routes exist as:
+
+```text
+/client/jobs/new
+/client/jobs/:jobId/edit
+```
+
+Make sure these work consistently while authenticated as Client and maintain the Client experience.
+
+If they currently bypass the Client layout or render inconsistently because of `PublicRouter` / `ClientRouter` route ordering, fix the routing architecture cleanly.
+
+Do not break:
+
+* Admin JobFormPage mode
+* public jobs
+* talent routes
+* client auth protection
+
+---
+
+# Acceptance criteria
+
+The task is complete only when all of the following are true.
+
+## Client navigation
+
+* Sidebar shows `Find Talent`.
+* Sidebar shows `Projects`.
+* Sidebar shows `Team`.
+* Old labels are not shown in equivalent Client navigation.
+
+## Job rich text
+
+* Review & Post no longer displays `<p>`, `<strong>`, `<ul>`, `<li>`, `<br>` as text.
+* Bold formatting displays as bold.
+* Lists display as proper lists.
+* Paragraph spacing remains readable.
+* Published job page renders the same content correctly.
+* Unsafe HTML is sanitized.
+
+## Client Job Postings
+
+* Each eligible Client job has a Find/Invite Talent action.
+* Clicking it searches talent in the context of that job.
+* The selected job is preserved.
+* Formal invitation uses the existing invitation endpoint.
+* Duplicate invites are blocked.
+* Client cannot invite through another Client's job.
+
+## Talent result UI
+
+When job context is present:
+
+* `Preview` is available.
+* `Invite to Apply` is available.
+* Invited state is visible.
+* Existing Shortlist behavior remains semantically separate.
+
+## Name masking
+
+For candidates with both names:
+
+```text
+FirstName L.
+```
+
+is shown consistently.
+
+The fix must be server-side or server-authoritative, not a visual-only frontend patch.
+
+PII remains redacted.
+
+## Job approval notification
+
+When Admin changes a Client job from pending to approved:
+
+* a real notification record is created
+* correct Client receives it
+* notification references the job/title
+* duplicate notification is not created on unrelated edits
+* Client notification UI displays it
+
+## Requirements styling
+
+These requested areas visually stand out as subheadings:
+
+```text
+Minimum educational attainment
+Required Skills
+Availability
+Compensation
+```
+
+without overpowering the page title.
+
+## Interview/calendar
+
+* Existing interview proposal/timezone behavior remains functional.
+* Document Google Calendar + Google Meet as the primary external-calendar integration path.
+* Do not introduce an unnecessary custom calendar/video-conferencing subsystem.
+
+---
+
+# Regression requirements
+
+Run existing tests, especially anything covering:
+
+```text
+client talent search
+PII sanitization
+shortlists
+formal invitations
+interview scheduling/timezones
+job creation/edit
+job approval
+notifications
+```
+
+The repository already contains important privacy and invitation invariants. Do not weaken them.
+
+Also manually verify:
+
+```text
+1. Login as Client.
+2. Confirm renamed sidebar items.
+3. Open Client Job Postings.
+4. Open/create a job with rich text.
+5. Enter bold paragraphs and bullet lists.
+6. Reach Review & Post.
+7. Confirm formatting is rendered, not printed as HTML.
+8. Submit job.
+9. Approve it as Admin.
+10. Return as Client and verify approval notification.
+11. Click Find Talent from that job.
+12. Search talent.
+13. Verify every candidate name follows FirstName + last initial when available.
+14. Preview candidate.
+15. Invite candidate to that exact job.
+16. Confirm invitation appears for Talent.
+17. Attempt a duplicate invitation and confirm it is prevented.
+18. Verify no Client-facing endpoint exposes candidate email/phone/external contact URLs.
+```
+
+---
+
+# Before changing code
+
+First summarize:
+
+1. Which component currently renders Client Job Postings.
+2. Which route displays it.
+3. Which fields contain HTML and which contain plain text.
+4. Why the Review & Post screen currently prints raw tags.
+5. How the current Client talent search works.
+6. How the current formal invitation flow works.
+7. Where Client talent names are sanitized/masked.
+8. What existing notification table/service exists.
+9. Which Admin job approval route performs the approval.
+10. What existing interview scheduling model/API exists.
+
+Then implement the changes.
+
+---
+
+# After implementation
+
+Return a concise engineering summary with:
+
+```text
+Files changed
+Client sidebar labels changed
+Rich-text root cause
+Rich-text rendering/sanitization fix
+Client Job Postings component/route
+Find Talent → Invite to Apply flow
+How selected job context is carried
+Invitation endpoint reused
+Duplicate invite protection
+Name-masking fix
+PII protections retained
+Job approval notification implementation
+Requirements heading changes
+Calendar recommendation
+Environment variables, if any
+Tests run
+Manual verification steps
+```
+
+Do not claim an item is fixed unless you verified its actual code path.

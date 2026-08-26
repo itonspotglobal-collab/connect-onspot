@@ -403,7 +403,7 @@ function TalentRouter() {
   useEffect(() => {
     if (isLoading) return;
     if (user && user.role !== "talent") {
-      navigate(user.role === "client" ? "/dashboard" : "/");
+      navigate(user.role === "client" ? "/hire-talent" : "/");
     } else if (!user && !talentOnlyAuth) {
       navigate("/get-hired");
     }

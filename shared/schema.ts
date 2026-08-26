@@ -285,6 +285,19 @@ export const jobs = pgTable("jobs", {
   index("idx_jobs_status_approval").on(table.status, table.approvalStatus),
 ]);
 
+// Private Client bookmarks. Favorites intentionally have no job or submission
+// relationship: saving a talent here must never enter the hiring pipeline.
+export const clientTalentFavorites = pgTable("client_talent_favorites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  talentId: varchar("talent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("client_talent_favorites_client_talent_unique").on(table.clientId, table.talentId),
+  index("idx_client_talent_favorites_client_id").on(table.clientId),
+  index("idx_client_talent_favorites_talent_id").on(table.talentId),
+]);
+
 // Legacy freelance marketplace schema — retained temporarily to keep Publish
 // additive-only. Application routes do not use these models; they remain here
 // solely so existing production data and relationships are never scheduled for

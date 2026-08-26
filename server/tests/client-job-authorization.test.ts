@@ -153,6 +153,7 @@ async function createFixtures() {
 async function destroyFixtures() {
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
+  await query(`DELETE FROM client_talent_favorites WHERE client_id = $1 OR talent_id = $1`, [CLIENT_ID]).catch(() => {});
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
   await query(`DELETE FROM notifications WHERE user_id = $1`, [TALENT_ID]).catch(() => {});
   await query(`DELETE FROM candidates WHERE id = $1`, [CANDIDATE_ID]).catch(() => {});
@@ -235,6 +236,83 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(saved.status, 200, JSON.stringify(saved.json));
     assert.equal(saved.json.companyName, "Client Test Company");
     assert.equal(saved.json.about, "Updated through the client self-service route.");
+  });
+
+  it("persists private favorites without creating hiring-pipeline side effects", async () => {
+    const deniedTalent = await request(server, "GET", "/api/client/favorites", talentToken);
+    assert.equal(deniedTalent.status, 403, "talent sessions must not read client favorites");
+
+    const initial = await request(server, "GET", "/api/client/favorites", clientToken);
+    assert.equal(initial.status, 200, JSON.stringify(initial.json));
+    assert.ok(Array.isArray(initial.json.favorites));
+    assert.ok(!initial.json.favorites.some((favorite: any) => favorite.talentId === TALENT_ID));
+
+    const submissionBaseline = await query(
+      `SELECT COUNT(*)::int AS count FROM job_submissions WHERE client_id = $1 AND talent_id = $2`,
+      [CLIENT_ID, TALENT_ID],
+    );
+    const notificationBaseline = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+
+    const favorite = await request(server, "POST", "/api/client/favorites", clientToken, {
+      talentUserId: TALENT_ID,
+    });
+    assert.equal(favorite.status, 201, JSON.stringify(favorite.json));
+    assert.equal(favorite.json.talentId, TALENT_ID);
+    assert.equal(favorite.json.alreadyFavorited, false);
+
+    const duplicate = await request(server, "POST", "/api/client/favorites", clientToken, {
+      talentUserId: TALENT_ID,
+    });
+    assert.equal(duplicate.status, 200, JSON.stringify(duplicate.json));
+    assert.equal(duplicate.json.alreadyFavorited, true);
+
+    const list = await request(server, "GET", "/api/client/favorites", clientToken);
+    assert.equal(list.status, 200, JSON.stringify(list.json));
+    assert.equal(list.json.favorites.filter((item: any) => item.talentId === TALENT_ID).length, 1);
+
+    const otherClientList = await request(server, "GET", "/api/client/favorites", otherClientToken);
+    assert.equal(otherClientList.status, 200, JSON.stringify(otherClientList.json));
+    assert.ok(!otherClientList.json.favorites.some((item: any) => item.talentId === TALENT_ID));
+    const otherClientDelete = await request(
+      server,
+      "DELETE",
+      `/api/client/favorites/${encodeURIComponent(TALENT_ID)}`,
+      otherClientToken,
+    );
+    assert.equal(otherClientDelete.status, 404, "a different client cannot remove this favorite");
+
+    const submissionAfterFavorite = await query(
+      `SELECT COUNT(*)::int AS count FROM job_submissions WHERE client_id = $1 AND talent_id = $2`,
+      [CLIENT_ID, TALENT_ID],
+    );
+    const notificationAfterFavorite = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      [TALENT_ID],
+    );
+    assert.equal(
+      submissionAfterFavorite.rows[0].count,
+      submissionBaseline.rows[0].count,
+      "a favorite must not create an application, shortlist, or invitation",
+    );
+    assert.equal(
+      notificationAfterFavorite.rows[0].count,
+      notificationBaseline.rows[0].count,
+      "a favorite must not notify talent",
+    );
+
+    const removed = await request(
+      server,
+      "DELETE",
+      `/api/client/favorites/${encodeURIComponent(TALENT_ID)}`,
+      clientToken,
+    );
+    assert.equal(removed.status, 204, JSON.stringify(removed.json));
+    const afterRemoval = await request(server, "GET", "/api/client/favorites", clientToken);
+    assert.equal(afterRemoval.status, 200, JSON.stringify(afterRemoval.json));
+    assert.ok(!afterRemoval.json.favorites.some((item: any) => item.talentId === TALENT_ID));
   });
 
   it("lets a client create and edit their own job, but not another client's job", async () => {

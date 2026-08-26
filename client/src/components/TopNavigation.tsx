@@ -296,7 +296,7 @@ export function TopNavigation() {
   const isTalentLoggedIn = !!(talentAuth || user?.role === "talent");
   const isClientLoggedIn = !!(user?.role === "client");
   const getHomeRoute = () => {
-    if (user?.role === "client") return "/dashboard";
+    if (user?.role === "client") return "/hire-talent";
     if (user?.role === "admin") return "/admin/dashboard";
     if (user?.role === "talent" || talentAuth) return "/my-applications";
     return "/";
