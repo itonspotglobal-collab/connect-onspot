@@ -475,8 +475,14 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
               <>
                 {!isClientMode && !isEditing && (
                   <div className="mb-6 rounded-xl border border-border bg-muted/40 p-4">
-                    <Label htmlFor="admin-client-select" className="text-sm font-semibold">
-                      Post on behalf of <span className="text-red-500">*</span>
+                    <h3 className="text-base font-bold leading-tight text-foreground">
+                      Post on behalf of
+                      <span className="ml-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#474ead]">
+                        Admin only
+                      </span>
+                    </h3>
+                    <Label htmlFor="admin-client-select" className="mt-3 block text-sm font-semibold">
+                      Client account <span className="text-red-500">*</span>
                     </Label>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Select the client that will own this job posting.

@@ -33,17 +33,17 @@ function SectionHeading({
   optional?: boolean;
 }) {
   return (
-    <p className="text-base font-bold text-foreground leading-snug">
-      <span className="text-muted-foreground font-semibold mr-1">
+    <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base font-bold leading-snug text-foreground">
+      <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-indigo-50 px-1.5 text-xs font-bold text-[#474ead] dark:bg-indigo-900/30 dark:text-indigo-300">
         {number}.
       </span>
-      {label}
+      <span>{label}</span>
       {optional && (
-        <span className="ml-2 text-sm font-normal text-muted-foreground">
+        <span className="text-sm font-normal text-muted-foreground">
           — optional
         </span>
       )}
-    </p>
+    </h3>
   );
 }
 
@@ -99,10 +99,10 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">
+      <h2 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-foreground mb-1.5">
         Requirements
       </h2>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-muted-foreground mb-9">
         Tell us what you’re looking for in a strong applicant. Your choices help
         us find the best match.
       </p>

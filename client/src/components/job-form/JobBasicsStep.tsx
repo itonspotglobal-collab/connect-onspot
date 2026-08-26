@@ -43,8 +43,10 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">The basics</h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <h2 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-foreground mb-1.5">
+        The Basics
+      </h2>
+      <p className="text-sm text-muted-foreground mb-7">
         Just enough to get your post live. You can polish the rest as you go.
       </p>
 
@@ -214,10 +216,10 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
       </div>
 
       {/* Company section */}
-      <div className="border-t border-dashed border-border pt-5 mb-5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
+      <div className="border-t border-dashed border-border pt-6 mb-5">
+        <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-[#474ead] mb-4">
           About the Company
-        </p>
+        </h3>
 
         <div className="mb-4">
           <Label htmlFor="basics-company">

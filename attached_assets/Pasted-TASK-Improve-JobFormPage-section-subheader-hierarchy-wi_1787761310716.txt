@@ -1,0 +1,106 @@
+TASK: Improve JobFormPage section/subheader hierarchy without changing any form behavior.
+
+This is a UI-only change.
+
+The existing JobFormPage and all of its create/edit/validation/submission behavior are currently working and must remain unchanged.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Before editing, inspect:
+
+- client/src/pages/JobFormPage.tsx
+- client/src/components/job-form/JobBasicsStep.tsx
+- client/src/components/job-form/JobDescriptionStep.tsx
+- client/src/components/job-form/JobRequirementsStep.tsx
+- client/src/components/job-form/JobReviewStep.tsx
+- existing shared typography/design patterns
+
+Do not change form state, validation, API calls, payloads, field names, step transitions, or submission logic.
+
+GOAL
+
+Make the section/subheaders inside the job form visually stand out more, especially Step 1 — Basics.
+
+Current examples include headings such as:
+
+- The basics
+- About the company
+- Requirements
+- Required Skills
+- Availability
+- other subsection headings inside each step
+
+The hierarchy currently feels too subtle and blends into surrounding field labels.
+
+REQUIRED DESIGN DIRECTION
+
+Improve visual hierarchy using existing OnSpot styling.
+
+Prefer small, scoped improvements such as:
+
+- slightly larger subsection heading typography
+- increased font weight
+- stronger text contrast
+- better spacing above/below section headings
+- subtle section separators where appropriate
+- optional small uppercase eyebrow/helper labels
+- consistent hierarchy between page title, step title, subsection title, field label, and helper text
+
+Step 1 should make these sections visually obvious:
+
+1. Post on behalf of — Admin only
+2. The Basics
+3. About the Company
+
+Do not turn every subsection into a heavy card.
+
+Keep the current clean/minimal layout.
+
+Do not perform a global typography redesign.
+
+DO NOT CHANGE
+
+- four-step flow
+- progress indicator
+- form dimensions
+- responsive layout except where needed for spacing
+- existing inputs
+- required/optional behavior
+- Admin "Post on behalf of"
+- Client company prefill
+- Save & Exit behavior as part of THIS task
+- create/edit APIs
+- validation
+- review page
+- job submission behavior
+
+ACCESSIBILITY
+
+Maintain proper heading hierarchy where practical.
+
+Do not fake headings using only visual styling if semantic heading elements are already appropriate.
+
+TEST
+
+Verify:
+
+1. Admin create job still works.
+2. Client create job still works.
+3. Edit job still works.
+4. Step navigation still works.
+5. Validation messages still appear correctly.
+6. Mobile/responsive layout remains usable.
+7. No form fields or values were changed.
+8. No API request changed.
+
+COMPLETION REPORT
+
+Report:
+
+- exact files modified
+- visual changes made
+- confirmation that no form logic changed
+- confirmation that create/edit/submit behavior remains unchanged
+- screenshots or manual verification of all four steps if available
+
+This task is visual hierarchy only. Do not refactor working JobFormPage logic.

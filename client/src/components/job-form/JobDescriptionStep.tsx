@@ -17,8 +17,10 @@ interface Props {
 export function JobDescriptionStep({ formData, updateField, errors }: Props) {
   return (
     <div>
-      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Describe the role</h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <h2 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-foreground mb-1.5">
+        Describe the Role
+      </h2>
+      <p className="text-sm text-muted-foreground mb-7">
         Write it the way you&apos;d explain it to a great candidate.
       </p>
 
