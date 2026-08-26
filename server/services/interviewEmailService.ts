@@ -394,6 +394,134 @@ export async function sendInterviewConfirmedEmailToClient(
   }
 }
 
+// ── Client counter-proposal notification email ────────────────────────────────
+
+export interface InterviewCounterEmailToClientOptions {
+  clientUserId: string;
+  talentUserId: string;   // resolved to display name only
+  jobTitle: string;
+  proposedTimes: InterviewTimeSlot[];
+  durationMinutes: number | null;
+  interviewType?: string;
+  roundNumber?: number | null;
+}
+
+/**
+ * Send a "talent has proposed alternative interview times — please respond"
+ * email to the client.
+ * Called fire-and-forget from the counter branch of
+ * PATCH /api/talent/interviews/:id/respond.
+ */
+export async function sendInterviewCounterEmailToClient(
+  opts: InterviewCounterEmailToClientOptions,
+): Promise<void> {
+  if (!isEmailServiceConfigured()) {
+    console.warn(
+      `[interviewEmailService] sendInterviewCounterEmailToClient: email service not configured — skipping for client ${opts.clientUserId}`,
+    );
+    return;
+  }
+
+  // Resolve client recipient
+  const clientResult = await query(
+    `SELECT email, first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+    [opts.clientUserId],
+  );
+  if (!clientResult.rows.length) {
+    console.warn(
+      `[interviewEmailService] sendInterviewCounterEmailToClient: no user row for client ${opts.clientUserId} — skipping`,
+    );
+    return;
+  }
+  const clientRow = clientResult.rows[0];
+  const clientEmail: string = clientRow.email;
+  const clientFirstName: string = clientRow.first_name ?? "there";
+  const clientFullName: string =
+    [clientRow.first_name, clientRow.last_name].filter(Boolean).join(" ") || undefined!;
+
+  // Resolve talent display name
+  const talentResult = await query(
+    `SELECT first_name, last_name FROM users WHERE id = $1 LIMIT 1`,
+    [opts.talentUserId],
+  );
+  const talentRow = talentResult.rows[0];
+  const talentName: string = talentRow
+    ? [talentRow.first_name, talentRow.last_name].filter(Boolean).join(" ") || "The talent"
+    : "The talent";
+
+  const safeJobTitle = escapeHtml(opts.jobTitle);
+  const typeLabel = opts.interviewType
+    ? opts.interviewType.charAt(0).toUpperCase() + opts.interviewType.slice(1)
+    : "Interview";
+  const round = opts.roundNumber ? ` (Round ${opts.roundNumber})` : "";
+  const duration = opts.durationMinutes ? `${opts.durationMinutes} minutes` : null;
+
+  const timeRows = opts.proposedTimes
+    .slice(0, 10)
+    .map((slot, i) => {
+      const label = formatInterviewTime(slot.start, slot.timezone || "UTC", true);
+      return `<li style="margin:4px 0;color:#25283d;font-size:15px;">Option ${i + 1}: ${escapeHtml(label)}</li>`;
+    })
+    .join("\n");
+
+  const durationLine = duration
+    ? `<p style="color:#444;font-size:15px;margin:8px 0;"><strong>Duration:</strong> ${escapeHtml(duration)}</p>`
+    : "";
+
+  const contentHtml = `
+  <h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">
+    Talent has proposed alternative interview times
+  </h1>
+  <p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escapeHtml(clientFirstName)},</p>
+  <p style="color:#444;font-size:15px;margin:12px 0;">
+    <strong>${escapeHtml(talentName)}</strong> was unable to make the originally proposed times for their
+    <strong>${escapeHtml(typeLabel)} interview${round}</strong> for
+    <strong>${safeJobTitle}</strong>, and has suggested the following alternative slots.
+    Please log in to the OnSpot portal to confirm or respond.
+  </p>
+  <p style="color:#25283d;font-size:15px;font-weight:600;margin:20px 0 8px;">Proposed alternative times (UTC)</p>
+  <ul style="margin:0;padding-left:20px;">
+    ${timeRows}
+  </ul>
+  ${durationLine}
+  <p style="color:#444;font-size:15px;margin:20px 0 8px;">
+    Log in to the <strong>OnSpot portal</strong> to accept one of these times or propose alternatives.
+  </p>
+  <p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
+    If you have any questions, contact us through the portal.
+  </p>
+`.trim();
+
+  const subject = `Interview rescheduled: ${opts.jobTitle}${round} — talent proposed new times`;
+
+  const rendered = renderApplicantEmail(
+    { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+    buildEmailContext({
+      applicantName: clientFullName,
+      email: clientEmail,
+      jobTitle: opts.jobTitle,
+    }),
+  );
+
+  const result = await sendApplicantEmail({
+    to: clientEmail,
+    toName: clientFullName,
+    subject: rendered.subject,
+    bodyHtml: rendered.bodyHtml,
+  });
+
+  if (!result.success) {
+    console.error(
+      `[interviewEmailService] sendInterviewCounterEmailToClient failed for client ${opts.clientUserId}:`,
+      result.error,
+    );
+  } else {
+    console.log(
+      `[interviewEmailService] Interview counter-proposal email sent to client ${clientEmail} for job "${opts.jobTitle}"`,
+    );
+  }
+}
+
 export interface InterviewProposalEmailOptions {
   talentUserId: string;
   jobTitle: string;

@@ -90,6 +90,7 @@ import { transitionJobApprovalStatus } from "./services/jobApprovalNotificationS
 import {
   sendInterviewConfirmedEmail,
   sendInterviewConfirmedEmailToClient,
+  sendInterviewCounterEmailToClient,
   sendInterviewProposalEmail,
 } from "./services/interviewEmailService.js";
 import {
@@ -16454,6 +16455,7 @@ export async function registerRoutes(
       interviewType: string | undefined;
       roundNumber: number | null;
     } | null = null;
+    let counterProposedTimes: any[] | null = null;
     const txClient = await pool.connect();
     try {
       await txClient.query("BEGIN");
@@ -16569,6 +16571,7 @@ export async function registerRoutes(
           await txClient.query("ROLLBACK");
           return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
         }
+        counterProposedTimes = normalized;
         const nextCount = Number(interview.proposal_exchange_count ?? 0) + 1;
         await txClient.query(
           `UPDATE interviews
@@ -16637,6 +16640,21 @@ export async function registerRoutes(
             console.error("client interview confirmation email failed:", e),
           );
         }
+      }
+
+      // Fire-and-forget counter-proposal email to client when talent counters
+      if (action === "counter" && interview.client_id && counterProposedTimes) {
+        sendInterviewCounterEmailToClient({
+          clientUserId: interview.client_id,
+          talentUserId: userId,
+          jobTitle: interview.job_title,
+          proposedTimes: counterProposedTimes,
+          durationMinutes: interview.duration_minutes ?? null,
+          interviewType: interview.interview_type ?? undefined,
+          roundNumber: interview.round_number ?? null,
+        }).catch((e: any) =>
+          console.error("client interview counter-proposal email failed:", e),
+        );
       }
 
       const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);
