@@ -1,0 +1,985 @@
+The previous implementation did NOT satisfy the requested changes. I need you to fix the remaining issues exactly as described below.
+
+Do not reinterpret the requirements.
+
+Do not redirect the Client to `/hire-talent` for the job-specific talent search.
+
+Do not leave any of the old Client sidebar labels unchanged.
+
+Do not claim the task is complete until you verify the actual rendered UI.
+
+---
+
+# ISSUE 1 — Job Create/Edit Review still displays raw HTML
+
+This is still broken.
+
+On the Job Create/Edit flow, Step 4:
+
+```text
+Review & post
+```
+
+the job description is still displayed like this:
+
+```html
+<p>text here</p><p><br></p><p>more text</p>
+```
+
+instead of displaying formatted paragraphs.
+
+The screenshot proves the Review screen is still rendering HTML as text.
+
+## Relevant files
+
+Inspect and fix at minimum:
+
+```text
+client/src/components/job-form/JobReviewStep.tsx
+client/src/components/job-form/JobDescriptionStep.tsx
+client/src/components/job-form/JobRequirementsStep.tsx
+client/src/pages/JobFormPage.tsx
+client/src/lib/jobFormUtils.ts
+client/src/pages/FindWorkJob.tsx
+```
+
+## Required fix
+
+The job editor stores rich-text HTML.
+
+Therefore, the Review page must render the rich-text content as formatted content.
+
+DO NOT render:
+
+```tsx
+<p>{formData.description}</p>
+```
+
+when `description` contains HTML.
+
+DO NOT simply strip all HTML tags.
+
+The Review page must support:
+
+```text
+paragraphs
+line breaks
+bold
+italic if supported
+ordered lists
+unordered lists
+list items
+```
+
+Example stored HTML:
+
+```html
+<p><strong>Role Overview</strong></p>
+<p>We are looking for a customer support specialist.</p>
+<ul>
+  <li>Handle customer inquiries</li>
+  <li>Manage tickets</li>
+</ul>
+```
+
+Expected visual result:
+
+```text
+Role Overview
+
+We are looking for a customer support specialist.
+
+• Handle customer inquiries
+• Manage tickets
+```
+
+NOT:
+
+```text
+<p><strong>Role Overview</strong></p>...
+```
+
+## Sanitize HTML
+
+Use a safe sanitizer.
+
+If the project already has an HTML sanitization utility, reuse it.
+
+If not, create a small reusable helper for job rich-text content.
+
+Only allow formatting tags needed by the editor, such as:
+
+```text
+p
+br
+strong
+b
+em
+i
+ul
+ol
+li
+a
+```
+
+and any other legitimate Quill tags already used by this project.
+
+Do not allow:
+
+```text
+script
+iframe
+onerror
+onclick
+javascript:
+```
+
+or arbitrary unsafe attributes.
+
+## Review card
+
+Update the actual preview card visible in Step 4.
+
+The description area in the card under:
+
+```text
+job title
+category
+experience
+engagement type
+salary
+```
+
+must use the rich-text renderer.
+
+Do not fix only the lower "Description" summary card.
+
+The main job preview card itself must be fixed.
+
+## Published job parity
+
+Also verify the public job page:
+
+```text
+client/src/pages/FindWorkJob.tsx
+```
+
+The same saved HTML must display properly there.
+
+Use one consistent reusable rendering strategy where possible.
+
+---
+
+# ISSUE 2 — Client Profile talent search must be INLINE, not redirect to Hire Talent
+
+The previous implementation is incorrect.
+
+Current behavior:
+
+```text
+Client Profile
+→ Find Talent
+→ redirects to /hire-talent
+```
+
+This is NOT what is required.
+
+The Client should be able to search talent directly from the Client Profile / Job Postings page without leaving the page.
+
+## Required UX
+
+The Client Profile currently contains a section like:
+
+```text
+Job Postings
+
+Job A
+[Close] [Edit] [View] [Delete]
+
+Job B
+[Close] [Edit] [View] [Delete]
+```
+
+For each eligible job, add:
+
+```text
+[Find Talent]
+```
+
+or preferably:
+
+```text
+[Invite Talent]
+```
+
+The button belongs to the individual job row because the talent search is for that specific job.
+
+Recommended actions:
+
+```text
+[Find Talent] [Close] [Edit] [View] [Delete]
+```
+
+or:
+
+```text
+[Invite Talent] [Close] [Edit] [View] [Delete]
+```
+
+Use one label consistently.
+
+---
+
+# DO NOT redirect to /hire-talent
+
+This requirement is strict.
+
+When the user clicks the job's talent-search action:
+
+DO NOT:
+
+```ts
+navigate("/hire-talent")
+```
+
+DO NOT:
+
+```ts
+window.location.href = "/hire-talent"
+```
+
+DO NOT open the general Hire Talent page.
+
+Instead open an in-page modal, drawer, sheet, or expandable section directly inside the Client Profile page.
+
+Recommended:
+
+```text
+Client Profile
+   ↓
+Job Postings
+   ↓
+Specific Job
+   ↓
+Invite Talent
+   ↓
+Talent Search Modal
+```
+
+The user stays on the Client Profile page.
+
+---
+
+# Talent Search Modal / Drawer
+
+When clicking `Invite Talent` for a job, open a modal or large drawer.
+
+Example:
+
+```text
+Invite Talent to Apply
+
+Job:
+Customer Support Specialist
+
+Search talent
+[ Search by role, skill, experience...          ]
+
+Filters if already available:
+[Category] [Availability] [Experience]
+
+------------------------------------------------
+
+Jane S.
+Customer Support Specialist
+Available now · 92% match
+
+[Preview] [Invite to Apply]
+
+------------------------------------------------
+
+John B.
+Customer Service Representative
+Available now · 87% match
+
+[Preview] [Invite to Apply]
+```
+
+The search must be usable without navigating away.
+
+The selected job must remain fixed while the modal is open.
+
+Display the selected job title at the top.
+
+---
+
+# Reuse the existing talent search backend
+
+Do NOT duplicate the talent database or ranking code.
+
+Inspect the existing search endpoints used by the current talent search feature.
+
+Likely relevant existing APIs include:
+
+```text
+POST /api/client/talent-search
+```
+
+and related Client talent endpoints.
+
+Reuse those APIs if appropriate.
+
+If the existing search endpoint requires a scaffold job and cannot directly rank against a real job, inspect the existing ranking implementation and reuse the underlying ranking function for the selected real Client job.
+
+Preferred architecture:
+
+```text
+Client selects Job A
+        ↓
+Search modal opens
+        ↓
+Backend receives real Job A ID
+        ↓
+Verify Client owns Job A
+        ↓
+Rank/search candidates against Job A
+        ↓
+Return sanitized candidate results
+```
+
+Do not create a search-scaffold job when a real Client job has already been selected unless the existing architecture absolutely requires it.
+
+---
+
+# Invite to Apply
+
+Each search result must have:
+
+```text
+Preview
+Invite to Apply
+```
+
+Clicking:
+
+```text
+Invite to Apply
+```
+
+must formally invite that talent to the selected Client job.
+
+Reuse the project's existing invitation endpoint and workflow:
+
+```text
+POST /api/client/invitations
+```
+
+The request should use:
+
+```text
+jobId = selected job from Client Profile
+talentUserId = selected talent
+```
+
+The backend must verify:
+
+```text
+authenticated user is a Client
+Client owns the job
+job is a real job posting
+job is eligible for invitation
+talent exists
+talent has not already been invited to that job
+```
+
+Do not rely only on frontend checks.
+
+---
+
+# Duplicate invitation handling
+
+If talent is already invited to that job, show:
+
+```text
+Invited
+```
+
+instead of:
+
+```text
+Invite to Apply
+```
+
+Do not insert another invitation record.
+
+If the backend returns the existing:
+
+```text
+already_invited
+```
+
+condition, handle it gracefully.
+
+---
+
+# Talent Preview
+
+Clicking:
+
+```text
+Preview
+```
+
+should open the existing safe Client-facing talent profile preview if possible.
+
+Do not expose private contact information.
+
+Preserve masking of:
+
+```text
+email
+phone
+LinkedIn
+GitHub
+portfolio URLs
+resume URLs
+website URLs
+video URLs
+```
+
+Use the existing Client search sanitizer.
+
+---
+
+# Search loading states
+
+Inside the modal:
+
+While searching:
+
+```text
+Searching talent...
+```
+
+If no results:
+
+```text
+No matching talent found.
+Try another search or adjust the filters.
+```
+
+If API fails:
+
+```text
+We couldn't load talent right now.
+Please try again.
+```
+
+Do not silently fail.
+
+---
+
+# Do not replace the general Hire Talent page
+
+The existing:
+
+```text
+/hire-talent
+```
+
+page can remain for general talent discovery.
+
+This new Client Profile feature is a separate entry point that reuses the same backend/search components.
+
+The distinction should be:
+
+```text
+Sidebar Find Talent
+→ general talent discovery page
+
+Client Profile → Job Posting → Invite Talent
+→ inline job-specific talent search
+```
+
+---
+
+# ISSUE 3 — Sidebar labels are STILL unchanged
+
+This must be fixed directly.
+
+The current file is:
+
+```text
+client/src/components/ClientLayout.tsx
+```
+
+It still currently contains:
+
+```ts
+title: "OnSpot Talent"
+title: "Client Projects"
+title: "Client Management"
+```
+
+Change them exactly to:
+
+```ts
+title: "Find Talent"
+title: "Projects"
+title: "Team"
+```
+
+Required final Client sidebar:
+
+```text
+Core Modules
+
+Dashboard
+Find Talent
+Messages
+Projects
+Performance
+
+Management
+
+Team
+Contracts
+Payments
+Billing
+ROI Analytics
+
+System
+
+Settings
+```
+
+Do NOT leave:
+
+```text
+OnSpot Talent
+Client Projects
+Client Management
+```
+
+anywhere in the Client sidebar.
+
+The URLs may remain:
+
+```text
+Find Talent → /hire-talent
+Projects → /projects
+Team → /clients
+```
+
+because this task is changing the navigation labels, not necessarily those routes.
+
+---
+
+# Sidebar test IDs
+
+Because `data-testid` is currently generated from `item.title`, changing the title will also change the test IDs.
+
+Update any tests that currently expect:
+
+```text
+nav-onspot-talent
+nav-client-projects
+nav-client-management
+```
+
+to expect:
+
+```text
+nav-find-talent
+nav-projects
+nav-team
+```
+
+Search the repo for old test IDs before finishing.
+
+---
+
+# ISSUE 4 — Remove the incorrect top-level Search & Shortlist redirect behavior if it was added for this task
+
+The screenshot currently shows a large panel:
+
+```text
+Search & Shortlist Talent
+Browse and shortlist candidates from our talent pool.
+
+[Find Talent]
+```
+
+If this was added specifically to satisfy the requirement:
+
+> Clients should be able to invite talents to apply in their job posts
+
+then this is the wrong implementation.
+
+The requirement is job-specific.
+
+A generic panel above Job Postings does not associate the talent search with a particular job.
+
+Remove it if it was introduced only for this feature.
+
+Instead, put the action on each job row.
+
+Example:
+
+```text
+Customer Support Specialist
+OPEN   APPROVED
+
+[Invite Talent] [Close] [Edit] [View] [Delete]
+```
+
+This clearly associates the selected talent search with that job.
+
+If the generic talent-search panel existed before this task for another feature, do not remove it blindly. In that case, preserve it but still add the required job-specific inline talent search.
+
+---
+
+# ISSUE 5 — Search results must stay inside Client Profile
+
+The modal/drawer should support:
+
+```text
+search
+candidate results
+preview
+invite
+invited state
+pagination/load more if required
+```
+
+without navigating away.
+
+Closing it should return directly to the exact Job Postings view.
+
+No full page reload should be required.
+
+---
+
+# Recommended component structure
+
+Do not put hundreds of new lines directly into `ClientProfile.tsx` if avoidable.
+
+Prefer something like:
+
+```text
+client/src/components/ClientJobTalentSearchDialog.tsx
+```
+
+Props:
+
+```ts
+interface ClientJobTalentSearchDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  job: {
+    id: string;
+    title: string;
+  } | null;
+}
+```
+
+Responsibilities:
+
+```text
+render search input
+call search API
+display sanitized talent results
+preview talent
+invite talent to selected job
+show invited state
+```
+
+Then Client Profile controls:
+
+```ts
+selectedTalentSearchJob
+setSelectedTalentSearchJob(...)
+```
+
+This keeps Client Profile maintainable.
+
+---
+
+# Search architecture
+
+Before creating a new API route, inspect whether an existing route can safely support searching against a selected real job.
+
+Search the backend for:
+
+```text
+/api/client/talent-search
+rankTalentForJob
+scoreJobForCandidate
+calculateJobMatches
+/api/client/invitations
+sanitizeSearchCandidate
+```
+
+Prefer reuse.
+
+If you must create a job-specific endpoint, make it something explicit such as:
+
+```text
+GET /api/client/jobs/:jobId/talent-search?q=...
+```
+
+or:
+
+```text
+POST /api/client/jobs/:jobId/talent-search
+```
+
+but only if the existing endpoint cannot cleanly support this.
+
+Backend pseudo-flow:
+
+```ts
+authenticate client
+
+load job
+
+if (!job)
+  404
+
+if (job.client_id !== authenticatedClient.id)
+  403
+
+if (job.created_via === "search_scaffold")
+  400
+
+rank candidates using existing ranking service
+
+sanitize every candidate with existing Client sanitizer
+
+return results
+```
+
+Do not return raw candidate rows.
+
+---
+
+# ISSUE 6 — Verify the Create AND Edit job flows
+
+The rich-text Review bug must be fixed for BOTH:
+
+```text
+/client/jobs/new
+/client/jobs/:jobId/edit
+```
+
+Also verify Admin equivalents if they use the same component:
+
+```text
+/admin/find-work/jobs/new
+/admin/find-work/jobs/:jobId/edit
+```
+
+Since they share `JobFormPage`/`JobReviewStep`, the fix should work for both unless there is intentional role-specific behavior.
+
+Test:
+
+```text
+Create job
+→ Description
+→ enter rich formatting
+→ Review
+→ formatting rendered
+
+Edit existing job
+→ existing HTML loads
+→ Review
+→ formatting rendered
+```
+
+---
+
+# Mandatory implementation verification
+
+DO NOT finish by only saying "implemented".
+
+After changing code, run the app or relevant browser tests and verify the rendered UI.
+
+Explicitly verify these exact strings are no longer present in Client sidebar DOM:
+
+```text
+OnSpot Talent
+Client Projects
+Client Management
+```
+
+Verify these exact strings are present:
+
+```text
+Find Talent
+Projects
+Team
+```
+
+Verify the Review page does NOT display strings matching:
+
+```text
+<p>
+</p>
+<strong>
+<ul>
+<li>
+<br>
+&nbsp;
+```
+
+as visible text.
+
+Verify `Invite Talent` from a specific job DOES NOT change the browser route to:
+
+```text
+/hire-talent
+```
+
+The Client must remain on Client Profile while the talent-search dialog is open.
+
+---
+
+# Browser acceptance test
+
+Run this exact manual/browser test:
+
+## Test 1 — Sidebar
+
+1. Login as Client.
+2. Open the Client dashboard.
+3. Confirm sidebar says:
+
+```text
+Dashboard
+Find Talent
+Messages
+Projects
+Performance
+Team
+Contracts
+Payments
+Billing
+ROI Analytics
+Settings
+```
+
+4. Confirm it does NOT say:
+
+```text
+OnSpot Talent
+Client Projects
+Client Management
+```
+
+## Test 2 — Rich text Review
+
+1. Click Post a Job.
+2. In Description enter:
+
+```text
+Role Overview
+
+This should be bold.
+
+Responsibilities:
+• First item
+• Second item
+```
+
+3. Make `Role Overview` bold using the editor.
+4. Add a bullet list.
+5. Continue to Review.
+6. Confirm HTML tags are not visible.
+7. Confirm bold and bullets render properly.
+8. Save job.
+9. Edit the same job.
+10. Return to Review.
+11. Confirm formatting remains correct.
+
+## Test 3 — Job-specific talent search
+
+1. Open Client Profile.
+2. Find an APPROVED OPEN job.
+3. Click:
+
+```text
+Invite Talent
+```
+
+4. Confirm URL DOES NOT navigate to `/hire-talent`.
+5. Confirm talent search opens inside Client Profile.
+6. Confirm selected job title is shown.
+7. Search for talent.
+8. Confirm results appear.
+9. Click Preview.
+10. Close Preview.
+11. Click Invite to Apply.
+12. Confirm invitation is sent for the selected job.
+13. Confirm button changes to:
+
+```text
+Invited
+```
+
+14. Try inviting again.
+15. Confirm no duplicate is created.
+16. Close the modal.
+17. Confirm user is still on Client Profile.
+
+---
+
+# Before making changes
+
+First report the CURRENT state from the code:
+
+```text
+1. Current Client sidebar labels
+2. Current Client Profile Job Postings component
+3. Current Find Talent button behavior
+4. Current Review description rendering code
+5. Current talent search endpoint
+6. Current invitation endpoint
+7. Current candidate sanitizer
+```
+
+Then make the changes.
+
+Do not stop after the analysis.
+
+---
+
+# Final response after implementation
+
+Report:
+
+```text
+Files changed
+
+Sidebar:
+- old labels
+- new labels
+
+Review:
+- root cause
+- exact renderer/sanitizer used
+- create flow tested
+- edit flow tested
+
+Client job talent search:
+- component created/updated
+- selected job handling
+- search API used
+- invitation API used
+- confirmation that no /hire-talent redirect occurs
+
+Tests:
+- commands run
+- browser/manual test results
+```
+
+If any requirement could not be implemented, explicitly say which one and why instead of marking the task complete.

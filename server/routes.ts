@@ -14766,6 +14766,89 @@ export async function registerRoutes(
     }
   });
 
+  // POST /api/client/jobs/:jobId/talent-search — job-specific Client search.
+  // This is intentionally separate from general discovery: it only accepts a
+  // real, owned, approved and open posting, then ranks talent against that job.
+  app.post("/api/client/jobs/:jobId/talent-search", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as any).user?.id;
+      const jobId = req.params.jobId;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+      if (!jobId || jobId.length > 200) return res.status(400).json({ error: "A valid job ID is required" });
+
+      const jobResult = await query(
+        `SELECT id, client_id, status, approval_status, created_via
+           FROM jobs
+          WHERE id = $1
+          LIMIT 1`,
+        [jobId],
+      );
+      if (!jobResult.rows.length) return res.status(404).json({ error: "Job not found" });
+
+      const job = jobResult.rows[0];
+      if (job.client_id !== clientId) return res.status(403).json({ error: "This job does not belong to you" });
+      if (job.created_via === "search_scaffold") {
+        return res.status(400).json({ error: "Search placeholders cannot be used to invite talent" });
+      }
+      if (job.status !== "open" || job.approval_status !== "approved") {
+        return res.status(400).json({ error: "Only open, approved job postings can be used to invite talent" });
+      }
+
+      const searchText = typeof req.body?.searchText === "string" ? req.body.searchText.trim() : "";
+      if (searchText.length > 120) return res.status(400).json({ error: "Search text must be 120 characters or fewer" });
+      const terms = searchText.toLowerCase().split(/\s+/).filter(Boolean);
+
+      const ranked = await storage.rankTalentForJob(jobId, 50);
+      const filtered = terms.length
+        ? ranked.filter((result) => {
+            const candidate = result.candidate ?? {};
+            const searchable = [
+              candidate.targetPosition,
+              candidate.headline,
+              candidate.summary,
+              candidate.category,
+              ...(Array.isArray(candidate.coreSkills) ? candidate.coreSkills : []),
+              ...(Array.isArray(candidate.secondarySkills) ? candidate.secondarySkills : []),
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return terms.every((term: string) => searchable.includes(term));
+          })
+        : ranked;
+
+      const talentIds = filtered.map((result) => result.userId);
+      const invitations = talentIds.length
+        ? await query(
+            `SELECT DISTINCT talent_id
+               FROM job_submissions
+              WHERE client_id = $1
+                AND job_id = $2
+                AND talent_id = ANY($3::text[])
+                AND (workflow_type = 'client_invitation'
+                  OR (workflow_type = 'application' AND initiated_by = 'client' AND status <> 'shortlisted'))
+                AND status NOT IN ('declined', 'rejected', 'withdrawn')`,
+            [clientId, jobId, talentIds],
+          )
+        : { rows: [] as Array<{ talent_id: string }> };
+
+      return res.json({
+        results: filtered.map((result) => ({
+          candidateId: result.candidateId,
+          userId: result.userId,
+          score: result.score,
+          overlapSkills: result.overlapSkills,
+          matchReasons: result.matchReasons,
+          candidate: sanitizeSearchCandidate(result.candidate),
+        })),
+        invitedTalentIds: invitations.rows.map((row: any) => row.talent_id),
+      });
+    } catch (err: any) {
+      console.error("POST /api/client/jobs/:jobId/talent-search error:", err);
+      return res.status(500).json({ error: "We couldn't load talent right now. Please try again." });
+    }
+  });
+
   // PATCH /api/client/talent-search/:jobId — REMOVED.
   // Engagement-type rescoring is now handled by re-calling POST /api/client/talent-search
   // with the new engagementType — no stored scaffold row to update.

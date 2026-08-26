@@ -38,7 +38,7 @@ const coreModules = [
     icon: Home,
   },
   {
-    title: "OnSpot Talent",
+    title: "Find Talent",
     url: "/hire-talent",
     icon: Search,
   },
@@ -48,7 +48,7 @@ const coreModules = [
     icon: MessageSquare,
   },
   {
-    title: "Client Projects",
+    title: "Projects",
     url: "/projects",
     icon: Briefcase,
   },
@@ -62,7 +62,7 @@ const coreModules = [
 // Management
 const managementItems = [
   {
-    title: "Client Management",
+    title: "Team",
     url: "/clients",
     icon: Users,
   },

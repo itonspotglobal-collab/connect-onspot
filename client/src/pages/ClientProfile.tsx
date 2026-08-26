@@ -75,6 +75,8 @@ import {
   RequestInterviewDialog,
   canRequestInterview,
 } from "@/components/InterviewWorkflowUi";
+import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchDialog";
+import { JobRichText } from "@/components/JobRichText";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -556,9 +558,10 @@ function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: ()
         {(job as any).description && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Description</p>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-              {(job as any).description}
-            </p>
+            <JobRichText
+              html={(job as any).description}
+              className="max-h-48 overflow-y-auto text-slate-700 dark:text-slate-300"
+            />
           </div>
         )}
       </DialogContent>
@@ -573,6 +576,7 @@ function ClientJobRow({
   onToggle,
   onDelete,
   onView,
+  onInvite,
   isToggling,
   isDeleting,
 }: {
@@ -581,6 +585,7 @@ function ClientJobRow({
   onToggle: () => void;
   onDelete: () => void;
   onView: () => void;
+  onInvite: () => void;
   isToggling: boolean;
   isDeleting: boolean;
 }) {
@@ -588,6 +593,10 @@ function ClientJobRow({
   const pay = buildRateDisplay(job as any);
   const timeAgo = getTimeAgo(job.createdAt);
   const approvalStatus = (job as any).approvalStatus ?? "approved";
+  const canInviteTalent =
+    isOpen &&
+    approvalStatus === "approved" &&
+    (job as any).createdVia !== "search_scaffold";
 
   const approvalBadge = ({
     pending: { label: "Pending Approval", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
@@ -676,6 +685,15 @@ function ClientJobRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {canInviteTalent && (
+            <Button
+              size="sm"
+              className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+              onClick={onInvite}
+            >
+              <Users className="mr-1.5 h-3.5 w-3.5" />Invite Talent
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
             {isOpen ? (
               <><EyeOff className="w-3 h-3 mr-1.5" />Close</>
@@ -753,6 +771,7 @@ export default function ClientProfile() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<ClientProfile>>({});
   const [viewingJob, setViewingJob] = useState<Job | null>(null);
+  const [talentSearchJob, setTalentSearchJob] = useState<{ id: string; title: string } | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
   const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
 
@@ -1209,6 +1228,7 @@ export default function ClientProfile() {
                   }
                   onDelete={() => deleteJobMutation.mutate(job.id)}
                   onView={() => setViewingJob(job)}
+                  onInvite={() => setTalentSearchJob({ id: job.id, title: job.title })}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteJobMutation.isPending}
                 />
@@ -1237,6 +1257,14 @@ export default function ClientProfile() {
       <ClientJobPreviewDialog
         job={viewingJob}
         onClose={() => setViewingJob(null)}
+      />
+
+      <ClientJobTalentSearchDialog
+        open={Boolean(talentSearchJob)}
+        onOpenChange={(open) => {
+          if (!open) setTalentSearchJob(null);
+        }}
+        job={talentSearchJob}
       />
 
       {/* ── View Submission modal ─────────────────────────────────────────────── */}

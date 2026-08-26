@@ -3,6 +3,7 @@ import { Pencil, AlertTriangle } from "lucide-react";
 import type { JobFormData } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
 import { getEngagementTypeLabel, getExperienceLevelLabel } from "@/lib/jobConstants";
+import { JobRichText } from "@/components/JobRichText";
 
 interface Props {
   formData: JobFormData;
@@ -144,13 +145,13 @@ export function JobReviewStep({
               <MetaChip label={`${currSymbol}${formData.salaryDisplay}/mo`} />
             )}
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {formData.description || (
-              <span className="italic">
-                Your job description appears here on the public job page, followed by the required education, skills, and availability.
-              </span>
-            )}
-          </p>
+          {formData.description ? (
+            <JobRichText html={formData.description} className="text-muted-foreground" />
+          ) : (
+            <p className="text-sm text-muted-foreground leading-relaxed italic">
+              Your job description appears here on the public job page, followed by the required education, skills, and availability.
+            </p>
+          )}
         </div>
       </div>
 

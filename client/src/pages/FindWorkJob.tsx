@@ -39,6 +39,7 @@ import {
 import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 import { Footer } from "@/components/Footer";
+import { JobRichText } from "@/components/JobRichText";
 
 const roles = [
   {
@@ -849,16 +850,12 @@ function DbJobDetail({
             label="About the Role"
           >
             {isHtml(aboutTheRole) ? (
-              <div
-                className="prose prose-slate max-w-3xl text-base leading-7 dark:prose-invert prose-p:text-left sm:prose-p:text-justify prose-li:text-left sm:prose-li:text-justify prose-p:leading-7 prose-li:leading-7"
-                dangerouslySetInnerHTML={{ __html: aboutTheRole }}
+              <JobRichText
+                html={aboutTheRole}
+                className="max-w-3xl text-base leading-7 prose-p:text-left sm:prose-p:text-justify prose-li:text-left sm:prose-li:text-justify prose-p:leading-7 prose-li:leading-7"
               />
             ) : (
-              <p
-                className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}
-              >
-                {aboutTheRole}
-              </p>
+              <p className={`max-w-3xl whitespace-pre-wrap ${contentTextClass}`}>{aboutTheRole}</p>
             )}
           </Section>
         )}

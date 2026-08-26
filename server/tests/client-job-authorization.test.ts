@@ -238,6 +238,60 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(saved.json.about, "Updated through the client self-service route.");
   });
 
+  it("searches talent only against an owned approved job and returns sanitized results", async () => {
+    const search = await request(
+      server,
+      "POST",
+      `/api/client/jobs/${READY_JOB_ID}/talent-search`,
+      clientToken,
+      { searchText: "engineer" },
+    );
+    assert.equal(search.status, 200, JSON.stringify(search.json));
+    assert.ok(Array.isArray(search.json.results));
+    const talent = search.json.results.find((result: any) => result.userId === TALENT_ID);
+    assert.ok(talent, "the linked talent fixture should appear in the job-specific search");
+    assert.equal(typeof talent.candidate.maskedName, "string");
+    for (const blockedField of [
+      "email", "phone", "phoneNumber", "resumeUrl", "linkedinUrl",
+      "githubUrl", "portfolioUrl", "websiteUrl", "videoIntroUrl",
+      "fullName", "firstName", "lastName", "userId",
+    ]) {
+      assert.equal(
+        Object.hasOwn(talent.candidate, blockedField),
+        false,
+        `job-specific search must not expose ${blockedField}`,
+      );
+    }
+    assert.ok(Array.isArray(search.json.invitedTalentIds));
+
+    const foreignJob = await request(
+      server,
+      "POST",
+      `/api/client/jobs/${READY_JOB_ID}/talent-search`,
+      otherClientToken,
+      {},
+    );
+    assert.equal(foreignJob.status, 403, JSON.stringify(foreignJob.json));
+
+    const pendingJob = await request(
+      server,
+      "POST",
+      `/api/client/jobs/${PENDING_JOB_ID}/talent-search`,
+      clientToken,
+      {},
+    );
+    assert.equal(pendingJob.status, 400, JSON.stringify(pendingJob.json));
+
+    const scaffoldJob = await request(
+      server,
+      "POST",
+      `/api/client/jobs/${SCAFFOLD_JOB_ID}/talent-search`,
+      clientToken,
+      {},
+    );
+    assert.equal(scaffoldJob.status, 400, JSON.stringify(scaffoldJob.json));
+  });
+
   it("persists private favorites without creating hiring-pipeline side effects", async () => {
     const deniedTalent = await request(server, "GET", "/api/client/favorites", talentToken);
     assert.equal(deniedTalent.status, 403, "talent sessions must not read client favorites");
