@@ -20,11 +20,11 @@ A stale 'processing' row (crash mid-send) is re-claimable after the configured c
 **How to apply:** New companion email path → add a function here, call `claimEmailDelivery` before sending, call `markEmailDeliveryResult` after.
 
 ## Reviewed job-decision emails
-The Admin composer and the automatic job-approval companion are coordinated through one canonical event key: `job-approval-email:${transitionEventKey}`. Reviewed content is passed into the existing companion sender; it is not sent by a separate route-level Graph call.
+The Admin composer and automatic job-decision companions are coordinated through one canonical event key: `job-approval-email:${transitionEventKey}`. Reviewed content is passed into the existing companion sender; it is not sent by a separate route-level Graph call.
 
-**Why:** A real approval/rejection transition must create one delivery claim and at most one Client email, while ordinary non-composer transitions must retain their automatic companion.
+**Why:** A real transition must create one delivery claim and at most one Client email, while unrelated automatic companions must remain intact.
 
-**How to apply:** Render and validate composer content before the state transition, reuse the atomic approval transition (including its in-app notification), then pass the reviewed content and transition event key to the companion service. A no-op repeat transition must not send.
+**How to apply:** Approve keeps its direct automatic path. For Unapprove and Reject, confirm first, persist the atomic transition and in-app notification, then open the composer. Manual send reuses that transition event key; closing or delivery failure never rolls back state.
 
 ## Interview emails
 `sendInterviewRescheduledEmail` / `sendInterviewCancelledEmail` live in `server/services/interviewEmailService.ts` and import `claimEmailDelivery` / `markEmailDeliveryResult` from emailCompanionService.

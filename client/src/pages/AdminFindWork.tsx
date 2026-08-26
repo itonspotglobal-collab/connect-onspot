@@ -20,6 +20,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -764,13 +765,15 @@ export default function AdminFindWork() {
   const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
   const [approveConfirmJobId, setApproveConfirmJobId] = useState<string | null>(null);
-  const [emailDecision, setEmailDecision] = useState<"approved" | "rejected">("approved");
+  const [unapproveConfirmJobId, setUnapproveConfirmJobId] = useState<string | null>(null);
+  const [rejectConfirmJobId, setRejectConfirmJobId] = useState<string | null>(null);
+  const [composerJob, setComposerJob] = useState<{ id: string; title: string } | null>(null);
+  const [emailDecision, setEmailDecision] = useState<"unapproved" | "rejected">("rejected");
   const [composerRejectionReason, setComposerRejectionReason] = useState("");
+  const [composerTransitionEventKey, setComposerTransitionEventKey] = useState<string | null>(null);
   const openCreate = () => navigate("/admin/find-work/jobs/new");
   const openEdit = (job: Job) => navigate(`/admin/find-work/jobs/${job.id}/edit`);
   const openApproveComposer = (jobId: string) => {
-    setEmailDecision("approved");
-    setComposerRejectionReason("");
     setApproveConfirmJobId(jobId);
   };
 
@@ -853,47 +856,63 @@ export default function AdminFindWork() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) =>
-      apiRequest("POST", `/api/admin/jobs/${id}/approve-with-email`, payload),
-    onSuccess: async (response) => {
-      const result = await response.json();
-      invalidate();
-      setApproveConfirmJobId(null);
-      toast({
-        title: "Job approved — now visible publicly",
-        description: result.email?.status === "failed" ? "The decision was saved, but the Client email failed to send." : "The Client email was sent.",
-        variant: result.email?.status === "failed" ? "destructive" : "default",
-      });
-    },
+    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/approve`),
+    onSuccess: () => { invalidate(); toast({ title: "Job approved — now visible publicly" }); },
     onError: (err: any) =>
       toast({ title: "Approval failed", description: err.message, variant: "destructive" }),
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) =>
-      apiRequest("POST", `/api/admin/jobs/${id}/reject-with-email`, payload),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiRequest("POST", `/api/admin/jobs/${id}/reject-for-email`, { rejectionReason: reason }),
     onSuccess: async (response) => {
       const result = await response.json();
       invalidate();
-      setApproveConfirmJobId(null);
-      setRejectModalJobId(null);
+      setRejectConfirmJobId(null);
       setRejectionReason("");
-      setComposerRejectionReason("");
-      toast({
-        title: "Job rejected",
-        description: result.email?.status === "failed" ? "The decision was saved, but the Client email failed to send." : "The Client email was sent.",
-        variant: result.email?.status === "failed" ? "destructive" : "default",
-      });
+      setComposerRejectionReason(result.job?.rejection_reason ?? "");
+      setComposerTransitionEventKey(result.transitionEventKey);
+      setEmailDecision("rejected");
+      setComposerJob(result.job ? { id: result.job.id, title: result.job.title } : null);
     },
     onError: (err: any) =>
       toast({ title: "Rejection failed", description: err.message, variant: "destructive" }),
   });
 
-  const pendingMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/pending`),
-    onSuccess: () => { invalidate(); toast({ title: "Job moved back to pending" }); },
+  const unapproveMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/unapprove-for-email`),
+    onSuccess: async (response) => {
+      const result = await response.json();
+      invalidate();
+      setUnapproveConfirmJobId(null);
+      setComposerTransitionEventKey(result.transitionEventKey);
+      setComposerRejectionReason("");
+      setEmailDecision("unapproved");
+      setComposerJob(result.job ? { id: result.job.id, title: result.job.title } : null);
+    },
     onError: (err: any) =>
-      toast({ title: "Failed", description: err.message, variant: "destructive" }),
+      toast({ title: "Unapprove failed", description: err.message, variant: "destructive" }),
+  });
+
+  const composerSendMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) =>
+      apiRequest("POST", `/api/admin/jobs/${id}/client-email/send-after-transition`, {
+        ...payload,
+        decision: emailDecision,
+        transitionEventKey: composerTransitionEventKey,
+      }),
+    onSuccess: async (response) => {
+      const result = await response.json();
+      setComposerJob(null);
+      setComposerTransitionEventKey(null);
+      toast({
+        title: "Email sent",
+        description: result.email?.status === "failed" ? "The job decision was saved, but the Client email failed to send." : "The Client email was sent.",
+        variant: result.email?.status === "failed" ? "destructive" : "default",
+      });
+    },
+    onError: (err: any) =>
+      toast({ title: "Email failed", description: err.message, variant: "destructive" }),
   });
 
   const refreshMutation = useMutation({
@@ -1369,7 +1388,7 @@ export default function AdminFindWork() {
                   onCopy={() => copy(job.id)}
                   onApprove={() => openApproveComposer(job.id)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
-                  onMoveToPending={() => pendingMutation.mutate(job.id)}
+                  onMoveToPending={() => setUnapproveConfirmJobId(job.id)}
                   onRefresh={() => refreshMutation.mutate(job.id)}
                   copiedId={copiedId}
                   isToggling={toggleStatusMutation.isPending}
@@ -1433,19 +1452,67 @@ export default function AdminFindWork() {
         </div>
       </div>
 
+      <Dialog open={!!approveConfirmJobId} onOpenChange={(open) => { if (!open) setApproveConfirmJobId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ThumbsUp className="h-5 w-5 text-emerald-500" />
+              Approve this job?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              This role will become visible on the public Find Work page immediately.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setApproveConfirmJobId(null)}>Cancel</Button>
+              <Button
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                disabled={approveMutation.isPending}
+                onClick={() => {
+                  if (approveConfirmJobId) {
+                    approveMutation.mutate(approveConfirmJobId);
+                    setApproveConfirmJobId(null);
+                  }
+                }}
+              >
+                {approveMutation.isPending ? "Approving…" : "Approve"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ClientEmailComposer
-        job={(data?.items ?? []).find((item) => item.id === approveConfirmJobId) ?? null}
+        job={composerJob}
         decision={emailDecision}
         rejectionReason={composerRejectionReason}
-        open={!!approveConfirmJobId}
-        onClose={() => { setApproveConfirmJobId(null); setComposerRejectionReason(""); }}
-        isSending={approveMutation.isPending || rejectMutation.isPending}
+        open={!!composerJob}
+        onClose={() => { setComposerJob(null); setComposerTransitionEventKey(null); setComposerRejectionReason(""); }}
+        isSending={composerSendMutation.isPending}
         onConfirm={(payload) => {
-          if (!approveConfirmJobId) return;
-          if (emailDecision === "approved") approveMutation.mutate({ id: approveConfirmJobId, payload });
-          else rejectMutation.mutate({ id: approveConfirmJobId, payload });
+          if (!composerJob) return;
+          composerSendMutation.mutate({ id: composerJob.id, payload });
         }}
       />
+
+      <Dialog open={!!unapproveConfirmJobId} onOpenChange={(open) => { if (!open) setUnapproveConfirmJobId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Unapprove this job post?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            This will remove the job from approved status. The Client will be notified and you can review the email before sending.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setUnapproveConfirmJobId(null)}>Cancel</Button>
+            <Button className="bg-amber-600 text-white hover:bg-amber-700" disabled={unapproveMutation.isPending}
+              onClick={() => unapproveConfirmJobId && unapproveMutation.mutate(unapproveConfirmJobId)}>
+              {unapproveMutation.isPending ? "Unapproving…" : "Confirm Unapprove"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Reject reason modal ── */}
       <Dialog open={!!rejectModalJobId} onOpenChange={(open) => { if (!open) setRejectModalJobId(null); }}>
@@ -1479,9 +1546,7 @@ export default function AdminFindWork() {
                 disabled={rejectMutation.isPending}
                 onClick={() => {
                   if (rejectModalJobId) {
-                    setEmailDecision("rejected");
-                    setComposerRejectionReason(rejectionReason);
-                    setApproveConfirmJobId(rejectModalJobId);
+                    setRejectConfirmJobId(rejectModalJobId);
                     setRejectModalJobId(null);
                   }
                 }}
@@ -1489,6 +1554,22 @@ export default function AdminFindWork() {
                 {rejectMutation.isPending ? "Declining..." : "Confirm Decline"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rejectConfirmJobId} onOpenChange={(open) => { if (!open) setRejectConfirmJobId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm rejection?</DialogTitle>
+            <DialogDescription>This will reject the job, preserve the in-app notification, and then open the Client email composer.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setRejectConfirmJobId(null)}>Cancel</Button>
+            <Button className="bg-red-600 text-white hover:bg-red-700" disabled={rejectMutation.isPending}
+              onClick={() => rejectConfirmJobId && rejectMutation.mutate({ id: rejectConfirmJobId, reason: rejectionReason })}>
+              {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -294,6 +294,28 @@ describe("sendJobApprovalCompanionEmail", () => {
     assert.equal(capturedSends[0].bodyHtml, "<p>Reviewed rejection body</p>");
   });
 
+  it("sends one reviewed Unapprove email using the original pending transition key", async () => {
+    resetMocks();
+    queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] });
+    queryResponses.push({ rows: [{ id: "unapprove-composer-claim" }] });
+    queryResponses.push({ rows: [] });
+    const result = await sendJobApprovalCompanionEmail({
+      jobId: "unapprove-job",
+      jobTitle: "Operations Lead",
+      clientUserId: "client-3",
+      newStatus: "unapproved",
+      transitionEventKey: "job-approval-transition:unapprove-job:one",
+      reviewedContent: {
+        subject: "Update on your job post",
+        bodyHtml: "<p>Your job is no longer approved.</p>",
+      },
+    });
+    assert.equal(result.status, "sent");
+    assert.equal(result.eventKey, "job-approval-email:job-approval-transition:unapprove-job:one");
+    assert.equal(capturedSends.length, 1);
+    assert.equal(capturedSends[0].subject, "Update on your job post");
+  });
+
   it("resolves recipient first, then claims slot, then sends approved email", async () => {
     resetMocks();
     queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] }); // recipient lookup

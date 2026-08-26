@@ -212,7 +212,7 @@ export interface JobApprovalCompanionEmailOptions {
   jobId: string;
   jobTitle: string;
   clientUserId: string;
-  newStatus: "approved" | "rejected" | "pending";
+  newStatus: "approved" | "rejected" | "unapproved" | "pending";
   rejectionReason?: string | null;
   /** Deterministic event key from the approval transition (one UUID per real transition). */
   transitionEventKey: string;
@@ -249,7 +249,7 @@ export async function sendJobApprovalCompanionEmail(
     reviewedContent,
   } = opts;
   const emailEventKey = `job-approval-email:${transitionEventKey}`;
-  if (newStatus === "pending") {
+  if (newStatus === "pending" && !reviewedContent) {
     return { status: "skipped", eventKey: emailEventKey };
   }
 

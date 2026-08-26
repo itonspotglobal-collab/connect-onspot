@@ -1,0 +1,366 @@
+Apply this change now.
+
+Do NOT perform another audit or planning pass.
+
+Use the existing working `ClientEmailComposer` implementation and existing job approval/rejection infrastructure.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+# GOAL
+
+Currently:
+
+* Clicking `Unapprove` changes the job posting status immediately.
+* Clicking `Reject` changes the job posting status immediately.
+
+Change both flows so they require:
+
+1. Confirmation.
+2. Open `ClientEmailComposer`.
+3. Let Admin review/edit and send the Client email.
+
+Do not change the existing working Approve flow.
+
+# UNAPPROVE FLOW
+
+Current:
+
+Admin clicks `Unapprove`
+→ status changes immediately
+
+New:
+
+Admin clicks `Unapprove`
+→ show confirmation dialog
+
+Suggested copy:
+
+Title:
+`Unapprove this job post?`
+
+Message:
+`This will remove the job from approved status. The Client will be notified and you can review the email before sending.`
+
+Buttons:
+
+`Cancel`
+`Confirm Unapprove`
+
+If Admin clicks Cancel:
+
+* do nothing
+* keep current status
+* do not open email composer
+
+If Admin clicks Confirm Unapprove:
+
+1. Persist the unapprove transition using the existing backend logic.
+2. Preserve existing in-app notification behavior.
+3. Open `ClientEmailComposer`.
+4. Preload the appropriate Unapproved email template.
+5. Admin can review/edit.
+6. Admin sends email manually through the existing composer.
+
+Important:
+
+The job status should already be changed before the email is sent.
+
+If email sending fails:
+
+* keep the job unapproved
+* show email failure
+* do not roll back status
+
+# REJECT FLOW
+
+Current:
+
+Admin clicks `Reject`
+→ rejection/status changes immediately
+
+New:
+
+Admin clicks `Reject`
+→ show confirmation first
+
+If a rejection reason is already required, preserve that existing reason input.
+
+Preferred flow:
+
+Admin clicks Reject
+→ existing rejection reason input
+→ confirmation dialog
+→ Confirm Reject
+→ persist rejection
+→ preserve in-app notification
+→ open ClientEmailComposer
+→ preload Job Post Rejected template with rejection reason
+→ Admin reviews/edits
+→ Send Email
+
+Do not remove the rejection reason field.
+
+Do not change rejection business rules.
+
+# IMPORTANT ORDER
+
+For both Unapprove and Reject:
+
+Confirmation
+→ persist status change
+→ in-app notification
+→ ClientEmailComposer opens
+→ email send
+
+Do NOT make the status transition wait on successful email delivery.
+
+# CLIENT EMAIL RECIPIENT
+
+Use existing working recipient resolution:
+
+`jobs.client_id → users.id → users.email`
+
+Do not change it.
+
+# SENDER
+
+Default sender:
+
+`OnSpot Hire Talent <hiretalent@onspotglobal.com>`
+
+Reuse the working ClientEmailComposer sender configuration.
+
+# EMAIL TEMPLATES
+
+Add/reuse:
+
+## Job Post Unapproved
+
+Suggested name:
+`Job Post Unapproved`
+
+Suggested category:
+`job_unapproved`
+
+Subject:
+`Update on your job post — {{job_title}}`
+
+Suggested body:
+
+Hi {{client_first_name}},
+
+Your job posting for **{{job_title}}** has been moved out of approved status.
+
+Please review the posting and make any required updates before submitting it again for approval.
+
+[Review Job Posting]
+
+Warm regards,
+The OnSpot Hire Talent Team
+
+## Job Post Rejected
+
+Reuse the existing working rejection template.
+
+Include:
+
+`{{rejection_reason}}`
+
+when present.
+
+# DUPLICATE EMAIL PROTECTION
+
+The existing automatic companion email logic must not also send another email after the composer opens.
+
+For Unapprove and Reject:
+
+* exactly one workflow email should be sent
+* sending from ClientEmailComposer must not create a duplicate automatic email
+
+Reuse the same duplicate-prevention/idempotency approach already implemented for Approve.
+
+Do not disable unrelated companion email flows globally.
+
+# CLIENTEMAILCOMPOSER BEHAVIOR
+
+Reuse the existing component.
+
+Do not create another composer.
+
+For Unapprove/Reject, it should:
+
+* display Client name
+* display Client email
+* default to Hire Talent sender
+* preload correct template
+* support Compose
+* Preview
+* History
+* Test Send
+* Send Email
+
+Do not change ApplicantEmailComposer.
+
+# UI STATE
+
+After confirming status change and opening ClientEmailComposer:
+
+If Admin closes the composer without sending:
+
+* status remains changed
+* in-app notification remains
+* email simply remains unsent
+
+Do not revert the job.
+
+This is intentional because status persistence happens before the email step.
+
+# HISTORY
+
+Ensure ClientEmailComposer History records:
+
+* Unapprove email
+* Reject email
+
+scoped to the correct job.
+
+# ERROR HANDLING
+
+If status update fails:
+
+* do not open ClientEmailComposer
+* show the existing appropriate error
+
+If status update succeeds but composer/email fails:
+
+* keep status change
+* show email failure only
+
+# DO NOT CHANGE
+
+Do not modify:
+
+* working Approve flow
+* ApplicantEmailComposer
+* existing ClientEmailComposer structure beyond adding new workflow modes if needed
+* job ownership
+* authorization
+* job approval state machine
+* in-app notifications
+* Graph integration
+* Admin job list layout
+* Client job list behavior
+* application workflows
+* interview workflows
+
+# TESTS
+
+Add focused tests:
+
+1. Click Unapprove → confirmation opens.
+
+2. Cancel Unapprove → no status change.
+
+3. Confirm Unapprove → status changes.
+
+4. Unapprove in-app notification still appears.
+
+5. ClientEmailComposer opens after successful unapprove.
+
+6. Correct Client recipient is shown.
+
+7. Job Post Unapproved template loads.
+
+8. Email failure does not revert unapprove.
+
+9. Exactly one Unapprove email is sent.
+
+10. Duplicate click does not duplicate email.
+
+11. Click Reject → rejection reason flow remains.
+
+12. Confirmation appears before rejection commits.
+
+13. Cancel Reject → no status change.
+
+14. Confirm Reject → status changes.
+
+15. Reject in-app notification still appears.
+
+16. ClientEmailComposer opens after rejection.
+
+17. Rejection reason appears in template.
+
+18. Email failure does not revert rejection.
+
+19. Exactly one Reject email is sent.
+
+20. Duplicate click does not duplicate email.
+
+21. Existing Approve flow still works.
+
+22. Existing ApplicantEmailComposer still works.
+
+23. Existing ClientEmailComposer history still works.
+
+24. Existing notification tests still pass.
+
+25. `npx tsc --noEmit` passes.
+
+26. `git diff --check` passes.
+
+# MANUAL VERIFICATION
+
+Use a Client-owned test job.
+
+## Unapprove
+
+1. Click Unapprove.
+2. Confirm dialog appears.
+3. Cancel once → verify status unchanged.
+4. Click Unapprove again.
+5. Confirm.
+6. Verify status changes.
+7. Verify ClientEmailComposer opens.
+8. Verify:
+
+   * correct Client
+   * correct email
+   * Hire Talent sender
+   * Job Post Unapproved template
+9. Send email.
+10. Verify Client receives it.
+11. Verify only one email was sent.
+
+## Reject
+
+1. Click Reject.
+2. Enter rejection reason.
+3. Confirm dialog appears.
+4. Confirm.
+5. Verify status becomes rejected.
+6. Verify ClientEmailComposer opens.
+7. Verify rejection reason is prefilled/resolved.
+8. Send email.
+9. Verify Client receives it.
+10. Verify only one email was sent.
+
+# COMPLETION REPORT
+
+Report only after implementation:
+
+1. Files changed.
+2. Unapprove confirmation flow.
+3. Reject confirmation flow.
+4. Status transition order.
+5. ClientEmailComposer integration.
+6. Templates used/added.
+7. Duplicate-email prevention.
+8. Test results.
+9. Manual verification results.
+10. Confirmation Approve flow was not changed.
+11. Confirmation ApplicantEmailComposer was not changed.
+12. Confirmation email failure never rolls back Unapprove/Reject.
+
+Do not audit again. Apply these changes directly using the existing working patterns.
+Important Note: Do not change the existing working features or Ruin it.

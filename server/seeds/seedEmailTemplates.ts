@@ -60,6 +60,15 @@ function brandedClientTemplate(
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
   brandedClientTemplate({
+    name: "Job Post Unapproved", category: "job_unapproved", stage: null, isDefault: true,
+    subject: "Update on your job post — {{job_title}}",
+    content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>
+<p style="margin:0 0 16px;">Your job posting for <strong>{{job_title}}</strong> has been moved out of approved status.</p>
+<p style="margin:0 0 16px;">Please review the posting and make any required updates before submitting it again for approval.</p>
+${button("{{job_url}}", "Review Job Posting")}
+<p style="margin:0;">Warm regards,<br />The OnSpot Hire Talent Team</p>`,
+  }),
+  brandedClientTemplate({
     name: "Job Post Approved", category: "job_approved", stage: null, isDefault: true,
     subject: "Your job post has been approved — {{job_title}}",
     content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>

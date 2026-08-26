@@ -30,7 +30,7 @@ const representativeContext: EmailVariableContext = {
 describe("default applicant email templates", () => {
   it("renders all 14 templates with resolved subjects, branded HTML, and accurate metadata", () => {
     const templates = DEFAULT_TEMPLATES.filter(
-      (template) => !["job_approved", "job_rejected"].includes(template.category),
+      (template) => !["job_approved", "job_rejected", "job_unapproved"].includes(template.category),
     );
     assert.equal(templates.length, 14);
 
@@ -50,11 +50,11 @@ describe("default applicant email templates", () => {
     }
   });
 
-  it("renders both Client decision templates and hides an absent rejection reason", () => {
+  it("renders all Client decision templates and hides an absent rejection reason", () => {
     const templates = DEFAULT_TEMPLATES.filter(
-      (template) => ["job_approved", "job_rejected"].includes(template.category),
+      (template) => ["job_approved", "job_rejected", "job_unapproved"].includes(template.category),
     );
-    assert.equal(templates.length, 2);
+    assert.equal(templates.length, 3);
     const context: EmailVariableContext = {
       clientFirstName: "Morgan",
       clientLastName: "Lee",

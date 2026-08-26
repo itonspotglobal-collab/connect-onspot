@@ -56,7 +56,7 @@ export interface ClientEmailPayload {
 
 interface Props {
   job: { id: string; title: string } | null;
-  decision: "approved" | "rejected";
+  decision: "approved" | "rejected" | "unapproved";
   rejectionReason?: string;
   open: boolean;
   onClose: () => void;
@@ -180,9 +180,11 @@ export function ClientEmailComposer({
     <Dialog open={open} onOpenChange={(next) => { if (!next && !isSending) onClose(); }}>
       <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{decision === "approved" ? "Approve Job & Email Client" : "Reject Job & Email Client"}</DialogTitle>
+          <DialogTitle>
+            {decision === "approved" ? "Approve Job & Email Client" : decision === "unapproved" ? "Email Client About Unapproved Job" : "Email Client About Rejected Job"}
+          </DialogTitle>
           <DialogDescription>
-            Review the Client notification before confirming the job decision. Canceling or sending a test will not change the job.
+            Review the Client notification before sending. The job decision has already been saved; canceling or sending a test will not change it.
           </DialogDescription>
         </DialogHeader>
 
@@ -264,7 +266,7 @@ export function ClientEmailComposer({
             onClick={() => onConfirm({ templateId, subject, bodyHtml, senderEmail, rejectionReason })}
           >
             {isSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {decision === "approved" ? "Approve & Send" : "Reject & Send"}
+            {decision === "approved" ? "Approve & Send" : "Send Email"}
           </Button>
         </div>
       </DialogContent>

@@ -21477,8 +21477,8 @@ export async function registerRoutes(
       const scopeSql = scope === "all"
         ? ""
         : scope === "client_job"
-          ? "AND category IN ('job_approved', 'job_rejected')"
-          : "AND category NOT IN ('job_approved', 'job_rejected')";
+          ? "AND category IN ('job_approved', 'job_rejected', 'job_unapproved')"
+          : "AND category NOT IN ('job_approved', 'job_rejected', 'job_unapproved')";
       const result = await query(
         `SELECT id, name, subject, category, stage, is_published AS "isPublished",
                 is_default AS "isDefault", is_archived AS "isArchived",
@@ -21698,7 +21698,7 @@ export async function registerRoutes(
     return result.rows[0] ?? null;
   };
 
-  const renderClientJobEmail = async (job: any, input: any, decision: "approved" | "rejected") => {
+  const renderClientJobEmail = async (job: any, input: any, decision: "approved" | "rejected" | "unapproved") => {
     if (!job.client_id || !job.email) {
       throw Object.assign(new Error("This job does not have a Client account owner with an email address."), { status: 422 });
     }
@@ -21729,7 +21729,7 @@ export async function registerRoutes(
       companyName: job.company,
       jobId: job.id,
       jobTitle: job.title,
-      jobStatus: decision === "approved" ? "open" : job.status,
+      jobStatus: decision === "approved" ? "open" : decision === "unapproved" ? "pending" : job.status,
       approvalStatus: decision,
       rejectionReason: input.rejectionReason ?? job.rejection_reason,
     });
@@ -21762,7 +21762,7 @@ export async function registerRoutes(
     try {
       const job = await loadClientJobEmailContext(req.params.id);
       if (!job) return res.status(404).json({ error: "Job not found" });
-      const decision = req.body?.decision === "rejected" ? "rejected" : "approved";
+      const decision = ["rejected", "unapproved"].includes(req.body?.decision) ? req.body.decision : "approved";
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       return res.json({ subject: rendered.subject, bodyHtml: rendered.bodyHtml });
     } catch (err: any) {
@@ -21776,7 +21776,7 @@ export async function registerRoutes(
     const testRecipient = String(req.body?.testRecipient ?? "").trim();
     if (!validateEmail(testRecipient)) return res.status(400).json({ error: "Enter a valid test recipient email." });
     try {
-      const decision = req.body?.decision === "rejected" ? "rejected" : "approved";
+      const decision = ["rejected", "unapproved"].includes(req.body?.decision) ? req.body.decision : "approved";
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
       const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
@@ -21881,6 +21881,77 @@ export async function registerRoutes(
     confirmClientJobDecision(req, res, "approved"));
   app.post("/api/admin/jobs/:id/reject-with-email", maybeAuthenticateAdmin, maybeRequireTalentSubRole, (req: any, res: Response) =>
     confirmClientJobDecision(req, res, "rejected"));
+
+  // Persist-first workflow for decisions whose Client email is reviewed after
+  // the state transition. No email is sent by these endpoints.
+  const persistClientEmailDecision = async (req: any, res: Response, decision: "rejected" | "pending") => {
+    try {
+      const transition = await transitionJobApprovalStatus({
+        jobId: req.params.id,
+        newStatus: decision,
+        adminId: req.user?.id ?? null,
+        rejectionReason: decision === "rejected" ? req.body?.rejectionReason ?? null : null,
+      });
+      if (!transition) return res.status(404).json({ error: "Job not found" });
+      if (!transition.transitioned || !transition.eventKey) {
+        return res.status(409).json({ error: "Job has already completed this transition.", transitioned: false });
+      }
+      return res.json({
+        success: true,
+        transitioned: true,
+        transitionEventKey: transition.eventKey,
+        job: transition.job,
+      });
+    } catch (err: any) {
+      console.error(`POST persist ${decision} job error:`, err);
+      return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to update job" });
+    }
+  };
+
+  app.post("/api/admin/jobs/:id/reject-for-email", maybeAuthenticateAdmin, maybeRequireTalentSubRole, (req: any, res: Response) =>
+    persistClientEmailDecision(req, res, "rejected"));
+
+  app.post("/api/admin/jobs/:id/unapprove-for-email", maybeAuthenticateAdmin, maybeRequireTalentSubRole, (req: any, res: Response) =>
+    persistClientEmailDecision(req, res, "pending"));
+
+  app.post("/api/admin/jobs/:id/client-email/send-after-transition", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    try {
+      const job = await loadClientJobEmailContext(req.params.id);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      const decision = req.body?.decision === "unapproved" ? "unapproved" : "rejected";
+      const transitionEventKey = String(req.body?.transitionEventKey ?? "");
+      if (!transitionEventKey) return res.status(400).json({ error: "A transition event key is required." });
+      if (!transitionEventKey.startsWith(`job-approval-transition:${job.id}:`)) {
+        return res.status(400).json({ error: "The transition event key does not belong to this job." });
+      }
+      const expectedStatus = decision === "unapproved" ? "pending" : "rejected";
+      if (job.approval_status !== expectedStatus) {
+        return res.status(409).json({ error: "The job is no longer in the expected decision state." });
+      }
+      const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
+      const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
+      const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
+      const email = await sendJobApprovalCompanionEmail({
+        jobId: job.id,
+        jobTitle: job.title,
+        clientUserId: job.client_id,
+        newStatus: decision,
+        rejectionReason: req.body?.rejectionReason ?? job.rejection_reason,
+        transitionEventKey,
+        reviewedContent: {
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+          templateId: rendered.templateId,
+          senderEmail,
+          sentBy: req.user?.id ?? null,
+        },
+      });
+      return res.json({ success: true, email });
+    } catch (err: any) {
+      console.error("POST client email after transition error:", err);
+      return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to send Client email", unresolvedKeys: err?.unresolvedKeys });
+    }
+  });
 
   // ── Client status-change approval requests ─────────────────────────────────────
   // These routes never mutate job_submissions.status. The actual transition is
