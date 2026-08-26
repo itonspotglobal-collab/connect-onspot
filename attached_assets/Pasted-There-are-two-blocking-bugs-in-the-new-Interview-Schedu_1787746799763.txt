@@ -1,0 +1,383 @@
+There are two blocking bugs in the new Interview Scheduling V1 implementation.
+
+Fix these narrowly. Do NOT redesign or refactor the existing working interview/invitation system.
+
+Existing Client, Talent, pipeline, timezone, notification, email, Graph availability, and authorization behavior must remain unchanged.
+
+# BUG 1 — Interviewer list returns 500
+
+In Admin → Schedule Interview, the Interviewer field shows:
+
+`Failed to load interviewer list`
+
+Browser console shows:
+
+`GET /api/admin/interviewers ... 500 Internal Server Error`
+
+## Required investigation
+
+Do not guess.
+
+1. Reproduce the request directly.
+2. Inspect the full server-side error/stack trace for:
+   `GET /api/admin/interviewers`
+3. Report the exact root cause before changing code.
+4. Determine whether the failure comes from:
+
+   * database query
+   * Microsoft Graph call
+   * missing/expired Graph credentials
+   * invalid response parsing
+   * missing environment configuration
+   * incorrect route implementation
+   * some other issue
+
+## Important architecture rule
+
+The interviewer selector itself must NOT become unusable simply because Microsoft Graph availability is unavailable.
+
+Microsoft Graph is an optional availability helper.
+
+If the interviewer list represents OnSpot/Admin users stored in our own system, load those users independently from Microsoft Graph.
+
+Then use Graph only when checking the selected interviewer's Outlook availability.
+
+Desired behavior:
+
+### Interviewer directory works
+
+Admin can select the interviewer.
+
+### Graph available
+
+Show/check Outlook availability.
+
+### Graph unavailable
+
+Display a graceful availability warning such as:
+
+`Outlook availability is currently unavailable.`
+
+But do not crash the interviewer list endpoint.
+
+Do not remove or weaken the existing Graph functionality.
+
+Fix the actual root cause and preserve existing Graph availability behavior.
+
+---
+
+# BUG 2 — Admin Schedule Interview returns "Submission not found or forbidden"
+
+The new Schedule Interview form allows Admin to enter:
+
+* Interview type
+* Duration
+* Date
+* Time
+* Timezone
+* Meeting link
+* Notes
+
+But clicking:
+
+`Schedule Interview`
+
+fails with:
+
+`Submission not found or forbidden`
+
+Browser console shows a POST to a Client interview endpoint returning `404`.
+
+## Likely integration issue to verify
+
+Audit the request actually being sent by the Admin scheduling dialog.
+
+Confirm whether Admin scheduling is currently calling:
+
+`POST /api/client/interviews`
+
+If yes, this is incorrect.
+
+Do NOT solve this by weakening the authorization inside the Client endpoint.
+
+`POST /api/client/interviews` must continue enforcing Client ownership exactly as it did before #407.
+
+Admin scheduling needs an Admin-authorized persistence path.
+
+---
+
+# REQUIRED FIX FOR ADMIN INTERVIEW CREATION
+
+Use an additive Admin route such as:
+
+`POST /api/admin/interviews`
+
+or another existing Admin-authorized interview route if one was already created during #407.
+
+Do not replace the Client route.
+
+Do not alter the Talent route.
+
+Admin creation should still create the SAME existing `interviews` record and use the SAME interview/proposal workflow.
+
+There must NOT be a separate Admin interview table or calendar event.
+
+## Admin authorization
+
+The route must:
+
+1. Require authenticated Admin.
+2. Load the actual `job_submissions` record.
+3. Verify the submission exists.
+4. Verify it is eligible for interview scheduling using the existing formal pipeline guards.
+5. Resolve the linked Talent and Client from that submission.
+6. Create the interview using the existing interview semantics.
+7. Write the initial immutable proposal/history record if that is the existing pattern.
+8. Preserve existing pipeline transition behavior to `interviewing`.
+9. Preserve timezone normalization.
+10. Preserve meeting-link behavior.
+
+Do not bypass the formal pipeline guard.
+
+---
+
+# IMPORTANT — VERIFY THE ID BEING PASSED
+
+The Admin Job Applications UI may expose several different identifiers.
+
+Audit this carefully.
+
+Possible IDs include:
+
+* job application ID
+* job submission ID
+* candidate ID
+* talent user ID
+* job ID
+
+The interview API is linked to:
+
+`job_submissions.id`
+
+Confirm that `ScheduleInterviewDialog` is actually passing the correct `job_submissions.id`.
+
+Do not assume that the Admin Job Applications row `id` is automatically the correct submission ID.
+
+Trace it from:
+
+Admin Job Applications API response
+
+→ selected application object
+
+→ Schedule Interview dialog props/state
+
+→ POST request payload
+
+→ server lookup
+
+Report the exact value currently being sent and what table it belongs to.
+
+If the Admin listing currently returns an ambiguous `id`, add an explicit additive field such as:
+
+`submissionId`
+
+to the Admin API response rather than changing the meaning of the existing `id` field.
+
+Do not change the existing `id` contract because other Admin functionality may depend on it.
+
+Then have the scheduling dialog explicitly send:
+
+`submissionId`
+
+---
+
+# ADMIN CREATE PAYLOAD
+
+Use the existing interview shape as much as possible.
+
+Example:
+
+```json
+{
+  "submissionId": "...",
+  "interviewType": "initial",
+  "durationMinutes": 60,
+  "proposedTimes": [
+    {
+      "start": "...UTC ISO...",
+      "end": "...UTC ISO...",
+      "timezone": "Asia/Singapore"
+    }
+  ],
+  "meetingLink": "https://teams.microsoft.com/...",
+  "candidateNotes": "..."
+}
+```
+
+Do not create a second scheduling model.
+
+Use the project's existing field names if they differ.
+
+---
+
+# IMPORTANT — DATE/TIME VALIDATION
+
+The screenshot shows a manually selected date and time.
+
+Ensure:
+
+* browser-local input is correctly interpreted using the selected timezone
+* UTC instant is generated using the existing interview normalization
+* end time comes from duration
+* past times are rejected server-side
+* timezone remains explicitly stored/labeled
+
+Do NOT change the existing `server/lib/interviewTime.ts` behavior unless there is a proven bug.
+
+---
+
+# MICROSOFT GRAPH MUST REMAIN OPTIONAL
+
+These are separate concerns:
+
+### OnSpot scheduling
+
+Persists into `interviews`.
+
+### Outlook availability
+
+Optional helper.
+
+An Admin must be able to schedule an interview even if Microsoft Graph availability temporarily fails, provided they intentionally select a valid time.
+
+Do not make Graph availability a database prerequisite.
+
+Do not silently schedule if the UI explicitly requires a successful availability check today; preserve existing behavior unless the new scheduling flow already specifies manual scheduling fallback.
+
+---
+
+# MEETING LINK
+
+Keep the current optional manual meeting-link field working.
+
+Do not implement automatic Teams meeting generation as part of this bugfix.
+
+We will handle automatic Teams creation separately after the built-in scheduling workflow is stable.
+
+A manually supplied Teams URL must continue being accepted if valid.
+
+---
+
+# NON-REGRESSION REQUIREMENTS
+
+Do not change existing behavior of:
+
+* `POST /api/client/invitations`
+* `POST /api/client/interviews`
+* Client interview ownership rules
+* Talent interview responses
+* Counter-proposals
+* Rescheduling
+* Interview rounds
+* Meeting links
+* Timezone formatting
+* Pipeline transitions
+* Formal pipeline guards
+* Notifications
+* Email
+* Existing Admin Job Applications actions
+* Existing Microsoft Graph availability
+* Client Profile
+* Talent Applications
+
+Do not weaken Client authorization to accommodate Admin.
+
+---
+
+# TESTS TO ADD
+
+Add focused regression tests.
+
+## Interviewer list
+
+1. Admin can retrieve interviewer list.
+2. Non-admin cannot retrieve it.
+3. Graph availability failure does not crash interviewer directory loading if they are separate concerns.
+4. Existing interviewer availability endpoint still works when Graph is configured.
+
+## Admin scheduling
+
+5. Admin can create interview for valid `job_submissions.id`.
+6. Interview persists after reload.
+7. Proposal/history row is created correctly.
+8. Submission transitions correctly according to existing pipeline behavior.
+9. Client route still rejects Admin attempting to use Client-owned route.
+10. Client route still enforces Client ownership.
+11. Admin cannot schedule nonexistent submission.
+12. Admin cannot schedule withdrawn/rejected/ineligible submission.
+13. Correct Talent is linked.
+14. Correct Client/job are linked.
+15. Timezone remains correct.
+16. Duration is persisted.
+17. Meeting link is persisted.
+18. Notes are persisted.
+19. Existing Client invitation test still passes.
+20. Existing Talent response tests still pass.
+21. Existing timezone smoke test still passes.
+22. Existing Admin Graph availability tests still pass.
+
+---
+
+# UI ERROR HANDLING
+
+Replace generic frontend failure only where appropriate.
+
+If submission truly does not exist:
+
+`Submission not found.`
+
+If pipeline state is invalid:
+
+`This application is no longer eligible for interview scheduling.`
+
+If unauthorized:
+
+return the appropriate authorization error.
+
+Do not mask server bugs as:
+
+`Submission not found or forbidden`
+
+when the actual issue is the Admin UI calling the wrong endpoint.
+
+---
+
+# COMPLETION REPORT
+
+Before saying this is fixed, report:
+
+1. Exact root cause of `/api/admin/interviewers` returning 500.
+2. Exact server error/stack trace summary.
+3. Whether Graph was involved.
+4. Exact endpoint the Admin Schedule Interview dialog was calling before the fix.
+5. Exact identifier being sent before the fix.
+6. Which database table that identifier belonged to.
+7. Correct Admin endpoint after the fix.
+8. Confirmation that Admin uses `job_submissions.id`.
+9. Exact files changed.
+10. Tests added.
+11. Test results.
+12. Confirmation Client authorization was NOT weakened.
+13. Confirmation existing Talent flow was NOT altered.
+14. Confirmation existing Graph availability still works.
+15. Manual verification:
+
+    * interviewer list loads
+    * Admin selects interviewer
+    * Admin selects date/time
+    * Admin schedules interview
+    * record persists
+    * page refresh still shows interview
+    * Talent receives/sees the proposed interview
+
+Do not implement unrelated changes in this bugfix.
