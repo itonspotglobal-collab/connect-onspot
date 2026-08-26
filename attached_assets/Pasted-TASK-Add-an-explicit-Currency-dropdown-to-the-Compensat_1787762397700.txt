@@ -1,0 +1,339 @@
+TASK: Add an explicit Currency dropdown to the Compensation section of the Create/Edit Job Form.
+
+This must be a narrowly scoped, backward-compatible change.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Do not change unrelated job form behavior, validation, submission flow, job approval, job search, application flow, interview flow, notifications, or emails.
+
+CURRENT UI
+
+The Compensation section currently shows something like:
+
+Compensation — optional
+
+Monthly rate (PHP)
+
+[ e.g. ₱45,000 – ₱60,000 ]
+
+Display as
+
+[ Range ▼ ]
+
+The currency is currently implied/hardcoded in the label/placeholder.
+
+We want the user to explicitly choose the currency first.
+
+GOAL
+
+Update the Compensation section to include:
+
+Currency
+
+[ PHP ▼ ]
+
+Monthly rate
+
+[ e.g. 45,000 – 60,000 ]
+
+Display as
+
+[ Range ▼ ]
+
+The currency should no longer be hardcoded into the field label before the user chooses it.
+
+The selected currency controls how the compensation is stored and displayed.
+
+AUDIT FIRST
+
+Before implementing, identify and report:
+
+1. Which JobFormData fields currently store:
+
+   * compensation/rate
+   * currency
+   * display format
+2. Which jobs database columns currently receive these values.
+3. Whether the schema already contains fields such as:
+
+   * budget
+   * budgetCurrency
+   * customCurrencyCode
+   * salaryDisplay
+     or equivalent.
+4. Which public/job-detail components format compensation.
+5. Which Admin/Client job list components format compensation.
+6. Whether existing jobs already support PHP/USD or other currencies.
+
+Do not add a new database column if an existing currency field already supports this.
+
+PREFERRED IMPLEMENTATION
+
+Reuse the existing currency field already present in the job schema/form model.
+
+Do not create parallel compensation fields.
+
+If the current form uses a field such as:
+
+budgetCurrency
+
+reuse it.
+
+If there is already a custom currency mechanism, preserve it.
+
+CURRENCY DROPDOWN
+
+Add a standard existing OnSpot Select/dropdown labeled:
+
+Currency
+
+Recommended V1 options:
+
+* PHP — Philippine Peso
+* USD — US Dollar
+* EUR — Euro
+* GBP — British Pound
+* AUD — Australian Dollar
+* CAD — Canadian Dollar
+
+If the existing system already supports a canonical currency list, reuse that exact list instead of introducing a new one.
+
+If the existing system supports `OTHER` / custom ISO codes, preserve that behavior.
+
+Do not remove any existing supported currency.
+
+DEFAULT
+
+Preserve the current default behavior.
+
+If compensation currently defaults to PHP, keep:
+
+PHP
+
+as the default for new job postings.
+
+Existing jobs must continue loading with their stored currency.
+
+Do not rewrite historical records.
+
+LABEL CHANGE
+
+Change:
+
+Monthly rate (PHP)
+
+to:
+
+Monthly rate
+
+because the currency is now selected separately.
+
+Do not hardcode:
+
+PHP
+$
+₱
+€
+
+into the field label.
+
+PLACEHOLDER
+
+Prefer a neutral numeric placeholder such as:
+
+45,000 – 60,000
+
+or dynamically format the placeholder based on the selected currency if this can be done without changing existing form logic significantly.
+
+Do not store formatting symbols inside numeric DB fields unless that is already how the existing system works.
+
+DISPLAY AS
+
+Preserve the existing:
+
+Display as
+
+control and its current behavior.
+
+Do not change options such as:
+
+* Range
+* Exact
+* Starting at
+  or whatever values already exist.
+
+The new Currency dropdown must work with the current Display As behavior.
+
+PERSISTENCE
+
+Verify all combinations persist correctly.
+
+Examples:
+
+Currency = PHP
+Rate = 45,000 – 60,000
+
+Currency = USD
+Rate = 1,000 – 1,500
+
+Currency = EUR
+etc.
+
+On reload/edit, the exact stored currency must be selected.
+
+REVIEW STEP
+
+Update the existing Review step only as needed so compensation displays with the selected currency.
+
+Examples:
+
+PHP:
+₱45,000 – ₱60,000
+
+USD:
+$1,000 – $1,500
+
+EUR:
+€1,000 – €1,500
+
+Use the project's existing compensation/rate formatter if one already exists.
+
+Do not create another formatting utility if the existing `buildRateDisplay`, `buildRateDisplayWithCode`, or equivalent helper already handles this.
+
+PUBLIC JOB DISPLAY
+
+Audit the existing job cards/job detail pages.
+
+Ensure they continue showing compensation correctly with the stored currency.
+
+Do not redesign these pages.
+
+The new form change must not break:
+
+* Find Work
+* job cards
+* job detail
+* Admin job list
+* Client job list
+* job editing
+* job matching/search
+
+BACKWARD COMPATIBILITY
+
+Existing historical jobs may have:
+
+* PHP
+* USD
+* null/missing currency
+* custom currency
+
+Handle them safely.
+
+Do not cause edit pages to crash if an old job has no currency.
+
+Use the existing legacy/default fallback.
+
+Do not rewrite old values just by opening an edit form.
+
+OPTIONAL COMPENSATION
+
+Compensation remains optional unless current business rules already require it.
+
+Do not make compensation mandatory as part of this task.
+
+If the user leaves compensation blank:
+
+* job creation/edit should still behave exactly as before
+* selected/default currency should not create fake salary data by itself
+
+Do not display a compensation value publicly if no rate was entered.
+
+CUSTOM CURRENCY
+
+If the existing system already supports a custom currency code field, preserve it.
+
+Do not remove it.
+
+If `OTHER` is already supported, keep the same existing UX/data contract.
+
+Do not add a new custom-currency feature if it does not already exist unless needed for compatibility.
+
+VALIDATION
+
+Reuse existing rate validation.
+
+Do not change compensation parsing unless necessary for the currency selector.
+
+Do not accidentally reject existing values that currently work.
+
+Currency validation should use the existing supported values.
+
+DO NOT CHANGE
+
+Do not modify:
+
+* Job Title
+* Work Setup
+* Function
+* Experience Level
+* Engagement Type
+* Duration
+* Description
+* Requirements
+* Skills
+* Availability
+* Company fields
+* Draft logic
+* Save & Exit
+* Submit for Approval
+* approval status
+* public job visibility rules
+* applications
+* invite readiness
+* interviews
+* notifications
+* emails
+* unrelated compensation logic
+
+Do not refactor JobFormPage broadly.
+
+TESTS / VERIFICATION
+
+Verify:
+
+1. New PHP job saves and reloads correctly.
+2. New USD job saves and reloads correctly.
+3. New EUR job saves and reloads correctly.
+4. Existing PHP job still loads correctly.
+5. Existing USD job still loads correctly.
+6. Legacy job with missing currency does not crash.
+7. Review step shows correct currency.
+8. Public job display shows correct currency.
+9. Admin job list shows correct currency.
+10. Client job list shows correct currency.
+11. Empty compensation remains optional.
+12. Existing Display As behavior remains unchanged.
+13. Create Job still works for Admin.
+14. Create Job still works for Client.
+15. Edit Job still works.
+16. Existing approval flow still works.
+17. Existing job search/display still works.
+18. `npx tsc --noEmit` passes.
+19. `git diff --check` passes.
+
+COMPLETION REPORT
+
+Report:
+
+1. Existing compensation field(s) found.
+2. Existing currency field/database column found.
+3. Whether any schema migration was needed.
+4. Currency options used.
+5. Default currency behavior.
+6. Exact files changed.
+7. How legacy jobs remain compatible.
+8. How compensation is rendered in Review/public views.
+9. Test results.
+10. Confirmation no unrelated job form behavior changed.
+
+Keep this change narrowly scoped to adding an explicit Currency dropdown before the compensation/rate value and removing the hardcoded currency from the rate label.
