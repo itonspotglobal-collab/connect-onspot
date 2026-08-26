@@ -95,6 +95,7 @@ export function ClientEmailComposer({
   const [bodyHtml, setBodyHtml] = useState("");
   const [senderEmail, setSenderEmail] = useState("hiretalent@onspotglobal.com");
   const [testRecipient, setTestRecipient] = useState("");
+  const [activeTab, setActiveTab] = useState<"compose" | "preview" | "history">("compose");
 
   const contextQuery = useQuery<Context>({
     queryKey: ["/api/admin/jobs", job?.id, "client-email-context"],
@@ -129,14 +130,13 @@ export function ClientEmailComposer({
   }, [open, decision, eligibleTemplates, templateId, toast]);
 
   useEffect(() => {
-    if (!open) {
-      setTemplateId("");
-      setSubject("");
-      setBodyHtml("");
-      setSenderEmail("hiretalent@onspotglobal.com");
-      setTestRecipient("");
-    }
-  }, [open]);
+    setTemplateId("");
+    setSubject("");
+    setBodyHtml("");
+    setSenderEmail("hiretalent@onspotglobal.com");
+    setTestRecipient("");
+    setActiveTab("compose");
+  }, [open, job?.id, decision]);
 
   const selectTemplate = async (id: string) => {
     setTemplateId(id);
@@ -184,11 +184,13 @@ export function ClientEmailComposer({
             {decision === "approved" ? "Approve Job & Email Client" : decision === "unapproved" ? "Email Client About Unapproved Job" : "Email Client About Rejected Job"}
           </DialogTitle>
           <DialogDescription>
-            Review the Client notification before sending. The job decision has already been saved; canceling or sending a test will not change it.
+            {decision === "approved"
+              ? "Review and edit the Client notification before confirming approval. Canceling or sending a test will not change the job."
+              : "Review and edit the Client notification. The job decision has already been saved; canceling or sending a test will not change it."}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="compose">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
           <TabsList>
             <TabsTrigger value="compose"><Mail className="mr-1.5 h-4 w-4" />Compose</TabsTrigger>
             <TabsTrigger value="preview"><Eye className="mr-1.5 h-4 w-4" />Preview</TabsTrigger>

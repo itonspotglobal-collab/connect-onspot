@@ -21705,9 +21705,9 @@ export async function registerRoutes(
     const templateId = String(input.templateId ?? "");
     let subject = String(input.subject ?? "").trim();
     let bodyHtml = String(input.bodyHtml ?? "").trim();
-    if ((!subject || !bodyHtml) && templateId) {
+    if (templateId) {
       const templateResult = await query(
-        `SELECT subject, body_html AS "bodyHtml"
+        `SELECT subject, body_html AS "bodyHtml", category
            FROM applicant_email_templates
           WHERE id = $1 AND is_archived = false
           LIMIT 1`,
@@ -21715,6 +21715,9 @@ export async function registerRoutes(
       );
       if (!templateResult.rows[0]) {
         throw Object.assign(new Error("Email template not found."), { status: 404 });
+      }
+      if (templateResult.rows[0].category !== `job_${decision}`) {
+        throw Object.assign(new Error("The selected template does not match this job decision."), { status: 400 });
       }
       subject ||= templateResult.rows[0].subject;
       bodyHtml ||= templateResult.rows[0].bodyHtml;
@@ -21837,6 +21840,16 @@ export async function registerRoutes(
     try {
       const job = await loadClientJobEmailContext(req.params.id);
       if (!job) return res.status(404).json({ error: "Job not found" });
+      if (decision === "approved") {
+        const jobToApprove = await storage.getJob(req.params.id);
+        if (!jobToApprove) return res.status(404).json({ error: "Job not found" });
+        if (!["Lite", "Standard"].includes(jobToApprove.engagementType as string)) {
+          return res.status(400).json({
+            error: "Engagement Type required",
+            message: "An Engagement Type (Lite or Standard) must be set before approving a job.",
+          });
+        }
+      }
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
       const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
@@ -21854,6 +21867,11 @@ export async function registerRoutes(
           job: transition.job,
           email: { status: "skipped", reason: "already_decided" },
         });
+      }
+      if (decision === "approved") {
+        import("./services/ragService")
+          .then(({ indexJobListings }) => indexJobListings())
+          .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
       }
       const email = await sendJobApprovalCompanionEmail({
         jobId: transition.job.id,
@@ -21927,6 +21945,32 @@ export async function registerRoutes(
       const expectedStatus = decision === "unapproved" ? "pending" : "rejected";
       if (job.approval_status !== expectedStatus) {
         return res.status(409).json({ error: "The job is no longer in the expected decision state." });
+      }
+      const expectedNotificationType = decision === "unapproved" ? "job_pending" : "job_rejected";
+      const transitionRecord = await query(
+        `SELECT id
+           FROM notifications
+          WHERE event_key = $1
+            AND user_id = $2
+            AND type = $3
+            AND related_id = $4
+            AND related_type = 'job'
+          LIMIT 1`,
+        [transitionEventKey, job.client_id, expectedNotificationType, job.id],
+      );
+      if (!transitionRecord.rows[0]) {
+        return res.status(409).json({ error: "The transition event is not valid for this job decision." });
+      }
+      const deliveryEventKey = `job-approval-email:${transitionEventKey}`;
+      const sentDelivery = await query(
+        `SELECT id
+           FROM email_notification_deliveries
+          WHERE event_key = $1 AND status = 'sent'
+          LIMIT 1`,
+        [deliveryEventKey],
+      );
+      if (sentDelivery.rows[0]) {
+        return res.status(409).json({ error: "The Client email for this transition was already sent." });
       }
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");

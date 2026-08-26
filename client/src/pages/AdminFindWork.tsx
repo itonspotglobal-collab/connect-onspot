@@ -764,17 +764,19 @@ export default function AdminFindWork() {
   const [linkModalJobId, setLinkModalJobId] = useState<string | null>(null);
   const [linkTargetJobId, setLinkTargetJobId] = useState<string>("");
   const [viewDetailJobId, setViewDetailJobId] = useState<string | null>(null);
-  const [approveConfirmJobId, setApproveConfirmJobId] = useState<string | null>(null);
   const [unapproveConfirmJobId, setUnapproveConfirmJobId] = useState<string | null>(null);
   const [rejectConfirmJobId, setRejectConfirmJobId] = useState<string | null>(null);
   const [composerJob, setComposerJob] = useState<{ id: string; title: string } | null>(null);
-  const [emailDecision, setEmailDecision] = useState<"unapproved" | "rejected">("rejected");
+  const [emailDecision, setEmailDecision] = useState<"approved" | "unapproved" | "rejected">("rejected");
   const [composerRejectionReason, setComposerRejectionReason] = useState("");
   const [composerTransitionEventKey, setComposerTransitionEventKey] = useState<string | null>(null);
   const openCreate = () => navigate("/admin/find-work/jobs/new");
   const openEdit = (job: Job) => navigate(`/admin/find-work/jobs/${job.id}/edit`);
-  const openApproveComposer = (jobId: string) => {
-    setApproveConfirmJobId(jobId);
+  const openApproveComposer = (job: Pick<Job, "id" | "title">) => {
+    setComposerJob({ id: job.id, title: job.title });
+    setEmailDecision("approved");
+    setComposerRejectionReason("");
+    setComposerTransitionEventKey(null);
   };
 
   const handleTabChange = (tab: TabKey) => {
@@ -855,13 +857,6 @@ export default function AdminFindWork() {
       toast({ title: "Failed to remove job", description: err.message, variant: "destructive" }),
   });
 
-  const approveMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("POST", `/api/admin/jobs/${id}/approve`),
-    onSuccess: () => { invalidate(); toast({ title: "Job approved — now visible publicly" }); },
-    onError: (err: any) =>
-      toast({ title: "Approval failed", description: err.message, variant: "destructive" }),
-  });
-
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       apiRequest("POST", `/api/admin/jobs/${id}/reject-for-email`, { rejectionReason: reason }),
@@ -895,21 +890,36 @@ export default function AdminFindWork() {
   });
 
   const composerSendMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) =>
-      apiRequest("POST", `/api/admin/jobs/${id}/client-email/send-after-transition`, {
-        ...payload,
-        decision: emailDecision,
-        transitionEventKey: composerTransitionEventKey,
-      }),
+    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) => {
+      const isApproval = emailDecision === "approved";
+      return apiRequest(
+        "POST",
+        isApproval
+          ? `/api/admin/jobs/${id}/approve-with-email`
+          : `/api/admin/jobs/${id}/client-email/send-after-transition`,
+        {
+          ...payload,
+          decision: emailDecision,
+          transitionEventKey: isApproval ? undefined : composerTransitionEventKey,
+        },
+      );
+    },
     onSuccess: async (response) => {
       const result = await response.json();
+      invalidate();
       setComposerJob(null);
       setComposerTransitionEventKey(null);
-      toast({
-        title: "Email sent",
-        description: result.email?.status === "failed" ? "The job decision was saved, but the Client email failed to send." : "The Client email was sent.",
-        variant: result.email?.status === "failed" ? "destructive" : "default",
-      });
+      if (result.email?.status === "failed") {
+        toast({
+          title: emailDecision === "approved" ? "Job approved; email failed" : "Decision saved; email failed",
+          description: result.email.error ?? "The decision was saved, but the Client email could not be delivered.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: emailDecision === "approved" ? "Job approved — email sent to Client" : "Email sent",
+        });
+      }
     },
     onError: (err: any) =>
       toast({ title: "Email failed", description: err.message, variant: "destructive" }),
@@ -1351,7 +1361,7 @@ export default function AdminFindWork() {
                   key={job.id}
                   job={job}
                   allJobs={enrichedJobs}
-                  onApprove={() => openApproveComposer(job.id)}
+                  onApprove={() => openApproveComposer(job)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onLink={() => {
                     setLinkModalJobId(job.id);
@@ -1359,8 +1369,8 @@ export default function AdminFindWork() {
                     setLinkTargetJobId(firstDup?.id ?? "");
                   }}
                   onView={() => setViewDetailJobId(job.id)}
-                  isApproving={approveMutation.isPending}
-                  isRejecting={rejectMutation.isPending}
+                  isApproving={composerSendMutation.isPending}
+                  isRejecting={rejectMutation.isPending || composerSendMutation.isPending}
                 />
               ))}
             </div>
@@ -1386,15 +1396,15 @@ export default function AdminFindWork() {
                   }}
                   onDelete={() => deleteMutation.mutate(job.id)}
                   onCopy={() => copy(job.id)}
-                  onApprove={() => openApproveComposer(job.id)}
+                  onApprove={() => openApproveComposer(job)}
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onMoveToPending={() => setUnapproveConfirmJobId(job.id)}
                   onRefresh={() => refreshMutation.mutate(job.id)}
                   copiedId={copiedId}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteMutation.isPending}
-                  isApproving={approveMutation.isPending}
-                  isRejecting={rejectMutation.isPending}
+                  isApproving={composerSendMutation.isPending}
+                  isRejecting={rejectMutation.isPending || composerSendMutation.isPending}
                   isRefreshing={refreshMutation.isPending}
                 />
               ))}
@@ -1451,37 +1461,6 @@ export default function AdminFindWork() {
           )}
         </div>
       </div>
-
-      <Dialog open={!!approveConfirmJobId} onOpenChange={(open) => { if (!open) setApproveConfirmJobId(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ThumbsUp className="h-5 w-5 text-emerald-500" />
-              Approve this job?
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-1">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              This role will become visible on the public Find Work page immediately.
-            </p>
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" onClick={() => setApproveConfirmJobId(null)}>Cancel</Button>
-              <Button
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                disabled={approveMutation.isPending}
-                onClick={() => {
-                  if (approveConfirmJobId) {
-                    approveMutation.mutate(approveConfirmJobId);
-                    setApproveConfirmJobId(null);
-                  }
-                }}
-              >
-                {approveMutation.isPending ? "Approving…" : "Approve"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <ClientEmailComposer
         job={composerJob}
@@ -1715,7 +1694,7 @@ export default function AdminFindWork() {
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-100 dark:border-white/[0.06]">
                   <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => { setViewDetailJobId(null); openApproveComposer(dj.id); }}>
+                    onClick={() => { setViewDetailJobId(null); openApproveComposer(dj); }}>
                     <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />Approve
                   </Button>
                   <Button size="sm" variant="outline"

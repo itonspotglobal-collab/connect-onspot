@@ -19,31 +19,13 @@ A stale 'processing' row (crash mid-send) is re-claimable after the configured c
 
 **How to apply:** New companion email path → add a function here, call `claimEmailDelivery` before sending, call `markEmailDeliveryResult` after.
 
-## Reviewed job-decision emails
-The Admin composer and automatic job-decision companions are coordinated through one canonical event key: `job-approval-email:${transitionEventKey}`. Reviewed content is passed into the existing companion sender; it is not sent by a separate route-level Graph call.
 
-**Why:** A real transition must create one delivery claim and at most one Client email, while unrelated automatic companions must remain intact.
+## Reviewed administrative notifications
+Admin-reviewed decision emails must reuse the exact canonical transition event and delivery ledger as automatic companion emails. State transitions and in-app notifications remain committed even when delivery fails.
 
-**How to apply:** Approve keeps its direct automatic path. For Unapprove and Reject, confirm first, persist the atomic transition and in-app notification, then open the composer. Manual send reuses that transition event key; closing or delivery failure never rolls back state.
+**Why:** Administrative decisions must be durable and auditable without allowing email outages or duplicate clicks to create duplicate workflow notifications.
 
-## Interview emails
-`sendInterviewRescheduledEmail` / `sendInterviewCancelledEmail` live in `server/services/interviewEmailService.ts` and import `claimEmailDelivery` / `markEmailDeliveryResult` from emailCompanionService.
-
-**Admin route guard:** Rescheduled/cancelled email calls must be dispatched OUTSIDE the `if (notifType && interview.talent_id)` block so the client is notified even when no talent user is linked yet.
-
-## DB tables (Migration 0013)
-- `email_notification_deliveries` — idempotency ledger: one row per `event_key`, status `processing|sent|failed`.
-- `message_email_cooldowns` — per-thread/user cooldown for unread-message emails; deleted on read.
-
-## Coverage
-| Event | Where fired |
-|---|---|
-| Job approved / rejected | Automatic approve/reject routes and composer-confirmed approve-with-email/reject-with-email routes |
-| Client new application (auth + unauth) | routes.ts → POST /api/jobs/:jobId/apply |
-| Interview rescheduled (admin-initiated) | routes.ts → PATCH /api/admin/interviews/:id |
-| Interview cancelled (admin or client) | routes.ts → PATCH /api/admin/interviews/:id, PATCH /api/client/interviews/:id |
-| Unread message email | routes.ts → POST /api/messages (cooldown-gated) |
-| Mark-read cooldown reset | routes.ts → POST /api/message-threads/:threadId/mark-read |
+**How to apply:** Reuse the transition event for the reviewed send, claim before sending, and record both successful and failed attempts through this service.
 
 ## Privacy invariants
 - Applicant contact PII (email, phone) is never included in Client-facing companion emails.
@@ -52,6 +34,3 @@ The Admin composer and automatic job-decision companions are coordinated through
 
 ## Sender
 `hiretalent@onspotglobal.com` is the default; falls back to `MICROSOFT_SENDER_EMAIL` / `APPLICATION_EMAIL_FROM` if not in the allowlist. Operational validation of Graph mailbox/Send-As permissions is still required.
-
-## Test file
-`server/tests/email-companion-service.test.ts` — uses `mock.module` from `node:test` (requires `--experimental-test-module-mocks`, already passed by the project's npm test runner). Single closure mock with mutable control flags (`queryShouldThrow`, `sendShouldFail`) avoids ERR_INVALID_STATE from double mock.module calls.

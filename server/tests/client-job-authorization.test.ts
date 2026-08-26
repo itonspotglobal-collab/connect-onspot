@@ -29,6 +29,8 @@ const REVISION_JOB_ID = `client-job-revision-${suffix}`;
 const SCAFFOLD_JOB_ID = `client-job-scaffold-${suffix}`;
 const APPROVAL_NOTIFICATION_JOB_ID = `client-job-approval-notification-${suffix}`;
 const REJECTION_NOTIFICATION_JOB_ID = `client-job-rejection-notification-${suffix}`;
+const COMPOSER_APPROVAL_JOB_ID = `client-job-composer-approval-${suffix}`;
+const COMPOSER_REJECTION_JOB_ID = `client-job-composer-rejection-${suffix}`;
 const CANDIDATE_ID = `client-job-candidate-${suffix}`;
 
 const token = (userId: string, role: string) =>
@@ -145,6 +147,10 @@ async function createFixtures() {
        ($6, $2, 'Approval notification job', 'Notification test job', 'Technical', 'intermediate',
         'Standard', 'open', 'pending', 'manual'),
        ($7, $2, 'Rejection notification job', 'Rejected notification test job', 'Technical', 'intermediate',
+        'Standard', 'open', 'pending', 'manual'),
+       ($8, $2, 'Composer approval job', 'Composer approval test job', 'Technical', 'intermediate',
+        'Standard', 'open', 'pending', 'manual'),
+       ($9, $2, 'Composer rejection job', 'Composer rejection test job', 'Technical', 'intermediate',
         'Standard', 'open', 'pending', 'manual')`,
       [
         PENDING_JOB_ID,
@@ -154,6 +160,8 @@ async function createFixtures() {
         SCAFFOLD_JOB_ID,
         APPROVAL_NOTIFICATION_JOB_ID,
         REJECTION_NOTIFICATION_JOB_ID,
+        COMPOSER_APPROVAL_JOB_ID,
+        COMPOSER_REJECTION_JOB_ID,
       ],
   );
   await query(
@@ -165,6 +173,11 @@ async function createFixtures() {
 }
 
 async function destroyFixtures() {
+  await query(
+    `DELETE FROM email_notification_deliveries
+      WHERE related_id = ANY($1::text[])`,
+    [[COMPOSER_APPROVAL_JOB_ID, COMPOSER_REJECTION_JOB_ID]],
+  ).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
   await query(`DELETE FROM client_talent_favorites WHERE client_id = $1 OR talent_id = $1`, [CLIENT_ID]).catch(() => {});
@@ -183,6 +196,8 @@ async function destroyFixtures() {
       SCAFFOLD_JOB_ID,
       APPROVAL_NOTIFICATION_JOB_ID,
       REJECTION_NOTIFICATION_JOB_ID,
+      COMPOSER_APPROVAL_JOB_ID,
+      COMPOSER_REJECTION_JOB_ID,
     ]],
   ).catch(() => {});
   await query(
@@ -736,6 +751,246 @@ describe("client profile and job authorization (production routes)", () => {
     assert.match(finalNotifications.rows[0].message, /Pending approval job/);
     assert.equal(finalNotifications.rows[0].related_id, invitation.json.id);
     assert.equal(finalNotifications.rows[0].is_read, false);
+  });
+
+  it("previews, tests, and commits Client approval emails without duplicate transitions", async () => {
+    const savedEmailConfig = {
+      tenant: process.env.MICROSOFT_TENANT_ID,
+      client: process.env.MICROSOFT_CLIENT_ID,
+      secret: process.env.MICROSOFT_CLIENT_SECRET,
+    };
+    const savedFetch = globalThis.fetch;
+    process.env.MICROSOFT_TENANT_ID = "";
+    process.env.MICROSOFT_CLIENT_ID = "";
+    process.env.MICROSOFT_CLIENT_SECRET = "";
+    globalThis.fetch = async () => {
+      throw new Error("Graph disabled for approval composer regression test");
+    };
+
+    try {
+      const context = await request(
+        server,
+        "GET",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/client-email/context`,
+        adminToken,
+      );
+      assert.equal(context.status, 200, JSON.stringify(context.json));
+      assert.equal(context.json.recipient.email, `${CLIENT_ID}@test.example`);
+      assert.deepEqual(context.json.sender, {
+        name: "OnSpot Hire Talent",
+        email: "hiretalent@onspotglobal.com",
+      });
+
+      const approvedTemplate = await query(
+        `SELECT id FROM applicant_email_templates
+          WHERE category = 'job_approved' AND is_default = true
+          LIMIT 1`,
+      );
+      const rejectedTemplate = await query(
+        `SELECT id FROM applicant_email_templates
+          WHERE category = 'job_rejected' AND is_default = true
+          LIMIT 1`,
+      );
+      assert.ok(approvedTemplate.rows[0]?.id);
+      assert.ok(rejectedTemplate.rows[0]?.id);
+
+      const reviewedApproval = {
+        decision: "approved",
+        templateId: approvedTemplate.rows[0].id,
+        subject: "Reviewed {{job_title}} approval",
+        bodyHtml: "<p>Hello {{client_name}} — {{job_title}} is approved.</p>",
+        senderEmail: "hiretalent@onspotglobal.com",
+      };
+      const preview = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/client-email/preview`,
+        adminToken,
+        reviewedApproval,
+      );
+      assert.equal(preview.status, 200, JSON.stringify(preview.json));
+      assert.equal(preview.json.subject, "Reviewed Composer approval job approval");
+      assert.match(preview.json.bodyHtml, /Client Tester/);
+
+      const testSend = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/client-email/test`,
+        adminToken,
+        { ...reviewedApproval, testRecipient: "qa@example.com" },
+      );
+      assert.equal(testSend.status, 502, JSON.stringify(testSend.json));
+      const beforeApproval = await query(
+        `SELECT approval_status FROM jobs WHERE id = $1`,
+        [COMPOSER_APPROVAL_JOB_ID],
+      );
+      assert.equal(beforeApproval.rows[0].approval_status, "pending", "test sends must not transition jobs");
+
+      await query(`UPDATE jobs SET engagement_type = NULL WHERE id = $1`, [COMPOSER_APPROVAL_JOB_ID]);
+      const blockedApproval = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/approve-with-email`,
+        adminToken,
+        reviewedApproval,
+      );
+      assert.equal(blockedApproval.status, 400, JSON.stringify(blockedApproval.json));
+      const stillPending = await query(
+        `SELECT approval_status FROM jobs WHERE id = $1`,
+        [COMPOSER_APPROVAL_JOB_ID],
+      );
+      assert.equal(stillPending.rows[0].approval_status, "pending");
+      await query(`UPDATE jobs SET engagement_type = 'Standard' WHERE id = $1`, [COMPOSER_APPROVAL_JOB_ID]);
+
+      process.env.MICROSOFT_TENANT_ID = "test-tenant";
+      process.env.MICROSOFT_CLIENT_ID = "test-client";
+      process.env.MICROSOFT_CLIENT_SECRET = "test-secret";
+      globalThis.fetch = async (input: Parameters<typeof fetch>[0]) => {
+        if (String(input).includes("/oauth2/v2.0/token")) {
+          return new Response(JSON.stringify({ access_token: "test-access-token", expires_in: 3600 }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(null, { status: 202 });
+      };
+      const approval = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/approve-with-email`,
+        adminToken,
+        reviewedApproval,
+      );
+      assert.equal(approval.status, 200, JSON.stringify(approval.json));
+      assert.equal(approval.json.transitioned, true);
+      assert.equal(approval.json.email.status, "sent");
+
+      const repeatedApproval = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_APPROVAL_JOB_ID}/approve-with-email`,
+        adminToken,
+        reviewedApproval,
+      );
+      assert.equal(repeatedApproval.status, 200, JSON.stringify(repeatedApproval.json));
+      assert.equal(repeatedApproval.json.transitioned, false);
+      const approvalDeliveries = await query(
+        `SELECT status, subject, body_html, is_test
+           FROM email_notification_deliveries
+          WHERE related_type = 'job' AND related_id = $1
+          ORDER BY created_at ASC`,
+        [COMPOSER_APPROVAL_JOB_ID],
+      );
+      assert.equal(approvalDeliveries.rows.length, 2, "one test and one workflow delivery should be recorded");
+      assert.equal(approvalDeliveries.rows.filter((row: any) => !row.is_test).length, 1);
+      assert.equal(approvalDeliveries.rows.find((row: any) => !row.is_test).status, "sent");
+      assert.equal(
+        approvalDeliveries.rows.find((row: any) => !row.is_test).subject,
+        reviewedApproval.subject.replace("{{job_title}}", "Composer approval job"),
+      );
+      const approvalNotifications = await query(
+        `SELECT type FROM notifications WHERE related_id = $1`,
+        [COMPOSER_APPROVAL_JOB_ID],
+      );
+      assert.deepEqual(approvalNotifications.rows.map((row: any) => row.type), ["job_approved"]);
+
+      process.env.MICROSOFT_TENANT_ID = "";
+      process.env.MICROSOFT_CLIENT_ID = "";
+      process.env.MICROSOFT_CLIENT_SECRET = "";
+      globalThis.fetch = async () => {
+        throw new Error("Graph disabled for rejection failure regression test");
+      };
+      const rejection = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_REJECTION_JOB_ID}/reject-with-email`,
+        adminToken,
+        {
+          decision: "rejected",
+          templateId: rejectedTemplate.rows[0].id,
+          subject: "",
+          bodyHtml: "",
+          senderEmail: "hiretalent@onspotglobal.com",
+          rejectionReason: "Needs revision",
+        },
+      );
+      assert.equal(rejection.status, 200, JSON.stringify(rejection.json));
+      assert.equal(rejection.json.transitioned, true);
+      assert.equal(rejection.json.email.status, "failed");
+      const rejectionState = await query(
+        `SELECT approval_status, rejection_reason FROM jobs WHERE id = $1`,
+        [COMPOSER_REJECTION_JOB_ID],
+      );
+      assert.equal(rejectionState.rows[0].approval_status, "rejected");
+      assert.equal(rejectionState.rows[0].rejection_reason, "Needs revision");
+
+      const forgedKey = `job-approval-transition:${COMPOSER_REJECTION_JOB_ID}:forged`;
+      const forgedSend = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_REJECTION_JOB_ID}/client-email/send-after-transition`,
+        adminToken,
+        { ...reviewedApproval, decision: "rejected", transitionEventKey: forgedKey },
+      );
+      assert.equal(forgedSend.status, 409, JSON.stringify(forgedSend.json));
+
+      const actualTransition = await query(
+        `SELECT event_key FROM notifications
+          WHERE related_id = $1 AND type = 'job_rejected'
+          ORDER BY created_at DESC, id DESC
+          LIMIT 1`,
+        [COMPOSER_REJECTION_JOB_ID],
+      );
+      assert.ok(actualTransition.rows[0]?.event_key);
+      await query(
+        `UPDATE email_notification_deliveries
+            SET status = 'sent', sent_at = NOW()
+          WHERE event_key = $1`,
+        [`job-approval-email:${actualTransition.rows[0].event_key}`],
+      );
+      const replay = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${COMPOSER_REJECTION_JOB_ID}/client-email/send-after-transition`,
+        adminToken,
+        { ...reviewedApproval, decision: "rejected", transitionEventKey: actualTransition.rows[0].event_key },
+      );
+      assert.equal(replay.status, 409, JSON.stringify(replay.json));
+    } finally {
+      globalThis.fetch = savedFetch;
+      for (const [key, value] of Object.entries({
+        MICROSOFT_TENANT_ID: savedEmailConfig.tenant,
+        MICROSOFT_CLIENT_ID: savedEmailConfig.client,
+        MICROSOFT_CLIENT_SECRET: savedEmailConfig.secret,
+      })) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
+  it("rejects an Unapprove email for a job that has no Unapprove transition", async () => {
+    const forgedSend = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${PENDING_JOB_ID}/client-email/send-after-transition`,
+      adminToken,
+      {
+        decision: "unapproved",
+        transitionEventKey: `job-approval-transition:${PENDING_JOB_ID}:never-created`,
+        subject: "Pending job",
+        bodyHtml: "<p>Pending job</p>",
+        senderEmail: "hiretalent@onspotglobal.com",
+      },
+    );
+    assert.equal(forgedSend.status, 409, JSON.stringify(forgedSend.json));
+    const deliveries = await query(
+      `SELECT COUNT(*)::int AS count
+         FROM email_notification_deliveries
+        WHERE related_type = 'job' AND related_id = $1`,
+      [PENDING_JOB_ID],
+    );
+    assert.equal(deliveries.rows[0].count, 0);
   });
 
   it("notifies only the owning client for each real approval transition", async () => {

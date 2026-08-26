@@ -24,8 +24,8 @@ import { query } from "../db.js";
 import {
   sendApplicantEmail,
   isEmailServiceConfigured,
-  ALLOWED_SENDERS,
 } from "./microsoftGraphEmailService.js";
+import * as microsoftGraphEmailService from "./microsoftGraphEmailService.js";
 import {
   renderBrandedEmailLayout,
   renderApplicantEmail,
@@ -34,6 +34,13 @@ import {
 
 /** Default sender for client-facing companion emails. */
 const CLIENT_SENDER = "hiretalent@onspotglobal.com";
+const FALLBACK_SENDER_ALLOWLIST: Record<string, string> = {
+  [CLIENT_SENDER]: "OnSpot Hire Talent",
+};
+
+function getSenderAllowlist(): Record<string, string> {
+  return microsoftGraphEmailService.ALLOWED_SENDERS ?? FALLBACK_SENDER_ALLOWLIST;
+}
 
 /** Cooldown window for unread-message emails (minutes). */
 export const MESSAGE_EMAIL_COOLDOWN_MINUTES = 15;
@@ -254,17 +261,9 @@ export async function sendJobApprovalCompanionEmail(
   }
 
   const requestedSender = reviewedContent?.senderEmail ?? CLIENT_SENDER;
-  const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : CLIENT_SENDER;
-  const senderName = ALLOWED_SENDERS[senderEmail] ?? "OnSpot Hire Talent";
-
-  if (!isEmailServiceConfigured()) {
-    console.warn("[emailCompanionService] sendJobApprovalCompanionEmail: email not configured — skipping");
-    return {
-      status: "failed",
-      eventKey: emailEventKey,
-      error: "Microsoft Graph email is not configured.",
-    };
-  }
+  const senderAllowlist = getSenderAllowlist();
+  const senderEmail = senderAllowlist[requestedSender] ? requestedSender : CLIENT_SENDER;
+  const senderName = senderAllowlist[senderEmail] ?? "OnSpot Hire Talent";
 
   try {
     // Resolve Client email first so we have the recipient before claiming the slot
@@ -366,6 +365,13 @@ ${reasonSection}
     if (!claimed) {
       console.log(`[emailCompanionService] sendJobApprovalCompanionEmail: delivery slot already claimed for ${emailEventKey} — skipping`);
       return { status: "skipped", eventKey: emailEventKey };
+    }
+
+    if (!isEmailServiceConfigured()) {
+      const error = "Microsoft Graph email is not configured.";
+      await markEmailDeliveryResult({ eventKey: emailEventKey, status: "failed", error });
+      console.warn("[emailCompanionService] sendJobApprovalCompanionEmail: email not configured");
+      return { status: "failed", eventKey: emailEventKey, error };
     }
 
     const sendResult = await sendApplicantEmail({
@@ -584,7 +590,7 @@ export async function sendUnreadMessageEmail(opts: UnreadMessageEmailOptions): P
       buildEmailContext({ email: recipientEmail }),
     );
 
-    const senderEmail = ALLOWED_SENDERS[CLIENT_SENDER]
+    const senderEmail = getSenderAllowlist()[CLIENT_SENDER]
       ? CLIENT_SENDER
       : process.env.MICROSOFT_SENDER_EMAIL || process.env.APPLICATION_EMAIL_FROM || CLIENT_SENDER;
 
