@@ -34,7 +34,9 @@ function SectionHeading({
 }) {
   return (
     <p className="text-base font-bold text-foreground leading-snug">
-      <span className="text-muted-foreground font-semibold mr-1">{number}.</span>
+      <span className="text-muted-foreground font-semibold mr-1">
+        {number}.
+      </span>
       {label}
       {optional && (
         <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -62,8 +64,16 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
 
   const addPendingSkill = () => {
     const name = pendingSkillName.trim();
-    if (name && !formData.requiredSkills.some((skill) => skill.name.toLowerCase() === name.toLowerCase())) {
-      saveSkills([...formData.requiredSkills, { name, years: pendingSkillYears }]);
+    if (
+      name &&
+      !formData.requiredSkills.some(
+        (skill) => skill.name.toLowerCase() === name.toLowerCase(),
+      )
+    ) {
+      saveSkills([
+        ...formData.requiredSkills,
+        { name, years: pendingSkillYears },
+      ]);
     }
     setPendingSkillName("");
     setPendingSkillYears("any");
@@ -75,7 +85,9 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
     delete nextDrafts[index];
     setNameDrafts(nextDrafts);
     if (!name.trim()) {
-      saveSkills(formData.requiredSkills.filter((_, skillIndex) => skillIndex !== index));
+      saveSkills(
+        formData.requiredSkills.filter((_, skillIndex) => skillIndex !== index),
+      );
       return;
     }
     saveSkills(
@@ -87,14 +99,21 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">Requirements</h2>
+      <h2 className="font-serif text-2xl font-normal mb-1 tracking-tight">
+        Requirements
+      </h2>
       <p className="text-sm text-muted-foreground mb-8">
-        Pick what a strong applicant needs. These power our matching — just tick what applies.
+        Tell us what you’re looking for in a strong applicant. Your choices help
+        us find the best match.
       </p>
 
       {/* ── 1. Education ─────────────────────────────────────────────────────── */}
       <div className="mb-8">
-        <SectionHeading number={1} label="Minimum educational attainment" optional />
+        <SectionHeading
+          number={1}
+          label="Minimum educational attainment"
+          optional
+        />
         <Select
           value={formData.minimumEducation}
           onValueChange={(value) => updateField("minimumEducation", value)}
@@ -104,7 +123,9 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
           </SelectTrigger>
           <SelectContent>
             {MINIMUM_EDUCATION_OPTIONS.map((option) => (
-              <SelectItem key={option} value={option}>{option}</SelectItem>
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -117,7 +138,8 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
       <div className="border-t border-dashed border-border pt-7 mb-8">
         <SectionHeading number={2} label="Required Skills" />
         <p className="mt-1.5 mb-4 text-sm text-muted-foreground">
-          Add the skills you want applicants to have and select the preferred experience level.
+          Add the skills you want applicants to have and select the preferred
+          experience level.
         </p>
 
         <div className="space-y-2">
@@ -128,7 +150,9 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             >
               <Input
                 value={nameDrafts[index] ?? skill.name}
-                onChange={(event) => setNameDrafts({ ...nameDrafts, [index]: event.target.value })}
+                onChange={(event) =>
+                  setNameDrafts({ ...nameDrafts, [index]: event.target.value })
+                }
                 onBlur={(event) => updateSkillName(index, event.target.value)}
                 placeholder="Skill name"
                 className="h-9 bg-white"
@@ -139,22 +163,35 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
                   saveSkills(
                     formData.requiredSkills.map((item, skillIndex) =>
                       skillIndex === index
-                        ? { ...item, years: years as RequiredSkillRequirement["years"] }
+                        ? {
+                            ...item,
+                            years: years as RequiredSkillRequirement["years"],
+                          }
                         : item,
                     ),
                   )
                 }
               >
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {SKILL_EXPERIENCE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <button
                 type="button"
-                onClick={() => saveSkills(formData.requiredSkills.filter((_, skillIndex) => skillIndex !== index))}
+                onClick={() =>
+                  saveSkills(
+                    formData.requiredSkills.filter(
+                      (_, skillIndex) => skillIndex !== index,
+                    ),
+                  )
+                }
                 className="rounded p-1 text-muted-foreground hover:bg-white hover:text-foreground"
                 aria-label={`Remove ${skill.name}`}
               >
@@ -180,12 +217,20 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
               />
               <Select
                 value={pendingSkillYears}
-                onValueChange={(years) => setPendingSkillYears(years as RequiredSkillRequirement["years"])}
+                onValueChange={(years) =>
+                  setPendingSkillYears(
+                    years as RequiredSkillRequirement["years"],
+                  )
+                }
               >
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {SKILL_EXPERIENCE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -219,7 +264,9 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             onClick={() => setIsAddingSkill(true)}
             className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#474ead]"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 text-xs">+</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-50 text-xs">
+              +
+            </span>
             Add another skill
           </button>
         )}
@@ -233,11 +280,15 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             <input
               type="checkbox"
               checked={formData.requiresUsTimezoneOverlap}
-              onChange={(event) => updateField("requiresUsTimezoneOverlap", event.target.checked)}
+              onChange={(event) =>
+                updateField("requiresUsTimezoneOverlap", event.target.checked)
+              }
               className="mt-0.5 h-4 w-4 accent-[#474ead]"
             />
             <span>
-              <span className="block text-sm font-semibold">Must overlap with US time zones</span>
+              <span className="block text-sm font-semibold">
+                Must overlap with US time zones
+              </span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 Applicant works hours that align with US business hours.
               </span>
@@ -247,11 +298,15 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             <input
               type="checkbox"
               checked={formData.requiresFluentEnglish}
-              onChange={(event) => updateField("requiresFluentEnglish", event.target.checked)}
+              onChange={(event) =>
+                updateField("requiresFluentEnglish", event.target.checked)
+              }
               className="mt-0.5 h-4 w-4 accent-[#474ead]"
             />
             <span>
-              <span className="block text-sm font-semibold">Fluent English (written &amp; spoken)</span>
+              <span className="block text-sm font-semibold">
+                Fluent English (written &amp; spoken)
+              </span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 Required for client-facing communication.
               </span>
@@ -270,7 +325,9 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
               id="req-salary"
               className="mt-1.5"
               value={formData.salaryDisplay}
-              onChange={(event) => updateField("salaryDisplay", event.target.value)}
+              onChange={(event) =>
+                updateField("salaryDisplay", event.target.value)
+              }
               placeholder="e.g. ₱45,000 – ₱60,000"
             />
           </div>
@@ -278,14 +335,18 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
             <Label htmlFor="req-compensation-display">Display as</Label>
             <Select
               value={formData.compensationDisplayType}
-              onValueChange={(value) => updateField("compensationDisplayType", value)}
+              onValueChange={(value) =>
+                updateField("compensationDisplayType", value)
+              }
             >
               <SelectTrigger id="req-compensation-display" className="mt-1.5">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {COMPENSATION_DISPLAY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
