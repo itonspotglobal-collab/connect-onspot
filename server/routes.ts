@@ -16288,7 +16288,7 @@ export async function registerRoutes(
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN interview_proposals ip ON ip.interview_id = i.id
           WHERE js.talent_id = $1
-            AND i.status IN ('proposed', 'rescheduled', 'confirmed')
+            AND i.status IN ('proposed', 'rescheduled', 'confirmed', 'cancelled')
           GROUP BY i.id, js.status, js.id, j.title, j.company
           ORDER BY i.created_at DESC`,
         [userId],
@@ -16303,9 +16303,12 @@ export async function registerRoutes(
         status: row.status,
         proposedTimes: row.proposed_times ?? [],
         confirmedTime: row.confirmed_time,
-         confirmedTimeZone: row.confirmed_time_zone ?? "UTC",
+        confirmedTimeZone: row.confirmed_time_zone ?? "UTC",
         currentProposalOwner: row.current_proposal_owner,
         meetingLink: row.meeting_link,
+        durationMinutes: row.duration_minutes ?? null,
+        cancelledAt: row.cancelled_at ?? null,
+        cancellationReason: row.cancellation_reason ?? null,
         proposalExchangeCount: Number(row.proposal_exchange_count ?? 0),
         proposals: row.proposals ?? [],
         nudge: Number(row.proposal_exchange_count ?? 0) >= 3 && row.status !== "confirmed",

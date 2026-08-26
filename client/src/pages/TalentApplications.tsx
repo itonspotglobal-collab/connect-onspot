@@ -1082,6 +1082,9 @@ interface TalentInterview {
   confirmedTimeZone?: string | null;
   currentProposalOwner: string | null;
   meetingLink: string | null;
+  durationMinutes: number | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
   proposalExchangeCount: number;
   nudge: boolean;
 }
@@ -1125,6 +1128,10 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
       setRespondingId(null);
     }
   };
+  const activeInterviews = interviews.filter(
+    (i) => i.status === "proposed" || i.status === "rescheduled" || i.status === "confirmed",
+  );
+  const cancelledInterviews = interviews.filter((i) => i.status === "cancelled");
   if (isLoading || interviews.length === 0) return null;
   return (
     <div className="mb-8">
@@ -1132,13 +1139,21 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
         <Calendar className="h-4 w-4 text-indigo-500" />
         <h2 className="text-base font-semibold text-slate-900 dark:text-white">Interviews</h2>
         <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-          {interviews.filter((item) => item.status === "proposed" || item.status === "rescheduled").length} awaiting
+          {activeInterviews.filter((item) => item.status === "proposed" || item.status === "rescheduled").length} awaiting
         </span>
       </div>
       <div className="space-y-3">
-        {interviews.map((interview) => {
+        {activeInterviews.map((interview) => {
           const pending = (interview.status === "proposed" || interview.status === "rescheduled") &&
             interview.currentProposalOwner === "talent";
+          const statusLabel =
+            interview.status === "confirmed" ? "Confirmed"
+            : interview.status === "rescheduled" ? "Rescheduled"
+            : "Proposal";
+          const statusClasses =
+            interview.status === "confirmed"
+              ? "border-emerald-200 bg-emerald-50/70 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-300"
+              : "border-indigo-200 bg-white/70 text-indigo-700 dark:bg-slate-800 dark:text-indigo-300";
           return (
             <div key={interview.id} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20">
               <div className="flex items-start justify-between gap-3">
@@ -1146,25 +1161,34 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">{interview.job.title}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {interview.job.company} · Round {interview.roundNumber} · {interview.interviewType}
+                    {interview.durationMinutes ? ` · ${interview.durationMinutes} min` : ""}
                   </p>
                 </div>
-                <span className="rounded-full border border-indigo-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
-                  {interview.status === "confirmed" ? "Confirmed" : "Proposal"}
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>
+                  {statusLabel}
                 </span>
               </div>
               {interview.confirmedTime && (
-                <p className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                  Confirmed: {formatInterviewTime(interview.confirmedTime, interview.confirmedTimeZone ?? "UTC")}
-                </p>
-              )}
-              {interview.meetingLink && interview.status === "confirmed" && (
-                <a className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline" href={interview.meetingLink} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3 w-3" /> Join meeting
-                </a>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    <Clock className="mr-1 inline h-3 w-3" />
+                    {formatInterviewTime(interview.confirmedTime, interview.confirmedTimeZone ?? "UTC")}
+                  </p>
+                  {interview.meetingLink && (
+                    <a
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                      href={interview.meetingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink className="h-3 w-3" /> Join meeting
+                    </a>
+                  )}
+                </div>
               )}
               {pending && (
                 <>
-                  <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">Choose one of the client’s proposed times:</p>
+                  <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">Choose one of the client's proposed times:</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {interview.proposedTimes.map((slot) => (
                       <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={respondingId === interview.id} onClick={() => respond(interview, "accept", slot.start)}>
@@ -1188,7 +1212,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
                     </Button>
                   </div>
                   {interview.nudge && (
-                    <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">You’ve exchanged several time proposals. Consider the other side’s available times.</p>
+                    <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">You've exchanged several time proposals. Consider the other side's available times.</p>
                   )}
                 </>
               )}
@@ -1196,6 +1220,36 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
             </div>
           );
         })}
+
+        {/* Cancelled interviews — shown collapsed below active ones */}
+        {cancelledInterviews.map((interview) => (
+          <div key={interview.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 line-through">{interview.job.title}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  {interview.job.company} · Round {interview.roundNumber} · {interview.interviewType}
+                  {interview.durationMinutes ? ` · ${interview.durationMinutes} min` : ""}
+                </p>
+              </div>
+              <span className="rounded-full border border-slate-300 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                Cancelled
+              </span>
+            </div>
+            {interview.confirmedTime && (
+              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                <Clock className="mr-1 inline h-3 w-3" />
+                Was scheduled: {formatInterviewTime(interview.confirmedTime, interview.confirmedTimeZone ?? "UTC")}
+              </p>
+            )}
+            {interview.cancellationReason && (
+              <div className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Reason</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{interview.cancellationReason}</p>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
