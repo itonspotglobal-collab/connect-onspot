@@ -493,4 +493,195 @@ describe("Interview Scheduling V1", () => {
       assert.notEqual(r.status, 500, "Should not cause a server error");
     });
   });
+
+  // ── Conflict-check edge cases ────────────────────────────────────────────
+
+  describe("Interview conflict-check edge cases", () => {
+    // Use a dedicated second submission so these tests are isolated from
+    // the proposed-only interviews created by earlier describe blocks.
+    let conflictSubId: string;
+
+    // Use far-future slots (days 30+) to avoid any overlap with other tests.
+    // All times are pinned relative to the moment the before() hook runs.
+    let slotBase: Date; // start of the "base" confirmed slot used across sub-tests
+
+    before(async () => {
+      const subRow = await query(
+        `INSERT INTO job_submissions
+           (job_id, talent_id, client_id, applicant_name, email, status,
+            initiated_by, workflow_type)
+         VALUES ($1, $2, $3, 'IV1 Conflict Talent', $4, 'shortlisted',
+                 'client', 'client_invitation')
+         RETURNING id`,
+        [jobId, TALENT_ID, CLIENT_ID, `${TALENT_ID}@test.local`],
+      );
+      conflictSubId = subRow.rows[0].id;
+
+      // Pin slotBase now so all tests share the same reference point.
+      slotBase = new Date(Date.now() + 30 * 86_400_000);
+    });
+
+    after(async () => {
+      await query(
+        `DELETE FROM interview_proposals WHERE interview_id IN
+           (SELECT id FROM interviews WHERE submission_id = $1)`,
+        [conflictSubId],
+      );
+      await query(`DELETE FROM interviews WHERE submission_id = $1`, [conflictSubId]);
+      await query(
+        `DELETE FROM job_application_status_history WHERE application_id = $1`,
+        [conflictSubId],
+      );
+      await query(`DELETE FROM job_submissions WHERE id = $1`, [conflictSubId]);
+    });
+
+    it("overlapping interval returns 409 with interview_time_conflict (sanity check)", async () => {
+      // Create a confirmed interview at slotBase for 60 min.
+      const slotStart = slotBase.toISOString();
+      const create = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: slotStart }],
+        confirmedTime: slotStart,
+        durationMinutes: 60,
+      });
+      assert.equal(create.status, 201, `Setup failed: ${JSON.stringify(create.json)}`);
+
+      // A new slot starting 30 min in overlaps the first (end = base + 90 min, but existing ends at base + 60 min).
+      const overlappingStart = new Date(slotBase.getTime() + 30 * 60_000).toISOString();
+      const r = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: overlappingStart }],
+        confirmedTime: overlappingStart,
+        durationMinutes: 60,
+      });
+      assert.equal(r.status, 409, `Expected 409 for overlap, got ${r.status}: ${JSON.stringify(r.json)}`);
+      assert.equal(r.json?.error, "interview_time_conflict", "Error code should be interview_time_conflict");
+    });
+
+    it("boundary-touching interval (new starts exactly when existing ends) is NOT a conflict", async () => {
+      // The confirmed interview created above ends at slotBase + 60 min.
+      // A new slot starting exactly at that boundary should be allowed.
+      const boundaryStart = new Date(slotBase.getTime() + 60 * 60_000).toISOString();
+      const r = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: boundaryStart }],
+        confirmedTime: boundaryStart,
+        durationMinutes: 30,
+      });
+      assert.equal(
+        r.status, 201,
+        `Boundary-touching slot must not conflict (got ${r.status}): ${JSON.stringify(r.json)}`,
+      );
+      assert.equal(r.json?.status, "confirmed");
+    });
+
+    it("cancelled interview does NOT block the same time slot", async () => {
+      // Use a slot further in the future (day 32) to be independent of slotBase interviews.
+      const cancelSlotStart = new Date(Date.now() + 32 * 86_400_000).toISOString();
+
+      // Create a confirmed interview at this slot.
+      const create = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: cancelSlotStart }],
+        confirmedTime: cancelSlotStart,
+        durationMinutes: 60,
+      });
+      assert.equal(create.status, 201, `Setup failed: ${JSON.stringify(create.json)}`);
+      const cancelledId = create.json.id;
+
+      // Cancel it.
+      const cancelR = await request(srv, "PATCH", `/api/admin/interviews/${cancelledId}`, adminTok, {
+        status: "cancelled",
+        cancellationReason: "Conflict-check test cancellation",
+      });
+      assert.ok(
+        cancelR.status >= 200 && cancelR.status < 300,
+        `Cancel failed: ${cancelR.status}: ${JSON.stringify(cancelR.json)}`,
+      );
+
+      // Now schedule a new confirmed interview for the same slot — must succeed.
+      const r = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: cancelSlotStart }],
+        confirmedTime: cancelSlotStart,
+        durationMinutes: 60,
+      });
+      assert.equal(
+        r.status, 201,
+        `Cancelled interview must not block same slot (got ${r.status}): ${JSON.stringify(r.json)}`,
+      );
+      assert.equal(r.json?.status, "confirmed");
+    });
+
+    it("completed interview does NOT block the same time slot", async () => {
+      // Use day 34 for this sub-test.
+      const completedSlotStart = new Date(Date.now() + 34 * 86_400_000).toISOString();
+
+      // Create a confirmed interview at this slot.
+      const create = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: completedSlotStart }],
+        confirmedTime: completedSlotStart,
+        durationMinutes: 60,
+      });
+      assert.equal(create.status, 201, `Setup failed: ${JSON.stringify(create.json)}`);
+      const completedId = create.json.id;
+
+      // Force the interview to 'completed' status directly in the DB.
+      // (The outcome endpoint requires the submission to have a client, which it does,
+      // but the route is /api/client/interviews/:id/outcome — use that.)
+      const outcomeR = await request(
+        srv, "PATCH", `/api/client/interviews/${completedId}/outcome`, clientTok,
+        { outcome: "advance", internalNotes: "Conflict-check completed test" },
+      );
+      assert.ok(
+        outcomeR.status >= 200 && outcomeR.status < 300,
+        `Mark completed failed: ${outcomeR.status}: ${JSON.stringify(outcomeR.json)}`,
+      );
+
+      // Schedule a new confirmed interview at the same slot — must succeed.
+      const r = await request(srv, "POST", "/api/admin/interviews", adminTok, {
+        submissionId: conflictSubId,
+        proposedTimes: [{ start: completedSlotStart }],
+        confirmedTime: completedSlotStart,
+        durationMinutes: 60,
+      });
+      assert.equal(
+        r.status, 201,
+        `Completed interview must not block same slot (got ${r.status}): ${JSON.stringify(r.json)}`,
+      );
+    });
+
+    it("two concurrent admin confirms for the same slot — one succeeds, other returns 409 not 500", async () => {
+      // Use day 36 as the racing slot.
+      const racingSlot = new Date(Date.now() + 36 * 86_400_000).toISOString();
+
+      // Fire both requests simultaneously.
+      const [r1, r2] = await Promise.all([
+        request(srv, "POST", "/api/admin/interviews", adminTok, {
+          submissionId: conflictSubId,
+          proposedTimes: [{ start: racingSlot }],
+          confirmedTime: racingSlot,
+          durationMinutes: 60,
+        }),
+        request(srv, "POST", "/api/admin/interviews", adminTok, {
+          submissionId: conflictSubId,
+          proposedTimes: [{ start: racingSlot }],
+          confirmedTime: racingSlot,
+          durationMinutes: 60,
+        }),
+      ]);
+
+      // Neither request should cause a 500.
+      assert.notEqual(r1.status, 500, `Request 1 must not 500 (got ${r1.status})`);
+      assert.notEqual(r2.status, 500, `Request 2 must not 500 (got ${r2.status})`);
+
+      // Exactly one should succeed (201) and the other should conflict (409).
+      const succeeded = [r1, r2].filter((r) => r.status === 201);
+      const conflicted = [r1, r2].filter((r) => r.status === 409);
+      assert.equal(succeeded.length, 1, `Expected exactly one 201, got statuses: ${r1.status}, ${r2.status}`);
+      assert.equal(conflicted.length, 1, `Expected exactly one 409, got statuses: ${r1.status}, ${r2.status}`);
+      assert.equal(conflicted[0].json?.error, "interview_time_conflict");
+    });
+  });
 });
