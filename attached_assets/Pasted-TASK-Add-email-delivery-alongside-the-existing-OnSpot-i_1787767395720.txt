@@ -1,0 +1,852 @@
+TASK: Add email delivery alongside the existing OnSpot in-app notification system for important user-facing events, while preserving all existing notification behavior.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing notifications, application workflows, job approval flows, interviews, chat, organization features, and Vanessa AI already work.
+
+Do not replace or rewrite them.
+
+The goal is:
+
+Existing event
+→ existing in-app notification still happens
+→ email notification is also sent when appropriate
+
+Email is an additional delivery channel.
+
+# IMPORTANT ARCHITECTURE RULE
+
+Do NOT make email sending the source of truth.
+
+Do NOT make business actions depend on successful email delivery.
+
+Examples:
+
+Job approved
+→ job approval must persist even if email fails.
+
+Application status changed
+→ status must persist even if email fails.
+
+Interview confirmed
+→ interview must remain confirmed even if email fails.
+
+Chat message sent
+→ chat message must persist even if email fails.
+
+Email is always a side effect.
+
+# CLIENT EMAIL SENDER
+
+For Client-facing email notifications, use:
+
+[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)
+
+as the sender.
+
+Audit the existing Microsoft Graph/email configuration first.
+
+Determine whether this address is configured as:
+
+* Microsoft 365 user mailbox
+* shared mailbox
+* Send As mailbox
+* Send on Behalf mailbox
+
+Do not hardcode credentials.
+
+Do not silently fall back to another sender without reporting it.
+
+If Graph permissions are missing, report the exact missing requirement.
+
+# AUDIT FIRST
+
+Before changing code, audit all current notification-producing flows.
+
+Create a notification event inventory.
+
+At minimum inspect:
+
+* applicationNotificationService.ts
+* notifications table/schema
+* notification creation helpers
+* notification event_key behavior
+* job approval/rejection routes
+* job-post Client notifications
+* application creation routes
+* application status transitions
+* interview notifications
+* offer notifications
+* contract notifications
+* organization notifications
+* billing/payment notifications
+* account/profile update notifications
+* chat/message notification behavior
+* existing Microsoft Graph email service
+* existing email templates
+* server/seeds/seedEmailTemplates.ts
+* emailVariableResolver
+* applicant email template tests
+* Vanessa/OpenAI services
+* message/thread services
+
+Report all notification types currently emitted before implementing.
+
+Do NOT rely only on frontend notification text.
+
+Find the server-side event creation points.
+
+# CORE PRINCIPLE
+
+Every important existing in-app notification should be evaluated for an email equivalent.
+
+But do not blindly email every internal/system notification.
+
+Classify notifications into:
+
+A. transactional / critical
+B. actionable
+C. informational
+D. noisy/high-frequency
+
+Transactional and actionable notifications should normally email immediately.
+
+Noisy/high-frequency events, especially chat, should use smarter rules.
+
+# REQUIRED EVENT COVERAGE
+
+At minimum add email delivery for the following.
+
+## JOB POSTING EVENTS
+
+### Job Approved
+
+Recipient:
+Client/job owner.
+
+Trigger:
+Admin changes job approval status from pending to approved.
+
+Email should include:
+
+* Client first name
+* job title
+* approval confirmation
+* link to Client job/profile area
+* appropriate next step
+
+Sender:
+[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)
+
+Do not send:
+
+* on draft save
+* when already approved
+* when simply editing an approved job
+* more than once for the same approval event
+
+### Job Rejected
+
+Recipient:
+Client/job owner.
+
+Include:
+
+* job title
+* rejection status
+* rejection reason if present
+* CTA to edit/review the job
+
+Sender:
+[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)
+
+### Job-related Admin update
+
+If there are other existing Client-facing job notifications, map them too.
+
+Do not invent new business events unnecessarily.
+
+# APPLICATION EVENTS
+
+## New Application Received
+
+Recipient:
+Client/job owner.
+
+Trigger:
+A new job submission/application is successfully created.
+
+The existing system already creates a Client-facing notification such as:
+
+`New application received`
+
+Reuse the same event rather than adding a parallel trigger.
+
+Email should include:
+
+* job title
+* Talent/candidate display name according to existing privacy rules
+* application time
+* CTA to review application
+
+Do not expose masked/private Talent information beyond what the Client is currently authorized to see.
+
+## Talent Application Received
+
+Recipient:
+Talent/applicant.
+
+Use existing Application Received email template where appropriate.
+
+## Application Status Changes
+
+Recipient:
+Talent.
+
+Use the existing canonical application status transitions.
+
+At minimum:
+
+* under_review
+* shortlisted
+* interviewing
+* offer_extended
+* offer_accepted
+* offer_declined
+* rejected
+* withdrawn
+* hired if current pipeline emits it
+
+The existing notification helper already maps statuses to user-facing messaging.
+
+Do not create a new status vocabulary.
+
+Use specific existing email templates where available.
+
+# CLIENT STATUS CHANGES
+
+If an Admin changes a Client-related status and the current notification system already creates a Client notification, send the email equivalent too.
+
+Examples may include:
+
+* Client verification update
+* organization invitation/status
+* billing/payment status
+* account-related workflow changes
+
+Only implement events that already exist as real notifications.
+
+Do not invent new lifecycle logic.
+
+# INTERVIEW EVENTS
+
+Add email alongside current interview notifications for:
+
+* interview proposed
+* interview confirmed
+* interview rescheduled
+* interview cancelled
+
+Use existing interview date/time and timezone formatting.
+
+Include:
+
+* job title
+* Client/company
+* Talent
+* date
+* time
+* timezone
+* meeting link when available
+* CTA back to OnSpot
+
+Do not create another interview workflow.
+
+# OFFERS / CONTRACTS
+
+Audit existing notification events and add email equivalents where they exist.
+
+Likely examples:
+
+* offer extended
+* offer accepted
+* offer declined
+* contract ready
+* contract signed
+* contract status change
+
+Do not change the offer/contract state machine.
+
+# ORGANIZATION EVENTS
+
+If existing notifications exist for:
+
+* organization invite
+* invite accepted
+* invite declined
+* member added/removed
+* organization deletion scheduled/cancelled
+
+add email equivalents where appropriate.
+
+Reuse existing Organization permissions and email flows.
+
+Do not duplicate existing organization invitation emails.
+
+If an event already has an email, do NOT send a second duplicate email.
+
+# ACCOUNT / PROFILE UPDATE EVENTS
+
+User said "Client Update".
+
+Audit what current in-app notifications exist for account/profile changes.
+
+Do not email users for every trivial self-edit such as changing their own first name unless an existing security/product notification already exists.
+
+Appropriate examples:
+
+* Admin changes Client verification/account status
+* Admin changes account access
+* organization role changed
+* important compliance/account workflow update
+
+Distinguish between:
+
+user edits their own profile
+and
+an Admin changes something meaningful about their account.
+
+Only the latter should generally create an email unless current product requirements say otherwise.
+
+# CHAT / MESSAGES
+
+This needs special handling.
+
+Do NOT send an email for every single chat message immediately.
+
+That will cause notification spam.
+
+Instead implement a safe email-notification policy around the existing chat system.
+
+Preferred V1:
+
+If recipient is not actively viewing the conversation / has not read messages within an appropriate short window:
+
+send one email notification for unread activity.
+
+Example:
+
+Subject:
+`New message on OnSpot`
+
+Body:
+
+`You have a new message from [display name].`
+
+Optional short sanitized preview.
+
+CTA:
+`View Message`
+
+Do not include sensitive message contents by default if there are privacy concerns.
+
+Do NOT send multiple emails for five messages sent within a minute.
+
+Use thread/user-level deduping or cooldown.
+
+Suggested rule:
+
+one unread-message email per thread/recipient within a configurable window, such as 10–15 minutes.
+
+Do not use process-local setTimeout for persistence-critical behavior.
+
+If the existing system has no scheduler/queue, use event-based deduping:
+
+first unread message
+→ email
+
+later unread messages
+→ no new email until prior email state/reset condition is cleared.
+
+When recipient reads the thread, allow a future unread email again.
+
+Audit existing read/unread state first.
+
+# VANESSA AI — USE INTELLIGENTLY, NOT AS AUTHORITY
+
+Vanessa AI may assist email generation, but must not control core business event delivery.
+
+Deterministic code decides:
+
+* event happened
+* who receives it
+* whether email category is enabled
+* what factual data is allowed
+* what CTA is used
+
+Vanessa may optionally generate:
+
+* friendlier subject line
+* concise event summary
+* polished body paragraph
+* chat urgency classification
+* digest summary
+* natural-language explanation of a complex status change
+
+Vanessa must NOT:
+
+* invent dates
+* invent statuses
+* invent rejection reasons
+* invent compensation
+* invent meeting links
+* change recipient
+* decide to suppress critical transactional emails
+* expose hidden PII
+* alter legal/compliance text
+* rewrite contract terms
+* send messages autonomously outside defined event rules
+
+# VANESSA FALLBACK
+
+AI must never be required for delivery.
+
+If Vanessa/OpenAI fails:
+
+use deterministic template content.
+
+Email must still send.
+
+Example architecture:
+
+event data
+→ select canonical template
+→ optional Vanessa polish
+→ validate output
+→ send
+
+If AI error:
+→ send canonical template
+
+Do not block the business event or notification.
+
+# VANESSA FOR CHAT
+
+This is where Vanessa can add the most value.
+
+Optional intelligent behavior:
+
+Classify unread chat activity as:
+
+* urgent/actionable
+* normal
+* low-value/repetitive
+
+Possible immediate email criteria:
+
+* interview scheduling question
+* offer/contract question
+* application decision
+* request requiring response
+* payment issue
+* urgent Client/Talent coordination
+
+Normal chat:
+use standard unread-message email.
+
+Do not automatically suppress all low-priority messages unless product policy explicitly approves that.
+
+For V1, classification may influence email wording/subject, not whether the message exists.
+
+# EMAIL TEMPLATES
+
+Reuse the existing template system.
+
+Do NOT create a second template framework.
+
+Existing templates already include application and interview stages.
+
+Add missing templates only.
+
+Potential missing templates:
+
+* Job Approved
+* Job Rejected
+* New Application for Client
+* Interview Rescheduled
+* Interview Cancelled
+* New Chat Message
+* Client Account Status Updated
+* Organization Member Update
+* Contract Update if missing
+
+Templates must remain editable through the existing Admin email-template UI if the current architecture supports categories dynamically.
+
+# DO NOT OVERWRITE CUSTOM TEMPLATES
+
+The existing seed logic protects Admin-customized templates.
+
+Preserve that behavior.
+
+Only update known stock templates safely.
+
+Do not replace customized subject/body content.
+
+# EMAIL DELIVERY SERVICE
+
+Create or extend a focused reusable email notification service rather than scattering Graph calls across dozens of routes.
+
+Suggested conceptual service:
+
+`emailNotificationService`
+
+Responsibilities:
+
+* resolve recipient email
+* resolve sender
+* select template
+* build variable map
+* optional Vanessa polish
+* send
+* log delivery result
+* idempotency check
+
+Do not move existing notification business logic into this service.
+
+Existing notification services remain responsible for notification event creation.
+
+# BEST ARCHITECTURE
+
+Preferred flow:
+
+Business action
+→ DB transaction succeeds
+→ in-app notification is created
+→ email companion delivery is triggered from the same canonical event/service
+
+Avoid duplicating business-condition checks separately in route A and email service B.
+
+Where possible, extend the current notification helper to invoke email delivery after successful notification creation.
+
+But do not make email failure cause the notification helper to throw back into the business transaction.
+
+# EVENT KEY / IDEMPOTENCY
+
+Email must be idempotent.
+
+Use the same event identity as the corresponding notification where practical.
+
+Example:
+
+application-status:
+`application-status:{submissionId}:{previousStatus}:{newStatus}`
+
+Job approval:
+`job-approved:{jobId}:{approvedAt-or-transition-version}`
+
+Interview:
+`interview-confirmed:{interviewId}:{confirmedTime}`
+
+Message:
+`message-unread:{threadId}:{recipientId}:{notification-window}`
+
+Do not rely on subject/body matching for idempotency.
+
+# EMAIL DELIVERY LOG
+
+Audit whether an email delivery/audit table already exists.
+
+If yes:
+reuse it.
+
+If no, consider a focused additive table such as:
+
+email_notification_deliveries
+
+Possible fields:
+
+* id
+* event_key unique
+* event_type
+* recipient_user_id
+* recipient_email
+* sender_email
+* template_id/category
+* status
+* provider_message_id
+* error
+* attempted_at
+* sent_at
+* created_at
+
+But do not add a new table unless it materially improves reliability/idempotency.
+
+Report the schema decision first.
+
+# USER EMAIL PREFERENCES
+
+Do not make all critical transactional email optional in V1 unless existing preference infrastructure already exists.
+
+However, architect event categories so preferences can be added later.
+
+Potential categories:
+
+* hiring_updates
+* interviews
+* messages
+* organizations
+* billing
+* account_security
+
+Critical security/legal messages should not be user-disableable.
+
+Do not build a large preferences UI in this task unless already present.
+
+# CLIENT SENDER
+
+For Client-facing notifications:
+
+From:
+[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)
+
+Examples:
+
+* job approved
+* job rejected
+* new application
+* interview update
+* account/admin update
+
+Audit whether replies should go to:
+
+[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)
+
+or another existing mailbox.
+
+Do not invent Reply-To behavior without checking current email infrastructure.
+
+# TALENT EMAIL SENDER
+
+Audit the current sender used for Applicant/Talent emails.
+
+If [hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com) is already appropriate and configured, use it consistently.
+
+Otherwise preserve existing Talent sender behavior unless the product requirement explicitly says to change it.
+
+Do not unexpectedly change all existing sender identities.
+
+# LINKS
+
+Use correct role-aware portal links.
+
+Examples:
+
+Client:
+
+* Client Profile
+* job applications
+* interviews
+* messages
+* organization
+
+Talent:
+
+* My Applications
+* interviews
+* inbox/messages
+
+Admin:
+
+* relevant Admin page
+
+Do not send links to pages the recipient cannot access.
+
+# SECURITY / PRIVACY
+
+Never send:
+
+* hidden Talent PII
+* another Client's data
+* private internal Admin notes
+* confidential interview notes
+* contract internal metadata
+* message contents if recipient privacy policy forbids previewing them in email
+
+Use existing sanitizers/authorization rules.
+
+Vanessa must receive only the minimum structured data needed for wording.
+
+Do not feed full private DB records to AI unnecessarily.
+
+# HTML SAFETY
+
+Sanitize or safely escape variable content in email templates.
+
+Do not let user-supplied:
+
+* job titles
+* names
+* messages
+* organization names
+
+inject arbitrary HTML into email.
+
+Reuse existing template/escaping helpers.
+
+# FAILURE HANDLING
+
+Email failure:
+
+* log it
+* preserve event_key
+* optionally make retry possible
+* do not roll back business state
+* do not delete in-app notification
+
+If there is an existing retry mechanism, reuse it.
+
+If there is none, implement a safe explicit retry mechanism only if scoped and reliable.
+
+Do not use process-local timers.
+
+# EVENT INVENTORY BEFORE IMPLEMENTATION
+
+Before coding, output a table/list containing:
+
+* existing notification type
+* event source
+* current recipient
+* proposed email recipient
+* immediate email yes/no
+* existing template
+* new template needed
+* Vanessa use yes/no
+* idempotency key strategy
+
+I want to review the event map conceptually before broad implementation.
+
+# PRIORITY IMPLEMENTATION ORDER
+
+Implement in phases to reduce regression risk.
+
+PHASE 1 — Critical Hiring Events
+
+* Job Approved
+* Job Rejected
+* New Application Received
+* Talent Application Received
+* Application Status Changed
+* Interview Proposed
+* Interview Confirmed
+* Interview Rescheduled
+* Interview Cancelled
+
+PHASE 2 — Existing Business Notifications
+
+* Offers
+* Contracts
+* Organization events
+* important Client/Admin account changes
+* billing/payment notifications that already exist
+
+PHASE 3 — Chat Email Notifications
+
+* unread-message email
+* deduping/cooldown
+* optional Vanessa summary/classification
+
+Do not implement all three phases as one massive unreviewed rewrite if it can be separated safely.
+
+# TESTS — PHASE 1
+
+At minimum:
+
+1. Job approval persists even if email fails.
+2. Job approval sends one Client email.
+3. Duplicate approval request does not duplicate email.
+4. Job rejection sends Client email.
+5. Rejection reason appears safely.
+6. New application sends Client email.
+7. Existing Client in-app notification still appears.
+8. New application sends Talent receipt.
+9. Status change sends Talent email.
+10. Same-status write sends no email.
+11. Duplicate transition retry sends no duplicate.
+12. Interview proposal email.
+13. Interview confirmation email.
+14. Reschedule email.
+15. Cancellation email.
+16. Timezone displayed correctly.
+17. Meeting link shown only when present.
+18. Customized email template preserved.
+19. Vanessa failure falls back to canonical template.
+20. Microsoft Graph failure does not roll back business action.
+21. Sender for Client email is [hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com).
+
+# TESTS — CHAT
+
+1. Message persists if email fails.
+2. Recipient receives unread-message email.
+3. Five rapid messages do not generate five emails.
+4. Sender does not receive their own email.
+5. Reading the thread resets future unread email eligibility.
+6. Unauthorized user cannot trigger email to unrelated recipient.
+7. Message preview is escaped/sanitized.
+8. Vanessa classification failure uses normal chat email.
+9. In-app unread badge still behaves exactly as before.
+10. Existing message delivery is unchanged.
+
+# NON-REGRESSION
+
+Do not change:
+
+* notification table semantics
+* notification bell behavior
+* existing read/unread behavior
+* application status transitions
+* Admin job approval behavior
+* Client job ownership
+* Talent application flow
+* interview negotiation
+* messaging transport
+* organization permissions
+* contract workflow
+* authentication
+* Vanessa's existing features
+* existing email templates/customization
+
+Do not refactor unrelated routes.
+
+# COMPLETION REPORT
+
+Report:
+
+1. Full notification event inventory.
+2. Events receiving email.
+3. Events intentionally not emailed and why.
+4. Client sender configuration.
+5. Talent sender configuration.
+6. Existing email service reused.
+7. Templates reused.
+8. Templates added.
+9. Customized-template preservation.
+10. Email idempotency strategy.
+11. Delivery logging/retry strategy.
+12. Vanessa integration points.
+13. Vanessa fallback behavior.
+14. Chat email deduping behavior.
+15. Files changed.
+16. Migration added, if any.
+17. Tests before implementation.
+18. Tests after implementation.
+19. Manual Client tests.
+20. Manual Talent tests.
+21. Manual Admin tests.
+22. Manual chat tests.
+23. Confirmation existing in-app notifications remain unchanged.
+24. Confirmation business actions never depend on successful email sending.
+
+The guiding rule is:
+
+Use the existing in-app notification event system as the canonical source of truth and add email as a reliable, idempotent companion channel. Use Vanessa to improve communication quality and intelligence, but never let AI control critical workflow truth, authorization, recipients, or transactional delivery.
+Also, make sure not to ruin other existing and working feature so that we don't have to fix it.
