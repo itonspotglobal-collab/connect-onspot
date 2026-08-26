@@ -17,6 +17,8 @@ let showApprovalNotification = false;
 let approvalNotificationRead = false;
 let approvalNotificationMarkReadCount = 0;
 const APPROVAL_NOTIFICATION_ID = "job-approved-notification-ui";
+const PENDING_NOTIFICATION_ID = "job-pending-notification-ui";
+const REJECTION_NOTIFICATION_ID = "job-rejected-notification-ui";
 
 async function waitForUrl(url: string, timeoutMs = 15_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -42,8 +44,26 @@ async function routeApi(route: Route): Promise<void> {
 
   if (request.method() === "GET" && path === `/api/users/${CLIENT_ID}/notifications`) {
     const isUnreadOnly = url.searchParams.get("unread_only") === "true";
-    return fulfillJson(route, showApprovalNotification && (!isUnreadOnly || !approvalNotificationRead)
+    const notifications = showApprovalNotification
       ? [{
+          id: REJECTION_NOTIFICATION_ID,
+          type: "job_rejected",
+          title: "Job post rejected",
+          message: "Your job post “Customer Support Specialist” was not approved. Reason: Add a clearer compensation range",
+          relatedId: JOB_ID,
+          relatedType: "job",
+          isRead: false,
+          createdAt: "2026-08-26T00:20:00.000Z",
+        }, {
+          id: PENDING_NOTIFICATION_ID,
+          type: "job_pending",
+          title: "Job post moved back to review",
+          message: "Your job post “Customer Support Specialist” has been moved back to Pending Approval and is no longer publicly visible.",
+          relatedId: JOB_ID,
+          relatedType: "job",
+          isRead: false,
+          createdAt: "2026-08-26T00:10:00.000Z",
+        }, {
           id: APPROVAL_NOTIFICATION_ID,
           type: "job_approved",
           title: "Job post approved",
@@ -53,7 +73,11 @@ async function routeApi(route: Route): Promise<void> {
           isRead: approvalNotificationRead,
           createdAt: "2026-08-26T00:00:00.000Z",
         }]
-      : []);
+      : [];
+    return fulfillJson(
+      route,
+      isUnreadOnly ? notifications.filter((notification) => !notification.isRead) : notifications,
+    );
   }
   if (request.method() === "PATCH" && path === `/api/notifications/${APPROVAL_NOTIFICATION_ID}/read`) {
     approvalNotificationRead = true;
@@ -271,24 +295,34 @@ test("Find Work compact cards convert Quill HTML to readable plain text", async 
   }
 });
 
-test("Client notification bell shows, counts, and marks a job approval notification as read", async () => {
+test("Client notification bell shows, counts, and marks job approval-status notifications as read", async () => {
   showApprovalNotification = true;
   approvalNotificationRead = false;
   approvalNotificationMarkReadCount = 0;
   const page = await newClientPage();
   try {
     const bell = page.getByTestId("notification-bell");
-    await page.getByRole("button", { name: "1 unread notifications" }).waitFor();
+    await page.getByRole("button", { name: "3 unread notifications" }).waitFor();
     await bell.click();
     await page.getByText("Job post approved", { exact: true }).waitFor();
+    await page.getByText("Job post moved back to review", { exact: true }).waitFor();
+    await page.getByText("Job post rejected", { exact: true }).waitFor();
     await page.getByText(
       "Your job post “Customer Support Specialist” has been approved and is now live.",
+      { exact: true },
+    ).waitFor();
+    await page.getByText(
+      "Your job post “Customer Support Specialist” has been moved back to Pending Approval and is no longer publicly visible.",
+      { exact: true },
+    ).waitFor();
+    await page.getByText(
+      "Your job post “Customer Support Specialist” was not approved. Reason: Add a clearer compensation range",
       { exact: true },
     ).waitFor();
 
     await page.getByTestId(`notification-${APPROVAL_NOTIFICATION_ID}`).click();
     await page.waitForFunction(
-      () => document.querySelector('[data-testid="notification-bell"]')?.getAttribute("aria-label") === "Notifications",
+      () => document.querySelector('[data-testid="notification-bell"]')?.getAttribute("aria-label") === "2 unread notifications",
     );
     assert.equal(approvalNotificationMarkReadCount, 1);
     assert.match(page.url(), /\/client-profile$/, "approval notifications must link to Client job postings");

@@ -1,0 +1,770 @@
+Fix the existing Client job-status notification behavior.
+
+The current implementation successfully creates a notification the FIRST time a Client job is approved, but subsequent status changes do not create notifications.
+
+Observed test:
+
+```text
+Pending
+→ Admin Approves
+→ Client receives "Job post approved" ✅
+
+Approved
+→ Admin Unapproves
+→ Client receives nothing ❌
+
+Pending
+→ Admin Approves again
+→ Client receives nothing ❌
+```
+
+Also add notification support for:
+
+```text
+Pending
+→ Admin Rejects
+→ Client must receive rejection notification
+```
+
+This behavior is incorrect.
+
+---
+
+# Required principle
+
+Notifications must represent **approval-status transition events**, not a once-per-job notification.
+
+Do NOT globally deduplicate a notification only because:
+
+```text
+same jobId
+same notification type
+```
+
+A single job can legitimately move through multiple approval states over time.
+
+Each real state change must create a new notification.
+
+---
+
+# Required transitions
+
+At minimum support:
+
+```text
+pending → approved
+approved → pending
+pending → rejected
+rejected → pending
+rejected → approved
+approved → rejected
+```
+
+Only implement transitions that the current Admin workflow actually permits.
+
+For every successful status transition, create the appropriate Client notification.
+
+---
+
+# 1. Approved notification
+
+When:
+
+```text
+previousApprovalStatus !== "approved"
+newApprovalStatus === "approved"
+```
+
+create:
+
+Title:
+
+```text
+Job post approved
+```
+
+Message:
+
+```text
+Your job post “{{job_title}}” has been approved and is now live.
+```
+
+Example:
+
+```text
+Job post approved
+
+Your job post “Testpost” has been approved and is now live.
+```
+
+This should happen EVERY TIME the job enters the approved state.
+
+Example:
+
+```text
+pending → approved
+```
+
+creates notification #1.
+
+Then:
+
+```text
+approved → pending → approved
+```
+
+must create another NEW approval notification.
+
+Do not suppress it because an older approval notification already exists.
+
+---
+
+# 2. Unapproved / moved back to pending notification
+
+When Admin uses the existing:
+
+```text
+Unapprove
+```
+
+action and the status changes:
+
+```text
+approved → pending
+```
+
+create a new Client notification.
+
+Recommended title:
+
+```text
+Job post moved back to review
+```
+
+Recommended message:
+
+```text
+Your job post “{{job_title}}” has been moved back to Pending Approval and is no longer publicly visible.
+```
+
+Example:
+
+```text
+Job post moved back to review
+
+Your job post “Testpost” has been moved back to Pending Approval and is no longer publicly visible.
+```
+
+Use wording consistent with the existing product UI.
+
+Do not imply the job was deleted.
+
+---
+
+# 3. Rejected notification
+
+When:
+
+```text
+pending → rejected
+```
+
+create:
+
+Title:
+
+```text
+Job post rejected
+```
+
+Message:
+
+```text
+Your job post “{{job_title}}” was not approved.
+```
+
+If the Admin provided a rejection reason and the existing workflow safely stores it, include it:
+
+```text
+Your job post “Testpost” was not approved.
+
+Reason: {{rejection_reason}}
+```
+
+Only expose the existing Admin rejection reason.
+
+Do not expose internal logs, IDs, or unrelated Admin notes.
+
+---
+
+# 4. Re-approved after rejection
+
+If the Admin later changes:
+
+```text
+rejected → approved
+```
+
+create a NEW approval notification:
+
+```text
+Job post approved
+
+Your job post “{{job_title}}” has been approved and is now live.
+```
+
+Do not suppress this because the job may have been approved in the past.
+
+---
+
+# Fix the current duplicate prevention
+
+Inspect the implementation that was added for job approval notifications.
+
+Search for:
+
+```text
+job_approved
+Job post approved
+createNotification
+insertNotification
+notificationExists
+existingNotification
+duplicate
+jobId
+relatedId
+approvalStatus
+```
+
+Find why a second approval notification is being suppressed.
+
+Likely problematic patterns include logic such as:
+
+```ts
+if (notificationAlreadyExists(job.id, "job_approved")) {
+  return;
+}
+```
+
+or a database uniqueness rule such as:
+
+```text
+user_id + type + related_id
+```
+
+or:
+
+```text
+job_id + notification_type
+```
+
+If such logic exists, do NOT simply remove all duplicate protection globally.
+
+Other notification types may correctly depend on deduplication.
+
+Only adjust the job approval-status notification logic so that separate status transition EVENTS can produce separate records.
+
+---
+
+# Correct duplicate protection
+
+We still need protection against accidental duplicate notifications from the SAME status-change request.
+
+Example:
+
+Admin clicks Approve once.
+
+The backend request is retried accidentally.
+
+Do NOT generate:
+
+```text
+Job post approved
+Job post approved
+```
+
+twice for one single transition.
+
+The correct distinction is:
+
+```text
+same state transition request
+→ prevent duplicate
+
+future independent transition back into same status
+→ create new notification
+```
+
+---
+
+# Recommended implementation
+
+Capture the old status BEFORE updating:
+
+```ts
+const previousStatus = job.approvalStatus;
+```
+
+Perform the update.
+
+Then:
+
+```ts
+if (previousStatus !== newStatus) {
+  await createJobApprovalStatusNotification({
+    job,
+    previousStatus,
+    newStatus,
+  });
+}
+```
+
+The helper should map transitions/statuses to notification content.
+
+For example:
+
+```ts
+function buildJobApprovalNotification(
+  oldStatus: string,
+  newStatus: string,
+  jobTitle: string,
+  rejectionReason?: string,
+) {
+  switch (newStatus) {
+    case "approved":
+      return {
+        type: "job_approved",
+        title: "Job post approved",
+        message: `Your job post “${jobTitle}” has been approved and is now live.`,
+      };
+
+    case "pending":
+      return {
+        type: "job_pending",
+        title: "Job post moved back to review",
+        message: `Your job post “${jobTitle}” has been moved back to Pending Approval and is no longer publicly visible.`,
+      };
+
+    case "rejected":
+      return {
+        type: "job_rejected",
+        title: "Job post rejected",
+        message: rejectionReason
+          ? `Your job post “${jobTitle}” was not approved. Reason: ${rejectionReason}`
+          : `Your job post “${jobTitle}” was not approved.`,
+      };
+  }
+}
+```
+
+Adapt this to the actual notification schema and supported type values.
+
+Do not blindly add new enum values without checking the schema.
+
+---
+
+# Event identity / idempotency
+
+If the notification architecture supports an event key/idempotency key, base it on the individual transition, not just the job.
+
+For example:
+
+```text
+job:<jobId>:approval-transition:<oldStatus>:<newStatus>:<transitionTimestamp-or-eventId>
+```
+
+or preferably use the actual approval-history/status-change record ID if one exists.
+
+Best case:
+
+```text
+job approval history record
+        ↓
+notification source_event_id = history.id
+```
+
+Then retries for the SAME history event are prevented, but a future:
+
+```text
+pending → approved
+```
+
+creates a different history/event ID and therefore another legitimate notification.
+
+---
+
+# Do not deduplicate using only these
+
+Do NOT use only:
+
+```text
+jobId
+type
+userId
+```
+
+as the uniqueness key.
+
+This would incorrectly suppress repeated legitimate approval transitions.
+
+---
+
+# Rejection reason handling
+
+Inspect how rejection currently works in Admin Jobs.
+
+The project already appears to support:
+
+```text
+rejectionReason
+```
+
+for rejected Client jobs.
+
+If available, include it in the notification message.
+
+Example:
+
+```text
+Job post rejected
+
+Your job post “Customer Support” was not approved.
+
+Reason: Please add a clearer compensation range.
+```
+
+Do not include empty:
+
+```text
+Reason:
+```
+
+when no reason exists.
+
+---
+
+# Client job visibility
+
+Status notification content must match actual visibility.
+
+Expected:
+
+```text
+APPROVED
+→ publicly visible if job.status = open
+
+PENDING
+→ not publicly visible
+
+REJECTED
+→ not publicly visible
+```
+
+Do not tell the Client:
+
+```text
+"is now live"
+```
+
+unless the job is actually publicly eligible after approval.
+
+If the job is closed while approved, use a safer message such as:
+
+```text
+Your job post “{{job_title}}” has been approved.
+```
+
+Do not falsely say it is live if `status = closed`.
+
+---
+
+# Existing notification UI
+
+Do not create new UI.
+
+Reuse the working notification bell/dropdown shown in the Client portal.
+
+Every new status event should appear as another notification entry.
+
+Example history:
+
+```text
+10:00 AM
+Job post approved
+Your job post “Testpost” has been approved and is now live.
+
+10:10 AM
+Job post moved back to review
+Your job post “Testpost” has been moved back to Pending Approval.
+
+10:15 AM
+Job post approved
+Your job post “Testpost” has been approved and is now live.
+```
+
+That is correct.
+
+Do NOT overwrite the first notification.
+
+Do NOT update an old notification record in place.
+
+Each event gets its own notification record.
+
+---
+
+# Unread count
+
+Each new status-change notification must:
+
+```text
+start unread
+increment unread count
+appear at the top of the notification list
+```
+
+Existing mark-as-read behavior must continue working.
+
+---
+
+# Backend only
+
+The notification must be created by the backend that performs the Admin status change.
+
+Do not have the Admin frontend separately trigger a notification request.
+
+Do not let the Client frontend infer job status changes and create notifications.
+
+Required architecture:
+
+```text
+Admin action
+   ↓
+backend validates Admin
+   ↓
+backend loads job + old approval status
+   ↓
+backend changes status
+   ↓
+backend creates status-transition notification
+   ↓
+Client notification UI sees new record
+```
+
+---
+
+# Test matrix
+
+Add automated tests for every supported transition.
+
+## Test A — first approval
+
+```text
+pending → approved
+```
+
+Expected:
+
+```text
+1 new approval notification
+```
+
+---
+
+## Test B — unapprove
+
+```text
+approved → pending
+```
+
+Expected:
+
+```text
+1 new pending/review notification
+```
+
+---
+
+## Test C — approve again
+
+Starting history:
+
+```text
+pending
+→ approved
+→ pending
+→ approved
+```
+
+Expected total:
+
+```text
+3 notifications
+```
+
+Specifically:
+
+```text
+1. approved
+2. moved back to review
+3. approved
+```
+
+The second approval MUST exist.
+
+---
+
+## Test D — reject
+
+```text
+pending → rejected
+```
+
+Expected:
+
+```text
+1 rejection notification
+```
+
+and correct rejection reason if supplied.
+
+---
+
+## Test E — reject then approve
+
+```text
+pending
+→ rejected
+→ approved
+```
+
+Expected:
+
+```text
+1 rejection notification
+1 approval notification
+```
+
+---
+
+## Test F — no state change
+
+If:
+
+```text
+approved → approved
+```
+
+or:
+
+```text
+pending → pending
+```
+
+Expected:
+
+```text
+0 new notification
+```
+
+---
+
+## Test G — retry same request
+
+Simulate the same backend action being retried without a new status transition.
+
+Expected:
+
+```text
+only 1 notification for that event
+```
+
+---
+
+# Manual test
+
+Use one Client job named:
+
+```text
+Notification Status Test
+```
+
+Perform:
+
+```text
+1. Submit as Client
+   → Pending Approval
+
+2. Admin Approve
+   → Client notification: Job post approved
+
+3. Admin Unapprove
+   → Client notification: Job post moved back to review
+
+4. Admin Approve again
+   → NEW Client notification: Job post approved
+
+5. Admin Unapprove again
+
+6. Admin Reject
+   → Client notification: Job post rejected
+```
+
+Verify the Client notification dropdown contains every event in chronological order.
+
+Do not delete or replace older notification records.
+
+---
+
+# Before changing code
+
+Report:
+
+```text
+1. Where the current approval notification is created
+2. Current duplicate-prevention logic
+3. Whether a DB unique constraint affects job notifications
+4. Exact Admin Approve route
+5. Exact Admin Unapprove route
+6. Exact Admin Reject route
+7. Existing rejection reason field
+```
+
+Then implement.
+
+Do not stop after analysis.
+
+---
+
+# After implementation
+
+Report:
+
+```text
+Files changed
+
+Current root cause:
+- why second approval notification was suppressed
+
+Transitions now notified:
+- pending → approved
+- approved → pending
+- pending → rejected
+- rejected → approved
+- other supported transitions
+
+Duplicate protection:
+- how same-event retries are prevented
+- how future repeated transitions remain allowed
+
+Tests:
+- automated tests
+- manual results
+```
+
+Do not mark this fixed unless this exact sequence works:
+
+```text
+pending → approved → pending → approved
+```
+
+and produces THREE separate Client notifications.

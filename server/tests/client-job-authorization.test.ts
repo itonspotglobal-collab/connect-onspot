@@ -703,7 +703,7 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(finalNotifications.rows[0].count, 0, "shortlist and promotion must not create a platform notification");
   });
 
-  it("notifies only the owning client when an admin approves a job, without duplicate approval events", async () => {
+  it("notifies only the owning client for each real approval transition", async () => {
     const approval = await request(
       server,
       "POST",
@@ -716,20 +716,25 @@ describe("client profile and job authorization (production routes)", () => {
     const notificationRows = await query(
       `SELECT user_id, type, title, message, related_id, related_type, event_key, is_read
          FROM notifications
-        WHERE related_id = $1`,
+        WHERE related_id = $1
+        ORDER BY created_at ASC, id ASC`,
       [APPROVAL_NOTIFICATION_JOB_ID],
     );
     assert.equal(notificationRows.rows.length, 1, "one approval notification must be persisted");
-    assert.deepEqual(notificationRows.rows[0], {
+    assert.deepEqual({ ...notificationRows.rows[0], event_key: undefined }, {
       user_id: CLIENT_ID,
       type: "job_approved",
       title: "Job post approved",
       message: "Your job post “Approval notification job” has been approved and is now live.",
       related_id: APPROVAL_NOTIFICATION_JOB_ID,
       related_type: "job",
-      event_key: `job_approved:${APPROVAL_NOTIFICATION_JOB_ID}`,
+      event_key: undefined,
       is_read: false,
     });
+    assert.match(
+      notificationRows.rows[0].event_key,
+      new RegExp(`^job-approval-transition:${APPROVAL_NOTIFICATION_JOB_ID}:`),
+    );
 
     const ownerUnread = await request(
       server,
@@ -753,7 +758,7 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(
       otherClientUnread.json.some((notification: any) => notification.relatedId === APPROVAL_NOTIFICATION_JOB_ID),
       false,
-      "another client must not receive the approval notification",
+      "another client must not receive job status notifications",
     );
 
     const repeatedApproval = await request(
@@ -763,14 +768,60 @@ describe("client profile and job authorization (production routes)", () => {
       adminToken,
     );
     assert.equal(repeatedApproval.status, 200, JSON.stringify(repeatedApproval.json));
-    const afterRepeat = await query(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE related_id = $1 AND type = 'job_approved'`,
+    const afterRepeatedApproval = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE related_id = $1`,
       [APPROVAL_NOTIFICATION_JOB_ID],
     );
-    assert.equal(afterRepeat.rows[0].count, 1, "an already-approved job must not create another event");
+    assert.equal(afterRepeatedApproval.rows[0].count, 1, "an already-approved job must not create another event");
+
+    const unapprove = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${APPROVAL_NOTIFICATION_JOB_ID}/pending`,
+      adminToken,
+    );
+    assert.equal(unapprove.status, 200, JSON.stringify(unapprove.json));
+    assert.equal(unapprove.json.approval_status, "pending");
+
+    const repeatedUnapprove = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${APPROVAL_NOTIFICATION_JOB_ID}/pending`,
+      adminToken,
+    );
+    assert.equal(repeatedUnapprove.status, 200, JSON.stringify(repeatedUnapprove.json));
+    const afterUnapprove = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE related_id = $1`,
+      [APPROVAL_NOTIFICATION_JOB_ID],
+    );
+    assert.equal(afterUnapprove.rows[0].count, 2, "approved → pending must create one new event");
+
+    const approveAgain = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${APPROVAL_NOTIFICATION_JOB_ID}/approve`,
+      adminToken,
+    );
+    assert.equal(approveAgain.status, 200, JSON.stringify(approveAgain.json));
+    const approvalHistory = await query(
+      `SELECT type, event_key
+         FROM notifications
+        WHERE related_id = $1
+        ORDER BY created_at ASC, id ASC`,
+      [APPROVAL_NOTIFICATION_JOB_ID],
+    );
+    assert.deepEqual(
+      approvalHistory.rows.map((row: any) => row.type),
+      ["job_approved", "job_pending", "job_approved"],
+    );
+    assert.equal(
+      new Set(approvalHistory.rows.map((row: any) => row.event_key)).size,
+      3,
+      "each real transition must have its own event key",
+    );
   });
 
-  it("does not create an approval notification when an admin rejects a pending job", async () => {
+  it("notifies every supported rejection and re-approval transition with the safe reason", async () => {
     const rejection = await request(
       server,
       "POST",
@@ -780,10 +831,76 @@ describe("client profile and job authorization (production routes)", () => {
     );
     assert.equal(rejection.status, 200, JSON.stringify(rejection.json));
     assert.equal(rejection.json.approval_status, "rejected");
-    const notifications = await query(
-      `SELECT id FROM notifications WHERE related_id = $1 AND type = 'job_approved'`,
+    const firstRejection = await query(
+      `SELECT type, title, message, is_read
+         FROM notifications
+        WHERE related_id = $1`,
       [REJECTION_NOTIFICATION_JOB_ID],
     );
-    assert.equal(notifications.rows.length, 0);
+    assert.deepEqual(firstRejection.rows, [{
+      type: "job_rejected",
+      title: "Job post rejected",
+      message: "Your job post “Rejection notification job” was not approved. Reason: Needs more detail",
+      is_read: false,
+    }]);
+
+    const repeatedRejection = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/reject`,
+      adminToken,
+      { rejectionReason: "Needs more detail" },
+    );
+    assert.equal(repeatedRejection.status, 200, JSON.stringify(repeatedRejection.json));
+
+    const reapproved = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/approve`,
+      adminToken,
+    );
+    assert.equal(reapproved.status, 200, JSON.stringify(reapproved.json));
+
+    const rejectedAgain = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/reject`,
+      adminToken,
+      { rejectionReason: "Please revise the job details" },
+    );
+    assert.equal(rejectedAgain.status, 200, JSON.stringify(rejectedAgain.json));
+
+    const movedBackToPending = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/pending`,
+      adminToken,
+    );
+    assert.equal(movedBackToPending.status, 200, JSON.stringify(movedBackToPending.json));
+
+    const approvedAfterPending = await request(
+      server,
+      "POST",
+      `/api/admin/jobs/${REJECTION_NOTIFICATION_JOB_ID}/approve`,
+      adminToken,
+    );
+    assert.equal(approvedAfterPending.status, 200, JSON.stringify(approvedAfterPending.json));
+
+    const history = await query(
+      `SELECT type, message, event_key
+         FROM notifications
+        WHERE related_id = $1
+        ORDER BY created_at ASC, id ASC`,
+      [REJECTION_NOTIFICATION_JOB_ID],
+    );
+    assert.deepEqual(
+      history.rows.map((row: any) => row.type),
+      ["job_rejected", "job_approved", "job_rejected", "job_pending", "job_approved"],
+    );
+    assert.equal(
+      history.rows[2].message,
+      "Your job post “Rejection notification job” was not approved. Reason: Please revise the job details",
+    );
+    assert.equal(new Set(history.rows.map((row: any) => row.event_key)).size, 5);
   });
 });

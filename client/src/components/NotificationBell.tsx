@@ -105,6 +105,20 @@ const TYPE_CONFIG: Record<
     label: "Job Approved",
     route: "/client-profile",
   },
+  job_pending: {
+    icon: Clock,
+    color: "#B45309",
+    bg: "#FEF3C7",
+    label: "Job Back in Review",
+    route: "/client-profile",
+  },
+  job_rejected: {
+    icon: XCircle,
+    color: "#DC2626",
+    bg: "#FEE2E2",
+    label: "Job Rejected",
+    route: "/client-profile",
+  },
   job_application_received: {
     icon: FileText,
     color: "#2563EB",

@@ -19,6 +19,8 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "offer_declined",
   "offer_expired",
   "job_approved",
+  "job_pending",
+  "job_rejected",
   "job_application_received",
   "client_application_status_changed",
   "new_message",

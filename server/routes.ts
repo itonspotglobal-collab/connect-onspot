@@ -86,6 +86,7 @@ import {
   notifyTalentOfApplicationStatusChange,
   resolveTalentPortalNotificationRecipient,
 } from "./services/applicationNotificationService";
+import { transitionJobApprovalStatus } from "./services/jobApprovalNotificationService";
 import {
   insertUserSchema,
   insertProfileSchema,
@@ -9409,60 +9410,18 @@ export async function registerRoutes(
           message: "An Engagement Type (Lite or Standard) must be set before approving a job.",
         });
       }
-      const result = await query(
-        `UPDATE jobs SET
-          approval_status = 'approved',
-          status = 'open',
-          approved_by = $1,
-          approved_at = NOW(),
-          posted_at = COALESCE(posted_at, NOW()),
-          rejected_by = NULL,
-          rejected_at = NULL,
-          rejection_reason = NULL,
-          updated_at = NOW()
-         WHERE id = $2
-           AND COALESCE(approval_status, 'pending') <> 'approved'
-         RETURNING *`,
-        [adminId, req.params.id],
-      );
-      if (result.rows.length === 0) {
-        // An already-approved job is a successful no-op, not a second approval
-        // event. Re-read it so the existing endpoint response remains useful.
-        const current = await query(`SELECT * FROM jobs WHERE id = $1 LIMIT 1`, [req.params.id]);
-        if (current.rows.length === 0) return res.status(404).json({ error: "Job not found" });
-        return res.json(current.rows[0]);
+      const transition = await transitionJobApprovalStatus({
+        jobId: req.params.id,
+        newStatus: "approved",
+        adminId,
+      });
+      if (!transition) return res.status(404).json({ error: "Job not found" });
+      res.json(transition.job);
+      if (transition.transitioned) {
+        import("./services/ragService")
+          .then(({ indexJobListings }) => indexJobListings())
+          .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
       }
-
-      const approvedJob = result.rows[0];
-      try {
-        await storage.createNotification({
-          userId: approvedJob.client_id,
-          type: "job_approved",
-          title: "Job post approved",
-          message: `Your job post “${approvedJob.title}” has been approved and is now live.`,
-          relatedId: approvedJob.id,
-          relatedType: "job",
-          eventKey: `job_approved:${approvedJob.id}`,
-        });
-        console.log(`[JobApprovalNotification] Created notification for client ${approvedJob.client_id}`);
-      } catch (notificationError: any) {
-        // The unique event key makes retries/concurrent approval requests
-        // harmless. A notification failure must not turn a committed approval
-        // into a misleading "approval failed" response.
-        if (notificationError?.code === "23505") {
-          console.log(`[JobApprovalNotification] Already exists for job ${approvedJob.id}`);
-        } else {
-          console.error(
-            `[JobApprovalNotification] Failed for job ${approvedJob.id}:`,
-            notificationError?.message ?? notificationError,
-          );
-        }
-      }
-
-      res.json(approvedJob);
-      import("./services/ragService")
-        .then(({ indexJobListings }) => indexJobListings())
-        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error) {
       console.error("Admin job approve error:", error);
       res.status(500).json({ error: "Failed to approve job" });
@@ -9474,24 +9433,19 @@ export async function registerRoutes(
     try {
       const adminId = (req as any).user?.id;
       const { rejectionReason } = req.body;
-      const result = await query(
-        `UPDATE jobs SET
-          approval_status = 'rejected',
-          rejected_by = $1,
-          rejected_at = NOW(),
-          rejection_reason = $2,
-          approved_by = NULL,
-          approved_at = NULL,
-          updated_at = NOW()
-         WHERE id = $3
-         RETURNING *`,
-        [adminId, rejectionReason || null, req.params.id],
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
-      res.json(result.rows[0]);
-      import("./services/ragService")
-        .then(({ indexJobListings }) => indexJobListings())
-        .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+      const transition = await transitionJobApprovalStatus({
+        jobId: req.params.id,
+        newStatus: "rejected",
+        adminId,
+        rejectionReason,
+      });
+      if (!transition) return res.status(404).json({ error: "Job not found" });
+      res.json(transition.job);
+      if (transition.transitioned) {
+        import("./services/ragService")
+          .then(({ indexJobListings }) => indexJobListings())
+          .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+      }
     } catch (error) {
       console.error("Admin job reject error:", error);
       res.status(500).json({ error: "Failed to reject job" });
@@ -9568,21 +9522,18 @@ export async function registerRoutes(
   // ─── Admin: Move approved/rejected job back to pending ────────────────────
   app.post("/api/admin/jobs/:id/pending", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
     try {
-      const result = await query(
-        `UPDATE jobs SET
-          approval_status = 'pending',
-          approved_by = NULL,
-          approved_at = NULL,
-          rejected_by = NULL,
-          rejected_at = NULL,
-          rejection_reason = NULL,
-          updated_at = NOW()
-         WHERE id = $1
-         RETURNING *`,
-        [req.params.id],
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: "Job not found" });
-      res.json(result.rows[0]);
+      const transition = await transitionJobApprovalStatus({
+        jobId: req.params.id,
+        newStatus: "pending",
+        adminId: (req as any).user?.id,
+      });
+      if (!transition) return res.status(404).json({ error: "Job not found" });
+      res.json(transition.job);
+      if (transition.transitioned) {
+        import("./services/ragService")
+          .then(({ indexJobListings }) => indexJobListings())
+          .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
+      }
     } catch (error) {
       console.error("Admin job pending error:", error);
       res.status(500).json({ error: "Failed to reset job approval" });
