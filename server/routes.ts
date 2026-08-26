@@ -1334,41 +1334,6 @@ export async function registerRoutes(
     console.warn("⚠️  organization tables migration skipped:", migErr.message);
   }
 
-  // ── One-time safe migration: set application_method = 'built_in_form' for
-  // approved/open jobs that have no valid external apply link (empty, null, or
-  // pointing at the old LeadConnector placeholder URL).
-  // Intentionally external jobs that have a real non-LeadConnector HTTPS URL
-  // are left untouched.
-  try {
-    const migResult = await query(
-      `UPDATE jobs
-         SET application_method = 'built_in_form',
-             apply_link = NULL,
-             updated_at = NOW()
-       WHERE approval_status = 'approved'
-         AND status = 'open'
-         AND (
-               application_method IS NULL
-            OR application_method = ''
-            OR application_method != 'external_link'
-            OR apply_link IS NULL
-            OR apply_link = ''
-            OR apply_link ILIKE '%leadconnectorhq.com%'
-         )
-         AND NOT (
-               application_method = 'external_link'
-           AND apply_link IS NOT NULL
-           AND apply_link != ''
-           AND apply_link NOT ILIKE '%leadconnectorhq.com%'
-         )`,
-    );
-    if (migResult.rowCount && migResult.rowCount > 0) {
-      console.log(`✅ Migration: set ${migResult.rowCount} open job(s) to built_in_form application method`);
-    }
-  } catch (migErr: any) {
-    console.warn("⚠️  built_in_form migration skipped:", migErr.message);
-  }
-
   // ── One-time safe migration: add is_repeat_application column to job_submissions ──
   try {
     await query(`ALTER TABLE job_submissions ADD COLUMN IF NOT EXISTS is_repeat_application boolean NOT NULL DEFAULT false`);
@@ -1625,7 +1590,8 @@ export async function registerRoutes(
   // ── One-time safe migration: application method / link ────────────────────
   try {
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS apply_link text`);
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_method text DEFAULT 'external_link'`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS application_method text DEFAULT 'built_in_form'`);
+    await query(`ALTER TABLE jobs ALTER COLUMN application_method SET DEFAULT 'built_in_form'`);
     console.log("✅ Migration: jobs application method columns ready");
   } catch (migErr: any) {
     console.warn("⚠️  application method migration skipped:", migErr.message);
@@ -14932,8 +14898,17 @@ export async function registerRoutes(
     try {
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      // Client-created jobs always start as pending approval
-      const body = { ...req.body, clientId: userId, approvalStatus: "pending", isClientSubmitted: true };
+      // Client-created jobs always start as pending approval. The current Client
+      // form has no external-link control, so omitted application fields must
+      // never inherit legacy external behavior.
+      const body = {
+        ...req.body,
+        clientId: userId,
+        approvalStatus: "pending",
+        isClientSubmitted: true,
+        applicationMethod: "built_in_form",
+        applyLink: null,
+      };
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientCreateEtErr = validateEngagementType(body.engagementType);

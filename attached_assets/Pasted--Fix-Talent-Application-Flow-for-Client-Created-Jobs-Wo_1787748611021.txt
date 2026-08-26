@@ -1,0 +1,625 @@
+## Fix Talent Application Flow for Client-Created Jobs
+
+Work inside the existing **OnSpot / connect-onspot** codebase.
+
+### Problem
+
+There is a bug in the Talent **Find Work** application flow.
+
+Current reproduction:
+
+1. Log in using a **Client** account.
+2. Create a job from the Client portal.
+3. Log in using an **Admin** account.
+4. Approve the client-submitted job.
+5. Log in using a **Talent** account.
+6. Open **Find Work**.
+7. Open the approved job.
+8. Click **Apply Now**.
+
+Instead of opening the existing internal job application form, the user is taken to a page that says:
+
+> This job uses an external application
+> Please use the Apply Now link on the job listing.
+
+This is incorrect for normal client-created jobs.
+
+### Expected behavior
+
+The account that created the job must **not** determine whether the job uses an internal or external application.
+
+An approved client-created job should behave exactly like an admin-created job.
+
+Application behavior must depend only on the job's configured application method:
+
+* `applicationMethod === "built_in_form"` → open the existing internal application form.
+* `applicationMethod === "external_link"` AND a valid `applyLink` exists → open the external URL.
+* A client-created job must **not automatically become an external application** simply because its source/creator is a client.
+
+For a built-in application, clicking **Apply Now** should navigate to:
+
+```tsx
+/jobs/${job.id}/apply
+```
+
+and load the existing:
+
+```text
+client/src/pages/JobApplyPage.tsx
+```
+
+Do not create a second application form.
+
+---
+
+## Files / areas to inspect
+
+At minimum inspect:
+
+```text
+client/src/pages/FindWorkJob.tsx
+client/src/pages/JobApplyPage.tsx
+client/src/pages/FindWork.tsx
+client/src/pages/FindWorkAllJobs.tsx
+client/src/pages/JobFormPage.tsx
+shared/schema.ts
+server job routes / API routes
+client job creation endpoint
+admin job approval endpoint
+```
+
+Also search the entire codebase for:
+
+```text
+applicationMethod
+applyLink
+external_link
+built_in_form
+external application
+This job uses an external application
+source === "client"
+source === 'client'
+createdBy
+created_by
+clientId
+client_id
+```
+
+---
+
+## 1. Trace the current application decision
+
+Find the exact condition that decides whether **Apply Now**:
+
+* navigates to `/jobs/:jobId/apply`
+* opens `applyLink`
+* or displays the "This job uses an external application" screen.
+
+Do not assume the problem is frontend-only.
+
+Trace the full lifecycle:
+
+```text
+Client Job Creation
+        ↓
+Database record
+        ↓
+Admin approval
+        ↓
+Public jobs API
+        ↓
+Find Work job details
+        ↓
+Apply Now
+        ↓
+JobApplyPage
+```
+
+Identify where the incorrect application method is being introduced.
+
+---
+
+## 2. Do not use job source/creator as the application method
+
+Remove or correct logic equivalent to:
+
+```tsx
+if (job.source === "client") {
+  // treat as external
+}
+```
+
+or:
+
+```tsx
+if (job.clientId) {
+  // external application
+}
+```
+
+or:
+
+```tsx
+if (job.createdByClient) {
+  // external
+}
+```
+
+or any similar condition.
+
+The following fields must NOT independently determine the application flow:
+
+```text
+source
+createdBy
+created_by
+clientId
+client_id
+creator role
+```
+
+A client-created job can use the built-in OnSpot application form.
+
+---
+
+## 3. Use applicationMethod as the source of truth
+
+Normalize application behavior around the existing values:
+
+```ts
+type ApplicationMethod =
+  | "built_in_form"
+  | "external_link";
+```
+
+Expected application logic:
+
+```tsx
+const applicationMethod = job.applicationMethod;
+
+if (applicationMethod === "external_link" && job.applyLink) {
+  window.open(job.applyLink, "_blank", "noopener,noreferrer");
+  return;
+}
+
+navigate(`/jobs/${job.id}/apply`);
+```
+
+The built-in form should be the normal/default path.
+
+Do not send the talent to an external-application informational page when:
+
+```ts
+job.applicationMethod === "built_in_form"
+```
+
+---
+
+## 4. Fix defaults for client-created jobs
+
+Inspect the Client job creation flow.
+
+A normal job created from the Client portal should default to:
+
+```ts
+applicationMethod: "built_in_form"
+```
+
+unless the client explicitly selected an external application method.
+
+If there is no UI option allowing the client to choose an external application URL, then client-created jobs should always default to:
+
+```ts
+applicationMethod = "built_in_form"
+applyLink = null
+```
+
+Do not infer:
+
+```ts
+applicationMethod = "external_link"
+```
+
+just because the job came from the Client portal.
+
+Check both:
+
+* frontend payload construction
+* backend/default/database insertion logic
+
+The backend should enforce a safe default even if the frontend omits the field.
+
+Example:
+
+```ts
+applicationMethod:
+  body.applicationMethod === "external_link"
+    ? "external_link"
+    : "built_in_form";
+```
+
+---
+
+## 5. Check the admin approval flow
+
+Inspect what happens when Admin approves a client-submitted job.
+
+Admin approval should update approval/publication fields only, for example:
+
+```text
+approvalStatus = approved
+status = open
+approvedAt
+approvedBy
+postedAt
+```
+
+It must NOT silently change:
+
+```text
+applicationMethod
+applyLink
+```
+
+unless the admin explicitly edits those fields.
+
+Preserve the original application configuration when approving the job.
+
+---
+
+## 6. Normalize the public job API response
+
+Admin-created and client-created jobs must return the same public API shape.
+
+At minimum ensure these fields are returned consistently:
+
+```ts
+{
+  id,
+  title,
+  status,
+  approvalStatus,
+  source,
+  applicationMethod,
+  applyLink,
+  requiresResume,
+  requiresVideoIntro,
+  applicationQuestions
+}
+```
+
+Do not have one API mapping use:
+
+```text
+application_method
+```
+
+while another expects:
+
+```text
+applicationMethod
+```
+
+without explicitly transforming it.
+
+Likewise normalize:
+
+```text
+apply_link → applyLink
+```
+
+if the database uses snake_case.
+
+---
+
+## 7. Fix FindWorkJob.tsx
+
+Inspect:
+
+```text
+client/src/pages/FindWorkJob.tsx
+```
+
+The database-backed job details page should use the actual job's application configuration.
+
+Expected CTA behavior:
+
+```tsx
+const handleApply = () => {
+  if (
+    job.applicationMethod === "external_link" &&
+    job.applyLink
+  ) {
+    window.open(
+      job.applyLink,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    return;
+  }
+
+  navigate(`/jobs/${job.id}/apply`);
+};
+```
+
+Do not route built-in jobs to the external application screen.
+
+Prefer a single reusable helper/function instead of duplicating application-method checks in several JSX branches.
+
+---
+
+## 8. Verify JobApplyPage.tsx accepts client-created jobs
+
+The existing internal application form is:
+
+```text
+client/src/pages/JobApplyPage.tsx
+```
+
+Do not duplicate or replace it.
+
+Ensure it can load any publicly approved/open job regardless of whether that job was originally created by:
+
+```text
+admin
+client
+```
+
+The form should care about:
+
+```text
+job visibility
+job ID
+application configuration
+talent authentication/session
+application requirements
+```
+
+It should not reject the job because `source === "client"`.
+
+Check its job fetch:
+
+```text
+GET /api/jobs/:jobId
+```
+
+and application-prefill routes.
+
+Approved client-created jobs should work through the same APIs as admin-created jobs.
+
+---
+
+## 9. Handle bad external configuration safely
+
+If:
+
+```ts
+applicationMethod === "external_link"
+```
+
+but:
+
+```ts
+applyLink
+```
+
+is null, empty, or invalid, do not send the user to a dead-end informational screen.
+
+Prefer a clear disabled/error state such as:
+
+```text
+Application link unavailable
+```
+
+Do not silently fall back to external behavior.
+
+For:
+
+```ts
+applicationMethod === "built_in_form"
+```
+
+the absence of `applyLink` is completely normal.
+
+---
+
+## 10. Preserve approval/public visibility rules
+
+Do not solve this by bypassing approval.
+
+Client-submitted jobs must still follow:
+
+```text
+Client submits job
+        ↓
+Pending approval
+        ↓
+Not visible publicly
+        ↓
+Admin approves
+        ↓
+Job becomes open/public
+        ↓
+Talent can view
+        ↓
+Talent can apply
+```
+
+Keep the same job ID when approving the job.
+
+Do not create a duplicate job during approval.
+
+---
+
+## 11. Database/backfill check
+
+Inspect existing client-created jobs in the database.
+
+If historical client jobs were incorrectly saved as:
+
+```text
+applicationMethod = external_link
+```
+
+despite having no `applyLink`, add a safe migration/backfill if appropriate.
+
+For example, conceptually:
+
+```sql
+UPDATE jobs
+SET application_method = 'built_in_form'
+WHERE source = 'client'
+  AND (
+    apply_link IS NULL
+    OR TRIM(apply_link) = ''
+  )
+  AND application_method = 'external_link';
+```
+
+Adapt this to the actual schema and database naming.
+
+Do NOT blindly rewrite legitimate external-link jobs that actually have a configured external application URL.
+
+---
+
+## 12. Testing requirements
+
+Test all of these scenarios.
+
+### Client-created + built-in form
+
+```text
+Client creates job
+Admin approves it
+Talent sees it in Find Work
+Talent opens job details
+Talent clicks Apply Now
+Internal JobApplyPage opens
+Talent can submit application
+```
+
+Expected:
+
+```text
+PASS
+```
+
+### Admin-created + built-in form
+
+Ensure existing behavior is unchanged.
+
+Expected:
+
+```text
+Apply Now → internal JobApplyPage
+```
+
+### External-link job
+
+For a job explicitly configured with:
+
+```ts
+applicationMethod = "external_link"
+applyLink = "https://..."
+```
+
+Expected:
+
+```text
+Apply Now → external application URL
+```
+
+### External-link job without URL
+
+Expected:
+
+```text
+No crash
+No broken redirect
+Clear "Application link unavailable" state
+```
+
+### Pending client job
+
+Expected:
+
+```text
+Visible in Admin Pending Approvals
+Not visible to Talent
+```
+
+### Approved client job
+
+Expected:
+
+```text
+Same persisted job ID
+Visible in Find Work
+View Details works
+Apply Now follows its configured applicationMethod
+```
+
+### Application submission
+
+After applying to a client-created built-in job, verify the application is stored against:
+
+```text
+correct job ID
+correct talent/candidate
+correct client/job ownership
+```
+
+and becomes visible in the existing application-management flows.
+
+---
+
+## 13. Avoid unnecessary redesigns
+
+Do not redesign:
+
+```text
+Find Work UI
+Job details UI
+JobApplyPage UI
+Client job creation UI
+Admin approval UI
+```
+
+unless a tiny change is necessary for this fix.
+
+Do not create a second job application system.
+
+Do not remove support for legitimate external application links.
+
+Do not change unrelated functionality.
+
+Keep the fix narrowly scoped to making the application behavior consistent between admin-created and client-created jobs.
+
+---
+
+## Expected final result
+
+After the fix, this exact scenario must work:
+
+```text
+CLIENT
+Create job
+        ↓
+ADMIN
+Approve job
+        ↓
+TALENT
+Find Work
+        ↓
+Open approved job
+        ↓
+Apply Now
+        ↓
+Existing OnSpot internal application form
+        ↓
+Submit application successfully
+```
+
+The creator/source of the job must not decide whether the application is internal or external.
+
+`applicationMethod` must be the source of truth.

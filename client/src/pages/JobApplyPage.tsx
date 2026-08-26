@@ -26,6 +26,7 @@ import type { Job } from "@shared/schema";
 import { getPublicCompanyName } from "@/lib/jobUtils";
 import { loadTalentAuth, type TalentAuthState } from "@/components/TalentLoginModal";
 import { validatePhone } from "@/lib/phoneValidation";
+import { resolveJobApplicationAction } from "@/lib/jobApplication";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -708,7 +709,9 @@ export default function JobApplyPage() {
     );
   }
 
-  if ((job as any).applicationMethod !== "built_in_form") {
+  const applicationAction = resolveJobApplicationAction(job);
+
+  if (applicationAction.kind === "external") {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <TopNavigation />
@@ -717,6 +720,33 @@ export default function JobApplyPage() {
             This job uses an external application
           </h2>
           <p className="text-slate-500 mb-6">Please use the Apply Now link on the job listing.</p>
+          <div className="flex justify-center gap-3">
+            <Button variant="outline" className="rounded-full" onClick={() => navigate(`/find-work/job/${jobId}`)}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> View Job
+            </Button>
+            <Button
+              className="rounded-full bg-[#474ead] text-white hover:bg-[#3d439c]"
+              onClick={() => window.open(applicationAction.url, "_blank", "noopener,noreferrer")}
+            >
+              Open Application
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (applicationAction.kind === "unavailable") {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <TopNavigation />
+        <div className="mx-auto max-w-xl px-6 pt-24 text-center">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+            Application link unavailable
+          </h2>
+          <p className="text-slate-500 mb-6">
+            This job's external application link is missing or invalid.
+          </p>
           <Button variant="outline" className="rounded-full" onClick={() => navigate(`/find-work/job/${jobId}`)}>
             <ArrowLeft className="mr-2 h-4 w-4" /> View Job
           </Button>

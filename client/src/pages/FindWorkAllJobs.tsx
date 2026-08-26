@@ -49,6 +49,7 @@ import {
   scoreJobForTalent,
 } from "@/lib/talentRecommendations";
 import { JOB_FUNCTIONS, FILTER_CONTRACT_TYPES } from "@/lib/jobConstants";
+import { resolveJobApplicationAction } from "@/lib/jobApplication";
 
 // POPULAR_CHIPS replaced by dynamic /api/jobs/popular query
 
@@ -402,23 +403,29 @@ function JobCard({
 
           {/* Action buttons */}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button
+            {(() => {
+              const applicationAction = resolveJobApplicationAction(job);
+              return <Button
               size="sm"
+              disabled={applicationAction.kind === "unavailable"}
               className={
                 featured
                   ? "rounded-full bg-amber-400 px-5 text-[#2F327F] font-bold border-0 hover:bg-amber-300 shadow-sm transition-all"
                   : "rounded-full bg-gradient-to-r from-[#3A3AF8] to-[#7F3DF4] px-5 text-white border-0 hover:opacity-90"
               }
               onClick={() => {
-                if ((job as any).applicationMethod === "external_link" && job.applyLink) {
-                  window.open(job.applyLink, "_blank", "noopener,noreferrer");
+                if (applicationAction.kind === "external") {
+                  window.open(applicationAction.url, "_blank", "noopener,noreferrer");
+                } else if (applicationAction.kind === "built_in") {
+                  navigate(applicationAction.path);
                 } else {
-                  navigate(`/jobs/${job.id}/apply`);
+                  return;
                 }
               }}
             >
-              Apply Now
-            </Button>
+              {applicationAction.kind === "unavailable" ? "Application link unavailable" : "Apply Now"}
+            </Button>;
+            })()}
             <button
               onClick={() => onNavigate(job.id)}
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:text-indigo-400"

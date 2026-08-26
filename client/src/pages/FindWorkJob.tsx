@@ -40,6 +40,7 @@ import { saveUserActivity } from "@/lib/userActivityMemory";
 import { BenefitsDisplay } from "@/components/BenefitsDisplay";
 import { Footer } from "@/components/Footer";
 import { JobRichText } from "@/components/JobRichText";
+import { resolveJobApplicationAction } from "@/lib/jobApplication";
 
 const roles = [
   {
@@ -685,22 +686,24 @@ function DbJobDetail({
   function ApplyButton({ size = "default" }: { size?: "default" | "large" }) {
     const px = size === "large" ? "px-10 py-2.5" : "px-7";
     const cls = `rounded-full bg-[#474ead] ${px} text-white shadow-[0_8px_32px_rgba(71,78,173,0.20)] hover:bg-[#3d439c]`;
-    if ((job as any).applicationMethod === "built_in_form") {
+    const applicationAction = resolveJobApplicationAction(job);
+
+    if (applicationAction.kind === "built_in") {
       return (
         <Button
           className={cls}
-          onClick={() => navigate(`/jobs/${job.id}/apply`)}
+          onClick={() => navigate(applicationAction.path)}
         >
           Apply Now
         </Button>
       );
     }
-    if (job.applyLink) {
+    if (applicationAction.kind === "external") {
       return (
         <Button
           className={cls}
           onClick={() =>
-            window.open(job.applyLink!, "_blank", "noopener,noreferrer")
+            window.open(applicationAction.url, "_blank", "noopener,noreferrer")
           }
         >
           Apply Now
