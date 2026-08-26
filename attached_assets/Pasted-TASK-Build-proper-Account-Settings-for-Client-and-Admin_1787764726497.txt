@@ -1,0 +1,735 @@
+TASK: Build proper Account Settings for Client and Admin users, while preserving the existing Talent Profile Settings exactly as it works today.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing Talent Profile Settings is working and must NOT be redesigned, refactored, or repurposed for Client/Admin.
+
+The current `/settings` navigation is shared in the ClientLayout, but Client/Admin users should no longer land on a Talent-only settings experience.
+
+AUDIT FIRST
+
+Before implementing, inspect and report the current state of:
+
+* client/src/pages/ProfileSettings.tsx
+* client/src/App.tsx
+* client/src/components/ClientLayout.tsx
+* AuthContext / current user shape
+* users table
+* client_profiles table
+* organizations table
+* organization_members table
+* organization_invitations table
+* existing OrganizationCreate
+* existing OrganizationDetail
+* existing OrganizationInvite / OrganizationInvitations
+* existing organization API routes
+* existing profile-image upload behavior for non-Talent users, if any
+* existing password/account-security functionality, if any
+* existing admin account/profile routes
+* current `/settings` route and role guards
+
+Do not write code until you know which existing fields/routes can be reused.
+
+# PRODUCT GOAL
+
+Create a role-aware Account Settings experience.
+
+When clicking:
+
+Settings
+
+the user should see settings appropriate to their account role.
+
+Behavior:
+
+Talent
+→ keep existing Talent Profile Settings unchanged.
+
+Client
+→ show new Client Account Settings.
+
+Admin
+→ show new Admin Account Settings.
+
+Do not show:
+
+"Talent login required"
+
+to authenticated Client or Admin users.
+
+# ROUTING
+
+Keep `/settings` as the common entry point if possible.
+
+Make it role-aware.
+
+Suggested behavior:
+
+* Talent → existing `ProfileSettings`
+* Client → new `ClientAccountSettings`
+* Admin → new `AdminAccountSettings`
+
+If a cleaner route structure is needed, it may use:
+
+* `/settings`
+* `/settings/account`
+* `/settings/organization`
+
+but existing navigation links must continue working.
+
+Do not break bookmarked or existing `/settings` links.
+
+Do not redirect Client/Admin to Talent Profile Settings.
+
+# DESIGN
+
+Use the existing Talent Settings visual language as inspiration:
+
+* page title
+* left-side settings navigation
+* section cards
+* clean inputs
+* Save changes actions
+
+But do NOT copy Talent-only sections.
+
+Client/Admin settings should look like they belong to the same product, not like an unrelated new page.
+
+# CLIENT ACCOUNT SETTINGS
+
+Create a Client settings experience with these sections.
+
+## 1. Account Information
+
+Personal/account-level data for the logged-in Client.
+
+Fields should reuse existing `users` fields wherever possible:
+
+* Profile photo/avatar
+* First Name
+* Last Name
+* Email
+
+Add, if already supported safely:
+
+* Phone Number
+* Timezone
+
+Important:
+
+Determine whether phone/timezone belong in `client_profiles` rather than `users`.
+
+Use the existing canonical field location.
+
+Do not duplicate the same data into multiple tables unnecessarily.
+
+Email:
+
+If email is currently identity/authentication-sensitive and not safely editable, display it read-only.
+
+Do not casually make login email editable if existing authentication does not support that flow.
+
+## 2. Company / Organization
+
+This section must integrate with the EXISTING Organization feature.
+
+Do not create a second "company settings" model disconnected from organizations.
+
+Determine whether the Client:
+
+A. belongs to an active Organization
+B. owns an Organization
+C. has no Organization
+
+### If Client has an Organization
+
+Show organization/company information:
+
+* Organization Name
+* Website
+* Industry
+* Company Size
+* Location
+* Timezone
+* About
+
+These map naturally to the existing `organizations` fields.
+
+Editing permissions:
+
+* Organization owner may edit organization details.
+* Ordinary organization member should only edit organization-level fields if existing organization permissions allow it.
+* If members are not allowed to edit, show the values read-only with an appropriate note.
+
+Do NOT weaken organization ownership permissions.
+
+### If Client has no Organization
+
+Show an empty-state/action:
+
+`Create Organization`
+
+or
+
+`Set up your organization`
+
+Reuse the existing OrganizationCreate flow.
+
+Do not automatically create an organization simply because the user opened Settings.
+
+## 3. Team / Organization Members
+
+If the Client belongs to an Organization, expose the existing organization membership experience from Settings.
+
+This section can show:
+
+* Owner
+* Active members
+* Pending invitations
+
+Actions according to existing permissions:
+
+Owner:
+
+* Invite member
+* Revoke pending invitation
+* manage existing organization membership according to current feature rules
+
+Member:
+
+* view membership
+* no owner-only controls
+
+Reuse:
+
+* organization_members
+* organization_invitations
+* existing invitation endpoints
+* existing OrganizationInvite / OrganizationInvitations behavior
+
+Do not duplicate the Organization feature into a separate Team implementation.
+
+If the existing Organization Detail page already has a good member-management UI, it is acceptable for Settings to link into that page rather than duplicating the whole interface.
+
+## 4. Hiring Preferences
+
+Reuse existing `client_profiles` fields where appropriate:
+
+* Hiring Needs
+* Preferred Roles
+
+Do not invent new fields if these already exist.
+
+This is Client-specific and should not appear for Admin unless it makes sense for an Admin's own client organization.
+
+## 5. Account / Security
+
+Only expose settings that the existing authentication system safely supports.
+
+Examples, only if already supported:
+
+* password change
+* sign-out from sessions
+* account security information
+
+Do NOT build a new password reset/authentication subsystem as part of this task.
+
+If password management is not currently available, omit it and report the limitation.
+
+# ADMIN ACCOUNT SETTINGS
+
+Admin Settings should NOT look like Talent Settings and should NOT show resume, skills, certifications, availability, rates, etc.
+
+Admin Account Settings should include:
+
+## 1. Account Information
+
+Reuse `users`:
+
+* Profile photo/avatar
+* First Name
+* Last Name
+* Email
+* Role shown read-only as `Admin`
+
+If phone/timezone are already supported for Admin via `profiles` or another canonical structure, reuse them.
+
+Do not create arbitrary duplicate profile storage just for Admin.
+
+## 2. Organization / Company Context
+
+This requires careful behavior.
+
+Admins may interact with many Client organizations in the system, so do NOT assume the Admin user's account automatically belongs to a Client Organization.
+
+If the Admin is actually an `organization_members` member of an Organization:
+
+show their membership and organization link.
+
+If not:
+
+do not auto-create or attach them to an organization.
+
+Admin Settings can show:
+
+`No organization membership`
+
+if appropriate.
+
+Do not mix platform-admin permissions with organization-owner permissions.
+
+An OnSpot Admin is not automatically the owner of every Client organization.
+
+## 3. Admin-specific account context
+
+Keep this minimal.
+
+Examples:
+
+* Account role: Admin
+* current profile/account identity
+* optional timezone
+
+Do NOT put platform configuration, job approvals, email templates, interviewer management, etc. into Account Settings unless those already belong there.
+
+Those are Admin operational features, not personal account settings.
+
+# PROFILE PHOTO
+
+Audit the existing Talent photo implementation.
+
+Do NOT directly reuse Talent candidate upload endpoints for Client/Admin.
+
+If there is already a generic user/profile image mechanism, use it.
+
+If not, implement a small, role-safe generic account avatar upload tied to:
+
+`users.profile_image_url`
+
+or the existing canonical account image field.
+
+Requirements:
+
+* Client can only update their own profile image.
+* Admin can only update their own profile image through personal settings.
+* Talent photo flow remains unchanged.
+* Existing TopNavigation/avatar should reflect the updated image after save/refetch.
+
+Do not change Candidate photo persistence.
+
+# CLIENT_PROFILE VS ORGANIZATION — IMPORTANT
+
+There is overlapping company data in:
+
+`client_profiles`
+and
+`organizations`.
+
+Do not blindly synchronize every field both ways.
+
+Audit the existing product semantics first.
+
+Recommended ownership:
+
+Personal Client/hiring-specific data:
+
+* contact person
+* phone
+* hiring needs
+* preferred roles
+* MSA acceptance
+
+→ `client_profiles`
+
+Shared company/workspace data:
+
+* company/organization name
+* website
+* industry
+* company size
+* location
+* about
+* timezone
+
+→ `organizations` when the Client has an Organization.
+
+For Clients without an Organization, preserve existing `client_profiles` company information so existing Client Profile behavior continues working.
+
+Do NOT migrate or erase existing client_profiles data automatically.
+
+Do NOT introduce destructive synchronization.
+
+# SAFE RELATIONSHIP BETWEEN CLIENT PROFILE AND ORGANIZATION
+
+When a Client already has an Organization:
+
+Prefer showing organization values as the shared company source of truth.
+
+Do not silently overwrite organization fields from client_profiles on page load.
+
+If the user edits Organization fields in Settings and has permission, update `organizations`.
+
+For legacy Clients without an Organization:
+
+continue using existing `client_profiles`.
+
+If they later create an Organization, existing OrganizationCreate logic should remain responsible for creating/linking it.
+
+Do not automatically migrate legacy fields unless that flow already does so.
+
+# ORGANIZATION MEMBERSHIP RESOLUTION
+
+Use existing `organization_members` records.
+
+Do not infer membership using:
+
+* matching email domains
+* matching company names
+* jobs.client_id
+* client_profiles.company_name
+
+Membership must come from the actual existing organization membership model.
+
+If a user belongs to multiple organizations and the system supports that:
+
+do not arbitrarily select one.
+
+Audit how OrganizationDetail/current Organization UI resolves this today.
+
+If multiple membership is allowed, provide a safe organization selector or link to each organization rather than changing the membership model.
+
+# API DESIGN
+
+Reuse existing endpoints first.
+
+Do not duplicate APIs if equivalent account/client/organization endpoints already exist.
+
+If focused account-settings endpoints are needed, keep them additive, for example:
+
+GET /api/account/settings
+PATCH /api/account/settings
+
+But only add them if this simplifies role-safe account fields without breaking existing routes.
+
+For organization edits, prefer existing organization APIs.
+
+For Client Profile-specific fields, prefer existing client-profile APIs.
+
+Do not create one giant PATCH endpoint that bypasses existing organization authorization.
+
+# SERVER AUTHORIZATION
+
+Enforce server-side.
+
+Client:
+
+* update only own personal account fields
+* update own client profile
+* edit Organization only when existing membership role permits it
+
+Admin:
+
+* update only own personal account fields through Account Settings
+* being platform Admin does NOT automatically mean mutate every Organization through personal Settings
+
+Talent:
+
+* existing Talent settings endpoints/authorization remain unchanged
+
+# SETTINGS PAGE ROLE RESOLUTION
+
+Do not decide the page from stale localStorage alone.
+
+Use the existing AuthContext/authenticated user role.
+
+If user role = talent:
+render existing ProfileSettings.
+
+If user role = client:
+render ClientAccountSettings.
+
+If user role = admin:
+render AdminAccountSettings.
+
+Handle loading state properly.
+
+Do not flash "Talent login required" before role resolution completes.
+
+# CLIENT SIDEBAR
+
+The existing ClientLayout already links:
+
+Settings → `/settings`
+
+Preserve that.
+
+Do not create a second Client sidebar Settings entry.
+
+For Admin, preserve the existing Admin navigation pattern.
+
+If Admin also uses ClientLayout in some routes, ensure `/settings` correctly resolves Admin rather than Talent.
+
+# TALENT SETTINGS — STRICT NON-REGRESSION
+
+Do NOT alter the existing sections or behavior of Talent Profile Settings:
+
+* Basic Information
+* Professional Details
+* Skills & Expertise
+* Documents
+* Certifications
+* Profile completion
+* Resume
+* Video
+* Identity verification
+* Candidate photo
+* Talent-specific authentication
+* Talent timezone
+* Talent languages
+
+Do not share stateful Candidate hooks with Client/Admin.
+
+Avoid modifying `useCandidateProfileSettings` unless there is an unrelated demonstrated bug.
+
+# CLIENT PROFILE — STRICT NON-REGRESSION
+
+Do not replace ClientProfile.
+
+Account Settings is supplementary.
+
+Existing Client Profile must continue working:
+
+* company profile
+* job postings
+* interview details
+* invitations
+* hiring-related functionality
+* Organization access
+
+Do not redesign ClientProfile in this task.
+
+# ORGANIZATION — STRICT NON-REGRESSION
+
+Preserve:
+
+* Organization creation
+* Organization ownership
+* members
+* invitations
+* invitation expiry
+* invitation emails
+* deletion lifecycle
+* existing permissions
+* OrganizationDetail
+* OrganizationInvite
+* OrganizationInvitations
+
+Account Settings should expose/link/integrate with these features, not replace them.
+
+# DATA/MIGRATIONS
+
+Do not add schema fields until after auditing existing `users`, `client_profiles`, `organizations`, and possibly `profiles`.
+
+The current schema already contains most expected fields.
+
+Avoid migrations if possible.
+
+If a new generic Admin/Client account field is genuinely missing, report it before adding a migration.
+
+Do not store:
+
+* resumes
+* skills
+* certifications
+* hourly rates
+
+for Client/Admin settings.
+
+# UI SUGGESTED STRUCTURE
+
+Client:
+
+Profile Settings / Account Settings
+
+Left navigation:
+
+* Account
+* Organization
+* Team
+* Hiring Preferences
+
+Optional:
+
+* Security, only if existing backend supports it
+
+Admin:
+
+Account Settings
+
+Left navigation:
+
+* Account
+* Organization Membership
+
+Optional:
+
+* Security
+
+Talent:
+
+Keep existing navigation unchanged.
+
+# CLIENT ACCOUNT SECTION EXAMPLE
+
+Basic Information
+
+Profile Photo
+
+First Name
+Last Name
+
+Email
+
+Phone Number
+
+Timezone
+
+Save Changes
+
+# ORGANIZATION SECTION EXAMPLE
+
+Organization
+
+[Organization Name]
+[Website]
+
+[Industry]
+[Company Size]
+
+[Location]
+[Timezone]
+
+About
+
+Save Organization
+
+If user is a non-owner/member without edit rights:
+
+Show values but no Save button.
+
+Add:
+
+`Managed by organization owner`
+
+# TEAM SECTION EXAMPLE
+
+Team Members
+
+Owner
+John Smith — Owner
+
+Members
+Jane Doe — Member
+
+Pending invitations
+[person@example.com](mailto:person@example.com) — Pending
+
+[Invite Team Member]
+
+Reuse existing Org feature and permissions.
+
+# EMPTY ORGANIZATION STATE
+
+If Client has no Organization:
+
+Organization
+
+`You are not currently part of an organization.`
+
+For Client:
+
+[Create Organization]
+
+For Admin:
+
+only show Create Organization if that behavior is already valid for Admin accounts. Do not invent it.
+
+# TESTS
+
+Add focused tests covering:
+
+1. Talent `/settings` still renders existing Talent Profile Settings.
+2. Client `/settings` renders Client Account Settings.
+3. Admin `/settings` renders Admin Account Settings.
+4. Client no longer sees "Talent login required".
+5. Admin no longer sees "Talent login required".
+6. Client updates first/last name.
+7. Updated name reloads after refresh.
+8. Client email remains read-only if auth does not support change.
+9. Client updates client-profile phone/timezone.
+10. Client with Organization sees Organization data.
+11. Owner can update Organization fields.
+12. Organization member cannot edit owner-only fields if current rules prohibit it.
+13. Client without Organization sees Create Organization state.
+14. Existing Organization create flow still works.
+15. Existing Organization invitation flow still works.
+16. Existing Organization members still load.
+17. Admin account can update its own permitted account fields.
+18. Admin does not gain ownership of Client Organizations from this feature.
+19. Profile image, if implemented, persists and reloads.
+20. Top navigation reflects updated profile name/avatar.
+21. Existing Talent photo/resume/documents/certifications continue working.
+22. Existing Client Profile still works.
+23. Existing Admin Dashboard still works.
+24. Existing Auth role guards still work.
+25. `npx tsc --noEmit` passes.
+26. `git diff --check` passes.
+
+# REGRESSION REQUIREMENT
+
+Before changes:
+
+run relevant existing:
+
+* organization tests
+* auth/role tests
+* client profile tests
+* Talent profile/settings tests
+
+Record baseline.
+
+After changes:
+
+every previously passing test must remain passing.
+
+Do not modify existing tests just to accommodate accidental behavior changes.
+
+# COMPLETION REPORT
+
+Before declaring complete, report:
+
+1. Existing `/settings` root cause for Client/Admin showing Talent login requirement.
+2. Existing user/profile/client_profile fields reused.
+3. Existing Organization fields reused.
+4. Existing Organization endpoints reused.
+5. New files added.
+6. Existing files changed.
+7. Any migration, and why it was necessary.
+8. Client Account Settings sections.
+9. Admin Account Settings sections.
+10. Organization integration behavior.
+11. Owner vs member permissions.
+12. Client without Organization behavior.
+13. Admin Organization membership behavior.
+14. Profile photo implementation, if included.
+15. Email edit behavior/read-only decision.
+16. Tests before/after.
+17. Manual Client test results.
+18. Manual Admin test results.
+19. Manual Talent regression results.
+20. Explicit confirmation that Talent Settings was not changed.
+21. Explicit confirmation that existing Organization functionality was not replaced or weakened.
+
+The guiding rule is:
+
+Build role-appropriate Account Settings around the existing account, Client Profile, and Organization models without turning Client/Admin into Talent profiles and without changing currently working Talent, Client Profile, Admin, or Organization behavior.
