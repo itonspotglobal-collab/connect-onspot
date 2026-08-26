@@ -2682,6 +2682,24 @@ export async function registerRoutes(
     console.error("❌ Billing engine migration failed:", err.message);
   }
 
+  // ── Migration 0012: new job-posting form fields ────────────────────────────
+  // Adds structured education, skill-experience thresholds, availability flags,
+  // compensation display preference, and contractor confirmation. All additive
+  // with safe defaults so existing jobs remain readable without backfills.
+  try {
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS minimum_education text`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS required_skills jsonb NOT NULL DEFAULT '[]'::jsonb`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_us_timezone_overlap boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requires_fluent_english boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS compensation_display_type text NOT NULL DEFAULT 'range'`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS contractor_engagement_confirmed boolean NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_compensation_display_type_check`);
+    await query(`ALTER TABLE jobs ADD CONSTRAINT jobs_compensation_display_type_check CHECK (compensation_display_type IN ('range', 'starting_from', 'negotiable'))`);
+    console.log("✅ Migration 0012: job form requirement columns and compensation_display_type constraint ready");
+  } catch (err: any) {
+    console.error("❌ Migration 0012 (job form requirements) failed:", err.message);
+  }
+
   // ── Customer billing and talent payout views — Phase 3 ────────────────────
   // These read-only routes deliberately select an allow-list of fields. In
   // particular, commission_rate and commission_earned are never selected or
