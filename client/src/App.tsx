@@ -60,6 +60,8 @@ import VanessaLearningDashboard from "@/pages/VanessaLearningDashboard";
 import AdminVanessaRAG from "@/pages/AdminVanessaRAG";
 import InvestorsCorner from "@/pages/InvestorsCorner";
 import ProfileSettings from "@/pages/ProfileSettings";
+import ClientSettings from "@/pages/ClientSettings";
+import AdminSettings from "@/pages/AdminSettings";
 import Powerapp from "@/pages/Powerapp";
 import OperationsPlaybook from "@/pages/OperationsPlaybook";
 import SuperhumanProject from "@/pages/SuperhumanProject";
@@ -495,7 +497,7 @@ function SettingsRoute() {
     );
   }
 
-  // JWT session: talent or client.
+  // JWT session: dispatch by role to role-specific settings pages.
   if (user?.role === "talent") {
     return (
       <div className="min-h-screen bg-background">
@@ -507,8 +509,16 @@ function SettingsRoute() {
   if (user?.role === "client") {
     return (
       <ClientLayout>
-        <ProfileSettings />
+        <ClientSettings />
       </ClientLayout>
+    );
+  }
+
+  if (user?.role === "admin") {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminSettings />
+      </div>
     );
   }
 

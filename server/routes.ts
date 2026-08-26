@@ -595,6 +595,7 @@ const requireRole = (allowedRoles: string[]) => {
 
 // Convenience middleware functions
 const requireClient = requireRole(["client"]);
+const requireClientOrAdmin = requireRole(["client", "admin"]);
 const requireTalent = requireRole(["talent"]);
 const requireAdmin = requireRole(["admin"]);
 const requireClientOrTalent = requireRole(["client", "talent"]);
@@ -5179,6 +5180,166 @@ export async function registerRoutes(
       }
     },
   );
+
+  // ====== ACCOUNT (identity & avatar for any role) ======
+
+  // GET /api/account/me — returns the caller's users row (id, email, name, role, company, createdAt)
+  app.get("/api/account/me", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Authentication required" });
+      // LEFT JOIN with profiles is intentionally non-mutating — it never auto-creates a row.
+      // profile_picture is null if the user has never uploaded an account photo.
+      const r = await query(
+        `SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.company,
+                u.profile_image_url, u.created_at,
+                p.profile_picture
+           FROM users u
+           LEFT JOIN profiles p ON p.user_id = u.id
+          WHERE u.id = $1`,
+        [userId],
+      );
+      if (!r.rows[0]) return res.status(404).json({ error: "User not found" });
+      const u = r.rows[0];
+      return res.json({
+        id: u.id,
+        email: u.email,
+        firstName: u.first_name ?? null,
+        lastName: u.last_name ?? null,
+        role: u.role,
+        company: u.company ?? null,
+        profileImageUrl: u.profile_image_url ?? null,
+        profilePicture: u.profile_picture ?? null,
+        createdAt: u.created_at,
+      });
+    } catch (err: any) {
+      console.error("GET /api/account/me error:", err.message);
+      return res.status(500).json({ error: "Failed to load account" });
+    }
+  });
+
+  // PATCH /api/account/me — update first_name / last_name in the users table (any role, self-scoped)
+  app.patch("/api/account/me", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Authentication required" });
+      const fn = typeof req.body.firstName === "string" ? req.body.firstName.trim().slice(0, 100) : undefined;
+      const ln = typeof req.body.lastName === "string" ? req.body.lastName.trim().slice(0, 100) : undefined;
+      if (fn === undefined && ln === undefined) {
+        return res.status(400).json({ error: "At least firstName or lastName is required" });
+      }
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
+      if (fn !== undefined) { sets.push(`first_name = $${idx++}`); params.push(fn); }
+      if (ln !== undefined) { sets.push(`last_name = $${idx++}`); params.push(ln); }
+      sets.push("updated_at = NOW()");
+      params.push(userId);
+      const r = await query(
+        `UPDATE users SET ${sets.join(", ")} WHERE id = $${idx} RETURNING id, email, first_name, last_name, role, company`,
+        params,
+      );
+      if (!r.rows[0]) return res.status(404).json({ error: "User not found" });
+      const u = r.rows[0];
+      return res.json({
+        id: u.id,
+        email: u.email,
+        firstName: u.first_name ?? null,
+        lastName: u.last_name ?? null,
+        role: u.role,
+        company: u.company ?? null,
+      });
+    } catch (err: any) {
+      console.error("PATCH /api/account/me error:", err.message);
+      return res.status(500).json({ error: "Failed to update account" });
+    }
+  });
+
+  // POST /api/account/me/photo — Upload / replace profile photo for any authenticated role.
+  // Upserts the profiles row so clients and admins who have never used /api/profiles/me
+  // still get their photo stored correctly. Reuses the same photoUpload multer instance
+  // and profile-photos storage namespace as the talent-photo endpoint.
+  app.post(
+    "/api/account/me/photo",
+    authenticateJWT,
+    (req: any, res: any, next: any) => {
+      photoUpload.single("photo")(req, res, (err: any) => {
+        if (err?.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "File too large — max 5 MB" });
+        }
+        if (err) return next(err);
+        next();
+      });
+    },
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: "Authentication required" });
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
+        const allowedMimes: Record<string, string> = {
+          "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+        };
+        const ext = allowedMimes[file.mimetype];
+        if (!ext) return res.status(400).json({ error: "Only JPEG, PNG, WebP, or GIF images are allowed" });
+
+        const objectStorageService = new ObjectStorageService();
+        const objectId = randomUUID();
+        const privateObjectDir = objectStorageService.getPrivateObjectDir();
+        const fullPath = `${privateObjectDir}/profile-photos/${userId}/${objectId}.${ext}`;
+        const parts = fullPath.split("/").filter((p: string) => p);
+        const bucketName = parts[0];
+        const objectName = parts.slice(1).join("/");
+        const bucket = objectStorageClient.bucket(bucketName);
+        const objectFile = bucket.file(objectName);
+        await objectFile.save(file.buffer, { metadata: { contentType: file.mimetype } });
+        await setObjectAclPolicy(objectFile, { visibility: "public" });
+
+        const storagePath = `/objects/profile-photos/${userId}/${objectId}.${ext}`;
+
+        // Upsert: insert a minimal profiles row if none exists, sourcing first_name / last_name
+        // from the users table because profiles.first_name and profiles.last_name are NOT NULL.
+        // On conflict (row already exists) only update the picture column.
+        const upsertResult = await query(
+          `INSERT INTO profiles
+             (user_id, profile_picture, first_name, last_name,
+              rate_currency, availability, languages, timezone, created_at, updated_at)
+           SELECT $1, $2,
+                  COALESCE(first_name, ''),
+                  COALESCE(last_name, ''),
+                  'USD', 'available', '{"English"}', 'UTC', NOW(), NOW()
+           FROM users WHERE id = $1
+           ON CONFLICT (user_id) DO UPDATE
+             SET profile_picture = EXCLUDED.profile_picture,
+                 updated_at      = NOW()`,
+          [userId, storagePath],
+        );
+        if (upsertResult.rowCount === 0) {
+          console.error(`❌ Account photo upsert: no users row found [${req.requestId}]`, { userId });
+          return res.status(500).json({ error: "User not found during photo save" });
+        }
+
+        console.log(`✅ Account photo uploaded [${req.requestId}]:`, { userId, storagePath });
+        return res.json({ success: true, photoUrl: `/api/profile-picture/${userId}` });
+      } catch (error: any) {
+        console.error(`❌ Account photo upload failed [${req.requestId}]:`, error.message);
+        return res.status(500).json({ error: "Failed to upload photo" });
+      }
+    },
+  );
+
+  // DELETE /api/account/me/photo — Remove the authenticated user's account photo (any role).
+  app.delete("/api/account/me/photo", authenticateJWT, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Authentication required" });
+      await db.update(profiles).set({ profilePicture: null }).where(eq(profiles.userId, userId));
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error(`❌ Account photo removal failed [${req.requestId}]:`, error.message);
+      return res.status(500).json({ error: "Failed to remove photo" });
+    }
+  });
 
   // ====== PROFILES ======
 
@@ -13750,7 +13911,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/organizations/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+  app.get("/api/organizations/me", authenticateJWT, requireClientOrAdmin, async (req: Request, res: Response) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -13799,6 +13960,60 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/organizations/:organizationId failed:", err);
       return res.status(500).json({ error: "Failed to load organization" });
+    }
+  });
+
+  // PATCH /api/organizations/:organizationId — owner-authorized update of organization fields.
+  // All fields are optional so callers can send only what changed.
+  app.patch("/api/organizations/:organizationId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const { organizationId } = req.params;
+
+    try {
+      const membership = await requireOrganizationOwner(organizationId, userId);
+      if (!membership) return res.status(403).json({ error: "Only organization owners can update organization details" });
+
+      const updatePayloadSchema = z.object({
+        name: z.string().trim().min(1, "Name cannot be empty").max(200).optional(),
+        website: optionalOrganizationText(2048),
+        industry: optionalOrganizationText(120),
+        companySize: optionalOrganizationText(80),
+        location: optionalOrganizationText(200),
+        about: optionalOrganizationText(5000),
+        timezone: optionalOrganizationText(120),
+      }).strict();
+
+      const payload = updatePayloadSchema.parse(req.body ?? {});
+      if (Object.keys(payload).length === 0) {
+        return res.status(400).json({ error: "No fields provided to update" });
+      }
+
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
+      if (payload.name !== undefined)        { sets.push(`name = $${idx++}`);                  params.push(payload.name); }
+      if (payload.website !== undefined)     { sets.push(`website = NULLIF($${idx++}, '')`);   params.push(payload.website); }
+      if (payload.industry !== undefined)    { sets.push(`industry = NULLIF($${idx++}, '')`);  params.push(payload.industry); }
+      if (payload.companySize !== undefined) { sets.push(`company_size = NULLIF($${idx++}, '')`); params.push(payload.companySize); }
+      if (payload.location !== undefined)    { sets.push(`location = NULLIF($${idx++}, '')`);  params.push(payload.location); }
+      if (payload.about !== undefined)       { sets.push(`about = NULLIF($${idx++}, '')`);     params.push(payload.about); }
+      if (payload.timezone !== undefined)    { sets.push(`timezone = NULLIF($${idx++}, '')`);  params.push(payload.timezone); }
+      sets.push("updated_at = NOW()");
+      params.push(organizationId);
+
+      const result = await query(
+        `UPDATE organizations SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`,
+        params,
+      );
+      if (!result.rows[0]) return res.status(404).json({ error: "Organization not found" });
+      return res.json({ organization: mapOrganizationRow(result.rows[0]) });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
+      }
+      console.error("PATCH /api/organizations/:organizationId error:", err.message);
+      return res.status(500).json({ error: "Failed to update organization" });
     }
   });
 

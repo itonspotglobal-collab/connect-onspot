@@ -185,7 +185,9 @@ export function TopNavigation() {
     ? calcCompletionPct(buildCompletionItems(profileStrengthFromCandidate(talentCandidateData)))
     : 0;
 
-  // ── General talent profile picture (from /api/profiles/me) ──────────────
+  // ── Talent profile picture (from /api/profiles/me — talent only) ────────
+  // This endpoint auto-creates a profiles row when none exists; restrict it to
+  // talent users to avoid creating rows for clients / admins.
   const { data: talentProfileMeData } = useQuery({
     queryKey: ["/api/profiles/me"],
     queryFn: async () => {
@@ -200,10 +202,32 @@ export function TopNavigation() {
   });
   // Derive a public URL for the profile picture; use the stored UUID as a cache-busting key
   // so the browser re-fetches when a new photo is uploaded (new UUID → new URL).
-  const _rawProfilePicture = (talentProfileMeData as any)?.profile?.profilePicture ?? null;
+  const _rawTalentProfilePicture = (talentProfileMeData as any)?.profile?.profilePicture ?? null;
   const generalTalentProfilePicture =
-    _rawProfilePicture && user?.id
-      ? `/api/profile-picture/${user.id}?v=${encodeURIComponent(_rawProfilePicture.split('/').pop() ?? 'x')}`
+    _rawTalentProfilePicture && user?.id
+      ? `/api/profile-picture/${user.id}?v=${encodeURIComponent(_rawTalentProfilePicture.split('/').pop() ?? 'x')}`
+      : null;
+
+  // ── Client / Admin profile picture (from /api/account/me — non-mutating) ─
+  // /api/account/me LEFT JOINs profiles without auto-creating rows, so it is
+  // safe to call for any role.  The result includes profilePicture when an
+  // account photo has been uploaded via POST /api/account/me/photo.
+  const { data: accountMeData } = useQuery({
+    queryKey: ["/api/account/me"],
+    queryFn: async () => {
+      try {
+        return await authAPI.get("/api/account/me");
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!user && (user.role === "client" || user.role === "admin"),
+    staleTime: 2 * 60_000,
+  });
+  const _rawClientAdminPicture = (accountMeData as any)?.profilePicture ?? null;
+  const clientAdminProfilePicture =
+    _rawClientAdminPicture && user?.id
+      ? `/api/profile-picture/${user.id}?v=${encodeURIComponent(_rawClientAdminPicture.split('/').pop() ?? 'x')}`
       : null;
 
   // ── Talent profile completion — general JWT talent path ───────────────────
@@ -1008,7 +1032,9 @@ export function TopNavigation() {
                       />
                       <span className="relative z-10 flex items-center gap-2">
                         <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
-                          {accountInitials || <AccountFallbackIcon style={{ width: 13, height: 13 }} />}
+                          {clientAdminProfilePicture
+                            ? <img src={clientAdminProfilePicture} alt="Account" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : (accountInitials || <AccountFallbackIcon style={{ width: 13, height: 13 }} />)}
                         </span>
                         {user?.role === "client" && activeClientOrganization
                           ? activeClientOrganization.name
@@ -1029,7 +1055,9 @@ export function TopNavigation() {
                       <div style={{ padding: '14px 14px 12px', background: 'linear-gradient(160deg, #F5F5FF 0%, #FAFAFF 100%)', borderRadius: 10, marginBottom: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ width: 48, height: 48, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg, #4F63F5 0%, #7C48F5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, color: '#FFFFFF', boxShadow: '0 3px 10px rgba(75,81,184,0.3)', overflow: 'hidden' }}>
-                            {accountInitials || <AccountFallbackIcon style={{ width: 22, height: 22 }} />}
+                            {clientAdminProfilePicture
+                              ? <img src={clientAdminProfilePicture} alt="Account" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : (accountInitials || <AccountFallbackIcon style={{ width: 22, height: 22 }} />)}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div style={{ fontSize: 15, fontWeight: 700, color: '#181A24', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
