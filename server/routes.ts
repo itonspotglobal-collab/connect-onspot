@@ -88,6 +88,10 @@ import {
 } from "./services/applicationNotificationService";
 import { transitionJobApprovalStatus } from "./services/jobApprovalNotificationService";
 import {
+  sendInterviewConfirmedEmail,
+  sendInterviewProposalEmail,
+} from "./services/interviewEmailService.js";
+import {
   insertUserSchema,
   insertProfileSchema,
   insertSkillSchema,
@@ -8460,6 +8464,31 @@ export async function registerRoutes(
           relatedId: String(interview.id),
           relatedType: "interview",
         }).catch((e: any) => console.error("admin interview notification failed:", e));
+
+        // Transactional email (fire-and-forget — failure never rolls back the scheduling)
+        if (isDirectConfirm) {
+          sendInterviewConfirmedEmail({
+            talentUserId: submission.talent_id as string,
+            jobTitle: submission.job_title,
+            confirmedTime: directConfirmedTime!,
+            confirmedTimeZone: directConfirmedZone ?? "UTC",
+            durationMinutes: parsedDuration,
+            meetingLink: normalizedMeetingLink ?? null,
+            interviewType,
+            roundNumber: interview.round_number ?? null,
+          }).catch((e: any) => console.error("admin interview confirmation email failed:", e));
+        } else {
+          sendInterviewProposalEmail({
+            talentUserId: submission.talent_id as string,
+            jobTitle: submission.job_title,
+            proposedTimes: normalizedProposedTimes,
+            durationMinutes: parsedDuration,
+            candidateNotes: candidateNotes ?? null,
+            interviewType,
+            roundNumber: interview.round_number ?? null,
+            proposerRole: "admin",
+          }).catch((e: any) => console.error("admin interview proposal email failed:", e));
+        }
       }
 
       return res.status(201).json(interview);
@@ -8665,6 +8694,30 @@ export async function registerRoutes(
           relatedId: String(id),
           relatedType: "interview",
         }).catch((e: any) => console.error(`${notifType} notification failed:`, e));
+
+        // Transactional email for confirmation (fire-and-forget)
+        if (notifType === "interview_confirmed" && confirmedIsoForTx) {
+          // Resolve meeting link: prefer the incoming value (already validated above)
+          // then fall back to whatever was previously stored on the interview row.
+          const emailMeetingLink =
+            meetingLink !== undefined
+              ? (normalizeMeetingLink(meetingLink) ?? null)
+              : (interview.meeting_link ?? null);
+          const emailDuration =
+            durationMinutes !== undefined && durationMinutes !== null
+              ? Number(durationMinutes)
+              : (interview.duration_minutes ?? null);
+          sendInterviewConfirmedEmail({
+            talentUserId: interview.talent_id as string,
+            jobTitle: interview.job_title,
+            confirmedTime: confirmedIsoForTx,
+            confirmedTimeZone: confirmedTzForTx ?? "UTC",
+            durationMinutes: emailDuration,
+            meetingLink: emailMeetingLink,
+            interviewType: interview.interview_type ?? undefined,
+            roundNumber: interview.round_number ?? null,
+          }).catch((e: any) => console.error("admin interview confirmation email (PATCH) failed:", e));
+        }
       }
 
       return res.json(updatedRow);
@@ -18478,6 +18531,18 @@ export async function registerRoutes(
           relatedId: String(interview.id),
           relatedType: "interview",
         }).catch((notifyErr: any) => console.error("interview_proposed notification failed:", notifyErr));
+
+        // Transactional email to talent (fire-and-forget — failure never rolls back the scheduling)
+        sendInterviewProposalEmail({
+          talentUserId: submission.talent_id as string,
+          jobTitle: submission.job_title,
+          proposedTimes: normalizedProposedTimes,
+          durationMinutes: parsedDuration,
+          candidateNotes: candidateNotes ?? null,
+          interviewType,
+          roundNumber: interview.round_number ?? null,
+          proposerRole: "client",
+        }).catch((emailErr: any) => console.error("client interview proposal email failed:", emailErr));
       }
 
       return res.status(201).json(interview);
