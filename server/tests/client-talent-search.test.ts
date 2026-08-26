@@ -793,7 +793,11 @@ describe("client talent-search — client-safe DTO sanitization", () => {
 //   If the route is ever changed to bypass the sanitizer (the exact failure mode of
 //   ea0253ba being overwritten), Layer 2 catches it even though Layer 1 still passes.
 
-import { sanitizeSearchCandidate, SEARCH_RESULT_BLOCKED_FIELDS } from "../lib/clientSearchSanitize.js";
+import {
+  sanitizeFullProfileForClient,
+  sanitizeSearchCandidate,
+  SEARCH_RESULT_BLOCKED_FIELDS,
+} from "../lib/clientSearchSanitize.js";
 import jwt from "jsonwebtoken";
 
 // Full raw candidate as it comes out of rankTalentForJob / getCandidateByUserId.
@@ -873,10 +877,46 @@ describe("PII regression — sanitizeSearchCandidate (imports real shared module
   it("formats the talent's name server-side before the response is sent", () => {
     const safe = sanitizeSearchCandidate(RAW_CANDIDATE_WITH_ALL_SENSITIVE_FIELDS);
     assert.equal(safe.maskedName, "Jane S.");
+    assert.equal(safe.fullName, "Jane S.");
+    assert.equal(safe.full_name, "Jane S.");
     assert.ok(
       !JSON.stringify(safe).includes("Jane Smith"),
       'raw full name "Jane Smith" must not appear in the serialized output',
     );
+  });
+
+  it("uses only the first structured given-name token and the family-name initial", () => {
+    const cases = [
+      {
+        input: { firstName: "John Benedict", lastName: "Acosta", fullName: "John Benedict Acosta" },
+        expected: "John A.",
+      },
+      {
+        input: { firstName: "Aaron Tristan", lastName: "Dela Cruz", fullName: "Aaron Tristan Dela Cruz" },
+        expected: "Aaron D.",
+      },
+      { input: { firstName: "Julie", lastName: "Santos" }, expected: "Julie S." },
+      { input: { firstName: "Van Carlo", lastName: "Lopez" }, expected: "Van L." },
+    ];
+
+    for (const { input, expected } of cases) {
+      assert.equal(sanitizeSearchCandidate(input).maskedName, expected);
+      assert.equal(sanitizeFullProfileForClient(input).maskedName, expected);
+    }
+  });
+
+  it("normalizes already-masked and full-name-only legacy records without exposing middle names", () => {
+    const cases = [
+      { input: { fullName: "John Benedict A." }, expected: "John A." },
+      { input: { fullName: "Aaron Tristan D." }, expected: "Aaron D." },
+      { input: { fullName: "Julie S." }, expected: "Julie S." },
+      { input: { fullName: "John Benedict Acosta" }, expected: "John A." },
+      { input: { fullName: "Aaron Tristan DelaCruz" }, expected: "Aaron D." },
+    ];
+
+    for (const { input, expected } of cases) {
+      assert.equal(sanitizeSearchCandidate(input).maskedName, expected);
+    }
   });
 
   it("preserves all safe profile fields", () => {
@@ -894,9 +934,9 @@ describe("PII regression — sanitizeSearchCandidate (imports real shared module
     assert.equal(safe.maskedName, "Talent Profile", "empty name → 'Talent Profile'");
   });
 
-  it("keeps a single first name readable without asterisks", () => {
+  it("preserves the single-name privacy mask", () => {
     const safe = sanitizeSearchCandidate({ fullName: "Madonna" });
-    assert.equal(safe.maskedName, "Madonna");
+    assert.equal(safe.maskedName, "M••••");
   });
 
   it("uses structured names over an existing legacy masked value", () => {

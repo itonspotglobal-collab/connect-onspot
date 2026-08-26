@@ -132,7 +132,7 @@ async function routeApi(route: Route): Promise<void> {
         score: 92,
         overlapSkills: ["Customer support", "Zendesk"],
         candidate: {
-          maskedName: "Jane S.",
+          maskedName: "John A.",
           targetPosition: "Customer Support Specialist",
           availability: "Available now",
           location: "Remote",
@@ -145,7 +145,7 @@ async function routeApi(route: Route): Promise<void> {
   }
   if (request.method() === "GET" && path === `/api/client/talent-profile/${TALENT_ID}`) {
     return fulfillJson(route, {
-      maskedName: "Jane S.",
+      maskedName: "John A.",
       targetPosition: "Customer Support Specialist",
       availability: "Available now",
       location: "Remote",
@@ -237,7 +237,9 @@ test("Client Profile keeps job-specific talent search inline and sends one selec
     await page.getByText("Customer Support Specialist", { exact: true }).first().waitFor();
     assert.match(page.url(), /\/client-profile$/, "opening job talent search must not navigate away");
 
-    await page.getByText("Jane S.", { exact: true }).waitFor();
+    await page.getByText("John A.", { exact: true }).waitFor();
+    assert.equal(await page.getByText("John Benedict", { exact: true }).count(), 0);
+    assert.equal(await page.getByText("Acosta", { exact: true }).count(), 0);
     await page.getByRole("button", { name: "Preview" }).click();
     await page.getByText("Safe client-facing profile preview").waitFor();
     await page.getByText("Experienced customer support specialist.").waitFor();

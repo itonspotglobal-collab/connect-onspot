@@ -39,6 +39,7 @@ import {
   parseInterviewTimestamp,
 } from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
+import { maskClientTalentName } from "../shared/talentName";
 import { containsPii } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
@@ -6677,20 +6678,6 @@ export async function registerRoutes(
     return safe;
   }
 
-  // Mask a combined name string to "FirstName LastInitial." for public display.
-  // "Maria Eubhe Regine Tantog" → "Maria T."
-  // "John Smith" → "John S."
-  // "Cher" → "Cher"
-  function maskPublicName(name: string | null | undefined): string {
-    const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return "";
-    const first = parts[0];
-    if (parts.length === 1) return first;
-    const lastToken = parts[parts.length - 1];
-    const initial = lastToken.replace(/\./g, "").charAt(0).toUpperCase();
-    return initial ? `${first} ${initial}.` : first;
-  }
-
   // Public-safe candidate: strips contact fields and masks the name.
   // Used whenever the requester is NOT the owner or an admin/TA.
   function publicSanitizeCandidate(c: any) {
@@ -6699,8 +6686,7 @@ export async function registerRoutes(
     // portfolioUrl, githubUrl, websiteUrl, videoIntroUrl, resumeFileName,
     // videoIntroFileName) are intentionally absent: they must never be returned
     // to non-privileged callers (anonymous visitors, client users).
-    const rawName = (c.displayName?.trim() || c.fullName?.trim() || "").trim();
-    const maskedName = maskPublicName(rawName);
+    const maskedName = maskClientTalentName(c);
     return {
       // Identity — masked; real name surfaces only after an accepted invitation
       id:             c.id             ?? null,
@@ -10033,6 +10019,8 @@ export async function registerRoutes(
           `SELECT
              u.id,
              TRIM(CONCAT(u.first_name, ' ', u.last_name))   AS raw_name,
+             u.first_name,
+             u.last_name,
              u.username,
              -- Revealed once the talent has accepted a client-initiated invitation
              ${nameRevealExistsSQL("$2", "u.id")} AS name_revealed,
@@ -10045,13 +10033,11 @@ export async function registerRoutes(
         for (const row of result.rows) {
           const raw = (row.raw_name?.trim() || row.username || "").trim();
           if (!row.name_revealed && row.is_talent) {
-            // "Jane S." or "T••••" — consistent with sanitizeSearchCandidate masking
-            const parts = raw.split(/\s+/).filter(Boolean);
-            names[row.id] = !parts.length
-              ? "Talent Profile"
-              : parts.length === 1
-                ? parts[0][0] + "•".repeat(4)
-                : parts[0] + " " + parts[1][0] + ".";
+            names[row.id] = maskClientTalentName({
+              firstName: row.first_name,
+              lastName: row.last_name,
+              fullName: raw,
+            });
           } else {
             names[row.id] = raw || "Member";
           }
@@ -17413,16 +17399,14 @@ export async function registerRoutes(
 
   /**
    * Mask a name string for a pending/declined client invitation.
-   * Returns "Talent Profile" for empty names, "J•••" for single words,
-   * or "Jane D." for multi-word names.
+   * Returns "Talent Profile" for empty names, "J••••" for single words,
+   * or the canonical "Jane D." format for multi-word names.
    */
-  const maskInviteName = (raw: string | null): string => {
-    const name = (raw ?? "").trim();
-    if (!name) return "Talent Profile";
-    const parts = name.split(" ").filter(Boolean);
-    if (parts.length === 1) return parts[0][0] + "•".repeat(4);
-    return parts[0] + " " + (parts[1]?.[0] ?? "") + ".";
-  };
+  const maskInviteName = (
+    raw: string | null,
+    firstName: string | null | undefined,
+    lastName: string | null | undefined,
+  ): string => maskClientTalentName({ fullName: raw, firstName, lastName });
 
   /**
    * Apply server-side PII masking to a client submission row.
@@ -17458,7 +17442,13 @@ export async function registerRoutes(
       (row.initiated_by !== "client" || revealedStatuses.has(row.status));
 
     const rawName = row.applicantName ?? row.applicant_name ?? null;
-    const displayName = nameRevealed ? rawName : maskInviteName(rawName);
+    const displayName = nameRevealed
+      ? rawName
+      : maskInviteName(
+          rawName,
+          row.firstName ?? row.first_name,
+          row.lastName ?? row.last_name,
+        );
 
     // Always return an explicit allowlist — never spread raw DB rows to avoid
     // accidentally leaking new columns added in future migrations.

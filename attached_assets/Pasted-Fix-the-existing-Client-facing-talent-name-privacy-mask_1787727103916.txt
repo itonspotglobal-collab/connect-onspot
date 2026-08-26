@@ -1,0 +1,857 @@
+Fix the existing Client-facing talent name privacy masking.
+
+This issue has been attempted multiple times but is still incorrect.
+
+DO NOT patch only the frontend display.
+
+DO NOT infer surname initials from the second word in `fullName`.
+
+The required privacy rule is:
+
+```text
+FIRST GIVEN NAME + LAST NAME INITIAL
+```
+
+Examples:
+
+```text
+John Benedict Acosta
+→ John A.
+
+Aaron Tristan Dela Cruz
+→ Aaron D.
+
+Julie Santos
+→ Julie S.
+```
+
+The middle/given names after the first given name must NOT be displayed.
+
+For the screenshot examples:
+
+```text
+John Benedict A.
+```
+
+must become:
+
+```text
+John A.
+```
+
+and:
+
+```text
+Aaron Tristan D.
+```
+
+must become:
+
+```text
+Aaron D.
+```
+
+---
+
+# Current root problem
+
+Inspect:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+The current sanitizer derives the masked name from:
+
+```ts
+const rawName = candidate.fullName ?? candidate.full_name;
+const parts = rawName.split(/\s+/);
+```
+
+and currently uses logic based on:
+
+```ts
+parts[0]
+parts[1]
+```
+
+This is NOT a reliable way to identify a surname.
+
+A person's second token may be a middle/given name.
+
+Example:
+
+```text
+John Benedict Acosta
+```
+
+Using `parts[1]` produces:
+
+```text
+John B.
+```
+
+which is incorrect.
+
+The desired value is:
+
+```text
+John A.
+```
+
+---
+
+# Required architecture
+
+The server must remain the authoritative source of the masked Client-facing name.
+
+Fix the masking in:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+and any other server-side Client talent sanitizers that return masked names.
+
+Do not rely on React components to hide extra names after the API response has already exposed them.
+
+The API itself should return only the masked display name.
+
+---
+
+# Use structured first/last name fields first
+
+Before using `fullName`, inspect the actual candidate/profile object passed into:
+
+```ts
+sanitizeSearchCandidate(...)
+sanitizeFullProfileForClient(...)
+```
+
+Determine which structured identity fields are available.
+
+Search for fields such as:
+
+```text
+firstName
+first_name
+lastName
+last_name
+givenName
+familyName
+middleName
+middle_name
+fullName
+full_name
+```
+
+Use the real database/schema fields.
+
+Preferred logic:
+
+```ts
+const firstName =
+  candidate.firstName ??
+  candidate.first_name ??
+  null;
+
+const lastName =
+  candidate.lastName ??
+  candidate.last_name ??
+  null;
+```
+
+If both are available:
+
+```ts
+maskedName = `${firstName.trim().split(/\s+/)[0]} ${firstLetter(lastName)}.`;
+```
+
+Important:
+
+If `firstName` itself contains:
+
+```text
+John Benedict
+```
+
+only expose the FIRST given-name token:
+
+```text
+John
+```
+
+Do NOT expose:
+
+```text
+John Benedict
+```
+
+---
+
+# Correct examples
+
+Structured data:
+
+```json
+{
+  "firstName": "John Benedict",
+  "lastName": "Acosta"
+}
+```
+
+Output:
+
+```text
+John A.
+```
+
+Structured data:
+
+```json
+{
+  "firstName": "Aaron Tristan",
+  "lastName": "Dela Cruz"
+}
+```
+
+Output:
+
+```text
+Aaron D.
+```
+
+Structured data:
+
+```json
+{
+  "firstName": "Julie",
+  "lastName": "Santos"
+}
+```
+
+Output:
+
+```text
+Julie S.
+```
+
+Structured data:
+
+```json
+{
+  "firstName": "Van Carlo",
+  "lastName": "Lopez"
+}
+```
+
+Output:
+
+```text
+Van L.
+```
+
+unless the project's actual data model explicitly treats `Van Carlo` as a single given name that should remain visible.
+
+The privacy requirement here is to expose only the first given-name component unless product rules say otherwise.
+
+---
+
+# Handle last names with prefixes correctly
+
+Do not strip legitimate surname prefixes.
+
+Examples:
+
+```text
+lastName = "Dela Cruz"
+→ D.
+
+lastName = "De Leon"
+→ D.
+
+lastName = "Van Dyke"
+→ V.
+
+lastName = "O'Brien"
+→ O.
+
+lastName = "Santos-Reyes"
+→ S.
+```
+
+Use the first visible alphabetic character of the stored surname.
+
+Do NOT take the final word of a multi-word surname if a structured lastName field already exists.
+
+---
+
+# Full-name fallback only when structured fields are unavailable
+
+Some legacy records may have only:
+
+```text
+fullName
+```
+
+or:
+
+```text
+full_name
+```
+
+Do not break these records.
+
+If structured `firstName` and `lastName` are genuinely unavailable, implement a conservative fallback.
+
+Before deciding the fallback, inspect how legacy `fullName` is constructed in this project.
+
+Do NOT blindly assume:
+
+```ts
+parts[parts.length - 1]
+```
+
+is always correct if existing values may already be masked, for example:
+
+```text
+John Benedict A.
+```
+
+or:
+
+```text
+Aaron Tristan D.
+```
+
+If the input is already in a masked form ending with a one-letter surname initial:
+
+```text
+John Benedict A.
+```
+
+the normalized output should become:
+
+```text
+John A.
+```
+
+Example fallback handling:
+
+```text
+"John Benedict A."
+→ first visible given name = John
+→ existing surname initial = A
+→ "John A."
+```
+
+```text
+"Aaron Tristan D."
+→ "Aaron D."
+```
+
+```text
+"Julie S."
+→ "Julie S."
+```
+
+If input is a full unmasked name:
+
+```text
+"John Benedict Acosta"
+```
+
+and no structured fields exist, the legacy fallback may use:
+
+```text
+first token + last token initial
+```
+
+which yields:
+
+```text
+John A.
+```
+
+But prefer structured fields whenever available.
+
+---
+
+# Create ONE shared masking helper
+
+Do not duplicate this logic between:
+
+```ts
+sanitizeSearchCandidate
+sanitizeFullProfileForClient
+```
+
+Create one helper, for example:
+
+```ts
+function maskClientTalentName(candidate: Record<string, any>): string
+```
+
+Then use it from both sanitizers.
+
+Example structure:
+
+```ts
+function maskClientTalentName(candidate: Record<string, any>): string {
+  // 1. structured first/last name
+  // 2. legacy already-masked name
+  // 3. legacy full-name fallback
+  // 4. single-name fallback
+}
+```
+
+This prevents the two endpoints from displaying different names.
+
+---
+
+# Preserve current single-name privacy
+
+The current sanitizer hides single-token names using a form like:
+
+```text
+M••••
+```
+
+Preserve that privacy behavior unless the existing product requirement says otherwise.
+
+For example:
+
+```text
+Madonna
+→ M••••
+```
+
+Do not suddenly expose a full single-name identity.
+
+---
+
+# Client-facing surfaces to audit
+
+Search all Client-facing talent displays.
+
+At minimum verify:
+
+```text
+/hire-talent
+/client-search
+Client Profile inline talent search
+talent result rows
+talent preview modal
+full profile preview
+shortlist dialogs
+invitation dialogs
+```
+
+All of them should consume the same already-sanitized server name.
+
+Do not introduce separate frontend functions such as:
+
+```ts
+maskName(...)
+getDisplayName(...)
+formatCandidateName(...)
+```
+
+unless they simply display an already-sanitized API field.
+
+The frontend must not reconstruct a fuller name from other fields.
+
+---
+
+# Important PII rule
+
+While fixing names, DO NOT expose additional identity/contact information.
+
+Continue blocking:
+
+```text
+email
+phone
+phoneNumber
+resumeUrl
+resumeFileName
+linkedinUrl
+githubUrl
+portfolioUrl
+websiteUrl
+videoIntroUrl
+videoIntroFileName
+displayName
+userId
+```
+
+The current `clientSearchSanitize.ts` is an explicit allowlist. Preserve that architecture.
+
+Do not use:
+
+```ts
+return {
+  ...candidate,
+  fullName: maskedName
+}
+```
+
+because that would leak restricted fields.
+
+Keep explicit safe-field construction.
+
+---
+
+# Check whether the data is being masked twice
+
+This is important.
+
+The screenshot currently shows names such as:
+
+```text
+John Benedict A.
+Aaron Tristan D.
+```
+
+This suggests some upstream code may already be returning an intermediate masked name.
+
+Trace the full flow:
+
+```text
+database candidate
+→ query
+→ candidate mapping
+→ sanitizeSearchCandidate
+→ API response
+→ frontend result row
+```
+
+Determine whether:
+
+```text
+fullName
+```
+
+has already been modified BEFORE `sanitizeSearchCandidate()` receives it.
+
+If yes, fix the source so masking is performed exactly ONCE at the authoritative sanitization boundary.
+
+Do not stack multiple incompatible masking functions.
+
+---
+
+# Search for all masking implementations
+
+Search the entire project for:
+
+```text
+maskedName
+maskName
+maskInviteName
+fullName
+full_name
+parts[0]
+parts[1]
+lastName
+last_name
+Talent Profile
+repeat(4)
+```
+
+There should be one canonical Client-facing talent-name masking rule.
+
+If another helper such as `maskInviteName` exists, either:
+
+* make it use the same shared helper, or
+* confirm it has a different intentional purpose.
+
+Do not leave conflicting implementations.
+
+---
+
+# Required tests
+
+Update:
+
+```text
+server/tests/client-talent-search.test.ts
+```
+
+and any sanitizer unit tests.
+
+Add explicit test cases.
+
+## Structured names
+
+```ts
+{
+  firstName: "John Benedict",
+  lastName: "Acosta",
+  fullName: "John Benedict Acosta"
+}
+```
+
+Expected:
+
+```text
+John A.
+```
+
+---
+
+```ts
+{
+  firstName: "Aaron Tristan",
+  lastName: "Dela Cruz",
+  fullName: "Aaron Tristan Dela Cruz"
+}
+```
+
+Expected:
+
+```text
+Aaron D.
+```
+
+---
+
+```ts
+{
+  firstName: "Julie",
+  lastName: "Santos"
+}
+```
+
+Expected:
+
+```text
+Julie S.
+```
+
+---
+
+```ts
+{
+  firstName: "Van Carlo",
+  lastName: "Lopez"
+}
+```
+
+Expected:
+
+```text
+Van L.
+```
+
+---
+
+## Already-masked legacy inputs
+
+Input:
+
+```text
+John Benedict A.
+```
+
+Expected:
+
+```text
+John A.
+```
+
+Input:
+
+```text
+Aaron Tristan D.
+```
+
+Expected:
+
+```text
+Aaron D.
+```
+
+Input:
+
+```text
+Julie S.
+```
+
+Expected:
+
+```text
+Julie S.
+```
+
+---
+
+## Full-name-only legacy input
+
+Input:
+
+```text
+John Benedict Acosta
+```
+
+Expected:
+
+```text
+John A.
+```
+
+Input:
+
+```text
+Aaron Tristan DelaCruz
+```
+
+Expected:
+
+```text
+Aaron D.
+```
+
+---
+
+## No name
+
+Expected:
+
+```text
+Talent Profile
+```
+
+---
+
+## Single-token name
+
+Input:
+
+```text
+Madonna
+```
+
+Expected masked form using current privacy rule:
+
+```text
+M••••
+```
+
+---
+
+# HTTP-level privacy test
+
+Do not only test the helper.
+
+Call the real Client-facing talent-search endpoint.
+
+Verify its JSON response contains:
+
+```json
+{
+  "fullName": "John A.",
+  "full_name": "John A."
+}
+```
+
+and does NOT contain:
+
+```text
+John Benedict
+Acosta
+email
+phone
+resume URL
+```
+
+Repeat for a multi-given-name candidate.
+
+This confirms the route is actually using the canonical sanitizer.
+
+---
+
+# Browser acceptance test
+
+Login as Client and open every talent listing surface.
+
+For records currently displaying:
+
+```text
+John Benedict A.
+Aaron Tristan D.
+```
+
+verify they now display:
+
+```text
+John A.
+Aaron D.
+```
+
+Verify all listed talent follows:
+
+```text
+FirstGivenName L.
+```
+
+Examples:
+
+```text
+Rhod D.
+Russel S.
+John A.
+Jan C.
+Aaron D.
+Julie S.
+Van L.
+```
+
+based on their actual stored surname values.
+
+Do not hardcode any of these example names.
+
+---
+
+# Before editing
+
+First report:
+
+1. The actual candidate name fields in the database/schema.
+2. The exact fields available to `sanitizeSearchCandidate`.
+3. Why `John Benedict A.` is currently reaching the frontend.
+4. Whether masking occurs more than once.
+5. Every server-side name masking helper currently used in Client talent flows.
+
+Then implement the fix.
+
+Do not stop after analysis.
+
+---
+
+# After implementation
+
+Report:
+
+```text
+Files changed
+Canonical masking helper
+Structured fields used
+Legacy fallback behavior
+Double-masking issue found/not found
+Client endpoints verified
+Tests added
+Test results
+Browser verification
+```
+
+Do not mark this fixed unless the raw Client-facing API response itself returns:
+
+```text
+John A.
+```
+
+instead of:
+
+```text
+John Benedict A.
+```

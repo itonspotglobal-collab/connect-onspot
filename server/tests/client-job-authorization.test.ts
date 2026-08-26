@@ -159,7 +159,7 @@ async function createFixtures() {
   await query(
     `INSERT INTO candidates
        (id, user_id, full_name, first_name, last_name, target_position, category)
-     VALUES ($1, $2, 'Talent Tester', 'Talent', 'Tester', 'Engineer', 'Technical')`,
+      VALUES ($1, $2, 'John Benedict Acosta', 'John Benedict', 'Acosta', 'Engineer', 'Technical')`,
     [CANDIDATE_ID, TALENT_ID],
   );
 }
@@ -298,11 +298,15 @@ describe("client profile and job authorization (production routes)", () => {
     assert.ok(Array.isArray(search.json.results));
     const talent = search.json.results.find((result: any) => result.userId === TALENT_ID);
     assert.ok(talent, "the linked talent fixture should appear in the job-specific search");
-    assert.equal(typeof talent.candidate.maskedName, "string");
+    assert.equal(talent.candidate.maskedName, "John A.");
+    assert.equal(talent.candidate.fullName, "John A.");
+    assert.equal(talent.candidate.full_name, "John A.");
+    assert.equal(JSON.stringify(talent.candidate).includes("John Benedict"), false);
+    assert.equal(JSON.stringify(talent.candidate).includes("Acosta"), false);
     for (const blockedField of [
       "email", "phone", "phoneNumber", "resumeUrl", "linkedinUrl",
       "githubUrl", "portfolioUrl", "websiteUrl", "videoIntroUrl",
-      "fullName", "firstName", "lastName", "userId",
+       "firstName", "lastName", "userId",
     ]) {
       assert.equal(
         Object.hasOwn(talent.candidate, blockedField),
@@ -677,6 +681,14 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(submissionCount.rows[0].count, 1, "promotion must reuse the shortlist submission");
     const interviewCount = await query(`SELECT COUNT(*)::int AS count FROM interviews WHERE submission_id = $1`, [shortlist.json.id]);
     assert.equal(interviewCount.rows[0].count, 1);
+
+    const pendingClientSubmissions = await request(server, "GET", "/api/client/job-submissions", clientToken);
+    assert.equal(pendingClientSubmissions.status, 200, JSON.stringify(pendingClientSubmissions.json));
+    const pendingSubmission = pendingClientSubmissions.json.find((submission: any) => submission.id === shortlist.json.id);
+    assert.equal(pendingSubmission?.applicantName, "John A.");
+    assert.equal(pendingSubmission?.applicant_name, "John A.");
+    assert.equal(JSON.stringify(pendingSubmission).includes("John Benedict"), false);
+    assert.equal(JSON.stringify(pendingSubmission).includes("Acosta"), false);
 
     const duplicateInvite = await request(server, "POST", "/api/client/invitations", clientToken, {
       jobId: PENDING_JOB_ID,

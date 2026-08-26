@@ -18,23 +18,17 @@
  *   githubUrl, portfolioUrl, websiteUrl, videoIntroUrl, videoIntroFileName,
  *   passwordHash, displayName (may differ from fullName and contain real identity)
  */
-import { formatTalentDisplayName, formatTalentDisplayNameFromFull } from "../../shared/talentName";
-
-function getSafeTalentName(candidate: Record<string, any>): string {
-  const firstName = candidate.firstName ?? candidate.first_name;
-  const lastName = candidate.lastName ?? candidate.last_name;
-  const structured = formatTalentDisplayName(firstName, lastName);
-  if (structured) return structured;
-
-  return formatTalentDisplayNameFromFull(candidate.fullName ?? candidate.full_name) || "Talent Profile";
-}
+import { maskClientTalentName } from "../../shared/talentName";
 
 export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<string, any> {
-  const maskedName = getSafeTalentName(candidate);
+  const maskedName = maskClientTalentName(candidate);
 
   return {
-    // Identity — always privacy formatted; raw/structured names are not returned.
+    // Identity — every alias carries the same privacy-formatted display name;
+    // raw/structured names are never returned.
     maskedName,
+    fullName: maskedName,
+    full_name: maskedName,
 
     // Professional profile — safe to expose pre-invite
     targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
@@ -72,11 +66,14 @@ export function sanitizeSearchCandidate(candidate: Record<string, any>): Record<
  * password hash are intentionally absent.
  */
 export function sanitizeFullProfileForClient(candidate: Record<string, any>): Record<string, any> {
-  const maskedName = getSafeTalentName(candidate);
+  const maskedName = maskClientTalentName(candidate);
 
   return {
-    // Identity — always privacy formatted; raw/structured names are not returned.
+    // Identity — every alias carries the same privacy-formatted display name;
+    // raw/structured names are never returned.
     maskedName,
+    fullName: maskedName,
+    full_name: maskedName,
 
     // Professional profile fields (same set as search results)
     targetPosition:  candidate.targetPosition  ?? candidate.target_position  ?? null,
@@ -123,7 +120,6 @@ export const SEARCH_RESULT_BLOCKED_FIELDS: readonly string[] = [
   "videoIntroUrl", "video_intro_url",
   "videoIntroFileName", "video_intro_file_name",
   "displayName",   "display_name",
-  "fullName",      "full_name",
   "firstName",     "first_name",
   "lastName",      "last_name",
   "userId",        "user_id",
