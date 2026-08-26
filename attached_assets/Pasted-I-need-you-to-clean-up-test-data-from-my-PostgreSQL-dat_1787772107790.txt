@@ -1,0 +1,162 @@
+I need you to clean up test data from my PostgreSQL database.
+
+I want to permanently delete the following records from the `"users"` table and all dependent/test records that prevent these users from being deleted because of foreign-key constraints.
+
+TARGET USER IDs:
+
+```text
+3426a24b-6304-432d-8a2a-734e820ba83a
+46a47d93-e88f-438f-b5b3-51ec8957000a
+59fde80a-a3e1-495b-bfee-f2a8024568f1
+5d5d0fd3-2a2d-4da1-af07-ee98401beadc
+5e6481a5-8b11-4b97-baa7-ec11f2450cae
+62a0734d-f026-4e39-8c8c-307f19bf009c
+6320d2e5-2b21-44e2-bd7f-6777fde63317
+63373b31-9c11-4181-bc30-dc03fe6b6318
+67fcbfe4-1bcf-4914-9d9b-15cd0fb4e464
+69248316-fc42-42ec-9afe-92621021ca41
+6c82b694-5c11-4cd3-af49-261e1003b0b2
+6d6ab906-d6d7-493a-9c2f-cd5bd01f59d8
+6d8d79ec-4131-456e-80d2-db7cd942a7e9
+75fd19df-0322-4bfa-a486-ce55fd1eae4d
+7688b982-2f3f-41d1-b9d8-d59f9fd20c8e
+79a8b10a-babe-4b35-9986-420729d4973d
+7af34c8f-c325-49ed-a155-0ba1e258efb1
+7c3a3b47-8fc7-430f-bd94-1032ef37824e
+7e5897d8-6ed9-45b0-89fe-1b2ae4315f22
+7f03ecd1-fb86-403e-8816-280b57f87992
+7fa78d7b-b430-42e0-819c-31816275e7bc
+825d5eb9-68d9-4bf0-8021-e3166a83812f
+86a793ca-ea03-47f9-af16-beff674d1f84
+89b67d7f-64ed-4048-bf33-8a32c96300a6
+8e169c40-7a98-4c23-bda0-8bc094b764ea
+906b74f5-01a5-4a2b-8835-b9462d41bb93
+90b49e93-90e1-4770-aa0f-d256ab72cea7
+959bc4c8-ff90-4f65-b120-b92e02f80739
+962ed3fc-ce28-46bf-8456-04fecf1e1a49
+968f0989-ef37-492e-90ba-160388b16ea6
+98a43c64-5d15-4508-b583-034badb22c6c
+9e1dceb3-876e-43cd-8f94-8063e50a2f2a
+a1fa19fe-768f-47bc-8ab1-33e221b8a5ee
+a5ae173f-1d11-4d42-b9ea-6fb8f730a2d5
+a617c13f-cde3-4043-a763-76f43efb5e83
+a638dadb-0f14-4b86-8a2c-94659e466a3d
+a815fee6-b4eb-4f24-8177-0aa89d315d16
+aaf638da-3981-44bb-b6e3-f3f44f8a60af
+ac20b258-a03e-4617-a829-bf53273eee1f
+acaf31f2-1c85-4dbd-a071-013a38248d43
+approval-finalize-admin-1787246506126-iplzs2e22n
+approval-finalize-admin-1787246530545-2ea6fv26fb6
+approval-finalize-client-1787246506126-iplzs2e22n
+approval-finalize-client-1787246530545-2ea6fv26fb6
+```
+
+### Requirements
+
+These are test records generated during development/testing and I want them cleaned up.
+
+Before deleting anything:
+
+1. Inspect the PostgreSQL schema and foreign-key relationships.
+2. Find EVERY foreign key that directly or indirectly prevents these target users from being deleted.
+3. Determine the correct child-to-parent deletion order.
+4. Do not guess table or column names. Inspect the actual schema.
+5. Do not disable foreign-key constraints.
+6. Do not drop any constraints, tables, columns, indexes, or database objects.
+7. Do not use `TRUNCATE`.
+8. Do not delete unrelated production records.
+
+We have previously encountered relationships including, but not necessarily limited to:
+
+```text
+profiles.user_id -> users.id
+jobs.client_id -> users.id
+candidates.user_id -> users.id
+messages.sender_id -> users.id
+client_profiles.user_id -> users.id
+notifications.user_id -> users.id
+job_submissions.client_id -> users.id
+job_submissions.job_id -> jobs.id
+message_threads.job_id -> jobs.id
+organizations.created_by -> users.id
+```
+
+Do NOT assume this list is complete. Query the current schema to find all foreign-key dependencies.
+
+### Important handling of indirect dependencies
+
+Some records may not reference `users.id` directly.
+
+For example:
+
+```text
+users
+  -> jobs
+      -> job_submissions
+      -> message_threads
+```
+
+Those grandchildren/descendant records must be handled before deleting the parent job.
+
+Recursively inspect dependencies so that the cleanup does not repeatedly fail with foreign-key violations.
+
+### Organizations
+
+Be especially careful with:
+
+```text
+organizations.created_by -> users.id
+```
+
+Do NOT blindly delete an organization merely because one of these test users is its `created_by`.
+
+First determine whether the organization itself is test data associated exclusively with these test records.
+
+If deleting an organization could affect legitimate/non-target users or production data, preserve the organization and safely reassign/clear `created_by` only if the schema permits and there is an appropriate valid value.
+
+Do not delete legitimate organization data.
+
+### Execution safety
+
+Perform the cleanup inside a PostgreSQL transaction.
+
+Before the DELETE operations, show me:
+
+* how many of the supplied IDs currently exist in `"users"`
+* which dependent tables contain matching records
+* the number of rows that will be affected in each table
+* the proposed deletion/update order
+
+Then execute the cleanup only for records belonging to or directly associated with these target test users.
+
+Use exact ID matching. Do not use broad matching such as:
+
+```sql
+LIKE '%test%'
+```
+
+or email/name matching.
+
+If any dependency is ambiguous and deleting it could affect non-target users, STOP and tell me what you found instead of deleting it.
+
+After cleanup, verify with:
+
+```sql
+SELECT id
+FROM "users"
+WHERE id IN (...all target IDs...);
+```
+
+The expected result is zero rows for target IDs that existed before cleanup.
+
+Also verify that no orphaned foreign-key references remain.
+
+Finally, report:
+
+* number of users deleted
+* number of dependent records deleted per table
+* number of records updated/reassigned, if any
+* supplied IDs that did not exist
+* anything intentionally preserved and why
+
+Do not modify application source code or database schema for this task. This should be a targeted database data-cleanup operation only.
