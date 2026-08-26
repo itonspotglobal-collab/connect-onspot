@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { Eye, Loader2, Search, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -61,10 +61,19 @@ export function ClientJobTalentSearchDialog({
     setPreviewing(null);
   }, [open, job?.id]);
 
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      setAppliedSearch(searchDraft.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [open, searchDraft]);
+
   const search = useQuery<SearchResponse>({
     queryKey: ["/api/client/jobs", job?.id, "talent-search", appliedSearch],
     enabled: open && Boolean(job),
     retry: false,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const response = await apiRequest("POST", `/api/client/jobs/${job!.id}/talent-search`, {
         searchText: appliedSearch,
@@ -195,7 +204,12 @@ export function ClientJobTalentSearchDialog({
                 No matching talent found. Try another search or adjust the filters.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-white/[0.08] dark:border-white/[0.1]">
+              <div className="relative divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-white/[0.08] dark:border-white/[0.1]">
+                {search.isFetching && (
+                  <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-500 shadow-sm dark:bg-slate-900/95">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Searching…
+                  </div>
+                )}
                 {results.map((result) => {
                   const isInvited = invitedIds.has(result.userId);
                   const isSending = invite.isPending && invite.variables === result.userId;

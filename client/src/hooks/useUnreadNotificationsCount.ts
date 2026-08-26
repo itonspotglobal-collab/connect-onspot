@@ -10,6 +10,7 @@ interface NotificationRow {
 
 export const TALENT_NOTIFICATION_TYPES = [
   "offer_received",
+  "job_invitation",
   "job_application_status_changed",
   "new_message",
 ] as const;

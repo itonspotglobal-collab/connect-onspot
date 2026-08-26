@@ -77,6 +77,13 @@ const TYPE_CONFIG: Record<
     label: "New Offer",
     route: "/my-applications",
   },
+  job_invitation: {
+    icon: FileText,
+    color: "#4D55C7",
+    bg: "#EEF2FF",
+    label: "Invitation to Apply",
+    route: "/my-applications",
+  },
   offer_accepted: {
     icon: CheckCircle,
     color: "#059669",   // emerald-600

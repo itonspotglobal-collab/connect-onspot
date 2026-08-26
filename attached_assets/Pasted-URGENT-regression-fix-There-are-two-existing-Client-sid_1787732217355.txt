@@ -1,0 +1,1046 @@
+URGENT regression fix.
+
+There are two existing Client-side workflows that are currently broken:
+
+```text
+1. Client Profile → Invite Talent to Apply:
+   talent search does not work.
+
+2. Hire Talent → Invite / Request Interview:
+   invitation flow fails with 428 msa_required and also produces a React Query undefined-data error.
+```
+
+Do NOT redesign these features.
+
+Do NOT remove Terms of Service / MSA enforcement.
+
+Do NOT bypass backend authorization or invitation-readiness rules.
+
+Do NOT create a second talent-search backend.
+
+Do NOT create a second invitation workflow.
+
+Fix the existing implementations only.
+
+---
+
+# ISSUE 1 — Client Profile talent search must work in REAL TIME
+
+Current screen:
+
+```text
+Invite Talent to Apply
+
+Search talent for Data Entry.
+
+[ Search by role, skill, or experience... ] [Search]
+```
+
+Before entering a search, the dialog visibly contains candidates such as:
+
+```text
+valu T.
+Legacy U.
+Verify T.
+Valu T.
+Val T.
+```
+
+But entering:
+
+```text
+Val
+```
+
+and clicking Search produces:
+
+```text
+No matching talent found.
+Try another search or adjust the filters.
+```
+
+This is clearly incorrect because candidates matching `Val` are already visible in the same result set.
+
+Fix this properly.
+
+---
+
+# Required UX: realtime search
+
+The search must update as the Client types.
+
+Example:
+
+```text
+V
+Va
+Val
+```
+
+should progressively filter/search without requiring the user to click Search.
+
+Keep the Search button if desired, but typing itself must trigger search.
+
+Use a debounce of approximately:
+
+```text
+250–400 ms
+```
+
+Recommended:
+
+```text
+300 ms
+```
+
+Do NOT send a backend request for every keystroke without debounce.
+
+Pressing Enter and clicking Search should still work and should execute the same search logic.
+
+---
+
+# Search behavior
+
+Search must be:
+
+```text
+case-insensitive
+trimmed
+partial-match capable
+```
+
+These queries should behave equivalently:
+
+```text
+Val
+val
+VAL
+"  Val  "
+```
+
+A candidate whose safe Client-facing name is:
+
+```text
+Val T.
+Valu T.
+```
+
+must match `Val`.
+
+---
+
+# Search across appropriate fields
+
+Search eligible candidates using safe/professional fields such as:
+
+```text
+masked/display name
+target position
+headline
+professional role
+category
+core skills
+secondary skills
+experience/seniority
+location
+```
+
+Do not search only one field such as `targetPosition`.
+
+Example:
+
+Candidate:
+
+```text
+name: Val T.
+role: Technical Specialist
+skills: Customer Support, CRM
+```
+
+Must match:
+
+```text
+Val
+technical
+customer
+CRM
+```
+
+when appropriate.
+
+---
+
+# IMPORTANT — search raw server data, return sanitized data
+
+The project has strict Client-facing Talent privacy rules.
+
+Preserve:
+
+```text
+server/lib/clientSearchSanitize.ts
+```
+
+Correct architecture:
+
+```text
+backend loads eligible Talent
+        ↓
+backend performs search/ranking using internal data
+        ↓
+backend applies privacy sanitizer
+        ↓
+Client receives sanitized results
+```
+
+Do NOT expose raw Talent identity/PII to make search work.
+
+The response must still omit:
+
+```text
+email
+phone
+resumeUrl
+LinkedIn
+GitHub
+portfolio
+website
+video URL
+userId
+other hidden identity fields
+```
+
+---
+
+# Do not filter only an already-paginated subset
+
+Inspect whether the dialog currently does something like:
+
+```ts
+results.filter(...)
+```
+
+on only the currently displayed batch.
+
+If so, fix it.
+
+Realtime search should query/filter the full eligible search population through the existing backend search implementation.
+
+Search should not return zero merely because the matching Talent is outside the currently loaded page.
+
+---
+
+# Search and AI match percentage are NOT the same thing
+
+The screenshot currently displays candidates with:
+
+```text
+5% match
+0% match
+```
+
+Therefore a low match score is clearly allowed.
+
+Do NOT hide a textual search match because:
+
+```text
+jobMatchScore < some threshold
+```
+
+Example:
+
+```text
+Val T. — 0% match
+```
+
+still must appear when the Client searches:
+
+```text
+Val
+```
+
+The text search decides whether the candidate matches the search query.
+
+The AI percentage is a separate ranking/display metric.
+
+---
+
+# Fix stale request/race-condition behavior
+
+Because search must be realtime, handle request races correctly.
+
+Example:
+
+```text
+User types "V"
+request A starts
+
+User types "Val"
+request B starts
+
+request A finishes after B
+```
+
+The older `V` result must NOT overwrite the newer `Val` results.
+
+Use React Query query keys correctly, AbortSignal where supported, or another existing cancellation/stale-response-safe pattern.
+
+Do not manually create fragile global request flags.
+
+---
+
+# Search query key
+
+The search query must include every input that changes the result.
+
+For example:
+
+```ts
+queryKey: [
+  "/api/...",
+  selectedJob.id,
+  debouncedSearchTerm
+]
+```
+
+Do not reuse one static query key for different search terms.
+
+---
+
+# Empty search
+
+When the search input is cleared:
+
+```text
+""
+```
+
+restore the default eligible talent list automatically.
+
+Do not leave the previous filtered result onscreen.
+
+---
+
+# Loading state
+
+During debounced search, do not completely destroy the previous result list if avoidable.
+
+Prefer a subtle state such as:
+
+```text
+Searching…
+```
+
+while keeping the modal stable.
+
+If there are genuinely no results:
+
+```text
+No matching talent found.
+Try another search.
+```
+
+If the API fails:
+
+```text
+Unable to search talent right now.
+Please try again.
+```
+
+Do NOT convert API errors into "No matching talent found."
+
+---
+
+# Verify the ACTUAL endpoint
+
+Before changing code, trace:
+
+```text
+ClientJobTalentSearchDialog / equivalent component
+→ React Query/query function
+→ API endpoint
+→ server route
+→ query
+→ sanitizer
+```
+
+Report exactly why:
+
+```text
+Val
+```
+
+currently returns zero results while `Val T.` is already visible.
+
+Do not guess and do not patch only the frontend unless that is actually the root cause.
+
+---
+
+# ISSUE 2 — Hire Talent invitation / interview request fails because Terms acceptance is not integrated correctly
+
+Current Hire Talent flow allows:
+
+```text
+Invite <Talent> to which role?
+
+Propose an initial interview time
+
+[Data Entry]
+[Social Media Manager]
+
+[Send invitation]
+```
+
+The modal itself warns:
+
+```text
+Terms acceptance required for your first invitation
+Read the Terms of Service.
+When you send this invitation, you'll be asked to confirm acceptance so we can record it.
+```
+
+But clicking:
+
+```text
+Send invitation
+```
+
+currently results in:
+
+```text
+428 Precondition Required
+
+{
+  "error": "msa_required",
+  "message": "Accept the Terms of Service before sending your first talent invitation.",
+  "termsUrl": "/terms-and-conditions"
+}
+```
+
+This should NOT be shown as a raw backend error.
+
+The backend `428 msa_required` protection must remain.
+
+Fix the frontend flow around it.
+
+---
+
+# Required Terms flow
+
+Before sending the first formal invitation, determine the Client's existing MSA/Terms acceptance state using the existing endpoint/service.
+
+The project already has MSA/Terms acceptance infrastructure.
+
+Reuse it.
+
+Do NOT create another Terms table.
+
+Do NOT hardcode `accepted = true`.
+
+---
+
+# Preferred first-invitation UX
+
+When the Client has NOT accepted the current Terms version:
+
+The invitation modal should clearly show:
+
+```text
+Terms of Service acceptance required
+```
+
+Provide:
+
+```text
+[Read Terms]
+```
+
+and:
+
+```text
+[Accept Terms]
+```
+
+or a required confirmation checkbox using the project's existing acceptance mechanism.
+
+Example:
+
+```text
+☐ I have read and accept the current Terms of Service.
+```
+
+Then:
+
+```text
+Send invitation
+```
+
+must remain disabled until acceptance is successfully recorded.
+
+Alternative acceptable flow:
+
+```text
+Client clicks Send invitation
+        ↓
+Terms confirmation dialog opens
+        ↓
+Client explicitly accepts
+        ↓
+backend records MSA acceptance
+        ↓
+original invitation automatically retries once
+```
+
+But do not silently accept Terms for the Client.
+
+Explicit acceptance is required.
+
+---
+
+# Once Terms are accepted
+
+After successful acceptance:
+
+```text
+refetch/invalidate MSA status
+```
+
+Then allow the invitation to proceed immediately without requiring the Client to close/reopen the modal.
+
+The user should NOT need a page refresh.
+
+---
+
+# 428 fallback handling
+
+Even after implementing proactive MSA checking, keep defensive handling for:
+
+```text
+428 msa_required
+```
+
+because Terms versions can change or cached state may become stale.
+
+If the invitation endpoint returns:
+
+```json
+{
+  "error": "msa_required"
+}
+```
+
+do NOT show:
+
+```text
+Could not send invitation
+428: {...raw JSON...}
+```
+
+Instead show a proper product message:
+
+```text
+Terms acceptance required
+
+Please accept the current Terms of Service before sending this invitation.
+```
+
+Open/display the existing Terms acceptance control.
+
+Preserve the selected:
+
+```text
+Talent
+Job
+Proposed interview time
+```
+
+so the Client does not have to start over.
+
+---
+
+# IMPORTANT — proposed interview time must survive Terms acceptance
+
+The current invitation form includes:
+
+```text
+Propose an initial interview time
+```
+
+If the Client:
+
+```text
+selects job
+selects interview time
+clicks Send invitation
+accepts Terms
+```
+
+the original job and proposed interview time must still be there.
+
+After acceptance, sending the invitation must pass the same existing:
+
+```text
+proposedTimes
+timezone
+```
+
+data.
+
+Do not wipe the modal state.
+
+---
+
+# ISSUE 3 — Fix React Query undefined-data error
+
+The console currently shows:
+
+```text
+Query data cannot be undefined.
+Please make sure to return a value other than undefined from your query function.
+
+Affected query key:
+["/api/organization-invitations"]
+```
+
+This must be fixed.
+
+Search for:
+
+```text
+/api/organization-invitations
+```
+
+and inspect its React Query:
+
+```ts
+useQuery(...)
+queryFn
+```
+
+A React Query `queryFn` must NEVER resolve to:
+
+```ts
+undefined
+```
+
+Correct patterns include returning:
+
+```ts
+[]
+```
+
+for an empty list, or:
+
+```ts
+null
+```
+
+if null is intentionally part of the typed API contract.
+
+Do NOT hide the warning.
+
+Fix the query function/API result.
+
+Example:
+
+```ts
+queryFn: async () => {
+  const res = await apiRequest(...);
+
+  if (!res.ok) {
+    ...
+  }
+
+  const data = await res.json();
+
+  return data ?? [];
+}
+```
+
+Use the actual endpoint's expected response shape.
+
+---
+
+# Handle AbortError correctly
+
+The console also shows repeated:
+
+```text
+Uncaught (in promise) AbortError:
+The user aborted a request.
+```
+
+Do not log expected request cancellation as an application error.
+
+Realtime search or route changes may legitimately abort stale requests.
+
+Handle `AbortError` gracefully.
+
+Do NOT display an error toast for an intentionally cancelled request.
+
+Do not globally suppress real network errors.
+
+---
+
+# ISSUE 4 — Hire Talent "Request Interview" must use the existing formal invitation flow correctly
+
+The Hire Talent screen's interview/invite action must continue to use the existing formal invitation architecture.
+
+Do not create an interview record independently before the Talent accepts unless that is already the established workflow.
+
+Expected flow:
+
+```text
+Client finds Talent
+        ↓
+Client chooses Invite / Request Interview
+        ↓
+Client selects one of own eligible jobs
+        ↓
+Client proposes initial interview time
+        ↓
+MSA/Terms readiness validated
+        ↓
+formal invitation created
+        ↓
+Talent receives invitation
+        ↓
+Talent can accept/decline
+        ↓
+proposed interview time enters existing coordination flow
+```
+
+Preserve existing:
+
+```text
+POST /api/client/invitations
+```
+
+and its duplicate protection, job ownership validation, and proposed time handling.
+
+---
+
+# Job eligibility
+
+Only show jobs that the Client is legitimately allowed to invite Talent to.
+
+At minimum inspect:
+
+```text
+ownership
+approval status
+open/closed status
+search scaffold exclusion
+invitation readiness
+```
+
+Do not allow invitations to another Client's job.
+
+Do not let a pending/rejected Client job become a public/active invitation target if existing business rules forbid that.
+
+---
+
+# Request Interview CTA state
+
+If Terms are not yet accepted:
+
+Do NOT let the final request produce a raw 428.
+
+The UI should indicate:
+
+```text
+Accept Terms to send your first invitation
+```
+
+and guide the Client through that action.
+
+If Terms are accepted:
+
+```text
+Send invitation
+```
+
+should work without extra interruption.
+
+---
+
+# Invitation success
+
+After successful send:
+
+```text
+close modal
+show success toast
+refresh invitation state
+update Talent row to Invited / Pending response where applicable
+```
+
+Do not require a page reload.
+
+Suggested message:
+
+```text
+Invitation sent to <masked talent name>.
+```
+
+Do not expose full private identity.
+
+---
+
+# Notification/email behavior must remain intact
+
+Do NOT remove the recently requested behavior where a successful invitation also results in:
+
+```text
+Talent in-app notification
+Talent invitation email
+```
+
+using the existing notification system and:
+
+```text
+findwork@onspotglobal.com
+```
+
+as the invitation sender.
+
+The side effects must happen only AFTER a new invitation is successfully created.
+
+A failed `msa_required` attempt must NOT:
+
+```text
+create notification
+send email
+create duplicate invitation
+```
+
+---
+
+# Duplicate protection
+
+If the Client retries after accepting Terms:
+
+The original failed 428 attempt did not create the invitation.
+
+The successful retry should create exactly:
+
+```text
+1 invitation
+1 Talent notification
+1 Talent email
+```
+
+If an invitation already exists:
+
+```text
+already_invited
+```
+
+must remain authoritative.
+
+Do not generate another notification/email.
+
+---
+
+# Do not ruin the general Hire Talent page
+
+Preserve:
+
+```text
+Talent cards
+Preview
+existing shortlist behavior
+existing search
+match percentages
+privacy masking
+existing interview/timezone coordination
+```
+
+Patch the broken invitation/Terms flow only.
+
+---
+
+# Mandatory test — realtime Client Profile search
+
+Use a known candidate currently displayed as:
+
+```text
+Val T.
+```
+
+1. Open Client Profile.
+2. Click Invite Talent on an eligible job.
+3. Confirm default Talent list loads.
+4. Type:
+
+```text
+V
+```
+
+5. Wait ~300ms.
+6. Results update automatically.
+7. Type:
+
+```text
+Val
+```
+
+8. Confirm `Val T.` / matching candidates remain visible.
+9. Do NOT click Search.
+10. Clear the input.
+11. Confirm default results return.
+12. Try:
+
+```text
+val
+VAL
+" Val "
+```
+
+13. Confirm equivalent results.
+14. Search by a known role.
+15. Search by a known skill.
+16. Confirm no stale older request overwrites the newest query.
+
+---
+
+# Mandatory test — Terms + interview invitation
+
+Use a Client account that has NOT accepted the current Terms.
+
+1. Open Hire Talent.
+2. Select a Talent.
+3. Click invitation/interview action.
+4. Select:
+
+```text
+Data Entry
+```
+
+5. Choose a proposed interview time.
+6. Confirm the UI knows Terms acceptance is required.
+7. Confirm Send Invitation is either disabled until explicit acceptance OR opens a proper acceptance step.
+8. Accept Terms.
+9. Confirm acceptance is recorded through the EXISTING backend endpoint.
+10. Confirm selected job remains `Data Entry`.
+11. Confirm proposed time remains unchanged.
+12. Send invitation.
+13. Confirm HTTP success.
+14. Confirm exactly one formal invitation exists.
+15. Confirm Talent receives the existing in-app invitation notification.
+16. Confirm Talent invitation email is triggered through the existing mail service.
+17. Confirm no raw `428` toast appears.
+18. Confirm no page refresh is required.
+
+---
+
+# Mandatory test — already accepted Client
+
+Use a Client whose current Terms are already accepted.
+
+1. Open Hire Talent.
+2. Invite Talent.
+3. Select role.
+4. Select proposed interview time.
+5. Send.
+6. No Terms interruption should occur.
+7. Invitation succeeds.
+
+---
+
+# Mandatory test — React Query errors
+
+Open DevTools Console.
+
+After normal use of:
+
+```text
+Client Profile talent search
+Hire Talent
+Invite Talent
+Terms acceptance
+```
+
+there must be NO:
+
+```text
+Query data cannot be undefined
+```
+
+for:
+
+```text
+/api/organization-invitations
+```
+
+and expected cancelled searches must not produce unhandled `AbortError` noise.
+
+---
+
+# BEFORE IMPLEMENTING
+
+Report the CURRENT code paths:
+
+```text
+1. Exact component for Client Profile Invite Talent dialog
+2. Exact search endpoint it calls
+3. Current search query/queryFn
+4. Why "Val" returns no results
+5. Whether search currently happens frontend or backend
+6. Exact Hire Talent invitation component
+7. Exact POST endpoint used by Send invitation
+8. Existing MSA status endpoint
+9. Existing MSA acceptance endpoint
+10. Why UI reaches POST before Terms are accepted
+11. Query function for /api/organization-invitations
+12. Why that query resolves undefined
+```
+
+Then fix the issues.
+
+DO NOT stop after analysis.
+
+---
+
+# AFTER IMPLEMENTATION
+
+Report:
+
+```text
+Files changed
+
+Realtime talent search:
+- root cause
+- endpoint
+- debounce
+- searchable fields
+- race/cancellation handling
+
+Hire Talent invitation:
+- root cause of 428 UX
+- MSA status endpoint reused
+- MSA acceptance endpoint reused
+- proposed interview time preserved
+- invitation endpoint reused
+
+React Query:
+- undefined-data root cause
+- fix
+- AbortError handling
+
+Regression:
+- privacy sanitizer preserved
+- duplicate invitation protection preserved
+- Talent notification preserved
+- Talent email preserved
+
+Tests run
+Manual browser test results
+```
+
+Do not mark this fixed unless BOTH of these exact cases pass:
+
+```text
+A. Typing "Val" without clicking Search returns the existing matching Talent.
+
+B. First-time Client can accept Terms inside the invitation flow and successfully send the proposed interview invitation without a raw 428 error.
+```

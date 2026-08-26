@@ -277,7 +277,7 @@ export function TopNavigation() {
     queryKey: ["/api/organization-invitations"],
     queryFn: async () => {
       const response = await authAPI.get("/api/organization-invitations");
-      return response.data;
+      return Array.isArray(response) ? response : [];
     },
     enabled: !!user && user.role === "client",
     staleTime: 30_000,

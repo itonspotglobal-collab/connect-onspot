@@ -316,6 +316,31 @@ describe("client profile and job authorization (production routes)", () => {
     }
     assert.ok(Array.isArray(search.json.invitedTalentIds));
 
+    for (const searchText of ["john", "JOHN", "  John  "]) {
+      const nameSearch = await request(
+        server,
+        "POST",
+        `/api/client/jobs/${READY_JOB_ID}/talent-search`,
+        clientToken,
+        { searchText },
+      );
+      assert.equal(nameSearch.status, 200, JSON.stringify(nameSearch.json));
+      assert.ok(
+        nameSearch.json.results.some((result: any) => result.userId === TALENT_ID),
+        `${JSON.stringify(searchText)} should match the sanitized partial name`,
+      );
+    }
+
+    const unknownSearch = await request(
+      server,
+      "POST",
+      `/api/client/jobs/${READY_JOB_ID}/talent-search`,
+      clientToken,
+      { searchText: "definitely-no-such-talent-term" },
+    );
+    assert.equal(unknownSearch.status, 200, JSON.stringify(unknownSearch.json));
+    assert.deepEqual(unknownSearch.json.results, []);
+
     const foreignJob = await request(
       server,
       "POST",
@@ -663,6 +688,9 @@ describe("client profile and job authorization (production routes)", () => {
       proposedTimes: [{ start: "2030-01-01T10:00:00.000Z", timezone: "UTC" }],
     });
     assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
+    assert.equal(invitation.json.invitationCreated, true);
+    assert.equal(invitation.json.notificationCreated, true);
+    assert.equal(invitation.json.emailSent, true);
 
     const rows = await query(
       `SELECT workflow_type, status FROM job_submissions
@@ -697,10 +725,17 @@ describe("client profile and job authorization (production routes)", () => {
     });
     assert.equal(duplicateInvite.status, 409, JSON.stringify(duplicateInvite.json));
     const finalNotifications = await query(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1`,
+      `SELECT user_id, type, title, message, related_id, is_read
+         FROM notifications
+        WHERE user_id = $1 AND type = 'job_invitation'`,
       [TALENT_ID],
     );
-    assert.equal(finalNotifications.rows[0].count, 0, "shortlist and promotion must not create a platform notification");
+    assert.equal(finalNotifications.rows.length, 1, "a successful formal invitation must notify talent exactly once");
+    assert.equal(finalNotifications.rows[0].user_id, TALENT_ID);
+    assert.equal(finalNotifications.rows[0].title, "You've been invited to apply");
+    assert.match(finalNotifications.rows[0].message, /Pending approval job/);
+    assert.equal(finalNotifications.rows[0].related_id, invitation.json.id);
+    assert.equal(finalNotifications.rows[0].is_read, false);
   });
 
   it("notifies only the owning client for each real approval transition", async () => {

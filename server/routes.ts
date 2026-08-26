@@ -1117,13 +1117,13 @@ async function fireInvitationEmail(opts: {
   jobTitle: string;
   jobDescription: string | null;
   submissionId: string;
-}): Promise<void> {
+}): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!opts.talentEmail) return;
+    if (!opts.talentEmail) return { success: false, error: "Talent email is unavailable" };
     // The production route is also used by isolated smoke tests. Those tests
     // opt into a no-op transport so exercising invitation creation never sends
     // mail or depends on Microsoft Graph credentials.
-    if (process.env.INVITATION_EMAIL_TRANSPORT === "noop") return;
+    if (process.env.INVITATION_EMAIL_TRANSPORT === "noop") return { success: true };
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
     const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
       await import("./services/emailVariableResolver.ts");
@@ -1135,7 +1135,7 @@ async function fireInvitationEmail(opts: {
       ? `<p style="color:#444;font-size:15px;margin:16px 0;">${escHtml(opts.jobDescription)}</p>`
       : "";
 
-    const subject = `You've been invited to a role: ${opts.jobTitle}`;
+    const subject = `You've been invited to apply for ${opts.jobTitle}`;
     const contentHtml = `
   <h2 style="color:#1a1a2e;margin-bottom:8px;">You've been invited to a role</h2>
   <p style="color:#444;font-size:15px;margin-bottom:4px;">Hi ${safeName},</p>
@@ -1167,17 +1167,24 @@ async function fireInvitationEmail(opts: {
       console.warn(
         `fireInvitationEmail: blocked email for ${opts.submissionId}; unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
       );
-      return;
+      return { success: false, error: "Invitation email template could not be rendered" };
     }
 
-    await sendApplicantEmail({
+    const result = await sendApplicantEmail({
       to: opts.talentEmail,
       subject: rendered.subject,
       bodyHtml: rendered.bodyHtml,
+      senderEmail: "findwork@onspotglobal.com",
     });
-    console.log(`✅ Invitation email sent to ${opts.talentEmail} for submission ${opts.submissionId}`);
+    if (result.success) {
+      console.log(`[TalentInvitationEmail] Sent submissionId=${opts.submissionId} sender=findwork@onspotglobal.com`);
+    } else {
+      console.warn(`[TalentInvitationEmail] Failed submissionId=${opts.submissionId} error=${result.error ?? "unknown"}`);
+    }
+    return result;
   } catch (e: any) {
-    console.warn("fireInvitationEmail (non-fatal):", e?.message);
+    console.warn(`[TalentInvitationEmail] Failed submissionId=${opts.submissionId} error=${e?.message ?? "unknown"}`);
+    return { success: false, error: e?.message ?? "Invitation email failed" };
   }
 }
 
@@ -13954,7 +13961,10 @@ export async function registerRoutes(
         [userId],
       );
       return res.json({
-        accepted: Boolean(r.rows[0]?.msa_accepted_at),
+        accepted: Boolean(
+          r.rows[0]?.msa_accepted_at &&
+          r.rows[0]?.msa_version === CURRENT_MSA_VERSION,
+        ),
         acceptedAt: r.rows[0]?.msa_accepted_at ?? null,
         version: r.rows[0]?.msa_version ?? null,
         currentVersion: CURRENT_MSA_VERSION,
@@ -13979,8 +13989,8 @@ export async function registerRoutes(
       if (existing.rows.length) {
         result = await query(
           `UPDATE client_profiles
-              SET msa_accepted_at = COALESCE(msa_accepted_at, NOW()),
-                  msa_version = COALESCE(msa_version, $1),
+              SET msa_accepted_at = NOW(),
+                  msa_version = $1,
                   updated_at = NOW()
             WHERE user_id = $2
             RETURNING *`,
@@ -14112,7 +14122,7 @@ export async function registerRoutes(
           [userId],
         ),
         query(
-          `SELECT msa_accepted_at
+          `SELECT msa_accepted_at, msa_version
              FROM client_profiles
             WHERE user_id = $1
             LIMIT 1`,
@@ -14157,7 +14167,10 @@ export async function registerRoutes(
         state = "not_ready";
       }
 
-      const accepted = Boolean(profileResult.rows[0]?.msa_accepted_at);
+      const accepted = Boolean(
+        profileResult.rows[0]?.msa_accepted_at &&
+        profileResult.rows[0]?.msa_version === CURRENT_MSA_VERSION,
+      );
       const isFirstInvitation = Boolean(firstInviteResult.rows[0]?.is_first);
 
       return res.json({
@@ -14773,15 +14786,22 @@ export async function registerRoutes(
       if (searchText.length > 120) return res.status(400).json({ error: "Search text must be 120 characters or fewer" });
       const terms = searchText.toLowerCase().split(/\s+/).filter(Boolean);
 
-      const ranked = await storage.rankTalentForJob(jobId, 50);
+      // Search the complete eligible population first. Limiting before text
+      // filtering caused valid low-score candidates to disappear.
+      const ranked = await storage.rankTalentForJob(jobId, Number.POSITIVE_INFINITY);
       const filtered = terms.length
         ? ranked.filter((result) => {
             const candidate = result.candidate ?? {};
+            const safeCandidate = sanitizeSearchCandidate(candidate);
             const searchable = [
+              safeCandidate.maskedName,
               candidate.targetPosition,
               candidate.headline,
               candidate.summary,
               candidate.category,
+              candidate.seniority,
+              candidate.location,
+              candidate.experienceYears,
               ...(Array.isArray(candidate.coreSkills) ? candidate.coreSkills : []),
               ...(Array.isArray(candidate.secondarySkills) ? candidate.secondarySkills : []),
             ]
@@ -14791,8 +14811,9 @@ export async function registerRoutes(
             return terms.every((term: string) => searchable.includes(term));
           })
         : ranked;
+      const visibleResults = filtered.slice(0, 50);
 
-      const talentIds = filtered.map((result) => result.userId);
+      const talentIds = visibleResults.map((result) => result.userId);
       const invitations = talentIds.length
         ? await query(
             `SELECT DISTINCT talent_id
@@ -14808,7 +14829,7 @@ export async function registerRoutes(
         : { rows: [] as Array<{ talent_id: string }> };
 
       return res.json({
-        results: filtered.map((result) => ({
+        results: visibleResults.map((result) => ({
           candidateId: result.candidateId,
           userId: result.userId,
           score: result.score,
@@ -15247,6 +15268,7 @@ export async function registerRoutes(
        let talent: any;
        let jobTitle = "a new role";
        let jobDescription: string | null = null;
+       let notificationCreated = false;
        try {
          await txClient.query("BEGIN");
         let talentUserId: string | null =
@@ -15328,10 +15350,13 @@ export async function registerRoutes(
           );
           if (firstInvite.rows[0]?.is_first) {
             const msa = await txClient.query(
-              `SELECT msa_accepted_at FROM client_profiles WHERE user_id = $1 LIMIT 1`,
+              `SELECT msa_accepted_at, msa_version FROM client_profiles WHERE user_id = $1 LIMIT 1`,
               [clientId],
             );
-            if (!msa.rows[0]?.msa_accepted_at) {
+            if (
+              !msa.rows[0]?.msa_accepted_at ||
+              msa.rows[0]?.msa_version !== CURRENT_MSA_VERSION
+            ) {
               await txClient.query("ROLLBACK");
               return res.status(428).json({
                 error: "msa_required",
@@ -15434,15 +15459,22 @@ export async function registerRoutes(
            );
            created.interview = interviewResult.rows[0];
          }
+          await txClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type, event_key, is_read)
+             VALUES ($1, 'job_invitation', $2, $3, $4, 'job_submission', $5, false)
+             ON CONFLICT (event_key) WHERE event_key IS NOT NULL DO NOTHING`,
+            [
+              talentUserId,
+              "You've been invited to apply",
+              `A client has invited you to apply for “${jobTitle}”.`,
+              created.id,
+              `job_invitation:${created.id}`,
+            ],
+          );
+          notificationCreated = true;
          await txClient.query("COMMIT");
-
-         fireInvitationEmail({
-           talentEmail: email,
-           talentName: name,
-           jobTitle,
-           jobDescription,
-           submissionId: created.id,
-         });
+          console.log(`[TalentInvitationNotification] Created submissionId=${created.id} talentUserId=${talentUserId}`);
        } catch (txErr: any) {
          await txClient.query("ROLLBACK").catch(() => {});
          throw txErr;
@@ -15450,11 +15482,24 @@ export async function registerRoutes(
          txClient.release();
        }
 
+       const emailResult = await fireInvitationEmail({
+         talentEmail: talent.email ?? "",
+         talentName: talent.full_name ||
+           [talent.first_name, talent.last_name].filter(Boolean).join(" ") ||
+           "Invited Talent",
+         jobTitle,
+         jobDescription,
+         submissionId: created.id,
+       });
+
        return res.status(201).json({
          id: created.id,
           combinedInvite: true,
          interview: created.interview ?? null,
-       });
+          invitationCreated: true,
+          notificationCreated,
+          emailSent: emailResult.success,
+        });
     } catch (err: any) {
        console.error("POST /api/client/invitations error:", err);
       return res.status(500).json({ error: err.message });

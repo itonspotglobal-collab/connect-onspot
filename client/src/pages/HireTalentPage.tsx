@@ -786,6 +786,8 @@ export default function HireTalentPage() {
   const [pickerSelectedJobId, setPickerSelectedJobId] = useState<string | null>(null);
   const [pickerSending, setPickerSending] = useState(false);
   const [inviteDateTime, setInviteDateTime] = useState("");
+  const [termsConfirmed, setTermsConfirmed] = useState(false);
+  const [acceptingTerms, setAcceptingTerms] = useState(false);
 
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -1053,6 +1055,7 @@ export default function HireTalentPage() {
     setPickerError(null);
     setPickerSelectedJobId(null);
     setInviteDateTime("");
+    setTermsConfirmed(false);
   }
 
   async function openPicker(talentUserId: string, talentName: string) {
@@ -1061,6 +1064,7 @@ export default function HireTalentPage() {
     setPickerError(null);
     setPickerReadiness(null);
     setPickerSelectedJobId(null);
+    setTermsConfirmed(false);
     try {
       const res = await apiRequest("GET", "/api/client/invitation-readiness");
       const data = await res.json().catch(() => ({}));
@@ -1074,6 +1078,29 @@ export default function HireTalentPage() {
       setPickerError(err.message || "Could not load your job postings");
     } finally {
       setPickerLoading(false);
+    }
+  }
+
+  async function acceptCurrentTerms() {
+    if (!termsConfirmed) return;
+    setAcceptingTerms(true);
+    try {
+      const response = await apiRequest("POST", "/api/client/msa-acceptance", { accepted: true });
+      const accepted = await response.json().catch(() => ({}));
+      if (!accepted.accepted) throw new Error("Terms acceptance could not be recorded.");
+      setPickerReadiness((current) => current ? {
+        ...current,
+        msa: { ...current.msa, accepted: true, required: false },
+      } : current);
+      toast({ title: "Terms accepted", description: "You can now send this invitation." });
+    } catch (error) {
+      toast({
+        title: "Could not accept Terms",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAcceptingTerms(false);
     }
   }
 
@@ -1107,17 +1134,16 @@ export default function HireTalentPage() {
           return;
         }
         if (body.error === "msa_required") {
-          window.open(body.termsUrl || "/terms-and-conditions", "_blank", "noopener,noreferrer");
-          const accepted = window.confirm(
-            "Please review the Terms of Service in the opened tab. Press OK only if you accept them to record acceptance and send this invitation.",
-          );
-          if (!accepted) return;
-          const msaRes = await apiRequest("POST", "/api/client/msa-acceptance", { accepted: true });
-          if (!msaRes.ok) {
-            const msaBody = await msaRes.json().catch(() => ({}));
-            throw new Error(msaBody.message || msaBody.error || "Please accept the Terms of Service first");
-          }
-          res = await apiRequest("POST", "/api/client/invitations", invitePayload);
+          setPickerReadiness((current) => current ? {
+            ...current,
+            msa: { ...current.msa, accepted: false, required: true },
+          } : current);
+          toast({
+            title: "Terms acceptance required",
+            description: "Please accept the current Terms of Service before sending this invitation.",
+            variant: "destructive",
+          });
+          return;
         }
         if (!res.ok) {
           const retryBody = await res.json().catch(() => ({}));
@@ -1129,7 +1155,23 @@ export default function HireTalentPage() {
       closePicker();
     } catch (err: any) {
       // Keep picker open on error so the client can retry or cancel.
-      toast({ title: "Could not send invitation", description: err.message, variant: "destructive" });
+      const rawMessage = err?.message ?? "";
+      if (rawMessage.includes("already_invited")) {
+        setInvitedIds((current) => new Set(current).add(talentUserId));
+        closePicker();
+      } else if (rawMessage.includes("msa_required")) {
+        setPickerReadiness((current) => current ? {
+          ...current,
+          msa: { ...current.msa, accepted: false, required: true },
+        } : current);
+        toast({
+          title: "Terms acceptance required",
+          description: "Please accept the current Terms of Service before sending this invitation.",
+          variant: "destructive",
+        });
+      } else if (err?.name !== "AbortError") {
+        toast({ title: "Could not send invitation", description: rawMessage || "Please try again.", variant: "destructive" });
+      }
     } finally {
       setPickerSending(false);
       setInvitingId(null);
@@ -1600,8 +1642,15 @@ export default function HireTalentPage() {
                         Terms acceptance required for your first invitation
                       </p>
                       <p className="mt-1 text-[12.5px] leading-relaxed text-amber-800/80 dark:text-amber-400/80">
-                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>. When you send this invitation, you’ll be asked to confirm acceptance so we can record it.
+                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>.
                       </p>
+                      <label className="mt-3 flex items-start gap-2 text-[12.5px] text-amber-900 dark:text-amber-300">
+                        <input type="checkbox" checked={termsConfirmed} onChange={(e) => setTermsConfirmed(e.target.checked)} className="mt-0.5" />
+                        <span>I have read and accept the current Terms of Service.</span>
+                      </label>
+                      <button type="button" onClick={acceptCurrentTerms} disabled={!termsConfirmed || acceptingTerms} className="mt-3 rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+                        {acceptingTerms ? "Recording acceptance…" : "Accept Terms"}
+                      </button>
                     </div>
                   )}
                   <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
@@ -1634,14 +1683,14 @@ export default function HireTalentPage() {
                   <div className="flex gap-2 justify-end">
                     <button
                       onClick={closePicker}
-                       disabled={pickerSending || !inviteDateTime}
+                      disabled={pickerSending}
                       className="rounded-[10px] border border-slate-200 px-4 py-2 text-[13.5px] font-semibold text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-60"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => confirmInvite(pickerJobs[0].id)}
-                       disabled={pickerSending || !inviteDateTime}
+                      disabled={pickerSending || !inviteDateTime || Boolean(pickerReadiness?.msa.required)}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? (
@@ -1661,8 +1710,15 @@ export default function HireTalentPage() {
                         Terms acceptance required for your first invitation
                       </p>
                       <p className="mt-1 text-[12.5px] leading-relaxed text-amber-800/80 dark:text-amber-400/80">
-                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>. When you send this invitation, you’ll be asked to confirm acceptance so we can record it.
+                        <a href={pickerReadiness.msa.termsUrl} target="_blank" rel="noreferrer" className="font-semibold underline">Read the Terms of Service</a>.
                       </p>
+                      <label className="mt-3 flex items-start gap-2 text-[12.5px] text-amber-900 dark:text-amber-300">
+                        <input type="checkbox" checked={termsConfirmed} onChange={(e) => setTermsConfirmed(e.target.checked)} className="mt-0.5" />
+                        <span>I have read and accept the current Terms of Service.</span>
+                      </label>
+                      <button type="button" onClick={acceptCurrentTerms} disabled={!termsConfirmed || acceptingTerms} className="mt-3 rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+                        {acceptingTerms ? "Recording acceptance…" : "Accept Terms"}
+                      </button>
                     </div>
                   )}
                   <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-1">
@@ -1714,7 +1770,7 @@ export default function HireTalentPage() {
                     </button>
                     <button
                       onClick={() => pickerSelectedJobId && confirmInvite(pickerSelectedJobId)}
-                      disabled={!pickerSelectedJobId || !inviteDateTime || pickerSending}
+                      disabled={!pickerSelectedJobId || !inviteDateTime || pickerSending || Boolean(pickerReadiness?.msa.required)}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? (
