@@ -630,6 +630,7 @@ function buildPayload(formData: JobFormData): any {
     skillTags: formData.requiredSkills.filter((skill) => skill.name.trim()).map((skill) => skill.name.trim()),
     requiresUsTimezoneOverlap: formData.requiresUsTimezoneOverlap,
     requiresFluentEnglish: formData.requiresFluentEnglish,
+    budgetCurrency: formData.currency || "PHP",
     salaryDisplay: formData.salaryDisplay.trim() || null,
     compensationDisplayType: formData.compensationDisplayType,
     contractorEngagementConfirmed: formData.contractorEngagementConfirmed,

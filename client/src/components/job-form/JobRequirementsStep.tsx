@@ -15,6 +15,7 @@ import {
   MINIMUM_EDUCATION_OPTIONS,
   SKILL_EXPERIENCE_OPTIONS,
 } from "@/lib/jobConstants";
+import { SUPPORTED_CURRENCIES } from "@/lib/jobUtils";
 
 interface Props {
   formData: JobFormData;
@@ -320,7 +321,25 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
         <SectionHeading number={4} label="Compensation" optional />
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="req-salary">Monthly rate (PHP)</Label>
+            <Label htmlFor="req-currency">Currency</Label>
+            <Select
+              value={formData.currency || "PHP"}
+              onValueChange={(value) => updateField("currency", value)}
+            >
+              <SelectTrigger id="req-currency" className="mt-1.5">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="req-salary">Monthly rate</Label>
             <Input
               id="req-salary"
               className="mt-1.5"
@@ -328,7 +347,7 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
               onChange={(event) =>
                 updateField("salaryDisplay", event.target.value)
               }
-              placeholder="e.g. ₱45,000 – ₱60,000"
+              placeholder="e.g. 45,000 – 60,000"
             />
           </div>
           <div>
