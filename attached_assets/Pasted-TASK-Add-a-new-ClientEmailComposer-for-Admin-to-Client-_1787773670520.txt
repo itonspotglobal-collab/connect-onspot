@@ -1,0 +1,675 @@
+TASK: Add a new `ClientEmailComposer` for Admin-to-Client communication and integrate it into the existing Job Post Approval / Rejection workflow.
+
+This should reuse the proven Applicant email system.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing:
+
+`ApplicantEmailComposer`
+
+already successfully sends email using:
+
+`OnSpot Hire Talent <hiretalent@onspotglobal.com>`
+
+Do not create another Microsoft Graph integration.
+
+Do not change or break ApplicantEmailComposer.
+
+Reuse its proven sender, template, preview, history, and send infrastructure wherever safely possible.
+
+# CONFIRMED BEHAVIOR
+
+Manual Admin Applicant email currently works.
+
+The existing ApplicantEmailComposer supports:
+
+* From/sender selection
+* `hiretalent@onspotglobal.com`
+* Email templates
+* Subject
+* Rich HTML message
+* Preview
+* History
+* Send/Test Send
+* variable resolution
+
+Therefore:
+
+Do NOT spend this task rebuilding sender authentication.
+
+The missing functionality is Admin → Client email workflow integration.
+
+# GOAL
+
+Create:
+
+`client/src/components/ClientEmailComposer.tsx`
+
+This composer should be used when Admin performs important Client-facing actions such as:
+
+* Job Post Approved
+* Job Post Rejected
+
+and later be reusable for:
+
+* Client account/status updates
+* other Admin → Client notifications
+
+For this first implementation, focus on Job Approval and Job Rejection.
+
+# IMPORTANT ARCHITECTURAL RULE
+
+Do NOT clone all ApplicantEmailComposer code blindly.
+
+Audit which parts can be safely shared.
+
+Prefer one of:
+
+A. extract small reusable email composer primitives
+
+or
+
+B. create ClientEmailComposer using the same existing services/API patterns
+
+Choose the option with the smallest regression risk.
+
+Do not heavily refactor ApplicantEmailComposer just to achieve reuse.
+
+Existing applicant email behavior must remain unchanged.
+
+# CLIENT EMAIL RECIPIENT
+
+For job approval/rejection:
+
+Resolve recipient from:
+
+`jobs.client_id`
+→ `users.id`
+→ `users.email`
+
+This is the Client account owner email.
+
+Example:
+
+`val.legaspi09@gmail.com`
+
+Do not use:
+
+* Applicant email
+* Talent email
+* organization invite email
+* display name lookup
+* random client_profiles contact field
+
+unless existing job ownership semantics explicitly require a different source.
+
+Show the resolved recipient clearly in the composer.
+
+Example:
+
+Email Client — Val Client
+
+To:
+`val.legaspi09@gmail.com`
+
+# DEFAULT SENDER
+
+For Client-facing emails, default the sender to:
+
+`OnSpot Hire Talent <hiretalent@onspotglobal.com>`
+
+Unlike ApplicantEmailComposer, ClientEmailComposer does not need to default to Careers.
+
+If multiple sender choices remain available, default specifically to:
+
+`hiretalent@onspotglobal.com`
+
+for all Client hiring/job workflow emails.
+
+Do not remove existing sender choices from ApplicantEmailComposer.
+
+# CLIENT EMAIL COMPOSER UX
+
+Match ApplicantEmailComposer's existing UX closely.
+
+Header example:
+
+`Email Client — Val Client`
+
+Tabs:
+
+* Compose
+* Preview
+* History
+
+Compose fields:
+
+From
+Template
+Subject
+Message
+
+Footer:
+
+Preview
+Test send
+Send Email
+
+For workflow-driven approval/rejection, the send button may use more specific wording such as:
+
+`Approve & Send Email`
+
+or
+
+`Reject & Send Email`
+
+depending on how the parent flow is structured.
+
+# IMPORTANT — APPROVAL FLOW
+
+We want one more step when Admin approves a job.
+
+Current concept:
+
+Admin clicks Approve
+→ job becomes approved
+→ notification appears
+
+New desired flow:
+
+Admin clicks Approve
+→ ClientEmailComposer opens
+→ preloaded "Job Post Approved" email
+→ Admin can review/edit
+→ Admin confirms
+→ job approval is persisted
+→ existing in-app notification is created
+→ email is sent to Client
+
+But transactional safety is critical.
+
+Do NOT allow email delivery failure to undo a valid approval.
+
+Preferred sequence:
+
+1. Admin clicks Approve.
+2. Open ClientEmailComposer in approval mode.
+3. Admin reviews/edits email.
+4. Admin clicks:
+   `Approve & Send`
+5. Backend performs job approval transaction.
+6. Existing in-app notification is created.
+7. Email send is attempted.
+8. UI reports:
+
+   * approval successful
+   * email sent
+     OR
+   * approval successful, but email delivery failed
+
+Do not leave the job pending just because Graph failed.
+
+# CANCEL BEHAVIOR
+
+If Admin closes/cancels ClientEmailComposer BEFORE confirming:
+
+Do not approve/reject the job.
+
+Return to the existing job approval UI unchanged.
+
+This makes the email composer part of the confirmation step.
+
+# OPTIONAL SEND WITHOUT EMAIL
+
+Decide carefully based on product behavior.
+
+Recommended:
+
+Provide:
+
+`Approve without email`
+
+only as a secondary Admin option if necessary.
+
+But preferred normal workflow:
+
+`Approve & Send Email`
+
+Since Client communication is a requirement.
+
+If adding "without email" creates complexity, leave it out for V1.
+
+Do not auto-send until Admin confirms.
+
+# JOB APPROVED TEMPLATE
+
+Add/reuse a template:
+
+Name:
+
+`Job Post Approved`
+
+Category:
+
+`job_approved`
+
+Subject:
+
+`Your job post has been approved — {{job_title}}`
+
+Suggested body:
+
+Hi {{client_first_name}},
+
+Good news — your job posting for **{{job_title}}** has been approved.
+
+Your role is now available according to the current OnSpot publishing rules, and you can begin reviewing talent and applications.
+
+[View Job Posting]
+
+Warm regards,
+The OnSpot Hire Talent Team
+
+Do not hardcode the final HTML directly into ClientEmailComposer.
+
+Use the existing email template system.
+
+# JOB REJECTED TEMPLATE
+
+Add:
+
+`Job Post Rejected`
+
+Category:
+
+`job_rejected`
+
+Subject:
+
+`Update on your job post — {{job_title}}`
+
+Suggested body:
+
+Hi {{client_first_name}},
+
+We've reviewed your job posting for **{{job_title}}**, and it requires changes before it can be approved.
+
+Reason:
+
+{{rejection_reason}}
+
+Please review and update the job posting, then submit it again for approval.
+
+[Review Job Posting]
+
+Warm regards,
+The OnSpot Hire Talent Team
+
+Only show rejection_reason when one exists.
+
+# TEMPLATE SYSTEM
+
+Reuse:
+
+* existing Admin email template storage
+* existing variable resolver
+* existing branded layout
+* existing template preview
+* existing customized-template protection
+
+Do not make separate hardcoded Client templates outside the template system.
+
+New Client templates should appear in existing Admin Email Templates management if categories are dynamic.
+
+Do not overwrite customized Applicant templates.
+
+# CLIENT-SPECIFIC VARIABLES
+
+Add only necessary variables.
+
+Examples:
+
+* `client_first_name`
+* `client_last_name`
+* `client_name`
+* `client_email`
+* `company_name`
+* `job_title`
+* `job_id`
+* `job_status`
+* `approval_status`
+* `rejection_reason`
+* `portal_url`
+* `job_url`
+
+Do not reuse Applicant variables incorrectly.
+
+Example:
+
+Do NOT require:
+
+`{{applicant_first_name}}`
+
+for a Client email.
+
+# PREVIEW ENDPOINT
+
+ApplicantEmailComposer currently uses an application-specific preview route.
+
+Do not force Client emails through:
+
+`/api/admin/job-applications/:id/email/preview`
+
+Add/reuse an appropriate Client/job preview endpoint.
+
+Example:
+
+`POST /api/admin/jobs/:jobId/client-email/preview`
+
+It should:
+
+* require Admin auth
+* load job
+* resolve Client
+* resolve permitted template variables
+* render subject/body
+* return unresolved variables
+
+Do not mutate job state during preview.
+
+# SEND ENDPOINT
+
+Use a job/Client-specific Admin endpoint.
+
+Example:
+
+`POST /api/admin/jobs/:jobId/client-email/send`
+
+Payload concept:
+
+{
+"templateId": "...",
+"subject": "...",
+"bodyHtml": "...",
+"senderEmail": "[hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com)",
+"eventType": "job_approved"
+}
+
+Server must independently resolve recipient.
+
+Do NOT trust a frontend-provided arbitrary recipient email for normal approval flow.
+
+Frontend may display recipient, but backend should derive it from job ownership.
+
+# APPROVAL + SEND ENDPOINT
+
+To prevent race conditions, consider a focused endpoint such as:
+
+`POST /api/admin/jobs/:jobId/approve-with-email`
+
+It may accept:
+
+* subject
+* bodyHtml
+* templateId
+* senderEmail
+
+Then:
+
+1. validates Admin
+2. validates current job approval state
+3. approves job using existing approval logic
+4. creates existing notification
+5. attempts email
+6. returns both results
+
+Example response:
+
+{
+"approved": true,
+"email": {
+"status": "sent"
+}
+}
+
+or:
+
+{
+"approved": true,
+"email": {
+"status": "failed",
+"message": "..."
+}
+}
+
+Do not duplicate approval logic.
+
+Extract/reuse existing approval service/function if needed.
+
+Do NOT implement a second inconsistent status transition.
+
+# JOB REJECTION + SEND
+
+Use the same pattern.
+
+Admin chooses Reject
+→ existing rejection reason UI
+→ ClientEmailComposer opens with rejection template
+→ rejection reason already populated into template context
+→ Admin reviews
+→ `Reject & Send`
+
+Persist rejection regardless of email delivery result.
+
+# HISTORY
+
+ClientEmailComposer should have History like ApplicantEmailComposer.
+
+History should be scoped appropriately.
+
+For job-driven emails:
+
+show emails sent to the Client concerning that job.
+
+History row should include:
+
+* subject
+* recipient
+* sender
+* status
+* sent date
+* template
+* test/not test
+
+Do not mix Applicant email history into Client history unless the existing email history table is generic and can safely filter by related entity.
+
+# EMAIL DELIVERY AUDIT
+
+Reuse the existing email history/logging infrastructure if generic enough.
+
+If existing records are tied only to job applications, audit whether it can support:
+
+relatedType:
+`job`
+
+relatedId:
+jobId
+
+Prefer extending existing generic email history over creating another disconnected table.
+
+# TEST SEND
+
+Preserve Test Send functionality.
+
+For ClientEmailComposer:
+
+Admin may send a test copy using the existing test-email mechanism.
+
+Test Send must NOT approve/reject the job.
+
+Test Send is preview/testing only.
+
+# STATUS / NOTIFICATION NON-REGRESSION
+
+Existing in-app:
+
+`Job post approved`
+
+notification must continue appearing exactly as it does now.
+
+Do not replace it with email.
+
+Email is additional.
+
+Same for rejection.
+
+# VANESSA
+
+Do not add Vanessa AI to this first ClientEmailComposer bugfix unless it already integrates cleanly into ApplicantEmailComposer.
+
+First make deterministic Client email delivery work reliably.
+
+Vanessa can be added later for optional:
+
+* rewrite
+* polish
+* shorten
+* tone adjustment
+
+But must never alter the approval status or recipient.
+
+# UI PLACEMENT
+
+Integrate ClientEmailComposer into the existing Admin job approval surface.
+
+Do not redesign Admin Job list/profile.
+
+Keep existing:
+
+Approve
+Reject
+View
+Edit
+other job actions
+
+Only insert the email confirmation step after Admin initiates approve/reject.
+
+# EXISTING APPLICANT EMAIL COMPOSER
+
+STRICTLY PRESERVE:
+
+* ApplicantEmailComposer UI
+* sender selector
+* applicant templates
+* preview
+* history
+* status workflows
+* pendingStatus behavior
+* confirmation dialogs
+* send email behavior
+
+Do not rename its APIs as part of this task unless unavoidable.
+
+# ACCESSIBILITY
+
+The screenshot shows current Dialog accessibility warnings related to missing Description/aria-describedby.
+
+When creating ClientEmailComposer:
+
+include proper:
+
+DialogTitle
+DialogDescription
+
+Do not copy the current accessibility warning into the new component.
+
+Do not broaden this task into refactoring all ApplicantEmailComposer accessibility unless trivial and isolated.
+
+# TESTS
+
+Add tests for:
+
+1. Admin opens Approve.
+2. ClientEmailComposer appears.
+3. Correct Client recipient is shown.
+4. Recipient derives from jobs.client_id → users.email.
+5. Default sender is [hiretalent@onspotglobal.com](mailto:hiretalent@onspotglobal.com).
+6. Job Approved template preloads.
+7. Preview resolves Client/job variables.
+8. Cancel composer leaves job pending.
+9. Approve & Send approves job.
+10. Existing in-app approval notification appears.
+11. Email sends successfully.
+12. Email failure does not undo approval.
+13. Duplicate approval cannot duplicate state/email.
+14. Job Rejected template preloads.
+15. Rejection reason resolves.
+16. Cancel rejection composer leaves state unchanged.
+17. Reject & Send rejects job.
+18. Existing rejection notification still works.
+19. Test Send does not change job status.
+20. Email history records Client email.
+21. ApplicantEmailComposer still works.
+22. Existing application email tests remain passing.
+23. Existing job approval tests remain passing.
+24. `npx tsc --noEmit` passes.
+25. `git diff --check` passes.
+
+# MANUAL TEST
+
+Use:
+
+Client:
+`val.legaspi09@gmail.com`
+
+Admin:
+
+1. Create/submit Client job.
+2. Open Admin approval.
+3. Click Approve.
+4. Confirm ClientEmailComposer opens.
+5. Verify:
+
+From:
+`OnSpot Hire Talent <hiretalent@onspotglobal.com>`
+
+To:
+`val.legaspi09@gmail.com`
+
+Template:
+`Job Post Approved`
+
+6. Preview.
+7. Click Approve & Send.
+8. Verify job becomes Approved.
+9. Verify in-app Client notification appears.
+10. Verify Gmail receives the email.
+11. Verify ClientEmailComposer History shows Sent.
+
+Repeat with rejection.
+
+# COMPLETION REPORT
+
+Report:
+
+1. ClientEmailComposer file added.
+2. Components/helpers reused from ApplicantEmailComposer.
+3. ApplicantEmailComposer changes, if any.
+4. Approval workflow before/after.
+5. Rejection workflow before/after.
+6. New templates.
+7. New variables.
+8. Preview endpoint.
+9. Send endpoint.
+10. Approval/rejection endpoint integration.
+11. Email history integration.
+12. Client recipient resolution.
+13. Default sender.
+14. Tests/results.
+15. Manual delivery result.
+16. Confirmation ApplicantEmailComposer was not broken.
+17. Confirmation existing in-app notifications were not changed.
+18. Confirmation job approval/rejection remains persisted if email fails.
+
+Keep the implementation narrowly scoped to adding the Client email confirmation/composer step around Admin Job Approval and Rejection.
