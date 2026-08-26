@@ -96,11 +96,21 @@ import {
   sendInterviewCancelledEmail,
 } from "./services/interviewEmailService.js";
 import {
+  claimEmailDelivery,
+  markEmailDeliveryResult,
   sendJobApprovalCompanionEmail,
   sendClientNewApplicationEmail,
   sendUnreadMessageEmail,
   resetMessageEmailCooldown,
 } from "./services/emailCompanionService.js";
+import {
+  ALLOWED_SENDERS,
+  sendApplicantEmail,
+} from "./services/microsoftGraphEmailService.js";
+import {
+  buildClientEmailContext,
+  renderClientEmail,
+} from "./services/emailVariableResolver.js";
 import {
   insertUserSchema,
   insertProfileSchema,
@@ -2689,6 +2699,14 @@ export async function registerRoutes(
         recipient_user_id text,
         sender_email    text,
         template_category text,
+        related_type    text,
+        related_id      text,
+        template_id     uuid,
+        subject         text,
+        body_html       text,
+        sent_by         text,
+        sender_name     text,
+        is_test         boolean     NOT NULL DEFAULT false,
         status          text        NOT NULL DEFAULT 'pending',
         error           text,
         attempted_at    timestamptz DEFAULT NOW(),
@@ -2696,8 +2714,17 @@ export async function registerRoutes(
         created_at      timestamptz DEFAULT NOW()
       )
     `);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS related_type text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS related_id text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS template_id uuid`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS subject text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS body_html text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS sent_by text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS sender_name text`);
+    await query(`ALTER TABLE email_notification_deliveries ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false`);
     await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_event_key  ON email_notification_deliveries(event_key)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_created_at ON email_notification_deliveries(created_at)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_related ON email_notification_deliveries(related_type, related_id, created_at DESC)`);
     await query(`
       CREATE TABLE IF NOT EXISTS message_email_cooldowns (
         id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -21446,12 +21473,22 @@ export async function registerRoutes(
     try {
       const isClient = req.user?.role === "client";
       const includeArchived = !isClient && req.query.archived === "true";
+      const scope = String(req.query.scope ?? "applicant");
+      const scopeSql = scope === "all"
+        ? ""
+        : scope === "client_job"
+          ? "AND category IN ('job_approved', 'job_rejected')"
+          : "AND category NOT IN ('job_approved', 'job_rejected')";
       const result = await query(
         `SELECT id, name, subject, category, stage, is_published AS "isPublished",
                 is_default AS "isDefault", is_archived AS "isArchived",
                 variables, created_at AS "createdAt", updated_at AS "updatedAt"
          FROM applicant_email_templates
-         ${isClient ? "WHERE is_archived = false AND is_published = true" : includeArchived ? "" : "WHERE is_archived = false"}
+         ${isClient
+           ? `WHERE is_archived = false AND is_published = true ${scopeSql}`
+           : includeArchived
+             ? `WHERE true ${scopeSql}`
+             : `WHERE is_archived = false ${scopeSql}`}
          ORDER BY is_default DESC, category, name`,
         [],
       );
@@ -21647,6 +21684,203 @@ export async function registerRoutes(
       return res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  const loadClientJobEmailContext = async (jobId: string) => {
+    const result = await query(
+      `SELECT j.id, j.title, j.status, j.approval_status, j.rejection_reason,
+              j.client_id, u.email, u.first_name, u.last_name, u.company
+         FROM jobs j
+         LEFT JOIN users u ON u.id = j.client_id
+        WHERE j.id = $1
+        LIMIT 1`,
+      [jobId],
+    );
+    return result.rows[0] ?? null;
+  };
+
+  const renderClientJobEmail = async (job: any, input: any, decision: "approved" | "rejected") => {
+    if (!job.client_id || !job.email) {
+      throw Object.assign(new Error("This job does not have a Client account owner with an email address."), { status: 422 });
+    }
+    const templateId = String(input.templateId ?? "");
+    let subject = String(input.subject ?? "").trim();
+    let bodyHtml = String(input.bodyHtml ?? "").trim();
+    if ((!subject || !bodyHtml) && templateId) {
+      const templateResult = await query(
+        `SELECT subject, body_html AS "bodyHtml"
+           FROM applicant_email_templates
+          WHERE id = $1 AND is_archived = false
+          LIMIT 1`,
+        [templateId],
+      );
+      if (!templateResult.rows[0]) {
+        throw Object.assign(new Error("Email template not found."), { status: 404 });
+      }
+      subject ||= templateResult.rows[0].subject;
+      bodyHtml ||= templateResult.rows[0].bodyHtml;
+    }
+    if (!subject || !bodyHtml) {
+      throw Object.assign(new Error("Subject and message are required."), { status: 400 });
+    }
+    const context = buildClientEmailContext({
+      clientFirstName: job.first_name,
+      clientLastName: job.last_name,
+      clientEmail: job.email,
+      companyName: job.company,
+      jobId: job.id,
+      jobTitle: job.title,
+      jobStatus: decision === "approved" ? "open" : job.status,
+      approvalStatus: decision,
+      rejectionReason: input.rejectionReason ?? job.rejection_reason,
+    });
+    const rendered = renderClientEmail({ subject, bodyHtml }, context);
+    if (rendered.unresolvedKeys.length > 0) {
+      throw Object.assign(
+        new Error(`Unresolved template variables: ${rendered.unresolvedKeys.join(", ")}`),
+        { status: 422, unresolvedKeys: rendered.unresolvedKeys },
+      );
+    }
+    return { ...rendered, templateId: templateId || null, context };
+  };
+
+  app.get("/api/admin/jobs/:id/client-email/context", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    const job = await loadClientJobEmailContext(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    return res.json({
+      jobId: job.id,
+      jobTitle: job.title,
+      approvalStatus: job.approval_status,
+      recipient: {
+        name: [job.first_name, job.last_name].filter(Boolean).join(" ") || job.company || job.email || "Client",
+        email: job.email ?? null,
+      },
+      sender: { name: "OnSpot Hire Talent", email: "hiretalent@onspotglobal.com" },
+    });
+  });
+
+  app.post("/api/admin/jobs/:id/client-email/preview", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    try {
+      const job = await loadClientJobEmailContext(req.params.id);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      const decision = req.body?.decision === "rejected" ? "rejected" : "approved";
+      const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
+      return res.json({ subject: rendered.subject, bodyHtml: rendered.bodyHtml });
+    } catch (err: any) {
+      return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to preview email", unresolvedKeys: err?.unresolvedKeys });
+    }
+  });
+
+  app.post("/api/admin/jobs/:id/client-email/test", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    const job = await loadClientJobEmailContext(req.params.id);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    const testRecipient = String(req.body?.testRecipient ?? "").trim();
+    if (!validateEmail(testRecipient)) return res.status(400).json({ error: "Enter a valid test recipient email." });
+    try {
+      const decision = req.body?.decision === "rejected" ? "rejected" : "approved";
+      const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
+      const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
+      const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
+      const eventKey = `job-client-email-test:${job.id}:${randomUUID()}`;
+      await claimEmailDelivery({
+        eventKey,
+        eventType: `job_${decision}_test`,
+        recipientEmail: testRecipient,
+        recipientUserId: null,
+        senderEmail,
+        templateCategory: `job_${decision}`,
+        relatedType: "job",
+        relatedId: job.id,
+        templateId: rendered.templateId,
+        subject: rendered.subject,
+        bodyHtml: rendered.bodyHtml,
+        sentBy: req.user?.id ?? null,
+        senderName: ALLOWED_SENDERS[senderEmail],
+        isTest: true,
+      });
+      const delivery = await sendApplicantEmail({
+        to: testRecipient,
+        subject: `[TEST] ${rendered.subject}`,
+        bodyHtml: rendered.bodyHtml,
+        senderEmail,
+      });
+      await markEmailDeliveryResult({
+        eventKey,
+        status: delivery.success ? "sent" : "failed",
+        error: delivery.error,
+      });
+      if (!delivery.success) return res.status(502).json({ error: delivery.error ?? "Test email could not be sent." });
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to send test email", unresolvedKeys: err?.unresolvedKeys });
+    }
+  });
+
+  app.get("/api/admin/jobs/:id/client-email/history", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    const result = await query(
+      `SELECT d.id, d.event_type AS "eventType", d.recipient_email AS "recipientEmail",
+              d.sender_email AS "senderEmail", d.sender_name AS "senderName",
+              d.subject, d.body_html AS "bodyHtml", d.status, d.error,
+              d.is_test AS "isTest", d.attempted_at AS "attemptedAt",
+              d.sent_at AS "sentAt", d.created_at AS "createdAt",
+              t.name AS "templateName"
+         FROM email_notification_deliveries d
+         LEFT JOIN applicant_email_templates t ON t.id = d.template_id
+        WHERE d.related_type = 'job' AND d.related_id = $1
+        ORDER BY d.created_at DESC
+        LIMIT 100`,
+      [req.params.id],
+    );
+    return res.json(result.rows);
+  });
+
+  const confirmClientJobDecision = async (req: any, res: Response, decision: "approved" | "rejected") => {
+    try {
+      const job = await loadClientJobEmailContext(req.params.id);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
+      const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
+      const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
+      const transition = await transitionJobApprovalStatus({
+        jobId: req.params.id,
+        newStatus: decision,
+        adminId: req.user?.id ?? null,
+        rejectionReason: decision === "rejected" ? req.body?.rejectionReason ?? null : null,
+      });
+      if (!transition) return res.status(404).json({ error: "Job not found" });
+      if (!transition.transitioned || !transition.eventKey) {
+        return res.json({
+          success: true,
+          transitioned: false,
+          job: transition.job,
+          email: { status: "skipped", reason: "already_decided" },
+        });
+      }
+      const email = await sendJobApprovalCompanionEmail({
+        jobId: transition.job.id,
+        jobTitle: transition.job.title,
+        clientUserId: transition.job.client_id,
+        newStatus: decision,
+        rejectionReason: decision === "rejected" ? req.body?.rejectionReason ?? null : null,
+        transitionEventKey: transition.eventKey,
+        reviewedContent: {
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+          templateId: rendered.templateId,
+          senderEmail,
+          sentBy: req.user?.id ?? null,
+        },
+      });
+      return res.json({ success: true, transitioned: true, job: transition.job, email });
+    } catch (err: any) {
+      console.error(`POST composer ${decision} job error:`, err);
+      return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to update job", unresolvedKeys: err?.unresolvedKeys });
+    }
+  };
+
+  app.post("/api/admin/jobs/:id/approve-with-email", maybeAuthenticateAdmin, maybeRequireTalentSubRole, (req: any, res: Response) =>
+    confirmClientJobDecision(req, res, "approved"));
+  app.post("/api/admin/jobs/:id/reject-with-email", maybeAuthenticateAdmin, maybeRequireTalentSubRole, (req: any, res: Response) =>
+    confirmClientJobDecision(req, res, "rejected"));
 
   // ── Client status-change approval requests ─────────────────────────────────────
   // These routes never mutate job_submissions.status. The actual transition is

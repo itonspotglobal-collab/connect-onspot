@@ -228,6 +228,72 @@ describe("isEventAlreadyDelivered", () => {
 // ── sendJobApprovalCompanionEmail ─────────────────────────────────────────────
 
 describe("sendJobApprovalCompanionEmail", () => {
+  it("uses reviewed composer content and the canonical transition event key exactly once", async () => {
+    resetMocks();
+    queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] });
+    queryResponses.push({ rows: [{ id: "composer-claim" }] });
+    queryResponses.push({ rows: [] });
+
+    const first = await sendJobApprovalCompanionEmail({
+      jobId: "composer-job",
+      jobTitle: "Designer",
+      clientUserId: "client-1",
+      newStatus: "approved",
+      transitionEventKey: "job-approval-transition:composer-job:one",
+      reviewedContent: {
+        subject: "Reviewed approval subject",
+        bodyHtml: "<p>Reviewed approval body</p>",
+        templateId: "template-1",
+        senderEmail: "hiretalent@onspotglobal.com",
+        sentBy: "admin-1",
+      },
+    });
+
+    assert.equal(first.status, "sent");
+    assert.equal(first.eventKey, "job-approval-email:job-approval-transition:composer-job:one");
+    assert.equal(capturedSends.length, 1);
+    assert.equal(capturedSends[0].subject, "Reviewed approval subject");
+    assert.equal(capturedSends[0].bodyHtml, "<p>Reviewed approval body</p>");
+
+    queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] });
+    queryResponses.push({ rows: [] });
+    const retry = await sendJobApprovalCompanionEmail({
+      jobId: "composer-job",
+      jobTitle: "Designer",
+      clientUserId: "client-1",
+      newStatus: "approved",
+      transitionEventKey: "job-approval-transition:composer-job:one",
+      reviewedContent: {
+        subject: "Reviewed approval subject",
+        bodyHtml: "<p>Reviewed approval body</p>",
+      },
+    });
+    assert.equal(retry.status, "skipped");
+    assert.equal(capturedSends.length, 1, "retry must not create a second Graph send");
+  });
+
+  it("sends reviewed rejection content once without using the automatic body", async () => {
+    resetMocks();
+    queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] });
+    queryResponses.push({ rows: [{ id: "reject-composer-claim" }] });
+    queryResponses.push({ rows: [] });
+    await sendJobApprovalCompanionEmail({
+      jobId: "reject-job",
+      jobTitle: "Analyst",
+      clientUserId: "client-2",
+      newStatus: "rejected",
+      rejectionReason: "Please add a budget.",
+      transitionEventKey: "job-approval-transition:reject-job:one",
+      reviewedContent: {
+        subject: "Reviewed rejection subject",
+        bodyHtml: "<p>Reviewed rejection body</p>",
+      },
+    });
+    assert.equal(capturedSends.length, 1);
+    assert.equal(capturedSends[0].subject, "Reviewed rejection subject");
+    assert.equal(capturedSends[0].bodyHtml, "<p>Reviewed rejection body</p>");
+  });
+
   it("resolves recipient first, then claims slot, then sends approved email", async () => {
     resetMocks();
     queryResponses.push({ rows: [{ email: "client@acme.com", first_name: "Alice" }] }); // recipient lookup

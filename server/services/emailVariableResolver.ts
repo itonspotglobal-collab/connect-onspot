@@ -23,6 +23,15 @@ export interface EmailVariableContext {
   portalUrl?: string;
   companyName?: string;
   logoUrl?: string;
+  clientFirstName?: string;
+  clientLastName?: string;
+  clientName?: string;
+  clientEmail?: string;
+  jobId?: string;
+  jobStatus?: string;
+  approvalStatus?: string;
+  rejectionReason?: string;
+  jobUrl?: string;
 }
 
 const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
@@ -42,6 +51,15 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   portal_url: "portalUrl",
   company_name: "companyName",
   logo_url: "logoUrl",
+  client_first_name: "clientFirstName",
+  client_last_name: "clientLastName",
+  client_name: "clientName",
+  client_email: "clientEmail",
+  job_id: "jobId",
+  job_status: "jobStatus",
+  approval_status: "approvalStatus",
+  rejection_reason: "rejectionReason",
+  job_url: "jobUrl",
 
   // Legacy aliases are supported for existing custom templates. New default
   // templates and the editor expose only the canonical names above.
@@ -54,7 +72,8 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
 
 const TOKEN_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 const UNRESOLVED_TOKEN_PATTERN = /\{\{\s*[^}]+\s*\}\}/g;
-const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl"]);
+const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl"]);
+const OPTIONAL_BLOCK_PATTERN = /\{\{#\s*([a-z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/gi;
 
 function escapeHtml(value: string): string {
   return value
@@ -162,6 +181,28 @@ export function renderApplicantEmail(
   };
 }
 
+/**
+ * Client job emails support a small optional-block syntax so rejection-only
+ * copy disappears cleanly when no reason was supplied:
+ * {{#rejection_reason}}...{{rejection_reason}}...{{/rejection_reason}}
+ */
+export function renderClientEmail(
+  template: { subject: string; bodyHtml: string },
+  context: EmailVariableContext,
+): RenderedApplicantEmail {
+  const bodyWithConditionals = template.bodyHtml.replace(
+    OPTIONAL_BLOCK_PATTERN,
+    (_match, rawKey: string, content: string) => {
+      const contextKey = VARIABLE_MAP[String(rawKey).toLowerCase()];
+      return contextKey && context[contextKey]?.trim() ? content : "";
+    },
+  );
+  return renderApplicantEmail(
+    { subject: template.subject, bodyHtml: bodyWithConditionals },
+    context,
+  );
+}
+
 export function findUnresolvedTemplateVariables(value: string): string[] {
   return unique(
     Array.from(value.matchAll(UNRESOLVED_TOKEN_PATTERN), (match) =>
@@ -180,6 +221,13 @@ export function extractTemplateVariables(value: string): string[] {
         : key;
     }),
   );
+}
+
+export function extractClientTemplateVariables(value: string): string[] {
+  const withoutBlockMarkers = value
+    .replace(/\{\{#\s*[a-z0-9_]+\s*\}\}/gi, "")
+    .replace(/\{\{\/\s*[a-z0-9_]+\s*\}\}/gi, "");
+  return extractTemplateVariables(withoutBlockMarkers);
 }
 
 /**
@@ -243,6 +291,45 @@ export function buildEmailContext(opts: {
   };
 }
 
+export function buildClientEmailContext(opts: {
+  clientFirstName?: string | null;
+  clientLastName?: string | null;
+  clientEmail: string;
+  companyName?: string | null;
+  jobId: string;
+  jobTitle?: string | null;
+  jobStatus?: string | null;
+  approvalStatus: string;
+  rejectionReason?: string | null;
+}): EmailVariableContext {
+  const firstName = opts.clientFirstName?.trim() || "";
+  const lastName = opts.clientLastName?.trim() || "";
+  const clientName = [firstName, lastName].filter(Boolean).join(" ") || opts.clientEmail;
+  const baseUrl = resolvePublicBaseUrl();
+  const portalUrl = baseUrl ? `${baseUrl}/client-profile` : undefined;
+  const jobUrl = baseUrl ? `${baseUrl}/client/jobs/${encodeURIComponent(opts.jobId)}/edit` : undefined;
+  const logoUrl = toSafeHttpsUrl(process.env.ONSPOT_EMAIL_LOGO_URL) ?? (
+    baseUrl ? `${baseUrl}/new-onspot.png` : undefined
+  );
+
+  return {
+    clientFirstName: firstName || undefined,
+    clientLastName: lastName || undefined,
+    clientName,
+    clientEmail: opts.clientEmail,
+    companyName: opts.companyName?.trim() || "OnSpot",
+    jobId: opts.jobId,
+    jobPostingId: opts.jobId,
+    jobTitle: opts.jobTitle?.trim() || undefined,
+    jobStatus: opts.jobStatus?.trim() || undefined,
+    approvalStatus: opts.approvalStatus,
+    rejectionReason: opts.rejectionReason?.trim() || undefined,
+    portalUrl,
+    jobUrl,
+    logoUrl,
+  };
+}
+
 /**
  * Email-client-safe shell used by built-in templates and system-generated
  * applicant emails. Content is intentionally stored as complete HTML so admins
@@ -297,4 +384,13 @@ export const SUPPORTED_VARIABLES: { key: string; label: string; description: str
   { key: "logo_url", label: "OnSpot Logo URL", description: "Absolute HTTPS URL for the OnSpot logo" },
   { key: "application_id", label: "Application ID", description: "Canonical application ID" },
   { key: "job_posting_id", label: "Job Posting ID", description: "Job posting ID" },
+  { key: "client_first_name", label: "Client First Name", description: "Client account owner's first name" },
+  { key: "client_last_name", label: "Client Last Name", description: "Client account owner's last name" },
+  { key: "client_name", label: "Client Name", description: "Client account owner's full name" },
+  { key: "client_email", label: "Client Email", description: "Client account owner's email" },
+  { key: "job_id", label: "Job ID", description: "Canonical job ID" },
+  { key: "job_status", label: "Job Status", description: "Current job publishing status" },
+  { key: "approval_status", label: "Approval Status", description: "Job approval decision" },
+  { key: "rejection_reason", label: "Rejection Reason", description: "Admin feedback when a job is rejected" },
+  { key: "job_url", label: "Client Job URL", description: "Secure Client link to review the job" },
 ];

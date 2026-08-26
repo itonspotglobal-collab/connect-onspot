@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  renderClientEmail,
   renderApplicantEmail,
   resolveVariables,
   type EmailVariableContext,
@@ -28,9 +29,12 @@ const representativeContext: EmailVariableContext = {
 
 describe("default applicant email templates", () => {
   it("renders all 14 templates with resolved subjects, branded HTML, and accurate metadata", () => {
-    assert.equal(DEFAULT_TEMPLATES.length, 14);
+    const templates = DEFAULT_TEMPLATES.filter(
+      (template) => !["job_approved", "job_rejected"].includes(template.category),
+    );
+    assert.equal(templates.length, 14);
 
-    for (const template of DEFAULT_TEMPLATES) {
+    for (const template of templates) {
       const rendered = renderApplicantEmail(template, representativeContext);
       assert.deepEqual(
         rendered.unresolvedKeys,
@@ -44,6 +48,37 @@ describe("default applicant email templates", () => {
       assert.ok(template.variables.length > 0, `${template.name} should persist variable metadata`);
       assert.ok(template.variables.includes("logo_url"), `${template.name} should declare the logo variable`);
     }
+  });
+
+  it("renders both Client decision templates and hides an absent rejection reason", () => {
+    const templates = DEFAULT_TEMPLATES.filter(
+      (template) => ["job_approved", "job_rejected"].includes(template.category),
+    );
+    assert.equal(templates.length, 2);
+    const context: EmailVariableContext = {
+      clientFirstName: "Morgan",
+      clientLastName: "Lee",
+      clientName: "Morgan Lee",
+      clientEmail: "morgan@example.com",
+      companyName: "Acme",
+      jobId: "job-123",
+      jobPostingId: "job-123",
+      jobTitle: "Product Designer",
+      jobStatus: "open",
+      approvalStatus: "approved",
+      jobUrl: "https://talent.onspotglobal.com/client/jobs/job-123/edit",
+      logoUrl: "https://talent.onspotglobal.com/new-onspot.png",
+    };
+    for (const template of templates) {
+      const rendered = renderClientEmail(template, context);
+      assert.deepEqual(rendered.unresolvedKeys, []);
+      assert.doesNotMatch(rendered.bodyHtml, /\{\{[#/]/);
+    }
+    const rejected = renderClientEmail(
+      templates.find((template) => template.category === "job_rejected")!,
+      context,
+    );
+    assert.doesNotMatch(rejected.bodyHtml, /<strong>Reason:/);
   });
 
   it("supports whitespace and the legacy job_company alias without exposing it in defaults", () => {

@@ -1,0 +1,68 @@
+One important requirement before implementation:
+
+There must be only one Client approval/rejection email per actual job decision.
+
+The audit found that approval/rejection already trigger a companion email automatically.
+
+The new ClientEmailComposer must coordinate with that existing path so we do NOT get:
+
+Admin clicks Approve
+→ ClientEmailComposer sends email
+→ existing automatic companion email also sends
+→ Client receives duplicate emails
+
+Please identify the current automatic approval/rejection email trigger and make the workflow use one canonical send path.
+
+Preferred behavior:
+
+Admin clicks Approve
+→ ClientEmailComposer opens
+→ Admin reviews/edits
+→ Admin clicks Approve & Send
+→ approval transition persists
+→ existing in-app notification persists
+→ exactly one Client email is sent using the reviewed composer content
+
+Same for rejection.
+
+Do not simply disable all existing companion email behavior globally if another flow depends on it.
+
+Scope the suppression/coordination specifically to the composer-confirmed workflow.
+
+Use an explicit workflow/event flag or canonical service path rather than fragile UI-only suppression.
+
+Also preserve:
+
+ApplicantEmailComposer
+existing application email behavior
+existing in-app notification behavior
+existing job approval/rejection state transitions
+existing customized templates
+existing Graph sender integration
+current job authorization
+
+For client recipient resolution, continue to use the actual job owner:
+
+jobs.client_id → users.id → users.email
+
+For Client job workflow email, default sender must be:
+
+OnSpot Hire Talent <hiretalent@onspotglobal.com>
+
+Please include a focused regression test proving:
+
+Approve & Send results in exactly one email.
+Reject & Send results in exactly one email.
+Repeated click/retry does not send another email.
+Existing automatic companion email path still works where it is still intentionally used outside the new composer workflow.
+Existing ApplicantEmailComposer remains unchanged.
+
+The final report should explicitly include:
+
+Duplicate Email Verification
+existing automatic approval email trigger identified
+how the new composer coordinates with it
+exact event/idempotency key used
+proof only one delivery record/email exists per approval/rejection event
+
+Otherwise, the implementation plan for #443 is approved.

@@ -7,7 +7,11 @@
  */
 import { createHash } from "node:crypto";
 import { query } from "../db.ts";
-import { extractTemplateVariables, renderBrandedEmailLayout } from "../services/emailVariableResolver.ts";
+import {
+  extractClientTemplateVariables,
+  extractTemplateVariables,
+  renderBrandedEmailLayout,
+} from "../services/emailVariableResolver.ts";
 
 export interface TemplateRow {
   name: string;
@@ -39,7 +43,41 @@ const button = (href: string, label: string) => `
     </td></tr>
   </table>`;
 
+function brandedClientTemplate(
+  config: Omit<TemplateRow, "bodyHtml" | "variables"> & { content: string },
+): TemplateRow {
+  const bodyHtml = renderBrandedEmailLayout(config.content);
+  return {
+    name: config.name,
+    subject: config.subject,
+    bodyHtml,
+    category: config.category,
+    stage: config.stage,
+    isDefault: config.isDefault,
+    variables: extractClientTemplateVariables(`${config.subject}\n${bodyHtml}`),
+  };
+}
+
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
+  brandedClientTemplate({
+    name: "Job Post Approved", category: "job_approved", stage: null, isDefault: true,
+    subject: "Your job post has been approved — {{job_title}}",
+    content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>
+<p style="margin:0 0 16px;">Good news — your job posting for <strong>{{job_title}}</strong> has been approved.</p>
+<p style="margin:0 0 16px;">Your role is now available according to the current OnSpot publishing rules, and you can begin reviewing talent and applications.</p>
+${button("{{job_url}}", "View Job Posting")}
+<p style="margin:0;">Warm regards,<br />The OnSpot Hire Talent Team</p>`,
+  }),
+  brandedClientTemplate({
+    name: "Job Post Rejected", category: "job_rejected", stage: null, isDefault: true,
+    subject: "Update on your job post — {{job_title}}",
+    content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>
+<p style="margin:0 0 16px;">We've reviewed your job posting for <strong>{{job_title}}</strong>, and it requires changes before it can be approved.</p>
+{{#rejection_reason}}<p style="margin:0 0 16px;"><strong>Reason:</strong><br />{{rejection_reason}}</p>{{/rejection_reason}}
+<p style="margin:0 0 16px;">Please review and update the job posting, then submit it again for approval.</p>
+${button("{{job_url}}", "Review Job Posting")}
+<p style="margin:0;">Warm regards,<br />The OnSpot Hire Talent Team</p>`,
+  }),
   brandedTemplate({
     name: "Application Received", category: "application_received", stage: "submitted", isDefault: true,
     subject: "We received your application — {{job_title}}",

@@ -98,20 +98,43 @@ export async function claimEmailDelivery(opts: {
   recipientEmail: string | null;
   recipientUserId: string | null;
   senderEmail: string;
+  templateCategory?: string | null;
+  relatedType?: string | null;
+  relatedId?: string | null;
+  templateId?: string | null;
+  subject?: string | null;
+  bodyHtml?: string | null;
+  sentBy?: string | null;
+  senderName?: string | null;
+  isTest?: boolean;
 }): Promise<boolean> {
   try {
     const result = await query(
       `INSERT INTO email_notification_deliveries
-         (event_key, event_type, recipient_email, recipient_user_id, sender_email, status, attempted_at)
-       VALUES ($1, $2, $3, $4, $5, 'processing', NOW())
+         (event_key, event_type, recipient_email, recipient_user_id, sender_email,
+          template_category, related_type, related_id, template_id, subject,
+          body_html, sent_by, sender_name, is_test, status, attempted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'processing', NOW())
        ON CONFLICT (event_key) DO UPDATE
          SET status       = 'processing',
-             attempted_at = NOW()
+             attempted_at = NOW(),
+             recipient_email = EXCLUDED.recipient_email,
+             recipient_user_id = EXCLUDED.recipient_user_id,
+             sender_email = EXCLUDED.sender_email,
+             template_category = EXCLUDED.template_category,
+             related_type = EXCLUDED.related_type,
+             related_id = EXCLUDED.related_id,
+             template_id = EXCLUDED.template_id,
+             subject = EXCLUDED.subject,
+             body_html = EXCLUDED.body_html,
+             sent_by = EXCLUDED.sent_by,
+             sender_name = EXCLUDED.sender_name,
+             is_test = EXCLUDED.is_test
          WHERE email_notification_deliveries.status = 'failed'
             OR (
                  email_notification_deliveries.status = 'processing'
                  AND email_notification_deliveries.attempted_at
-                       < NOW() - ($6 || ' minutes')::interval
+                       < NOW() - ($15 || ' minutes')::interval
                )
        RETURNING id`,
       [
@@ -120,6 +143,15 @@ export async function claimEmailDelivery(opts: {
         opts.recipientEmail,
         opts.recipientUserId,
         opts.senderEmail,
+        opts.templateCategory ?? null,
+        opts.relatedType ?? null,
+        opts.relatedId ?? null,
+        opts.templateId ?? null,
+        opts.subject ?? null,
+        opts.bodyHtml ?? null,
+        opts.sentBy ?? null,
+        opts.senderName ?? null,
+        opts.isTest ?? false,
         String(CLAIM_EXPIRY_MINUTES),
       ],
     );
@@ -184,6 +216,19 @@ export interface JobApprovalCompanionEmailOptions {
   rejectionReason?: string | null;
   /** Deterministic event key from the approval transition (one UUID per real transition). */
   transitionEventKey: string;
+  reviewedContent?: {
+    subject: string;
+    bodyHtml: string;
+    templateId?: string | null;
+    senderEmail?: string | null;
+    sentBy?: string | null;
+  };
+}
+
+export interface CompanionEmailDeliveryResult {
+  status: "sent" | "failed" | "skipped";
+  eventKey: string;
+  error?: string | null;
 }
 
 /**
@@ -193,16 +238,32 @@ export interface JobApprovalCompanionEmailOptions {
  */
 export async function sendJobApprovalCompanionEmail(
   opts: JobApprovalCompanionEmailOptions,
-): Promise<void> {
-  const { jobTitle, clientUserId, newStatus, rejectionReason, transitionEventKey } = opts;
-  if (newStatus === "pending") return; // No email for admin-moving-back-to-review
-
+): Promise<CompanionEmailDeliveryResult> {
+  const {
+    jobId,
+    jobTitle,
+    clientUserId,
+    newStatus,
+    rejectionReason,
+    transitionEventKey,
+    reviewedContent,
+  } = opts;
   const emailEventKey = `job-approval-email:${transitionEventKey}`;
-  const senderEmail = CLIENT_SENDER;
+  if (newStatus === "pending") {
+    return { status: "skipped", eventKey: emailEventKey };
+  }
+
+  const requestedSender = reviewedContent?.senderEmail ?? CLIENT_SENDER;
+  const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : CLIENT_SENDER;
+  const senderName = ALLOWED_SENDERS[senderEmail] ?? "OnSpot Hire Talent";
 
   if (!isEmailServiceConfigured()) {
     console.warn("[emailCompanionService] sendJobApprovalCompanionEmail: email not configured — skipping");
-    return;
+    return {
+      status: "failed",
+      eventKey: emailEventKey,
+      error: "Microsoft Graph email is not configured.",
+    };
   }
 
   try {
@@ -213,34 +274,30 @@ export async function sendJobApprovalCompanionEmail(
     );
     if (!recipientResult.rows.length) {
       console.warn(`[emailCompanionService] sendJobApprovalCompanionEmail: no user row for client ${clientUserId} — skipping`);
-      return;
+      return {
+        status: "failed",
+        eventKey: emailEventKey,
+        error: "Client account owner could not be resolved.",
+      };
     }
     const clientRow = recipientResult.rows[0];
     const recipientEmail: string = clientRow.email;
     const firstName: string = clientRow.first_name ?? "there";
 
-    // Atomically claim the delivery slot — prevents duplicate sends on retries
-    const claimed = await claimEmailDelivery({
-      eventKey: emailEventKey,
-      eventType: `job_${newStatus}`,
-      recipientEmail,
-      recipientUserId: clientUserId,
-      senderEmail,
-    });
-    if (!claimed) {
-      console.log(`[emailCompanionService] sendJobApprovalCompanionEmail: delivery slot already claimed for ${emailEventKey} — skipping`);
-      return;
-    }
-
-    const safeTitle = escHtml(jobTitle);
-    const portalUrl = resolveClientPortalUrl();
-
     let subject: string;
-    let contentHtml: string;
+    let bodyHtml: string;
 
-    if (newStatus === "approved") {
-      subject = `Your job post "${jobTitle}" has been approved`;
-      contentHtml = `
+    if (reviewedContent) {
+      subject = reviewedContent.subject;
+      bodyHtml = reviewedContent.bodyHtml;
+    } else {
+      const safeTitle = escHtml(jobTitle);
+      const portalUrl = resolveClientPortalUrl();
+      let contentHtml: string;
+
+      if (newStatus === "approved") {
+        subject = `Your job post "${jobTitle}" has been approved`;
+        contentHtml = `
 <h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Your job post is now live</h1>
 <p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escHtml(firstName)},</p>
 <p style="color:#444;font-size:15px;margin:12px 0;">
@@ -256,13 +313,12 @@ export async function sendJobApprovalCompanionEmail(
 <p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
   Applications will appear in your OnSpot portal as candidates apply.
 </p>`.trim();
-    } else {
-      // rejected
-      const reasonSection = rejectionReason?.trim()
-        ? `<p style="color:#444;font-size:15px;margin:12px 0;"><strong>Reason:</strong> ${escHtml(rejectionReason.trim())}</p>`
-        : "";
-      subject = `Your job post "${jobTitle}" requires attention`;
-      contentHtml = `
+      } else {
+        const reasonSection = rejectionReason?.trim()
+          ? `<p style="color:#444;font-size:15px;margin:12px 0;"><strong>Reason:</strong> ${escHtml(rejectionReason.trim())}</p>`
+          : "";
+        subject = `Your job post "${jobTitle}" requires attention`;
+        contentHtml = `
 <h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Job post not approved</h1>
 <p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escHtml(firstName)},</p>
 <p style="color:#444;font-size:15px;margin:12px 0;">
@@ -279,17 +335,43 @@ ${reasonSection}
     Review and update your job post
   </a>
 </p>`.trim();
+      }
+
+      const rendered = renderApplicantEmail(
+        { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
+        buildEmailContext({ email: recipientEmail }),
+      );
+      subject = rendered.subject;
+      bodyHtml = rendered.bodyHtml;
     }
 
-    const rendered = renderApplicantEmail(
-      { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
-      buildEmailContext({ email: recipientEmail }),
-    );
+    // Atomically claim the canonical delivery slot. Automatic and
+    // composer-reviewed sends use the same transition-derived event key.
+    const claimed = await claimEmailDelivery({
+      eventKey: emailEventKey,
+      eventType: `job_${newStatus}`,
+      recipientEmail,
+      recipientUserId: clientUserId,
+      senderEmail,
+      templateCategory: `job_${newStatus}`,
+      relatedType: "job",
+      relatedId: jobId,
+      templateId: reviewedContent?.templateId ?? null,
+      subject,
+      bodyHtml,
+      sentBy: reviewedContent?.sentBy ?? null,
+      senderName,
+      isTest: false,
+    });
+    if (!claimed) {
+      console.log(`[emailCompanionService] sendJobApprovalCompanionEmail: delivery slot already claimed for ${emailEventKey} — skipping`);
+      return { status: "skipped", eventKey: emailEventKey };
+    }
 
     const sendResult = await sendApplicantEmail({
       to: recipientEmail,
-      subject: rendered.subject,
-      bodyHtml: rendered.bodyHtml,
+      subject,
+      bodyHtml,
       senderEmail,
     });
 
@@ -309,11 +391,21 @@ ${reasonSection}
         sendResult.error,
       );
     }
+    return {
+      status: sendResult.success ? "sent" : "failed",
+      eventKey: emailEventKey,
+      error: sendResult.error,
+    };
   } catch (err: any) {
     console.error(
       "[emailCompanionService] sendJobApprovalCompanionEmail (non-fatal):",
       err?.message,
     );
+    return {
+      status: "failed",
+      eventKey: emailEventKey,
+      error: err?.message ?? "Unknown email delivery error",
+    };
   }
 }
 

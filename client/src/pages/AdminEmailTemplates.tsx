@@ -99,7 +99,7 @@ export default function AdminEmailTemplates() {
   const listKey = ["/api/admin/email-templates", showArchived];
   const { data: templates = [], isLoading, isError, refetch } = useQuery<Template[]>({
     queryKey: listKey,
-    queryFn: () => apiFetch(`/api/admin/email-templates?archived=${showArchived}`),
+    queryFn: () => apiFetch(`/api/admin/email-templates?archived=${showArchived}&scope=all`),
   });
 
   // Derived / filtered

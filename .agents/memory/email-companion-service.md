@@ -1,6 +1,6 @@
 ---
 name: Email companion service
-description: Non-blocking idempotent companion emails for job approval, new applications, interview reschedule/cancel, and unread messages.
+description: Non-blocking idempotent companion emails, including the reviewed Admin-to-Client job-decision workflow.
 ---
 
 # Email Companion Service
@@ -15,9 +15,16 @@ description: Non-blocking idempotent companion emails for job approval, new appl
 2. Build and send the email.
 3. `markEmailDeliveryResult()` → writes final 'sent' or 'failed' status.
 
-A stale 'processing' row (crash mid-send) is re-claimable after 10 minutes.
+A stale 'processing' row (crash mid-send) is re-claimable after the configured claim-expiry window.
 
 **How to apply:** New companion email path → add a function here, call `claimEmailDelivery` before sending, call `markEmailDeliveryResult` after.
+
+## Reviewed job-decision emails
+The Admin composer and the automatic job-approval companion are coordinated through one canonical event key: `job-approval-email:${transitionEventKey}`. Reviewed content is passed into the existing companion sender; it is not sent by a separate route-level Graph call.
+
+**Why:** A real approval/rejection transition must create one delivery claim and at most one Client email, while ordinary non-composer transitions must retain their automatic companion.
+
+**How to apply:** Render and validate composer content before the state transition, reuse the atomic approval transition (including its in-app notification), then pass the reviewed content and transition event key to the companion service. A no-op repeat transition must not send.
 
 ## Interview emails
 `sendInterviewRescheduledEmail` / `sendInterviewCancelledEmail` live in `server/services/interviewEmailService.ts` and import `claimEmailDelivery` / `markEmailDeliveryResult` from emailCompanionService.
@@ -31,7 +38,7 @@ A stale 'processing' row (crash mid-send) is re-claimable after 10 minutes.
 ## Coverage
 | Event | Where fired |
 |---|---|
-| Job approved / rejected | routes.ts → PATCH /api/admin/jobs/:id/approve and /reject |
+| Job approved / rejected | Automatic approve/reject routes and composer-confirmed approve-with-email/reject-with-email routes |
 | Client new application (auth + unauth) | routes.ts → POST /api/jobs/:jobId/apply |
 | Interview rescheduled (admin-initiated) | routes.ts → PATCH /api/admin/interviews/:id |
 | Interview cancelled (admin or client) | routes.ts → PATCH /api/admin/interviews/:id, PATCH /api/client/interviews/:id |
