@@ -1193,8 +1193,8 @@ async function fireInvitationEmail(opts: {
     const safeName  = escHtml(opts.talentName);
     const safeTitle = escHtml(opts.jobTitle);
 
-    const descriptionHtml = opts.jobDescription
-      ? `<p style="color:#444;font-size:15px;margin:16px 0;">${escHtml(opts.jobDescription)}</p>`
+    const descriptionHtml = opts.jobDescription?.trim()
+      ? `<p style="color:#444;font-size:15px;margin:16px 0;">{{job_description}}</p>`
       : "";
 
     const subject = `You've been invited to apply for ${opts.jobTitle}`;
@@ -1223,6 +1223,7 @@ async function fireInvitationEmail(opts: {
         applicantName: opts.talentName,
         email: opts.talentEmail,
         jobTitle: opts.jobTitle,
+        jobDescription: opts.jobDescription,
       }),
     );
     if (rendered.unresolvedKeys.length > 0) {

@@ -1,0 +1,351 @@
+Apply this fix now.
+
+Do NOT perform another broad audit or planning pass.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+We found a formatting issue in the Talent job invitation email.
+
+# CURRENT PROBLEM
+
+The Job Description is stored as rich-text HTML.
+
+Example stored value:
+
+`<p>This is to test if the feature is working</p>`
+
+The Talent invitation email currently displays:
+
+`<p>This is to test if the feature is working</p>`
+
+This is incorrect.
+
+The recipient should see:
+
+`This is to test if the feature is working`
+
+The HTML markup must NOT appear as visible text in the email.
+
+# IMPORTANT
+
+Do NOT change how Job Description is stored in the database.
+
+Do NOT strip HTML when saving/editing a job.
+
+Do NOT modify JobFormPage rich-text behavior.
+
+The existing rich-text job description may be required elsewhere in the application.
+
+Fix this specifically at the email/template rendering layer.
+
+# EXPECTED EMAIL
+
+Current:
+
+You've been invited to a role
+
+Hi Frenzy Test,
+
+A client has invited you to apply for the following role:
+
+Testing
+
+`<p>This is to test if the feature is working</p>`
+
+[View Invitation]
+
+Expected:
+
+You've been invited to a role
+
+Hi Frenzy Test,
+
+A client has invited you to apply for the following role:
+
+**Testing**
+
+This is to test if the feature is working
+
+[View Invitation]
+
+There should be NO visible:
+
+`<p>`
+`</p>`
+`<br>`
+`<strong>`
+`<ul>`
+`<li>`
+
+or other HTML markup.
+
+# IMPLEMENTATION
+
+Find where the Talent invitation email resolves the job-description template variable.
+
+Do not change the underlying `job.description`.
+
+Instead, create/reuse a safe HTML-to-email-text helper.
+
+Conceptually:
+
+`job.description`
+→ sanitize/convert HTML
+→ clean readable text
+→ email template variable
+
+For example:
+
+INPUT:
+
+`<p>This is to test if the feature is working</p>`
+
+OUTPUT:
+
+`This is to test if the feature is working`
+
+# DO NOT USE A NAIVE REGEX IF A SAFE EXISTING HTML/TEXT UTILITY EXISTS
+
+First reuse an existing HTML sanitization / rich-text-to-plain-text helper if the project already has one.
+
+If none exists, add one focused reusable helper.
+
+It should handle common rich-text HTML properly.
+
+Examples:
+
+INPUT:
+
+`<p>Hello world</p>`
+
+OUTPUT:
+
+`Hello world`
+
+INPUT:
+
+`<p>First paragraph</p><p>Second paragraph</p>`
+
+OUTPUT:
+
+First paragraph
+
+Second paragraph
+
+INPUT:
+
+`<p>Required skills:</p><ul><li>React</li><li>TypeScript</li></ul>`
+
+OUTPUT should remain readable, for example:
+
+Required skills:
+
+• React
+• TypeScript
+
+INPUT:
+
+`<p>Experience with <strong>React</strong> is required.</p>`
+
+OUTPUT:
+
+`Experience with React is required.`
+
+INPUT:
+
+`<p>Remote &amp; flexible</p>`
+
+OUTPUT:
+
+`Remote & flexible`
+
+HTML entities should be decoded correctly.
+
+# SECURITY
+
+Do not render unsanitized job-description HTML directly into the email.
+
+Job descriptions are user-controlled content.
+
+The email template must not allow arbitrary:
+
+* script
+* style
+* iframe
+* event handlers
+* unsafe links
+* executable HTML
+
+For this email field, plain readable text is sufficient.
+
+# APPLY CONSISTENTLY TO JOB DESCRIPTION EMAIL VARIABLES
+
+Check the central email template-variable resolver.
+
+If `{{job_description}}` or the equivalent job-description variable is shared across email templates, fix the normalized email value there so all appropriate emails benefit automatically.
+
+Preferred:
+
+database HTML
+→ central email-safe job description formatter
+→ template variable
+
+rather than individually fixing many email templates.
+
+However, do NOT globally strip HTML from unrelated rich-text template bodies.
+
+Only normalize values representing Job Description when inserted into an email.
+
+# EXISTING EMAIL TEMPLATE HTML
+
+Important distinction:
+
+The EMAIL TEMPLATE itself may remain HTML.
+
+For example:
+
+`<p>Hi {{applicant_first_name}},</p>`
+
+is valid email template markup.
+
+The problem is the value inserted into:
+
+`{{job_description}}`
+
+Do not strip the legitimate HTML structure of the email template itself.
+
+Only sanitize/normalize the Job Description variable.
+
+# TALENT INVITATION
+
+Specifically verify the existing Talent invitation email shown in the test.
+
+Job:
+
+`Testing`
+
+Stored description:
+
+`<p>This is to test if the feature is working</p>`
+
+Expected Gmail rendering:
+
+Testing
+
+This is to test if the feature is working
+
+No `<p>` markup should be visible.
+
+# OTHER EMAILS
+
+Search only the existing email template-variable usage for Job Description.
+
+If these existing emails also insert the same raw description variable, use the same safe formatter.
+
+Do not redesign their email content.
+
+This is a formatting fix only.
+
+# DO NOT CHANGE
+
+Do NOT modify or break:
+
+* JobFormPage
+* Job Description editor
+* database job descriptions
+* ClientEmailComposer
+* ApplicantEmailComposer
+* email template editor
+* Microsoft Graph integration
+* sender configuration
+* Talent invitations
+* invitation acceptance/decline
+* application workflows
+* job approval
+* job rejection
+* job unapproval
+* Admin posting on behalf of Client
+* notifications
+* email history
+* template variables unrelated to Job Description
+
+# TESTS
+
+Add focused tests.
+
+1. `<p>Hello</p>` → `Hello`
+
+2. `<p>First</p><p>Second</p>` produces readable paragraph separation.
+
+3. `<strong>React</strong>` → `React`
+
+4. `<p>Remote &amp; flexible</p>` → `Remote & flexible`
+
+5. Lists remain readable.
+
+6. Empty/null description does not throw an error.
+
+7. Plain-text descriptions remain unchanged.
+
+8. Script/unsafe markup is not rendered into the email.
+
+9. Talent invitation email does not display literal HTML tags.
+
+10. Existing email template HTML still renders normally.
+
+11. Existing template variables still resolve.
+
+12. Existing invitation functionality still works.
+
+13. Existing ClientEmailComposer still works.
+
+14. Existing ApplicantEmailComposer still works.
+
+15. `npx tsc --noEmit` passes.
+
+16. `git diff --check` passes.
+
+# MANUAL VERIFICATION
+
+Create/use the exact test case:
+
+Job title:
+
+`Testing`
+
+Job description stored as:
+
+`<p>This is to test if the feature is working</p>`
+
+Send the existing Talent invitation email.
+
+Verify Gmail displays:
+
+**Testing**
+
+This is to test if the feature is working
+
+Verify Gmail does NOT display:
+
+`<p>This is to test if the feature is working</p>`
+
+Also verify the original Job Description still displays correctly as rich text inside OnSpot.
+
+# COMPLETION REPORT
+
+Report:
+
+1. Root cause.
+2. Exact formatter/helper used or added.
+3. Exact email variable fixed.
+4. Files changed.
+5. Whether the central variable resolver was updated.
+6. Tests passed.
+7. Manual Gmail result.
+8. Confirmation database Job Description storage was NOT changed.
+9. Confirmation JobFormPage was NOT changed.
+10. Confirmation existing email composers and workflows were NOT changed.
+
+Apply this as a focused email-formatting fix only.
+
+Do not perform unrelated refactors.

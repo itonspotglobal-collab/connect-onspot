@@ -38,5 +38,12 @@ Admin-created jobs posted on behalf of a Client use the same reviewed composer, 
 - Unread message emails never include message body content.
 - Vanessa/AI is not used anywhere in the companion pipeline.
 
+## Rich-text values in email templates
+User-controlled rich-text fields must be converted to readable plain text at the email-variable boundary, while the trusted email template keeps its own HTML structure.
+
+**Why:** Escaping stored rich text directly makes tags visible to recipients; inserting it as HTML would expose email clients to unsafe markup.
+
+**How to apply:** Normalize only the rich-text variable value, preserve paragraph/list readability and entity decoding, then let the normal template renderer HTML-escape that plain text.
+
 ## Sender
 `hiretalent@onspotglobal.com` is the default; falls back to `MICROSOFT_SENDER_EMAIL` / `APPLICATION_EMAIL_FROM` if not in the allowlist. Operational validation of Graph mailbox/Send-As permissions is still required.

@@ -5,6 +5,7 @@
  * HTML. The renderer never fabricates text around a replacement value and it
  * reports every unresolved token so callers can block delivery safely.
  */
+import { htmlToPlainText } from "../lib/htmlToPlainText.js";
 
 export interface EmailVariableContext {
   applicantFirstName?: string;
@@ -13,6 +14,7 @@ export interface EmailVariableContext {
   applicantEmail?: string;
   applicantPhone?: string;
   jobTitle?: string;
+  jobDescription?: string;
   jobLocation?: string;
   applicationStatus?: string;
   previousApplicationStatus?: string;
@@ -41,6 +43,7 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   applicant_email: "applicantEmail",
   applicant_phone: "applicantPhone",
   job_title: "jobTitle",
+  job_description: "jobDescription",
   job_location: "jobLocation",
   application_status: "applicationStatus",
   previous_application_status: "previousApplicationStatus",
@@ -73,6 +76,7 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
 const TOKEN_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 const UNRESOLVED_TOKEN_PATTERN = /\{\{\s*[^}]+\s*\}\}/g;
 const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl"]);
+const MULTILINE_TEXT_VARIABLES = new Set<keyof EmailVariableContext>(["jobDescription"]);
 const OPTIONAL_BLOCK_PATTERN = /\{\{#\s*([a-z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/gi;
 
 function escapeHtml(value: string): string {
@@ -149,7 +153,13 @@ export function resolveVariables(
       return match;
     }
 
-    return format === "html" ? escapeHtml(value) : escapeSubject(value);
+    if (format === "html") {
+      const escaped = escapeHtml(value);
+      return MULTILINE_TEXT_VARIABLES.has(contextKey)
+        ? escaped.replace(/\n/g, "<br>")
+        : escaped;
+    }
+    return escapeSubject(value);
   });
 
   return { resolved, unresolvedKeys: unique(unresolvedKeys) };
@@ -241,6 +251,7 @@ export function buildEmailContext(opts: {
   email: string;
   phone?: string | null;
   jobTitle?: string | null;
+  jobDescription?: string | null;
   jobCompany?: string | null;
   jobLocation?: string | null;
   status?: string | null;
@@ -278,6 +289,9 @@ export function buildEmailContext(opts: {
     applicantEmail: opts.email,
     applicantPhone: opts.phone?.trim() || undefined,
     jobTitle: opts.jobTitle?.trim() || undefined,
+    jobDescription: opts.jobDescription
+      ? htmlToPlainText(opts.jobDescription) || undefined
+      : undefined,
     jobLocation: opts.jobLocation?.trim() || undefined,
     applicationStatus: opts.newStatus ?? opts.status ?? undefined,
     previousApplicationStatus: opts.previousStatus ?? undefined,
@@ -374,6 +388,7 @@ export const SUPPORTED_VARIABLES: { key: string; label: string; description: str
   { key: "applicant_email", label: "Email", description: "Applicant's email address" },
   { key: "applicant_phone", label: "Phone", description: "Applicant's phone number" },
   { key: "job_title", label: "Job Title", description: "Title of the job applied for" },
+  { key: "job_description", label: "Job Description", description: "Readable text from the job description" },
   { key: "company_name", label: "Company", description: "Company name, or OnSpot when none is provided" },
   { key: "job_location", label: "Job Location", description: "Location of the job" },
   { key: "application_status", label: "Application Status", description: "Current application status" },
