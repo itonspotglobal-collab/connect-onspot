@@ -5,7 +5,14 @@ export function notificationRouteForRole(
 ): string | null {
   if (role === "admin") {
     if (type === "job_application_received") return "/admin/job-applications";
-    if (["job_pending", "job_approved", "job_rejected"].includes(type)) {
+    if (
+      [
+        "client_application_status_changed",
+        "job_pending",
+        "job_approved",
+        "job_rejected",
+      ].includes(type)
+    ) {
       return "/admin/find-work";
     }
   }

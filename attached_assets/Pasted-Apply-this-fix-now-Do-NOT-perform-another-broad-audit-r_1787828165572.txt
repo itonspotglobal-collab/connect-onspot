@@ -1,0 +1,283 @@
+Apply this fix now.
+
+Do NOT perform another broad audit, redesign, or refactor.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing notification system is working correctly.
+
+Only fix the incorrect destination for the Admin notification:
+
+`Client updated application`
+
+# CURRENT BUG
+
+When Admin clicks:
+
+`Client updated application`
+
+the notification currently redirects to:
+
+`/admin/job-applications`
+
+This is incorrect.
+
+# REQUIRED BEHAVIOR
+
+For Admin users:
+
+`Client updated application`
+
+must redirect to:
+
+`/admin/find-work`
+
+This is the correct Admin page for reviewing Client-originated application/job workflow updates.
+
+# IMPORTANT ROUTING DISTINCTION
+
+Do NOT change the recently fixed route for:
+
+`New application received`
+
+That notification must continue routing to:
+
+`/admin/job-applications`
+
+The required mapping is:
+
+| Admin Notification                      | Destination               |
+| --------------------------------------- | ------------------------- |
+| New application received                | `/admin/job-applications` |
+| Client updated application              | `/admin/find-work`        |
+| Client requested/submitted job approval | `/admin/find-work`        |
+
+Do not make all application-related notifications route to the same page.
+
+# USE CANONICAL NOTIFICATION TYPE
+
+Find the actual notification type used for:
+
+`Client updated application`
+
+The existing application notification service likely uses a type similar to:
+
+`client_application_status_changed`
+
+Use the actual canonical type in the repository.
+
+Preferred routing:
+
+```ts
+if (role === "admin") {
+  switch (notification.type) {
+    case "job_application_received":
+      return "/admin/job-applications";
+
+    case "client_application_status_changed":
+      return "/admin/find-work";
+
+    // existing job approval request type(s)
+    case "job_approval_requested":
+      return "/admin/find-work";
+  }
+}
+```
+
+Use the real existing type names.
+
+Do NOT route based only on visible notification title text if a stable `notification.type` already exists.
+
+# WHY THIS ROUTE IS DIFFERENT
+
+`New application received`
+
+means a new Talent application was submitted and should be reviewed under:
+
+`/admin/job-applications`
+
+However:
+
+`Client updated application`
+
+represents a Client-originated workflow/status update that Admin needs to review through the Admin Find Work/job-management workflow.
+
+Therefore it should route to:
+
+`/admin/find-work`
+
+# DO NOT CHANGE NOTIFICATION CREATION
+
+Do NOT change:
+
+* title
+* message
+* relatedId
+* relatedType
+* eventKey
+* notification database records
+* application status logic
+
+Only change its Admin navigation destination.
+
+# PRESERVE READ BEHAVIOR
+
+Clicking the notification should continue to:
+
+1. mark it as read
+2. update unread badge/count
+3. close/behave with the dropdown exactly as before
+4. navigate to the corrected route
+
+Do not change any of these behaviors.
+
+# FOOTER LINK
+
+The notification dropdown currently has:
+
+`View applications →`
+
+Do not change this globally merely because `Client updated application` now routes elsewhere.
+
+The footer can continue pointing to:
+
+`/admin/job-applications`
+
+if that is its intended general destination.
+
+Only the individual:
+
+`Client updated application`
+
+notification click should route to:
+
+`/admin/find-work`.
+
+Do not accidentally change the footer for all notifications.
+
+# CLIENT / TALENT ROUTES
+
+Do NOT change notification routing for:
+
+* Client
+* Talent
+
+This correction is Admin-specific.
+
+# EXISTING ROUTING TO PRESERVE
+
+Explicitly preserve:
+
+`job_application_received`
+→ Admin `/admin/job-applications`
+
+Do not regress the previous fix.
+
+Also preserve all currently working:
+
+* interview notification routes
+* message routes
+* Client notification routes
+* Talent application routes
+* job approval request routes
+
+# TESTS
+
+Add/update focused routing tests:
+
+1. Admin `job_application_received`
+   → `/admin/job-applications`
+
+2. Admin `client_application_status_changed`
+   → `/admin/find-work`
+
+3. `client_application_status_changed`
+   does NOT route to `/admin/job-applications`.
+
+4. Existing Admin job approval request
+   → `/admin/find-work`
+
+5. Notification still becomes read after click.
+
+6. Unread badge/count still updates.
+
+7. Client notification routing remains unchanged.
+
+8. Talent notification routing remains unchanged.
+
+9. Existing notification creation tests remain passing.
+
+10. Existing application notification tests remain passing.
+
+11. `npx tsc --noEmit` passes.
+
+12. `git diff --check` passes.
+
+# MANUAL VERIFICATION
+
+1. Trigger a Client application status update.
+2. Log in as Admin.
+3. Open Notifications.
+4. Find:
+
+`Client updated application`
+
+5. Click the notification.
+6. Verify browser URL becomes:
+
+`/admin/find-work`
+
+7. Verify Admin Find Work page loads correctly.
+8. Verify notification becomes read.
+
+Then test:
+
+`New application received`
+
+and verify it STILL routes to:
+
+`/admin/job-applications`
+
+This second check is mandatory to ensure the previous fix was not broken.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+* notification generation
+* application workflow
+* application status transitions
+* Admin Find Work
+* Admin Job Applications
+* job approval/rejection
+* email notifications
+* ClientEmailComposer
+* ApplicantEmailComposer
+* notification bell
+* notification count
+* Client routes
+* Talent routes
+* authentication
+* role guards
+
+No unrelated cleanup or refactoring.
+
+# COMPLETION REPORT
+
+Report:
+
+1. Exact file changed.
+2. Canonical notification type used for `Client updated application`.
+3. Previous route.
+4. New route.
+5. Confirmation `New application received` still routes to `/admin/job-applications`.
+6. Confirmation job approval notifications still route to `/admin/find-work`.
+7. Confirmation read/unread behavior was unchanged.
+8. Test results.
+9. Manual verification results.
+10. `npx tsc --noEmit` result.
+11. `git diff --check` result.
+
+Apply this as a narrowly scoped routing correction only.
+
+Do not alter or ruin any other currently working feature.

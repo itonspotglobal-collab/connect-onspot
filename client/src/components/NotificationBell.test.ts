@@ -22,6 +22,26 @@ describe("notificationRouteForRole", () => {
     },
   );
 
+  it("routes Admin Client application updates to Admin Find Work", () => {
+    expect(
+      notificationRouteForRole(
+        "client_application_status_changed",
+        "admin",
+        "/admin/job-applications",
+      ),
+    ).toBe("/admin/find-work");
+  });
+
+  it("does not route Admin Client application updates to Admin applications", () => {
+    expect(
+      notificationRouteForRole(
+        "client_application_status_changed",
+        "admin",
+        "/admin/job-applications",
+      ),
+    ).not.toBe("/admin/job-applications");
+  });
+
   it("preserves Client application notification routing", () => {
     expect(notificationRouteForRole("job_application_received", "client", "/client-profile")).toBe("/client-profile");
   });
