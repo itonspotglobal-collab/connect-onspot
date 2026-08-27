@@ -1,0 +1,474 @@
+# Task: Add Meeting Link to the Existing Interview Invitation Flow
+
+Please implement **only this requested change**.
+
+## IMPORTANT — DO NOT AUDIT THE APPLICATION
+
+Do **not** perform another general audit, architecture review, cleanup, refactor, optimization pass, or unrelated bug investigation.
+
+Do not inspect unrelated areas of the application looking for improvements.
+
+The goal is a **small, surgical change** to the existing working invitation/interview scheduling flow.
+
+## Critical regression rule
+
+**Do not break, rewrite, refactor, replace, or redesign any existing working feature.**
+
+Preserve all currently working behavior, including:
+
+* Talent search
+* Talent matching
+* Talent preview
+* Invite to Apply
+* Existing invitation creation
+* Suggested first interview time
+* Timezone handling
+* Duplicate invitation handling
+* Invitation email sending
+* Talent My Applications flow
+* Talent accept/suggest-alternative interview flow
+* Existing client invitation flows elsewhere in the application
+* Existing email templates/content except for adding the meeting information requested below
+* Existing API response contracts unless adding an optional field is required
+
+Do not rename existing routes, components, database columns, API fields, functions, or shared types unless absolutely necessary.
+
+Do not touch unrelated files.
+
+Do not make cosmetic or structural refactors while implementing this task.
+
+---
+
+# Existing Component
+
+The main UI change must be made in:
+
+`client/src/components/ClientJobTalentSearchDialog.tsx`
+
+The existing dialog currently contains:
+
+* Search talent
+* Suggested first interview time
+* Talent results
+* Preview
+* Invite to Apply
+
+The existing invitation request is sent through:
+
+`POST /api/client/invitations`
+
+The current request already sends:
+
+* `jobId`
+* `talentUserId`
+* `proposedTimes`
+
+  * `start`
+  * `timezone`
+
+Keep all of that behavior exactly as it currently works.
+
+---
+
+# Requested Change
+
+Add a new field to the **Invite Talent to Apply** dialog for the interview meeting link.
+
+Suggested UI:
+
+**Meeting link**
+
+Placeholder example:
+
+`https://meet.google.com/...`
+
+or
+
+`https://zoom.us/j/...`
+
+Place this field alongside the existing interview scheduling section.
+
+A sensible layout would be:
+
+* Search talent
+* Suggested first interview time
+* Meeting link
+
+Use the existing UI components and styling conventions already used in `ClientJobTalentSearchDialog.tsx`.
+
+Do not redesign the modal.
+
+---
+
+# Meeting Link Behavior
+
+Add local state for the meeting link.
+
+For example conceptually:
+
+`meetingLink`
+
+When the dialog opens/reset occurs, clear this field the same way `proposedTime` is currently reset.
+
+When the client clicks **Invite to Apply**, send the meeting link with the existing invitation request.
+
+Use a clear optional API property such as:
+
+`meetingLink`
+
+Example conceptual payload:
+
+```ts
+{
+  jobId: job.id,
+  talentUserId,
+  proposedTimes: [
+    {
+      start: start.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    },
+  ],
+  meetingLink,
+}
+```
+
+However, before changing the backend, inspect the existing `/api/client/invitations` handler and invitation persistence model to determine whether a meeting-link field already exists.
+
+### If a meeting-link field already exists
+
+Reuse it.
+
+Do not create another duplicate field.
+
+### If it does not exist
+
+Add the **smallest backward-compatible change necessary** to persist the meeting link with the invitation/interview proposal.
+
+Prefer an optional nullable field so existing invitation flows continue working unchanged.
+
+Do not make the meeting link mandatory for older invitation flows unless the current product behavior explicitly requires it.
+
+---
+
+# Validation
+
+The meeting link should support normal interview URLs, including examples such as:
+
+* Google Meet
+* Zoom
+* Microsoft Teams
+* Other valid `http://` or `https://` meeting URLs
+
+If validation is added, keep it lightweight.
+
+Do not introduce a new validation framework.
+
+Do not block existing invitation behavior unnecessarily.
+
+Recommended behavior:
+
+* Trim whitespace before sending.
+* If a non-empty value is provided, require a valid HTTP/HTTPS URL.
+* Show the validation error through the same existing toast/error pattern.
+* Do not crash the dialog.
+
+---
+
+# Email Requirement
+
+The meeting link must also be included in the **invitation email sent to the talent**.
+
+The existing invitation email currently tells the talent they have been invited to the role and provides the **View Invitation** button.
+
+Preserve the existing email layout and content.
+
+Add interview information rather than replacing the existing email.
+
+Include:
+
+**Proposed interview time:**
+Formatted using the existing invitation/interview date handling.
+
+**Meeting link:**
+The meeting URL provided by the client.
+
+Ideally render the meeting link as a clickable link/button, for example:
+
+`Join meeting`
+
+The actual URL should point to the exact meeting link entered by the client.
+
+Do not remove or change the existing:
+
+* role title
+* job description/content
+* View Invitation button
+* My Applications link
+* branding
+* existing email delivery logic
+
+Only extend the existing email.
+
+---
+
+# Data Flow Requirement
+
+The intended flow is:
+
+Client opens
+`ClientJobTalentSearchDialog.tsx`
+
+→ selects an interview date/time
+
+→ enters a meeting link
+
+→ clicks **Invite to Apply**
+
+→ existing `/api/client/invitations` flow runs
+
+→ invitation is persisted as before
+
+→ interview proposal keeps its existing time/timezone behavior
+
+→ meeting link is associated with that invitation/interview
+
+→ talent receives the existing invitation email
+
+→ email additionally contains the proposed interview time and meeting link
+
+→ talent can still use the existing application/interview flow normally.
+
+---
+
+# Important: Preserve Other Invitation Flows
+
+There is another existing component:
+
+`client/src/components/ClientTalentInviteDialog.tsx`
+
+It also uses:
+
+`POST /api/client/invitations`
+
+Do **not** rewrite or redesign that component as part of this task.
+
+If the backend invitation schema is extended with an optional `meetingLink`, ensure requests from this existing component still work exactly as before when no meeting link is supplied.
+
+The new backend field must therefore be backward compatible.
+
+---
+
+# Database Changes
+
+Do not create a migration unless persistence truly requires one.
+
+First inspect the existing invitation/interview schema because there may already be an appropriate field.
+
+If a new column is necessary:
+
+* make it nullable
+* use the project's existing migration/schema conventions
+* do not alter unrelated columns
+* do not rename tables
+* do not recreate tables
+* do not delete existing data
+* do not modify unrelated indexes or constraints
+
+Suggested semantic field:
+
+`meeting_link`
+
+or whichever equivalent naming convention the existing interview schema already uses.
+
+Reuse an existing interview `location`, `meetingUrl`, `meetingLink`, or similar field if one already exists.
+
+---
+
+# Backend Changes
+
+Make the smallest possible change to the existing invitation endpoint.
+
+Do not create a parallel invitation API.
+
+Do not duplicate invitation logic.
+
+Do not bypass:
+
+* authorization
+* MSA/Terms checks
+* duplicate invitation protection
+* client ownership validation
+* talent resolution
+* email sending
+* existing interview creation logic
+
+Extend the current pipeline.
+
+---
+
+# Email Template Safety
+
+Before modifying anything, identify whether the invitation email comes from:
+
+* an email-template record,
+* a seeded template,
+* a shared rendering service,
+* or server-side HTML.
+
+Modify the actual existing invitation email path.
+
+Do not create a second duplicate email.
+
+Do not accidentally cause two emails to be sent.
+
+If email templates support variables, add only the necessary meeting/interview variables.
+
+Keep existing template compatibility.
+
+If older templates do not reference the new variables, they must continue rendering normally.
+
+---
+
+# Scope Control
+
+Only modify files required for this feature.
+
+Likely areas may include:
+
+1. `client/src/components/ClientJobTalentSearchDialog.tsx`
+2. The existing `/api/client/invitations` backend handler/service
+3. Existing invitation/interview schema only if required
+4. Existing invitation email rendering/template code
+5. Focused tests directly related to this change
+
+Do not modify unrelated pages/components.
+
+Do not make global UI changes.
+
+Do not reorganize directories.
+
+Do not change unrelated dependency versions.
+
+Do not install new packages unless absolutely unavoidable.
+
+---
+
+# Regression Protection
+
+Before editing an existing function, understand what it already does.
+
+Prefer adding a small optional path instead of rewriting working code.
+
+Specifically, do not break:
+
+```ts
+proposedTimes: [{
+  start: start.toISOString(),
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+}]
+```
+
+The existing timezone behavior must remain unchanged.
+
+Do not change invitation duplicate handling:
+
+`already_invited`
+
+Do not change existing success/error toast behavior except where necessary for meeting-link validation.
+
+---
+
+# Testing
+
+Do **targeted testing only**.
+
+Do not perform a broad audit.
+
+Do not fix unrelated failures discovered during testing.
+
+Verify at minimum:
+
+### 1. Existing invitation without regression
+
+The dialog still:
+
+* searches talent
+* previews talent
+* selects interview time
+* sends invitation successfully
+
+### 2. Meeting link
+
+Entering:
+
+`https://meet.google.com/test-meeting`
+
+and sending the invitation results in that exact URL being persisted/passed through the intended invitation/interview flow.
+
+### 3. Email
+
+The talent receives **one** invitation email containing:
+
+* existing invitation content
+* role title
+* proposed interview time
+* meeting link / Join meeting link
+* existing View Invitation action
+
+### 4. Existing invitation API compatibility
+
+Any existing caller of `/api/client/invitations` that does not send `meetingLink` must continue working.
+
+### 5. Duplicate invitation
+
+Existing duplicate handling must behave exactly as before.
+
+### 6. Timezone
+
+Existing proposed interview time and timezone behavior must remain unchanged.
+
+---
+
+# Do Not Do These Things
+
+Do NOT:
+
+* perform an application audit
+* rewrite the interview scheduling system
+* refactor the invitation system
+* redesign the dialog
+* change unrelated APIs
+* change existing authorization
+* change route naming
+* change application navigation
+* remove working code
+* replace existing email templates
+* create duplicate invitation email logic
+* modify unrelated database schema
+* fix unrelated bugs
+* clean up unrelated TypeScript
+* make formatting-only changes across files
+* upgrade dependencies
+* replace working components with new implementations
+
+---
+
+# Implementation Principle
+
+**Patch, do not rebuild.**
+
+Use the existing invitation pipeline and extend it with the meeting link.
+
+The requested end result is simply:
+
+**Interview time + meeting link are captured when the client invites talent, and both are available to the talent in the invitation email, without changing or breaking any other existing behavior.**
+
+After implementation, give me a concise summary containing only:
+
+1. Files changed
+2. Exact behavior added
+3. Whether a database migration was required
+4. How the meeting link reaches the invitation email
+5. Targeted tests performed
+
+Do not provide another audit or unrelated recommendations.

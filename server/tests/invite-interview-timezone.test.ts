@@ -32,6 +32,7 @@ const CLOSED_JOB_ID = `invite-smoke-closed-${suffix}`;
 const OTHER_CLIENT_JOB_ID = `invite-smoke-other-job-${suffix}`;
 const INTERVIEW_TIMEZONE = "Asia/Manila";
 const INTERVIEW_TIME = "2030-08-22T09:00:00.000Z";
+const MEETING_LINK = "https://meet.google.com/test-meeting";
 const SEARCH_TERM = `TimezoneSmokeSkill${suffix}`;
 const previousInvitationEmailTransport = process.env.INVITATION_EMAIL_TRANSPORT;
 
@@ -167,7 +168,7 @@ async function createFixtures() {
   );
   await query(
     `INSERT INTO client_profiles (user_id, msa_accepted_at, msa_version)
-     VALUES ($1, NOW(), 'smoke-test')`,
+     VALUES ($1, NOW(), '2026-08-14')`,
     [CLIENT_ID],
   );
   await query(
@@ -294,21 +295,33 @@ describe("invitation and interview timezone production smoke path", () => {
   });
 
   it("propagates the selected IANA timezone through invitation, talent, and client responses", async () => {
+    const invalidMeetingLink = await request(server, "POST", "/api/client/invitations", clientToken, {
+      jobId: OPEN_JOB_ID,
+      talentUserId: TALENT_ID,
+      proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }],
+      meetingLink: "javascript:alert(1)",
+    });
+    assert.equal(invalidMeetingLink.status, 400, JSON.stringify(invalidMeetingLink.json));
+
     const invitation = await request(server, "POST", "/api/client/invitations", clientToken, {
       jobId: OPEN_JOB_ID,
       talentUserId: TALENT_ID,
       proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }],
+      meetingLink: `  ${MEETING_LINK}  `,
       interviewType: "initial",
     });
     assert.equal(invitation.status, 201, JSON.stringify(invitation.json));
     assert.ok(invitation.json.id);
+    assert.equal(invitation.json.emailSent, true);
     assert.equal(invitation.json.interview.proposed_times[0].timezone, INTERVIEW_TIMEZONE);
+    assert.equal(invitation.json.interview.meeting_link, MEETING_LINK);
 
     const pendingInvitations = await request(server, "GET", "/api/talent/invitations", talentToken);
     assert.equal(pendingInvitations.status, 200, JSON.stringify(pendingInvitations.json));
     const pendingInvitation = pendingInvitations.json.find((row: { id: string }) => row.id === invitation.json.id);
     assert.ok(pendingInvitation);
     assert.equal(pendingInvitation.proposedTimes[0].timezone, INTERVIEW_TIMEZONE);
+    assert.equal(pendingInvitation.meetingLink, MEETING_LINK);
 
     const accepted = await request(
       server,
@@ -327,6 +340,7 @@ describe("invitation and interview timezone production smoke path", () => {
     );
     assert.ok(talentInterview);
     assert.equal(talentInterview.proposedTimes[0].timezone, INTERVIEW_TIMEZONE);
+    assert.equal(talentInterview.meetingLink, MEETING_LINK);
     assert.equal(talentInterview.confirmedTimeZone, "UTC", "an unconfirmed interview should use the explicit UTC response default");
 
     const confirmed = await request(

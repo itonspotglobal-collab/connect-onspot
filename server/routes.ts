@@ -92,6 +92,7 @@ import {
   sendInterviewConfirmedEmailToClient,
   sendInterviewCounterEmailToClient,
   sendInterviewProposalEmail,
+  formatInterviewTime,
   sendInterviewRescheduledEmail,
   sendInterviewCancelledEmail,
 } from "./services/interviewEmailService.js";
@@ -1178,6 +1179,8 @@ async function fireInvitationEmail(opts: {
   talentName: string;
   jobTitle: string;
   jobDescription: string | null;
+  proposedTimes?: Array<{ start: string; timezone?: string }>;
+  meetingLink?: string | null;
   submissionId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
@@ -1192,6 +1195,19 @@ async function fireInvitationEmail(opts: {
 
     const safeName  = escHtml(opts.talentName);
     const safeTitle = escHtml(opts.jobTitle);
+    const proposedTime = opts.proposedTimes?.[0];
+    const interviewDetailsHtml = proposedTime
+      ? `
+  <p style="color:#444;font-size:15px;margin:16px 0 8px;">
+    <strong>Proposed interview time:</strong>
+    ${escHtml(formatInterviewTime(proposedTime.start, proposedTime.timezone || "UTC", false))}
+  </p>
+  ${opts.meetingLink ? `
+  <p style="color:#444;font-size:15px;margin:8px 0 16px;">
+    <strong>Meeting link:</strong>
+    <a href="${escHtml(opts.meetingLink)}" style="color:#4f46e5;">Join meeting</a>
+  </p>` : ""}`
+      : "";
 
     const descriptionHtml = opts.jobDescription?.trim()
       ? `<p style="color:#444;font-size:15px;margin:16px 0;">{{job_description}}</p>`
@@ -1206,6 +1222,7 @@ async function fireInvitationEmail(opts: {
   </p>
   <h3 style="color:#1a1a2e;margin:8px 0;">${safeTitle}</h3>
   ${descriptionHtml}
+  ${interviewDetailsHtml}
   <p style="margin:24px 0;">
     <a href="{{portal_url}}"
        style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-size:15px;display:inline-block;">
@@ -16344,6 +16361,7 @@ export async function registerRoutes(
         talentUserId: requestedTalentUserId,
         candidateId,
         proposedTimes,
+        meetingLink,
         interviewType = "initial",
         candidateNotes,
       } = req.body ?? {};
@@ -16365,6 +16383,14 @@ export async function registerRoutes(
        const normalizedTimes = normalizeInterviewTimes(proposedTimes);
        if (!normalizedTimes) {
          return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+       }
+       let normalizedMeetingLink: string | null | undefined;
+       if (meetingLink !== undefined) {
+         const trimmedMeetingLink = typeof meetingLink === "string" ? meetingLink.trim() : meetingLink;
+         normalizedMeetingLink = normalizeMeetingLink(trimmedMeetingLink);
+         if (normalizedMeetingLink === undefined) {
+           return res.status(400).json({ error: "meetingLink must be a valid http(s) URL no longer than 2048 characters" });
+         }
        }
        const validInterviewTypes = ["initial", "technical", "final", "culture", "other"];
        if (!validInterviewTypes.includes(interviewType)) {
@@ -16554,10 +16580,17 @@ export async function registerRoutes(
            const interviewResult = await txClient.query(
              `INSERT INTO interviews
                 (submission_id, round_number, interview_type, status, proposed_times,
-                 current_proposal_owner, proposal_exchange_count, candidate_notes, created_by)
-               VALUES ($1, 1, $2, 'proposed', $3, 'talent', 0, $4, $5)
+                  meeting_link, current_proposal_owner, proposal_exchange_count, candidate_notes, created_by)
+                VALUES ($1, 1, $2, 'proposed', $3, $4, 'talent', 0, $5, $6)
               RETURNING *`,
-             [created.id, interviewType, JSON.stringify(normalizedTimes), candidateNotes ?? null, clientId],
+              [
+                created.id,
+                interviewType,
+                JSON.stringify(normalizedTimes),
+                normalizedMeetingLink ?? null,
+                candidateNotes ?? null,
+                clientId,
+              ],
            );
            await txClient.query(
              `INSERT INTO interview_proposals
@@ -16597,6 +16630,8 @@ export async function registerRoutes(
            "Invited Talent",
          jobTitle,
          jobDescription,
+        proposedTimes: normalizedTimes,
+        meetingLink: normalizedMeetingLink ?? null,
          submissionId: created.id,
        });
 

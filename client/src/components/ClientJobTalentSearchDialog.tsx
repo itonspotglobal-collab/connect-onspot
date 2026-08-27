@@ -49,6 +49,7 @@ export function ClientJobTalentSearchDialog({
   const [searchDraft, setSearchDraft] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [proposedTime, setProposedTime] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [previewing, setPreviewing] = useState<SearchResult | null>(null);
 
@@ -57,6 +58,7 @@ export function ClientJobTalentSearchDialog({
     setSearchDraft("");
     setAppliedSearch("");
     setProposedTime("");
+    setMeetingLink("");
     setInvitedIds(new Set());
     setPreviewing(null);
   }, [open, job?.id]);
@@ -106,6 +108,15 @@ export function ClientJobTalentSearchDialog({
       if (!proposedTime) throw new Error("Choose an initial interview time before sending an invitation.");
       const start = new Date(proposedTime);
       if (Number.isNaN(start.getTime())) throw new Error("Choose a valid initial interview time.");
+      const normalizedMeetingLink = meetingLink.trim();
+      if (normalizedMeetingLink) {
+        try {
+          const parsed = new URL(normalizedMeetingLink);
+          if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+        } catch {
+          throw new Error("Enter a valid http(s) meeting link.");
+        }
+      }
 
       const response = await apiRequest("POST", "/api/client/invitations", {
         jobId: job.id,
@@ -114,6 +125,7 @@ export function ClientJobTalentSearchDialog({
           start: start.toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         }],
+        meetingLink: normalizedMeetingLink || undefined,
       });
       const body = await response.json().catch(() => ({}));
       if (response.status === 409 && body.error === "already_invited") {
@@ -188,6 +200,18 @@ export function ClientJobTalentSearchDialog({
               />
               <p className="mt-1 text-[11px] text-slate-500">Talent can accept this time or suggest alternatives.</p>
             </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-meeting-link">
+              Meeting link <span className="font-normal text-slate-500">(optional)</span>
+            </label>
+            <Input
+              id="invite-meeting-link"
+              type="url"
+              value={meetingLink}
+              onChange={(event) => setMeetingLink(event.target.value)}
+              placeholder="https://meet.google.com/…"
+            />
           </div>
 
           <div className="min-h-36">
