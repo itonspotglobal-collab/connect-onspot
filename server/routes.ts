@@ -99,6 +99,7 @@ import {
   claimEmailDelivery,
   markEmailDeliveryResult,
   sendJobApprovalCompanionEmail,
+  sendJobPostedOnBehalfEmail,
   sendClientNewApplicationEmail,
   sendUnreadMessageEmail,
   resetMessageEmailCooldown,
@@ -21782,6 +21783,7 @@ export async function registerRoutes(
   const loadClientJobEmailContext = async (jobId: string) => {
     const result = await query(
       `SELECT j.id, j.title, j.status, j.approval_status, j.rejection_reason,
+              j.is_client_submitted,
               j.client_id, u.email, u.first_name, u.last_name, u.company
          FROM jobs j
          LEFT JOIN users u ON u.id = j.client_id
@@ -21792,7 +21794,11 @@ export async function registerRoutes(
     return result.rows[0] ?? null;
   };
 
-  const renderClientJobEmail = async (job: any, input: any, decision: "approved" | "rejected" | "unapproved") => {
+  const renderClientJobEmail = async (
+    job: any,
+    input: any,
+    decision: "approved" | "rejected" | "unapproved" | "posted_on_behalf",
+  ) => {
     if (!job.client_id || !job.email) {
       throw Object.assign(new Error("This job does not have a Client account owner with an email address."), { status: 422 });
     }
@@ -21827,7 +21833,7 @@ export async function registerRoutes(
       jobId: job.id,
       jobTitle: job.title,
       jobStatus: decision === "approved" ? "open" : decision === "unapproved" ? "pending" : job.status,
-      approvalStatus: decision,
+      approvalStatus: decision === "posted_on_behalf" ? job.approval_status : decision,
       rejectionReason: input.rejectionReason ?? job.rejection_reason,
     });
     const rendered = renderClientEmail({ subject, bodyHtml }, context);
@@ -21859,7 +21865,7 @@ export async function registerRoutes(
     try {
       const job = await loadClientJobEmailContext(req.params.id);
       if (!job) return res.status(404).json({ error: "Job not found" });
-      const decision = ["rejected", "unapproved"].includes(req.body?.decision) ? req.body.decision : "approved";
+      const decision = ["rejected", "unapproved", "posted_on_behalf"].includes(req.body?.decision) ? req.body.decision : "approved";
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       return res.json({ subject: rendered.subject, bodyHtml: rendered.bodyHtml });
     } catch (err: any) {
@@ -21873,7 +21879,7 @@ export async function registerRoutes(
     const testRecipient = String(req.body?.testRecipient ?? "").trim();
     if (!validateEmail(testRecipient)) return res.status(400).json({ error: "Enter a valid test recipient email." });
     try {
-      const decision = ["rejected", "unapproved"].includes(req.body?.decision) ? req.body.decision : "approved";
+       const decision = ["rejected", "unapproved", "posted_on_behalf"].includes(req.body?.decision) ? req.body.decision : "approved";
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);
       const requestedSender = String(req.body?.senderEmail ?? "hiretalent@onspotglobal.com");
       const senderEmail = ALLOWED_SENDERS[requestedSender] ? requestedSender : "hiretalent@onspotglobal.com";
@@ -21909,6 +21915,40 @@ export async function registerRoutes(
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(err?.status ?? 500).json({ error: err?.message ?? "Unable to send test email", unresolvedKeys: err?.unresolvedKeys });
+    }
+  });
+
+  app.post("/api/admin/jobs/:id/client-email/send-after-creation", maybeAuthenticateAdmin, maybeRequireTalentSubRole, async (req: any, res: Response) => {
+    try {
+      const job = await loadClientJobEmailContext(req.params.id);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      if (job.status === "draft") {
+        return res.status(409).json({ error: "Draft jobs cannot receive a posted-on-behalf email." });
+      }
+      if (job.is_client_submitted) {
+        return res.status(409).json({ error: "Client-posted jobs cannot receive a posted-on-behalf email." });
+      }
+      if (!job.client_id || !job.email) {
+        return res.status(422).json({ error: "This job does not have a Client account owner with an email address." });
+      }
+      const rendered = await renderClientJobEmail(job, req.body ?? {}, "posted_on_behalf");
+      const email = await sendJobPostedOnBehalfEmail({
+        jobId: job.id,
+        reviewedContent: {
+          subject: rendered.subject,
+          bodyHtml: rendered.bodyHtml,
+          templateId: rendered.templateId,
+          senderEmail: req.body?.senderEmail,
+          sentBy: req.user?.id ?? null,
+        },
+      });
+      return res.json({ success: true, email });
+    } catch (err: any) {
+      console.error("POST client email after job creation error:", err);
+      return res.status(err?.status ?? 500).json({
+        error: err?.message ?? "Unable to send Client email",
+        unresolvedKeys: err?.unresolvedKeys,
+      });
     }
   });
 

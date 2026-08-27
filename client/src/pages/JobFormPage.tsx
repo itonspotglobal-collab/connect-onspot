@@ -41,6 +41,7 @@ import { JobBasicsStep } from "@/components/job-form/JobBasicsStep";
 import { JobDescriptionStep } from "@/components/job-form/JobDescriptionStep";
 import { JobRequirementsStep } from "@/components/job-form/JobRequirementsStep";
 import { JobReviewStep } from "@/components/job-form/JobReviewStep";
+import { ClientEmailComposer, type ClientEmailPayload } from "@/components/ClientEmailComposer";
 import type { Job } from "@shared/schema";
 
 // ─── Step names ───────────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   const [pendingPayload, setPendingPayload] = useState<any>(null);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [clientSelectionError, setClientSelectionError] = useState("");
+  const [composerJob, setComposerJob] = useState<{ id: string; title: string } | null>(null);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -163,11 +165,27 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", apiBase, data),
-    onSuccess: () => {
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", apiBase, data);
+      return response.json();
+    },
+    onSuccess: (createdJob: any, submittedPayload: any) => {
       invalidate();
       toast({ title: "Job posting created — submitted for approval" });
-      navigate(returnPath);
+      const persistedClientId = createdJob?.clientId ?? createdJob?.client_id;
+      const isCompletedAdminCreation =
+        !isClientMode &&
+        !isEditing &&
+        submittedPayload?.status !== "draft" &&
+        createdJob?.status !== "draft" &&
+        !!selectedClientId &&
+        persistedClientId === selectedClientId;
+
+      if (isCompletedAdminCreation && createdJob?.id && createdJob?.title) {
+        setComposerJob({ id: createdJob.id, title: createdJob.title });
+      } else {
+        navigate(returnPath);
+      }
     },
     onError: (err: any) =>
       toast({
@@ -177,13 +195,52 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       }),
   });
 
+  const composerSendMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ClientEmailPayload }) =>
+      apiRequest("POST", `/api/admin/jobs/${id}/client-email/send-after-creation`, payload),
+    onSuccess: async (response) => {
+      const result = await response.json();
+      setComposerJob(null);
+      invalidate();
+      if (result.email?.status === "failed") {
+        toast({
+          title: "Job created; email failed",
+          description: result.email.error ?? "The job was created, but the Client email could not be delivered.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Job created — email sent to Client" });
+      }
+      navigate(returnPath);
+    },
+    onError: (err: any) =>
+      toast({ title: "Email failed", description: err.message, variant: "destructive" }),
+  });
+
+  const closeCreationComposer = () => {
+    setComposerJob(null);
+    navigate(returnPath);
+  };
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PATCH", `${apiBase}/${id}`, data),
-    onSuccess: () => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PATCH", `${apiBase}/${id}`, data);
+      return response.json();
+    },
+    onSuccess: (updatedJob: any, variables) => {
       invalidate();
       toast({ title: "Job posting updated" });
-      navigate(returnPath);
+      const isCompletedAdminDraft =
+        !isClientMode &&
+        isExistingDraft &&
+        variables.data?.status !== "draft" &&
+        updatedJob?.status !== "draft" &&
+        !(updatedJob?.isClientSubmitted ?? updatedJob?.is_client_submitted);
+      if (isCompletedAdminDraft && updatedJob?.id && updatedJob?.title) {
+        setComposerJob({ id: updatedJob.id, title: updatedJob.title });
+      } else {
+        navigate(returnPath);
+      }
     },
     onError: (err: any) => {
       const detail = err?.message ?? "Unknown error";
@@ -494,6 +551,18 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ClientEmailComposer
+        job={composerJob}
+        decision="posted_on_behalf"
+        open={!!composerJob}
+        onClose={closeCreationComposer}
+        isSending={composerSendMutation.isPending}
+        onConfirm={(payload) => {
+          if (!composerJob) return;
+          composerSendMutation.mutate({ id: composerJob.id, payload });
+        }}
+      />
 
       <div className="min-h-screen bg-gradient-to-br from-indigo-50/60 via-background to-teal-50/40 dark:from-indigo-950/20 dark:via-background dark:to-teal-950/10">
         {/* ── Top bar ── */}

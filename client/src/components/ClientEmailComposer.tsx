@@ -56,7 +56,7 @@ export interface ClientEmailPayload {
 
 interface Props {
   job: { id: string; title: string } | null;
-  decision: "approved" | "rejected" | "unapproved";
+  decision: "approved" | "rejected" | "unapproved" | "posted_on_behalf";
   rejectionReason?: string;
   open: boolean;
   onClose: () => void;
@@ -181,12 +181,20 @@ export function ClientEmailComposer({
       <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {decision === "approved" ? "Approve Job & Email Client" : decision === "unapproved" ? "Email Client About Unapproved Job" : "Email Client About Rejected Job"}
+            {decision === "approved"
+              ? "Approve Job & Email Client"
+              : decision === "unapproved"
+                ? "Email Client About Unapproved Job"
+                : decision === "posted_on_behalf"
+                  ? "Email Client About Job Posted on Their Behalf"
+                  : "Email Client About Rejected Job"}
           </DialogTitle>
           <DialogDescription>
             {decision === "approved"
               ? "Review and edit the Client notification before confirming approval. Canceling or sending a test will not change the job."
-              : "Review and edit the Client notification. The job decision has already been saved; canceling or sending a test will not change it."}
+              : decision === "posted_on_behalf"
+                ? "Review and edit the Client notification. The job has already been created; canceling or sending a test will not remove it."
+                : "Review and edit the Client notification. The job decision has already been saved; canceling or sending a test will not change the job."}
           </DialogDescription>
         </DialogHeader>
 

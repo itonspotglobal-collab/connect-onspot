@@ -27,6 +27,12 @@ Admin-reviewed decision emails must reuse the exact canonical transition event a
 
 **How to apply:** Reuse the transition event for the reviewed send, claim before sending, and record both successful and failed attempts through this service.
 
+Admin-created jobs posted on behalf of a Client use the same reviewed composer, but their creation event is distinct from approval decisions. Resolve the recipient from the persisted job owner, never from a frontend email address. Draft saves and Client-self posts are ineligible; final submission of an Admin-owned draft is eligible.
+
+**Why:** Creation and approval are separate business events, and tying recipient identity to persisted ownership prevents a stale or forged browser value from sending to the wrong account.
+
+**How to apply:** Persist the job first, open the existing Client composer only after successful final submission, and use a job-specific creation event key so retries cannot duplicate a successful send.
+
 ## Privacy invariants
 - Applicant contact PII (email, phone) is never included in Client-facing companion emails.
 - Unread message emails never include message body content.

@@ -31,6 +31,8 @@ const APPROVAL_NOTIFICATION_JOB_ID = `client-job-approval-notification-${suffix}
 const REJECTION_NOTIFICATION_JOB_ID = `client-job-rejection-notification-${suffix}`;
 const COMPOSER_APPROVAL_JOB_ID = `client-job-composer-approval-${suffix}`;
 const COMPOSER_REJECTION_JOB_ID = `client-job-composer-rejection-${suffix}`;
+const POSTED_ON_BEHALF_JOB_ID = `client-job-posted-on-behalf-${suffix}`;
+const CLIENT_SELF_POST_JOB_ID = `client-job-self-post-${suffix}`;
 const CANDIDATE_ID = `client-job-candidate-${suffix}`;
 
 const token = (userId: string, role: string) =>
@@ -151,8 +153,12 @@ async function createFixtures() {
         'Standard', 'open', 'pending', 'manual'),
        ($8, $2, 'Composer approval job', 'Composer approval test job', 'Technical', 'intermediate',
         'Standard', 'open', 'pending', 'manual'),
-       ($9, $2, 'Composer rejection job', 'Composer rejection test job', 'Technical', 'intermediate',
-        'Standard', 'open', 'pending', 'manual')`,
+        ($9, $2, 'Composer rejection job', 'Composer rejection test job', 'Technical', 'intermediate',
+         'Standard', 'open', 'pending', 'manual'),
+        ($10, $2, 'Admin posted job', 'Admin posted-on-behalf test job', 'Technical', 'intermediate',
+         'Standard', 'open', 'pending', 'admin_post'),
+        ($11, $2, 'Client self-posted job', 'Client self-post test job', 'Technical', 'intermediate',
+         'Standard', 'open', 'pending', 'client_post')`,
       [
         PENDING_JOB_ID,
         CLIENT_ID,
@@ -163,7 +169,13 @@ async function createFixtures() {
         REJECTION_NOTIFICATION_JOB_ID,
         COMPOSER_APPROVAL_JOB_ID,
         COMPOSER_REJECTION_JOB_ID,
+        POSTED_ON_BEHALF_JOB_ID,
+        CLIENT_SELF_POST_JOB_ID,
       ],
+  );
+  await query(
+    `UPDATE jobs SET is_client_submitted = true WHERE id = $1`,
+    [CLIENT_SELF_POST_JOB_ID],
   );
   await query(
     `INSERT INTO candidates
@@ -177,7 +189,7 @@ async function destroyFixtures() {
   await query(
     `DELETE FROM email_notification_deliveries
       WHERE related_id = ANY($1::text[])`,
-    [[COMPOSER_APPROVAL_JOB_ID, COMPOSER_REJECTION_JOB_ID]],
+    [[COMPOSER_APPROVAL_JOB_ID, COMPOSER_REJECTION_JOB_ID, POSTED_ON_BEHALF_JOB_ID, CLIENT_SELF_POST_JOB_ID]],
   ).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdDraftJobId]).catch(() => {});
@@ -200,6 +212,8 @@ async function destroyFixtures() {
       REJECTION_NOTIFICATION_JOB_ID,
       COMPOSER_APPROVAL_JOB_ID,
       COMPOSER_REJECTION_JOB_ID,
+      POSTED_ON_BEHALF_JOB_ID,
+      CLIENT_SELF_POST_JOB_ID,
     ]],
   ).catch(() => {});
   await query(
@@ -1049,6 +1063,120 @@ describe("client profile and job authorization (production routes)", () => {
         { ...reviewedApproval, decision: "rejected", transitionEventKey: actualTransition.rows[0].event_key },
       );
       assert.equal(replay.status, 409, JSON.stringify(replay.json));
+    } finally {
+      globalThis.fetch = savedFetch;
+      for (const [key, value] of Object.entries({
+        MICROSOFT_TENANT_ID: savedEmailConfig.tenant,
+        MICROSOFT_CLIENT_ID: savedEmailConfig.client,
+        MICROSOFT_CLIENT_SECRET: savedEmailConfig.secret,
+      })) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
+  it("sends one posted-on-behalf email to the persisted owner and excludes drafts and Client self-posts", async () => {
+    const savedEmailConfig = {
+      tenant: process.env.MICROSOFT_TENANT_ID,
+      client: process.env.MICROSOFT_CLIENT_ID,
+      secret: process.env.MICROSOFT_CLIENT_SECRET,
+    };
+    const savedFetch = globalThis.fetch;
+    let graphSendCount = 0;
+
+    try {
+      const template = await query(
+        `SELECT id FROM applicant_email_templates
+          WHERE category = 'job_posted_on_behalf' AND is_default = true
+          LIMIT 1`,
+      );
+      assert.ok(template.rows[0]?.id);
+      const payload = {
+        decision: "posted_on_behalf",
+        templateId: template.rows[0].id,
+        subject: "",
+        bodyHtml: "",
+        senderEmail: "hiretalent@onspotglobal.com",
+      };
+
+      const preview = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${POSTED_ON_BEHALF_JOB_ID}/client-email/preview`,
+        adminToken,
+        payload,
+      );
+      assert.equal(preview.status, 200, JSON.stringify(preview.json));
+      assert.equal(preview.json.subject, "A job post was created for you — Admin posted job");
+      assert.match(preview.json.bodyHtml, /Hi Client/);
+
+      const draftBlocked = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${otherClientJobId}/client-email/send-after-creation`,
+        adminToken,
+        payload,
+      );
+      assert.equal(draftBlocked.status, 409, JSON.stringify(draftBlocked.json));
+
+      const selfPostBlocked = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${CLIENT_SELF_POST_JOB_ID}/client-email/send-after-creation`,
+        adminToken,
+        payload,
+      );
+      assert.equal(selfPostBlocked.status, 409, JSON.stringify(selfPostBlocked.json));
+
+      process.env.MICROSOFT_TENANT_ID = "test-tenant";
+      process.env.MICROSOFT_CLIENT_ID = "test-client";
+      process.env.MICROSOFT_CLIENT_SECRET = "test-secret";
+      globalThis.fetch = async (input: Parameters<typeof fetch>[0]) => {
+        if (String(input).includes("/oauth2/v2.0/token")) {
+          return new Response(JSON.stringify({ access_token: "test-access-token", expires_in: 3600 }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        graphSendCount++;
+        return new Response(null, { status: 202 });
+      };
+
+      const sent = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${POSTED_ON_BEHALF_JOB_ID}/client-email/send-after-creation`,
+        adminToken,
+        payload,
+      );
+      assert.equal(sent.status, 200, JSON.stringify(sent.json));
+      assert.equal(sent.json.email.status, "sent");
+      assert.equal(sent.json.email.eventKey, `job-posted-on-behalf:${POSTED_ON_BEHALF_JOB_ID}`);
+
+      const repeated = await request(
+        server,
+        "POST",
+        `/api/admin/jobs/${POSTED_ON_BEHALF_JOB_ID}/client-email/send-after-creation`,
+        adminToken,
+        payload,
+      );
+      assert.equal(repeated.status, 200, JSON.stringify(repeated.json));
+      assert.equal(repeated.json.email.status, "skipped");
+      assert.equal(graphSendCount, 1);
+
+      const delivery = await query(
+        `SELECT recipient_email, recipient_user_id, sender_email, template_category, status
+           FROM email_notification_deliveries
+          WHERE event_key = $1`,
+        [`job-posted-on-behalf:${POSTED_ON_BEHALF_JOB_ID}`],
+      );
+      assert.equal(delivery.rows.length, 1);
+      assert.equal(delivery.rows[0].recipient_email, `${CLIENT_ID}@test.example`);
+      assert.equal(delivery.rows[0].recipient_user_id, CLIENT_ID);
+      assert.equal(delivery.rows[0].sender_email, "hiretalent@onspotglobal.com");
+      assert.equal(delivery.rows[0].template_category, "job_posted_on_behalf");
+      assert.equal(delivery.rows[0].status, "sent");
     } finally {
       globalThis.fetch = savedFetch;
       for (const [key, value] of Object.entries({

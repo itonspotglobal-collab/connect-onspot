@@ -415,6 +415,103 @@ ${reasonSection}
   }
 }
 
+// ── Admin-created Client Job Email ────────────────────────────────────────────
+
+export interface JobPostedOnBehalfEmailOptions {
+  jobId: string;
+  reviewedContent: {
+    subject: string;
+    bodyHtml: string;
+    templateId?: string | null;
+    senderEmail?: string | null;
+    sentBy?: string | null;
+  };
+}
+
+/**
+ * Send the reviewed "Job Posted on Your Behalf" email after an Admin-created
+ * job has been persisted. The recipient is always resolved from jobs.client_id
+ * rather than from request data.
+ */
+export async function sendJobPostedOnBehalfEmail(
+  opts: JobPostedOnBehalfEmailOptions,
+): Promise<CompanionEmailDeliveryResult> {
+  const emailEventKey = `job-posted-on-behalf:${opts.jobId}`;
+  const senderAllowlist = getSenderAllowlist();
+  const requestedSender = opts.reviewedContent.senderEmail ?? CLIENT_SENDER;
+  const senderEmail = senderAllowlist[requestedSender] ? requestedSender : CLIENT_SENDER;
+  const senderName = senderAllowlist[senderEmail] ?? "OnSpot Hire Talent";
+
+  try {
+    const ownerResult = await query(
+      `SELECT j.client_id, u.email
+         FROM jobs j
+         JOIN users u ON u.id = j.client_id AND u.role = 'client'
+        WHERE j.id = $1
+        LIMIT 1`,
+      [opts.jobId],
+    );
+    if (!ownerResult.rows.length || !ownerResult.rows[0].email) {
+      return {
+        status: "failed",
+        eventKey: emailEventKey,
+        error: "Client account owner could not be resolved.",
+      };
+    }
+
+    const owner = ownerResult.rows[0];
+    const recipientEmail: string = owner.email;
+    const recipientUserId: string = owner.client_id;
+    const claimed = await claimEmailDelivery({
+      eventKey: emailEventKey,
+      eventType: "job_posted_on_behalf",
+      recipientEmail,
+      recipientUserId,
+      senderEmail,
+      templateCategory: "job_posted_on_behalf",
+      relatedType: "job",
+      relatedId: opts.jobId,
+      templateId: opts.reviewedContent.templateId ?? null,
+      subject: opts.reviewedContent.subject,
+      bodyHtml: opts.reviewedContent.bodyHtml,
+      sentBy: opts.reviewedContent.sentBy ?? null,
+      senderName,
+      isTest: false,
+    });
+    if (!claimed) return { status: "skipped", eventKey: emailEventKey };
+
+    if (!isEmailServiceConfigured()) {
+      const error = "Microsoft Graph email is not configured.";
+      await markEmailDeliveryResult({ eventKey: emailEventKey, status: "failed", error });
+      return { status: "failed", eventKey: emailEventKey, error };
+    }
+
+    const sendResult = await sendApplicantEmail({
+      to: recipientEmail,
+      subject: opts.reviewedContent.subject,
+      bodyHtml: opts.reviewedContent.bodyHtml,
+      senderEmail,
+    });
+    await markEmailDeliveryResult({
+      eventKey: emailEventKey,
+      status: sendResult.success ? "sent" : "failed",
+      error: sendResult.error,
+    });
+    return {
+      status: sendResult.success ? "sent" : "failed",
+      eventKey: emailEventKey,
+      error: sendResult.error,
+    };
+  } catch (err: any) {
+    console.error("[emailCompanionService] sendJobPostedOnBehalfEmail (non-fatal):", err?.message);
+    return {
+      status: "failed",
+      eventKey: emailEventKey,
+      error: err?.message ?? "Unknown email delivery error",
+    };
+  }
+}
+
 // ── New-Application Client Email ───────────────────────────────────────────────
 
 export interface ClientNewApplicationEmailOptions {

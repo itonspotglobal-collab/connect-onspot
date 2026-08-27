@@ -60,6 +60,16 @@ function brandedClientTemplate(
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
   brandedClientTemplate({
+    name: "Job Posted on Your Behalf", category: "job_posted_on_behalf", stage: null, isDefault: true,
+    subject: "A job post was created for you — {{job_title}}",
+    content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>
+<p style="margin:0 0 16px;">The OnSpot team has created a job posting for <strong>{{job_title}}</strong> on your behalf.</p>
+<p style="margin:0 0 16px;">You can review the job posting and its current status from your OnSpot Client account.</p>
+${button("{{job_url}}", "View Job Posting")}
+<p style="margin:0 0 16px;">If any changes are needed, you can review the posting in OnSpot or contact the OnSpot Hire Talent team.</p>
+<p style="margin:0;">Warm regards,<br />The OnSpot Hire Talent Team</p>`,
+  }),
+  brandedClientTemplate({
     name: "Job Post Unapproved", category: "job_unapproved", stage: null, isDefault: true,
     subject: "Update on your job post — {{job_title}}",
     content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>

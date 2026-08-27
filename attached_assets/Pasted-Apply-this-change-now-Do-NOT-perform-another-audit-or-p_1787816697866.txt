@@ -1,0 +1,521 @@
+Apply this change now.
+
+Do NOT perform another audit or planning pass.
+Do not alter or ruin other working features so that we will not have to fix it again.
+
+Use the existing working ClientEmailComposer implementation and the existing Admin Job Form / "Post on behalf of" workflow.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Important Note: Do not change, ruin, refactor, or redesign any existing working feature.
+
+GOAL
+
+When an Admin creates/posts a job opening on behalf of a Client, the selected Client must receive an email notification.
+
+Example:
+
+Admin selects:
+
+Post on behalf of → val.legaspi09@gmail.com
+
+Admin completes the Job Form and posts/submits the job.
+
+After the job is successfully persisted for that Client:
+
+→ preserve all existing job behavior
+→ preserve existing in-app notification behavior if already present
+→ open the existing ClientEmailComposer
+→ preload a "Job Posted on Your Behalf" email
+→ allow Admin to review/edit
+→ send the email to that Client
+
+Do not create another email composer.
+
+Reuse ClientEmailComposer.
+
+IMPORTANT — THIS IS NOT THE APPROVAL EMAIL
+
+This new email represents:
+
+Admin created/submitted a job posting on behalf of the Client
+
+It is separate from:
+
+Job Post Approved
+Job Post Rejected
+Job Post Unapproved
+
+Do not reuse the Job Approved template for this event.
+
+A job created on behalf of the Client may still go through the existing approval/status workflow according to current business rules.
+
+Do not change those rules.
+
+REQUIRED FLOW
+
+Current conceptual Admin flow:
+
+Admin opens Create Job
+→ selects Client under Post on behalf of
+→ fills job form
+→ submits/posts job
+→ job is saved for selected Client
+
+New flow:
+
+Admin opens Create Job
+→ selects Client under Post on behalf of
+→ fills job form
+→ submits/posts job
+→ existing backend successfully creates the job for that Client
+→ open ClientEmailComposer
+→ preload "Job Posted on Your Behalf"
+→ Admin reviews/edits email
+→ Admin sends email
+
+The job MUST be persisted before the ClientEmailComposer opens.
+
+IMPORTANT ORDER
+
+Use:
+
+Job persistence
+→ existing business/status behavior
+→ existing notification, if any
+→ ClientEmailComposer
+→ email send
+
+Do NOT make job creation depend on successful email delivery.
+
+If email fails or Admin closes the composer:
+
+the job remains created
+ownership remains assigned to the Client
+no data is rolled back
+CLIENT RECIPIENT
+
+Use the Client selected in the existing:
+
+Post on behalf of
+
+field.
+
+Server-side recipient resolution must use the actual persisted job owner:
+
+jobs.client_id
+→ users.id
+→ users.email
+
+Example:
+
+Selected Client:
+val.legaspi09@gmail.com
+
+Expected recipient:
+val.legaspi09@gmail.com
+
+Do not trust an arbitrary frontend email as the authoritative recipient.
+
+Do not send to:
+
+Talent
+Applicant
+another Client
+Admin
+organization invitation email
+
+unless the persisted jobs.client_id actually resolves to that account.
+
+SENDER
+
+Default sender must be:
+
+OnSpot Hire Talent <hiretalent@onspotglobal.com>
+
+Use the exact same working ClientEmailComposer sender configuration already proven by:
+
+Approve
+Reject
+Unapprove
+
+Do not create a separate Graph/email sending path.
+
+CLIENT EMAIL TEMPLATE
+
+Add a template through the existing email template system:
+
+Name:
+
+Job Posted on Your Behalf
+
+Suggested category:
+
+job_posted_on_behalf
+
+Subject:
+
+A job post was created for you — {{job_title}}
+
+Suggested body:
+
+Hi {{client_first_name}},
+
+The OnSpot team has created a job posting for {{job_title}} on your behalf.
+
+You can review the job posting and its current status from your OnSpot Client account.
+
+[View Job Posting]
+
+If any changes are needed, you can review the posting in OnSpot or contact the OnSpot Hire Talent team.
+
+Warm regards,
+The OnSpot Hire Talent Team
+
+Do not hardcode this directly inside the component.
+
+Use the existing email template storage and variable resolver.
+
+TEMPLATE VARIABLES
+
+Reuse existing Client/job variables.
+
+At minimum support:
+
+{{client_first_name}}
+{{client_last_name}}
+{{client_name}}
+{{client_email}}
+{{company_name}}
+{{job_title}}
+{{job_id}}
+{{job_status}}
+{{approval_status}}
+{{job_url}}
+{{portal_url}}
+
+Do not use Applicant-only variables such as:
+
+{{applicant_first_name}}
+
+WHEN TO OPEN CLIENTEMAILCOMPOSER
+
+Only open ClientEmailComposer when ALL are true:
+
+Current user is Admin.
+Admin is creating a job using the existing Admin Job Form.
+A Client was selected under Post on behalf of.
+Job creation/submission succeeds.
+The persisted job is owned by that selected Client.
+
+Do not open it:
+
+while typing in the form
+when Save & Exit only saves a Draft
+when validation fails
+when backend job creation fails
+when a Client posts their own job
+when Admin is merely editing an existing job unless a separate business event requires it
+when viewing a job
+DRAFTS
+
+If Admin uses:
+
+Save & Exit
+
+and the record is saved only as a Draft:
+
+Do NOT send the "Job Posted on Your Behalf" email.
+
+A Draft is not a completed job posting action.
+
+The email should happen only when the Admin actually performs the existing final submit/post action.
+
+Do not change Draft behavior.
+
+CLIENT-POSTED JOBS
+
+If the Client creates their own job:
+
+Do NOT show ClientEmailComposer for "Job Posted on Your Behalf".
+
+The event only applies to:
+
+Admin → posting for Client.
+
+Do not email the Client telling them that they themselves posted their own job.
+
+JOB OWNERSHIP
+
+Do not change the existing Post on behalf of implementation.
+
+The existing selected Client must continue to become:
+
+jobs.client_id
+
+Do not change:
+
+Client ownership
+Admin authorization
+company association
+approval status
+createdVia
+job fields
+job status logic
+
+This task only adds the communication step after successful Admin-on-behalf creation.
+
+EXISTING APPROVAL FLOW
+
+Do NOT change the existing working:
+
+Approve
+→ ClientEmailComposer
+
+flow.
+
+The Client may therefore receive different emails at different points:
+
+Job Posted on Your Behalf
+when Admin creates the job for them.
+Job Post Approved
+later, if/when the job transitions to approved.
+
+These represent different real events and are both valid.
+
+Do not suppress the approval email simply because the Client already received the on-behalf email.
+
+EXISTING REJECT / UNAPPROVE FLOWS
+
+Do not change the existing working:
+
+Reject
+Unapprove
+
+ClientEmailComposer integrations.
+
+DUPLICATE PROTECTION
+
+The Job Posted on Your Behalf event must send at most one workflow email per actual creation event.
+
+Use an idempotent event key such as conceptually:
+
+job-posted-on-behalf:{jobId}
+
+Use the existing delivery/idempotency mechanism already implemented for ClientEmailComposer emails.
+
+Repeated frontend retries must not generate duplicate emails.
+
+Do not use subject matching as the duplicate check.
+
+CLIENTEMAILCOMPOSER
+
+Reuse the existing component.
+
+Expected UI:
+
+Email Client — [Client Name]
+
+To:
+val.legaspi09@gmail.com
+
+From:
+OnSpot Hire Talent <hiretalent@onspotglobal.com>
+
+Template:
+Job Posted on Your Behalf
+
+Tabs:
+
+Compose
+Preview
+History
+
+Actions:
+
+Preview
+Test Send
+Send Email
+
+Do not change ApplicantEmailComposer.
+
+CLOSING THE COMPOSER
+
+If Admin closes ClientEmailComposer without sending:
+
+keep the created job
+keep the Client ownership
+do not delete or roll back the job
+
+Email simply remains unsent.
+
+HISTORY
+
+Ensure ClientEmailComposer History records this email under the correct job.
+
+History should include:
+
+subject
+Client recipient
+sender
+template
+sent/failed status
+timestamp
+test status
+
+Do not mix Applicant email history incorrectly.
+
+EMAIL FAILURE
+
+If Graph/email sending fails:
+
+Show an appropriate email failure message.
+
+But:
+
+job stays created
+job ownership stays correct
+job status stays correct
+any existing in-app notification stays intact
+
+Do not retry job creation.
+
+OPTIONAL IN-APP NOTIFICATION
+
+Check whether the existing Admin-on-behalf creation already creates a Client notification.
+
+If it already exists:
+
+preserve it exactly.
+
+If there is no notification for this event, do NOT invent a broad notification redesign in this task unless the implementation already has an established direct companion pattern.
+
+Primary requirement here is the Client email.
+
+DO NOT CHANGE
+
+Do not modify or break:
+
+JobFormPage fields
+Post on behalf of selector
+Admin Client selector
+Work Setup
+Compensation/currency
+Draft Save & Exit
+Description
+Requirements
+Review
+job creation payload
+job ownership
+job approval workflow
+Approve ClientEmailComposer
+Reject ClientEmailComposer
+Unapprove ClientEmailComposer
+ApplicantEmailComposer
+notification bell
+Client Profile
+Client job list
+Find Work
+Talent applications
+interviews
+organizations
+authorization
+Microsoft Graph configuration
+
+Do not refactor working features.
+
+TESTS
+
+Add focused coverage:
+
+Admin selects Client and creates job.
+Job persists with correct jobs.client_id.
+ClientEmailComposer opens after successful creation.
+Correct Client recipient is shown.
+Recipient derives from persisted job ownership.
+Default sender is hiretalent@onspotglobal.com.
+Job Posted on Your Behalf template loads.
+Preview resolves Client/job variables.
+Closing composer does not remove job.
+Email failure does not remove job.
+Successful send creates history.
+Exactly one email is sent per job creation event.
+Retry does not duplicate email.
+Save & Exit Draft does NOT open composer.
+Draft does NOT send this email.
+Client creating their own job does NOT open this composer.
+Existing Admin job creation still works.
+Existing Approve email flow still works.
+Existing Reject email flow still works.
+Existing Unapprove email flow still works.
+ApplicantEmailComposer still works.
+Existing notifications still work.
+npx tsc --noEmit passes.
+git diff --check passes.
+MANUAL VERIFICATION
+
+Use:
+
+Admin account
+
+Select Client:
+
+val.legaspi09@gmail.com
+
+Then:
+
+Create a new test job.
+Confirm the Post on behalf of Client is:
+val.legaspi09@gmail.com
+Complete all required Job Form steps.
+Submit/post the job.
+Verify the job is successfully created first.
+Verify ClientEmailComposer opens.
+Verify:
+
+To:
+val.legaspi09@gmail.com
+
+From:
+OnSpot Hire Talent <hiretalent@onspotglobal.com>
+
+Template:
+Job Posted on Your Behalf
+
+Preview email.
+Send.
+Verify Gmail receives it.
+Verify ClientEmailComposer History shows Sent.
+Verify the Client can see the created job in their account.
+Verify only one on-behalf email was delivered.
+
+Also test:
+
+Save & Exit
+→ Draft saved
+→ NO ClientEmailComposer
+→ NO on-behalf email
+
+COMPLETION REPORT
+
+Report only after implementation:
+
+Exact files changed.
+Admin-on-behalf job creation integration point.
+Client recipient resolution.
+Template added.
+Default sender.
+ClientEmailComposer reuse.
+Event/idempotency key.
+History behavior.
+Draft exclusion.
+Client-self-post exclusion.
+Automated tests.
+Manual delivery result to val.legaspi09@gmail.com.
+Confirmation Approve flow was not changed.
+Confirmation Reject flow was not changed.
+Confirmation Unapprove flow was not changed.
+Confirmation ApplicantEmailComposer was not changed.
+Confirmation no existing Job Form feature was altered or ruined.
+
+Apply this directly using the existing working ClientEmailComposer pattern. Do not audit or redesign the feature.

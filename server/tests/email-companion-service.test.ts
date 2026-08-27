@@ -75,6 +75,7 @@ const {
   markEmailDeliveryResult,
   isEventAlreadyDelivered,
   sendJobApprovalCompanionEmail,
+  sendJobPostedOnBehalfEmail,
   sendClientNewApplicationEmail,
   sendUnreadMessageEmail,
   resetMessageEmailCooldown,
@@ -470,6 +471,47 @@ describe("sendJobApprovalCompanionEmail", () => {
     } finally {
       queryShouldThrow = false;
     }
+    assert.equal(capturedSends.length, 0);
+  });
+});
+
+describe("sendJobPostedOnBehalfEmail", () => {
+  it("resolves the persisted job owner and sends once with the creation event key", async () => {
+    resetMocks();
+    queryResponses.push({ rows: [{ client_id: "client-owner", email: "owner@acme.com" }] });
+    queryResponses.push({ rows: [{ id: "creation-claim" }] });
+    queryResponses.push({ rows: [] });
+
+    const result = await sendJobPostedOnBehalfEmail({
+      jobId: "created-job",
+      reviewedContent: {
+        subject: "A job post was created for you — Designer",
+        bodyHtml: "<p>Created on your behalf.</p>",
+        templateId: "posted-template",
+        senderEmail: "hiretalent@onspotglobal.com",
+        sentBy: "admin-1",
+      },
+    });
+
+    assert.equal(result.status, "sent");
+    assert.equal(result.eventKey, "job-posted-on-behalf:created-job");
+    assert.equal(capturedSends.length, 1);
+    assert.equal(capturedSends[0].to, "owner@acme.com");
+    assert.equal(capturedSends[0].senderEmail, "hiretalent@onspotglobal.com");
+    assert.match(String(queryCalls[0][0]), /jobs j/);
+  });
+
+  it("does not send again when the creation delivery claim is already taken", async () => {
+    resetMocks();
+    queryResponses.push({ rows: [{ client_id: "client-owner", email: "owner@acme.com" }] });
+    queryResponses.push({ rows: [] });
+
+    const result = await sendJobPostedOnBehalfEmail({
+      jobId: "created-job",
+      reviewedContent: { subject: "Subject", bodyHtml: "<p>Body</p>" },
+    });
+
+    assert.equal(result.status, "skipped");
     assert.equal(capturedSends.length, 0);
   });
 });
