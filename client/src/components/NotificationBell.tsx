@@ -19,6 +19,10 @@ import {
   notificationTypesForRole,
   useUnreadNotificationsCount,
 } from "@/hooks/useUnreadNotificationsCount";
+import {
+  applicationsFooterRouteForRole,
+  notificationRouteForRole,
+} from "@/lib/notificationRouting";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -264,7 +268,8 @@ export function NotificationBell() {
     if (n.type === "new_message" && n.relatedId) {
       navigate(`/messages/${encodeURIComponent(n.relatedId)}`);
     } else if (cfg) {
-      navigate(cfg.route);
+      const route = notificationRouteForRole(n.type, user?.role, cfg.route);
+      if (route) navigate(route);
     }
   }
 
@@ -373,7 +378,7 @@ export function NotificationBell() {
               <button
                 onClick={() => {
                   setOpen(false);
-                  navigate(isTalent ? "/my-applications" : "/client-profile");
+                  navigate(applicationsFooterRouteForRole(user?.role, isTalent));
                 }}
                 className="w-full py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
               >

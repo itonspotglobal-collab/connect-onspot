@@ -1,0 +1,430 @@
+Apply this routing fix now.
+
+Do NOT perform a broad audit, redesign, or refactor.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing notification system is working:
+
+* notifications are created
+* notification bell works
+* unread count works
+* notification dropdown works
+* notification content works
+
+The only problem is that certain Admin notifications navigate to the wrong page.
+
+Do NOT change notification creation or notification content unless required for routing metadata.
+
+# CURRENT BUG
+
+When an Admin clicks:
+
+`New application received`
+
+the notification currently redirects to:
+
+`/dashboard`
+
+For an Admin account this results in a blank/incorrect page.
+
+This is wrong.
+
+The Admin should be sent to:
+
+`/admin/job-applications`
+
+where all job applications are listed.
+
+# REQUIRED ROUTE 1 — NEW APPLICATION RECEIVED
+
+For Admin users:
+
+Notification type/event:
+
+`New application received`
+
+or its canonical notification type such as:
+
+`job_application_received`
+
+must navigate to:
+
+`/admin/job-applications`
+
+Do not route Admin to:
+
+`/dashboard`
+
+Do not route Admin to Client Job Applications.
+
+Do not route Admin to Talent Applications.
+
+# REQUIRED ROUTE 2 — JOB APPROVAL REQUEST
+
+When a Client submits/requests approval for a job posting and the Admin receives a related notification:
+
+Clicking that Admin notification must navigate to:
+
+`/admin/find-work`
+
+This is the Admin Job Board Management / approval page.
+
+Do not route it to:
+
+`/dashboard`
+
+Do not route it to Client Profile.
+
+# EXPECTED ADMIN MAPPING
+
+At minimum:
+
+### New application received
+
+Admin destination:
+
+`/admin/job-applications`
+
+### Client submitted/requested job approval
+
+Admin destination:
+
+`/admin/find-work`
+
+### Job approval-related Admin notification
+
+Admin destination:
+
+`/admin/find-work`
+
+Use the exact existing canonical notification types after inspecting the current routing switch/map.
+
+Do not match only against visible notification titles if a stable notification `type` exists.
+
+Preferred:
+
+`notification.type`
+→ route
+
+rather than:
+
+`notification.title.includes(...)`
+→ route
+
+# IMPORTANT — USE ROLE-AWARE ROUTING
+
+Notification routing may be shared between:
+
+* Admin
+* Client
+* Talent
+
+Do not globally change a notification destination if it would break another role.
+
+Example:
+
+A `job_application_received` notification for a Client may need to route somewhere different than the Admin version.
+
+Therefore route using:
+
+* authenticated user role
+* notification type
+* related type/id where useful
+
+Conceptually:
+
+```ts
+if (user.role === "admin") {
+  switch (notification.type) {
+    case "job_application_received":
+      return "/admin/job-applications";
+
+    case "job_approval_requested":
+    case "client_job_submitted":
+      return "/admin/find-work";
+  }
+}
+```
+
+Use the actual existing type names from the project.
+
+Do not invent new type names unless the notification currently lacks a usable stable type.
+
+# RELATED ENTITY IDS
+
+If the existing notification contains:
+
+* relatedId
+* relatedType
+* jobId
+* submissionId
+
+preserve them.
+
+For V1, it is acceptable to route to the Admin list pages:
+
+`/admin/job-applications`
+
+and:
+
+`/admin/find-work`
+
+without automatically opening the exact application/job.
+
+Do not introduce complicated deep-linking in this fix.
+
+If existing deep-link behavior already exists and is safe, preserve it.
+
+# VIEW APPLICATIONS LINK
+
+The notification dropdown currently has a footer/action like:
+
+`View applications →`
+
+For Admin users this must also resolve to:
+
+`/admin/job-applications`
+
+Do not send Admin users to `/dashboard`.
+
+For Client/Talent users, preserve their current footer destinations.
+
+# WHY /dashboard SHOULD NOT BE USED HERE
+
+Do not use `/dashboard` as a generic notification fallback for Admin hiring events.
+
+The Admin has dedicated routes for these workflows.
+
+Use:
+
+Applications:
+`/admin/job-applications`
+
+Job approval/management:
+`/admin/find-work`
+
+Only keep `/dashboard` for notification types that genuinely belong on the Admin Dashboard.
+
+# BLANK /dashboard PAGE
+
+Do not redesign `/dashboard` as part of this task.
+
+The reported blank `/dashboard` behavior is exposed by incorrect notification routing.
+
+Fix the notification destination.
+
+Do not turn this into an unrelated dashboard-routing refactor.
+
+# ROUTING SOURCE OF TRUTH
+
+Find the smallest existing location responsible for notification navigation.
+
+Likely places may include:
+
+* notification dropdown component
+* TopNavigation
+* NotificationBell
+* notification route helper
+* route mapping utility
+
+Prefer fixing one centralized notification-route helper rather than adding isolated `navigate()` calls throughout different components.
+
+If a centralized mapper already exists, extend it.
+
+Do not create a second competing route map.
+
+# PRESERVE READ/UNREAD BEHAVIOR
+
+Clicking a notification may currently:
+
+1. mark it as read
+2. close the notification panel
+3. navigate
+
+Preserve that exact behavior.
+
+Only change the destination.
+
+Do not break:
+
+* blue unread indicator
+* unread count
+* bell badge
+* mark-as-read
+* notification refresh
+* notification dropdown state
+
+# CLIENT ROUTING — DO NOT CHANGE
+
+Do not modify existing working Client notification navigation unless it currently shares a broken Admin fallback.
+
+Examples of Client routes that may already work:
+
+* Client Profile
+* Client Interviews
+* Client applications/job management
+* Messages
+
+Preserve them.
+
+# TALENT ROUTING — DO NOT CHANGE
+
+Do not modify existing Talent notification routing:
+
+* My Applications
+* interviews
+* messages
+* offers
+* other Talent flows
+
+This task is specifically fixing Admin routing.
+
+# NOTIFICATION TYPES TO VERIFY
+
+Check the existing canonical notification types and map the appropriate Admin routes.
+
+At minimum verify:
+
+* `job_application_received`
+* job approval/request notification type
+* Client-submitted job notification type if separate
+* any current Admin job-approval notification type
+
+Do not change notification database rows unnecessarily.
+
+New notifications should use the existing types.
+
+Legacy notifications should continue rendering.
+
+# SAFE FALLBACK
+
+For unknown Admin notification types:
+
+preserve the current fallback unless it routes to an invalid page.
+
+Do not map every unknown notification to `/admin/job-applications`.
+
+Use specific mappings only.
+
+# TESTS
+
+Add focused routing tests.
+
+1. Admin `job_application_received`
+   → `/admin/job-applications`
+
+2. Admin new application notification does NOT route to `/dashboard`.
+
+3. Admin job approval request
+   → `/admin/find-work`
+
+4. Admin Client job submission notification
+   → `/admin/find-work`
+
+5. Admin notification is marked read when clicked.
+
+6. Bell unread count still updates.
+
+7. Notification dropdown closes/behaves as before.
+
+8. Admin "View applications" footer
+   → `/admin/job-applications`
+
+9. Client notification routes remain unchanged.
+
+10. Talent notification routes remain unchanged.
+
+11. Existing notification auth tests remain passing.
+
+12. Existing notification creation tests remain passing.
+
+13. Existing Admin Job Applications route still works.
+
+14. Existing Admin Find Work route still works.
+
+15. `npx tsc --noEmit` passes.
+
+16. `git diff --check` passes.
+
+# MANUAL VERIFICATION
+
+## New Application
+
+1. Log in as Admin.
+2. Have a Talent submit a new application.
+3. Confirm Admin receives:
+   `New application received`
+4. Click it.
+5. Verify URL becomes:
+
+`/admin/job-applications`
+
+6. Verify Job Applications page loads.
+7. Verify notification is marked read.
+8. Verify no blank `/dashboard` page appears.
+
+## Job Approval Request
+
+1. Log in as Client.
+2. Submit a job for Admin approval.
+3. Log in as Admin.
+4. Confirm approval-request notification appears.
+5. Click it.
+6. Verify URL becomes:
+
+`/admin/find-work`
+
+7. Verify the Admin job-management page loads.
+8. Verify notification is marked read.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+* notification creation
+* notification text
+* notification database schema
+* unread count
+* notification bell
+* email notifications
+* ApplicantEmailComposer
+* ClientEmailComposer
+* Admin Dashboard
+* Admin Job Applications
+* Admin Find Work
+* job approval workflow
+* application workflow
+* Client routes
+* Talent routes
+* authentication
+* role guards
+* messaging
+* interviews
+* job posting behavior
+
+No unrelated cleanup.
+
+# COMPLETION REPORT
+
+Report only after implementation:
+
+1. Exact file(s) changed.
+2. Existing routing function/helper updated.
+3. Canonical notification type for new application.
+4. Canonical notification type for job approval request.
+5. New Admin destination for application notification.
+6. New Admin destination for approval notification.
+7. Confirmation `/dashboard` is no longer used for those two events.
+8. Confirmation mark-as-read behavior remains unchanged.
+9. Confirmation Client routing remains unchanged.
+10. Confirmation Talent routing remains unchanged.
+11. Automated test results.
+12. Manual Admin new-application test result.
+13. Manual Admin job-approval-request test result.
+14. `npx tsc --noEmit` result.
+15. `git diff --check` result.
+
+Apply this as a narrowly scoped Admin notification-routing fix only.
+
+Do not redesign or refactor other working features.
