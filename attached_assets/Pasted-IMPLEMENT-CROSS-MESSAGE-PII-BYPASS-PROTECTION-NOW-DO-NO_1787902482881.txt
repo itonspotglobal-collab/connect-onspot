@@ -1,0 +1,763 @@
+IMPLEMENT CROSS-MESSAGE PII BYPASS PROTECTION NOW.
+
+DO NOT AUDIT.
+DO NOT ONLY EXPLAIN THE PROBLEM.
+
+The existing message redaction now works for sensitive information inside a single message.
+
+We need to close the next bypass:
+
+A user can split personal information across multiple consecutive chat messages.
+
+Example:
+
+Message 1:
+val@onspot
+
+Message 2:
+global.com
+
+Individually these may not look like a complete email.
+
+Combined:
+
+val@onspotglobal.com
+
+This must be detected and protected.
+
+============================================================
+GOAL
+============================================================
+
+Make the messaging privacy filter CONVERSATION-AWARE.
+
+For every NEW user-generated message:
+
+1. Load a small number of recent messages from the SAME SENDER in the SAME THREAD.
+2. Combine their recent text with the new incoming message.
+3. Detect whether the sequence reconstructs:
+   - email address
+   - phone number
+   - credential
+   - username/contact handle
+   - secret/token
+   - obfuscated contact information
+4. If sensitive information spans multiple messages:
+   redact the appropriate content before the new message is delivered.
+5. Flag the event for review.
+6. Show the sender the existing privacy warning.
+
+Do not allow users to bypass protection by splitting one sensitive value across multiple messages.
+
+============================================================
+EXAMPLES THAT MUST BE CAUGHT
+============================================================
+
+EXAMPLE 1
+
+Message 1:
+val@onspot
+
+Message 2:
+global.com
+
+Combined:
+val@onspotglobal.com
+
+Result should prevent the recipient from reconstructing the email.
+
+Preferred visible result:
+
+Message 1:
+*****
+
+Message 2:
+*****.com
+
+OR another safe masking strategy where the combined visible conversation cannot reveal the full email.
+
+============================================================
+
+EXAMPLE 2
+
+Message 1:
+val
+
+Message 2:
+@onspotglobal
+
+Message 3:
+.com
+
+Must be detected as:
+
+val@onspotglobal.com
+
+============================================================
+
+EXAMPLE 3
+
+Message 1:
+0917
+
+Message 2:
+123
+
+Message 3:
+4723
+
+Combined:
+09171234723
+
+Must be treated as a phone number.
+
+Visible conversation must not allow the recipient to reconstruct the full phone number.
+
+============================================================
+
+EXAMPLE 4
+
+Message 1:
+my email is val
+
+Message 2:
+at gmail
+
+Message 3:
+dot com
+
+Must be treated as obfuscated email sharing.
+
+============================================================
+
+EXAMPLE 5
+
+Message 1:
+username: admin
+
+Message 2:
+password:
+
+Message 3:
+SuperSecret123
+
+The credential value must be hidden.
+
+============================================================
+IMPORTANT: SAME SENDER ONLY
+============================================================
+
+Only combine recent messages from the SAME sender.
+
+Do NOT combine:
+
+Client message:
+val@onspot
+
+Talent reply:
+sounds good
+
+Client message:
+global.com
+
+with unrelated participant text in the middle as one continuous literal string unless semantic logic strongly indicates an intentional continuation.
+
+The privacy context should primarily track the sender's own recent outgoing messages.
+
+============================================================
+SHORT TIME WINDOW
+============================================================
+
+Do not scan unlimited history.
+
+Use a bounded window.
+
+Recommended:
+
+last 3–5 user messages from same sender
+
+AND/OR
+
+messages sent within the last 3 minutes.
+
+Example:
+
+PRIVACY_CONTEXT_MESSAGE_LIMIT = 5
+PRIVACY_CONTEXT_WINDOW_MS = 3 * 60 * 1000
+
+Adjust if needed.
+
+This prevents:
+
+- excessive DB queries
+- false positives from old conversation history
+- expensive Vanessa calls
+
+============================================================
+CANONICAL PRIVACY CONTEXT
+============================================================
+
+Create a helper such as:
+
+buildMessagePrivacyContext({
+  threadId,
+  senderId,
+  newContent
+})
+
+Return something conceptually like:
+
+{
+  recentMessages,
+  combinedText,
+  segmentMap
+}
+
+segmentMap must preserve which characters came from which message so the server can determine what should be masked.
+
+Do not permanently concatenate messages in the DB.
+
+This combined text is only for privacy detection.
+
+============================================================
+NORMALIZATION FOR SPLIT ATTEMPTS
+============================================================
+
+When evaluating the temporary combined context, inspect multiple representations.
+
+Example messages:
+
+["val@onspot", "global.com"]
+
+Joined with space:
+
+val@onspot global.com
+
+Joined without boundary:
+
+val@onspotglobal.com
+
+Both should be checked.
+
+Likewise:
+
+["0917", "123", "4723"]
+
+Check:
+
+0917 123 4723
+
+and:
+
+09171234723
+
+But do not remove ALL whitespace blindly from arbitrary sentences.
+
+Use contact-aware joining.
+
+============================================================
+BOUNDARY-AWARE DETECTION
+============================================================
+
+Implement explicit boundary detection.
+
+For each potential transition between recent message and current message, test combinations such as:
+
+previousSuffix + currentPrefix
+
+Examples:
+
+"val@onspot" + "global.com"
+
+"0917" + "1234723"
+
+"john at gmail" + "dot com"
+
+Check progressively larger boundaries:
+
+last 20-40 chars of previous message
++
+first 20-40 chars of current message
+
+This is safer than concatenating whole long paragraphs.
+
+============================================================
+MULTI-MESSAGE EMAIL DETECTION
+============================================================
+
+Detect examples such as:
+
+val@onspot
+global.com
+
+val
+@onspotglobal.com
+
+val@
+onspotglobal
+.com
+
+val at
+gmail dot com
+
+val
+at gmail
+dot com
+
+When detected, the final visible messages must not allow reconstruction.
+
+============================================================
+HOW TO REDACT ALREADY-SAVED PREVIOUS MESSAGE
+============================================================
+
+This is important.
+
+Suppose:
+
+Message 1 already saved:
+val@onspot
+
+At that moment it may not have been recognized as PII.
+
+Then user sends Message 2:
+global.com
+
+Now the server knows the two messages form an email.
+
+The server must protect BOTH pieces.
+
+Preferred approach:
+
+Within the SAME transaction / privacy workflow:
+
+1. sanitize the new message
+2. update the recent previous message(s) involved in the reconstructed PII
+3. mark all involved messages flagged_for_review
+4. return/invalidate updated conversation data
+
+Example:
+
+before:
+
+Message 1:
+val@onspot
+
+Message 2 incoming:
+global.com
+
+after:
+
+Message 1:
+*****
+
+Message 2:
+*****.com
+
+The full contact information must disappear from the conversation after detection.
+
+============================================================
+DO NOT LEAVE PARTIAL CONTACT INFO
+============================================================
+
+Bad result:
+
+Message 1:
+val@onspot
+
+Message 2:
+*****.com
+
+The recipient can still infer too much.
+
+Bad:
+
+Message 1:
+*****
+
+Message 2:
+global.com
+
+Still reveals the domain.
+
+The combined visible state must be safe.
+
+============================================================
+TRANSACTION SAFETY
+============================================================
+
+If previous messages need to be updated:
+
+use a DB transaction.
+
+Conceptually:
+
+BEGIN
+
+load recent sender messages
+
+detect reconstructed PII
+
+sanitize previous affected messages
+
+insert sanitized new message
+
+mark affected messages flagged_for_review
+
+update thread last_message_at
+
+COMMIT
+
+Do not leave half-sanitized state if one DB operation fails.
+
+============================================================
+NOTIFICATION SAFETY
+============================================================
+
+If the new message contributes to reconstructed PII:
+
+notifications must use the sanitized new message.
+
+Do not generate notification text before cross-message privacy detection finishes.
+
+============================================================
+THREAD PREVIEW SAFETY
+============================================================
+
+The thread preview / latest message must use sanitized content only.
+
+If a previous message is retroactively sanitized, invalidate/update the relevant frontend query.
+
+============================================================
+FRONTEND REFRESH
+============================================================
+
+When server response says cross-message sanitization affected earlier messages, frontend should refetch the thread.
+
+Example response metadata:
+
+{
+  privacyRedacted: true,
+  privacyContextRedacted: true,
+  affectedMessageIds: ["..."]
+}
+
+The frontend should:
+
+invalidateQueries(["thread-messages", threadId])
+
+Do not manually reconstruct prior messages in React.
+
+============================================================
+SENDER WARNING
+============================================================
+
+Reuse the warning already requested:
+
+Title:
+Personal information hidden
+
+Description:
+"Sharing personal contact information or credentials is not allowed in Messages. Sensitive information was automatically hidden."
+
+For cross-message detection, optional slightly stronger wording:
+
+"Personal information was detected across multiple messages and automatically hidden."
+
+Still show only ONE warning.
+
+============================================================
+VANESSA AI ROLE
+============================================================
+
+Vanessa should help detect semantic split attempts that deterministic rules miss.
+
+Example:
+
+Message 1:
+you can find me on gmail
+
+Message 2:
+my username is val
+
+Message 3:
+domain is onspotglobal dot com
+
+Vanessa may classify this as attempted off-platform contact sharing.
+
+Do not let Vanessa see raw credentials already deterministically detected.
+
+Use the temporary recent-message privacy context.
+
+Ask Vanessa for structured output only.
+
+Example:
+
+{
+  "containsSplitSensitiveInfo": true,
+  "type": "email",
+  "confidence": 0.94,
+  "messageIndexes": [0,1,2]
+}
+
+Validate response.
+
+============================================================
+DO NOT USE VANESSA FOR EVERY HISTORY FETCH
+============================================================
+
+Run deterministic cross-message checks first.
+
+Call Vanessa only when:
+
+- suspicious fragments exist
+- contact-like tokens appear
+- deterministic confidence is uncertain
+
+Examples of suspicious fragments:
+
+@
+dot
+gmail
+yahoo
+outlook
+phone
+number
+whatsapp
+telegram
+password
+pin
+otp
+token
+digits split across messages
+
+Do not call AI for normal messages like:
+
+"Thanks"
+"Sounds good"
+"See you tomorrow"
+
+============================================================
+ANTI-BYPASS EXAMPLES
+============================================================
+
+Add tests for all of these:
+
+TEST 1
+m1 = "val@onspot"
+m2 = "global.com"
+
+Expected:
+combined email detected.
+
+============================================================
+
+TEST 2
+m1 = "val"
+m2 = "@onspotglobal"
+m3 = ".com"
+
+Expected:
+detected.
+
+============================================================
+
+TEST 3
+m1 = "val at"
+m2 = "gmail dot"
+m3 = "com"
+
+Expected:
+detected.
+
+============================================================
+
+TEST 4
+m1 = "0917"
+m2 = "123"
+m3 = "4723"
+
+Expected:
+phone detected.
+
+============================================================
+
+TEST 5
+m1 = "+63"
+m2 = "917"
+m3 = "123"
+m4 = "4723"
+
+Expected:
+phone detected.
+
+============================================================
+
+TEST 6
+m1 = "password:"
+m2 = "SuperSecret123!"
+
+Expected:
+credential redacted.
+
+============================================================
+
+TEST 7 — unrelated messages
+
+m1 = "I have 3 years experience"
+m2 = "and completed 4 projects"
+
+Expected:
+no PII detection.
+
+============================================================
+
+TEST 8 — different senders
+
+Client:
+"val@onspot"
+
+Talent:
+"global.com"
+
+Do NOT automatically combine into one email based purely on string concatenation.
+
+============================================================
+
+TEST 9 — expired window
+
+Sender sends:
+"val@onspot"
+
+30 minutes later:
+"global.com"
+
+Do not automatically join based solely on old context.
+
+============================================================
+
+TEST 10 — database result
+
+After cross-message email is detected:
+
+query affected messages.
+
+Assert the DB no longer contains the reconstructable raw email fragments.
+
+============================================================
+IMPORTANT DATA RETENTION RULE
+============================================================
+
+When cross-message PII is detected, update only the messages required to remove the sensitive value.
+
+Do not rewrite unrelated older messages.
+
+Do not delete whole conversations.
+
+============================================================
+PERFORMANCE
+============================================================
+
+For each send:
+
+Query only:
+
+same thread
+same sender
+recent messages
+LIMIT 5
+
+ordered newest first.
+
+Do not load the full chat history.
+
+Use an index-friendly query.
+
+============================================================
+DO NOT BREAK CURRENT SINGLE-MESSAGE REDACTION
+============================================================
+
+Current working behavior must remain:
+
+val@onspotglobal.com
+→ *****.com
+
++63...
+→ ***last4
+
+password
+→ ********
+
+Cross-message protection is an ADDITIONAL layer.
+
+============================================================
+ORDER OF OPERATIONS
+============================================================
+
+Correct pipeline:
+
+incoming raw new message
+
+↓
+
+single-message deterministic redaction
+
+↓
+
+load bounded recent messages from same sender
+
+↓
+
+cross-message deterministic detection
+
+↓
+
+sanitize previous affected messages if necessary
+
+↓
+
+Vanessa semantic split check if suspicious
+
+↓
+
+additional redaction
+
+↓
+
+insert sanitized new message
+
+↓
+
+flag affected messages
+
+↓
+
+notifications from sanitized content
+
+↓
+
+API response
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+Complete only when:
+
+- users cannot bypass email filtering by splitting across messages
+- users cannot bypass phone filtering by splitting digits
+- users cannot bypass credential filtering by splitting label/value
+- previous involved messages are retroactively sanitized when necessary
+- different participants are not naïvely concatenated
+- old stale messages are not unnecessarily joined
+- Vanessa can assist with semantic split attempts
+- single-message filtering still works
+- notifications remain sanitized
+- thread previews remain sanitized
+- sender receives one warning
+- DB does not retain reconstructable sensitive fragments after detection
+- tests pass
+- typecheck passes
+- build passes
+
+IMPLEMENT THIS NOW.
+DO NOT RETURN AN AUDIT.

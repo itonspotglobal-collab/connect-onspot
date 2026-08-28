@@ -44,6 +44,10 @@ import {
   filterMessageContentWithVanessa,
   MAX_USER_MESSAGE_CHARS,
 } from "./lib/messagePrivacyFilter";
+import {
+  detectMessagePrivacyContext,
+  PRIVACY_CONTEXT_MESSAGE_LIMIT,
+} from "./lib/messagePrivacyContext";
 import { filterMessageContent } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
@@ -2888,6 +2892,16 @@ export async function registerRoutes(
     console.log("✅ Migration 0014: messaging policy acceptance table ready");
   } catch (err: any) {
     console.error("❌ Migration 0014 (messaging policy acceptance) failed:", err.message);
+  }
+
+  try {
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_messages_privacy_context
+        ON messages(thread_id, sender_id, created_at DESC)
+    `);
+    console.log("✅ Migration 0015: message privacy context index ready");
+  } catch (err: any) {
+    console.error("❌ Migration 0015 (message privacy context index) failed:", err.message);
   }
 
   // ── Customer billing and talent payout views — Phase 3 ────────────────────
@@ -11299,10 +11313,109 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
       const privacy = await filterMessageContentWithVanessa(validated.content);
-      const message = await storage.createMessage(
-        { ...validated, content: privacy.sanitizedContent },
-        { flaggedForReview: privacy.flaggedForReview },
-      );
+      const txClient = await pool.connect();
+      let message: any;
+      let contextPrivacy: Awaited<ReturnType<typeof detectMessagePrivacyContext>>;
+      try {
+        await txClient.query("BEGIN");
+        // Serialize all sends in this thread so another participant's reply
+        // creates a real boundary between same-sender privacy fragments.
+        await txClient.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1))`,
+          [`message-privacy:${validated.threadId}`],
+        );
+
+        const recent = await txClient.query(
+          `SELECT
+             m.id,
+             m.sender_id AS "senderId",
+             m.content,
+             m.created_at AS "createdAt"
+           FROM messages m
+          WHERE m.thread_id = $1
+            AND m.sender_id = $2
+            AND m.message_type IS DISTINCT FROM 'system'
+            AND m.created_at >= NOW() - INTERVAL '3 minutes'
+            AND m.created_at > COALESCE(
+              (
+                SELECT MAX(other.created_at)
+                  FROM messages other
+                 WHERE other.thread_id = $1
+                   AND other.sender_id <> $2
+                   AND other.created_at >= NOW() - INTERVAL '3 minutes'
+              ),
+              NOW() - INTERVAL '3 minutes'
+            )
+          ORDER BY m.created_at DESC
+          LIMIT $3
+          FOR UPDATE`,
+          [validated.threadId, userId, PRIVACY_CONTEXT_MESSAGE_LIMIT],
+        );
+
+        contextPrivacy = await detectMessagePrivacyContext({
+          senderId: userId,
+          recentMessages: recent.rows.reverse(),
+          newContent: privacy.sanitizedContent,
+        });
+
+        for (const previous of contextPrivacy.previousMessageRedactions) {
+          await txClient.query(
+            `UPDATE messages
+                SET content = $1,
+                    flagged_for_review = TRUE
+              WHERE id = $2
+                AND thread_id = $3
+                AND sender_id = $4`,
+            [
+              previous.sanitizedContent,
+              previous.id,
+              validated.threadId,
+              userId,
+            ],
+          );
+        }
+
+        const inserted = await txClient.query(
+          `INSERT INTO messages (
+             thread_id,
+             sender_id,
+             content,
+             attachments,
+             message_type,
+             flagged_for_review
+           )
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING
+             id,
+             thread_id AS "threadId",
+             sender_id AS "senderId",
+             content,
+             attachments,
+             message_type AS "messageType",
+             read_by AS "readBy",
+             flagged_for_review AS "flaggedForReview",
+             created_at AS "createdAt"`,
+          [
+            validated.threadId,
+            userId,
+            contextPrivacy.sanitizedNewContent,
+            validated.attachments ?? null,
+            validated.messageType ?? "text",
+            privacy.flaggedForReview || contextPrivacy.detected,
+          ],
+        );
+        message = inserted.rows[0];
+        await txClient.query(
+          `UPDATE message_threads SET last_message_at = NOW() WHERE id = $1`,
+          [validated.threadId],
+        );
+        await txClient.query("COMMIT");
+      } catch (transactionError) {
+        await txClient.query("ROLLBACK").catch(() => {});
+        throw transactionError;
+      } finally {
+        txClient.release();
+      }
 
       // Canonical threads have one other participant. Group unread notifications
       // by recipient/thread after persistence; the message body and contact
@@ -11336,10 +11449,17 @@ export async function registerRoutes(
 
       // Strip admin-only field before returning to sender
       const { flaggedForReview: _omit, ...safeMessage } = message;
+      const privacyDetections = privacy.detections.concat(contextPrivacy.detections);
       res.status(201).json({
         ...safeMessage,
-        privacyRedacted: privacy.originalDetected,
-        privacyCategories: Array.from(new Set(privacy.detections.map((d) => d.type))),
+        privacyRedacted: privacy.originalDetected || contextPrivacy.detected,
+        privacyContextRedacted: contextPrivacy.detected,
+        affectedMessageIds: contextPrivacy.detected
+          ? contextPrivacy.affectedPreviousMessageIds.concat(message.id)
+          : [],
+        privacyCategories: Array.from(
+          new Set(privacyDetections.map((d) => d.type)),
+        ),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -118,6 +118,8 @@ function ThreadView({
     },
     onSuccess: (savedMessage: ThreadMessage & {
       privacyRedacted?: boolean;
+      privacyContextRedacted?: boolean;
+      affectedMessageIds?: string[];
       privacyCategories?: string[];
     }) => {
       setDraft("");
@@ -126,8 +128,9 @@ function ThreadView({
       if (savedMessage.privacyRedacted) {
         toast({
           title: "Personal information hidden",
-          description:
-            "Sharing personal contact information or credentials is not allowed in Messages. Sensitive information in your message was automatically hidden.",
+          description: savedMessage.privacyContextRedacted
+            ? "Personal information was detected across multiple messages and automatically hidden."
+            : "Sharing personal contact information or credentials is not allowed in Messages. Sensitive information in your message was automatically hidden.",
         });
       }
     },

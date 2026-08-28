@@ -117,6 +117,124 @@ export type FilteredMessageContent = {
   flaggedForReview: boolean;
 };
 
+export type MessagePrivacySpan = {
+  start: number;
+  end: number;
+  contextStart: number;
+  contextEnd: number;
+  type: MessagePrivacyDetectionType;
+};
+
+/**
+ * Returns only character offsets and safe category names. Values are never
+ * copied into the result. Context offsets may be wider than redaction offsets
+ * for labels such as "password:", where only the value should be hidden.
+ */
+export function findMessagePrivacySpans(content: string): MessagePrivacySpan[] {
+  const spans: MessagePrivacySpan[] = [];
+  const add = (
+    start: number,
+    end: number,
+    type: MessagePrivacyDetectionType,
+    contextStart = start,
+    contextEnd = end,
+  ) => {
+    if (start >= 0 && end > start && end <= content.length) {
+      spans.push({ start, end, contextStart, contextEnd, type });
+    }
+  };
+  const each = (pattern: RegExp, callback: (match: RegExpExecArray) => void) => {
+    const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+    const regex = new RegExp(pattern.source, flags);
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(content)) !== null) {
+      callback(match);
+      if (match[0].length === 0) regex.lastIndex += 1;
+    }
+  };
+
+  each(CREDENTIAL_CONTEXT_RE, (match) => {
+    const valueStart = match.index + match[1].length;
+    add(
+      valueStart,
+      match.index + match[0].length,
+      "credential",
+      match.index,
+      match.index + match[0].length,
+    );
+  });
+  each(LABELED_SECRET_RE, (match) => {
+    const valueOffset = match[0].lastIndexOf(match[2]);
+    add(
+      match.index + valueOffset,
+      match.index + valueOffset + match[2].length,
+      "token",
+      match.index,
+      match.index + match[0].length,
+    );
+  });
+  each(BEARER_TOKEN_RE, (match) => {
+    const valueOffset = match[0].lastIndexOf(match[2]);
+    add(
+      match.index + valueOffset,
+      match.index + valueOffset + match[2].length,
+      "token",
+      match.index,
+      match.index + match[0].length,
+    );
+  });
+  each(STANDALONE_API_KEY_RE, (match) =>
+    add(match.index, match.index + match[0].length, "token"),
+  );
+
+  for (const pattern of [
+    OBFUSCATED_EMAIL_SPACED_RE,
+    OBFUSCATED_EMAIL_SYMBOL_RE,
+    OBFUSCATED_EMAIL_WORDS_GLOBAL_RE,
+  ]) {
+    each(pattern, (match) =>
+      add(
+        match.index,
+        match.index + match[0].length,
+        "obfuscated_contact",
+      ),
+    );
+  }
+  each(EMAIL_GLOBAL_RE, (match) =>
+    add(match.index, match.index + match[0].length, "email"),
+  );
+
+  for (const pattern of [
+    PHONE_INTL_GLOBAL_RE,
+    PHONE_PH_GLOBAL_RE,
+    PHONE_PH_PARENS_GLOBAL_RE,
+    PHONE_DOT_WORD_GLOBAL_RE,
+    PHONE_US_GLOBAL_RE,
+    PHONE_DIGITS_GLOBAL_RE,
+  ]) {
+    each(pattern, (match) => {
+      const digits = match[0].replace(/\D/g, "");
+      if (digits.length >= 7 && digits.length <= 15) {
+        add(match.index, match.index + match[0].length, "phone");
+      }
+    });
+  }
+  each(PHONE_DIGIT_WORDS_GLOBAL_RE, (match) =>
+    add(
+      match.index,
+      match.index + match[0].length,
+      "obfuscated_contact",
+    ),
+  );
+
+  return spans.sort(
+    (a, b) =>
+      a.contextStart - b.contextStart ||
+      b.contextEnd - a.contextEnd ||
+      a.start - b.start,
+  );
+}
+
 function emailSuffix(domain: string): string {
   const labels = domain.toLowerCase().split(".").filter(Boolean);
   if (labels.length >= 2 && (labels.at(-2)?.length ?? 0) <= 3) {

@@ -483,6 +483,77 @@ describe("production messaging routes (registerRoutes)", () => {
     }
   });
 
+  it("retroactively sanitizes split PII in one atomic same-sender workflow", async () => {
+    const first = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "My portfolio is val@onspot",
+    });
+    assert.equal(first.status, 201, JSON.stringify(first.json));
+    assert.equal(first.json.privacyRedacted, false);
+
+    const second = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "global.com",
+    });
+    assert.equal(second.status, 201, JSON.stringify(second.json));
+    assert.equal(second.json.privacyRedacted, true);
+    assert.equal(second.json.privacyContextRedacted, true);
+    assert.deepEqual(
+      new Set(second.json.affectedMessageIds),
+      new Set([first.json.id, second.json.id]),
+    );
+
+    const persisted = await query(
+      `SELECT id, content, flagged_for_review AS "flaggedForReview"
+         FROM messages
+        WHERE id = ANY($1::text[])
+        ORDER BY created_at`,
+      [[first.json.id, second.json.id]],
+    );
+    assert.equal(persisted.rows.length, 2);
+    assert.ok(
+      persisted.rows.every((row: any) => row.flaggedForReview === true),
+    );
+    assert.deepEqual(
+      persisted.rows.map((row: any) => row.content),
+      ["My portfolio is *****", "*****"],
+    );
+    const persistedJson = JSON.stringify(persisted.rows).toLowerCase();
+    assert.ok(!persistedJson.includes("val@onspot"));
+    assert.ok(!persistedJson.includes("global.com"));
+
+    const recipientView = await request(
+      srv,
+      "GET",
+      `/api/message-threads/${acceptedThreadId}/messages`,
+      talentTok,
+    );
+    assert.equal(recipientView.status, 200);
+    const recipientJson = JSON.stringify(recipientView.json).toLowerCase();
+    assert.ok(!recipientJson.includes("val@onspot"));
+    assert.ok(!recipientJson.includes("global.com"));
+  });
+
+  it("does not deterministically join a sender across another participant's reply", async () => {
+    const first = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "different@onspot",
+    });
+    assert.equal(first.status, 201);
+    const reply = await request(srv, "POST", "/api/messages", talentTok, {
+      threadId: acceptedThreadId,
+      content: "Sounds good",
+    });
+    assert.equal(reply.status, 201);
+    const afterReply = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "global.com",
+    });
+    assert.equal(afterReply.status, 201);
+    assert.equal(afterReply.json.privacyContextRedacted, false);
+    assert.equal(afterReply.json.content, "global.com");
+  });
+
   it("rejects messages too long for complete semantic screening", async () => {
     const sent = await request(srv, "POST", "/api/messages", clientTok, {
       threadId: acceptedThreadId,
