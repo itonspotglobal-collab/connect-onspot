@@ -1,0 +1,128 @@
+Add a new "Client Profile" navigation item to the Client Account sidebar.
+
+## Objective
+
+Currently, the Client Profile is only accessible from the top-right profile dropdown/button.
+
+We want to make Client Profile available directly from the left sidebar navigation as well.
+
+---
+
+## Requirements
+
+### Add New Sidebar Menu Item
+
+Add a new sidebar item:
+
+Client Profile
+
+Place it under the "System" section.
+
+Current order:
+
+System
+- Settings
+
+New order:
+
+System
+- Client Profile
+- Settings
+
+Alternatively, if the design system groups account-related pages together better, place Client Profile directly above Settings.
+
+---
+
+## Navigation
+
+When clicked, the sidebar item should navigate to the existing Client Profile page.
+
+Use the same route currently used by the top-right "Client Profile" button/dropdown.
+
+Do NOT create a new page.
+
+Do NOT create a duplicate route.
+
+Reuse the existing Client Profile route.
+
+---
+
+## Active State
+
+The new sidebar item should support the same active-state styling as the other sidebar items.
+
+When the user is on the Client Profile page:
+
+- Highlight the Client Profile sidebar item
+- Apply the same active styling used by Dashboard, Team, Contracts, etc.
+
+---
+
+## Icon
+
+Use an appropriate profile/user icon consistent with the existing sidebar icon set.
+
+Examples:
+
+- User
+- UserCircle
+- AccountCircle
+
+Use whichever icon library is already being used in the sidebar.
+
+Do not introduce a new icon package.
+
+---
+
+## Mobile Behavior
+
+Verify that the new Client Profile item appears correctly in:
+
+- Desktop sidebar
+- Collapsed sidebar
+- Mobile navigation drawer (if applicable)
+
+Follow the existing responsive behavior.
+
+---
+
+## Reuse Existing Permissions
+
+If the application already has role-based sidebar visibility logic:
+
+- Follow the existing pattern.
+- Show Client Profile for Client accounts only.
+- Do not expose it to unrelated account types unless already permitted.
+
+---
+
+## Do Not Change
+
+Do not modify:
+
+- Existing routes
+- Existing Client Profile page layout
+- Header profile dropdown
+- Sidebar styling
+- Sidebar spacing
+- Navigation architecture
+
+This change should only add a new sidebar entry that routes to the already existing Client Profile page.
+
+---
+
+## Acceptance Criteria
+
+✓ "Client Profile" appears in the left sidebar
+
+✓ Clicking it opens the existing Client Profile page
+
+✓ Active state works correctly
+
+✓ Existing top-right Client Profile access remains unchanged
+
+✓ No duplicate pages or routes are created
+
+✓ Works on desktop and mobile
+
+Before implementing, inspect the existing sidebar navigation configuration and reuse the same navigation patterns already used by Dashboard, Team, Contracts, Payments, Billing, ROI Analytics, and Settings.

@@ -13,6 +13,7 @@ import {
   Upload,
   MessageSquare,
   Receipt,
+  UserCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -96,6 +97,11 @@ const managementItems = [
 
 // System
 const systemItems = [
+  {
+    title: "Client Profile",
+    url: "/client-profile",
+    icon: UserCircle,
+  },
   {
     title: "Settings",
     url: "/settings",
